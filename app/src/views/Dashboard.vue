@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore, termOptions, currentTermStr } from '../stores/user'
 import { useClassStore } from '../stores/class'
 import { useGradeStore } from '../stores/grade'
@@ -38,12 +38,29 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-const today = new Date()
-const todayDow = today.getDay() === 0 ? 7 : today.getDay()
-const todayStr = new Date().toISOString().slice(0, 10)
+const today = ref(new Date())
+const todayDow = computed(() => {
+  const d = today.value.getDay()
+  return d === 0 ? 7 : d
+})
+const todayStr = computed(() => today.value.toISOString().slice(0, 10))
+
+// 每分钟刷新一次日期，防止跨天后数据不更新
+let _dateTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  _dateTimer = setInterval(() => {
+    const now = new Date()
+    if (now.toDateString() !== today.value.toDateString()) {
+      today.value = now
+    }
+  }, 60_000)
+})
+onBeforeUnmount(() => {
+  if (_dateTimer) clearInterval(_dateTimer)
+})
 
 const todaySchedule = computed(() => {
-  const all = schoolStore.schedules.filter((s) => s.dayOfWeek === todayDow)
+  const all = schoolStore.schedules.filter((s) => s.dayOfWeek === todayDow.value)
   const mine = all.filter((s) => userStore.isTeaching(s.classId, s.subject))
   const list = userStore.teaching.length ? mine : all
   return list.sort((a, b) => a.period - b.period).slice(0, 6)
@@ -57,10 +74,19 @@ const totalGrades = computed(() => gradeStore.grades.length)
 // ============ 快速上手引导 ============
 const setupSteps = computed(() => [
   {
+    id: 'teacher',
+    icon: '📇',
+    title: '添加教师通讯录',
+    desc: '先录入老师，才能给班级分配班主任、课表安排任课老师',
+    done: teacherStore.teachers.length > 0,
+    action: '去添加教师',
+    route: 'teachers',
+  },
+  {
     id: 'class',
     icon: '🏫',
     title: '创建你的第一个班级',
-    desc: '先建立班级，才能添加学生和录入成绩',
+    desc: '建立班级并设置班主任，为添加学生和排课做准备',
     done: totalClasses.value > 0,
     action: '去创建班级',
     route: 'classes',
@@ -78,7 +104,7 @@ const setupSteps = computed(() => [
     id: 'schedule',
     icon: '📅',
     title: '设置课程表',
-    desc: '把每周的课程安排录入系统，随时查看',
+    desc: '安排每周课程，指定任课老师，随时查看课表',
     done: schoolStore.schedules.length > 0,
     action: '去设置课表',
     route: 'schedule',
@@ -91,15 +117,6 @@ const setupSteps = computed(() => [
     done: totalGrades.value > 0,
     action: '去录入成绩',
     route: 'grades',
-  },
-  {
-    id: 'teacher',
-    icon: '📇',
-    title: '添加教师通讯录',
-    desc: '录入班主任与各学科任课老师，便于设置学生任课老师',
-    done: teacherStore.teachers.length > 0,
-    action: '去添加教师',
-    route: 'teachers',
   },
 ])
 
@@ -179,7 +196,7 @@ onMounted(() => {
     const raw = localStorage.getItem(MOOD_KEY())
     if (raw) {
       const data = JSON.parse(raw)
-      if (data.date === todayStr) currentMood.value = data.mood || ''
+      if (data.date === todayStr.value) currentMood.value = data.mood || ''
     }
   } catch (e) {
     console.warn('mood init err', e)
@@ -188,7 +205,7 @@ onMounted(() => {
 
 function pickMood(m: string) {
   currentMood.value = m
-  localStorage.setItem(MOOD_KEY(), JSON.stringify({ date: todayStr, mood: m }))
+  localStorage.setItem(MOOD_KEY(), JSON.stringify({ date: todayStr.value, mood: m }))
   toast.success(`已记录今日心情：${m}`)
 }
 
@@ -202,7 +219,7 @@ const todos = computed(() => todoStore.todos)
 
 const todayTodos = computed(() =>
   todos.value
-    .filter((t) => t.date === todayStr)
+    .filter((t) => t.date === todayStr.value)
     .sort((a, b) => Number(a.done) - Number(b.done) || a.createdAt - b.createdAt),
 )
 
@@ -218,7 +235,7 @@ function addTodo() {
     openCreate()
     return
   }
-  todoStore.addTodo({ title: t, note: '', date: todayStr })
+  todoStore.addTodo({ title: t, note: '', date: todayStr.value })
   newTodoTitle.value = ''
   toast.success('已添加待办')
 }
@@ -262,7 +279,7 @@ function saveEdit() {
     return
   }
   if (isCreating.value) {
-    todoStore.addTodo({ title: v, note: editDraftNote.value, date: todayStr })
+    todoStore.addTodo({ title: v, note: editDraftNote.value, date: todayStr.value })
     newTodoTitle.value = ''
     toast.success('已添加待办')
   } else if (editingTodo.value) {
@@ -278,12 +295,12 @@ function saveEdit() {
 function clearDone() {
   const before = doneTodos.value.length
   for (const t of [...todos.value]) {
-    if (t.date === todayStr && t.done) todoStore.removeTodo(t.id)
+    if (t.date === todayStr.value && t.done) todoStore.removeTodo(t.id)
   }
   if (before) toast.info(`已清理 ${before} 条已完成`)
 }
 
-const dateLabel = computed(() => `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')} 周${dayOfWeekCN()}`)
+const dateLabel = computed(() => `${today.value.getFullYear()}-${(today.value.getMonth() + 1).toString().padStart(2, '0')}-${today.value.getDate().toString().padStart(2, '0')} 周${dayOfWeekCN()}`)
 
 // ============ 学期切换器 (欢迎条右上角) ============
 const termOpen = ref(false)
@@ -472,9 +489,9 @@ onBeforeUnmount(() => {
               🌱
             </div>
             <div>
-              <h2 class="title-display text-lg">快速上手 · 4 步开启高效教学</h2>
+              <h2 class="title-display text-lg">快速上手 · 5 步开启高效教学</h2>
               <p class="text-xs text-cocoa-500 mt-0.5">
-                已完成 {{ setupDoneCount }} / 4 步
+                已完成 {{ setupDoneCount }} / {{ setupSteps.length }} 步
               </p>
             </div>
           </div>
@@ -490,48 +507,45 @@ onBeforeUnmount(() => {
         <div class="w-full h-2 bg-cocoa-100 rounded-full mb-5 overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-butter-400 to-butter-500 rounded-full transition-all duration-500"
-            :style="{ width: (setupDoneCount / 4 * 100) + '%' }"
+            :style="{ width: (setupDoneCount / setupSteps.length * 100) + '%' }"
           />
         </div>
-        <!-- 步骤卡片 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 步骤卡片（单行 5 列） -->
+        <div class="flex gap-3">
           <div
-            v-for="step in setupSteps"
+            v-for="(step, idx) in setupSteps"
             :key="step.id"
-            class="rounded-xl p-4 transition-all"
+            class="flex-1 rounded-xl p-3 transition-all flex flex-col items-center text-center"
             :class="step.done
               ? 'bg-mint-50/60 border border-mint-200/50'
               : 'bg-white/70 border border-cocoa-100 hover:border-butter-300 hover:shadow-softer cursor-pointer'"
             @click="!step.done && goSetup(step.route)"
           >
-            <div class="flex items-start gap-3">
-              <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                :class="step.done ? 'bg-mint-200/70' : 'bg-butter-100'"
-              >
-                <Check v-if="step.done" class="text-mint-600" :size="20" />
-                <span v-else>{{ step.icon }}</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="font-medium text-sm text-cocoa-900 flex items-center gap-1">
-                  {{ step.title }}
-                  <span
-                    v-if="step.done"
-                    class="text-[10px] bg-mint-100 text-mint-600 px-1.5 py-0.5 rounded-full"
-                  >已完成</span>
-                </div>
-                <p class="text-xs text-cocoa-500 mt-1 leading-relaxed">
-                  {{ step.desc }}
-                </p>
-                <button
-                  v-if="!step.done"
-                  class="mt-2 text-xs text-butter-600 hover:text-butter-700 font-medium inline-flex items-center gap-0.5"
-                  @click.stop="goSetup(step.route)"
-                >
-                  {{ step.action }} <ArrowRight :size="12" />
-                </button>
-              </div>
+            <div class="text-[11px] text-cocoa-400 mb-1">第 {{ idx + 1 }} 步</div>
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2"
+              :class="step.done ? 'bg-mint-200/70' : 'bg-butter-100'"
+            >
+              <Check v-if="step.done" class="text-mint-600" :size="20" />
+              <span v-else>{{ step.icon }}</span>
             </div>
+            <div class="font-medium text-sm text-cocoa-900 leading-snug">
+              {{ step.title }}
+            </div>
+            <p class="text-[11px] text-cocoa-500 mt-1 leading-relaxed line-clamp-2">
+              {{ step.desc }}
+            </p>
+            <button
+              v-if="!step.done"
+              class="mt-auto pt-2 text-xs text-butter-600 hover:text-butter-700 font-medium inline-flex items-center gap-0.5"
+              @click.stop="goSetup(step.route)"
+            >
+              {{ step.action }} <ArrowRight :size="12" />
+            </button>
+            <span
+              v-else
+              class="mt-auto pt-2 text-[10px] bg-mint-100 text-mint-600 px-1.5 py-0.5 rounded-full"
+            >已完成</span>
           </div>
         </div>
       </div>

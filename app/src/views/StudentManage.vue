@@ -86,61 +86,6 @@ const grouped = computed(() => {
   return map
 })
 
-// ============ 座位编排 ============
-const arrangeOpen = ref(false)
-const arrangeCid = ref<string>('')
-const arrangeMode = ref<'score' | 'studentNo' | 'random'>('score')
-const arrangeCols = ref(6)
-const arrangeModes = [
-  { v: 'score' as const, label: '按成绩' },
-  { v: 'studentNo' as const, label: '按学号' },
-  { v: 'random' as const, label: '随机' },
-]
-function openArrange(cid: string) {
-  arrangeCid.value = cid
-  arrangeOpen.value = true
-}
-function studentAvgTotal(sid: string, cid: string): number {
-  const gs = gradeStore.grades.filter(
-    (g) => g.classId === cid && g.scores.some((s) => s.studentId === sid),
-  )
-  let total = 0
-  let n = 0
-  for (const g of gs) {
-    const my = g.scores.find((s) => s.studentId === sid)
-    const v = Number(my?.score)
-    if (my && my.score != null && Number.isFinite(v)) {
-      total += v
-      n++
-    }
-  }
-  return n ? total / n : 0
-}
-function applyArrange() {
-  const cid = arrangeCid.value
-  if (!cid) return
-  const list = [...classStore.studentsOf(cid)]
-  if (arrangeMode.value === 'studentNo') {
-    list.sort((a, b) => a.studentNo.localeCompare(b.studentNo))
-  } else if (arrangeMode.value === 'score') {
-    list.sort((a, b) => studentAvgTotal(b.id, cid) - studentAvgTotal(a.id, cid))
-  } else {
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[list[i], list[j]] = [list[j], list[i]]
-    }
-  }
-  const cols = Math.max(1, Math.floor(arrangeCols.value) || 1)
-  list.forEach((s, i) =>
-    classStore.updateStudent(s.id, {
-      seatRow: Math.floor(i / cols) + 1,
-      seatCol: (i % cols) + 1,
-    }),
-  )
-  toast.success('座位已编排完成')
-  arrangeOpen.value = false
-}
-
 function openCreate(forClass?: string) {
   editing.value = null
   const targetClass =
@@ -1371,12 +1316,6 @@ async function generateAComment() {
             >
               <Plus :size="12" /> 添加
             </button>
-            <button
-              class="btn-secondary !py-1.5 !px-3 text-xs"
-              @click="openArrange(cid)"
-            >
-              <Grid :size="12" /> 编排座位
-            </button>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -1507,59 +1446,6 @@ async function generateAComment() {
       desc="先在「班级管理」中创建班级，再来添加学生"
       icon="🧒"
     />
-
-    <!-- 座位编排弹窗 -->
-    <Modal
-      :open="arrangeOpen"
-      title="编排座位"
-      width="420px"
-      @close="arrangeOpen = false"
-    >
-      <div class="space-y-4">
-        <div>
-          <label class="text-sm text-cocoa-600 block mb-1.5">编排方式</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button
-              v-for="m in arrangeModes"
-              :key="m.v"
-              class="card-flat p-3 text-center text-sm transition"
-              :class="arrangeMode === m.v ? 'ring-2 ring-butter-400' : 'hover:shadow-soft'"
-              @click="arrangeMode = m.v"
-            >
-              {{ m.label }}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label class="text-sm text-cocoa-600 block mb-1.5">列数</label>
-          <input
-            v-model.number="arrangeCols"
-            type="number"
-            min="1"
-            max="12"
-            class="input-soft w-24"
-          >
-          <span class="text-xs text-cocoa-400 ml-2">排成多少列</span>
-        </div>
-        <p class="text-xs text-cocoa-400">
-          编排后将按规则重新分配每位学生的行/列座位，并同步保存到学生信息。
-        </p>
-      </div>
-      <template #footer>
-        <button
-          class="btn-secondary"
-          @click="arrangeOpen = false"
-        >
-          <X :size="14" /> 取消
-        </button>
-        <button
-          class="btn-primary"
-          @click="applyArrange"
-        >
-          <Check :size="14" /> 开始编排
-        </button>
-      </template>
-    </Modal>
 
     <Modal
       :open="modalOpen"

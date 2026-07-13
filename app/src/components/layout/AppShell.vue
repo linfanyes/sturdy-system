@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useClassStore } from '../../stores/class'
@@ -20,6 +20,23 @@ const todoStore = useTodoStore()
 
 const pageTitle = computed(() => (route.meta?.title as string) || '园丁工作台')
 
+// 根据当前时间显示问候语
+const currentHour = ref(new Date().getHours())
+let _greetTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  _greetTimer = setInterval(() => { currentHour.value = new Date().getHours() }, 60_000)
+})
+onUnmounted(() => { if (_greetTimer) clearInterval(_greetTimer) })
+const greeting = computed(() => {
+  const h = currentHour.value
+  if (h < 6) return '夜深了，注意休息'
+  if (h < 9) return '早上好'
+  if (h < 12) return '上午好'
+  if (h < 14) return '中午好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+})
+
 const navGroups = [
   {
     label: '工作',
@@ -27,6 +44,7 @@ const navGroups = [
       { name: 'dashboard', label: '工作台', icon: '🏠', emoji: true },
       { name: 'notes', label: '我的笔记', icon: '📒', emoji: true },
       { name: 'schedule', label: '我的课表', icon: '📅', emoji: true },
+      { name: 'work-log', label: '工作日志', icon: '📓', emoji: true },
     ],
   },
   {
@@ -36,14 +54,22 @@ const navGroups = [
       { name: 'students', label: '学生管理', icon: '🧒', emoji: true },
       { name: 'exams', label: '考试管理', icon: '📋', emoji: true },
       { name: 'grades', label: '成绩管理', icon: '📊', emoji: true },
+      { name: 'grade-trend', label: '成绩趋势', icon: '📈', emoji: true },
       { name: 'attendance', label: '考勤管理', icon: '✅', emoji: true },
       { name: 'homework', label: '作业登记', icon: '📝', emoji: true },
       { name: 'notice', label: '班级公告', icon: '📣', emoji: true },
+      { name: 'parent-contact', label: '家长联系', icon: '📞', emoji: true },
+      { name: 'growth', label: '成长档案', icon: '🌱', emoji: true },
+      { name: 'behavior', label: '行为观察', icon: '👀', emoji: true },
+      { name: 'class-finance', label: '班费管理', icon: '💰', emoji: true },
+      { name: 'duty-roster', label: '轮值表', icon: '📋', emoji: true },
+      { name: 'class-activity', label: '班级活动', icon: '🎉', emoji: true },
     ],
   },
   {
-    label: '同事与资源',
+    label: '教研',
     items: [
+      { name: 'lesson-obs', label: '听课记录', icon: '📝', emoji: true },
       { name: 'teachers', label: '教师通讯录', icon: '📇', emoji: true },
       { name: 'resource', label: '教学资源', icon: '📚', emoji: true },
     ],
@@ -253,8 +279,8 @@ function goFromNotif(n: NotifItem) {
           <div class="font-medium truncate">
             {{ userStore.user?.name || '未登录' }}
           </div>
-          <div class="text-xs text-cocoa-500 truncate">
-            {{ userStore.user?.subject || '请先登录' }}
+          <div class="text-xs text-cocoa-400 mt-0.5">
+            {{ greeting }}
           </div>
         </div>
       </div>
@@ -411,7 +437,7 @@ function goFromNotif(n: NotifItem) {
       <div class="grid grid-cols-5">
         <button
           class="flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-all"
-          :class="['dashboard', 'notes', 'schedule'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
+          :class="['dashboard', 'notes', 'schedule', 'work-log', 'lesson-obs'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
           @click="go('dashboard')"
         >
           <span class="text-xl">🏠</span>
@@ -419,7 +445,7 @@ function goFromNotif(n: NotifItem) {
         </button>
         <button
           class="flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-all"
-          :class="['students', 'classes', 'exams', 'grades', 'attendance', 'homework', 'notice'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
+          :class="['students', 'classes', 'exams', 'grades', 'grade-trend', 'attendance', 'homework', 'notice', 'parent-contact', 'growth', 'behavior', 'class-finance', 'duty-roster', 'class-activity'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
           @click="go('students')"
         >
           <span class="text-xl">🧒</span>

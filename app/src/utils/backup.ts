@@ -9,7 +9,6 @@
  */
 
 import { getCurrentUserId } from './storage'
-import { downloadBlob } from './download'
 
 const BACKUP_PREFIX = 'trace-backup'
 const MAX_BACKUPS = 10 // 最多保留 10 个备份
@@ -205,6 +204,23 @@ export function importBackupFile(file: File): Promise<boolean> {
     reader.onload = () => {
       try {
         const backup = JSON.parse(String(reader.result))
+
+        // 基本结构校验，防止恶意或损坏的文件
+        if (!backup || typeof backup !== 'object' || !backup.data || typeof backup.data !== 'object') {
+          console.warn('[backup] 导入文件结构不合法')
+          resolve(false)
+          return
+        }
+
+        // 校验 data 中的值都是字符串（localStorage 存储格式）
+        for (const [key, val] of Object.entries(backup.data)) {
+          if (typeof key !== 'string' || typeof val !== 'string') {
+            console.warn('[backup] 导入文件 data 格式不合法')
+            resolve(false)
+            return
+          }
+        }
+
         const userId = getCurrentUserId() || 'public'
         const backupId = `imported-${Date.now()}`
         const backupKey = `${BACKUP_PREFIX}.${userId}.${backupId}`
@@ -236,10 +252,18 @@ export function startAutoBackup(intervalMs: number = DEFAULT_INTERVAL): void {
   stopAutoBackup()
 
   // 启动时立即创建一次备份
-  createBackup('自动备份 - 启动')
+  try {
+    createBackup('自动备份 - 启动')
+  } catch (e) {
+    console.warn('[backup] 启动备份失败', e)
+  }
 
   backupTimer = window.setInterval(() => {
-    createBackup('自动备份')
+    try {
+      createBackup('自动备份')
+    } catch (e) {
+      console.warn('[backup] 定时备份失败', e)
+    }
   }, intervalMs)
 }
 

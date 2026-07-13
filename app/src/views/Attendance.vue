@@ -33,11 +33,24 @@ function getStatus(studentId: string): AttendanceStatus {
 }
 
 function setStatus(studentId: string, status: AttendanceStatus) {
+  const prevStatus = getStatus(studentId)
   const list = students.value.map((s) => ({
     studentId: s.id,
     status: s.id === studentId ? status : getStatus(s.id),
   }))
   schoolStore.saveAttendance(classId.value, date.value, list)
+  // 新标记为旷课时，自动生成一条班级公告
+  if (status === '旷课' && prevStatus !== '旷课') {
+    const stu = classStore.getStudent(studentId)
+    const cls = classStore.getClass(classId.value)
+    schoolStore.addNotice({
+      classId: classId.value,
+      title: `${stu?.name || '某同学'}今日旷课`,
+      content: `${cls?.name || ''} ${stu?.name || ''} 于 ${date.value} 旷课，请家长关注。`,
+      pinned: false,
+    })
+    toast.warning(`已为${stu?.name || '该同学'}生成旷课通知`)
+  }
 }
 
 function setAll(status: AttendanceStatus) {

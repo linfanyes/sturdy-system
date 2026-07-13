@@ -147,8 +147,20 @@ function save() {
     return
   }
   if (editing.value) {
+    const prevStatus = editing.value.status
     schoolStore.updateHomework(editing.value.id, draft.value)
     toast.success('已保存')
+    // 状态变为已发还时，自动生成一条班级公告
+    if (draft.value.status === '已发还' && prevStatus !== '已发还') {
+      const cls = classStore.getClass(draft.value.classId)
+      schoolStore.addNotice({
+        classId: draft.value.classId,
+        title: `${draft.value.title} 已发还`,
+        content: `${cls?.name || ''}的「${draft.value.title}」作业已发还，请同学们查收。`,
+        pinned: false,
+      })
+      toast.success(`已为「${draft.value.title}」生成发还通知`)
+    }
   } else {
     schoolStore.addHomework(draft.value)
     toast.success('已布置作业')

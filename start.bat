@@ -51,7 +51,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%scripts\pre-sta
 if errorlevel 1 goto :PRE_START_FAIL
 
 REM 5. Install deps (goto style, avoid nested parens blocks)
-if exist "node_modules" goto :DEPS_OK
+if exist "node_modules\.bin\vite.cmd" goto :DEPS_OK
 echo [start.bat] Installing deps, please wait 1-3 min on first run...
 call npm install --no-audit --no-fund
 if errorlevel 1 goto :NPM_FAIL

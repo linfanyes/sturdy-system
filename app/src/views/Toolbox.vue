@@ -139,6 +139,42 @@ const tools = [
     text: 'text-cocoa-700',
     route: 'schedule',
   },
+  {
+    name: '座位表',
+    desc: '可视化编排座位，支持多套布局方案',
+    icon: '💺',
+    bg: 'bg-sky2-100',
+    text: 'text-sky2-500',
+    route: 'tool-seat',
+    tag: '新增',
+  },
+  {
+    name: '课堂加减分',
+    desc: '个人加分扣分、小组竞赛积分，实时排行',
+    icon: '🏅',
+    bg: 'bg-sakura-100',
+    text: 'text-sakura-500',
+    route: 'tool-score',
+    tag: '新增',
+  },
+  {
+    name: '通知模板',
+    desc: '常用通知模板，一键复制快速发送',
+    icon: '📋',
+    bg: 'bg-mint-100',
+    text: 'text-mint-500',
+    route: 'tool-notice-tpl',
+    tag: '新增',
+  },
+  {
+    name: '教案模板库',
+    desc: '收藏和管理常用教案模板，快速复用',
+    icon: '📑',
+    bg: 'bg-butter-100',
+    text: 'text-butter-600',
+    route: 'tool-plan-tpl',
+    tag: '新增',
+  },
 ]
 </script>
 

@@ -10,6 +10,9 @@ import {
   seedAttendance,
 } from '../seed'
 import { getStorageKey, onUserChange } from '../utils/storage'
+import { useClassStore } from './class'
+import { useTeacherStore } from './teacher'
+import { useUserStore } from './user'
 
 const KEY = () => getStorageKey('school')
 
@@ -86,6 +89,29 @@ export const useSchoolStore = defineStore('school', () => {
         note,
       })
     }
+    // 自动同步：如果老师名匹配通讯录中的老师，为其创建任教分配
+    if (teacher && teacher !== '未知') {
+      const teacherStore = useTeacherStore()
+      const matched = teacherStore.teachers.find((t) => t.name === teacher)
+      if (matched) {
+        const hasEntry = (matched.teachings || []).some(
+          (e) => e.classId === classId && e.subject === subject,
+        )
+        if (!hasEntry) {
+          teacherStore.updateTeacher(matched.id, {
+            teachings: [...(matched.teachings || []), { classId, subject }],
+          })
+        }
+      }
+    }
+  }
+
+  /** 教师改名时，同步更新课表中的老师名 */
+  function renameTeacherInSchedule(oldName: string, newName: string) {
+    if (!oldName || oldName === newName) return
+    for (const s of schedules.value) {
+      if (s.teacher === oldName) s.teacher = newName
+    }
   }
 
   function updateScheduleTeacher(
@@ -131,6 +157,7 @@ export const useSchoolStore = defineStore('school', () => {
     grid: string[][],
     fixedSubjectByPeriod: Record<number, string>,
   ) {
+    const importedSubjects = new Set<string>()
     for (let d = 0; d < 5; d++) {
       const day = d + 1
       const row = grid[d] || []
@@ -153,7 +180,18 @@ export const useSchoolStore = defineStore('school', () => {
           }
         }
         if (!subject) continue
+        importedSubjects.add(subject)
         updateSchedule(classId, day, p, subject, '', teacher)
+      }
+    }
+    // 自动同步：将课表中出现的学科写入当前用户的任教配置
+    if (importedSubjects.size > 0) {
+      const userStore = useUserStore()
+      const userSubjects = new Set(userStore.user?.subjects || [])
+      for (const subj of importedSubjects) {
+        if (userSubjects.has(subj) && !userStore.isTeaching(classId, subj)) {
+          userStore.toggleTeaching(classId, subj)
+        }
       }
     }
   }
@@ -219,11 +257,21 @@ export const useSchoolStore = defineStore('school', () => {
     return attendance.value.find((a) => a.classId === classId && a.date === date)
   }
   function saveAttendance(classId: string, date: string, records: Attendance['records']) {
+    // 自动适配班级学生变动：补齐新增学生（默认出勤），移除已删除学生
+    const classStore = useClassStore()
+    const currentStudentIds = new Set(classStore.studentsOf(classId).map((s) => s.id))
+    const reconciled = records.filter((r) => currentStudentIds.has(r.studentId))
+    const existingIds = new Set(reconciled.map((r) => r.studentId))
+    for (const sid of currentStudentIds) {
+      if (!existingIds.has(sid)) {
+        reconciled.push({ studentId: sid, status: '出勤' })
+      }
+    }
     const found = attendance.value.find((a) => a.classId === classId && a.date === date)
     if (found) {
-      found.records = records
+      found.records = reconciled
     } else {
-      attendance.value.push({ id: uid(), classId, date, records })
+      attendance.value.push({ id: uid(), classId, date, records: reconciled })
     }
   }
 
@@ -322,6 +370,7 @@ export const useSchoolStore = defineStore('school', () => {
     updateScheduleTeacher,
     clearScheduleSlot,
     batchImportSchedule,
+    renameTeacherInSchedule,
     addHomework,
     updateHomework,
     removeHomework,

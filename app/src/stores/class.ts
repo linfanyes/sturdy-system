@@ -4,6 +4,7 @@ import type { ClassItem, Student } from '../types'
 import { now, uid } from '../utils'
 import { seedClasses, seedStudents } from '../seed'
 import { usePersistStore } from '../composables/usePersistStore'
+import { useGradeStore } from './grade'
 
 interface ClassesState {
   classes: ClassItem[]
@@ -89,6 +90,11 @@ export const useClassStore = defineStore('class', () => {
   function addStudent(payload: Omit<Student, 'id' | 'createdAt'>) {
     const s: Student = { ...payload, id: uid(), createdAt: now() }
     students.value.push(s)
+    // 自动为该学生在所有已有成绩记录中创建空分数槽位
+    const gradeStore = useGradeStore()
+    for (const g of gradeStore.gradesOfClass(payload.classId)) {
+      gradeStore.ensureScores(g.id, [s.id])
+    }
     return s
   }
 

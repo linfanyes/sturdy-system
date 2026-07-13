@@ -191,6 +191,22 @@ function toggleTeacher(name: string) {
   else draft.value.teachers.push(name)
 }
 
+/** 同步任课老师到教师通讯录的任教分配 */
+function syncTeacherTeachings(classId: string) {
+  const defaultSubject = userStore.user?.subjects?.[0] || ''
+  if (!defaultSubject) return
+  for (const t of teacherStore.teachers) {
+    if (draft.value.teachers.includes(t.name)) {
+      const hasEntry = (t.teachings || []).some((e) => e.classId === classId)
+      if (!hasEntry) {
+        teacherStore.updateTeacher(t.id, {
+          teachings: [...(t.teachings || []), { classId, subject: defaultSubject }],
+        })
+      }
+    }
+  }
+}
+
 function gotoAddTeacher() {
   sessionStorage.setItem('trace-open-add-teacher', '1')
   modalOpen.value = false
@@ -234,11 +250,13 @@ function save() {
   // 重新计算一次名称，确保最终保存
   recomputeName()
   if (editing.value) {
+    syncTeacherTeachings(editing.value.id)
     classStore.updateClass(editing.value.id, draft.value)
     toast.success('已更新班级信息')
   } else {
     const c = classStore.addClass(draft.value)
     activeId.value = c.id
+    syncTeacherTeachings(c.id)
     // 默认生成课表: 1-7 节随机安排学科, 午自习/课后服务 = 班主任
     autoScheduleNewClass(c.id, c.headTeacher)
     toast.success('已创建班级, 已自动生成默认课表')

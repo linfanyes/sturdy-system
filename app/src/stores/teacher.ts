@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { Teacher } from '../types'
 import { seedTeachers } from '../seed'
 import { usePersistStore } from '../composables/usePersistStore'
+import { useSchoolStore } from './school'
 
 export const useTeacherStore = defineStore('teacher', () => {
   const teachers = ref<Teacher[]>([])
@@ -24,7 +25,13 @@ export const useTeacherStore = defineStore('teacher', () => {
 
   function updateTeacher(id: string, patch: Partial<Teacher>) {
     const idx = teachers.value.findIndex((t) => t.id === id)
-    if (idx >= 0) teachers.value[idx] = { ...teachers.value[idx], ...patch }
+    if (idx < 0) return
+    const old = teachers.value[idx]
+    teachers.value[idx] = { ...old, ...patch }
+    // 教师改名时，同步更新课表中的老师名
+    if (patch.name && patch.name !== old.name) {
+      useSchoolStore().renameTeacherInSchedule(old.name, patch.name)
+    }
   }
 
   function removeTeacher(id: string) {

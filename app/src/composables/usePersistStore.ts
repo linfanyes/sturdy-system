@@ -25,13 +25,25 @@
 import { watch, type Ref } from 'vue'
 import { getStorageKey, onUserChange } from '../utils/storage'
 
-/** 简单防抖 */
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
+/** 简单防抖，支持 flush 立即执行 */
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T & { flush: () => void; pending: () => boolean } {
   let timer: number | null = null
-  return ((...args: unknown[]) => {
+  const debounced = ((...args: unknown[]) => {
     if (timer) clearTimeout(timer)
-    timer = window.setTimeout(() => fn(...args), delay)
-  }) as T
+    timer = window.setTimeout(() => {
+      timer = null
+      fn(...args)
+    }, delay)
+  }) as T & { flush: () => void; pending: () => boolean }
+  debounced.flush = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+      fn()
+    }
+  }
+  debounced.pending = () => timer !== null
+  return debounced
 }
 
 export function usePersistStore<T extends object>(
@@ -93,6 +105,10 @@ export function usePersistStore<T extends object>(
     save,
     { deep: true },
   )
+
+  // 页面关闭前刷出未写入的数据，防止丢失
+  const onBeforeUnload = () => save.flush()
+  window.addEventListener('beforeunload', onBeforeUnload)
 
   // 用户切换时重载
   onUserChange(reload)

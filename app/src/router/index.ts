@@ -182,6 +182,85 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/tools/AwardRecord.vue'),
         meta: { title: '获奖记录', icon: '🏆' },
       },
+      // ---- 新增功能模块 ----
+      {
+        path: 'parent-contact',
+        name: 'parent-contact',
+        component: () => import('../views/ParentContact.vue'),
+        meta: { title: '家长联系', icon: '📞' },
+      },
+      {
+        path: 'growth',
+        name: 'growth',
+        component: () => import('../views/GrowthArchive.vue'),
+        meta: { title: '成长档案', icon: '🌱' },
+      },
+      {
+        path: 'behavior',
+        name: 'behavior',
+        component: () => import('../views/BehaviorObs.vue'),
+        meta: { title: '行为观察', icon: '👀' },
+      },
+      {
+        path: 'lesson-obs',
+        name: 'lesson-obs',
+        component: () => import('../views/LessonObs.vue'),
+        meta: { title: '听课记录', icon: '📝' },
+      },
+      {
+        path: 'work-log',
+        name: 'work-log',
+        component: () => import('../views/WorkLogView.vue'),
+        meta: { title: '工作日志', icon: '📓' },
+      },
+      {
+        path: 'class-finance',
+        name: 'class-finance',
+        component: () => import('../views/ClassFinance.vue'),
+        meta: { title: '班费管理', icon: '💰' },
+      },
+      {
+        path: 'duty-roster',
+        name: 'duty-roster',
+        component: () => import('../views/DutyRosterView.vue'),
+        meta: { title: '轮值表', icon: '📋' },
+      },
+      {
+        path: 'class-activity',
+        name: 'class-activity',
+        component: () => import('../views/ClassActivityView.vue'),
+        meta: { title: '班级活动', icon: '🎉' },
+      },
+      {
+        path: 'grade-trend',
+        name: 'grade-trend',
+        component: () => import('../views/GradeTrend.vue'),
+        meta: { title: '成绩趋势', icon: '📈' },
+      },
+      {
+        path: 'toolbox/seat-map',
+        name: 'tool-seat',
+        component: () => import('../views/tools/SeatMap.vue'),
+        meta: { title: '座位表', icon: '💺' },
+      },
+      {
+        path: 'toolbox/score-panel',
+        name: 'tool-score',
+        component: () => import('../views/tools/ScorePanel.vue'),
+        meta: { title: '加减分', icon: '🏅' },
+      },
+      {
+        path: 'toolbox/notice-template',
+        name: 'tool-notice-tpl',
+        component: () => import('../views/tools/NoticeTemplate.vue'),
+        meta: { title: '通知模板', icon: '📋' },
+      },
+      {
+        path: 'toolbox/plan-template',
+        name: 'tool-plan-tpl',
+        component: () => import('../views/tools/PlanTemplateLib.vue'),
+        meta: { title: '教案模板库', icon: '📑' },
+      },
       // 小游戏合集
       {
         path: 'games',

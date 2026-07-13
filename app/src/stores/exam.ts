@@ -5,6 +5,7 @@ import { now, uid } from '../utils'
 import { getStorageKey, onUserChange } from '../utils/storage'
 import { currentTermStr, normalizeTerm } from './user'
 import { useGradeStore } from './grade'
+import { useClassStore } from './class'
 
 const KEY = () => getStorageKey('exams')
 
@@ -44,7 +45,24 @@ export const useExamStore = defineStore('exam', () => {
   }
 
   function addExam(payload: Omit<Exam, 'id' | 'createdAt'>) {
-    exams.value.unshift({ ...payload, id: uid(), createdAt: now() })
+    const exam = { ...payload, id: uid(), createdAt: now() }
+    exams.value.unshift(exam)
+    // 自动为每个学科预建成绩表，填入所有学生的空分数槽位
+    const gradeStore = useGradeStore()
+    const classStore = useClassStore()
+    const studentIds = classStore.studentsOf(payload.classId).map((s) => s.id)
+    for (const subject of payload.subjects) {
+      const grade = gradeStore.addGrade({
+        classId: payload.classId,
+        subject,
+        examName: payload.name,
+        examId: exam.id,
+        date: payload.date,
+        scores: studentIds.map((sid) => ({ studentId: sid, score: null })),
+      })
+      // 如果学生列表为空，后续添加学生时 addStudent 会自动补齐
+      void grade
+    }
   }
   function updateExam(id: string, patch: Partial<Exam>) {
     const i = exams.value.findIndex((e) => e.id === id)
@@ -67,6 +85,17 @@ export const useExamStore = defineStore('exam', () => {
     }
   }
   function removeExam(id: string) {
+    const exam = exams.value.find((e) => e.id === id)
+    if (exam) {
+      // 级联清理该考试的所有成绩记录
+      useGradeStore().clearByExam({
+        examId: id,
+        classId: exam.classId,
+        subjects: exam.subjects,
+        examName: exam.name,
+        date: exam.date,
+      })
+    }
     exams.value = exams.value.filter((e) => e.id !== id)
   }
   function getExam(id: string) {
