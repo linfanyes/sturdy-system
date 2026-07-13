@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/user'
 import { useToastStore } from '../stores/toast'
 import MyScheduleTable from '../components/common/MyScheduleTable.vue'
 import Modal from '../components/common/Modal.vue'
+import ToolBackButton from '../components/common/ToolBackButton.vue'
 import { Calendar, Settings, Printer, Save, SlidersHorizontal } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
@@ -82,6 +83,7 @@ function goScheduleMaker() {
 
 <template>
   <div class="space-y-4 sm:space-y-5">
+    <ToolBackButton />
     <!-- 顶部 -->
     <div class="card-soft p-4 sm:p-5 flex flex-col gap-3">
       <div class="flex items-center gap-3">
