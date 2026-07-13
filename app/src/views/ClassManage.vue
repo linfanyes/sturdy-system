@@ -7,7 +7,7 @@ import { useGradeStore } from '../stores/grade'
 import { useRewardStore } from '../stores/reward'
 import { useExamStore } from '../stores/exam'
 import { useUserStore, termOptions, normalizeTerm } from '../stores/user'
-import type { ClassItem } from '../types'
+import type { ClassItem, Student } from '../types'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import ClassScheduleGrid from '../components/common/ClassScheduleGrid.vue'
@@ -145,6 +145,39 @@ function saveClassNotice() {
 }
 const studentsInActive = computed(() =>
   activeId.value ? classStore.studentsOf(activeId.value) : [],
+)
+
+// ============ 花名册排布 ============
+// 座位编排后：所有学生都有 seatRow/seatCol，按座位网格分布显示
+const seatArranged = computed(
+  () =>
+    studentsInActive.value.length > 0 &&
+    studentsInActive.value.every(
+      (s) => s.seatRow != null && s.seatCol != null,
+    ),
+)
+// 座位网格：row/col 定位，空格留空
+const seatGrid = computed<(Student | null)[][]>(() => {
+  const list = studentsInActive.value
+  let maxRow = 0
+  let maxCol = 0
+  for (const s of list) {
+    if (s.seatRow != null) maxRow = Math.max(maxRow, s.seatRow)
+    if (s.seatCol != null) maxCol = Math.max(maxCol, s.seatCol)
+  }
+  const grid: (Student | null)[][] = []
+  for (let r = 0; r < maxRow; r++) grid.push(new Array(maxCol).fill(null))
+  for (const s of list) {
+    if (s.seatRow != null && s.seatCol != null)
+      grid[s.seatRow - 1][s.seatCol - 1] = s
+  }
+  return grid
+})
+// 座位未编排：按学号排序，5 列铺开
+const rosterDefault = computed<Student[]>(() =>
+  [...studentsInActive.value].sort((a, b) =>
+    (a.studentNo || '').localeCompare(b.studentNo || ''),
+  ),
 )
 
 // 教师选择下拉
@@ -917,31 +950,86 @@ function confirmSchedImport() {
           v-if="activeClass"
           class="card-soft p-6"
         >
-          <h3 class="title-display text-lg mb-3 flex items-center gap-2">
-            <BookOpen :size="18" /> 班级花名册
-          </h3>
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h3 class="title-display text-lg flex items-center gap-2">
+              <BookOpen :size="18" /> 班级花名册
+            </h3>
+            <span
+              class="text-[11px] px-2 py-0.5 rounded-full"
+              :class="seatArranged ? 'bg-mint-100 text-mint-500' : 'bg-butter-100 text-butter-700'"
+            >
+              {{ seatArranged ? '座位已编排 · 按座位分布' : '座位未编排 · 按学号 5 列' }}
+            </span>
+          </div>
+
           <div
             v-if="studentsInActive.length"
-            class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[440px] overflow-y-auto pr-1"
+            class="max-h-[440px] overflow-y-auto pr-1"
           >
-            <div
-              v-for="s in studentsInActive"
-              :key="s.id"
-              class="card-flat p-3 flex items-center gap-2"
-            >
+            <!-- 座位已编排：按 seatRow/seatCol 在教室网格中定位 -->
+            <template v-if="seatArranged">
+              <div class="text-center text-[10px] text-cocoa-400 py-1 bg-cocoa-50 rounded mb-2">
+                讲台
+              </div>
               <div
-                class="w-8 h-8 rounded-full bg-butter-300/80 flex items-center justify-center text-sm shrink-0"
+                v-for="(row, ri) in seatGrid"
+                :key="'r' + ri"
+                class="mb-2"
               >
-                {{ s.gender === '女' ? '👧' : '👦' }}
-              </div>
-              <div class="text-sm min-w-0">
-                <div class="truncate">
-                  {{ s.name }}
+                <div class="text-[10px] text-cocoa-300 mb-1">
+                  第 {{ ri + 1 }} 排
                 </div>
-                <span class="text-xs text-cocoa-300">· 座 {{ s.seatNo }}</span>
+                <div
+                  class="grid gap-2"
+                  :style="{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }"
+                >
+                  <template
+                    v-for="(s, ci) in row"
+                    :key="'c' + ri + '-' + ci"
+                  >
+                    <div
+                      v-if="s"
+                      class="card-flat p-3 flex items-center gap-2"
+                    >
+                      <div class="w-8 h-8 rounded-full bg-butter-300/80 flex items-center justify-center text-sm shrink-0">
+                        {{ s.gender === '女' ? '👧' : '👦' }}
+                      </div>
+                      <div class="text-sm min-w-0">
+                        <div class="truncate">{{ s.name }}</div>
+                        <span class="text-xs text-cocoa-300">· 座 {{ s.seatNo }}</span>
+                      </div>
+                    </div>
+                    <div
+                      v-else
+                      class="card-flat p-3 border border-dashed border-cocoa-100 opacity-40"
+                    />
+                  </template>
+                </div>
               </div>
-            </div>
+            </template>
+
+            <!-- 座位未编排：按学号排序，5 列铺开 -->
+            <template v-else>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                <div
+                  v-for="s in rosterDefault"
+                  :key="s.id"
+                  class="card-flat p-3 flex items-center gap-2"
+                >
+                  <div class="w-8 h-8 rounded-full bg-butter-300/80 flex items-center justify-center text-sm shrink-0">
+                    {{ s.gender === '女' ? '👧' : '👦' }}
+                  </div>
+                  <div class="text-sm min-w-0">
+                    <div class="truncate">{{ s.name }}</div>
+                    <span class="text-xs text-cocoa-300">
+                      #{{ s.studentNo }} · 座 {{ s.seatNo }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
+
           <div
             v-if="!studentsInActive.length"
             class="text-center text-cocoa-500 py-4"
