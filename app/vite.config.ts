@@ -128,7 +128,7 @@ export default defineConfig({
       fs: path.resolve(__dirname, './src/polyfills/fs-stub.ts'),
       stream: path.resolve(__dirname, './src/polyfills/stream-stub.ts'),
       path: path.resolve(__dirname, './src/polyfills/path-stub.ts'),
-      buffer: path.resolve(__dirname, './node_modules/buffer/buffer.js'),
+      buffer: path.resolve(__dirname, './node_modules/buffer/index.js'),
     },
   },
 })
