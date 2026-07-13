@@ -26,7 +26,7 @@ export const ALL_TOOLS: DashboardTool[] = [
   { name: '课堂计算器', icon: '🧮', color: 'mint', route: 'tool-calc' },
   { name: '奖惩记录', icon: '🏅', color: 'sakura', route: 'tool-reward' },
   { name: '课表排版', icon: '🗓️', color: 'sky2', route: 'tool-schedule' },
-  { name: '取色器', icon: '🎨', color: 'butter', route: 'tool-color' },
+  { name: '随机分组', icon: '👥', color: 'butter', route: 'tool-grouper' },
   { name: '小游戏', icon: '🎮', color: 'sakura', route: 'games' },
   { name: '我的课表', icon: '📅', color: 'mint', route: 'schedule' },
   { name: '座位表', icon: '💺', color: 'sky2', route: 'tool-seat' },

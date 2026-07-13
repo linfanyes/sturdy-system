@@ -111,10 +111,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '课表排版', icon: '🗓️' },
       },
       {
-        path: 'toolbox/color',
-        name: 'tool-color',
-        component: () => import('../views/tools/ColorPick.vue'),
-        meta: { title: '取色器', icon: '🎨' },
+        path: 'toolbox/random-grouper',
+        name: 'tool-grouper',
+        component: () => import('../views/tools/RandomGrouper.vue'),
+        meta: { title: '随机分组', icon: '👥' },
       },
       {
         path: 'toolbox/reward',
