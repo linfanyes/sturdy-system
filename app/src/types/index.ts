@@ -1,0 +1,12 @@
+// 全部领域模型类型（按模块拆分，统一出口）
+// 原有 import { xxx } from '../types' 无需修改
+
+export * from './user'
+export * from './class'
+export * from './teacher'
+export * from './grade'
+export * from './school'
+export * from './note'
+export * from './reward'
+export * from './ai'
+export * from './generated'

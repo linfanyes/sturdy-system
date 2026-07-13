@@ -1,0 +1,496 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream-50: 255 252 245;
+  --cream-100: 255 249 238;
+  --cream-200: 255 241 217;
+  --cream-300: 255 231 184;
+  --butter-100: 255 234 184;
+  --butter-300: 255 218 142;
+  --butter-400: 255 212 121;
+  --butter-500: 245 190 82;
+  --butter-600: 216 156 44;
+  --mint-100: 214 245 226;
+  --mint-300: 168 232 194;
+  --mint-400: 127 216 164;
+  --mint-500: 84 188 131;
+  --sakura-100: 255 224 233;
+  --sakura-300: 255 184 204;
+  --sakura-400: 255 158 181;
+  --sakura-500: 244 123 152;
+  --sky2-100: 212 236 255;
+  --sky2-300: 164 214 255;
+  --sky2-400: 123 198 255;
+  --sky2-500: 79 163 224;
+  --cocoa-100: 200 181 154;
+  --cocoa-300: 142 120 88;
+  --cocoa-500: 122 106 85;
+  --cocoa-700: 82 63 42;
+  --cocoa-900: 61 46 31;
+
+  /* 主题强调色变量：默认指向 butter，各主题（mint/sakura/sky）仅覆盖这些变量 */
+  --accent-100: var(--butter-100);
+  --accent-300: var(--butter-300);
+  --accent-400: var(--butter-400);
+  --accent-500: var(--butter-500);
+  --accent-600: var(--butter-600);
+}
+
+.dark {
+  --cream-50: 33 26 18;
+  --cream-100: 42 33 24;
+  --cream-200: 53 42 29;
+  --cream-300: 70 55 31;
+  --butter-100: 74 61 36;
+  --butter-300: 110 92 52;
+  --butter-400: 201 162 78;
+  --butter-500: 224 184 94;
+  --butter-600: 184 144 47;
+  --mint-100: 27 51 41;
+  --mint-300: 44 87 67;
+  --mint-400: 79 158 120;
+  --mint-500: 95 191 146;
+  --sakura-100: 62 32 39;
+  --sakura-300: 110 58 72;
+  --sakura-400: 199 122 142;
+  --sakura-500: 224 140 160;
+  --sky2-100: 28 49 64;
+  --sky2-300: 44 78 100;
+  --sky2-400: 90 147 184;
+  --sky2-500: 111 176 214;
+  --cocoa-100: 74 63 48;
+  --cocoa-300: 138 122 99;
+  --cocoa-500: 201 184 156;
+  --cocoa-700: 224 211 188;
+  --cocoa-900: 242 232 216;
+}
+
+
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+
+  body {
+    @apply font-sans text-cocoa-900 bg-cream-100;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image: radial-gradient(
+        circle at 20% 12%,
+        rgba(255, 218, 142, 0.45),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 82% 8%,
+        rgba(127, 216, 164, 0.35),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 76% 92%,
+        rgba(255, 158, 181, 0.32),
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 12% 88%,
+        rgba(123, 198, 255, 0.32),
+        transparent 50%
+      );
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 20% 12%, rgba(201, 162, 78, 0.16), transparent 45%),
+      radial-gradient(circle at 82% 8%, rgba(79, 158, 120, 0.14), transparent 45%),
+      radial-gradient(circle at 76% 92%, rgba(199, 122, 142, 0.12), transparent 50%),
+      radial-gradient(circle at 12% 88%, rgba(90, 147, 184, 0.12), transparent 50%);
+  }
+
+  /* 噪点纹理叠加 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.35 0 0 0 0 0.2 0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+  }
+
+  ::selection {
+    background: #ffd479;
+    color: #3d2e1f;
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(190, 140, 80, 0.25);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(190, 140, 80, 0.45);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .card-soft {
+    @apply rounded-3xl bg-white/80 backdrop-blur-sm shadow-soft border border-white/60;
+  }
+
+  .card-flat {
+    @apply rounded-2xl bg-white/70 border border-white/60;
+  }
+
+  .btn-pill {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-all duration-200 select-none active:scale-95;
+  }
+
+  .btn-primary {
+    @apply btn-pill bg-gradient-to-br from-butter-400 to-butter-500 text-cocoa-900 shadow-pop hover:brightness-105;
+  }
+
+  .btn-secondary {
+    @apply btn-pill bg-cocoa-900/5 text-cocoa-900 hover:bg-cocoa-900/10;
+  }
+
+  .btn-ghost {
+    @apply btn-pill hover:bg-cocoa-900/5 text-cocoa-700;
+  }
+
+  .btn-mint {
+    @apply btn-pill bg-mint-400 text-cocoa-900 shadow-softer hover:brightness-105;
+  }
+
+  .btn-sakura {
+    @apply btn-pill bg-sakura-400 text-cocoa-900 shadow-softer hover:brightness-105;
+  }
+
+  .btn-sky {
+    @apply btn-pill bg-sky2-400 text-cocoa-900 shadow-softer hover:brightness-105;
+  }
+
+  .input-soft {
+    @apply w-full rounded-2xl border border-cocoa-100/80 bg-white/80 px-4 py-2.5 text-cocoa-900 placeholder:text-cocoa-300 outline-none transition-all focus:border-butter-400 focus:ring-4 focus:ring-butter-100;
+  }
+
+  .textarea-soft {
+    @apply w-full rounded-2xl border border-cocoa-100/80 bg-white/80 px-4 py-2.5 text-cocoa-900 placeholder:text-cocoa-300 outline-none transition-all resize-none focus:border-butter-400 focus:ring-4 focus:ring-butter-100;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium;
+  }
+
+  .divider-dashed {
+    background-image: linear-gradient(
+      to right,
+      rgba(190, 140, 80, 0.35) 50%,
+      transparent 0
+    );
+    background-size: 8px 1px;
+    background-repeat: repeat-x;
+    height: 1px;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/60;
+  }
+
+  .title-display {
+    @apply font-display text-cocoa-900;
+    letter-spacing: 0.04em;
+  }
+
+  .hand {
+    @apply font-hand text-cocoa-900;
+  }
+
+  .number {
+    @apply font-number text-cocoa-900;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 rounded-2xl px-4 py-2.5 text-cocoa-700 transition-all hover:bg-butter-100/70;
+  }
+
+  .nav-item.active {
+    @apply bg-butter-300/60 text-cocoa-900 shadow-softer;
+  }
+
+  .scribble {
+    position: relative;
+  }
+  .scribble::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: -6px;
+    height: 6px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'><path d='M0 4 Q 15 0 30 4 T 60 4 T 90 4 T 120 4' fill='none' stroke='%23FFB8CC' stroke-width='2' stroke-linecap='round'/></svg>")
+      no-repeat;
+    background-size: 100% 100%;
+    pointer-events: none;
+  }
+
+  /* ===== 主题色组件覆盖：通过 --accent-* 变量统一管理（仅 mint/sakura/sky 生效） =====
+     butter 默认沿用 base 组件样式，故使用 :is() 限定三套主题选择器。
+     各主题块只需覆盖 --accent-* 变量即可，无需重复书写组件规则。 */
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .btn-primary {
+    background-image: linear-gradient(to bottom right, rgb(var(--accent-300)), rgb(var(--accent-500)));
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .nav-item.active {
+    background-color: rgb(var(--accent-300) / 0.6);
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .nav-item:hover {
+    background-color: rgb(var(--accent-100) / 0.7);
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .input-soft:focus,
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .textarea-soft:focus {
+    border-color: rgb(var(--accent-400));
+    --tw-ring-color: rgb(var(--accent-100));
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) ::selection {
+    background: rgb(var(--accent-400) / 0.5);
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .title-display {
+    color: rgb(var(--accent-500));
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .chip {
+    background-color: rgb(var(--accent-100) / 0.8);
+  }
+  :is(html[data-color="mint"], html[data-color="sakura"], html[data-color="sky"]) .card-soft {
+    box-shadow: 0 8px 24px rgb(var(--accent-500) / 0.10);
+  }
+
+  /* 暗色模式：组件覆盖（保持暖色夜间风，与奶系设计一致） */
+  .dark .card-soft {
+    @apply bg-cream-200/70 border-cocoa-100/40;
+  }
+  .dark .card-flat {
+    @apply bg-cream-200/55 border-cocoa-100/35;
+  }
+  .dark .glass {
+    @apply bg-cream-200/70 border-cocoa-100/40;
+  }
+  .dark .input-soft,
+  .dark .textarea-soft {
+    @apply bg-cream-200/60 border-cocoa-100/50;
+  }
+  .dark .nav-item {
+    @apply text-cocoa-300 hover:bg-butter-100/20;
+  }
+  .dark .nav-item.active {
+    @apply bg-butter-300/25;
+  }
+  .dark .btn-secondary {
+    @apply hover:bg-cocoa-100/15;
+  }
+  .dark .btn-ghost {
+    @apply text-cocoa-300 hover:bg-cocoa-100/15;
+  }
+  .dark .btn-primary,
+  .dark .btn-mint,
+  .dark .btn-sakura,
+  .dark .btn-sky {
+    @apply text-cream-300;
+  }
+
+  /* 表格深色模式 */
+  .dark table {
+    @apply text-cocoa-900;
+  }
+  .dark th {
+    @apply bg-cream-200/80 border-cocoa-100/40;
+  }
+  .dark td {
+    @apply border-cocoa-100/30;
+  }
+  .dark tr:hover td {
+    @apply bg-butter-100/20;
+  }
+
+  /* Modal 深色模式 */
+  .dark .modal-overlay {
+    @apply bg-cocoa-900/60;
+  }
+  .dark .modal-content {
+    @apply bg-cream-100 border-cocoa-100/40;
+  }
+
+  /* Toast 深色模式 */
+  .dark .toast {
+    @apply bg-cream-200 text-cocoa-900 border-cocoa-100/40;
+  }
+
+  /* 滚动条深色模式 */
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(201, 184, 156, 0.3);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(201, 184, 156, 0.5);
+  }
+
+  /* 选中文本深色模式 */
+  .dark ::selection {
+    background: rgba(224, 184, 94, 0.4);
+    color: #f2e8d8;
+  }
+
+  /* 空状态深色模式 */
+  .dark .empty-state {
+    @apply text-cocoa-300;
+  }
+
+  /* 标签/徽章深色模式 */
+  .dark .chip {
+    @apply bg-cream-200/80 text-cocoa-700;
+  }
+
+  /* 分隔线深色模式 */
+  .dark hr,
+  .dark .divider {
+    @apply border-cocoa-100/30;
+  }
+
+  /* 代码块深色模式 */
+  .dark pre,
+  .dark code {
+    @apply bg-cream-200/60 text-cocoa-700;
+  }
+
+  /* 引用块深色模式 */
+  .dark blockquote {
+    @apply border-l-butter-400/50 bg-butter-100/10 text-cocoa-500;
+  }
+}
+
+/* ========== 移动端优化 ========== */
+@layer utilities {
+  /* 安全区域内边距 */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* 禁止文字选中（按钮等交互元素） */
+  .select-none-touch {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* ========== 字号调节 ========== */
+html[data-font="sm"] {
+  font-size: 14px;
+}
+html[data-font="md"] {
+  font-size: 16px;
+}
+html[data-font="lg"] {
+  font-size: 18px;
+}
+
+/* ========== 主题色切换 ==========
+   每个主题只需覆盖 --accent-* 变量 + body 背景渐变 + scribble 描边色。
+   组件规则（.btn-primary / .nav-item / .chip / .card-soft 等）已在 @layer components
+   中通过 --accent-* 统一管理，此处不再重复书写。 */
+/* 薄荷绿主题 */
+html[data-color="mint"] {
+  color-scheme: light;
+  --accent-100: var(--mint-100);
+  --accent-300: var(--mint-300);
+  --accent-400: var(--mint-400);
+  --accent-500: var(--mint-500);
+}
+html[data-color="mint"] body {
+  background-image:
+    radial-gradient(circle at 20% 12%, rgba(168, 232, 194, 0.5), transparent 45%),
+    radial-gradient(circle at 82% 8%, rgba(127, 216, 164, 0.35), transparent 45%),
+    radial-gradient(circle at 76% 92%, rgba(255, 218, 142, 0.25), transparent 50%),
+    radial-gradient(circle at 12% 88%, rgba(123, 198, 255, 0.25), transparent 50%);
+}
+html[data-color="mint"] .btn-mint {
+  @apply bg-mint-500;
+}
+html[data-color="mint"] .scribble::after {
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'><path d='M0 4 Q 15 0 30 4 T 60 4 T 90 4 T 120 4' fill='none' stroke='%237FD8A4' stroke-width='2' stroke-linecap='round'/></svg>") no-repeat;
+  background-size: 100% 100%;
+}
+
+/* 樱花粉主题 */
+html[data-color="sakura"] {
+  --accent-100: var(--sakura-100);
+  --accent-300: var(--sakura-300);
+  --accent-400: var(--sakura-400);
+  --accent-500: var(--sakura-500);
+}
+html[data-color="sakura"] body {
+  background-image:
+    radial-gradient(circle at 20% 12%, rgba(255, 184, 204, 0.5), transparent 45%),
+    radial-gradient(circle at 82% 8%, rgba(255, 218, 142, 0.3), transparent 45%),
+    radial-gradient(circle at 76% 92%, rgba(255, 158, 181, 0.35), transparent 50%),
+    radial-gradient(circle at 12% 88%, rgba(212, 236, 255, 0.25), transparent 50%);
+}
+html[data-color="sakura"] .scribble::after {
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'><path d='M0 4 Q 15 0 30 4 T 60 4 T 90 4 T 120 4' fill='none' stroke='%23FF9EB5' stroke-width='2' stroke-linecap='round'/></svg>") no-repeat;
+  background-size: 100% 100%;
+}
+
+/* 天空蓝主题 */
+html[data-color="sky"] {
+  --accent-100: var(--sky2-100);
+  --accent-300: var(--sky2-300);
+  --accent-400: var(--sky2-400);
+  --accent-500: var(--sky2-500);
+}
+html[data-color="sky"] body {
+  background-image:
+    radial-gradient(circle at 20% 12%, rgba(164, 214, 255, 0.5), transparent 45%),
+    radial-gradient(circle at 82% 8%, rgba(127, 216, 164, 0.3), transparent 45%),
+    radial-gradient(circle at 76% 92%, rgba(255, 218, 142, 0.25), transparent 50%),
+    radial-gradient(circle at 12% 88%, rgba(123, 198, 255, 0.35), transparent 50%);
+}
+html[data-color="sky"] .scribble::after {
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'><path d='M0 4 Q 15 0 30 4 T 60 4 T 90 4 T 120 4' fill='none' stroke='%237BC6FF' stroke-width='2' stroke-linecap='round'/></svg>") no-repeat;
+  background-size: 100% 100%;
+}
+
+/* 移动端：表格横向滚动容器优化 */
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* 表格在手机上字号小一点 */
+  table {
+    font-size: 12px;
+  }
+  th, td {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
