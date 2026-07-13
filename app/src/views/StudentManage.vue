@@ -47,6 +47,7 @@ const draft = ref<Omit<Student, 'id' | 'createdAt'>>({
   parentPhone: '',
   note: '',
   tags: [],
+  duty: '',
 })
 
 const filtered = computed(() => {
@@ -102,6 +103,7 @@ function openCreate(forClass?: string) {
     parentPhone: '',
     note: '',
     tags: [],
+    duty: '',
   }
   draftSnapshot.value = JSON.stringify(draft.value)
   modalOpen.value = true
@@ -1336,6 +1338,9 @@ async function generateAComment() {
                   座位
                 </th>
                 <th class="py-2 pr-2">
+                  职务
+                </th>
+                <th class="py-2 pr-2">
                   家长
                 </th>
                 <th class="py-2 pr-2">
@@ -1401,6 +1406,10 @@ async function generateAComment() {
                   >
                     座 {{ s.seatNo }}
                   </span>
+                </td>
+                <td class="py-2.5 pr-2">
+                  <span v-if="s.duty" class="chip bg-sky2-100 text-sky2-600 text-[10px]">{{ s.duty }}</span>
+                  <span v-else class="text-cocoa-300 text-xs">-</span>
                 </td>
                 <td class="py-2.5 pr-2 text-cocoa-700">
                   {{ s.parentName || '-' }}
@@ -1537,6 +1546,14 @@ async function generateAComment() {
             class="input-soft mt-1 min-h-[80px]"
             placeholder="如：过敏食物、特长等"
           />
+        </div>
+        <div>
+          <label class="text-xs text-cocoa-500 ml-1">班级职务</label>
+          <input
+            v-model="draft.duty"
+            class="input-soft mt-1"
+            placeholder="如：班长、学习委员、语文课代表、组长"
+          >
         </div>
         <div>
           <label class="text-xs text-cocoa-500 ml-1">标签（用逗号分隔）</label>

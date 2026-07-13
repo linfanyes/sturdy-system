@@ -29,6 +29,8 @@ export interface Student {
   parentPhone: string
   note: string
   tags: string[]
+  /** 班级职务（如：班长、学习委员、语文课代表、组长） */
+  duty?: string
   /** AI 生成的期末/阶段性评语 (鼓励赞扬向), 可选 */
   comment?: string
   createdAt: number

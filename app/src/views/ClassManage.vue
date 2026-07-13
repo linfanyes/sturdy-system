@@ -1014,7 +1014,8 @@ function confirmSchedImport() {
                       </div>
                       <div class="text-sm min-w-0">
                         <div class="truncate">{{ s.name }}</div>
-                        <span class="text-xs text-cocoa-300">· 座 {{ s.seatNo }}</span>
+                        <span v-if="s.duty" class="text-xs text-sky2-500">{{ s.duty }}</span>
+                        <span v-else class="text-xs text-cocoa-300">座 {{ s.seatNo }}</span>
                       </div>
                     </div>
                     <div
@@ -1039,9 +1040,8 @@ function confirmSchedImport() {
                   </div>
                   <div class="text-sm min-w-0">
                     <div class="truncate">{{ s.name }}</div>
-                    <span class="text-xs text-cocoa-300">
-                      #{{ s.studentNo }} · 座 {{ s.seatNo }}
-                    </span>
+                    <span v-if="s.duty" class="text-xs text-sky2-500">{{ s.duty }}</span>
+                    <span v-else class="text-xs text-cocoa-300">#{{ s.studentNo }}</span>
                   </div>
                 </div>
               </div>
