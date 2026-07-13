@@ -275,10 +275,10 @@ export function stopAutoBackup(): void {
   }
 }
 
-/** 读取自动备份开关（默认开启） */
+/** 读取自动备份开关（默认关闭） */
 export function getAutoBackupEnabled(): boolean {
   const v = localStorage.getItem(AUTO_BACKUP_KEY)
-  return v === null ? true : v === '1'
+  return v === null ? false : v === '1'
 }
 
 /** 写入自动备份开关 */
