@@ -8,6 +8,8 @@ import EmptyState from '../../components/common/EmptyState.vue'
 import { Plus, Trash2, Save, Star, Copy, Upload, Download } from 'lucide-vue-next'
 import type { LessonPlanTemplate } from '../../types'
 import JSZip from 'jszip'
+import WordExtractor from 'word-extractor'
+import { Buffer } from 'buffer'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
 
 const adminStore = useAdminStore()
@@ -81,13 +83,11 @@ function copyContent(t: LessonPlanTemplate) {
   navigator.clipboard.writeText(t.content).then(() => toast.success('已复制到剪贴板'))
 }
 
-/** 从 .docx 文件提取纯文本 */
+/** 从 .docx 文件提取纯文本 (JSZip 解析 XML) */
 async function extractDocxText(file: File): Promise<string> {
   const zip = await JSZip.loadAsync(file)
   const xml = await zip.file('word/document.xml')?.async('string')
   if (!xml) return ''
-  // 简单提取：去除所有 XML 标签，保留文本内容
-  // 先处理段落分隔
   const text = xml
     .replace(/<\/w:p>/g, '\n')
     .replace(/<w:tab\/>/g, '\t')
@@ -102,6 +102,23 @@ async function extractDocxText(file: File): Promise<string> {
   return text
 }
 
+/** 从 .doc 文件提取纯文本 (word-extractor 解析 OLE2 二进制格式) */
+async function extractDocText(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const extractor = new WordExtractor()
+  const doc = await extractor.extract(Buffer.from(buffer))
+  return doc.getBody().trim()
+}
+
+/** 根据文件扩展名自动选择解析方式 */
+async function extractWordText(file: File): Promise<string> {
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.doc') && !name.endsWith('.docx')) {
+    return extractDocText(file)
+  }
+  return extractDocxText(file)
+}
+
 /** 导入 .docx 文件 */
 const importFileRef = ref<HTMLInputElement | null>(null)
 function triggerImport() {
@@ -114,7 +131,7 @@ async function onImportFile(e: Event) {
   if (!file) return
   input.value = ''
   try {
-    const text = await extractDocxText(file)
+    const text = await extractWordText(file)
     if (!text) { toast.warning('文件内容为空'); return }
     const name = file.name.replace(/\.docx?$/i, '')
     draft.value = { title: name, subject: '', lessonType: '其他', grade: '', content: text }
@@ -122,7 +139,7 @@ async function onImportFile(e: Event) {
     modalOpen.value = true
     toast.success('已导入，请补充信息后保存')
   } catch (err) {
-    toast.warning('文件解析失败，请确认是 .docx 格式')
+    toast.warning('文件解析失败，请确认是 .doc 或 .docx 格式')
   }
 }
 
@@ -194,9 +211,9 @@ const typeColor: Record<string, string> = {
         @click="filterFav = !filterFav">⭐ 收藏</button>
       <input v-model="search" class="input-soft !w-36 ml-auto" placeholder="搜索模板..." />
       <button class="btn-secondary" @click="triggerImport">
-        <Upload :size="14" /> 导入 .docx
+        <Upload :size="14" /> 导入 Word
       </button>
-      <input ref="importFileRef" type="file" accept=".docx,.doc" class="hidden" @change="onImportFile" />
+      <input ref="importFileRef" type="file" accept=".doc,.docx" class="hidden" @change="onImportFile" />
       <button class="btn-primary" @click="openCreate">
         <Plus :size="14" /> 新建模板
       </button>

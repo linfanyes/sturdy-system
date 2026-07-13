@@ -118,11 +118,17 @@ export default defineConfig({
   ],
   optimizeDeps: {
     // 预打包文档解析相关依赖, 避免首次上传时触发 Vite 反复优化重载
-    include: ['pdfjs-dist', 'jszip', 'xlsx'],
+    include: ['pdfjs-dist', 'jszip', 'xlsx', 'word-extractor'],
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'), // @ = src, 相对当前配置文件
+      // word-extractor 依赖 Node.js 内置模块, 浏览器环境用 stub 替代
+      // (仅传 Buffer 调用, 不会触发 fs 文件读取)
+      fs: path.resolve(__dirname, './src/polyfills/fs-stub.ts'),
+      stream: path.resolve(__dirname, './src/polyfills/stream-stub.ts'),
+      path: path.resolve(__dirname, './src/polyfills/path-stub.ts'),
+      buffer: path.resolve(__dirname, './node_modules/buffer/buffer.js'),
     },
   },
 })
