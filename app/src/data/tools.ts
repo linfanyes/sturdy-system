@@ -32,7 +32,7 @@ export const ALL_TOOLS: DashboardTool[] = [
   { name: '座位表', icon: '💺', color: 'sky2', route: 'tool-seat' },
   { name: '课堂加减分', icon: '🏅', color: 'sakura', route: 'tool-score' },
   { name: '通知模板', icon: '📋', color: 'mint', route: 'tool-notice-tpl' },
-  { name: '教案模板库', icon: '📑', color: 'butter', route: 'tool-plan-tpl' },
+  { name: '文案模板库', icon: '📑', color: 'butter', route: 'tool-plan-tpl' },
   { name: '教育论文', icon: '📝', color: 'sky2', route: 'tool-paper' },
 ]
 

@@ -59,7 +59,7 @@ function openEdit(t: LessonPlanTemplate) {
 
 function save() {
   if (!draft.value.title.trim()) { toast.warning('请输入模板标题'); return }
-  if (!draft.value.content.trim()) { toast.warning('请输入教案内容'); return }
+  if (!draft.value.content.trim()) { toast.warning('请输入模板内容'); return }
   if (editing.value) {
     adminStore.updatePlanTemplate(editing.value.id, { ...draft.value, isFavorite: editing.value.isFavorite })
     toast.success('已更新')
@@ -199,8 +199,8 @@ const typeColor: Record<string, string> = {
   <div class="space-y-5">
     <ToolPageHeader
       icon="📑"
-      title="教案模板库"
-      description="收藏和管理常用教案模板，快速复用"
+      title="文案模板库"
+      description="收藏和管理常用文案模板，快速复用"
       gradient="from-butter-100 via-cream-50 to-sky2-100"
     />
 
@@ -224,7 +224,7 @@ const typeColor: Record<string, string> = {
     </div>
 
     <div v-if="!filtered.length" class="mt-8">
-      <EmptyState title="还没有教案模板" desc="创建教案模板，快速复用教学成果" icon="📑" />
+      <EmptyState title="还没有文案模板" desc="创建文案模板，快速复用" icon="📑" />
     </div>
 
     <div v-else class="grid sm:grid-cols-2 gap-4">
@@ -254,12 +254,12 @@ const typeColor: Record<string, string> = {
       </div>
     </div>
 
-    <Modal :open="modalOpen" :title="editing ? '编辑教案模板' : '新建教案模板'" width="640px" @close="modalOpen = false">
+    <Modal :open="modalOpen" :title="editing ? '编辑文案模板' : '新建文案模板'" width="640px" @close="modalOpen = false">
       <div class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-cocoa-500">标题</label>
-            <input v-model="draft.title" class="input-soft" placeholder="如：《草船借箭》教案" />
+            <input v-model="draft.title" class="input-soft" placeholder="如：家长会发言稿" />
           </div>
           <div>
             <label class="text-xs text-cocoa-500">科目</label>
@@ -279,8 +279,8 @@ const typeColor: Record<string, string> = {
           </div>
         </div>
         <div>
-          <label class="text-xs text-cocoa-500">教案内容</label>
-          <textarea v-model="draft.content" class="input-soft font-mono text-xs" rows="12" placeholder="教学目标：&#10;教学重难点：&#10;教学过程：&#10;板书设计：&#10;作业布置：" />
+          <label class="text-xs text-cocoa-500">模板内容</label>
+          <textarea v-model="draft.content" class="input-soft font-mono text-xs" rows="12" placeholder="在此输入模板内容..." />
         </div>
       </div>
       <template #footer>

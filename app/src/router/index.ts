@@ -259,7 +259,7 @@ const routes: RouteRecordRaw[] = [
         path: 'toolbox/plan-template',
         name: 'tool-plan-tpl',
         component: () => import('../views/tools/PlanTemplateLib.vue'),
-        meta: { title: '教案模板库', icon: '📑' },
+        meta: { title: '文案模板库', icon: '📑' },
       },
       {
         path: 'toolbox/paper',

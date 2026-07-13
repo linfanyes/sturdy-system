@@ -167,8 +167,8 @@ const tools = [
     tag: '新增',
   },
   {
-    name: '教案模板库',
-    desc: '收藏和管理常用教案模板，快速复用',
+    name: '文案模板库',
+    desc: '收藏和管理常用文案模板，快速复用',
     icon: '📑',
     bg: 'bg-butter-100',
     text: 'text-butter-600',
