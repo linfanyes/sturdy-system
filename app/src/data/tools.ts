@@ -33,6 +33,7 @@ export const ALL_TOOLS: DashboardTool[] = [
   { name: '课堂加减分', icon: '🏅', color: 'sakura', route: 'tool-score' },
   { name: '通知模板', icon: '📋', color: 'mint', route: 'tool-notice-tpl' },
   { name: '教案模板库', icon: '📑', color: 'butter', route: 'tool-plan-tpl' },
+  { name: '教育论文', icon: '📝', color: 'sky2', route: 'tool-paper' },
 ]
 
 /** 默认展示的 5 个常用工具（取列表前 5 个的路由） */

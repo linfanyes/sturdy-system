@@ -11,6 +11,7 @@ import JSZip from 'jszip'
 import WordExtractor from 'word-extractor'
 import { Buffer } from 'buffer'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
+import { extractDocumentText } from '../../utils/document'
 
 const adminStore = useAdminStore()
 const toast = useToastStore()
@@ -110,9 +111,12 @@ async function extractDocText(file: File): Promise<string> {
   return doc.getBody().trim()
 }
 
-/** 根据文件扩展名自动选择解析方式 */
+/** 根据文件扩展名自动选择解析方式 (支持 .doc / .docx / .pdf) */
 async function extractWordText(file: File): Promise<string> {
   const name = file.name.toLowerCase()
+  if (name.endsWith('.pdf')) {
+    return extractDocumentText(file)
+  }
   if (name.endsWith('.doc') && !name.endsWith('.docx')) {
     return extractDocText(file)
   }
@@ -139,7 +143,7 @@ async function onImportFile(e: Event) {
     modalOpen.value = true
     toast.success('已导入，请补充信息后保存')
   } catch (err) {
-    toast.warning('文件解析失败，请确认是 .doc 或 .docx 格式')
+    toast.warning('文件解析失败，请确认是 .doc / .docx / .pdf 格式')
   }
 }
 
@@ -211,9 +215,9 @@ const typeColor: Record<string, string> = {
         @click="filterFav = !filterFav">⭐ 收藏</button>
       <input v-model="search" class="input-soft !w-36 ml-auto" placeholder="搜索模板..." />
       <button class="btn-secondary" @click="triggerImport">
-        <Upload :size="14" /> 导入 Word
+        <Upload :size="14" /> 导入文档
       </button>
-      <input ref="importFileRef" type="file" accept=".doc,.docx" class="hidden" @change="onImportFile" />
+      <input ref="importFileRef" type="file" accept=".doc,.docx,.pdf" class="hidden" @change="onImportFile" />
       <button class="btn-primary" @click="openCreate">
         <Plus :size="14" /> 新建模板
       </button>

@@ -1,64 +1,24 @@
-# wait-ready.ps1 - Wait for the dev/preview server to become ready
-param(
-    [Parameter(Mandatory = $true)]
-    [int]$Port,
+# wait-ready.ps1 - Wait for the dev server to become ready
+param([int]$Port = 5201, [string]$LogFile = "", [string]$PidFile = "")
 
-    [Parameter(Mandatory = $true)]
-    [string]$LogFile,
-
-    [Parameter(Mandatory = $true)]
-    [string]$PidFile
-)
-
-$ErrorActionPreference = 'SilentlyContinue'
-$timeout = 120        # max wait seconds
-$interval = 1         # poll interval seconds
-$elapsed = 0
-
-Write-Host "[wait-ready] Waiting for http://localhost:${Port}/ ..."
-
-while ($elapsed -lt $timeout) {
-    # Check if any process is listening on the port
-    $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-    if ($conn) {
-        # Port is listening - try an HTTP request
-        try {
-            $response = Invoke-WebRequest -Uri "http://localhost:${Port}/" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
-                # Server is ready - find and save PID
-                $pids = $conn | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -and $_ -ne 0 }
-                $serverPid = if ($pids) { $pids[0] } else { 0 }
-                Set-Content -Path $PidFile -Value $serverPid -NoNewline
-                Write-Host "[wait-ready] Server ready (PID $serverPid), responded with $($response.StatusCode)."
-                exit 0
-            }
-        } catch {
-            # HTTP request failed but port is listening - server still starting
+$maxWait = 30; $elapsed = 0
+while ($elapsed -lt $maxWait) {
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $result = $tcp.BeginConnect("127.0.0.1", $Port, $null, $null)
+        $success = $result.AsyncWaitHandle.WaitOne(1000, $false)
+        if ($success) { $tcp.EndConnect($result); $tcp.Close()
+            Write-Host "[wait-ready] Server ready on port $Port (${elapsed}s)"
+            if ($PidFile) { $c = Get-NetTCPConnection -LocalPort $Port -State Listen -EA SilentlyContinue; if($c){$c.OwningProcess|Set-Content $PidFile} }
+            exit 0
         }
+        $tcp.Close()
+    } catch {}
+    if ($LogFile -and (Test-Path $LogFile)) {
+        $tail = Get-Content $LogFile -Tail 5 -EA SilentlyContinue
+        if ($tail -match "ERROR|Cannot find module") { Write-Host "[wait-ready] Error in log"; exit 1 }
     }
-
-    # Check log file for fatal errors
-    if (Test-Path $LogFile) {
-        $logContent = Get-Content $LogFile -Tail 20 -Raw -ErrorAction SilentlyContinue
-        if ($logContent -match 'EADDRINUSE|Cannot find module|Error:|FATAL') {
-            Write-Host "[wait-ready] Fatal error detected in log:"
-            Write-Host $logContent
-            exit 1
-        }
-    }
-
-    Start-Sleep -Seconds $interval
-    $elapsed += $interval
-
-    # Print progress every 10 seconds
-    if ($elapsed % 10 -eq 0) {
-        Write-Host "[wait-ready] Still waiting... (${elapsed}s / ${timeout}s)"
-    }
+    Start-Sleep -Seconds 1; $elapsed++
+    Write-Host "[wait-ready] Waiting for port $Port... (${elapsed}s)"
 }
-
-Write-Host "[wait-ready] Timeout after ${timeout}s. Server did not become ready."
-if (Test-Path $LogFile) {
-    Write-Host "[wait-ready] Last lines of log:"
-    Get-Content $LogFile -Tail 10
-}
-exit 1
+Write-Host "[wait-ready] Timeout after ${maxWait}s"; exit 1

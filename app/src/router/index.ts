@@ -261,6 +261,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/tools/PlanTemplateLib.vue'),
         meta: { title: '教案模板库', icon: '📑' },
       },
+      {
+        path: 'toolbox/paper',
+        name: 'tool-paper',
+        component: () => import('../views/tools/Paper.vue'),
+        meta: { title: '教育论文', icon: '📝' },
+      },
       // 小游戏合集
       {
         path: 'games',

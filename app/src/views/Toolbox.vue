@@ -175,6 +175,15 @@ const tools = [
     route: 'tool-plan-tpl',
     tag: '新增',
   },
+  {
+    name: '教育论文',
+    desc: '搜索论文参考，AI 辅助撰写教育教学论文',
+    icon: '📝',
+    bg: 'bg-sky2-100',
+    text: 'text-sky2-500',
+    route: 'tool-paper',
+    tag: '新增',
+  },
 ]
 </script>
 
