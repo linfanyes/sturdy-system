@@ -1,0 +1,16 @@
+# electron-builder 临时配置（输出到独立目录，避免旧目录被锁）
+appId: com.gardener.workstation
+productName: 园丁工作台
+copyright: Copyright © 2026 园丁工作台
+directories:
+  output: ../dist-electron-new
+  buildResources: .
+files:
+  - dist/**/*
+  - electron/**/*
+win:
+  target:
+    - portable
+  artifactName: ${productName}-${version}-${arch}.${ext}
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

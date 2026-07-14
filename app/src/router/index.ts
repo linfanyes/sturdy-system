@@ -354,8 +354,8 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // 测试数据生成器：仅在开发模式注册路由，避免生产构建被访问
-  ...(import.meta.env.DEV
+  // 测试数据生成器：在开发模式或 Electron 桌面端注册，避免普通生产 Web 构建被访问
+  ...(import.meta.env.DEV || (typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron'))
     ? [
         {
           path: '/dev/seed',
