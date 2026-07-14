@@ -267,6 +267,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/tools/Paper.vue'),
         meta: { title: '教育论文', icon: '📝' },
       },
+      {
+        path: 'toolbox/knowledge',
+        name: 'tool-knowledge',
+        component: () => import('../views/tools/Knowledge.vue'),
+        meta: { title: '知识点', icon: '💡' },
+      },
       // 小游戏合集
       {
         path: 'games',
@@ -348,17 +354,13 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // dev-only: 测试数据生成器
-  ...(import.meta.env.DEV
-    ? [
-        {
-          path: '/dev/seed',
-          name: 'dev-seed',
-          component: () => import('../views/DevSeed.vue'),
-          meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
-        },
-      ]
-    : []),
+  // 测试数据生成器 (开发者工具, 桌面版/生产构建同样可用)
+  {
+    path: '/dev/seed',
+    name: 'dev-seed',
+    component: () => import('../views/DevSeed.vue'),
+    meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

@@ -156,6 +156,11 @@ function studentNo(id: string | null) {
   return students.value.find(s => s.id === id)?.studentNo || ''
 }
 
+/** 左侧（讲台后方左半区）应包含的列数：整体居中，中间留过道 */
+function leftCount(cols: number) {
+  return Math.ceil(cols / 2)
+}
+
 function assignStudent(row: number, col: number, studentId: string) {
   draft.value.seats[row][col] = studentId || null
 }
@@ -236,12 +241,12 @@ const unassigned = computed(() => {
     </div>
 
     <div v-else class="grid sm:grid-cols-2 gap-4">
-      <div v-for="layout in layouts" :key="layout.id" class="card-soft p-5" :class="layout.active ? 'ring-2 ring-mint-400' : ''">
+      <div v-for="layout in layouts" :key="layout.id" class="card-soft p-5" :class="layout.active ? 'ring-2 ring-butter-500 bg-butter-100/30' : ''">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="title-display text-lg">{{ layout.name }}</h3>
             <span class="chip bg-sky2-100 text-sky2-500 text-[10px]">{{ classStore.getClass(layout.classId)?.name || '' }}</span>
-            <span v-if="layout.active" class="chip bg-mint-100 text-mint-500 text-[10px]">使用中</span>
+            <span v-if="layout.active" class="chip bg-butter-300 text-cocoa-900 font-semibold text-[10px]">✓ 使用中</span>
           </div>
           <div class="flex gap-1">
             <button v-if="!layout.active" class="btn-ghost !px-2 !py-1 text-xs text-mint-500" @click="activate(layout)">使用</button>
@@ -251,20 +256,71 @@ const unassigned = computed(() => {
             </button>
           </div>
         </div>
-        <div class="text-xs text-cocoa-500 mb-1">{{ layout.rows }}排 × {{ layout.cols }}列</div>
+        <div class="text-xs text-cocoa-500 mb-2">{{ layout.rows }}排 × {{ layout.cols }}列</div>
         <div class="overflow-x-auto">
-          <div class="text-[10px] text-cocoa-400 mb-0.5 text-center">— 讲台 —</div>
-          <div class="inline-grid gap-1" :style="{ gridTemplateColumns: `repeat(${layout.cols}, minmax(2.5rem, 1fr))` }">
-            <template v-for="(row, ri) in layout.seats" :key="ri">
+          <!-- 讲台（前置，醒目台子） -->
+          <div class="flex justify-center mb-3">
+            <div
+              class="px-6 py-1.5 rounded-lg text-[11px] font-semibold tracking-widest border shadow-sm"
+              :class="layout.active
+                ? 'bg-butter-300 text-cocoa-900 border-butter-500'
+                : 'bg-cocoa-100 text-cocoa-700 border-cocoa-300'"
+            >
+              讲 台
+            </div>
+          </div>
+          <!-- 座位：讲台后方，中间过道分左右两侧 -->
+          <div class="flex flex-col gap-1 items-center">
+            <div
+              v-for="(row, ri) in layout.seats"
+              :key="ri"
+              class="flex items-center gap-1"
+            >
+              <!-- 左半区 -->
               <div
-                v-for="(seat, ci) in row"
-                :key="ci"
-                class="w-10 h-8 rounded text-[10px] flex items-center justify-center truncate px-0.5"
-                :class="seat ? 'bg-mint-200 text-cocoa-800' : 'bg-cocoa-100/40 text-cocoa-300'"
+                class="grid gap-1"
+                :style="{ gridTemplateColumns: `repeat(${leftCount(layout.cols)}, 2.5rem)` }"
               >
-                {{ seat ? studentName(seat) : '空' }}
+                <div
+                  v-for="(seat, ci) in row.slice(0, leftCount(layout.cols))"
+                  :key="'l' + ci"
+                  class="w-10 h-8 rounded text-[10px] flex items-center justify-center truncate px-0.5 transition"
+                  :class="seat
+                    ? (layout.active
+                        ? 'bg-butter-300 text-cocoa-900 font-semibold ring-1 ring-butter-500'
+                        : 'bg-mint-200 text-cocoa-800')
+                    : 'bg-cocoa-100/40 text-cocoa-300'"
+                >
+                  {{ seat ? studentName(seat) : '空' }}
+                </div>
               </div>
-            </template>
+              <!-- 中间过道 -->
+              <div
+                v-if="layout.cols > 1"
+                class="w-5 flex-shrink-0 flex justify-center"
+              >
+                <div class="w-px h-6 bg-cocoa-200/60"></div>
+              </div>
+              <!-- 右半区 -->
+              <div
+                v-if="row.length > leftCount(layout.cols)"
+                class="grid gap-1"
+                :style="{ gridTemplateColumns: `repeat(${row.length - leftCount(layout.cols)}, 2.5rem)` }"
+              >
+                <div
+                  v-for="(seat, ci) in row.slice(leftCount(layout.cols))"
+                  :key="'r' + ci"
+                  class="w-10 h-8 rounded text-[10px] flex items-center justify-center truncate px-0.5 transition"
+                  :class="seat
+                    ? (layout.active
+                        ? 'bg-butter-300 text-cocoa-900 font-semibold ring-1 ring-butter-500'
+                        : 'bg-mint-200 text-cocoa-800')
+                    : 'bg-cocoa-100/40 text-cocoa-300'"
+                >
+                  {{ seat ? studentName(seat) : '空' }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

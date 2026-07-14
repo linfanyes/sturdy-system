@@ -73,6 +73,15 @@ const tools = [
     tag: '新增',
   },
   {
+    name: '知识点',
+    desc: '按年级/科目/教材版本/学期，AI 梳理课本知识点',
+    icon: '💡',
+    bg: 'bg-sky2-100',
+    text: 'text-sky2-500',
+    route: 'tool-knowledge',
+    tag: '新增',
+  },
+  {
     name: '优质教案',
     desc: '多篇候选教案，勾选后整合为新教案',
     icon: '📚',
@@ -183,6 +192,15 @@ const tools = [
     bg: 'bg-sky2-100',
     text: 'text-sky2-500',
     route: 'tool-paper',
+    tag: '新增',
+  },
+  {
+    name: '轮值表',
+    desc: '排布值日 / 值周安排，一目了然人人有责',
+    icon: '📋',
+    bg: 'bg-mint-100',
+    text: 'text-mint-500',
+    route: 'duty-roster',
     tag: '新增',
   },
 ]

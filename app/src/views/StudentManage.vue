@@ -7,6 +7,7 @@ import { useSchoolStore } from '../stores/school'
 import { useUserStore, currentTermStr } from '../stores/user'
 import { useExamStore } from '../stores/exam'
 import { useAIStore } from '../stores/ai'
+import { useParentContactStore } from '../stores/parentContact'
 import type { Student, Gender } from '../types'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
@@ -27,6 +28,7 @@ const schoolStore = useSchoolStore()
 const userStore = useUserStore()
 const examStore = useExamStore()
 const ai = useAIStore()
+const parentContactStore = useParentContactStore()
 const toast = useToastStore()
 
 const { search, searchDebounced } = useDebouncedSearch(200)
@@ -68,20 +70,48 @@ const filtered = computed(() => {
   return list
 })
 
+type SortKey = 'name' | 'gender' | 'studentNo' | 'seat' | 'duty'
+const sortKey = ref<SortKey>('studentNo')
+const sortOrder = ref<'asc' | 'desc'>('asc')
+function toggleSort(k: SortKey) {
+  if (sortKey.value === k) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  else {
+    sortKey.value = k
+    sortOrder.value = 'asc'
+  }
+}
+function seatSortVal(s: Student): number {
+  if (s.seatRow != null && s.seatCol != null) return s.seatRow * 1000 + s.seatCol
+  return s.seatNo || 0
+}
+
 const grouped = computed(() => {
   const map: Record<string, Student[]> = {}
   for (const s of filtered.value) {
     if (!map[s.classId]) map[s.classId] = []
     map[s.classId].push(s)
   }
+  const dir = sortOrder.value === 'asc' ? 1 : -1
   for (const id in map) {
     map[id].sort((a, b) => {
-      const ra = a.seatRow ?? 9999
-      const rb = b.seatRow ?? 9999
-      if (ra !== rb) return ra - rb
-      const ca = a.seatCol ?? a.seatNo
-      const cb = b.seatCol ?? b.seatNo
-      return ca - cb
+      let r = 0
+      switch (sortKey.value) {
+        case 'studentNo':
+          r = (parseInt(a.studentNo) || 0) - (parseInt(b.studentNo) || 0)
+          break
+        case 'seat':
+          r = seatSortVal(a) - seatSortVal(b)
+          break
+        case 'duty':
+          r = (a.duty || '').localeCompare(b.duty || '', 'zh')
+          break
+        case 'gender':
+          r = a.gender.localeCompare(b.gender, 'zh')
+          break
+        default:
+          r = a.name.localeCompare(b.name, 'zh')
+      }
+      return r * dir
     })
   }
   return map
@@ -372,7 +402,8 @@ function parseImport() {
     return
   }
   let count = 0,
-    skipped = 0
+    skipped = 0,
+    contactSynced = 0
   const baseSeat = classStore.studentsOf(importTargetClass.value).length
   const existing = new Set(
     classStore.students
@@ -387,7 +418,7 @@ function parseImport() {
       continue
     }
     seen.add(key)
-    classStore.addStudent({
+    const student = classStore.addStudent({
       classId: importTargetClass.value,
       name: r.name,
       gender: r.gender,
@@ -398,10 +429,27 @@ function parseImport() {
       note: r.note,
       tags: [],
     })
+    // 家长信息（姓名/电话任一有值）同步进「家长联系记录」
+    const pName = (r.parentName || '').trim()
+    const pPhone = (r.parentPhone || '').trim()
+    if (pName || pPhone) {
+      parentContactStore.addContact({
+        studentId: student.id,
+        studentName: student.name,
+        parentName: pName || '家长',
+        relation: '家长',
+        phone: pPhone,
+        wechat: '',
+        method: '电话',
+        content: '学生信息导入时自动同步的家长联系方式',
+        date: new Date().toISOString().slice(0, 10),
+      })
+      contactSynced++
+    }
     count++
   }
   toast.success(
-    `成功导入 ${count} 名学生${skipped ? `，跳过 ${skipped} 个重复` : ''}`,
+    `成功导入 ${count} 名学生${skipped ? `，跳过 ${skipped} 个重复` : ''}${contactSynced ? `，同步 ${contactSynced} 条家长联系` : ''}`,
   )
   importText.value = ''
   importFile.value = null
@@ -1325,20 +1373,40 @@ async function generateAComment() {
             <thead>
               <tr class="text-left text-cocoa-500 border-b border-cocoa-100/60">
                 <th class="py-2 pr-2 w-8" />
-                <th class="py-2 pr-2">
+                <th
+                  class="py-2 pr-2 cursor-pointer select-none hover:text-cocoa-800"
+                  @click="toggleSort('name')"
+                >
                   姓名
+                  <span v-if="sortKey === 'name'" class="text-butter-600">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                 </th>
-                <th class="py-2 pr-2">
+                <th
+                  class="py-2 pr-2 cursor-pointer select-none hover:text-cocoa-800"
+                  @click="toggleSort('gender')"
+                >
                   性别
+                  <span v-if="sortKey === 'gender'" class="text-butter-600">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                 </th>
-                <th class="py-2 pr-2">
+                <th
+                  class="py-2 pr-2 cursor-pointer select-none hover:text-cocoa-800"
+                  @click="toggleSort('studentNo')"
+                >
                   学号
+                  <span v-if="sortKey === 'studentNo'" class="text-butter-600">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                 </th>
-                <th class="py-2 pr-2">
+                <th
+                  class="py-2 pr-2 cursor-pointer select-none hover:text-cocoa-800"
+                  @click="toggleSort('seat')"
+                >
                   座位
+                  <span v-if="sortKey === 'seat'" class="text-butter-600">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                 </th>
-                <th class="py-2 pr-2">
+                <th
+                  class="py-2 pr-2 cursor-pointer select-none hover:text-cocoa-800"
+                  @click="toggleSort('duty')"
+                >
                   职务
+                  <span v-if="sortKey === 'duty'" class="text-butter-600">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
                 </th>
                 <th class="py-2 pr-2">
                   家长
@@ -1402,9 +1470,9 @@ async function generateAComment() {
                   </span>
                   <span
                     v-else
-                    class="chip bg-butter-100 text-butter-600 text-[10px]"
+                    class="chip bg-cocoa-100 text-cocoa-400 text-[10px]"
                   >
-                    座 {{ s.seatNo }}
+                    未排座
                   </span>
                 </td>
                 <td class="py-2.5 pr-2">
@@ -1894,7 +1962,9 @@ async function generateAComment() {
               </span>
             </div>
             <div class="text-xs text-cocoa-500 mt-0.5">
-              {{ detailClass?.name || '未分班' }} · 座 {{ detailStudent.seatNo }} 号
+              {{ detailClass?.name || '未分班' }} ·
+              <template v-if="detailStudent.seatRow && detailStudent.seatCol">第{{ detailStudent.seatRow }}行·第{{ detailStudent.seatCol }}列</template>
+              <template v-else>未排座</template>
               <span v-if="detailStudent.studentNo"> · 学号 {{ detailStudent.studentNo }}</span>
             </div>
           </div>
@@ -1949,55 +2019,42 @@ async function generateAComment() {
               </div>
             </div>
             <div>
-              <div class="text-[10px] text-cocoa-400">
-                班主任
-              </div>
+              <div class="text-[10px] text-cocoa-400">座次</div>
               <div class="font-medium">
-                {{ detailClass?.headTeacher || '-' }}
+                <template v-if="detailStudent.seatRow && detailStudent.seatCol">第{{ detailStudent.seatRow }}行·第{{ detailStudent.seatCol }}列</template>
+                <template v-else>未排座</template>
               </div>
             </div>
-            <div class="col-span-2 sm:col-span-2">
-              <div class="text-[10px] text-cocoa-400 flex items-center gap-0.5">
-                <School :size="10" /> 所在学校
-              </div>
-              <div class="font-medium">
-                {{ userStore.user?.school || '暂未设置' }}
-              </div>
+            <div>
+              <div class="text-[10px] text-cocoa-400">职务</div>
+              <div class="font-medium">{{ detailStudent.duty || '无' }}</div>
             </div>
-            <div class="col-span-2 sm:col-span-2">
-              <div class="text-[10px] text-cocoa-400">
-                所在班级
-              </div>
-              <div class="font-medium">
-                {{ detailClass?.name || '未分班' }}
-              </div>
+          </div>
+          <!-- 班级信息: 班主任 / 所在学校 / 所在班级 同行紧凑展示 -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm mt-3 pt-3 border-t border-cocoa-100/60">
+            <div>
+              <div class="text-[10px] text-cocoa-400">班主任</div>
+              <div class="font-medium">{{ detailClass?.headTeacher || '-' }}</div>
             </div>
-            <div
-              v-if="detailStudent.tags?.length"
-              class="col-span-2 sm:col-span-4"
-            >
-              <div class="text-[10px] text-cocoa-400">
-                标签
-              </div>
-              <div class="flex flex-wrap gap-1 mt-0.5">
-                <span
-                  v-for="t in detailStudent.tags"
-                  :key="t"
-                  class="chip bg-sakura-100 text-sakura-500 text-[10px]"
-                >{{ t }}</span>
-              </div>
+            <div>
+              <div class="text-[10px] text-cocoa-400 flex items-center gap-0.5"><School :size="10" /> 所在学校</div>
+              <div class="font-medium">{{ userStore.user?.school || '暂未设置' }}</div>
             </div>
-            <div
-              v-if="detailStudent.note"
-              class="col-span-2 sm:col-span-4"
-            >
-              <div class="text-[10px] text-cocoa-400">
-                备注
-              </div>
-              <div class="text-cocoa-700">
-                {{ detailStudent.note }}
-              </div>
+            <div>
+              <div class="text-[10px] text-cocoa-400">所在班级</div>
+              <div class="font-medium">{{ detailClass?.name || '未分班' }}</div>
             </div>
+          </div>
+          <!-- 标签 / 备注 -->
+          <div v-if="detailStudent.tags?.length" class="mt-3">
+            <div class="text-[10px] text-cocoa-400">标签</div>
+            <div class="flex flex-wrap gap-1 mt-0.5">
+              <span v-for="t in detailStudent.tags" :key="t" class="chip bg-sakura-100 text-sakura-500 text-[10px]">{{ t }}</span>
+            </div>
+          </div>
+          <div v-if="detailStudent.note" class="mt-3">
+            <div class="text-[10px] text-cocoa-400">备注</div>
+            <div class="text-cocoa-700">{{ detailStudent.note }}</div>
           </div>
         </section>
 
@@ -2217,20 +2274,20 @@ async function generateAComment() {
             </div>
             <!-- 学科列表 -->
             <div class="flex-1 w-full">
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 <div
                   v-for="subj in detailRadar"
                   :key="subj.subject"
-                  class="flex items-center gap-2"
+                  class="flex items-center gap-1.5"
                 >
                   <div
-                    class="w-12 text-xs font-medium shrink-0"
+                    class="w-11 text-[11px] font-medium shrink-0 truncate"
                     :style="{ color: subj.color }"
                   >
                     {{ subj.subject }}
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="h-3 bg-cream-100 rounded-full overflow-hidden">
+                  <div class="w-28 shrink-0">
+                    <div class="h-2.5 bg-cream-100 rounded-full overflow-hidden">
                       <div
                         class="h-full rounded-full transition-all"
                         :style="{
@@ -2241,11 +2298,11 @@ async function generateAComment() {
                       />
                     </div>
                   </div>
-                  <div class="text-right shrink-0 min-w-[50px]">
-                    <span class="text-xs font-semibold" :style="{ color: subj.color }">
+                  <div class="text-left shrink-0 min-w-[40px]">
+                    <span class="text-[11px] font-semibold" :style="{ color: subj.color }">
                       {{ subj.avgRate }}%
                     </span>
-                    <span class="text-[9px] text-cocoa-400 ml-1">
+                    <span class="text-[9px] text-cocoa-400 ml-0.5">
                       ({{ subj.examCount }}次)
                     </span>
                   </div>
@@ -2484,7 +2541,7 @@ async function generateAComment() {
                                 : 'text-sakura-500'
                             "
                           >
-                            {{ (getExamAnalysis(exam.examName + '::' + exam.date)!.totalDiff ?? 0) >= 0 ? '+' : '' }}{{ getExamAnalysis(exam.examName + '::' + exam.date)!.totalDiff }} 分
+                            {{ (getExamAnalysis(exam.examName + '::' + exam.date)!.totalDiff ?? 0) >= 0 ? '+' : '' }}{{ (getExamAnalysis(exam.examName + '::' + exam.date)!.totalDiff ?? 0).toFixed(1) }} 分
                           </div>
                         </div>
                       </div>

@@ -21,10 +21,14 @@ import {
   BookOpen,
   GraduationCap,
   Hash,
+  Sparkles,
+  Square,
 } from 'lucide-vue-next'
 import { useToastStore } from '../stores/toast'
 import { subjectPalette } from '../seed'
 import { classSubjects } from '../utils'
+import { aiChat, AIError } from '../utils/aiCall'
+import { fmtScore } from '../utils/format'
 
 const classStore = useClassStore()
 const examStore = useExamStore()
@@ -35,6 +39,9 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const FALLBACK_SUBJECTS = ['语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育']
+
+/** 新建考试时默认勾选的科目（其余默认不勾选、不参与考试） */
+const DEFAULT_EXAM_SUBJECTS = ['语文', '数学', '英语', '科学', '品德']
 
 /** 学科默认满分: 语文/数学/英语 100, 其他 50 */
 function defaultFullScore(subject: string): number {
@@ -113,6 +120,63 @@ function saveAnalysisNote() {
   toast.success('已保存分析描述')
 }
 
+// 一键生成「本次考试分析情况描述」：由 AI 根据本次考试数据自动总结
+const genAnalysising = ref(false)
+const genAbort = ref<AbortController | null>(null)
+
+async function generateAnalysisNote() {
+  if (genAnalysising.value) return
+  if (!analysisExam.value) return
+  if (!analysisGrades.value.length) {
+    toast.warning('该考试尚未录入成绩，无法生成分析')
+    return
+  }
+  genAnalysising.value = true
+  analysisNoteDraft.value = ''
+  genAbort.value = new AbortController()
+  const cls = classStore.getClass(analysisExam.value.classId)?.name || ''
+  const subjectLines = analysisGrades.value
+    .map((g) => {
+      const s = analysisStat(g)
+      const top = s.ranking
+        .slice(0, 3)
+        .map((r) => {
+          const st = classStore.students.find((x) => x.id === r.studentId)
+          return `${st?.name || '?'} ${fmtScore(r.score)}`
+        })
+        .join('、')
+      return `【${g.subject}】满分${analysisFullScore(g.subject)}，参考${s.count}人，平均${s.avg}，最高${s.max}，最低${s.min}，及格率${s.passRate}%，优秀率${s.excellentRate}%；前三名：${top}`
+    })
+    .join('\n')
+  const sys =
+    '你是一位经验丰富的班主任，擅长根据考试成绩数据撰写客观、有针对性的考试质量分析。'
+  const usr =
+    `班级：${cls}\n考试：${analysisExam.value.name}（${analysisExam.value.date}）\n\n` +
+    `各科数据：\n${subjectLines}\n\n` +
+    `请基于以上数据，生成一段「本次考试分析情况描述」，包含整体情况、各学科亮点与不足、需关注的学生群体、改进建议。300字左右，客观务实。`
+  try {
+    await aiChat({
+      messages: [
+        { role: 'system', content: sys },
+        { role: 'user', content: usr },
+      ],
+      temperature: 0.6,
+      stream: true,
+      signal: genAbort.value.signal,
+      onDelta: (t) => {
+        analysisNoteDraft.value += t
+      },
+    })
+    toast.success('已生成分析，可编辑后点「保存描述」')
+  } catch (e: any) {
+    if (e instanceof AIError || e?.name === 'AIError') toast.error(e.message)
+    else if (e?.name !== 'AbortError') toast.error('生成失败：' + (e?.message || '未知错误'))
+  } finally {
+    genAnalysising.value = false
+    genAbort.value = null
+  }
+}
+
 // ============ 新建/编辑考试 ============
 const editOpen = ref(false)
 const editId = ref<string | null>(null)
@@ -175,7 +239,9 @@ function openCreate() {
   editId.value = null
   const classId = classStore.classes[0]?.id || ''
   const cls = classId ? classStore.getClass(classId) : null
-  const defaultSubjects = classSubjects(cls, FALLBACK_SUBJECTS)
+  const defaultSubjects = classSubjects(cls, FALLBACK_SUBJECTS).filter((s) =>
+    DEFAULT_EXAM_SUBJECTS.includes(s),
+  )
   const fullScores: Record<string, number> = {}
   for (const s of defaultSubjects) fullScores[s] = defaultFullScore(s)
   edit.value = {
@@ -675,12 +741,28 @@ onMounted(() => {
             <label class="text-sm font-medium text-cocoa-700 flex items-center gap-1.5">
               <FileText :size="14" /> 本次考试分析情况描述
             </label>
-            <button
-              class="btn-soft text-xs"
-              @click="saveAnalysisNote"
-            >
-              <Save :size="12" /> 保存描述
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="!genAnalysising"
+                class="btn-soft text-xs"
+                @click="generateAnalysisNote"
+              >
+                <Sparkles :size="12" /> 一键生成
+              </button>
+              <button
+                v-else
+                class="btn-soft text-xs"
+                @click="genAbort?.abort()"
+              >
+                <Square :size="12" /> 停止
+              </button>
+              <button
+                class="btn-soft text-xs"
+                @click="saveAnalysisNote"
+              >
+                <Save :size="12" /> 保存描述
+              </button>
+            </div>
           </div>
           <textarea
             v-model="analysisNoteDraft"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useClassStore } from '../../stores/class'
+import { useSeatStore } from '../../stores/seat'
 import { useToastStore } from '../../stores/toast'
 import type { Student } from '../../types/class'
 import ToolPageHeader from '../../components/common/ToolPageHeader.vue'
@@ -8,13 +9,15 @@ import EmptyState from '../../components/common/EmptyState.vue'
 import { RefreshCw, Copy, Printer, Users } from 'lucide-vue-next'
 
 const classStore = useClassStore()
+const seatStore = useSeatStore()
 const toast = useToastStore()
 
-type GroupMode = 'random' | 'gender' | 'mixed'
+type GroupMode = 'random' | 'gender' | 'mixed' | 'column'
 const MODE_LABELS: Record<GroupMode, string> = {
   random: '完全随机',
   gender: '男女均衡',
   mixed: '混合均衡',
+  column: '按列分组',
 }
 
 const classId = ref('')
@@ -53,6 +56,28 @@ function buildGroups() {
   const list = studentList.value
   if (!list.length) {
     toast.warning('请先选择包含学生的班级')
+    return
+  }
+  // 按列分组：取当前已启用的座位表，每一列为一组
+  if (mode.value === 'column') {
+    const layout = seatStore.activeLayoutOfClass(classId.value)
+    if (!layout) {
+      toast.warning('该班级尚未启用座位表，请先在「座位表」中启用座次后再分组')
+      return
+    }
+    const byCol: Group[] = []
+    for (let c = 0; c < layout.cols; c++) {
+      const members: Student[] = []
+      for (let r = 0; r < layout.rows; r++) {
+        const sid = layout.seats[r]?.[c]
+        if (sid) {
+          const st = classStore.students.find((s) => s.id === sid)
+          if (st) members.push(st)
+        }
+      }
+      if (members.length) byCol.push({ index: byCol.length + 1, members })
+    }
+    groups.value = byCol
     return
   }
   const n = Math.max(1, Math.floor(groupCount.value) || 1)
@@ -155,7 +180,7 @@ function onClassChange() {
         <label class="text-xs text-cocoa-500">分组方式</label>
         <div class="flex gap-1 mt-1">
           <button
-            v-for="m in (['random', 'gender', 'mixed'] as const)"
+            v-for="m in (['random', 'gender', 'mixed', 'column'] as const)"
             :key="m"
             class="chip cursor-pointer text-[10px]"
             :class="mode === m ? 'bg-mint-300 text-mint-700' : 'bg-cocoa-100 text-cocoa-500'"

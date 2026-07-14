@@ -184,9 +184,9 @@ function goRedirect() {
 
     <div class="grid lg:grid-cols-2 gap-6 sm:gap-10 max-w-5xl xl:max-w-6xl w-full items-center relative xl:pr-20">
       <!-- 左侧欢迎 -->
-      <div class="space-y-4 sm:space-y-5 text-center lg:text-center">
-        <div class="inline-flex items-center gap-2 chip bg-white/80 text-cocoa-700 border border-white/80 shadow-softer">
-          <Sparkles :size="14" /> 园丁工作台
+      <div class="space-y-4 sm:space-y-5 text-center lg:text-center -mt-6 lg:-mt-10">
+        <div class="inline-flex items-center gap-1.5 chip bg-white/80 text-cocoa-800 border border-white/80 shadow-softer px-4 py-1.5 text-sm font-semibold tracking-wide">
+          <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
         <h1 class="title-display text-3xl sm:text-4xl lg:text-5xl leading-tight text-cocoa-900">
           {{ greeting }}，老师 <span class="inline-block animate-wiggle">👋</span>

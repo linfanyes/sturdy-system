@@ -2045,11 +2045,11 @@ function confirmImport() {
         <!-- 排名 -->
         <div>
           <h4 class="title-display text-base mb-2 flex items-center gap-2">
-            <Award :size="16" /> 学生排名（前 10）
+            <Award :size="16" /> 学生排名（共 {{ detailStat.ranking.length }} 人）
           </h4>
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
             <div
-              v-for="r in detailStat.ranking.slice(0, 10)"
+              v-for="r in detailStat.ranking"
               :key="r.studentId"
               class="flex items-center gap-3 card-flat p-2.5"
             >

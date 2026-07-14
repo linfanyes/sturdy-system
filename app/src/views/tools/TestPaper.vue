@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import type { PaperQueryDoc } from '../../types'
 import { useAIStore } from '../../stores/ai'
 import { useClassStore } from '../../stores/class'
 import { useGeneratedStore } from '../../stores/generated'
@@ -24,6 +25,7 @@ import {
   Eye,
   Square,
   FileSpreadsheet,
+  Search,
 } from 'lucide-vue-next'
 
 const ai = useAIStore()
@@ -174,6 +176,130 @@ function stop() {
   abort.value?.abort()
 }
 
+// ============ 试卷查询（页签） ============
+const tab = ref<'generate' | 'query'>('generate')
+const queryKeyword = ref('')
+const queryResults = ref<PaperQueryDoc[]>([])
+const queryGenerating = ref(false)
+const queryAbort = ref<AbortController | null>(null)
+
+function parseQuery(raw: string): Omit<PaperQueryDoc, 'id' | 'createdAt' | 'keyword'>[] {
+  const blocks = raw.split(/^###\s+/m).slice(1)
+  return blocks
+    .map((b) => {
+      const lines = b.trim().split('\n')
+      // 去掉标题里 AI 可能自带的前导序号（如 "1. " / "1、" / "（1）"），避免与列表序号重复出现 "1.1."
+      const title =
+        (lines.shift()?.trim() || '未命名试卷')
+          .replace(/^[（(]?\s*\d+\s*[.、）)]\s*/, '')
+          .trim() || '未命名试卷'
+      let source = '', year = '', abstract = ''
+      const body: string[] = []
+      for (const ln of lines) {
+        const m = ln.match(/^[-*]?\s*(来源|年份|摘要)\s*[:：]\s*(.*)$/)
+        if (m) {
+          if (m[1] === '来源') source = m[2].trim()
+          else if (m[1] === '年份') year = m[2].trim()
+          else if (m[1] === '摘要') abstract = m[2].trim()
+        } else {
+          body.push(ln)
+        }
+      }
+      // 正文（题目 + 参考答案），去掉首尾空行
+      const bodyText = body.join('\n').replace(/^\s+|\s+$/g, '')
+      return {
+        title,
+        source,
+        year,
+        abstract,
+        bodyText,
+        // 下载内容 = 标题 + 元信息 + 完整正文
+        content:
+          `# ${title}\n\n` +
+          (source ? `> 来源：${source}` : '') +
+          (year ? ` · 年份：${year}` : '') +
+          (abstract ? `\n>\n> 摘要：${abstract}` : '') +
+          `\n\n${bodyText}\n`,
+      }
+    })
+    // 关键：正文太短（说明 AI 没有真实内容、只给了标题）的直接剔除，不显示、不瞎编
+    .filter((p) => p.bodyText && p.bodyText.replace(/\s/g, '').length >= 40)
+    .map(({ bodyText: _bodyText, ...rest }) => rest)
+    .slice(0, 10)
+}
+
+async function querySearch() {
+  if (queryGenerating.value) return
+  const kw = queryKeyword.value.trim()
+  if (!kw) {
+    toast.warning('请输入查询关键字')
+    return
+  }
+  if (!ai.settings.apiKey) {
+    toast.error('请先在「AI 对话」配置 API Key')
+    return
+  }
+  queryGenerating.value = true
+  queryAbort.value = new AbortController()
+  const sys =
+    '你是严谨的试卷检索与还原助手。你只能基于真实存在的、你确有把握的历年真题或权威模拟卷来作答，并尽量完整还原其真实题目与参考答案。' +
+    '严禁编造不存在的试卷、来源、年份或题目。若对某份试卷的真实内容没有把握，就不要列出它——宁可少给几份，也不要凑数或虚构。' +
+    '如果与关键字相关的真实试卷你一份都没有把握，就返回空（不输出任何 ### 块）。'
+  const usr =
+    `请检索与「${kw}」高度相关的真实往年试卷/真题，最多列出 10 份，按相关度排序。\n` +
+    `严格要求：\n` +
+    `1) 每份必须是你确有把握的真实试卷，来源、年份要真实可靠；没把握的一律不要列出。\n` +
+    `2) 每份都要给出尽量完整的真实试卷正文（各大题、题目、以及参考答案），而不是只有标题或简介。\n` +
+    `3) 若真实内容不足或不确定，直接省略该份，不要用占位、示意或自行编造的题目填充。\n\n` +
+    `每份严格用如下 Markdown 结构输出（标题里不要写序号）：\n\n` +
+    `### 试卷标题\n- 来源：如 学科网 / 国家中小学智慧教育平台 等（真实来源）\n- 年份：如 2024\n- 摘要：一句话说明适用年级、学科与重点\n\n` +
+    `## 一、xxx题\n1. （真实题目）……\n\n## 参考答案\n1. ……\n\n` +
+    `（有几份真实的就列几份，可少于 10 份；没有把握的就不要出现）`
+  let raw = ''
+  try {
+    await aiChat({
+      messages: [
+        { role: 'system', content: sys },
+        { role: 'user', content: usr },
+      ],
+      temperature: 0.6,
+      stream: true,
+      signal: queryAbort.value.signal,
+      onDelta: (t) => {
+        raw += t
+      },
+    })
+    const parsed = parseQuery(raw)
+    if (!parsed.length) {
+      queryResults.value = []
+      toast.warning('未查询到有把握的真实试卷，已不显示（不编造占位内容），请换个更具体的关键字再试')
+      return
+    }
+    queryResults.value = parsed.map((p) => genStore.addQuery({ keyword: kw, ...p }))
+    toast.success(`已检索到 ${parsed.length} 份真实试卷（含完整内容）`)
+  } catch (e: any) {
+    if (e instanceof AIError || e?.name === 'AIError') toast.error(e.message)
+    else if (e?.name !== 'AbortError') toast.error('查询失败：' + (e?.message || '未知错误'))
+  } finally {
+    queryGenerating.value = false
+    queryAbort.value = null
+  }
+}
+
+function stopQuery() {
+  queryAbort.value?.abort()
+}
+
+async function downloadQuery(q: PaperQueryDoc) {
+  const safeName = (q.title || '试卷').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80)
+  try {
+    await downloadDocx(safeName + '.docx', q.title, q.content)
+    toast.success('Word 文件已下载')
+  } catch (e: any) {
+    toast.error('下载失败：' + (e?.message || ''))
+  }
+}
+
 // ============ 导出 ============
 const exportName = computed(
   () => (currentTitle.value || '试卷').replace(/[\\/:*?"<>|]/g, '_'),
@@ -243,7 +369,25 @@ function removeHistory(id: string) {
       </div>
     </section>
 
-    <div class="grid lg:grid-cols-3 gap-4">
+    <!-- Tab 切换：试卷生成 / 试卷查询 -->
+    <div class="flex gap-2">
+      <button
+        class="chip cursor-pointer text-sm"
+        :class="tab === 'generate' ? 'bg-sakura-200 text-cocoa-900' : 'bg-cocoa-100 text-cocoa-500'"
+        @click="tab = 'generate'"
+      >
+        试卷生成
+      </button>
+      <button
+        class="chip cursor-pointer text-sm"
+        :class="tab === 'query' ? 'bg-sakura-200 text-cocoa-900' : 'bg-cocoa-100 text-cocoa-500'"
+        @click="tab = 'query'"
+      >
+        试卷查询
+      </button>
+    </div>
+
+    <div v-if="tab === 'generate'" class="grid lg:grid-cols-3 gap-4">
       <!-- 左: 配置 + 历史 -->
       <div class="lg:col-span-1 space-y-4">
         <div class="card-soft p-5">
@@ -517,6 +661,62 @@ function removeHistory(id: string) {
               生成后可下载 Markdown / Word，或打印
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 试卷查询 -->
+    <div v-else class="space-y-4">
+      <div class="card-soft p-5">
+        <h3 class="title-display text-lg mb-2 flex items-center gap-2">
+          <Search :size="16" /> 试卷查询
+        </h3>
+        <p class="text-xs text-cocoa-500 mb-3">
+          输入关键字（如「三年级语文期末」「人教版七年级数学期中」），AI 推荐相关往年试卷参考，可预览与下载。结果为 AI 整理参考，非真实下载链接。
+        </p>
+        <div class="flex gap-2">
+          <input
+            v-model="queryKeyword"
+            class="input-soft flex-1"
+            placeholder="输入查询关键字"
+            @keyup.enter="querySearch"
+          >
+          <button v-if="!queryGenerating" class="btn-primary flex items-center gap-1.5" @click="querySearch">
+            <Search :size="14" /> 查询
+          </button>
+          <button v-else class="btn-secondary flex items-center gap-1.5" @click="stopQuery">
+            <Square :size="14" /> 停止
+          </button>
+        </div>
+      </div>
+
+      <div v-if="queryGenerating && !queryResults.length" class="text-center text-cocoa-500 py-8">
+        检索中…
+      </div>
+      <div v-else-if="!queryResults.length" class="text-center text-cocoa-400 py-8">
+        暂无查询结果，输入关键字开始检索
+      </div>
+      <div v-else class="grid sm:grid-cols-2 gap-3">
+        <div v-for="(q, i) in queryResults" :key="q.id || i" class="card-soft p-4">
+          <div class="flex items-start justify-between gap-2">
+            <h4 class="font-semibold text-cocoa-800 leading-snug">
+              {{ i + 1 }}. {{ q.title }}
+            </h4>
+            <button
+              class="btn-soft text-xs shrink-0 flex items-center gap-1"
+              @click="downloadQuery(q)"
+            >
+              <Download :size="12" /> 下载
+            </button>
+          </div>
+          <div class="text-[11px] text-cocoa-400 mt-1">
+            {{ q.source || '未知来源' }} · {{ q.year || '年份未知' }}
+          </div>
+          <p class="text-xs text-cocoa-600 mt-1">{{ q.abstract }}</p>
+          <details class="mt-2 text-xs text-cocoa-500">
+            <summary class="cursor-pointer select-none hover:text-cocoa-800">查看整理内容</summary>
+            <div class="whitespace-pre-wrap mt-1 p-2 bg-cream-50 rounded leading-relaxed">{{ q.content }}</div>
+          </details>
         </div>
       </div>
     </div>
