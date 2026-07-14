@@ -18,8 +18,9 @@ const DEFAULT_DUTIES = ['班长', '副班长', '学习委员', '组长']
 const classId = ref('')
 const selectedDuties = ref<string[]>([])
 const customDuties = ref<string[]>([])
-const assignments = ref<Record<string, string>>({})
+const assignments = ref<Record<string, string[]>>({})
 const customInput = ref('')
+const addStudentSelect = ref<Record<string, string>>({})
 
 const classSubjects = computed(() => {
   const c = classStore.getClass(classId.value)
@@ -46,19 +47,15 @@ const students = computed(() =>
   ),
 )
 
-const assignedStudentIds = computed(() => {
-  const set = new Set<string>()
-  for (const [duty, studentId] of Object.entries(assignments.value)) {
-    if (allEnabledDuties.value.includes(duty) && studentId) set.add(studentId)
-  }
-  return set
-})
+function assignedStudents(duty: string): typeof students.value {
+  const ids = assignments.value[duty] || []
+  const map = new Map(students.value.map((s) => [s.id, s]))
+  return ids.map((id) => map.get(id)).filter(Boolean) as typeof students.value
+}
 
-function selectableStudents(currentDuty: string) {
-  const currentId = assignments.value[currentDuty]
-  return students.value.filter(
-    (s) => !assignedStudentIds.value.has(s.id) || s.id === currentId,
-  )
+function unassignedStudents(duty: string): typeof students.value {
+  const ids = new Set(assignments.value[duty] || [])
+  return students.value.filter((s) => !ids.has(s.id))
 }
 
 function loadConfig() {
@@ -72,10 +69,11 @@ function loadConfig() {
     )
     assignments.value = {}
     for (const d of cfg.duties) {
-      assignments.value[d] = cfg.assignments[d] || ''
+      assignments.value[d] = [...(cfg.assignments[d] || [])]
     }
   } else {
-    selectedDuties.value = []
+    // 默认全部勾选
+    selectedDuties.value = [...availableDefaultDuties.value]
     customDuties.value = []
     assignments.value = {}
   }
@@ -121,15 +119,29 @@ function removeCustomDuty(duty: string) {
   delete assignments.value[duty]
 }
 
+function addStudentToDuty(duty: string, studentId: string) {
+  if (!studentId) return
+  if (!assignments.value[duty]) assignments.value[duty] = []
+  if (!assignments.value[duty].includes(studentId)) {
+    assignments.value[duty].push(studentId)
+  }
+  addStudentSelect.value[duty] = ''
+}
+
+function removeStudentFromDuty(duty: string, studentId: string) {
+  const list = assignments.value[duty] || []
+  assignments.value[duty] = list.filter((id) => id !== studentId)
+}
+
 function save() {
   if (!classId.value) {
     toast.warning('请先选择班级')
     return
   }
   const duties = [...selectedDuties.value, ...customDuties.value]
-  const payload: Record<string, string | null> = {}
+  const payload: Record<string, string[]> = {}
   for (const d of duties) {
-    payload[d] = assignments.value[d] || null
+    payload[d] = [...(assignments.value[d] || [])]
   }
   classDutyStore.saveConfig(classId.value, duties, payload)
   toast.success('已保存班级职务设置')
@@ -154,7 +166,7 @@ function save() {
         </label>
         <select
           v-model="classId"
-          class="input-soft mt-1"
+          class="input-soft mt-1 max-w-xs"
         >
           <option
             v-for="c in classStore.classes"
@@ -202,7 +214,7 @@ function save() {
         <!-- 自定义职务 -->
         <div>
           <label class="text-xs text-cocoa-500 ml-1">自定义职务</label>
-          <div class="flex gap-2 mt-1">
+          <div class="flex gap-2 mt-1 max-w-md">
             <input
               v-model="customInput"
               class="input-soft flex-1"
@@ -243,26 +255,52 @@ function save() {
             <div
               v-for="d in allEnabledDuties"
               :key="d"
-              class="flex items-center gap-3 card-flat p-3"
+              class="card-flat p-3"
             >
-              <div class="w-28 shrink-0 text-sm font-medium text-cocoa-700">
-                {{ d }}
+              <div class="flex flex-col sm:flex-row sm:items-start gap-2">
+                <div class="w-28 shrink-0 text-sm font-medium text-cocoa-700 pt-1">
+                  {{ d }}
+                </div>
+                <div class="flex-1 space-y-2">
+                  <div class="flex flex-wrap gap-2 min-h-[28px]">
+                    <span
+                      v-for="s in assignedStudents(d)"
+                      :key="s.id"
+                      class="chip bg-butter-100 text-butter-600 text-xs flex items-center gap-1"
+                    >
+                      {{ s.name }}（{{ s.studentNo }}）
+                      <button
+                        class="hover:text-cocoa-900"
+                        @click="removeStudentFromDuty(d, s.id)"
+                      >
+                        <X :size="10" />
+                      </button>
+                    </span>
+                    <span
+                      v-if="!assignedStudents(d).length"
+                      class="text-xs text-cocoa-400 py-1"
+                    >
+                      未分配学生
+                    </span>
+                  </div>
+                  <select
+                    v-model="addStudentSelect[d]"
+                    class="input-soft text-xs max-w-xs"
+                    @change="addStudentToDuty(d, addStudentSelect[d])"
+                  >
+                    <option value="">
+                      + 添加学生
+                    </option>
+                    <option
+                      v-for="s in unassignedStudents(d)"
+                      :key="s.id"
+                      :value="s.id"
+                    >
+                      {{ s.name }}（{{ s.studentNo }}）
+                    </option>
+                  </select>
+                </div>
               </div>
-              <select
-                v-model="assignments[d]"
-                class="input-soft flex-1"
-              >
-                <option value="">
-                  — 未选择 —
-                </option>
-                <option
-                  v-for="s in selectableStudents(d)"
-                  :key="s.id"
-                  :value="s.id"
-                >
-                  {{ s.name }}（{{ s.studentNo }}）
-                </option>
-              </select>
             </div>
           </div>
         </div>

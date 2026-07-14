@@ -34,7 +34,7 @@ export const useClassDutyStore = defineStore('classDuty', () => {
     return getConfig(classId)?.duties || []
   }
 
-  function getAssignment(classId: string, duty: string): string | null | undefined {
+  function getAssignment(classId: string, duty: string): string[] | undefined {
     return getConfig(classId)?.assignments[duty]
   }
 
@@ -46,16 +46,15 @@ export const useClassDutyStore = defineStore('classDuty', () => {
     }
   }
 
-  function setAssignment(classId: string, duty: string, studentId: string | null) {
+  function setAssignment(classId: string, duty: string, studentIds: string[]) {
     const cfg = ensureConfig(classId)
     if (!cfg.duties.includes(duty)) return
-    if (studentId) cfg.assignments[duty] = studentId
-    else delete cfg.assignments[duty]
+    cfg.assignments[duty] = [...studentIds]
   }
 
   /**
    * 根据配置同步该班所有学生的 duty 字段：
-   * - 已分配职务的学生写入对应职务
+   * - 已分配职务的学生写入所有对应职务（用中文顿号分隔）
    * - 未分配或职务已被删除的学生清空职务
    */
   function syncStudentDuties(classId: string) {
@@ -68,15 +67,18 @@ export const useClassDutyStore = defineStore('classDuty', () => {
       return
     }
 
-    const assigned = new Map<string, string>()
-    for (const [duty, studentId] of Object.entries(cfg.assignments)) {
-      if (studentId && cfg.duties.includes(duty)) {
-        assigned.set(studentId, duty)
+    const studentDuties = new Map<string, string[]>()
+    for (const duty of cfg.duties) {
+      const ids = cfg.assignments[duty] || []
+      for (const studentId of ids) {
+        if (!studentDuties.has(studentId)) studentDuties.set(studentId, [])
+        studentDuties.get(studentId)!.push(duty)
       }
     }
 
     for (const s of classStore.studentsOf(classId)) {
-      const newDuty = assigned.get(s.id) || ''
+      const duties = studentDuties.get(s.id) || []
+      const newDuty = duties.join('、')
       if (s.duty !== newDuty) classStore.updateStudent(s.id, { duty: newDuty })
     }
   }
@@ -87,13 +89,15 @@ export const useClassDutyStore = defineStore('classDuty', () => {
   function saveConfig(
     classId: string,
     duties: string[],
-    assignments: Record<string, string | null>,
+    assignments: Record<string, string[]>,
   ) {
     const cfg = ensureConfig(classId)
     cfg.duties = duties
     cfg.assignments = {}
-    for (const [duty, studentId] of Object.entries(assignments)) {
-      if (duties.includes(duty) && studentId) cfg.assignments[duty] = studentId
+    for (const [duty, studentIds] of Object.entries(assignments)) {
+      if (duties.includes(duty)) {
+        cfg.assignments[duty] = studentIds.filter(Boolean)
+      }
     }
     syncStudentDuties(classId)
   }

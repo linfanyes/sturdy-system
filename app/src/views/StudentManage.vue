@@ -125,6 +125,25 @@ const dutyOptions = computed(() => {
   return classDutyStore.getDuties(draft.value.classId)
 })
 
+const draftDuties = computed(() =>
+  (draft.value.duty || '')
+    .split('、')
+    .map((d) => d.trim())
+    .filter(Boolean),
+)
+
+function addDraftDuty(duty: string) {
+  if (!duty) return
+  const list = draftDuties.value
+  if (!list.includes(duty)) {
+    draft.value.duty = [...list, duty].join('、')
+  }
+}
+
+function removeDraftDuty(duty: string) {
+  draft.value.duty = draftDuties.value.filter((d) => d !== duty).join('、')
+}
+
 function openCreate(forClass?: string) {
   editing.value = null
   const targetClass =
@@ -1731,21 +1750,44 @@ async function generateAComment() {
           <label class="text-xs text-cocoa-500 ml-1 flex items-center gap-1">
             <Award :size="11" /> 班级职务
           </label>
-          <select
-            v-model="draft.duty"
-            class="input-soft mt-1"
-          >
-            <option value="">
-              — 无 —
-            </option>
-            <option
-              v-for="d in dutyOptions"
-              :key="d"
-              :value="d"
+          <div class="mt-1 space-y-2">
+            <div class="flex flex-wrap gap-2 min-h-[28px]">
+              <span
+                v-for="d in draftDuties"
+                :key="d"
+                class="chip bg-butter-100 text-butter-600 text-xs flex items-center gap-1"
+              >
+                {{ d }}
+                <button
+                  class="hover:text-cocoa-900"
+                  @click="removeDraftDuty(d)"
+                >
+                  <X :size="10" />
+                </button>
+              </span>
+              <span
+                v-if="!draftDuties.length"
+                class="text-xs text-cocoa-400 py-1"
+              >
+                未分配职务
+              </span>
+            </div>
+            <select
+              class="input-soft text-xs max-w-xs"
+              @change="(e) => { addDraftDuty((e.target as HTMLSelectElement).value); (e.target as HTMLSelectElement).value = '' }"
             >
-              {{ d }}
-            </option>
-          </select>
+              <option value="">
+                + 添加职务
+              </option>
+              <option
+                v-for="d in dutyOptions.filter((x) => !draftDuties.includes(x))"
+                :key="d"
+                :value="d"
+              >
+                {{ d }}
+              </option>
+            </select>
+          </div>
           <div
             v-if="!dutyOptions.length && draft.classId"
             class="text-[11px] text-cocoa-400 mt-1"
