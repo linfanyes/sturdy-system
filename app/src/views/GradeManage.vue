@@ -643,10 +643,11 @@ function openDetail(g: Grade) {
   detailOpen.value = true
 }
 
-// 从综合分析中打开某次单科详情
+// 从综合分析中打开某次单科详情（先关闭综合分析弹窗，避免详情被压在下方）
 function openDetailById(id: string) {
   const g = gradeStore.grades.find((x) => x.id === id) || null
   if (g) {
+    analysisOpen.value = false
     detail.value = g
     detailOpen.value = true
   }
@@ -661,6 +662,20 @@ function pct(n: number, total: number) {
   if (!total) return 0
   return Math.round((n / total) * 100)
 }
+
+// 分数段分布图颜色（从低到高：红 → 黄 → 绿）
+const distColorClasses = [
+  'bg-sakura-500',
+  'bg-sakura-400',
+  'bg-butter-400',
+  'bg-butter-300',
+  'bg-mint-300',
+  'bg-mint-400',
+  'bg-sky2-300',
+  'bg-sky2-400',
+  'bg-butter-500',
+  'bg-mint-500',
+]
 
 // ============ 综合分析 ============
 const analysisOpen = ref(false)
@@ -2715,74 +2730,103 @@ function confirmImport() {
             </div>
           </div>
 
-          <!-- 各科分数段分布（叠加柱状图） -->
+          <!-- 各科分数段分布（横向堆叠百分比柱状图） -->
           <div class="card-flat p-4">
             <div class="flex items-center justify-between mb-3">
               <h4 class="title-display text-base flex items-center gap-2">
                 <BarChart :size="16" /> 各科分数段分布对比（每 10 分一段）
               </h4>
               <div class="text-[10px] text-cocoa-500">
-                纵轴为占比（%）
+                横轴为占比（%），悬停查看人数
               </div>
             </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-xs">
+
+            <!-- 图例 -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <div
+                v-for="(label, i) in analysisStats[0]?.stat.distLabels || []"
+                :key="label"
+                class="flex items-center gap-1 text-[10px] text-cocoa-600"
+              >
+                <span
+                  class="w-2.5 h-2.5 rounded-sm"
+                  :class="distColorClasses[i % distColorClasses.length]"
+                />
+                {{ label }}
+              </div>
+            </div>
+
+            <!-- 各科横向堆叠柱状图 -->
+            <div class="space-y-3">
+              <div
+                v-for="s in analysisStats"
+                :key="'d-' + s.subject"
+                class="flex items-center gap-3"
+              >
+                <div class="w-14 text-xs text-cocoa-700 font-medium whitespace-nowrap">
+                  {{ s.subject }}
+                </div>
+                <div class="flex-1 h-8 bg-cocoa-50/60 rounded-lg overflow-hidden flex">
+                  <div
+                    v-for="(c, i) in s.stat.distribution"
+                    :key="i"
+                    class="h-full flex items-center justify-center text-[9px] text-white font-medium transition-all hover:opacity-90"
+                    :class="distColorClasses[i % distColorClasses.length]"
+                    :style="{
+                      width: s.stat.count > 0 ? pct(c, s.stat.count) + '%' : '0%',
+                      minWidth: s.stat.count > 0 && pct(c, s.stat.count) > 0 ? '2px' : '0px',
+                    }"
+                    :title="`${s.stat.distLabels[i]}：${c} 人（${pct(c, s.stat.count)}%）`"
+                  >
+                    <span v-if="s.stat.count > 0 && pct(c, s.stat.count) >= 8">
+                      {{ pct(c, s.stat.count) }}%
+                    </span>
+                  </div>
+                </div>
+                <div class="w-10 text-[10px] text-cocoa-500 text-right">
+                  {{ s.stat.count }}人
+                </div>
+              </div>
+            </div>
+
+            <!-- 数据明细表格 -->
+            <div class="overflow-x-auto mt-4 pt-4 border-t border-cocoa-100/60">
+              <table class="w-full text-[10px]">
                 <thead>
                   <tr class="text-cocoa-500 border-b border-cocoa-100/60">
-                    <th class="py-1.5 pr-2 text-left font-normal whitespace-nowrap">
+                    <th class="py-1 pr-2 text-left font-normal whitespace-nowrap">
                       科目
                     </th>
                     <th
                       v-for="(label, i) in analysisStats[0]?.stat.distLabels || []"
                       :key="label"
-                      class="py-1.5 px-1 text-center font-normal"
-                      :title="label + ' 分'"
+                      class="py-1 px-1 text-center font-normal"
                     >
-                      {{ label }}
+                      <div class="flex items-center justify-center gap-1">
+                        <span
+                          class="w-1.5 h-1.5 rounded-full"
+                          :class="distColorClasses[i % distColorClasses.length]"
+                        />
+                        {{ label }}
+                      </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
                     v-for="s in analysisStats"
-                    :key="'d-' + s.subject"
+                    :key="'dt-' + s.subject"
                     class="border-b border-cocoa-100/40 last:border-b-0"
                   >
-                    <td class="py-2 pr-2 text-cocoa-700 font-medium whitespace-nowrap">
-                      <div class="flex items-center gap-1">
-                        <span
-                          class="w-2 h-2 rounded-full"
-                          :class="subjectPalette[s.subject]?.bg || 'bg-butter-300'"
-                        />
-                        {{ s.subject }}
-                      </div>
+                    <td class="py-1 pr-2 text-cocoa-700 font-medium whitespace-nowrap">
+                      {{ s.subject }}
                     </td>
                     <td
                       v-for="(c, i) in s.stat.distribution"
                       :key="i"
-                      class="py-2 px-1 text-center align-bottom"
+                      class="py-1 px-1 text-center text-cocoa-600"
                     >
-                      <div class="flex flex-col items-center gap-0.5">
-                        <div class="text-[9px] text-cocoa-700 number leading-none">
-                          {{ c }}
-                        </div>
-                        <div class="w-5 h-20 flex items-end bg-cocoa-50/60 rounded">
-                          <div
-                            class="w-full rounded-t transition-all"
-                            :class="subjectPalette[s.subject]?.bar || 'bg-butter-400'"
-                            :style="{
-                              height:
-                                s.stat.count > 0
-                                  ? pct(c, s.stat.count) + '%'
-                                  : '0%',
-                            }"
-                            :title="`${c} 人 · ${pct(c, s.stat.count)}%`"
-                          />
-                        </div>
-                        <div class="text-[8px] text-cocoa-300 leading-none">
-                          {{ pct(c, s.stat.count) }}%
-                        </div>
-                      </div>
+                      {{ c }}<span class="text-cocoa-400">/{{ pct(c, s.stat.count) }}%</span>
                     </td>
                   </tr>
                 </tbody>
