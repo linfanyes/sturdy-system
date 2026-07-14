@@ -159,12 +159,6 @@ function barWidth(val: number, maxVal: number) {
 
 <template>
   <div class="space-y-5">
-    <section class="card-soft p-6 bg-gradient-to-br from-mint-100 via-cream-50 to-sky2-100 relative overflow-hidden">
-      <div class="absolute -top-10 right-6 text-7xl opacity-20 select-none">📈</div>
-      <h2 class="title-display text-2xl">成绩趋势分析</h2>
-      <p class="text-sm text-cocoa-500 mt-1">可视化成绩变化趋势，跨班级对比分析</p>
-    </section>
-
     <!-- Mode switch -->
     <div class="flex items-center gap-3 flex-wrap">
       <div class="flex gap-1">

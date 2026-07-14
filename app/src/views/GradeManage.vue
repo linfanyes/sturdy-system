@@ -717,15 +717,6 @@ const analysisStats = computed<SubjectStat[]>(() =>
   }),
 )
 
-// 分数段分布图纵轴最大值（跨所有科目，保证柱状可对比且清晰可见）
-const analysisDistMax = computed(() => {
-  let m = 0
-  for (const s of analysisStats.value) {
-    for (const c of s.stat.distribution) if (c > m) m = c
-  }
-  return m
-})
-
 // 各科平均分对比曲线图数据（按满分归一化到 0-100%，便于横向对比）
 const curveChart = computed(() => {
   const stats = analysisStats.value
@@ -2731,7 +2722,7 @@ function confirmImport() {
                 <BarChart :size="16" /> 各科分数段分布对比（每 10 分一段）
               </h4>
               <div class="text-[10px] text-cocoa-500">
-                纵轴为人数，悬停查看占比
+                纵轴为占比（%）
               </div>
             </div>
             <div class="overflow-x-auto">
@@ -2781,8 +2772,8 @@ function confirmImport() {
                             :class="subjectPalette[s.subject]?.bar || 'bg-butter-400'"
                             :style="{
                               height:
-                                analysisDistMax > 0
-                                  ? (c / analysisDistMax) * 100 + '%'
+                                s.stat.count > 0
+                                  ? pct(c, s.stat.count) + '%'
                                   : '0%',
                             }"
                             :title="`${c} 人 · ${pct(c, s.stat.count)}%`"
