@@ -11,10 +11,9 @@ import type { ClassItem, Student } from '../types'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import ClassScheduleGrid from '../components/common/ClassScheduleGrid.vue'
-import AIImportPanel from '../components/common/AIImportPanel.vue'
-import { Plus, Edit, Trash2, Users, BookOpen, Quote, School, X, Save, Upload, FileText, FileSpreadsheet, AlertCircle, CheckCircle2, Download, UserPlus, Hash, GraduationCap, ChevronDown, Calendar, ArrowRightLeft, Move, Sparkles, Printer, Megaphone } from 'lucide-vue-next'
+import { Plus, Edit, Trash2, Users, BookOpen, Quote, School, X, Save, AlertCircle, UserPlus, Hash, GraduationCap, ChevronDown, Calendar, ArrowRightLeft, Move, Printer, Megaphone, Award } from 'lucide-vue-next'
 import { useToastStore } from '../stores/toast'
-import { parseTableFile, parsePastedText, downloadTXT, downloadExcel, type FormatType } from '../utils/excel'
+
 import { generateAutoSchedule, formatShort } from '../utils'
 import { getStorageKey, onUserChange } from '../utils/storage'
 import { printHtml } from '../utils/download'
@@ -381,7 +380,7 @@ function clearTerm() {
   toast.info('已清空所有班级的学期设置')
 }
 
-// ============== 班级整体调整到其他班级 ==============
+// ============== 班级整体同步到其他班级 ==============
 const moveModalOpen = ref(false)
 const moveFrom = ref<ClassItem | null>(null)
 const moveToId = ref('')
@@ -416,9 +415,9 @@ function confirmMove() {
   }
   const fromName = moveFrom.value.name
   const toName = moveToClass.value?.name || ''
-  // 1. 迁移学生
+  // 1. 同步学生
   const studentCount = classStore.reassignStudents(moveFrom.value.id, moveToId.value)
-  // 2. 迁移其他关联数据
+  // 2. 同步其他关联数据
   schoolStore.reassignClass(moveFrom.value.id, moveToId.value)
   gradeStore.reassignClass(moveFrom.value.id, moveToId.value)
   rewardStore.reassignClass(moveFrom.value.id, moveToId.value)
@@ -433,9 +432,9 @@ function confirmMove() {
     if (activeId.value === moveFrom.value.id) {
       activeId.value = moveToId.value
     }
-    toast.success(`已将「${fromName}」的 ${studentCount} 名学生迁至「${toName}」，并删除源班级`)
+    toast.success(`已将「${fromName}」的 ${studentCount} 名学生同步到「${toName}」，并删除源班级`)
   } else {
-    toast.success(`已将「${fromName}」的 ${studentCount} 名学生迁至「${toName}」（源班级保留为 0 人）`)
+    toast.success(`已将「${fromName}」的 ${studentCount} 名学生同步到「${toName}」（源班级保留为 0 人）`)
   }
 }
 
@@ -449,127 +448,11 @@ function addTeacher() {
 }
 function removeTeacher(i: number) {
   draft.value.teachers.splice(i, 1)
-}// ============== 课表批量导入 ==============
-const schedImportOpen = ref(false)
-const schedImportTarget = ref<string>('')
-const schedImportText = ref('')
-const schedImportFile = ref<File | null>(null)
-const schedImportFileInput = ref<HTMLInputElement | null>(null)
-const schedImportRows = ref<string[][]>([])
-const schedImportHeaders = ref<string[]>([])
-/** 课表弹框模式: 模板导入 / AI 智能识别 */
-const schedImportMode = ref<'manual' | 'ai'>('manual')
-
-/** AI 解析结果转 5x8 网格: 期望 AI 输出 [{rows: [[...],...5], ...}] */
-function onSchedAiRecords(records: Record<string, unknown>[]) {
-  if (!records.length) {
-    schedImportRows.value = []
-    schedImportHeaders.value = []
-    return
-  }
-  const rec = records[0]
-  let grid: string[][] = []
-  if (Array.isArray((rec as any).rows)) {
-    grid = (rec as any).rows
-  } else {
-    // 兜底: 从 day1/day2/... 取
-    const dayKeys = ['day1', 'day2', 'day3', 'day4', 'day5']
-    grid = dayKeys
-      .map((k) => (rec as any)[k])
-      .filter((g) => Array.isArray(g)) as string[][]
-  }
-  // 规范化: 5 行 × 8 列
-  const fixed: string[][] = []
-  for (let d = 0; d < 5; d++) {
-    const row = grid[d] || []
-    const norm: string[] = []
-    for (let p = 0; p < 8; p++) norm.push((row[p] || '').toString().trim())
-    fixed.push(norm)
-  }
-  schedImportHeaders.value = ['节次', '周一', '周二', '周三', '周四', '周五']
-  schedImportRows.value = fixed
-  schedImportMode.value = 'manual' // 切到 manual 让用户看到预览
-  toast.success('已合并到课表预览, 可直接「确认导入到课表」')
 }
 
 const dayLabels = ['周一', '周二', '周三', '周四', '周五']
 const periodLabels = ['', '第1节', '第2节', '第3节', '第4节', '午自习', '第6节', '第7节', '课后服务']
 const fixedSubjects: Record<number, string> = { 5: '午自习', 8: '课后服务' }
-
-interface SchedPreview {
-  day: number
-  period: number
-  cell: string
-  parsed: { subject: string; teacher: string } | null
-  ok: boolean
-  reason?: string
-}
-
-function parseCell(day: number, period: number, cell: string) {
-  const text = (cell || '').trim()
-  if (!text) return null
-  if (text.includes('/')) {
-    const [s, t] = text.split('/')
-    const subject = (s || '').trim()
-    const teacher = (t || '').trim() || '未知'
-    if (!subject) return { subject: '', teacher: '未知', ok: false, reason: '科目为空' }
-    return { subject, teacher, ok: true as const }
-  }
-  if (fixedSubjects[period]) {
-    return { subject: fixedSubjects[period], teacher: text, ok: true as const }
-  }
-  return { subject: text, teacher: '未知', ok: true as const }
-}
-
-const currentRows = computed<string[][]>(() => {
-  if (schedImportRows.value.length) return schedImportRows.value
-  if (!schedImportText.value.trim()) return []
-  return parsePastedText(schedImportText.value).rows
-})
-
-const currentHeaders = computed<string[]>(() => {
-  if (schedImportRows.value.length) return schedImportHeaders.value
-  if (!schedImportText.value.trim()) return []
-  return parsePastedText(schedImportText.value).headers
-})
-
-const schedPreview = computed<SchedPreview[]>(() => {
-  const rows = currentRows.value
-  if (!rows.length) return []
-  // 智能判断：表头是否包含"周一"或"星期"等
-  const firstCell = (rows[0]?.[0] || '').trim().toLowerCase()
-  const looksLikeHeader = dayLabels.some((d) => firstCell.includes(d)) || firstCell === 'day' || firstCell === '周次'
-  const dataRows = looksLikeHeader ? rows.slice(1) : rows
-  const list: SchedPreview[] = []
-  for (let d = 0; d < Math.min(5, dataRows.length); d++) {
-    const row = dataRows[d] || []
-    for (let p = 1; p <= 8; p++) {
-      const cell = (row[p] || '').trim() // 表头占用第 0 列；数据从第 1 列开始对应 period 1
-      if (!cell) continue
-      const parsed = parseCell(d + 1, p, cell)
-      list.push({
-        day: d + 1,
-        period: p,
-        cell,
-        parsed: parsed && parsed.ok ? { subject: parsed.subject, teacher: parsed.teacher } : null,
-        ok: !!parsed?.ok,
-        reason: !parsed ? '空' : !parsed.ok ? parsed.reason : undefined,
-      })
-    }
-  }
-  return list
-})
-
-const schedValidCount = computed(() => schedPreview.value.filter((r) => r.ok).length)
-
-function openSchedImport() {
-  schedImportTarget.value = activeId.value || classStore.classes[0]?.id || ''
-  schedImportText.value = ''
-  schedImportFile.value = null
-  schedImportRows.value = []
-  schedImportHeaders.value = []
-  schedImportOpen.value = true
-}
 
 /** 学科 -> 打印用背景色 (hex) */
 const SUBJECT_HEX: Record<string, string> = {
@@ -628,87 +511,6 @@ function printSchedule() {
     <p style="text-align:center;color:#a89a88;font-size:12px;margin-top:14px;">由「园丁工作台」生成</p>
   `
   printHtml(`${cls.name} 课程表`, html)
-}
-
-function pickSchedFile() {
-  schedImportFileInput.value?.click()
-}
-
-async function onSchedFileChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  schedImportFile.value = file
-  try {
-    const { headers, rows } = await parseTableFile(file)
-    schedImportHeaders.value = headers
-    schedImportRows.value = rows
-    toast.success(`已解析 ${rows.length} 行`)
-  } catch (err) {
-    console.error(err)
-    toast.error('文件解析失败：' + (err as Error).message)
-    schedImportRows.value = []
-  }
-  (e.target as HTMLInputElement).value = ''
-}
-
-function clearSchedFile() {
-  schedImportFile.value = null
-  schedImportRows.value = []
-  schedImportHeaders.value = []
-}
-
-function buildTemplateData(): { header: string[]; rows: string[][] } {
-  const header = ['', ...periodLabels.slice(1)]
-  const rows: string[][] = dayLabels.map(() => Array(9).fill(''))
-  if (schedImportTarget.value) {
-    for (const s of schoolStore.schedules) {
-      if (s.classId !== schedImportTarget.value) continue
-      const dayIdx = s.dayOfWeek - 1
-      if (dayIdx < 0 || dayIdx > 4) continue
-      const value = s.teacher && s.teacher !== '未知'
-        ? `${s.subject}/${s.teacher}`
-        : s.subject
-      rows[dayIdx][s.period] = value
-    }
-  }
-  return { header, rows }
-}
-
-async function downloadSchedTemplate(fmt: FormatType) {
-  if (!schedImportTarget.value) {
-    toast.warning('请先选择班级')
-    return
-  }
-  const cls = classStore.getClass(schedImportTarget.value)
-  const { header, rows } = buildTemplateData()
-  const baseName = `课程表-${cls?.name || '班级'}`
-  if (fmt === 'xlsx') {
-    await downloadExcel(`${baseName}.xlsx`, '课程表', [header, ...rows])
-  } else {
-    const content = [header.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n')
-    downloadTXT(`${baseName}.txt`, content)
-  }
-  toast.success(`${fmt === 'xlsx' ? 'Excel' : 'TXT'} 模板已下载`)
-}
-
-function confirmSchedImport() {
-  if (!schedImportTarget.value) {
-    toast.warning('请选择班级')
-    return
-  }
-  const valid = schedPreview.value.filter((r) => r.ok && r.parsed)
-  if (!valid.length) {
-    toast.error('没有可导入的有效数据')
-    return
-  }
-  // 5x8 网格
-  const grid: string[][] = Array.from({ length: 5 }, () => Array(8).fill(''))
-  for (const r of valid) {
-    grid[r.day - 1][r.period - 1] = r.cell
-  }
-  schoolStore.batchImportSchedule(schedImportTarget.value, grid, fixedSubjects)
-  toast.success(`已为「${classStore.getClass(schedImportTarget.value)?.name}」导入 ${valid.length} 个课节`)
-  schedImportOpen.value = false
 }
 </script>
 
@@ -787,11 +589,19 @@ function confirmSchedImport() {
                 <Edit :size="14" />
               </button>
               <button
+                class="p-1.5 rounded-full hover:bg-mint-100"
+                @click.stop="router.push({ name: 'tool-class-duty', query: { classId: c.id } })"
+                aria-label="班级职务设置"
+                title="班级职务设置"
+              >
+                <Award :size="14" />
+              </button>
+              <button
                 v-if="classStore.classes.length > 1"
                 class="p-1.5 rounded-full hover:bg-sky2-100"
                 @click.stop="openMove(c)"
-                aria-label="调整到其他班级"
-                title="调整到其他班级"
+                aria-label="同步到其他班级"
+                title="同步到其他班级"
               >
                 <Move :size="14" />
               </button>
@@ -884,21 +694,6 @@ function confirmSchedImport() {
                   不限制学科
                 </span>
               </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-              <button
-                v-if="classStore.classes.length > 1"
-                class="btn-secondary"
-                @click="openMove(activeClass)"
-              >
-                <Move :size="14" /> 调整到其他班级
-              </button>
-              <button
-                class="btn-secondary"
-                @click="openEdit(activeClass)"
-              >
-                <Edit :size="16" /> 编辑
-              </button>
             </div>
           </div>
           <div
@@ -1064,12 +859,6 @@ function confirmSchedImport() {
             <h3 class="title-display text-lg flex items-center gap-2">
               <BookOpen :size="18" /> 班级课程表
             </h3>
-            <button
-              class="btn-secondary !py-1.5 !px-3 text-xs"
-              @click="openSchedImport"
-            >
-              <Upload :size="12" /> 批量导入
-            </button>
             <button
               class="btn-secondary !py-1.5 !px-3 text-xs"
               @click="printSchedule"
@@ -1465,261 +1254,6 @@ function confirmSchedImport() {
       </template>
     </Modal>
 
-    <!-- 课表批量导入 -->
-    <Modal
-      :open="schedImportOpen"
-      title="批量导入班级课程表"
-      width="820px"
-      @close="schedImportOpen = false"
-    >
-      <div class="space-y-4">
-        <!-- 模式切换 -->
-        <div class="flex items-center gap-1 card-flat p-1 w-fit">
-          <button
-            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
-            :class="schedImportMode === 'manual' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
-            @click="schedImportMode = 'manual'"
-          >
-            <FileText :size="12" /> 模板导入
-          </button>
-          <button
-            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
-            :class="schedImportMode === 'ai' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
-            @click="schedImportMode = 'ai'"
-          >
-            <Sparkles :size="12" /> AI 智能识别
-          </button>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-2">
-            <label class="text-xs text-cocoa-500 ml-1">导入到班级</label>
-            <select
-              v-model="schedImportTarget"
-              class="input-soft mt-1"
-            >
-              <option
-                v-for="c in classStore.classes"
-                :key="c.id"
-                :value="c.id"
-              >
-                {{ c.name }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-cocoa-500 ml-1">行=日期 / 列=节次</label>
-            <div class="input-soft mt-1 !py-2 text-xs text-cocoa-500 flex items-center">
-              5 行 × 8 列
-            </div>
-          </div>
-        </div>
-
-        <!-- AI 智能识别模式 -->
-        <AIImportPanel
-          v-if="schedImportMode === 'ai'"
-          :schema="{
-            name: 'schedule',
-            fields: {
-              rows: '5x8 网格, 外层数组 5 行 (周一到周五), 内层数组 8 个元素 (第 1-8 节), 顺序: 1=第1节 2=第2节 3=第3节 4=第4节 5=午自习 6=第6节 7=第7节 8=课后服务',
-            },
-            example: {
-              rows: [
-                ['语文/李老师', '数学/王老师', '英语/张老师', '品德/未知', '李老师', '科学', '美术', '未知'],
-                ['数学/王老师', '语文/李老师', '英语/张老师', '音乐/未知', '李老师', '体育', '信息', '未知'],
-                ['英语/张老师', '数学/王老师', '语文/李老师', '科学', '李老师', '美术', '音乐', '未知'],
-                ['语文/李老师', '英语/张老师', '数学/王老师', '体育', '李老师', '品德', '科学', '未知'],
-                ['数学/王老师', '语文/李老师', '品德', '信息', '李老师', '体育', '音乐', '未知'],
-              ],
-            },
-            extra:
-              '单元格内容: 「科目/老师」(如 「语文/李老师」); 午自习/课后服务单元格只填老师姓名 (如 「李老师」); 缺失或空课时填空字符串; 老师姓名如无法判断填「未知」.',
-          }"
-          placeholder="把任意格式的课表文本粘贴到此处, 例如:&#10;周一: 语文/李老师, 数学/王老师, 英语/张老师, 品德, 李老师(午自习), 科学, 美术, 未知(课后)&#10;周二: ..."
-          :textarea-min-height="180"
-          :on-parsed="onSchedAiRecords"
-        />
-
-        <!-- 模板导入模式 (原 3 步流程) -->
-        <template v-else>
-          <div class="card-flat p-3">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <div class="text-sm font-medium">
-                第一步：下载模板（已预填本班现有课表）
-              </div>
-              <div class="flex gap-2">
-                <button
-                  class="btn-secondary !py-1.5 !px-3 text-xs"
-                  @click="downloadSchedTemplate('txt')"
-                >
-                  <FileText :size="12" /> TXT 模板
-                </button>
-                <button
-                  class="btn-secondary !py-1.5 !px-3 text-xs"
-                  @click="downloadSchedTemplate('xlsx')"
-                >
-                  <FileSpreadsheet :size="12" /> Excel 模板
-                </button>
-              </div>
-            </div>
-            <p class="text-[11px] text-cocoa-500 mt-1.5">
-              单元格内容：<code>科目</code> 或 <code>科目/老师</code>；午自习/课后服务列只填老师姓名即可
-            </p>
-          </div>
-
-          <div class="card-flat p-3">
-            <div class="text-sm font-medium mb-2">
-              第二步：上传文件
-            </div>
-            <div
-              class="border-2 border-dashed border-cocoa-100 rounded-2xl p-4 text-center cursor-pointer hover:border-butter-400 transition"
-              @click="pickSchedFile"
-            >
-              <div
-                v-if="!schedImportFile"
-                class="text-cocoa-500"
-              >
-                <Upload
-                  :size="20"
-                  class="mx-auto mb-1"
-                />
-                <div class="text-sm">
-                  点击选择 .txt / .xlsx / .xls 文件
-                </div>
-                <div class="text-[11px] mt-1">
-                  或将文件拖到此处
-                </div>
-              </div>
-              <div
-                v-else
-                class="flex items-center justify-center gap-2 text-sm text-mint-500"
-              >
-                <FileSpreadsheet :size="16" />
-                <span>{{ schedImportFile.name }}</span>
-                <button
-                  class="text-cocoa-300 hover:text-sakura-500"
-                  @click.stop="clearSchedFile"
-                >
-                  <X :size="14" />
-                </button>
-              </div>
-            </div>
-            <input
-              ref="schedImportFileInput"
-              type="file"
-              accept=".txt,.csv,.xlsx,.xls"
-              class="hidden"
-              @change="onSchedFileChange"
-            >
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs text-cocoa-500 ml-1">或者直接粘贴（Tab 分隔）</label>
-              <div class="text-[10px] text-cocoa-500">
-                支持首行为表头自动跳过
-              </div>
-            </div>
-            <textarea
-              v-model="schedImportText"
-              class="input-soft min-h-[120px] font-mono text-xs leading-relaxed"
-              placeholder="	第1节	第2节	第3节	第4节	午自习	第6节	第7节	课后服务&#10;周一	语文/李老师	数学/王老师	英语/张老师	品德/未知	李老师	科学	美术/未知	未知&#10;周二	..."
-            />
-          </div>
-
-          <div
-            v-if="schedPreview.length"
-            class="card-flat p-3"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm font-medium flex items-center gap-2">
-                <AlertCircle
-                  :size="14"
-                  class="text-cocoa-500"
-                />
-                解析预览（表头：{{ currentHeaders.join(' / ') || '自动识别' }}）
-              </div>
-              <div class="flex items-center gap-2 text-xs">
-                <span class="chip bg-mint-100 text-mint-500">
-                  <CheckCircle2 :size="10" /> 有效 {{ schedValidCount }}
-                </span>
-              </div>
-            </div>
-            <div class="max-h-[220px] overflow-y-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-cocoa-500 border-b border-cocoa-100/60">
-                    <th class="py-1.5 pr-2">
-                      日期
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      节次
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      原文
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      科目
-                    </th>
-                    <th class="py-1.5">
-                      老师
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="(r, i) in schedPreview"
-                    :key="i"
-                    class="border-b border-cocoa-100/40"
-                    :class="r.ok ? '' : 'bg-sakura-100/30'"
-                  >
-                    <td class="py-1.5 pr-2">
-                      {{ dayLabels[r.day - 1] }}
-                    </td>
-                    <td class="py-1.5 pr-2">
-                      {{ periodLabels[r.period] }}
-                    </td>
-                    <td class="py-1.5 pr-2 font-mono text-cocoa-500">
-                      {{ r.cell }}
-                    </td>
-                    <td class="py-1.5 pr-2">
-                      {{ r.parsed?.subject || '-' }}
-                    </td>
-                    <td class="py-1.5">
-                      {{ r.parsed?.teacher || '-' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </template>
-      </div>
-      <template #footer>
-        <button
-          class="btn-secondary"
-          @click="schedImportOpen = false"
-        >
-          <X :size="14" /> 取消
-        </button>
-        <button
-          v-if="schedImportMode !== 'ai'"
-          class="btn-primary"
-          :disabled="!schedValidCount"
-          @click="confirmSchedImport"
-        >
-          <Download :size="14" /> 导入 {{ schedValidCount }} 个课节
-        </button>
-        <button
-          v-else
-          class="btn-primary"
-          disabled
-        >
-          <Sparkles :size="14" /> 请先解析上方文本
-        </button>
-      </template>
-    </Modal>
-
     <!-- 学期设置弹框 (批量应用到所有班级) -->
     <Modal
       :open="termModalOpen"
@@ -1821,10 +1355,10 @@ function confirmSchedImport() {
       </template>
     </Modal>
 
-    <!-- 班级整体调整弹框 -->
+    <!-- 班级整体同步弹框 -->
     <Modal
       :open="moveModalOpen"
-      :title="`调整到其他班级 - ${moveFrom?.name || ''}`"
+      :title="`同步到其他班级 - ${moveFrom?.name || ''}`"
       width="560px"
       @close="moveModalOpen = false"
     >
@@ -1835,7 +1369,7 @@ function confirmSchedImport() {
             class="mt-0.5 shrink-0"
           />
           <div>
-            该操作会迁移班级下所有学生、课表、作业、考勤、成绩、奖惩、考试计划等到目标班级。
+            该操作会同步班级下所有学生、课表、作业、考勤、成绩、奖惩、考试计划等到目标班级。
             <span
               v-if="moveDeleteSource"
               class="font-medium"

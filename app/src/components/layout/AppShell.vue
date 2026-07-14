@@ -54,7 +54,6 @@ const navGroups = [
       { name: 'students', label: '学生管理', icon: '🧒', emoji: true },
       { name: 'exams', label: '考试管理', icon: '📋', emoji: true },
       { name: 'grades', label: '成绩管理', icon: '📊', emoji: true },
-      { name: 'grade-trend', label: '成绩趋势', icon: '📈', emoji: true },
       { name: 'attendance', label: '考勤管理', icon: '✅', emoji: true },
       { name: 'homework', label: '作业登记', icon: '📝', emoji: true },
       { name: 'notice', label: '班级公告', icon: '📣', emoji: true },
@@ -62,7 +61,6 @@ const navGroups = [
       { name: 'growth', label: '成长档案', icon: '🌱', emoji: true },
       { name: 'behavior', label: '行为观察', icon: '👀', emoji: true },
       { name: 'class-finance', label: '班费管理', icon: '💰', emoji: true },
-      { name: 'duty-roster', label: '轮值表', icon: '📋', emoji: true },
       { name: 'class-activity', label: '班级活动', icon: '🎉', emoji: true },
     ],
   },
@@ -445,7 +443,7 @@ function goFromNotif(n: NotifItem) {
         </button>
         <button
           class="flex flex-col items-center gap-0.5 py-2.5 text-[10px] transition-all"
-          :class="['students', 'classes', 'exams', 'grades', 'grade-trend', 'attendance', 'homework', 'notice', 'parent-contact', 'growth', 'behavior', 'class-finance', 'duty-roster', 'class-activity'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
+          :class="['students', 'classes', 'exams', 'grades', 'attendance', 'homework', 'notice', 'parent-contact', 'growth', 'behavior', 'class-finance', 'class-activity'].includes(route.name as string) ? 'text-butter-600' : 'text-cocoa-500'"
           @click="go('students')"
         >
           <span class="text-xl">🧒</span>

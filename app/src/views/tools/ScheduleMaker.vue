@@ -268,8 +268,9 @@ watch(classId, (newVal, oldVal) => {
       title="课表排版"
       description="可视化编辑班级课程表，支持自动排课和草稿保存"
       gradient="from-sky2-100 via-cream-50 to-mint-100"
+      class="print:hidden"
     />
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 print:hidden">
       <div class="flex flex-wrap items-center gap-2">
         <select
           v-model="classId"
@@ -331,7 +332,10 @@ watch(classId, (newVal, oldVal) => {
       </div>
     </div>
 
-    <div class="card-soft p-5 overflow-x-auto">
+    <div class="card-soft p-5 overflow-x-auto print-area">
+      <h1 class="hidden print:block text-center text-xl font-bold mb-4 text-cocoa-900">
+        {{ classStore.getClass(classId)?.name || '班级' }}课程表
+      </h1>
       <table class="w-full border-collapse">
         <thead>
           <tr>
@@ -503,3 +507,23 @@ watch(classId, (newVal, oldVal) => {
     </transition>
   </div>
 </template>
+
+<style>
+@media print {
+  body:has(.print-area) * {
+    visibility: hidden;
+  }
+  body:has(.print-area) .print-area,
+  body:has(.print-area) .print-area * {
+    visibility: visible;
+  }
+  body:has(.print-area) .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+}
+</style>

@@ -22,10 +22,9 @@ import {
 import { useAwardStore } from '../../stores/award'
 import { useToastStore } from '../../stores/toast'
 import { useAIStore } from '../../stores/ai'
-import { AI_DASHSCOPE_BASE_URL } from '../../utils/aiBase'
 import ToolPageHeader from '../../components/common/ToolPageHeader.vue'
 import Modal from '../../components/common/Modal.vue'
-import { isVisionModel, VISION_MODEL_EXAMPLES } from '../../utils/aiCall'
+import { aiChat, isVisionModel, VISION_MODEL_EXAMPLES } from '../../utils/aiCall'
 
 const awardStore = useAwardStore()
 const toast = useToastStore()
@@ -40,7 +39,7 @@ const filterCategory = ref('')
 // 展开/收起的年份
 const expandedYears = ref<Set<string>>(new Set())
 
-// 获奖记录表单
+// 我获奖啦表单
 const formOpen = ref(false)
 const editingId = ref<string | null>(null)
 const form = ref({
@@ -164,16 +163,16 @@ function saveForm() {
   }
   if (editingId.value) {
     awardStore.updateAward(editingId.value, { ...form.value })
-    toast.success('已更新获奖记录')
+    toast.success('已更新我获奖啦')
   } else {
     awardStore.addAward({ ...form.value })
-    toast.success('已添加获奖记录')
+    toast.success('已添加我获奖啦')
   }
   formOpen.value = false
 }
 
 function deleteAward(id: string) {
-  if (!confirm('确定删除这条获奖记录吗？')) return
+  if (!confirm('确定删除这条我获奖啦吗？')) return
   awardStore.removeAward(id)
   toast.success('已删除')
 }
@@ -218,53 +217,40 @@ async function recognizeImage() {
     toast.error('请先在「AI 对话」中配置 API Key')
     return
   }
-  if (!isVisionModel(ai.settings.model)) {
+  if (!isVisionModel(ai.settings.visionModel)) {
     toast.error(
-      `当前模型「${ai.settings.model}」不支持图片识别。请在 AI 设置中切换到多模态模型，如：${VISION_MODEL_EXAMPLES.slice(0, 3).join(' / ')}`,
+      `当前多模态模型「${ai.settings.visionModel}」不支持图片识别。请在 AI 设置中切换到多模态模型，如：${VISION_MODEL_EXAMPLES.slice(0, 3).join(' / ')}`,
     )
     return
   }
 
   recognizing.value = true
   try {
-    const baseUrl = (ai.settings.baseUrl || AI_DASHSCOPE_BASE_URL).replace(/\/$/, '')
-    const resp = await fetch(baseUrl + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + ai.settings.apiKey,
-      },
-      body: JSON.stringify({
-        model: ai.settings.model,
-        temperature: 0.3,
-        messages: [
-          {
-            role: 'system',
-            content:
-              '你是一名奖状文字识别助手。请仔细识别图片中的奖状内容，提取以下信息：\n' +
-              '1. name: 奖项名称（如：优秀教师、一等奖、教学能手等）\n' +
-              '2. issuer: 颁发机构（如：教育局、学校等）\n' +
-              '3. date: 获奖日期（格式 YYYY-MM-DD，识别不到具体年月日就填最近的合理日期）\n' +
-              '4. level: 奖项等级（如：一等奖、二等奖、优秀奖、国家级、省级、市级等）\n' +
-              '5. note: 其他重要信息摘要\n\n' +
-              '请严格以 JSON 格式输出，不要任何额外说明。',
-          },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: '请识别这张奖状的内容' },
-              { type: 'image_url', image_url: { url: form.value.image } },
-            ],
-          },
-        ],
-      }),
+    const text = await aiChat({
+      modelType: 'vision',
+      temperature: 0.3,
+      stream: false,
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是一名奖状文字识别助手。请仔细识别图片中的奖状内容，提取以下信息：\n' +
+            '1. name: 奖项名称（如：优秀教师、一等奖、教学能手等）\n' +
+            '2. issuer: 颁发机构（如：教育局、学校等）\n' +
+            '3. date: 获奖日期（格式 YYYY-MM-DD，识别不到具体年月日就填最近的合理日期）\n' +
+            '4. level: 奖项等级（如：一等奖、二等奖、优秀奖、国家级、省级、市级等）\n' +
+            '5. note: 其他重要信息摘要\n\n' +
+            '请严格以 JSON 格式输出，不要任何额外说明。',
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: '请识别这张奖状的内容' },
+            { type: 'image_url', image_url: { url: form.value.image } },
+          ],
+        },
+      ],
     })
-    if (!resp.ok) {
-      const errText = await resp.text()
-      throw new Error('请求失败: ' + resp.status + ' ' + errText.slice(0, 200))
-    }
-    const data = await resp.json()
-    const text = data.choices?.[0]?.message?.content || ''
 
     // 解析 JSON
     const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()
@@ -329,7 +315,7 @@ function resetFilters() {
   <div class="space-y-5">
     <ToolPageHeader
       icon="🏆"
-      title="获奖记录"
+      title="我获奖啦"
       description="记录你的每一份荣誉，支持图片AI识别、年份分类、自定义标签"
       gradient="from-butter-100 via-cream-50 to-sakura-100"
       status-text="AI 智能识别"
@@ -448,7 +434,7 @@ function resetFilters() {
       >
         <div class="text-4xl mb-3">🏆</div>
         <div class="text-cocoa-500 text-sm">
-          {{ searchKeyword || filterYear || filterTag ? '没有找到匹配的获奖记录' : '还没有获奖记录，点击「新增记录」开始记录你的荣誉吧' }}
+          {{ searchKeyword || filterYear || filterTag ? '没有找到匹配的我获奖啦' : '还没有我获奖啦，点击「新增记录」开始记录你的荣誉吧' }}
         </div>
       </div>
 
@@ -576,7 +562,7 @@ function resetFilters() {
     <!-- 新增/编辑弹窗 -->
     <Modal
       :open="formOpen"
-      :title="editingId ? '编辑获奖记录' : '新增获奖记录'"
+      :title="editingId ? '编辑我获奖啦' : '新增我获奖啦'"
       width="560px"
       @close="formOpen = false"
     >
@@ -802,7 +788,7 @@ function resetFilters() {
     >
       <div class="space-y-3">
         <p class="text-sm text-cocoa-600">
-          将为<span class="font-medium">全部 {{ awardStore.records.length }} 条</span>获奖记录统一设置评级分：
+          将为<span class="font-medium">全部 {{ awardStore.records.length }} 条</span>我获奖啦统一设置评级分：
         </p>
         <div class="flex items-center gap-2">
           <select

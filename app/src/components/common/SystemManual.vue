@@ -9,6 +9,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const copied = ref(false)
 const manualEl = ref<HTMLElement | null>(null)
+const viewMode = ref<'preview' | 'source'>('preview')
 
 const stats = computed(() => {
   const lines = MANUAL_TEXT.split('\n').length
@@ -44,8 +45,14 @@ onUnmounted(() => {
 
 function render() {
   if (!manualEl.value) return
-  manualEl.value.innerHTML = parseMarkdown(MANUAL_TEXT)
+  if (viewMode.value === 'source') {
+    manualEl.value.innerHTML = `<pre class="whitespace-pre-wrap font-mono text-xs text-cocoa-700 leading-relaxed">${escapeHtml(MANUAL_TEXT)}</pre>`
+  } else {
+    manualEl.value.innerHTML = parseMarkdown(MANUAL_TEXT)
+  }
 }
+
+watch(viewMode, render)
 
 // 极简 Markdown 渲染器 (headings / lists / code / tables / bold / inline code)
 function escapeHtml(s: string) {
@@ -289,6 +296,22 @@ function downloadManual() {
               </div>
             </div>
             <div class="flex items-center gap-1">
+              <div class="hidden sm:flex bg-cocoa-50 rounded-lg p-0.5 mr-1">
+                <button
+                  class="px-2.5 py-1 rounded-lg text-xs transition"
+                  :class="viewMode === 'preview' ? 'bg-white text-cocoa-800 shadow-sm' : 'text-cocoa-500 hover:text-cocoa-700'"
+                  @click="viewMode = 'preview'"
+                >
+                  Markdown 预览
+                </button>
+                <button
+                  class="px-2.5 py-1 rounded-lg text-xs transition"
+                  :class="viewMode === 'source' ? 'bg-white text-cocoa-800 shadow-sm' : 'text-cocoa-500 hover:text-cocoa-700'"
+                  @click="viewMode = 'source'"
+                >
+                  原始 Markdown
+                </button>
+              </div>
               <button
                 class="px-2.5 py-1.5 rounded-lg text-xs text-cocoa-600 hover:bg-cocoa-50 flex items-center gap-1"
                 @click="copyAll"

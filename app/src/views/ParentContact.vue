@@ -5,7 +5,7 @@ import { useParentContactStore } from '../stores/parentContact'
 import { useToastStore } from '../stores/toast'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
-import { Plus, Trash2, Save, Phone, MessageSquare } from 'lucide-vue-next'
+import { Plus, Trash2, Save, Phone, MessageSquare, RefreshCw } from 'lucide-vue-next'
 import type { ParentContact } from '../types'
 import { formatDate } from '../utils'
 
@@ -73,6 +73,18 @@ function remove(c: ParentContact) {
   contactStore.removeContact(c.id)
   toast.info('已删除')
 }
+
+/** 从学生档案同步家长信息（有则填充，无则留空） */
+function syncParentFromStudent() {
+  const student = students.value.find(s => s.id === draft.value.studentId)
+  if (!student) {
+    toast.warning('请先选择学生')
+    return
+  }
+  draft.value.parentName = student.parentName || ''
+  draft.value.phone = student.parentPhone || ''
+  toast.success(student.parentName || student.parentPhone ? '已同步学生家长信息' : '该学生暂未填写家长信息')
+}
 </script>
 
 <template>
@@ -124,9 +136,17 @@ function remove(c: ParentContact) {
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-cocoa-500">学生</label>
-            <select v-model="draft.studentId" class="input-soft">
-              <option v-for="s in students" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
+            <div class="flex items-center gap-2">
+              <select v-model="draft.studentId" class="input-soft flex-1">
+                <option v-for="s in students" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <button class="btn-secondary !px-3 text-xs whitespace-nowrap" title="从学生档案同步家长姓名和电话" @click="syncParentFromStudent">
+                <RefreshCw :size="12" class="inline" /> 同步档案家长
+              </button>
+            </div>
+            <p class="text-[11px] text-cocoa-500 mt-1">
+              点击「同步档案家长」可把该学生在「学生管理」中已填写的家长姓名/电话自动带过来，没有则留空。
+            </p>
           </div>
           <div>
             <label class="text-xs text-cocoa-500">日期</label>

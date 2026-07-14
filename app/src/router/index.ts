@@ -123,6 +123,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '奖惩记录', icon: '🏅' },
       },
       {
+        path: 'toolbox/class-duty',
+        name: 'tool-class-duty',
+        component: () => import('../views/tools/ClassDuty.vue'),
+        meta: { title: '班级职务', icon: '🎖️' },
+      },
+      {
         path: 'schedule',
         name: 'schedule',
         component: () => import('../views/Schedule.vue'),
@@ -180,7 +186,7 @@ const routes: RouteRecordRaw[] = [
         path: 'toolbox/award',
         name: 'tool-award',
         component: () => import('../views/tools/AwardRecord.vue'),
-        meta: { title: '获奖记录', icon: '🏆' },
+        meta: { title: '我获奖啦', icon: '🏆' },
       },
       // ---- 新增功能模块 ----
       {
@@ -230,12 +236,6 @@ const routes: RouteRecordRaw[] = [
         name: 'class-activity',
         component: () => import('../views/ClassActivityView.vue'),
         meta: { title: '班级活动', icon: '🎉' },
-      },
-      {
-        path: 'grade-trend',
-        name: 'grade-trend',
-        component: () => import('../views/GradeTrend.vue'),
-        meta: { title: '成绩趋势', icon: '📈' },
       },
       {
         path: 'toolbox/seat-map',
@@ -354,13 +354,17 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // 测试数据生成器 (开发者工具, 桌面版/生产构建同样可用)
-  {
-    path: '/dev/seed',
-    name: 'dev-seed',
-    component: () => import('../views/DevSeed.vue'),
-    meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
-  },
+  // 测试数据生成器：仅在开发模式注册路由，避免生产构建被访问
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/seed',
+          name: 'dev-seed',
+          component: () => import('../views/DevSeed.vue'),
+          meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
+        },
+      ]
+    : []),
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

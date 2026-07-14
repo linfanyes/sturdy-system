@@ -96,7 +96,7 @@ async function doTranslate() {
 4. 如果输入是混合语言, 整体处理为${targetName}。`
 
   const payload = {
-    model: ai.settings.model || 'qwen3.7-plus',
+    model: ai.settings.textModel || 'qwen3.7-plus',
     temperature: 0.3,
     stream: true,
     messages: [
@@ -231,7 +231,7 @@ onUnmounted(() => {
           class="flex items-center gap-1.5 text-xs text-mint-500"
         >
           <Check :size="14" />
-          已就绪 · 模型：{{ ai.settings.model || 'qwen3.7-plus' }}
+          已就绪 · 文本模型：{{ ai.settings.textModel || 'qwen3.7-plus' }}
         </div>
       </div>
     </section>

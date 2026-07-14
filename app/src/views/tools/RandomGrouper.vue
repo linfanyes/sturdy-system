@@ -110,7 +110,7 @@ function buildGroups() {
     }
     if (mode.value === 'mixed') {
       // 混合均衡: 在男女均衡基础上, 组间再按原序交错分布
-      arranged = arranged
+      // 当前实现与男女均衡一致（占位，可按需扩展为组间交错）
     }
   }
 

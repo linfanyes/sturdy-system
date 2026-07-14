@@ -1,11 +1,15 @@
 /** AI 模型设置 */
 export interface AISettings {
-  /** 基础 URL（默认 deepseek） */
+  /** 基础 URL（默认 dashscope） */
   baseUrl: string
   /** API Key */
   apiKey: string
-  /** 模型名 */
-  model: string
+  /** @deprecated 旧版单一模型，已拆分为 textModel / visionModel，保留兼容 */
+  model?: string
+  /** 文本对话模型 */
+  textModel: string
+  /** 多模态模型（图片 / 文件 / 视频识别与生成） */
+  visionModel: string
   /** 温度 */
   temperature: number
   /** AI 名字 */

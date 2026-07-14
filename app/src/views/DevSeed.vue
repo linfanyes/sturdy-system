@@ -713,17 +713,20 @@ onMounted(() => {
   // 支持 URL 参数 ?auto=1 自动运行 (headless / 自动化测试用)
   // 注意: vue-router hash 模式下 ?auto=1 是在 hash 内的 search,
   //       window.location.search 在 hash 模式下通常为空, 所以两个地方都查
-  try {
-    const outerSearch = window.location.search
-    const hashQuery = window.location.hash.includes('?')
-      ? window.location.hash.slice(window.location.hash.indexOf('?') + 1)
-      : ''
-    const params = new URLSearchParams(outerSearch || hashQuery)
-    if (params.get('auto') === '1' && userStore.user) {
-      setTimeout(() => seedGanShan(), 500)
+  // 安全: 自动运行仅在开发环境生效，防止生产构建被意外触发
+  if (import.meta.env.DEV) {
+    try {
+      const outerSearch = window.location.search
+      const hashQuery = window.location.hash.includes('?')
+        ? window.location.hash.slice(window.location.hash.indexOf('?') + 1)
+        : ''
+      const params = new URLSearchParams(outerSearch || hashQuery)
+      if (params.get('auto') === '1' && userStore.user) {
+        setTimeout(() => seedGanShan(), 500)
+      }
+    } catch (e) {
+      /* noop */
     }
-  } catch (e) {
-    /* noop */
   }
 })
 </script>

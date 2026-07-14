@@ -12,6 +12,8 @@ const router = useRouter()
 const route = useRoute()
 const toast = useToastStore()
 
+// 安全说明：当前为单机本地应用，登录码仅用于防止误触/简单隔离。
+// 由于源码可被审查，不建议将其作为真正认证手段；未来可改为用户自定义并持久化。
 const LOGIN_CODE = '1314520'
 
 const greeting = computed(() => {

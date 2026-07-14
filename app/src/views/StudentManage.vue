@@ -8,18 +8,20 @@ import { useUserStore, currentTermStr } from '../stores/user'
 import { useExamStore } from '../stores/exam'
 import { useAIStore } from '../stores/ai'
 import { useParentContactStore } from '../stores/parentContact'
+import { useClassDutyStore } from '../stores/classDuty'
 import type { Student, Gender } from '../types'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import AIImportPanel from '../components/common/AIImportPanel.vue'
-import { Plus, Edit, Trash2, Search, Download, Upload, Save, X, Phone, Users, Filter, FileText, FileSpreadsheet, AlertCircle, CheckCircle2, Award, BookOpen, ClipboardCheck, Calendar, User, Hash, Home, GraduationCap, TrendingUp, TrendingDown, Heart, BookMarked, Cake, MessageCircle, School, Sparkles, Copy, ChevronDown, ChevronUp, BarChart3, Target, Zap, Activity, Trophy, LineChart, Radar, Sparkle, Check, Grid, FileText as FileTextIcon } from 'lucide-vue-next'
+import { Plus, Edit, Trash2, Search, Download, Upload, Save, X, Phone, Users, Filter, FileText, FileSpreadsheet, AlertCircle, CheckCircle2, Award, BookOpen, ClipboardCheck, Calendar, User, Hash, Home, GraduationCap, TrendingUp, TrendingDown, Heart, BookMarked, Cake, MessageCircle, School, Sparkles, Copy, ChevronDown, ChevronUp, BarChart3, Target, Zap, Activity, Trophy, LineChart, Radar, Sparkle, Check, Grid, FileText as FileTextIcon, Camera, Image as ImageIcon, Loader2 } from 'lucide-vue-next'
 import { useToastStore } from '../stores/toast'
 import { parseTableFile, parsePastedText, downloadTXT, downloadExcel, type FormatType } from '../utils/excel'
 import { subjectPalette } from '../seed'
 import { fmtScore } from '../utils/format'
 import { copyText, downloadBlob } from '../utils/download'
 import { useDebouncedSearch } from '../composables/useDebouncedSearch'
-import { aiChat, AIError } from '../utils/aiCall'
+import { aiChat, AIError, isVisionModel, type AIChatContentPart } from '../utils/aiCall'
+import { readFile, buildUserContent, type AIAttachment } from '../utils/aiAttachment'
 
 const classStore = useClassStore()
 const gradeStore = useGradeStore()
@@ -27,8 +29,9 @@ const rewardStore = useRewardStore()
 const schoolStore = useSchoolStore()
 const userStore = useUserStore()
 const examStore = useExamStore()
-const ai = useAIStore()
+const aiStore = useAIStore()
 const parentContactStore = useParentContactStore()
+const classDutyStore = useClassDutyStore()
 const toast = useToastStore()
 
 const { search, searchDebounced } = useDebouncedSearch(200)
@@ -115,6 +118,11 @@ const grouped = computed(() => {
     })
   }
   return map
+})
+
+const dutyOptions = computed(() => {
+  if (!draft.value.classId) return []
+  return classDutyStore.getDuties(draft.value.classId)
 })
 
 function openCreate(forClass?: string) {
@@ -252,11 +260,18 @@ const importFormat = ref<FormatType>('txt')
 const importTargetClass = ref<string>('')
 const importFile = ref<File | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
-/** 弹框模式: 手动模板导入 / AI 智能识别 */
-const importMode = ref<'manual' | 'ai'>('manual')
+/** 弹框模式: 手动模板导入 / AI 智能识别 / 识图导入 */
+const importMode = ref<'manual' | 'ai' | 'image'>('manual')
 
 const importHeaders = ref<string[]>([])
 const importRows = ref<string[][]>([])
+
+// 识图导入相关
+const importImageInput = ref<HTMLInputElement | null>(null)
+const importImageFile = ref<File | null>(null)
+const importImageDataUrl = ref<string | null>(null)
+const importImageAtt = ref<AIAttachment | null>(null)
+const isImageRecognizing = ref(false)
 
 /** AI 智能识别: 接收 AIImportPanel 解析出的 records, 转为表格 rows */
 function onAiRecords(records: Record<string, unknown>[]) {
@@ -335,6 +350,7 @@ function openImport() {
   importRows.value = []
   importFormat.value = 'txt'
   importMode.value = 'manual'
+  clearImportImage()
   importOpen.value = true
 }
 
@@ -363,6 +379,101 @@ function onTextInput() {
   const { headers, rows } = parsePastedText(importText.value)
   importHeaders.value = headers
   importRows.value = rows
+}
+
+function pickImportImage() {
+  importImageInput.value?.click()
+}
+
+async function onImportImageChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  try {
+    const att = await readFile(file)
+    if (att.kind !== 'image' || !att.dataUrl) {
+      toast.warning('请选择图片文件')
+      return
+    }
+    importImageFile.value = file
+    importImageAtt.value = att
+    importImageDataUrl.value = att.dataUrl
+  } catch (err) {
+    toast.error((err as Error).message)
+  }
+  const input = e.target as HTMLInputElement
+  input.value = ''
+}
+
+function clearImportImage() {
+  importImageFile.value = null
+  importImageDataUrl.value = null
+  importImageAtt.value = null
+}
+
+async function recognizeStudentsFromImage() {
+  if (!importImageAtt.value?.dataUrl) {
+    toast.warning('请先上传学生信息图片')
+    return
+  }
+  if (!isVisionModel(aiStore.settings.visionModel)) {
+    toast.warning('当前多模态模型不支持图片识别，请在「AI 对话」设置中切换为视觉模型（如 qwen3-vl-plus）')
+    return
+  }
+  isImageRecognizing.value = true
+  try {
+    const prompt = `请识别这张学生信息图片，提取每位学生的信息。
+请按以下 JSON 数组格式返回，不要添加任何额外说明：
+[
+  {"name":"张三","gender":"男","studentNo":"2025001","parentName":"张先生","parentPhone":"13800001111","note":""},
+  {"name":"李四","gender":"女","studentNo":"2025002","parentName":"李女士","parentPhone":"13800002222","note":""}
+]
+字段说明：
+- name: 学生姓名（必填）
+- gender: 性别，只能填「男」或「女」，无法判断时填「男」
+- studentNo: 学号，没有则空字符串
+- parentName: 家长姓名，没有则空字符串
+- parentPhone: 家长电话，没有则空字符串
+- note: 备注，没有则空字符串
+请确保学生姓名保留原始写法，学号保留原始数字。`
+
+    const content = buildUserContent(prompt, [importImageAtt.value]) as string | AIChatContentPart[]
+    const res = await aiChat({
+      messages: [{ role: 'user', content }],
+      modelType: 'vision',
+      stream: false,
+      temperature: 0.3,
+    })
+    applyRecognizedStudents(res)
+  } catch (e: any) {
+    if (e?.name === 'AbortError') return
+    const msg = e instanceof AIError ? e.message : e?.message || '识别失败'
+    toast.error(msg)
+  } finally {
+    isImageRecognizing.value = false
+  }
+}
+
+function applyRecognizedStudents(raw: string) {
+  let jsonStr = raw
+  const arrMatch = raw.match(/\[[\s\S]*\]/)
+  if (arrMatch) jsonStr = arrMatch[0]
+  let records: Record<string, unknown>[] = []
+  try {
+    records = JSON.parse(jsonStr)
+  } catch {
+    toast.warning('AI 返回无法解析，请重新上传或换一张清晰的图片')
+    return
+  }
+  if (!Array.isArray(records)) {
+    toast.warning('AI 返回格式不正确')
+    return
+  }
+  if (!records.length) {
+    toast.warning('未识别到学生信息')
+    return
+  }
+  onAiRecords(records)
+  toast.success(`已识别 ${records.length} 名学生，请核对后导入`)
 }
 
 async function downloadTemplate(fmt: FormatType) {
@@ -455,6 +566,7 @@ function parseImport() {
   importFile.value = null
   importHeaders.value = []
   importRows.value = []
+  clearImportImage()
   importOpen.value = false
 }
 
@@ -1195,7 +1307,7 @@ function saveComment() {
 // AI 生成单个学生评语
 async function generateAComment() {
   if (!detailStudent.value) return
-  if (!ai.settings.apiKey) {
+  if (!aiStore.settings.apiKey) {
     toast.error('请先在「AI 对话」右上角设置中配置 API Key')
     return
   }
@@ -1616,12 +1728,30 @@ async function generateAComment() {
           />
         </div>
         <div>
-          <label class="text-xs text-cocoa-500 ml-1">班级职务</label>
-          <input
+          <label class="text-xs text-cocoa-500 ml-1 flex items-center gap-1">
+            <Award :size="11" /> 班级职务
+          </label>
+          <select
             v-model="draft.duty"
             class="input-soft mt-1"
-            placeholder="如：班长、学习委员、语文课代表、组长"
           >
+            <option value="">
+              — 无 —
+            </option>
+            <option
+              v-for="d in dutyOptions"
+              :key="d"
+              :value="d"
+            >
+              {{ d }}
+            </option>
+          </select>
+          <div
+            v-if="!dutyOptions.length && draft.classId"
+            class="text-[11px] text-cocoa-400 mt-1"
+          >
+            该班级尚未配置职务，请到「班级管理 → 班级职务设置」中添加
+          </div>
         </div>
         <div>
           <label class="text-xs text-cocoa-500 ml-1">标签（用逗号分隔）</label>
@@ -1657,8 +1787,8 @@ async function generateAComment() {
     >
       <div class="space-y-4">
         <p class="text-sm text-cocoa-500">
-          支持 <b>TXT / Excel 模板</b> 导入, 也可以用 <b class="text-butter-600">AI 智能识别</b> 直接粘贴任意格式文本.
-          字段顺序: 姓名、性别、学号、家长姓名、家长电话、备注.
+          支持 <b>TXT / Excel 模板</b> 导入、<b class="text-butter-600">AI 智能识别</b> 粘贴文本，或 <b class="text-butter-600">识图导入</b> 上传图片自动识别。
+          字段顺序: 姓名、性别、学号、家长姓名、家长电话、备注。
         </p>
 
         <div>
@@ -1693,6 +1823,13 @@ async function generateAComment() {
           >
             <Sparkles :size="12" /> AI 智能识别
           </button>
+          <button
+            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
+            :class="importMode === 'image' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
+            @click="importMode = 'image'"
+          >
+            <Camera :size="12" /> 识图导入
+          </button>
         </div>
 
         <!-- AI 智能识别模式 -->
@@ -1725,6 +1862,83 @@ async function generateAComment() {
           :textarea-min-height="160"
           :on-parsed="onAiRecords"
         />
+
+        <!-- 识图导入模式 -->
+        <div
+          v-else-if="importMode === 'image'"
+          class="space-y-3"
+        >
+          <div
+            class="border-2 border-dashed border-cocoa-100 rounded-2xl p-4 text-center cursor-pointer hover:border-butter-400 transition"
+            @click="pickImportImage"
+          >
+            <div
+              v-if="!importImageDataUrl"
+              class="text-cocoa-500"
+            >
+              <ImageIcon
+                :size="20"
+                class="mx-auto mb-1"
+              />
+              <div class="text-sm">
+                点击上传学生信息图片
+              </div>
+              <div class="text-[11px] mt-1">
+                支持 .png / .jpg / .jpeg / .webp
+              </div>
+            </div>
+            <div
+              v-else
+              class="relative"
+            >
+              <img
+                :src="importImageDataUrl"
+                class="max-h-48 mx-auto rounded-lg border border-cocoa-100"
+              >
+              <button
+                class="absolute top-1 right-1 p-1 bg-white/90 rounded-full text-cocoa-500 hover:text-sakura-500"
+                @click.stop="clearImportImage"
+              >
+                <X :size="14" />
+              </button>
+            </div>
+          </div>
+          <input
+            ref="importImageInput"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="onImportImageChange"
+          >
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              class="btn-primary"
+              :disabled="!importImageDataUrl || isImageRecognizing"
+              @click="recognizeStudentsFromImage"
+            >
+              <Camera
+                v-if="!isImageRecognizing"
+                :size="14"
+              />
+              <Loader2
+                v-else
+                :size="14"
+                class="animate-spin"
+              />
+              {{ isImageRecognizing ? '识别中...' : '点击识图' }}
+            </button>
+            <span class="text-[11px] text-cocoa-500">
+              多模态模型：{{ aiStore.settings.visionModel || '未设置' }}
+              <span
+                v-if="!isVisionModel(aiStore.settings.visionModel)"
+                class="text-sakura-500"
+              >（不支持图片识别）</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-cocoa-500">
+            识图结果会自动合并到下方预览，确认无误后再点击「确认导入」。
+          </p>
+        </div>
 
         <!-- 模板导入模式 -->
         <template v-else>
@@ -1825,97 +2039,98 @@ async function generateAComment() {
             />
           </div>
 
-          <!-- 预览 -->
-          <div
-            v-if="importRows.length"
-            class="card-flat p-3"
-          >
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm font-medium flex items-center gap-2">
-                <AlertCircle
-                  :size="14"
-                  class="text-cocoa-500"
-                />
-                解析预览（表头：{{ importHeaders.join(' / ') || '自动识别' }}）
-              </div>
-              <div class="flex items-center gap-2 text-xs">
-                <span class="chip bg-mint-100 text-mint-500">
-                  <CheckCircle2 :size="10" /> 有效 {{ importValidCount }}
-                </span>
-                <span
-                  v-if="importInvalidCount"
-                  class="chip bg-sakura-100 text-sakura-500"
-                >
-                  <AlertCircle :size="10" /> 错误 {{ importInvalidCount }}
-                </span>
-              </div>
+        </template>
+
+        <!-- 预览（通用） -->
+        <div
+          v-if="importRows.length"
+          class="card-flat p-3"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm font-medium flex items-center gap-2">
+              <AlertCircle
+                :size="14"
+                class="text-cocoa-500"
+              />
+              解析预览（表头：{{ importHeaders.join(' / ') || '自动识别' }}）
             </div>
-            <div class="max-h-[200px] overflow-y-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-cocoa-500 border-b border-cocoa-100/60">
-                    <th class="py-1.5 pr-2">
-                      姓名
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      性别
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      学号
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      家长
-                    </th>
-                    <th class="py-1.5 pr-2">
-                      电话
-                    </th>
-                    <th class="py-1.5">
-                      状态
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="(r, i) in importPreview"
-                    :key="i"
-                    class="border-b border-cocoa-100/40"
-                    :class="r.ok ? '' : 'bg-sakura-100/30'"
-                  >
-                    <td class="py-1.5 pr-2">
-                      {{ r.name || '（空）' }}
-                    </td>
-                    <td class="py-1.5 pr-2">
-                      {{ r.gender }}
-                    </td>
-                    <td class="py-1.5 pr-2 text-cocoa-500">
-                      {{ r.studentNo || '-' }}
-                    </td>
-                    <td class="py-1.5 pr-2 text-cocoa-500">
-                      {{ r.parentName || '-' }}
-                    </td>
-                    <td class="py-1.5 pr-2 text-cocoa-500">
-                      {{ r.parentPhone || '-' }}
-                    </td>
-                    <td class="py-1.5">
-                      <span
-                        v-if="r.ok"
-                        class="text-mint-500 text-xs inline-flex items-center gap-1"
-                      >
-                        <CheckCircle2 :size="10" /> 就绪
-                      </span>
-                      <span
-                        v-else
-                        class="text-sakura-500 text-xs inline-flex items-center gap-1"
-                      >
-                        <AlertCircle :size="10" /> {{ r.reason }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="chip bg-mint-100 text-mint-500">
+                <CheckCircle2 :size="10" /> 有效 {{ importValidCount }}
+              </span>
+              <span
+                v-if="importInvalidCount"
+                class="chip bg-sakura-100 text-sakura-500"
+              >
+                <AlertCircle :size="10" /> 错误 {{ importInvalidCount }}
+              </span>
             </div>
           </div>
-        </template>
+          <div class="max-h-[200px] overflow-y-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-cocoa-500 border-b border-cocoa-100/60">
+                  <th class="py-1.5 pr-2">
+                    姓名
+                  </th>
+                  <th class="py-1.5 pr-2">
+                    性别
+                  </th>
+                  <th class="py-1.5 pr-2">
+                    学号
+                  </th>
+                  <th class="py-1.5 pr-2">
+                    家长
+                  </th>
+                  <th class="py-1.5 pr-2">
+                    电话
+                  </th>
+                  <th class="py-1.5">
+                    状态
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(r, i) in importPreview"
+                  :key="i"
+                  class="border-b border-cocoa-100/40"
+                  :class="r.ok ? '' : 'bg-sakura-100/30'"
+                >
+                  <td class="py-1.5 pr-2">
+                    {{ r.name || '（空）' }}
+                  </td>
+                  <td class="py-1.5 pr-2">
+                    {{ r.gender }}
+                  </td>
+                  <td class="py-1.5 pr-2 text-cocoa-500">
+                    {{ r.studentNo || '-' }}
+                  </td>
+                  <td class="py-1.5 pr-2 text-cocoa-500">
+                    {{ r.parentName || '-' }}
+                  </td>
+                  <td class="py-1.5 pr-2 text-cocoa-500">
+                    {{ r.parentPhone || '-' }}
+                  </td>
+                  <td class="py-1.5">
+                    <span
+                      v-if="r.ok"
+                      class="text-mint-500 text-xs inline-flex items-center gap-1"
+                    >
+                      <CheckCircle2 :size="10" /> 就绪
+                    </span>
+                    <span
+                      v-else
+                      class="text-sakura-500 text-xs inline-flex items-center gap-1"
+                    >
+                      <AlertCircle :size="10" /> {{ r.reason }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <template #footer>
         <button

@@ -10,6 +10,7 @@ import { fmtScore } from '../utils/format'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import AIImportPanel from '../components/common/AIImportPanel.vue'
+import GradeTrend from './GradeTrend.vue'
 import {
   Plus,
   Save,
@@ -30,18 +31,26 @@ import {
   TrendingDown,
   Trophy,
   Sparkles,
+  Camera,
+  Image as ImageIcon,
+  Loader2,
 } from 'lucide-vue-next'
 import { subjectPalette } from '../seed'
 import { useToastStore } from '../stores/toast'
 import { parseTableFile, parsePastedText, downloadTXT, downloadExcel, type FormatType } from '../utils/excel'
 import { useUserStore, currentTermStr, normalizeTerm } from '../stores/user'
 import { classSubjects } from '../utils'
+import { isVisionModel, aiChat, AIError, type AIChatContentPart } from '../utils/aiCall'
+import { useAIStore } from '../stores/ai'
+import { readFile, buildUserContent, type AIAttachment } from '../utils/aiAttachment'
 
 const classStore = useClassStore()
 const gradeStore = useGradeStore()
 const examStore = useExamStore()
 const userStore = useUserStore()
 const toast = useToastStore()
+const aiStore = useAIStore()
+const currentModelIsVision = computed(() => isVisionModel(aiStore.settings.visionModel))
 
 const FALLBACK_SUBJECTS = ['语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育']
 
@@ -160,9 +169,17 @@ const edit = ref<Grade | null>(null)
 const editSnapshot = ref('')
 const entryMode = ref<'single' | 'all' | 'multi'>('single')
 const entrySubjects = ref<string[]>([])
+// 新增：录入方式（人工输入 / 识图录入），仅新增成绩时可用
+const inputMode = ref<'manual' | 'image'>('manual')
 // 多科目模式下：额外科目分数（按 学生id 存）
 // 主科目（entrySubjects[0]）的分数直接写在 edit.value.scores 上
 const extraScores = ref<Record<string, Record<string, number | null>>>({})
+// 识图录入相关
+const scoreImageInput = ref<HTMLInputElement | null>(null)
+const scoreImageFile = ref<File | null>(null)
+const scoreImageDataUrl = ref<string | null>(null)
+const scoreImageAtt = ref<AIAttachment | null>(null)
+const isRecognizing = ref(false)
 
 /** 录入/编辑弹框中, 当前班级下考试管理里已存在的考试名称 */
 const availableExamNames = computed<string[]>(() => {
@@ -216,6 +233,156 @@ function switchEntryMode(m: 'single' | 'all' | 'multi') {
   ensureExtraScores()
 }
 
+function switchInputMode(m: 'manual' | 'image') {
+  inputMode.value = m
+}
+
+function pickScoreImage() {
+  scoreImageInput.value?.click()
+}
+
+async function onScoreImageChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  try {
+    const att = await readFile(file)
+    if (att.kind !== 'image' || !att.dataUrl) {
+      toast.warning('请选择图片文件')
+      return
+    }
+    scoreImageFile.value = file
+    scoreImageAtt.value = att
+    scoreImageDataUrl.value = att.dataUrl
+  } catch (err) {
+    toast.error((err as Error).message)
+  }
+  const input = e.target as HTMLInputElement
+  input.value = ''
+}
+
+function clearScoreImage() {
+  scoreImageFile.value = null
+  scoreImageDataUrl.value = null
+  scoreImageAtt.value = null
+}
+
+async function recognizeScoresFromImage() {
+  if (!edit.value) return
+  if (!scoreImageAtt.value?.dataUrl) {
+    toast.warning('请先上传成绩表图片')
+    return
+  }
+  if (!currentModelIsVision.value) {
+    toast.warning('当前模型不支持图片识别，请在「AI 对话」设置中切换为多模态模型（如 qwen3-vl-plus）')
+    return
+  }
+  isRecognizing.value = true
+  try {
+    const students = classStore.studentsOf(edit.value.classId)
+    const studentNames = students.map((s) => s.name).join('、')
+    const subjectsToEnter = editId.value ? [edit.value.subject] : [...entrySubjects.value]
+    if (!subjectsToEnter.length) {
+      toast.warning('请先选择要录入的科目')
+      return
+    }
+    const subjectList = subjectsToEnter.join('、')
+    const prompt = `请识别这张成绩表图片，提取学生姓名和对应科目的分数。
+本班学生名单（按姓名匹配）：${studentNames}
+需要录入的科目：${subjectList}
+请严格按以下 JSON 数组格式返回，不要添加任何额外说明：
+[
+  {"name":"张三","scores":{"语文":92,"数学":85}},
+  {"name":"李四","scores":{"语文":78,"数学":90}}
+]
+其中 name 为学生姓名，scores 的键是科目名，值是数字分数。如果某学生某科缺考或无法识别，对应值填 null。`
+
+    const content = buildUserContent(prompt, [scoreImageAtt.value]) as string | AIChatContentPart[]
+    const res = await aiChat({
+      messages: [{ role: 'user', content }],
+      modelType: 'vision',
+      stream: false,
+      temperature: 0.3,
+    })
+    applyRecognizedScores(res, students, subjectsToEnter)
+    toast.success('已识别并填充分数，请核对后保存')
+  } catch (e: any) {
+    if (e?.name === 'AbortError') return
+    const msg = e instanceof AIError ? e.message : e?.message || '识别失败'
+    toast.error(msg)
+  } finally {
+    isRecognizing.value = false
+  }
+}
+
+function applyRecognizedScores(
+  raw: string,
+  students: ReturnType<typeof classStore.studentsOf>,
+  subjectsToEnter: string[],
+) {
+  if (!edit.value) return
+  let jsonStr = raw
+  const arrMatch = raw.match(/\[[\s\S]*\]/)
+  if (arrMatch) jsonStr = arrMatch[0]
+  let records: Array<{ name?: string; scores?: Record<string, number | string | null> }> = []
+  try {
+    records = JSON.parse(jsonStr)
+  } catch {
+    toast.warning('AI 返回无法解析，请手动输入')
+    return
+  }
+  if (!Array.isArray(records)) {
+    toast.warning('AI 返回格式不正确')
+    return
+  }
+
+  const nameToStudent = new Map<string, (typeof students)[0]>()
+  for (const s of students) {
+    nameToStudent.set(s.name.trim(), s)
+  }
+
+  let filled = 0
+  for (const r of records) {
+    const name = String(r.name || '').trim()
+    const student = nameToStudent.get(name)
+    if (!student) continue
+    const scores = r.scores || {}
+    for (const subj of subjectsToEnter) {
+      let v = scores[subj]
+      if (v === undefined || v === null) continue
+      if (typeof v === 'string') {
+        const trimmed = v.trim()
+        if (trimmed === '' || trimmed === '-' || trimmed === '缺' || trimmed === '缺考') {
+          v = null
+        } else {
+          v = Number(trimmed)
+        }
+      }
+      if (v === null || !Number.isFinite(v)) continue
+
+      if (editId.value) {
+        const sc = edit.value.scores.find((x) => x.studentId === student.id)
+        if (sc) {
+          sc.score = v
+          filled++
+        }
+      } else if (subj === entrySubjects.value[0]) {
+        const sc = edit.value.scores.find((x) => x.studentId === student.id)
+        if (sc) {
+          sc.score = v
+          filled++
+        }
+      } else {
+        if (!extraScores.value[subj]) extraScores.value[subj] = {}
+        extraScores.value[subj][student.id] = v
+        filled++
+      }
+    }
+  }
+  if (!filled) {
+    toast.warning('未识别到可匹配的学生分数')
+  }
+}
+
 function ensureExtraScores() {
   if (!edit.value) return
   if (entryMode.value === 'single') {
@@ -251,8 +418,10 @@ function openCreateFromQuery(opts: { classId?: string; examName?: string; subjec
   if (!filterClass.value) filterClass.value = opts.classId
   editId.value = null
   entryMode.value = 'single'
+  inputMode.value = 'manual'
   entrySubjects.value = []
   extraScores.value = {}
+  clearScoreImage()
   filterClass.value = opts.classId
   const subjects = opts.subjects && opts.subjects.length ? opts.subjects : ['语文']
   edit.value = {
@@ -289,8 +458,10 @@ function openCreate() {
   }
   editId.value = null
   entryMode.value = 'single'
+  inputMode.value = 'manual'
   entrySubjects.value = []
   extraScores.value = {}
+  clearScoreImage()
   edit.value = {
     id: '',
     classId: filterClass.value,
@@ -327,8 +498,10 @@ function openEdit(g: Grade) {
   edit.value = JSON.parse(JSON.stringify(g))
   editSnapshot.value = JSON.stringify(edit.value)
   entryMode.value = 'single'
+  inputMode.value = 'manual'
   entrySubjects.value = [g.subject]
   extraScores.value = {}
+  clearScoreImage()
   editOpen.value = true
 }
 
@@ -412,6 +585,7 @@ function saveEdit() {
   if (editId.value) {
     gradeStore.updateGrade(editId.value, edit.value)
     toast.success('已保存成绩')
+    clearScoreImage()
     editOpen.value = false
     return
   }
@@ -420,6 +594,7 @@ function saveEdit() {
     const examId = findExamId(edit.value.classId, examName, date)
     gradeStore.addGrade({ ...edit.value, subject: edit.value.subject, examId })
     toast.success(`已录入 ${edit.value.subject} 成绩`)
+    clearScoreImage()
     editOpen.value = false
     return
   }
@@ -441,6 +616,7 @@ function saveEdit() {
     })
   }
   toast.success(`已为 ${list.length} 个科目录入成绩`)
+  clearScoreImage()
   editOpen.value = false
 }
 
@@ -488,6 +664,7 @@ function pct(n: number, total: number) {
 
 // ============ 综合分析 ============
 const analysisOpen = ref(false)
+const analysisActiveTab = ref<'overview' | 'trend'>('overview')
 const analysisClassId = ref<string>('')
 const analysisExamName = ref<string>('')
 
@@ -669,6 +846,7 @@ function radarPoint(i: number, r: number): [number, number] {
 }
 
 function openAnalysis() {
+  analysisActiveTab.value = 'overview'
   analysisClassId.value = filterClass.value || classStore.classes[0]?.id || ''
   // 默认选最近一次考试
   const exs = analysisExams.value
@@ -1293,12 +1471,12 @@ function confirmImport() {
         v-if="edit"
         class="space-y-3"
       >
-        <!-- 模式切换（仅新增时显示） -->
+        <!-- 录入科目（仅新增时显示） -->
         <div
           v-if="!editId"
           class="flex items-center gap-2 flex-wrap"
         >
-          <span class="text-xs text-cocoa-500">录入模式：</span>
+          <span class="text-xs text-cocoa-500">录入科目：</span>
           <button
             class="chip border transition"
             :class="
@@ -1331,6 +1509,36 @@ function confirmImport() {
             @click="switchEntryMode('multi')"
           >
             ☑️ 多选科目
+          </button>
+        </div>
+
+        <!-- 录入方式（仅新增时显示） -->
+        <div
+          v-if="!editId"
+          class="flex items-center gap-2 flex-wrap"
+        >
+          <span class="text-xs text-cocoa-500">录入方式：</span>
+          <button
+            class="chip border transition"
+            :class="
+              inputMode === 'manual'
+                ? 'bg-butter-300 border-butter-500 text-cocoa-900'
+                : 'bg-white/70 border-white/80 text-cocoa-700 hover:bg-butter-100'
+            "
+            @click="switchInputMode('manual')"
+          >
+            ✍️ 人工输入
+          </button>
+          <button
+            class="chip border transition"
+            :class="
+              inputMode === 'image'
+                ? 'bg-butter-300 border-butter-500 text-cocoa-900'
+                : 'bg-white/70 border-white/80 text-cocoa-700 hover:bg-butter-100'
+            "
+            @click="switchInputMode('image')"
+          >
+            📷 识图录入
           </button>
         </div>
 
@@ -1437,6 +1645,81 @@ function confirmImport() {
           <label class="text-xs text-cocoa-500 ml-1">
             分数（满分 {{ currentSubjectFullScore }}）
           </label>
+
+          <!-- 识图录入：图片上传与识别 -->
+          <div
+            v-if="inputMode === 'image' && !editId"
+            class="card-flat p-3 mt-1 mb-3"
+          >
+            <div
+              class="border-2 border-dashed border-cocoa-100 rounded-2xl p-4 text-center cursor-pointer hover:border-butter-400 transition"
+              @click="pickScoreImage"
+            >
+              <div
+                v-if="!scoreImageDataUrl"
+                class="text-cocoa-500"
+              >
+                <ImageIcon
+                  :size="20"
+                  class="mx-auto mb-1"
+                />
+                <div class="text-sm">
+                  点击上传成绩表图片
+                </div>
+                <div class="text-[11px] mt-1">
+                  支持 .png / .jpg / .jpeg / .webp
+                </div>
+              </div>
+              <div
+                v-else
+                class="relative"
+              >
+                <img
+                  :src="scoreImageDataUrl"
+                  class="max-h-48 mx-auto rounded-lg border border-cocoa-100"
+                >
+                <button
+                  class="absolute top-1 right-1 p-1 bg-white/90 rounded-full text-cocoa-500 hover:text-sakura-500"
+                  @click.stop="clearScoreImage"
+                >
+                  <X :size="14" />
+                </button>
+              </div>
+            </div>
+            <input
+              ref="scoreImageInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onScoreImageChange"
+            >
+            <div class="flex items-center gap-2 mt-3">
+              <button
+                class="btn-primary"
+                :disabled="!scoreImageDataUrl || isRecognizing"
+                @click="recognizeScoresFromImage"
+              >
+                <Camera
+                  v-if="!isRecognizing"
+                  :size="14"
+                />
+                <Loader2
+                  v-else
+                  :size="14"
+                  class="animate-spin"
+                />
+                {{ isRecognizing ? '识别中...' : '点击识图' }}
+              </button>
+              <span class="text-[11px] text-cocoa-500">
+                多模态模型：{{ aiStore.settings.visionModel || '未设置' }}
+                <span
+                  v-if="!isVisionModel(aiStore.settings.visionModel)"
+                  class="text-sakura-500"
+                >（不支持图片识别）</span>
+              </span>
+            </div>
+          </div>
+
           <div class="card-flat p-3 mt-1 max-h-[400px] overflow-y-auto">
             <!-- 无学生提示 -->
             <div
@@ -2092,58 +2375,77 @@ function confirmImport() {
         v-if="analysisOpen"
         class="space-y-5"
       >
-        <!-- 选择器：班级 + 考试 -->
-        <div class="card-flat p-3 flex flex-wrap items-end gap-3">
-          <div class="flex-1 min-w-[180px]">
-            <label class="text-xs text-cocoa-500 ml-1">班级</label>
-            <select
-              v-model="analysisClassId"
-              class="input-soft mt-1"
-            >
-              <option
-                v-for="c in classStore.classes"
-                :key="c.id"
-                :value="c.id"
-              >
-                {{ c.name }}
-              </option>
-            </select>
-          </div>
-          <div class="flex-1 min-w-[220px]">
-            <label class="text-xs text-cocoa-500 ml-1">考试</label>
-            <select
-              v-model="analysisExamName"
-              class="input-soft mt-1"
-            >
-              <option
-                v-if="!analysisExams.length"
-                value=""
-                disabled
-              >
-                暂无考试
-              </option>
-              <option
-                v-for="e in analysisExams"
-                :key="e"
-                :value="e"
-              >
-                {{ e }}
-              </option>
-            </select>
-          </div>
-          <div class="text-[11px] text-cocoa-500 pb-2">
-            <span v-if="analysisStats.length">
-              共 <span class="text-cocoa-900 font-semibold">{{ analysisStats.length }}</span> 个科目，
-              综合 <span class="text-cocoa-900 font-semibold">{{ analysisAggregate?.count || 0 }}</span> 人次参考
-            </span>
-            <span
-              v-else
-              class="text-sakura-500"
-            >该班级暂无该考试的成绩数据</span>
-          </div>
+        <!-- 页签切换 -->
+        <div class="flex items-center gap-1 card-flat p-1 w-fit">
+          <button
+            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
+            :class="analysisActiveTab === 'overview' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
+            @click="analysisActiveTab = 'overview'"
+          >
+            <BarChart3 :size="12" /> 综合概览
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
+            :class="analysisActiveTab === 'trend' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
+            @click="analysisActiveTab = 'trend'"
+          >
+            <TrendingUp :size="12" /> 成绩趋势
+          </button>
         </div>
 
-        <div v-if="analysisStats.length">
+        <template v-if="analysisActiveTab === 'overview'">
+          <!-- 选择器：班级 + 考试 -->
+          <div class="card-flat p-3 flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-[180px]">
+              <label class="text-xs text-cocoa-500 ml-1">班级</label>
+              <select
+                v-model="analysisClassId"
+                class="input-soft mt-1"
+              >
+                <option
+                  v-for="c in classStore.classes"
+                  :key="c.id"
+                  :value="c.id"
+                >
+                  {{ c.name }}
+                </option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[220px]">
+              <label class="text-xs text-cocoa-500 ml-1">考试</label>
+              <select
+                v-model="analysisExamName"
+                class="input-soft mt-1"
+              >
+                <option
+                  v-if="!analysisExams.length"
+                  value=""
+                  disabled
+                >
+                  暂无考试
+                </option>
+                <option
+                  v-for="e in analysisExams"
+                  :key="e"
+                  :value="e"
+                >
+                  {{ e }}
+                </option>
+              </select>
+            </div>
+            <div class="text-[11px] text-cocoa-500 pb-2">
+              <span v-if="analysisStats.length">
+                共 <span class="text-cocoa-900 font-semibold">{{ analysisStats.length }}</span> 个科目，
+                综合 <span class="text-cocoa-900 font-semibold">{{ analysisAggregate?.count || 0 }}</span> 人次参考
+              </span>
+              <span
+                v-else
+                class="text-sakura-500"
+              >该班级暂无该考试的成绩数据</span>
+            </div>
+          </div>
+
+          <div v-if="analysisStats.length">
           <!-- 顶部综合指标卡片 -->
           <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
             <div class="card-flat p-3 text-center">
@@ -2693,12 +2995,15 @@ function confirmImport() {
           </div>
         </div>
 
-        <EmptyState
-          v-else
-          title="该考试暂无数据"
-          desc="请先在成绩管理录入或批量导入该次考试的成绩"
-          icon="📈"
-        />
+          <EmptyState
+            v-else
+            title="该考试暂无数据"
+            desc="请先在成绩管理录入或批量导入该次考试的成绩"
+            icon="📈"
+          />
+        </template>
+
+        <GradeTrend v-else-if="analysisActiveTab === 'trend'" />
       </div>
       <template #footer>
         <button

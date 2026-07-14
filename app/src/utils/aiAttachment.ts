@@ -13,6 +13,7 @@
  */
 
 import { extractDocumentText } from './document'
+import type { AIChatContentPart } from './aiCall'
 
 export type AIAttachmentKind = 'text' | 'image' | 'doc' | 'unsupported'
 
@@ -180,7 +181,7 @@ function fileToDataUrl(file: File): Promise<string> {
 export function buildUserContent(
   text: string,
   attachments: AIAttachment[],
-): string | Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }> {
+): string | AIChatContentPart[] {
   const textAtts = attachments.filter(
     (a) => (a.kind === 'text' || a.kind === 'doc') && a.text,
   )
@@ -197,7 +198,7 @@ export function buildUserContent(
   }
 
   // 有图片附件 -> 走 multimodal
-  const parts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }> = []
+  const parts: AIChatContentPart[] = []
   if (text.trim()) parts.push({ type: 'text', text })
   if (textAtts.length) {
     const intro = textAtts

@@ -162,7 +162,20 @@ function leftCount(cols: number) {
 }
 
 function assignStudent(row: number, col: number, studentId: string) {
-  draft.value.seats[row][col] = studentId || null
+  if (!studentId) {
+    draft.value.seats[row][col] = null
+    return
+  }
+  // 若该学号已分配在其他座位，先将其移出原位置，再放到新位置
+  for (let r = 0; r < draft.value.seats.length; r++) {
+    for (let c = 0; c < draft.value.seats[r].length; c++) {
+      if (r === row && c === col) continue
+      if (draft.value.seats[r][c] === studentId) {
+        draft.value.seats[r][c] = null
+      }
+    }
+  }
+  draft.value.seats[row][col] = studentId
 }
 
 function clearSeat(row: number, col: number) {

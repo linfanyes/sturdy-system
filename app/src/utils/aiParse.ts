@@ -63,7 +63,7 @@ export async function parseByAI<T = Record<string, unknown>>(
     return { ok: false, data: [], raw: '', error: '请先在「AI 对话 → 设置」中配置 API Key' }
   }
   const baseUrl = (settings.baseUrl || AI_DASHSCOPE_BASE_URL).replace(/\/$/, '')
-  const model = settings.model || 'qwen3.7-plus'
+  const model = settings.textModel || 'qwen3.7-plus'
 
   const fields = Object.entries(opts.schema.fields)
     .map(([k, v]) => `- ${k}: ${v}`)

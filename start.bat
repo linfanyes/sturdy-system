@@ -88,7 +88,7 @@ if /I "%MODE%"=="preview" goto :RUNNER_PREVIEW
 
 REM dev runner
 >> "%RUNNER_BAT%" echo echo Starting dev server on port %PORT%...
->> "%RUNNER_BAT%" echo call npx vite --port %PORT% --host
+>> "%RUNNER_BAT%" echo call npx vite --port %PORT% --host localhost
 goto :RUNNER_DONE
 
 :RUNNER_PREVIEW
@@ -96,7 +96,7 @@ goto :RUNNER_DONE
 >> "%RUNNER_BAT%" echo call npm run build
 >> "%RUNNER_BAT%" echo if errorlevel 1 exit /b 1
 >> "%RUNNER_BAT%" echo echo Starting preview server on port %PORT%...
->> "%RUNNER_BAT%" echo call npx vite preview --port %PORT% --host
+>> "%RUNNER_BAT%" echo call npx vite preview --port %PORT% --host localhost
 :RUNNER_DONE
 
 if not exist "%RUNNER_BAT%" goto :RUNNER_FAIL

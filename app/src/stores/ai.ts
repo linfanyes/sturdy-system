@@ -8,17 +8,35 @@ import { getStorageKey, onUserChange } from '../utils/storage'
 const SETTINGS_KEY = () => getStorageKey('ai-settings')
 const CHATS_KEY = () => getStorageKey('ai-chats')
 
-/** 默认模型列表（含 deepseek 系列） */
-export const DEFAULT_AI_MODELS = ['qwen3.7-plus', 'qwen3-vl-plus']
+/** 默认文本模型列表 */
+export const DEFAULT_TEXT_MODELS = ['qwen3.7-plus', 'deepseek-chat', 'deepseek-reasoner']
+
+/** 默认多模态模型列表 */
+export const DEFAULT_VISION_MODELS = ['qwen3-vl-plus', 'gpt-4o', 'qwen-vl-max']
 
 const DEFAULT_SETTINGS: AISettings = {
   baseUrl: AI_DASHSCOPE_BASE_URL,
   apiKey: '',
-  model: 'qwen3.7-plus',
-  temperature: 0.6,
+  textModel: 'qwen3.7-plus',
+  visionModel: 'qwen3-vl-plus',
+  temperature: 0.8,
   aiName: '小林子',
   systemPrompt:
     '你是一位亲切、专业的教师助理，名字叫「小林子」。回答要简洁、清晰、有条理。涉及数据时尽量用列表或表格，方便老师快速理解。\n\n你已被自动注入本系统的「使用说明书」和老师本人的班级/学生/成绩/课表/笔记/待办/奖惩等真实数据。\n- 当老师问到「这个系统怎么用 / XX功能在哪里 / 如何操作」时, 优先基于说明书回答, 准确给出入口路径和操作步骤。\n- 当老师问到「我的XX班级/学生/成绩/课表/笔记」时, 基于已注入的真实数据回答, 不要编造。',
+}
+
+function migrateSettings(data: Partial<AISettings>): AISettings {
+  const merged: AISettings = { ...DEFAULT_SETTINGS, ...data }
+  // 兼容旧版单一 model 字段：若旧 model 是视觉模型则也作为 visionModel，否则仅作为 textModel
+  if (merged.model && !merged.textModel && !merged.visionModel) {
+    const m = merged.model.toLowerCase()
+    const looksVision = /vl|vision|gpt-4o|gpt-4-turbo|glm-4v|qwen-vl|longcat|gemini|claude|doubao-vision|moonshot|kimi/i.test(m)
+    merged.textModel = looksVision ? DEFAULT_SETTINGS.textModel : merged.model
+    merged.visionModel = looksVision ? merged.model : DEFAULT_SETTINGS.visionModel
+  }
+  merged.textModel = merged.textModel || DEFAULT_SETTINGS.textModel
+  merged.visionModel = merged.visionModel || DEFAULT_SETTINGS.visionModel
+  return merged
 }
 
 function loadSettings(): AISettings {
@@ -26,7 +44,7 @@ function loadSettings(): AISettings {
     const raw = localStorage.getItem(SETTINGS_KEY())
     if (raw) {
       const data = JSON.parse(raw)
-      return { ...DEFAULT_SETTINGS, ...data }
+      return migrateSettings(data)
     }
   } catch (e) {
     /* noop */
@@ -124,6 +142,8 @@ export const useAIStore = defineStore('ai', () => {
   watch(
     settings,
     (val) => {
+      // 安全提示：当前 API Key 以明文形式持久化到 localStorage（按用户隔离）。
+      // 浏览器/纯前端环境无法安全地长期保存密钥，后续可考虑增加「仅当前会话记住」开关。
       localStorage.setItem(SETTINGS_KEY(), JSON.stringify(val))
     },
     { deep: true },

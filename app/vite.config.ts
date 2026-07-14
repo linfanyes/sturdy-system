@@ -15,7 +15,7 @@ export default defineConfig({
   base: './', // 相对路径基础, 适配任意部署根目录
   server: {
     port: 5201, // 默认开发端口, 配合 hosts 中的 teacherWorkStation:5201
-    host: true, // 监听所有网卡, 允许通过本地域名访问
+    host: 'localhost', // 仅监听本地回环，避免开发期间局域网暴露
   },
   build: {
     sourcemap: false, // 生产环境不生成 sourcemap, 减小构建体积

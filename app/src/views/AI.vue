@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
-import { useAIStore, DEFAULT_AI_MODELS } from '../stores/ai'
+import { useAIStore, DEFAULT_TEXT_MODELS, DEFAULT_VISION_MODELS } from '../stores/ai'
 import { AI_DASHSCOPE_BASE_URL } from '../utils/aiBase'
 import { useUserStore } from '../stores/user'
 import { useClassStore } from '../stores/class'
@@ -45,7 +45,7 @@ import {
   formatSize as fmtSize,
   type AIAttachment,
 } from '../utils/aiAttachment'
-import { isVisionModel, VISION_MODEL_EXAMPLES } from '../utils/aiCall'
+import { aiChat, AIError, isVisionModel, VISION_MODEL_EXAMPLES } from '../utils/aiCall'
 import { parseByAI, type AISchema } from '../utils/aiParse'
 import ToolBackButton from '../components/common/ToolBackButton.vue'
 // @ts-ignore - Vite raw import
@@ -260,53 +260,79 @@ function buildContext(): string {
 
 // ============ Settings ============
 const settingsOpen = ref(false)
-const editSettings = ref(ai.settings)
-// 模型选择: 用独立状态区分「下拉默认项」与「自定义输入」,
-// 避免自定义输入框一输入就因 v-if 条件翻转而消失 (原 bug: 只能输入一个字符)
-const modelSelect = ref('qwen3.7-plus')
-const customModelName = ref('')
-// 文本模型备份：自动切换多模态前记住用户原来的文本模型，无图片时切回
-const textModelBackup = ref<string>(
-  ai.settings.model && !isVisionModel(ai.settings.model) ? ai.settings.model : 'qwen3.7-plus',
-)
-function syncModelFields() {
-  const m = ai.settings.model || 'qwen3.7-plus'
-  if (DEFAULT_AI_MODELS.includes(m)) {
-    modelSelect.value = m
-    customModelName.value = ''
+const editSettings = ref({ ...ai.settings })
+const settingsTab = ref<'text' | 'vision'>('text')
+
+// 文本模型选择状态
+const textModelSelect = ref('qwen3.7-plus')
+const textCustomModel = ref('')
+// 多模态模型选择状态
+const visionModelSelect = ref('qwen3-vl-plus')
+const visionCustomModel = ref('')
+
+function syncTextModelField() {
+  const m = editSettings.value.textModel || 'qwen3.7-plus'
+  if (DEFAULT_TEXT_MODELS.includes(m)) {
+    textModelSelect.value = m
+    textCustomModel.value = ''
   } else {
-    modelSelect.value = '__custom__'
-    customModelName.value = m
+    textModelSelect.value = '__custom__'
+    textCustomModel.value = m
   }
+}
+function syncVisionModelField() {
+  const m = editSettings.value.visionModel || 'qwen3-vl-plus'
+  if (DEFAULT_VISION_MODELS.includes(m)) {
+    visionModelSelect.value = m
+    visionCustomModel.value = ''
+  } else {
+    visionModelSelect.value = '__custom__'
+    visionCustomModel.value = m
+  }
+}
+function syncModelFields() {
+  syncTextModelField()
+  syncVisionModelField()
 }
 function openSettings() {
   editSettings.value = { ...ai.settings }
   syncModelFields()
+  settingsTab.value = 'text'
   settingsOpen.value = true
 }
-function saveSettings() {
-  // 自定义模型需从输入框取值, 且不能为空
-  if (modelSelect.value === '__custom__') {
-    const name = customModelName.value.trim()
-    if (!name) {
-      toast.warning('请输入自定义模型名')
-      return
-    }
-    editSettings.value.model = name
-  } else {
-    editSettings.value.model = modelSelect.value
+function resolveModelFromSelect(
+  select: string,
+  custom: string,
+  defaultName: string,
+): string {
+  if (select === '__custom__') {
+    const name = custom.trim()
+    return name || defaultName
   }
-  if (!editSettings.value.model?.trim()) {
+  return select || defaultName
+}
+function saveSettings() {
+  const textModel = resolveModelFromSelect(
+    textModelSelect.value,
+    textCustomModel.value,
+    'qwen3.7-plus',
+  )
+  const visionModel = resolveModelFromSelect(
+    visionModelSelect.value,
+    visionCustomModel.value,
+    'qwen3-vl-plus',
+  )
+  if (!textModel.trim() || !visionModel.trim()) {
     toast.warning('请选择或填写模型')
     return
   }
-  ai.setSettings({ ...editSettings.value })
+  ai.setSettings({
+    ...editSettings.value,
+    textModel,
+    visionModel,
+  })
   settingsOpen.value = false
   toast.success('设置已保存')
-  // 保存的是文本模型则记住，便于后续自动切回
-  if (!isVisionModel(ai.settings.model)) {
-    textModelBackup.value = ai.settings.model
-  }
 }
 function resetSettings() {
   if (!confirm('恢复默认设置?')) return
@@ -685,8 +711,6 @@ function scrollToBottom() {
   })
 }
 
-// 粗判模型是否支持图片 (多模态). 逻辑已抽到 utils/aiCall.ts 的 isVisionModel (含已知非视觉模型黑名单).
-
 const IMAGE_GEN_KEYWORDS = ['生成图片', '生成图', '画一张', '画个', '画一', '来张图', '画张', '作图', '画图', '绘图', '给我画', '画一幅', '生成照片', '生成图像']
 
 function hasImageGenerationIntent(text: string): boolean {
@@ -694,33 +718,14 @@ function hasImageGenerationIntent(text: string): boolean {
   return IMAGE_GEN_KEYWORDS.some((k) => t.includes(k.toLowerCase()))
 }
 
-function chatHasImageHistory(chat: ReturnType<typeof ai.createChat>) {
-  return chat.messages.some((m) => m.attachments?.some((a) => a.kind === 'image'))
-}
-
-/** 根据当前消息内容/附件自动在文本模型与多模态模型之间切换 */
-function autoSwitchModel(
+/** 根据当前输入判断应使用的模型类型 */
+function resolveChatModelType(
   text: string,
   attachments: AIAttachment[],
-  chat: ReturnType<typeof ai.createChat>,
-) {
+): 'text' | 'vision' {
   const hasImage = attachments.some((a) => a.kind === 'image')
-  const needsVision = hasImage || chatHasImageHistory(chat) || hasImageGenerationIntent(text)
-  const currentVision = isVisionModel(ai.settings.model)
-
-  if (needsVision && !currentVision) {
-    // 切到多模态前先备份当前文本模型
-    textModelBackup.value = ai.settings.model || 'qwen3.7-plus'
-    ai.settings.model = VISION_MODEL_EXAMPLES[0]
-    toast.info('检测到图片/作图需求，已自动切换至多模态模型')
-    return
-  }
-
-  if (!needsVision && currentVision) {
-    // 无图片需求时切回文本模型
-    ai.settings.model = textModelBackup.value || 'qwen3.7-plus'
-    toast.info('当前无图片需求，已自动切换回文本模型')
-  }
+  if (hasImage || hasImageGenerationIntent(text)) return 'vision'
+  return 'text'
 }
 
 // Send + stream response
@@ -757,20 +762,16 @@ async function send() {
     return
   }
 
-  // 根据附件/作图意图自动切换文本/多模态模型
-  autoSwitchModel(text, sendAtts, chat)
+  const modelType = resolveChatModelType(text, sendAtts)
 
-  // 图片附件 + 当前模型不支持多模态 -> 直接拦截, 给出可执行的指引
-  // (deepseek 全系都没有视觉能力, 即使把图片发给它也会被忽略, 造成「AI 看不到图」的错觉)
+  // 图片附件 + 配置的多模态模型本身不支持视觉 -> 拦截并提示
   const hasImage = sendAtts.some((a) => a.kind === 'image')
-  if (hasImage && !isVisionModel(ai.settings.model)) {
+  if (hasImage && !isVisionModel(ai.settings.visionModel)) {
     toast.error(
-      `当前模型「${ai.settings.model || '未设置'}」不支持图片识别（无法"看"图片）。\n请到右上角「设置」把模型改为支持多模态的模型，例如：${VISION_MODEL_EXAMPLES.slice(0, 4).join(' / ')} 等，再上传图片。`,
+      `多模态模型「${ai.settings.visionModel || '未设置'}」不支持图片识别。\n请到右上角「设置」切换到支持视觉的模型，例如：${VISION_MODEL_EXAMPLES.slice(0, 4).join(' / ')} 等，再上传图片。`,
     )
-    // 还原输入框与附件, 不发送
     input.value = text
     pendingAttachments.value = sendAtts
-    // 移除刚刚误加的 user / assistant 占位消息
     if (chat.messages.length >= 2) {
       chat.messages.splice(chat.messages.length - 2, 2)
     }
@@ -808,72 +809,32 @@ async function send() {
         return { role: m.role, content: m.content }
       })
 
-    const payload = {
-      model: ai.settings.model || 'qwen3.7-plus',
-      temperature: ai.settings.temperature ?? 0.6,
-      stream: true,
+    let acc = ''
+    const res = await aiChat({
       messages: [
         { role: 'system', content: systemContent },
         ...historyMessages,
         { role: 'user', content: userContent },
       ],
-    }
-    const baseUrl = (ai.settings.baseUrl || AI_DASHSCOPE_BASE_URL).replace(/\/$/, '')
-    const resp = await fetch(baseUrl + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + ai.settings.apiKey,
-      },
-      body: JSON.stringify(payload),
+      modelType,
+      temperature: ai.settings.temperature ?? 0.8,
+      stream: true,
       signal: abortCtrl.signal,
+      onDelta: (delta) => {
+        acc += delta
+        ai.updateLastMessage(chat.id, acc)
+        scrollToBottom()
+      },
     })
-    if (!resp.ok) {
-      const errText = await resp.text()
-      ai.updateLastMessage(chat.id, '❌ 请求失败: ' + resp.status + ' ' + errText.slice(0, 500))
-      return
-    }
-    const reader = resp.body?.getReader()
-    if (!reader) {
-      ai.updateLastMessage(chat.id, '❌ 浏览器不支持流式响应')
-      return
-    }
-    const decoder = new TextDecoder('utf-8')
-    let acc = ''
-    let buffer = ''
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || trimmed === 'data: [DONE]') continue
-        if (!trimmed.startsWith('data:')) continue
-        const data = trimmed.slice(5).trim()
-        if (!data) continue
-        try {
-          const json = JSON.parse(data)
-          const delta = json.choices?.[0]?.delta?.content || ''
-          if (delta) {
-            acc += delta
-            ai.updateLastMessage(chat.id, acc)
-            scrollToBottom()
-          }
-        } catch (e) {
-          // ignore parse errors
-        }
-      }
-    }
-    if (!acc) {
+    if (!res && !acc) {
       ai.updateLastMessage(chat.id, '(无内容返回)')
     }
   } catch (e: any) {
     if (e?.name === 'AbortError') {
       toast.info('已停止')
     } else {
-      ai.updateLastMessage(chat.id, '❌ 错误: ' + (e?.message || String(e)))
+      const msg = e instanceof AIError ? e.message : e?.message || String(e)
+      ai.updateLastMessage(chat.id, '❌ 错误: ' + msg)
     }
   } finally {
     isStreaming.value = false
@@ -1089,7 +1050,7 @@ onUnmounted(() => {
               />
             </div>
             <div class="text-[10px] text-cocoa-500 truncate hidden sm:block">
-              {{ ai.settings.model || 'qwen3.7-plus' }} · 已注入本地数据
+              文本: {{ ai.settings.textModel || 'qwen3.7-plus' }} / 多模态: {{ ai.settings.visionModel || 'qwen3-vl-plus' }} · 已注入本地数据
             </div>
           </div>
         </div>
@@ -1402,32 +1363,16 @@ onUnmounted(() => {
             placeholder="sk-..."
           >
           <div class="text-[10px] text-cocoa-400 mt-0.5">
-            仅保存在本地浏览器 (localStorage), 不会上传.
+            仅保存在本地浏览器 (localStorage), 不会上传。注意：本地为明文存储，请勿在公共/共享设备上保存 Key。
           </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="text-xs text-cocoa-500 ml-1">模型</label>
-            <select
-              v-model="modelSelect"
-              class="input-soft mt-1"
-            >
-              <option
-                v-for="m in DEFAULT_AI_MODELS"
-                :key="m"
-                :value="m"
-              >
-                {{ m }}
-              </option>
-              <option value="__custom__">
-                + 自定义...
-              </option>
-            </select>
+            <label class="text-xs text-cocoa-500 ml-1">AI 名称</label>
             <input
-              v-if="modelSelect === '__custom__'"
-              v-model="customModelName"
+              v-model="editSettings.aiName"
               class="input-soft mt-1"
-              placeholder="输入自定义模型名"
+              placeholder="小林子"
             >
           </div>
           <div>
@@ -1442,14 +1387,85 @@ onUnmounted(() => {
             >
           </div>
         </div>
-        <div>
-          <label class="text-xs text-cocoa-500 ml-1">AI 名称</label>
-          <input
-            v-model="editSettings.aiName"
-            class="input-soft mt-1"
-            placeholder="小林子"
+
+        <!-- 模型页签 -->
+        <div class="flex items-center gap-1 card-flat p-1 w-fit">
+          <button
+            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
+            :class="settingsTab === 'text' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
+            @click="settingsTab = 'text'"
           >
+            <MessageSquare :size="12" /> 文本模型
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 transition"
+            :class="settingsTab === 'vision' ? 'bg-butter-300 text-cocoa-900' : 'text-cocoa-500 hover:bg-cocoa-50'"
+            @click="settingsTab = 'vision'"
+          >
+            <ImageIcon :size="12" /> 多模态模型
+          </button>
         </div>
+
+        <div v-if="settingsTab === 'text'" class="space-y-3">
+          <div>
+            <label class="text-xs text-cocoa-500 ml-1">文本模型</label>
+            <select
+              v-model="textModelSelect"
+              class="input-soft mt-1"
+            >
+              <option
+                v-for="m in DEFAULT_TEXT_MODELS"
+                :key="m"
+                :value="m"
+              >
+                {{ m }}
+              </option>
+              <option value="__custom__">
+                + 自定义...
+              </option>
+            </select>
+            <input
+              v-if="textModelSelect === '__custom__'"
+              v-model="textCustomModel"
+              class="input-soft mt-1"
+              placeholder="输入自定义模型名"
+            >
+            <p class="text-[10px] text-cocoa-400 mt-1">
+              用于普通文本对话、评语生成、教案、试卷、知识点等纯文本任务。
+            </p>
+          </div>
+        </div>
+
+        <div v-else class="space-y-3">
+          <div>
+            <label class="text-xs text-cocoa-500 ml-1">多模态模型</label>
+            <select
+              v-model="visionModelSelect"
+              class="input-soft mt-1"
+            >
+              <option
+                v-for="m in DEFAULT_VISION_MODELS"
+                :key="m"
+                :value="m"
+              >
+                {{ m }}
+              </option>
+              <option value="__custom__">
+                + 自定义...
+              </option>
+            </select>
+            <input
+              v-if="visionModelSelect === '__custom__'"
+              v-model="visionCustomModel"
+              class="input-soft mt-1"
+              placeholder="输入自定义模型名"
+            >
+            <p class="text-[10px] text-cocoa-400 mt-1">
+              用于文件解析、图片识别、视频解析、图片/视频生成等需要"看图"的任务。
+            </p>
+          </div>
+        </div>
+
         <div>
           <label class="text-xs text-cocoa-500 ml-1">系统提示词 (可编辑)</label>
           <textarea

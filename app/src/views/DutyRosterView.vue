@@ -6,6 +6,7 @@ import { useToastStore } from '../stores/toast'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import { Plus, Trash2, Save, Users } from 'lucide-vue-next'
+import ToolBackButton from '../components/common/ToolBackButton.vue'
 import type { DutyRoster } from '../types'
 
 const classStore = useClassStore()
@@ -99,6 +100,8 @@ function dayName(dateStr: string) {
 
 <template>
   <div class="space-y-5">
+    <ToolBackButton />
+
     <section class="card-soft p-6 bg-gradient-to-br from-sky2-100 via-cream-50 to-sakura-100 relative overflow-hidden">
       <div class="absolute -top-10 right-6 text-7xl opacity-20 select-none">📋</div>
       <h2 class="title-display text-2xl">轮值表</h2>

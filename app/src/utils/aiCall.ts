@@ -10,9 +10,13 @@
 import { useAIStore } from '../stores/ai'
 import { AI_DEEPSEEK_BASE_URL } from './aiBase'
 
+export type AIChatContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
 export interface AIChatMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | AIChatContentPart[]
 }
 
 /**
@@ -91,14 +95,33 @@ export class AIError extends Error {
   }
 }
 
+/** 判断消息内容是否包含图片附件 */
+function messageHasImage(content: string | AIChatContentPart[] | undefined): boolean {
+  if (!content) return false
+  if (typeof content === 'string') return false
+  if (!Array.isArray(content)) return false
+  return content.some((p) => p && ((p as any).type === 'image_url' || (p as any).type === 'image'))
+}
+
+/** 根据消息自动判断应使用文本模型还是多模态模型 */
+function resolveModelType(
+  messages: AIChatMessage[],
+  requested?: 'auto' | 'text' | 'vision',
+): 'text' | 'vision' {
+  if (requested === 'text') return 'text'
+  if (requested === 'vision') return 'vision'
+  return messages.some((m) => messageHasImage(m.content)) ? 'vision' : 'text'
+}
+
 /**
  * 调用 AI 对话补全接口.
  *
  * @param opts.messages 消息列表
- * @param opts.temperature 温度 (默认 0.7)
+ * @param opts.temperature 温度 (默认 0.8)
  * @param opts.stream 是否流式 (默认 true). 流式时通过 onDelta 回调增量返回, 并最终返回全文.
  * @param opts.signal 取消信号
  * @param opts.onDelta 流式增量回调
+ * @param opts.modelType 模型类型：auto 自动根据消息是否含图切换；text 强制文本模型；vision 强制多模态模型
  * @returns 完整回复文本
  */
 export async function aiChat(opts: {
@@ -107,6 +130,7 @@ export async function aiChat(opts: {
   stream?: boolean
   signal?: AbortSignal
   onDelta?: (text: string) => void
+  modelType?: 'auto' | 'text' | 'vision'
 }): Promise<string> {
   const ai = useAIStore()
   const settings = ai.settings
@@ -115,12 +139,18 @@ export async function aiChat(opts: {
     throw new AIError('请先在「AI 对话」右上角设置中配置 API Key')
   }
 
+  const type = resolveModelType(opts.messages, opts.modelType)
+  const model =
+    type === 'vision'
+      ? settings.visionModel || settings.textModel || 'qwen3-vl-plus'
+      : settings.textModel || settings.visionModel || 'qwen3.7-plus'
+
   const baseUrl = (settings.baseUrl || AI_DEEPSEEK_BASE_URL).replace(/\/$/, '')
   const useStream = opts.stream !== false
 
   const payload = {
-    model: settings.model || 'qwen3.7-plus',
-    temperature: opts.temperature ?? 0.7,
+    model,
+    temperature: opts.temperature ?? 0.8,
     stream: useStream,
     messages: opts.messages,
   }

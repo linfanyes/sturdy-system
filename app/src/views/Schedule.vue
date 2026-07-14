@@ -77,15 +77,15 @@ function print() {
 }
 
 function goScheduleMaker() {
-  router.push({ name: 'tool-schedule-maker' })
+  router.push({ name: 'tool-schedule' })
 }
 </script>
 
 <template>
   <div class="space-y-4 sm:space-y-5">
-    <ToolBackButton />
+    <ToolBackButton class="print:hidden" />
     <!-- 顶部 -->
-    <div class="card-soft p-4 sm:p-5 flex flex-col gap-3">
+    <div class="card-soft p-4 sm:p-5 flex flex-col gap-3 print:hidden">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-butter-300/70 flex items-center justify-center text-xl sm:text-2xl">
           📅
@@ -126,12 +126,15 @@ function goScheduleMaker() {
     </div>
 
     <!-- 课程表 -->
-    <div v-if="teaching.length">
+    <div v-if="teaching.length" class="print-area">
+      <h1 class="hidden print:block text-center text-xl font-bold mb-4 text-cocoa-900">
+        {{ userStore.user?.name || '我' }}的课表
+      </h1>
       <MyScheduleTable />
     </div>
     <div
       v-else
-      class="card-soft p-10 text-center"
+      class="card-soft p-10 text-center print:hidden"
     >
       <div class="text-4xl mb-2">
         📋
@@ -153,7 +156,7 @@ function goScheduleMaker() {
     <!-- 当前任教清单 -->
     <div
       v-if="teaching.length"
-      class="card-soft p-5"
+      class="card-soft p-5 print:hidden"
     >
       <div class="text-sm font-medium mb-2 flex items-center gap-2">
         <Calendar
@@ -246,3 +249,23 @@ function goScheduleMaker() {
     </Modal>
   </div>
 </template>
+
+<style>
+@media print {
+  body:has(.print-area) * {
+    visibility: hidden;
+  }
+  body:has(.print-area) .print-area,
+  body:has(.print-area) .print-area * {
+    visibility: visible;
+  }
+  body:has(.print-area) .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+}
+</style>
