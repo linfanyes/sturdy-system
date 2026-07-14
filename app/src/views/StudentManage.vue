@@ -594,15 +594,21 @@ function exportCSV() {
     toast.warning('当前没有可导出的学生')
     return
   }
-  const lines = ['姓名,性别,学号,座位号,班级,家长姓名,家长电话,备注']
+  const lines = ['姓名,性别,学号,座位,班级,家长姓名,家长电话,备注']
   for (const s of filtered.value) {
     const c = classStore.getClass(s.classId)
+    const seatText =
+      s.seatRow != null && s.seatCol != null
+        ? `第${s.seatRow}行第${s.seatCol}列`
+        : s.seatNo
+          ? String(s.seatNo)
+          : '-'
     lines.push(
       [
         s.name,
         s.gender,
         s.studentNo,
-        s.seatNo,
+        seatText,
         c?.name || '',
         s.parentName,
         s.parentPhone,
