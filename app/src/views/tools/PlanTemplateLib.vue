@@ -5,13 +5,27 @@ import { useToastStore } from '../../stores/toast'
 import ToolPageHeader from '../../components/common/ToolPageHeader.vue'
 import Modal from '../../components/common/Modal.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
-import { Plus, Trash2, Save, Star, Copy, Upload, Download } from 'lucide-vue-next'
+import { Plus, Trash2, Save, Copy, Upload, Download } from 'lucide-vue-next'
 import type { LessonPlanTemplate } from '../../types'
-import JSZip from 'jszip'
-import WordExtractor from 'word-extractor'
-import { Buffer } from 'buffer'
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
+import type { Paragraph } from 'docx'
 import { extractDocumentText } from '../../utils/document'
+
+// 重依赖按需懒加载, 避免阻塞页面首屏 (参考 utils/document.ts 范式)
+let JSZipMod: any = null
+async function getJSZip() {
+  if (!JSZipMod) {
+    const mod = await import('jszip')
+    JSZipMod = mod.default ?? mod
+  }
+  return JSZipMod
+}
+let DocxMod: any = null
+async function getDocx() {
+  if (!DocxMod) {
+    DocxMod = await import('docx')
+  }
+  return DocxMod
+}
 
 const adminStore = useAdminStore()
 const toast = useToastStore()
@@ -86,6 +100,7 @@ function copyContent(t: LessonPlanTemplate) {
 
 /** 从 .docx 文件提取纯文本 (JSZip 解析 XML) */
 async function extractDocxText(file: File): Promise<string> {
+  const JSZip = await getJSZip()
   const zip = await JSZip.loadAsync(file)
   const xml = await zip.file('word/document.xml')?.async('string')
   if (!xml) return ''
@@ -103,23 +118,16 @@ async function extractDocxText(file: File): Promise<string> {
   return text
 }
 
-/** 从 .doc 文件提取纯文本 (word-extractor 解析 OLE2 二进制格式) */
-async function extractDocText(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer()
-  const extractor = new WordExtractor()
-  const doc = await extractor.extract(Buffer.from(buffer))
-  return doc.getBody().trim()
-}
-
-/** 根据文件扩展名自动选择解析方式 (支持 .doc / .docx / .pdf) */
+/** 根据文件扩展名自动选择解析方式 (支持 .docx / .pdf, 旧版 .doc 需先转 .docx) */
 async function extractWordText(file: File): Promise<string> {
   const name = file.name.toLowerCase()
   if (name.endsWith('.pdf')) {
     return extractDocumentText(file)
   }
-  if (name.endsWith('.doc') && !name.endsWith('.docx')) {
-    return extractDocText(file)
+  if (name.endsWith('.docx')) {
+    return extractDocxText(file)
   }
+  // 旧版 .doc (OLE2) 在浏览器端无法可靠解析, 统一在 onImportFile 中提前拦截提示
   return extractDocxText(file)
 }
 
@@ -134,6 +142,11 @@ async function onImportFile(e: Event) {
   const file = input.files?.[0]
   if (!file) return
   input.value = ''
+  const lower = file.name.toLowerCase()
+  if (lower.endsWith('.doc') && !lower.endsWith('.docx')) {
+    toast.warning('暂不支持 .doc 旧格式，请另存为 .docx 后导入')
+    return
+  }
   try {
     const text = await extractWordText(file)
     if (!text) { toast.warning('文件内容为空'); return }
@@ -143,12 +156,13 @@ async function onImportFile(e: Event) {
     modalOpen.value = true
     toast.success('已导入，请补充信息后保存')
   } catch (err) {
-    toast.warning('文件解析失败，请确认是 .doc / .docx / .pdf 格式')
+    toast.warning('文件解析失败，请确认是 .docx / .pdf 格式')
   }
 }
 
 /** 导出为 .docx 文件 */
 async function exportDocx(t: LessonPlanTemplate) {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await getDocx()
   const paragraphs: Paragraph[] = []
   // 标题
   paragraphs.push(new Paragraph({

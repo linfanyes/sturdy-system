@@ -1,0 +1,17 @@
+# electron-builder 配置 (Windows exe 打包)
+# 前置: 先 `npm run build` 产出 app/dist, 再 `npm run electron:build`
+appId: com.gardener.workstation
+productName: 园丁工作台
+copyright: Copyright © 2026 园丁工作台
+directories:
+  output: ../dist-electron
+  buildResources: .
+files:
+  - dist/**/*
+  - electron/**/*
+win:
+  target:
+    - portable
+  artifactName: ${productName}-${version}-${arch}.${ext}
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

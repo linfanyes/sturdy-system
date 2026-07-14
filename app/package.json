@@ -2,7 +2,10 @@
   "name": "trace",
   "private": true,
   "version": "0.0.0",
+  "description": "园丁工作台 · 教师专用桌面端",
+  "author": "园丁工作台",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
@@ -14,6 +17,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,json}\"",
     "stylelint": "stylelint \"src/**/*.{vue,css}\"",
     "stylelint:fix": "stylelint \"src/**/*.{vue,css}\" --fix",
+    "electron:dev": "electron .",
+    "electron:build": "electron-builder",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -33,6 +38,7 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "docx": "^9.7.1",
+    "electron-packager": "^17.1.2",
     "jszip": "^3.10.1",
     "lucide-vue-next": "^0.511.0",
     "marked": "^18.0.6",
@@ -42,18 +48,18 @@
     "tailwind-merge": "^3.3.0",
     "vue": "^3.5.0",
     "vue-router": "^4.2.5",
-    "word-extractor": "^1.0.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
-    "@types/word-extractor": "^1.0.6",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "@vitejs/plugin-vue": "^5.0.3",
     "@vue/runtime-dom": "^3.5.0",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.17",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.20.1",
     "husky": "^9.0.0",
