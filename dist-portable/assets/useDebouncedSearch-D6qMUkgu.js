@@ -1,0 +1,1 @@
+import{w as a,I as c,r}from"./vendor-vue-CW3lsMsi.js";function i(n=200){const o=r(""),t=r("");let e=null;return a(o,u=>{e&&clearTimeout(e),e=window.setTimeout(()=>{t.value=u},n)}),c(()=>{e&&clearTimeout(e)}),{search:o,searchDebounced:t}}export{i as u};

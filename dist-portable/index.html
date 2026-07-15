@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: blob:;
+        connect-src 'self' https://* http://localhost:*;
+        frame-ancestors 'none';
+        form-action 'none';
+        base-uri 'self';
+      "
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#FFF9EE" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="园丁工作台" />
+    <title>园丁工作台 · 教师专用</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Caveat:wght@400;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Caveat:wght@400;600&family=Nunito:wght@400;600;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <script>
+      // 防刷新闪白：首屏渲染前根据已保存主题预置 dark class 与全套主题变量
+      (function () {
+        try {
+          var t = localStorage.getItem('trace-theme') === 'dark' ? 'dark' : 'light';
+          var VARS = {
+            light: { '--cream-50':'255 252 245','--cream-100':'255 249 238','--cream-200':'255 241 217','--cream-300':'255 231 184','--butter-100':'255 234 184','--butter-300':'255 218 142','--butter-400':'255 212 121','--butter-500':'245 190 82','--butter-600':'216 156 44','--mint-100':'214 245 226','--mint-300':'168 232 194','--mint-400':'127 216 164','--mint-500':'84 188 131','--sakura-100':'255 224 233','--sakura-300':'255 184 204','--sakura-400':'255 158 181','--sakura-500':'244 123 152','--sky2-100':'212 236 255','--sky2-300':'164 214 255','--sky2-400':'123 198 255','--sky2-500':'79 163 224','--cocoa-100':'200 181 154','--cocoa-300':'142 120 88','--cocoa-500':'122 106 85','--cocoa-700':'82 63 42','--cocoa-900':'61 46 31' },
+            dark: { '--cream-50':'33 26 18','--cream-100':'42 33 24','--cream-200':'53 42 29','--cream-300':'70 55 31','--butter-100':'74 61 36','--butter-300':'110 92 52','--butter-400':'201 162 78','--butter-500':'224 184 94','--butter-600':'184 144 47','--mint-100':'27 51 41','--mint-300':'44 87 67','--mint-400':'79 158 120','--mint-500':'95 191 146','--sakura-100':'62 32 39','--sakura-300':'110 58 72','--sakura-400':'199 122 142','--sakura-500':'224 140 160','--sky2-100':'28 49 64','--sky2-300':'44 78 100','--sky2-400':'90 147 184','--sky2-500':'111 176 214','--cocoa-100':'74 63 48','--cocoa-300':'138 122 99','--cocoa-500':'201 184 156','--cocoa-700':'224 211 188','--cocoa-900':'242 232 216' }
+          };
+          var v = VARS[t];
+          for (var k in v) document.documentElement.style.setProperty(k, v[k]);
+          if (t === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-CrvhU485.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-vue-DNFOfc4g.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-DRvfq8g6.css">
+  <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>

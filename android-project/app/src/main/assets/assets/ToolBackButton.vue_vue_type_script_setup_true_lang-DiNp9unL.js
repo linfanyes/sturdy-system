@@ -1,0 +1,1 @@
+import{a as s,o as r,c as n,u as e,b as a,x as m,E as u}from"./vendor-vue-DNFOfc4g.js";import{A as p}from"./arrow-left-C2vTUldF.js";const b=s({__name:"ToolBackButton",setup(l){const o=u();return(c,t)=>(r(),n("button",{class:"btn-ghost text-sm mb-3 self-start",onClick:t[0]||(t[0]=f=>e(o).push({name:"toolbox"}))},[a(e(p),{size:14}),t[1]||(t[1]=m(" 返回工具箱 ",-1))]))}});export{b as _};

@@ -158,16 +158,12 @@ const routes: RouteRecordRaw[] = [
       ...gameRoutes,
     ],
   },
-  ...(import.meta.env.DEV || (typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron'))
-    ? [
-        {
-          path: '/dev/seed',
-          name: 'dev-seed',
-          component: () => import('../views/DevSeed.vue'),
-          meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
-        },
-      ]
-    : []),
+  {
+    path: '/dev/seed',
+    name: 'dev-seed',
+    component: () => import('../views/DevSeed.vue'),
+    meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

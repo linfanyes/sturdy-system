@@ -1,0 +1,72 @@
+# 园丁工作台 - 分发版
+
+## 📁 目录结构
+
+```
+dist-portable/           # Windows 便携版（无需安装，双击即可运行）
+android-project/         # Android APK 项目模板（需 Android Studio 构建）
+```
+
+---
+
+## 🖥️ Windows 便携版
+
+### 使用方法
+
+1. 将 `dist-portable/` 整个文件夹复制到任意位置
+2. **方式一**：双击 `启动园丁工作台.bat`（使用系统默认浏览器打开）
+3. **方式二**：双击 `start_server.py`（需要安装 Python，启动本地 HTTP 服务器）
+
+### 特点
+
+- ✅ 无需安装，绿色便携
+- ✅ 所有数据保存在浏览器本地存储中
+- ✅ AI 对话功能需要联网并配置 API Key
+- ✅ 包含测试数据生成器（登录后访问 `#/dev/seed`）
+
+### 测试数据生成器
+
+登录后访问 `http://localhost:5202/#/dev/seed` 或通过个人中心入口进入：
+- 一键生成完整测试数据（班级、学生、成绩、课表等）
+- 清空全部数据
+
+---
+
+## 📱 Android APK
+
+### 构建方法
+
+1. 安装 **Android Studio**（https://developer.android.com/studio）
+2. 打开 `android-project/` 目录
+3. 等待 Gradle 同步完成
+4. 点击「Build → Build Bundle(s) / APK(s) → Build APK(s)」
+5. APK 文件位于 `app/build/outputs/apk/debug/`
+
+### 特点
+
+- ✅ 使用 WebView 加载本地 HTML，无需联网即可使用
+- ✅ 支持 JavaScript、本地存储（localStorage）
+- ✅ 内置测试数据生成器
+- ✅ AI 对话功能需要联网
+
+### 注意事项
+
+- 需要 Android 7.0（API 24）及以上版本
+- 首次安装需要允许安装未知来源应用
+- 数据保存在应用内部存储中
+
+---
+
+## 🔑 登录信息
+
+- 登录码：`1314520`
+- 首次登录需选择任教学期和学科
+
+---
+
+## 📤 数据备份
+
+在个人中心可以：
+- 导出数据为 JSON 文件
+- 从 JSON 文件恢复数据
+- 自动备份历史管理
