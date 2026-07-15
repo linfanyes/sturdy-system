@@ -1,5 +1,7 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw, type Router } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { toolRoutes } from './tools'
+import { gameRoutes } from './games'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -63,72 +65,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '常用工具箱', icon: '🧰' },
       },
       {
-        path: 'toolbox/picker',
-        name: 'tool-picker',
-        component: () => import('../views/tools/RandomPicker.vue'),
-        meta: { title: '随机点名', icon: '🎯' },
-      },
-      {
-        path: 'toolbox/timer',
-        name: 'tool-timer',
-        component: () => import('../views/tools/Timer.vue'),
-        meta: { title: '倒计时', icon: '⏱️' },
-      },
-      {
-        path: 'toolbox/calc',
-        name: 'tool-calc',
-        component: () => import('../views/tools/Calc.vue'),
-        meta: { title: '课堂计算器', icon: '🧮' },
-      },
-      {
-        path: 'toolbox/comment',
-        name: 'tool-comment',
-        component: () => import('../views/tools/CommentGen.vue'),
-        meta: { title: '评语生成', icon: '✍️' },
-      },
-      {
-        path: 'toolbox/test-paper',
-        name: 'tool-test-paper',
-        component: () => import('../views/tools/TestPaper.vue'),
-        meta: { title: '优选试卷', icon: '📝' },
-      },
-      {
-        path: 'toolbox/lesson-plan',
-        name: 'tool-lesson-plan',
-        component: () => import('../views/tools/LessonPlan.vue'),
-        meta: { title: '优质教案', icon: '📚' },
-      },
-      {
-        path: 'toolbox/math',
-        name: 'tool-math',
-        component: () => import('../views/tools/MathGen.vue'),
-        meta: { title: '口算生成', icon: '➕' },
-      },
-      {
-        path: 'toolbox/schedule-maker',
-        name: 'tool-schedule',
-        component: () => import('../views/tools/ScheduleMaker.vue'),
-        meta: { title: '课表排版', icon: '🗓️' },
-      },
-      {
-        path: 'toolbox/random-grouper',
-        name: 'tool-grouper',
-        component: () => import('../views/tools/RandomGrouper.vue'),
-        meta: { title: '随机分组', icon: '👥' },
-      },
-      {
-        path: 'toolbox/reward',
-        name: 'tool-reward',
-        component: () => import('../views/tools/Reward.vue'),
-        meta: { title: '奖惩记录', icon: '🏅' },
-      },
-      {
-        path: 'toolbox/class-duty',
-        name: 'tool-class-duty',
-        component: () => import('../views/tools/ClassDuty.vue'),
-        meta: { title: '班级职务', icon: '🎖️' },
-      },
-      {
         path: 'schedule',
         name: 'schedule',
         component: () => import('../views/Schedule.vue'),
@@ -164,31 +100,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/Profile.vue'),
         meta: { title: '个人中心', icon: '👤' },
       },
-      {
-        path: 'toolbox/ai',
-        name: 'tool-ai',
-        component: () => import('../views/AI.vue'),
-        meta: { title: 'AI 对话', icon: '🤖' },
-      },
-      {
-        path: 'toolbox/translate',
-        name: 'tool-translate',
-        component: () => import('../views/tools/Translate.vue'),
-        meta: { title: '翻译', icon: '🌐' },
-      },
-      {
-        path: 'toolbox/flower',
-        name: 'tool-flower',
-        component: () => import('../views/tools/FlowerGame.vue'),
-        meta: { title: '笑口常开', icon: '🌸' },
-      },
-      {
-        path: 'toolbox/award',
-        name: 'tool-award',
-        component: () => import('../views/tools/AwardRecord.vue'),
-        meta: { title: '我获奖啦', icon: '🏆' },
-      },
-      // ---- 新增功能模块 ----
       {
         path: 'parent-contact',
         name: 'parent-contact',
@@ -238,123 +149,15 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '班级活动', icon: '🎉' },
       },
       {
-        path: 'toolbox/seat-map',
-        name: 'tool-seat',
-        component: () => import('../views/tools/SeatMap.vue'),
-        meta: { title: '座位表', icon: '💺' },
-      },
-      {
-        path: 'toolbox/score-panel',
-        name: 'tool-score',
-        component: () => import('../views/tools/ScorePanel.vue'),
-        meta: { title: '加减分', icon: '🏅' },
-      },
-      {
-        path: 'toolbox/notice-template',
-        name: 'tool-notice-tpl',
-        component: () => import('../views/tools/NoticeTemplate.vue'),
-        meta: { title: '通知模板', icon: '📋' },
-      },
-      {
-        path: 'toolbox/plan-template',
-        name: 'tool-plan-tpl',
-        component: () => import('../views/tools/PlanTemplateLib.vue'),
-        meta: { title: '文案模板库', icon: '📑' },
-      },
-      {
-        path: 'toolbox/paper',
-        name: 'tool-paper',
-        component: () => import('../views/tools/Paper.vue'),
-        meta: { title: '教育论文', icon: '📝' },
-      },
-      {
-        path: 'toolbox/knowledge',
-        name: 'tool-knowledge',
-        component: () => import('../views/tools/Knowledge.vue'),
-        meta: { title: '知识点', icon: '💡' },
-      },
-      // 小游戏合集
-      {
         path: 'games',
         name: 'games',
         component: () => import('../views/games/GamesIndex.vue'),
         meta: { title: '小游戏合集', icon: '🎮', keepAlive: true },
       },
-      {
-        path: 'games/2048',
-        name: 'game-2048',
-        component: () => import('../views/games/Game2048.vue'),
-        meta: { title: '2048', icon: '🔢', keepAlive: true },
-      },
-      {
-        path: 'games/minesweeper',
-        name: 'game-minesweeper',
-        component: () => import('../views/games/GameMinesweeper.vue'),
-        meta: { title: '扫雷', icon: '💣', keepAlive: true },
-      },
-      {
-        path: 'games/snake',
-        name: 'game-snake',
-        component: () => import('../views/games/GameSnake.vue'),
-        meta: { title: '贪吃蛇', icon: '🐍', keepAlive: true },
-      },
-      {
-        path: 'games/tic-tac-toe',
-        name: 'game-tic-tac-toe',
-        component: () => import('../views/games/GameTicTacToe.vue'),
-        meta: { title: '井字棋', icon: '⭕', keepAlive: true },
-      },
-      {
-        path: 'games/gomoku',
-        name: 'game-gomoku',
-        component: () => import('../views/games/GameGomoku.vue'),
-        meta: { title: '五子棋', icon: '⚫', keepAlive: true },
-      },
-      {
-        path: 'games/match3',
-        name: 'game-match3',
-        component: () => import('../views/games/GameMatch3.vue'),
-        meta: { title: '消消乐', icon: '🧩', keepAlive: true },
-      },
-      {
-        path: 'games/whack',
-        name: 'game-whack',
-        component: () => import('../views/games/GameWhack.vue'),
-        meta: { title: '打地鼠', icon: '🔨', keepAlive: true },
-      },
-      {
-        path: 'games/puzzle',
-        name: 'game-puzzle',
-        component: () => import('../views/games/GamePuzzle.vue'),
-        meta: { title: '数字华容道', icon: '🧠', keepAlive: true },
-      },
-      {
-        path: 'games/tetris',
-        name: 'game-tetris',
-        component: () => import('../views/games/GameTetris.vue'),
-        meta: { title: '俄罗斯方块', icon: '🎮', keepAlive: true },
-      },
-      {
-        path: 'games/plane',
-        name: 'game-plane',
-        component: () => import('../views/games/GamePlane.vue'),
-        meta: { title: '飞机大战', icon: '✈️', keepAlive: true },
-      },
-      {
-        path: 'games/motorcycle',
-        name: 'game-motorcycle',
-        component: () => import('../views/games/GameMotorcycle.vue'),
-        meta: { title: '极速摩托', icon: '🏍️', keepAlive: true },
-      },
-      {
-        path: 'games/car-crash',
-        name: 'game-car-crash',
-        component: () => import('../views/games/GameCarCrash.vue'),
-        meta: { title: '汽车躲避', icon: '🚗', keepAlive: true },
-      },
+      ...toolRoutes,
+      ...gameRoutes,
     ],
   },
-  // 测试数据生成器：在开发模式或 Electron 桌面端注册，避免普通生产 Web 构建被访问
   ...(import.meta.env.DEV || (typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron'))
     ? [
         {
@@ -389,6 +192,7 @@ router.beforeEach((to) => {
   if (to.name === 'login' && userStore.user) {
     return { name: 'dashboard' }
   }
+
   return true
 })
 

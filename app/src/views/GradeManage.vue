@@ -121,6 +121,8 @@ function validateScores(
 
 const filterClass = ref<string>(classStore.classes[0]?.id || '')
 const filterSubject = ref<string>('all')
+const gradePage = ref(1)
+const GRADE_PAGE_SIZE = 12
 
 const filteredGrades = computed(() => {
   let list = gradeStore.grades
@@ -128,6 +130,18 @@ const filteredGrades = computed(() => {
   if (filterSubject.value !== 'all')
     list = list.filter((g) => g.subject === filterSubject.value)
   return list.sort((a, b) => +new Date(b.date) - +new Date(a.date))
+})
+
+const gradeTotalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredGrades.value.length / GRADE_PAGE_SIZE)),
+)
+const pagedGrades = computed(() => {
+  const start = (gradePage.value - 1) * GRADE_PAGE_SIZE
+  return filteredGrades.value.slice(start, start + GRADE_PAGE_SIZE)
+})
+
+watch([filterClass, filterSubject], () => {
+  gradePage.value = 1
 })
 
 /**
@@ -143,7 +157,7 @@ interface GradeCardStat {
   count: number
 }
 const filteredGradeStats = computed<GradeCardStat[]>(() => {
-  return filteredGrades.value.map((g) => {
+  return pagedGrades.value.map((g) => {
     const full = fullScoreOf(g.classId, g.examName, g.date, g.subject)
     const stat = calcStat(g.scores, full)
     return {
@@ -1365,12 +1379,10 @@ function confirmImport() {
       </div>
     </div>
 
-    <div
-      v-if="filteredGrades.length"
-      class="grid lg:grid-cols-2 gap-4"
-    >
+    <div v-if="filteredGrades.length" class="space-y-6">
+      <div class="grid lg:grid-cols-2 gap-4">
       <div
-        v-for="g in filteredGrades"
+        v-for="g in pagedGrades"
         :key="g.id"
         class="card-soft p-5 hover:-translate-y-0.5 transition cursor-pointer"
         @click="openDetail(g)"
@@ -1442,7 +1454,33 @@ function confirmImport() {
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- 分页 -->
+      <div
+        v-if="filteredGrades.length > GRADE_PAGE_SIZE"
+        class="flex items-center justify-center gap-2"
+      >
+        <button
+          class="btn-secondary !py-1.5 !px-3 text-xs"
+          :disabled="gradePage <= 1"
+          @click="gradePage--"
+        >
+          上一页
+        </button>
+        <span class="text-xs text-cocoa-500">
+          第 {{ gradePage }} / {{ gradeTotalPages }} 页 · 共 {{ filteredGrades.length }} 条
+        </span>
+        <button
+          class="btn-secondary !py-1.5 !px-3 text-xs"
+          :disabled="gradePage >= gradeTotalPages"
+          @click="gradePage++"
+        >
+          下一页
+        </button>
+      </div>
     </div>
+
     <EmptyState
       v-else
       title="还没有成绩记录"

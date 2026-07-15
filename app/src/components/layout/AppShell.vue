@@ -352,7 +352,7 @@ function goFromNotif(n: NotifItem) {
           class="w-10 h-10 rounded-2xl bg-gradient-to-br from-butter-100 to-sakura-100 hover:from-butter-300 hover:to-sakura-300 flex items-center justify-center shadow-softer hover:shadow-soft hover:-translate-y-0.5 transition relative"
           title="AI 对话"
           aria-label="AI 对话"
-          @click="router.push({ name: 'tool-ai' })"
+          @click="router.push({ path: '/toolbox/ai' })"
         >
           <Bot
             :size="18"
@@ -411,7 +411,7 @@ function goFromNotif(n: NotifItem) {
       <!-- 内容 -->
       <main class="flex-1 px-4 sm:px-6 lg:px-10 pb-24 lg:pb-12 animate-fadeIn">
         <router-view v-slot="{ Component, route }">
-          <keep-alive>
+          <keep-alive :max="6">
             <component :is="Component" v-if="route.meta.keepAlive" :key="route.path" />
           </keep-alive>
           <component :is="Component" v-if="!route.meta.keepAlive" :key="route.path" />

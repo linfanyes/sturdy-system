@@ -14,35 +14,27 @@ export const useGradeStore = defineStore('grade', () => {
     () => ({ grades: seedGrades.map((g) => ({ ...g })) }),
   )
 
-  // Map 索引：O(1) 查找
-  const gradeMap = computed(() => {
-    const map = new Map<string, Grade>()
-    for (const g of grades.value) map.set(g.id, g)
-    return map
-  })
-
-  // 按班级分组的成绩索引
-  const gradesByClass = computed(() => {
-    const map = new Map<string, Grade[]>()
+  // 一次遍历构建全部索引，减少 O(3N) → O(N)
+  const _indexes = computed(() => {
+    const byId = new Map<string, Grade>()
+    const byClass = new Map<string, Grade[]>()
+    const byClassSubject = new Map<string, Grade[]>()
     for (const g of grades.value) {
-      const arr = map.get(g.classId)
-      if (arr) arr.push(g)
-      else map.set(g.classId, [g])
-    }
-    return map
-  })
-
-  // 按 班级+科目 分组的成绩索引
-  const gradesByClassSubject = computed(() => {
-    const map = new Map<string, Grade[]>()
-    for (const g of grades.value) {
+      byId.set(g.id, g)
+      const arr1 = byClass.get(g.classId)
+      if (arr1) arr1.push(g)
+      else byClass.set(g.classId, [g])
       const key = `${g.classId}::${g.subject}`
-      const arr = map.get(key)
-      if (arr) arr.push(g)
-      else map.set(key, [g])
+      const arr2 = byClassSubject.get(key)
+      if (arr2) arr2.push(g)
+      else byClassSubject.set(key, [g])
     }
-    return map
+    return { byId, byClass, byClassSubject }
   })
+
+  const gradeMap = computed(() => _indexes.value.byId)
+  const gradesByClass = computed(() => _indexes.value.byClass)
+  const gradesByClassSubject = computed(() => _indexes.value.byClassSubject)
 
   function addGrade(payload: Omit<Grade, 'id' | 'createdAt'>) {
     const g: Grade = { ...payload, id: uid(), createdAt: now() }
@@ -240,30 +232,9 @@ export interface GradeStat {
 }
 
 export function calcStat(scores: GradeScore[], fullScore = 100): GradeStat {
-  // 只保留真正有效的数值分数:
-  // 排除 null / undefined / 空字符串 / 非数字 (v-model.number 留空会得到 '')
-  // 避免字符串拼接污染求和 (如 0 + '' + 90 => '090') 与最低分恒为 0 的错误
-  const valid = scores
-    .filter((s) => {
-      const raw = s.score as unknown
-      // 先剔除空值 (Number('') === 0 会被误判为 0 分)
-      if (raw === null || raw === undefined || raw === '') return false
-      return Number.isFinite(Number(raw))
-    })
-    .map((s) => ({ studentId: s.studentId, score: Number(s.score) }))
-  const count = valid.length
-  const nums = valid.map((s) => s.score)
-  const sum = nums.reduce((a, b) => a + b, 0)
-  const avg = count ? Math.round((sum / count) * 10) / 10 : 0
-  const max = count ? Math.max(...nums) : 0
-  const min = count ? Math.min(...nums) : 0
-  // 及格 / 优秀线按「该科目满分」的比例计算 (语数英 100 分则 60/90; 其他 50 分则 30/45)
   const fs = fullScore > 0 ? fullScore : 100
   const passLine = fs * 0.6
   const excLine = fs * 0.9
-  const pass = nums.filter((n) => n >= passLine).length
-  const exc = nums.filter((n) => n >= excLine).length
-  // 10 段 (按满分自适应: 满分 100 → 0-9…90-100; 满分 50 → 0-4…45-50)
   const bands = 10
   const w = fs / bands
   const dist = new Array(bands).fill(0)
@@ -273,31 +244,72 @@ export function calcStat(scores: GradeScore[], fullScore = 100): GradeStat {
     const hi = Math.round((b + 1) * w)
     distLabels.push(b === bands - 1 ? `${lo}-${hi}` : `${lo}-${hi - 1}`)
   }
-  nums.forEach((n) => {
+
+  const valid: { studentId: string; score: number }[] = []
+  let count = 0
+  let sum = 0
+  let max = -Infinity
+  let min = Infinity
+  let pass = 0
+  let exc = 0
+
+  for (let i = 0; i < scores.length; i++) {
+    const raw = scores[i].score as unknown
+    if (raw === null || raw === undefined || raw === '') continue
+    const n = Number(raw)
+    if (!Number.isFinite(n)) continue
+    valid.push({ studentId: scores[i].studentId, score: n })
+    count++
+    sum += n
+    if (n > max) max = n
+    if (n < min) min = n
+    if (n >= passLine) pass++
+    if (n >= excLine) exc++
     let idx = Math.floor(n / w)
     if (idx < 0) idx = 0
     if (idx > bands - 1) idx = bands - 1
     dist[idx]++
-  })
-  // 中位数
-  const sortedNums = [...nums].sort((a, b) => a - b)
-  let median = 0
-  if (count) {
-    if (count % 2) median = sortedNums[(count - 1) / 2]
-    else median = (sortedNums[count / 2 - 1] + sortedNums[count / 2]) / 2
-    median = Math.round(median * 10) / 10
   }
+
+  if (count === 0) {
+    return {
+      count: 0,
+      avg: 0,
+      max: 0,
+      min: 0,
+      median: 0,
+      passRate: 0,
+      excellentRate: 0,
+      distribution: dist,
+      distLabels,
+      ranking: [],
+    }
+  }
+
+  const avg = Math.round((sum / count) * 10) / 10
+  max = max === -Infinity ? 0 : max
+  min = min === Infinity ? 0 : min
+
+  const nums = new Array(count)
+  for (let i = 0; i < count; i++) nums[i] = valid[i].score
+  nums.sort((a, b) => a - b)
+  let median = 0
+  if (count % 2) median = nums[(count - 1) / 2]
+  else median = (nums[count / 2 - 1] + nums[count / 2]) / 2
+  median = Math.round(median * 10) / 10
+
   const ranking = [...valid]
     .sort((a, b) => b.score - a.score)
     .map((s, i) => ({ ...s, rank: i + 1 }))
+
   return {
     count,
     avg,
     max,
     min,
     median,
-    passRate: count ? Math.round((pass / count) * 1000) / 10 : 0,
-    excellentRate: count ? Math.round((exc / count) * 1000) / 10 : 0,
+    passRate: Math.round((pass / count) * 1000) / 10,
+    excellentRate: Math.round((exc / count) * 1000) / 10,
     distribution: dist,
     distLabels,
     ranking,

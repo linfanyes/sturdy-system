@@ -1,10 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ToolPageHeader from '../../components/common/ToolPageHeader.vue'
 
 const router = useRouter()
 
 const games = [
+  {
+    name: '24点',
+    desc: '加减乘除，凑出24',
+    icon: '🧮',
+    bg: 'bg-gradient-to-br from-mint-100 to-sky2-100',
+    route: 'game-24point',
+    tag: '数学',
+  },
   {
     name: '2048',
     desc: '合并数字，挑战最高分',
@@ -103,6 +112,8 @@ const games = [
   },
 ]
 
+const gameCount = computed(() => games.length)
+
 function goGame(route: string) {
   router.push({ name: route })
 }
@@ -113,9 +124,9 @@ function goGame(route: string) {
     <ToolPageHeader
       icon="🎮"
       title="小游戏合集"
-      description="12款经典小游戏，课间放松、摸鱼解压必备"
+      :description="`${gameCount}款经典小游戏，课间放松、摸鱼解压必备`"
       gradient="from-sakura-100 via-cream-50 to-mint-100"
-      status-text="12款游戏"
+      :status-text="`${gameCount}款游戏`"
       status-color="bg-sakura-100 text-sakura-600"
     />
 

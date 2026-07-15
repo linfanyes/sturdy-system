@@ -62,6 +62,9 @@ function loadChats(): AIChat[] {
   return []
 }
 
+/** 单条消息最多允许的图片附件数量 (避免内存占用过大) */
+export const MAX_IMAGES_PER_MESSAGE = 9
+
 export const useAIStore = defineStore('ai', () => {
   const settings = ref<AISettings>(loadSettings())
   const chats = ref<AIChat[]>(loadChats())
@@ -97,6 +100,8 @@ export const useAIStore = defineStore('ai', () => {
     return chats.value.find((c) => c.id === activeChatId.value) || null
   }
   function setActiveChat(id: string | null) {
+    if (id === activeChatId.value) return
+    releaseInactiveImages(id)
     activeChatId.value = id
   }
   function removeChat(id: string) {
@@ -109,6 +114,22 @@ export const useAIStore = defineStore('ai', () => {
     chats.value = []
     activeChatId.value = null
   }
+
+  /** 释放非活跃对话中所有图片附件的 dataUrl，减少内存占用 */
+  function releaseInactiveImages(keepChatId: string | null) {
+    for (const c of chats.value) {
+      if (c.id === keepChatId) continue
+      for (const m of c.messages) {
+        if (!m.attachments) continue
+        for (const a of m.attachments) {
+          if (a.kind === 'image' && a.dataUrl) {
+            ;(a as AIAttachment).dataUrl = undefined
+          }
+        }
+      }
+    }
+  }
+
   function appendMessage(
     chatId: string,
     msg: {
@@ -119,12 +140,18 @@ export const useAIStore = defineStore('ai', () => {
   ) {
     const chat = chats.value.find((c) => c.id === chatId)
     if (!chat) return
+    let attachments = msg.attachments
+    if (attachments && attachments.filter((a) => a.kind === 'image').length > MAX_IMAGES_PER_MESSAGE) {
+      const imgs = attachments.filter((a) => a.kind === 'image').slice(0, MAX_IMAGES_PER_MESSAGE)
+      const others = attachments.filter((a) => a.kind !== 'image')
+      attachments = [...imgs, ...others]
+    }
     chat.messages.push({
       id: uid(),
       role: msg.role,
       content: msg.content,
       createdAt: now(),
-      attachments: msg.attachments,
+      attachments,
     })
     chat.updatedAt = now()
   }

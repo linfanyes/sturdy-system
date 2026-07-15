@@ -38,6 +38,8 @@ import {
   FileText,
   Image as ImageIcon,
   Menu,
+  Search,
+  Lightbulb,
 } from 'lucide-vue-next'
 import {
   readFile,
@@ -344,6 +346,20 @@ function resetSettings() {
 // ============ Chat sessions ============
 const showSidebar = ref(true)
 const isMobileSidebarOpen = ref(false)
+const searchQuery = ref('')
+const showQuickCommands = ref(false)
+
+const quickCommands = [
+  { label: '分析班级成绩', icon: '📊', prompt: '帮我分析一下最近一次考试的班级成绩情况，包括平均分、最高分、最低分和进步最大的学生' },
+  { label: '生成教案', icon: '📚', prompt: '帮我设计一份三年级数学《长方形和正方形的周长》的教案，包含教学目标、教学重点和课堂活动' },
+  { label: '写期末评语', icon: '✍️', prompt: '请帮我写一段期末评语，要求积极鼓励，指出优点和改进方向，大约100字左右' },
+  { label: '出练习题', icon: '📝', prompt: '请帮我出10道二年级数学口算题，包含加减法，难度适中' },
+  { label: '家长沟通', icon: '💬', prompt: '学生小明这次考试成绩下降了，请帮我写一条给家长的沟通消息，既要指出问题又要鼓励' },
+  { label: '课堂活动', icon: '🎯', prompt: '推荐几个适合小学三年级的数学课堂互动游戏或活动' },
+  { label: '知识点梳理', icon: '💡', prompt: '请帮我梳理一下五年级数学上册的重点知识点，按单元整理' },
+  { label: '作业批改', icon: '✓', prompt: '学生作业中有一道题做错了：35 × 24 = 820，请帮我分析错误原因并给出正确解答' },
+]
+
 function newChat() {
   ai.createChat('新对话')
   nextTick(scrollToBottom)
@@ -356,6 +372,18 @@ function deleteChat(id: string) {
   if (!confirm('确定删除该对话?')) return
   ai.removeChat(id)
 }
+function useQuickCommand(cmd: string) {
+  input.value = cmd
+  showQuickCommands.value = false
+}
+const filteredChats = computed(() => {
+  if (!searchQuery.value) return ai.chats
+  const q = searchQuery.value.toLowerCase()
+  return ai.chats.filter(c => 
+    c.title.toLowerCase().includes(q) || 
+    c.messages.some(m => m.content.toLowerCase().includes(q))
+  )
+})
 
 // ============ Message input ============
 const input = ref('')
@@ -900,7 +928,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ai-container">
+  <div class="ai-container min-h-screen bg-gradient-to-br from-butter-50 via-cream-50 to-sakura-50">
     <!-- Left: chat list (desktop) -->
     <aside
       v-if="showSidebar && !isMobileSidebarOpen"
@@ -912,15 +940,26 @@ onUnmounted(() => {
       >
         <Plus :size="14" /> 新建对话
       </button>
+      
+      <div class="relative mb-3">
+        <Search :size="12" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-cocoa-400" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索对话..."
+          class="w-full pl-7 pr-3 py-2 bg-butter-50 border border-butter-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-butter-400 transition-all"
+        />
+      </div>
+      
       <div class="flex-1 overflow-y-auto space-y-1">
         <button
-          v-for="c in ai.chats"
+          v-for="c in filteredChats"
           :key="c.id"
-          class="w-full text-left card-flat px-3 py-2 text-sm flex items-center gap-2 group"
+          class="w-full text-left card-flat px-3 py-2 text-sm flex items-center gap-2 group transition-all duration-200"
           :class="
             c.id === ai.activeChatId
-              ? 'bg-butter-100 ring-1 ring-butter-300'
-              : 'hover:bg-butter-50/60'
+              ? 'bg-gradient-to-r from-butter-100 to-sakura-100 ring-1 ring-butter-300 shadow-sm'
+              : 'hover:bg-butter-50/80 hover:shadow-sm'
           "
           @click="selectChat(c.id)"
         >
@@ -1277,6 +1316,15 @@ onUnmounted(() => {
         </div>
 
         <div class="card-flat p-2 flex items-end gap-2">
+          <!-- 快捷指令按钮 -->
+          <button
+            class="p-2 rounded-xl text-cocoa-500 hover:text-butter-600 hover:bg-butter-50 transition-colors shrink-0"
+            :title="'快捷指令'"
+            :disabled="isStreaming"
+            @click="showQuickCommands = !showQuickCommands"
+          >
+            <Lightbulb :size="16" />
+          </button>
           <!-- 附件按钮 (回形针) -->
           <button
             class="p-2 rounded-xl text-cocoa-500 hover:text-butter-600 hover:bg-butter-50 transition-colors shrink-0"
@@ -1331,6 +1379,36 @@ onUnmounted(() => {
             支持文本/代码、图片，以及文档 (PDF/Word/Excel/PPT)
           </span>
           <span>{{ user.user?.name || '老师' }}老师 · 上下文含本系统全部数据</span>
+        </div>
+        
+        <!-- 快捷指令面板 -->
+        <div
+          v-if="showQuickCommands"
+          class="mt-2 bg-white rounded-2xl shadow-lg border border-butter-200 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+        >
+          <div class="px-3 py-2 bg-gradient-to-r from-butter-100 to-sakura-100 flex items-center gap-2">
+            <Lightbulb :size="14" class="text-butter-600" />
+            <span class="text-xs font-medium text-cocoa-800">快捷指令</span>
+            <button
+              class="ml-auto text-cocoa-400 hover:text-cocoa-600"
+              @click="showQuickCommands = false"
+            >
+              <X :size="12" />
+            </button>
+          </div>
+          <div class="p-2 grid grid-cols-2 gap-2">
+            <button
+              v-for="cmd in quickCommands"
+              :key="cmd.label"
+              class="text-left p-2 rounded-xl bg-butter-50/60 hover:bg-butter-100 transition-all group"
+              @click="useQuickCommand(cmd.prompt)"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-lg">{{ cmd.icon }}</span>
+                <span class="text-xs font-medium text-cocoa-700 group-hover:text-butter-600 transition-colors">{{ cmd.label }}</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </section>

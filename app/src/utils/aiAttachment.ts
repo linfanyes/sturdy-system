@@ -159,13 +159,50 @@ export async function readFile(file: File): Promise<AIAttachment> {
   return base
 }
 
-/** File -> dataURL (base64) */
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
+/** 图片自动压缩的最大边长 (px)，平衡识别率与内存占用 */
+export const IMAGE_MAX_SIDE = 1024
+
+/** File -> dataURL (base64)，大图片自动压缩到最大边长内 */
+async function fileToDataUrl(file: File): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
     reader.onerror = () => reject(new Error('读取图片失败'))
     reader.readAsDataURL(file)
+  })
+  return compressImage(dataUrl, IMAGE_MAX_SIDE)
+}
+
+/** 将 dataURL 图片压缩到指定最大边长以内，返回压缩后的 dataURL */
+export function compressImage(dataUrl: string, maxSide: number): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const { width, height } = img
+      if (width <= maxSide && height <= maxSide) {
+        resolve(dataUrl)
+        return
+      }
+      const scale = Math.min(maxSide / width, maxSide / height)
+      const w = Math.round(width * scale)
+      const h = Math.round(height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(dataUrl)
+        return
+      }
+      ctx.drawImage(img, 0, 0, w, h)
+      try {
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      } catch {
+        resolve(dataUrl)
+      }
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
   })
 }
 
