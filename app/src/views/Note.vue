@@ -5,9 +5,9 @@ import { useNoteStore } from '../stores/note'
 import type { NoteItem, NoteCategory } from '../types'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import MarkdownView from '../components/common/MarkdownView.vue'
 import { Plus, Pin, PinOff, Star, Trash2, Search, Save, X, Eye, Pencil } from 'lucide-vue-next'
 import { formatDate } from '../utils'
-import { renderMarkdownToHtml } from '../utils/download'
 import { useToastStore } from '../stores/toast'
 
 /** 弹窗：true=预览 Markdown，false=编辑 */
@@ -291,10 +291,10 @@ const catColor: Record<NoteCategory, string> = {
             class="input-soft mt-1 min-h-[260px] leading-relaxed"
             placeholder="把今天想说的写下来吧...（支持 Markdown 语法）"
           />
-          <div
+          <MarkdownView
             v-else
             class="note-md mt-1 min-h-[260px] max-h-[360px] overflow-y-auto card-flat p-4"
-            v-html="renderMarkdownToHtml(draft.content || '')"
+            :md="draft.content || ''"
           />
         </div>
       </div>

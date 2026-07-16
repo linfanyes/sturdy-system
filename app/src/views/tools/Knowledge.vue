@@ -5,9 +5,11 @@ import { useGeneratedStore } from '../../stores/generated'
 import { useUserStore, currentTermStr } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
 import { aiChat, AIError } from '../../utils/aiCall'
-import { renderMarkdownToHtml, downloadDocx, copyText } from '../../utils/download'
+import { downloadDocx, copyText } from '../../utils/download'
 import ToolPageHeader from '../../components/common/ToolPageHeader.vue'
 import EmptyState from '../../components/common/EmptyState.vue'
+import MarkdownView from '../../components/common/MarkdownView.vue'
+import AIModelHint from '../../components/common/AIModelHint.vue'
 import { Sparkles, Download, Copy, Trash2, RefreshCw, Square, History, FileText } from 'lucide-vue-next'
 
 const classStore = useClassStore()
@@ -36,7 +38,6 @@ const unit = ref('')
 const requirements = ref('')
 
 const result = ref('')
-const previewHtml = computed(() => (result.value ? renderMarkdownToHtml(result.value) : ''))
 
 const generating = ref(false)
 const abort = ref<AbortController | null>(null)
@@ -148,6 +149,7 @@ function removeHistory(id: string) {
 <template>
   <div class="space-y-5">
     <ToolPageHeader title="知识点" desc="按年级 / 科目 / 教材版本 / 学期，AI 生成当年课本知识点，支持预览、下载与多版本留存" icon="💡" />
+    <AIModelHint :injected="false" />
 
     <div class="grid lg:grid-cols-3 gap-4">
       <!-- 左侧：参数 -->
@@ -202,10 +204,10 @@ function removeHistory(id: string) {
               <button class="btn-soft text-xs" @click="doDocx"><Download :size="12" /> 下载 doc</button>
             </div>
           </div>
-          <div
+          <MarkdownView
             v-if="result"
             class="prose-doc max-h-[60vh] overflow-y-auto p-4 rounded-2xl bg-cream-50 text-sm leading-relaxed"
-            v-html="previewHtml"
+            :md="result"
           />
           <div v-else class="text-center text-cocoa-500 py-8">
             <div class="text-4xl mb-3">💡</div>

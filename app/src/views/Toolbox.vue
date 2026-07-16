@@ -11,35 +11,109 @@ const toolboxStore = useToolboxStore()
 const CATEGORY_LABELS: Record<ToolCategory, string> = {
   dialogue: '对话工具',
   text: '文字工具',
+  chinese: '语文',
+  math: '数学',
+  english: '英语',
   game: '游戏',
   other: '其他',
 }
 
-const CATEGORY_ORDER: ToolCategory[] = ['dialogue', 'text', 'game', 'other']
+const CATEGORY_ORDER: ToolCategory[] = [
+  'dialogue',
+  'text',
+  'chinese',
+  'math',
+  'english',
+  'game',
+  'other',
+]
 
 const CATEGORY_BTN_CLASS: Record<ToolCategory, string> = {
   dialogue: 'bg-butter-100 text-butter-600',
   text: 'bg-mint-100 text-mint-600',
+  chinese: 'bg-rose-100 text-rose-600',
+  math: 'bg-amber-100 text-amber-600',
+  english: 'bg-sky2-100 text-sky2-600',
   game: 'bg-sakura-100 text-sakura-600',
-  other: 'bg-sky2-100 text-sky2-600',
+  other: 'bg-cocoa-100 text-cocoa-600',
+}
+
+/** 每个分类统一的卡片背景色 + 文字色 (一个类一个颜色, 覆盖工具项自带的 bg/text) */
+const CATEGORY_CARD_STYLE: Record<ToolCategory, { bg: string; text: string }> = {
+  dialogue: { bg: 'bg-gradient-to-br from-butter-100 to-butter-200', text: 'text-butter-600' },
+  text: { bg: 'bg-gradient-to-br from-mint-100 to-mint-200', text: 'text-mint-600' },
+  chinese: { bg: 'bg-gradient-to-br from-rose-100 to-rose-200', text: 'text-rose-600' },
+  math: { bg: 'bg-gradient-to-br from-amber-100 to-amber-200', text: 'text-amber-600' },
+  english: { bg: 'bg-gradient-to-br from-sky2-100 to-sky2-200', text: 'text-sky2-600' },
+  game: { bg: 'bg-gradient-to-br from-sakura-100 to-sakura-200', text: 'text-sakura-600' },
+  other: { bg: 'bg-gradient-to-br from-cocoa-100 to-cocoa-200', text: 'text-cocoa-600' },
+}
+
+/** 按分类获取工具卡片样式 (统一颜色) */
+function cardStyle(t: ToolItem): { bg: string; text: string } {
+  return CATEGORY_CARD_STYLE[t.category] || { bg: t.bg, text: t.text }
 }
 
 /** 根据路由自动判断默认分类：新增工具只要符合规则即可自动归类 */
 function autoCategory(route: string): ToolCategory {
   if (route === 'tool-ai') return 'dialogue'
   if (route === 'games' || route.startsWith('game-') || route === 'tool-flower') return 'game'
+  // 语文工具
   if (
     [
-      'tool-translate',
+      'tool-stroke-order',
+      'tool-writing-materials',
+      'tool-poetry',
+      'tool-dictation',
+      'tool-reading',
+      'tool-essay',
+      'tool-idiom',
+      'tool-pinyin',
+    ].includes(route)
+  )
+    return 'chinese'
+  // 数学工具
+  if (
+    [
+      'tool-math',
+      'tool-vertical-calc',
+      'tool-answer-card',
+      'tool-multiplication-table',
+      'tool-unit-conversion',
+      'tool-math-mistakes',
+    ].includes(route)
+  )
+    return 'math'
+  // 英语工具
+  if (
+    [
+      'tool-word-card',
+      'tool-sentence-practice',
+      'tool-listening',
+      'tool-grammar',
+      'tool-scene-dialogue',
+      'tool-spell',
+      'tool-speaking',
+      'tool-english-story',
+    ].includes(route)
+  )
+    return 'english'
+  // 文字工具
+  if (
+    [
       'tool-comment',
       'tool-notice-tpl',
       'tool-plan-tpl',
       'tool-paper',
       'tool-knowledge',
       'tool-lesson-plan',
+      'tool-test-paper',
+      'tool-summary',
+      'tool-speech',
     ].includes(route)
   )
     return 'text'
+  // 翻译按用户要求移到「其他」类
   return 'other'
 }
 
@@ -141,6 +215,26 @@ const allTools: ToolItem[] = [
     category: autoCategory('tool-lesson-plan'),
   },
   {
+    name: '期末总结生成',
+    desc: 'AI 基于本地数据生成学生评语、班级、学科总结',
+    icon: '📑',
+    bg: 'bg-mint-100',
+    text: 'text-mint-500',
+    route: 'tool-summary',
+    tag: '文字',
+    category: autoCategory('tool-summary'),
+  },
+  {
+    name: '演讲稿生成',
+    desc: '国旗下讲话、班会、家长会等场景演讲稿',
+    icon: '🎤',
+    bg: 'bg-mint-100',
+    text: 'text-mint-500',
+    route: 'tool-speech',
+    tag: '文字',
+    category: autoCategory('tool-speech'),
+  },
+  {
     name: '口算生成',
     desc: '加减乘除，按难度自动出题',
     icon: '➕',
@@ -239,12 +333,12 @@ const allTools: ToolItem[] = [
   },
   {
     name: '小游戏合集',
-    desc: '12款经典小游戏，课间放松摸鱼必备',
+    desc: '18款经典小游戏，课间放松摸鱼必备',
     icon: '🎮',
     bg: 'bg-gradient-to-br from-sakura-100 to-mint-100',
     text: 'text-cocoa-700',
     route: 'games',
-    tag: '12合1',
+    tag: '18合1',
     category: autoCategory('games'),
   },
   {
@@ -316,6 +410,149 @@ const allTools: ToolItem[] = [
     route: 'tool-class-duty',
     tag: '新增',
     category: autoCategory('tool-class-duty'),
+  },
+  // ============ 语文工具 ============
+  {
+    name: '古诗词助手',
+    desc: '按年级/主题检索古诗词，含译文、赏析、默写练习',
+    icon: '📜',
+    bg: 'bg-gradient-to-br from-rose-100 to-butter-100',
+    text: 'text-rose-600',
+    route: 'tool-poetry',
+    tag: '语文',
+    category: autoCategory('tool-poetry'),
+  },
+  {
+    name: '汉字听写',
+    desc: '自定义词库，浏览器语音播报，学生默写自检',
+    icon: '🎧',
+    bg: 'bg-gradient-to-br from-rose-100 to-sakura-100',
+    text: 'text-rose-600',
+    route: 'tool-dictation',
+    tag: '语文',
+    category: autoCategory('tool-dictation'),
+  },
+  {
+    name: '阅读理解生成',
+    desc: '按年级/文体 AI 生成阅读理解文章与试题',
+    icon: '📚',
+    bg: 'bg-gradient-to-br from-rose-100 to-mint-100',
+    text: 'text-rose-600',
+    route: 'tool-reading',
+    tag: '语文',
+    category: autoCategory('tool-reading'),
+  },
+  {
+    name: '小作文助手',
+    desc: 'AI 生成范文、智能批改学生作文',
+    icon: '✍️',
+    bg: 'bg-gradient-to-br from-rose-100 to-butter-100',
+    text: 'text-rose-600',
+    route: 'tool-essay',
+    tag: '语文',
+    category: autoCategory('tool-essay'),
+  },
+  {
+    name: '成语词典',
+    desc: '成语查询、出处造句、AI 成语接龙',
+    icon: '🔤',
+    bg: 'bg-gradient-to-br from-rose-100 to-sakura-100',
+    text: 'text-rose-600',
+    route: 'tool-idiom',
+    tag: '语文',
+    category: autoCategory('tool-idiom'),
+  },
+  {
+    name: '拼音标注',
+    desc: '汉字文本自动标注拼音，支持多种模式',
+    icon: '🎵',
+    bg: 'bg-gradient-to-br from-rose-100 to-mint-100',
+    text: 'text-rose-600',
+    route: 'tool-pinyin',
+    tag: '语文',
+    category: autoCategory('tool-pinyin'),
+  },
+  // ============ 英语工具 ============
+  {
+    name: '英语听力',
+    desc: 'AI 生成听力材料与题目，浏览器 TTS 朗读',
+    icon: '📻',
+    bg: 'bg-gradient-to-br from-sky2-100 to-mint-100',
+    text: 'text-sky2-500',
+    route: 'tool-listening',
+    tag: '英语',
+    category: autoCategory('tool-listening'),
+  },
+  {
+    name: '英语语法练习',
+    desc: '时态、句型转换、单选填空等语法专项',
+    icon: '🔤',
+    bg: 'bg-gradient-to-br from-sky2-100 to-butter-100',
+    text: 'text-sky2-500',
+    route: 'tool-grammar',
+    tag: '英语',
+    category: autoCategory('tool-grammar'),
+  },
+  {
+    name: '英语情景对话',
+    desc: '购物/问路/就餐等情景对话生成与角色扮演',
+    icon: '💬',
+    bg: 'bg-gradient-to-br from-sky2-100 to-sakura-100',
+    text: 'text-sky2-500',
+    route: 'tool-scene-dialogue',
+    tag: '英语',
+    category: autoCategory('tool-scene-dialogue'),
+  },
+  {
+    name: '单词拼写',
+    desc: '听音拼写、看中拼英、看英写中三种模式',
+    icon: '🔡',
+    bg: 'bg-gradient-to-br from-sky2-100 to-mint-100',
+    text: 'text-sky2-500',
+    route: 'tool-spell',
+    tag: '英语',
+    category: autoCategory('tool-spell'),
+  },
+  {
+    name: '口语练习',
+    desc: 'AI 生成朗读文本，范读跟读录音对比',
+    icon: '🎙️',
+    bg: 'bg-gradient-to-br from-sky2-100 to-butter-100',
+    text: 'text-sky2-500',
+    route: 'tool-speaking',
+    tag: '英语',
+    category: autoCategory('tool-speaking'),
+  },
+  {
+    name: '英语爽文',
+    desc: 'AI 生成趣味英语故事，含生词表和翻译',
+    icon: '📖',
+    bg: 'bg-gradient-to-br from-sky2-100 to-sakura-100',
+    text: 'text-sky2-500',
+    route: 'tool-english-story',
+    tag: '英语',
+    category: autoCategory('tool-english-story'),
+  },
+  // ============ 其他工具 ============
+  {
+    name: '黑板报生成',
+    desc: '按主题 AI 生成 3 套黑板报方案，模拟黑板展示',
+    icon: '🟢',
+    bg: 'bg-gradient-to-br from-cocoa-100 to-mint-100',
+    text: 'text-cocoa-600',
+    route: 'tool-blackboard',
+    tag: '其他',
+    category: autoCategory('tool-blackboard'),
+  },
+  {
+    name: '随机决定器',
+    desc: '转盘/抽签/掷骰子/抛硬币，课堂随机神器',
+    icon: '🎲',
+    bg: 'bg-gradient-to-br from-cocoa-100 to-sakura-100',
+    text: 'text-cocoa-600',
+    route: 'tool-dice',
+    tag: '其他',
+    category: autoCategory('tool-dice'),
   },
 ]
 
@@ -407,7 +644,7 @@ function isOverridden(route: string) {
           >
             <div
               class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-softer group-hover:scale-110 transition-transform"
-              :class="t.bg"
+              :class="cardStyle(t).bg"
             >
               {{ t.icon }}
             </div>
@@ -428,7 +665,7 @@ function isOverridden(route: string) {
             </p>
             <div
               class="absolute right-4 top-4 chip"
-              :class="t.bg + ' ' + t.text + ' text-[10px] opacity-0 group-hover:opacity-100 transition'"
+              :class="cardStyle(t).bg + ' ' + cardStyle(t).text + ' text-[10px] opacity-0 group-hover:opacity-100 transition'"
             >
               立即使用 →
             </div>

@@ -2,7 +2,7 @@
 /**
  * 开发者测试数据生成工具
  *
- * 仅在 dev 模式可见 (router 注册时通过 import.meta.env.DEV 判断)。
+ * 仅在 dev 模式或 Electron 打包态可见 (router 中通过 import.meta.env.DEV || window.__ELECTRON_PACKAGED__ 判断)。
  * 登录后访问 /#/dev/seed 可一键为「甘珊」老师生成完整测试数据:
  *  - 2 个班级 (15 + 15 = 30 学生)
  *  - 3 次考试 (各科 100/50 分)

@@ -6,6 +6,8 @@ import { useToastStore } from '../../stores/toast'
 import { aiChat, AIError } from '../../utils/aiCall'
 import ToolBackButton from '../../components/common/ToolBackButton.vue'
 import Modal from '../../components/common/Modal.vue'
+import MarkdownView from '../../components/common/MarkdownView.vue'
+import AIModelHint from '../../components/common/AIModelHint.vue'
 import {
   downloadMarkdown,
   downloadDocx,
@@ -47,7 +49,7 @@ const generatedTitle = ref('')
 const abortWrite = ref<AbortController | null>(null)
 
 // ============ 计算 ============
-const generatedHtml = computed(() => generatedPaper.value ? renderMarkdownToHtml(generatedPaper.value) : '')
+const generatedHtml = computed(() => renderMarkdownToHtml(generatedPaper.value || ''))
 const planTemplates = computed(() => adminStore.planTemplates)
 const linkedTemplate = computed(() => planTemplates.value.find(t => t.id === linkedTemplateId.value) || null)
 
@@ -228,6 +230,7 @@ function doPrint() {
 <template>
   <div class="space-y-4">
     <ToolBackButton />
+    <AIModelHint :injected="true" />
     <!-- 顶部介绍 -->
     <section class="card-soft p-5 bg-gradient-to-br from-sky2-100 via-cream-50 to-mint-100">
       <div class="flex items-start gap-4 flex-wrap">
@@ -386,9 +389,9 @@ function doPrint() {
             {{ generatedPaper }}<span class="inline-block w-2 h-4 bg-sky2-500 ml-0.5 align-middle animate-pulse" />
           </div>
           <!-- 生成完成 -->
-          <div v-else-if="generatedPaper"
+          <MarkdownView v-else-if="generatedPaper"
             class="min-h-[300px] prose-doc p-4 rounded-2xl bg-cream-50 text-sm leading-relaxed overflow-y-auto max-h-[70vh]"
-            v-html="generatedHtml" />
+            :md="generatedPaper" />
           <!-- 空 -->
           <div v-else class="min-h-[200px] flex flex-col items-center justify-center text-cocoa-400">
             <FileText :size="40" class="mb-2 opacity-40" />

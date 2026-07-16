@@ -5,6 +5,8 @@ import { useGeneratedStore } from '../../stores/generated'
 import { useToastStore } from '../../stores/toast'
 import { aiChat, AIError } from '../../utils/aiCall'
 import ToolBackButton from '../../components/common/ToolBackButton.vue'
+import MarkdownView from '../../components/common/MarkdownView.vue'
+import AIModelHint from '../../components/common/AIModelHint.vue'
 import {
   downloadMarkdown,
   downloadDocx,
@@ -52,10 +54,7 @@ const currentTitle = ref('')
 const currentMeta = ref<string>('')
 const abort = ref<AbortController | null>(null)
 
-const candidatesHtml = computed(() =>
-  candidates.value.map((c) => ({ ...c, html: renderMarkdownToHtml(c.content) })),
-)
-const mergedHtml = computed(() => (merged.value ? renderMarkdownToHtml(merged.value) : ''))
+const candidatesHtml = computed(() => candidates.value.map((c) => ({ ...c })))
 
 function parseCandidates(text: string) {
   const re = /^###\s*方案\s*(\d+)[：:]\s*(.*)$/gm
@@ -247,6 +246,7 @@ function backToConfig() {
 <template>
   <div class="space-y-4">
     <ToolBackButton />
+    <AIModelHint :injected="true" />
     <section class="card-soft p-5 bg-gradient-to-br from-mint-100 via-sky2-100 to-cream-100">
       <div class="flex items-start gap-4 flex-wrap">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-mint-300 to-sky2-300 flex items-center justify-center text-2xl shadow-softer">
@@ -483,9 +483,9 @@ function backToConfig() {
                   <span class="font-medium text-cocoa-900">{{ c.title }}</span>
                 </label>
               </div>
-              <div
+              <MarkdownView
                 class="prose-doc text-xs leading-relaxed max-h-48 overflow-y-auto pl-1"
-                v-html="c.html"
+                :md="c.content"
               />
             </div>
           </div>
@@ -538,10 +538,10 @@ function backToConfig() {
           >
             {{ merged }}<span class="inline-block w-2 h-4 bg-butter-500 ml-0.5 align-middle animate-pulse" />
           </div>
-          <div
+          <MarkdownView
             v-else-if="merged"
             class="min-h-[300px] prose-doc p-4 rounded-2xl bg-cream-50 text-sm leading-relaxed overflow-y-auto max-h-[70vh]"
-            v-html="mergedHtml"
+            :md="merged"
           />
           <div
             v-else

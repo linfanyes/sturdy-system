@@ -1,4 +1,11 @@
-export type ToolCategory = 'dialogue' | 'text' | 'game' | 'other'
+export type ToolCategory =
+  | 'dialogue'
+  | 'text'
+  | 'chinese'
+  | 'math'
+  | 'english'
+  | 'game'
+  | 'other'
 
 export interface ToolItem {
   name: string

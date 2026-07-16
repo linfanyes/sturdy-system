@@ -110,6 +110,46 @@ const games = [
     route: 'game-car-crash',
     tag: '动作',
   },
+  {
+    name: '数独',
+    desc: '9x9 数字推理，锻炼逻辑',
+    icon: '🔢',
+    bg: 'bg-gradient-to-br from-butter-100 to-mint-100',
+    route: 'game-sudoku',
+    tag: '数字',
+  },
+  {
+    name: '数字排序',
+    desc: '按顺序点击数字，比比谁快',
+    icon: '🚂',
+    bg: 'bg-gradient-to-br from-mint-100 to-sky2-100',
+    route: 'game-sequence',
+    tag: '数字',
+  },
+  {
+    name: '记忆翻牌',
+    desc: '翻牌配对，考验记忆力',
+    icon: '🃏',
+    bg: 'bg-gradient-to-br from-sakura-100 to-butter-100',
+    route: 'game-memory',
+    tag: '益智',
+  },
+  {
+    name: '图片拼图',
+    desc: '15 数字滑块，还原有序',
+    icon: '🧩',
+    bg: 'bg-gradient-to-br from-sky2-100 to-sakura-100',
+    route: 'game-slide-puzzle',
+    tag: '益智',
+  },
+  {
+    name: '颜色反应',
+    desc: '斯特鲁普测试，挑战反应力',
+    icon: '🎨',
+    bg: 'bg-gradient-to-br from-rose-100 to-mint-100',
+    route: 'game-color-match',
+    tag: '益智',
+  },
 ]
 
 const gameCount = computed(() => games.length)

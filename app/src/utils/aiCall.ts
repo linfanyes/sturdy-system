@@ -87,12 +87,66 @@ export const VISION_MODEL_EXAMPLES = [
   'gemini-1.5-pro',
 ]
 
-/** AI 调用相关的业务错误 (带中文提示, 便于 UI 直接 toast) */
+/** AI 错误码: 用于 UI 区分用户操作错误 / 网络错误 / 鉴权错误等, 给出不同 CTA */
+export type AIErrorCode =
+  | 'NO_KEY'
+  | 'NETWORK'
+  | 'AUTH'
+  | 'RATE_LIMIT'
+  | 'INSUFFICIENT_BALANCE'
+  | 'SERVER'
+  | 'PARSE'
+  | 'ABORTED'
+  | 'UNKNOWN'
+
+/** AI 调用相关的业务错误 (带中文提示 + 错误码, 便于 UI 直接 toast 并按 CTA 处理) */
 export class AIError extends Error {
-  constructor(message: string) {
+  /** 错误码 (UI 据 code 给不同 CTA: 去配置 / 重试 / 联系管理员) */
+  readonly code: AIErrorCode
+  constructor(message: string, code: AIErrorCode = 'UNKNOWN') {
     super(message)
     this.name = 'AIError'
+    this.code = code
   }
+}
+
+/**
+ * 把上游 HTTP 响应错误体映射为用户友好的 AIError.
+ * 原始错误体仅走 console.warn, 不进 UI, 避免泄露内部 URL/RequestId/API Key 校验信息.
+ */
+function mapHttpError(status: number, rawBody: string): AIError {
+  // 原始错误体仅在 dev 模式下打到 console, 便于排查
+  if (import.meta.env.DEV) {
+    console.warn('[aiCall] HTTP error', status, rawBody.slice(0, 500))
+  }
+  switch (status) {
+    case 401:
+    case 403:
+      return new AIError('API Key 无效或权限不足，请到「AI 对话 → 设置」检查 API Key。', 'AUTH')
+    case 429:
+      return new AIError('请求过于频繁，已被限流，请稍后再试。', 'RATE_LIMIT')
+    case 402:
+      // 部分上游用 402 表示余额不足
+      return new AIError('AI 账户余额不足，请充值后再试。', 'INSUFFICIENT_BALANCE')
+    case 400: {
+      // 400 通常是请求格式问题 (模型名错误 / 消息格式错误), 给出可操作提示
+      const hint = /model/i.test(rawBody) ? '（可能是模型名错误，请到设置中核对）' : ''
+      return new AIError('请求参数有误' + hint + '，请检查模型名与消息格式。', 'UNKNOWN')
+    }
+    default:
+      if (status >= 500) {
+        return new AIError(`AI 服务暂时不可用 (${status})，请稍后重试。`, 'SERVER')
+      }
+      return new AIError(`AI 请求失败 (${status})，请稍后重试。`, 'UNKNOWN')
+  }
+}
+
+/**
+ * 对外暴露的错误体映射 (供 aiParse 等其他 AI 工具复用).
+ * 返回的 message 已是用户友好提示, 不包含上游原文.
+ */
+export function mapHttpErrorForParse(status: number, rawBody: string): string {
+  return mapHttpError(status, rawBody).message
 }
 
 /** 判断消息内容是否包含图片附件 */
@@ -136,7 +190,7 @@ export async function aiChat(opts: {
   const settings = ai.settings
 
   if (!settings.apiKey) {
-    throw new AIError('请先在「AI 对话」右上角设置中配置 API Key')
+    throw new AIError('请先在「AI 对话」右上角设置中配置 API Key', 'NO_KEY')
   }
 
   const type = resolveModelType(opts.messages, opts.modelType)
@@ -168,17 +222,20 @@ export async function aiChat(opts: {
     })
   } catch (e: any) {
     if (e?.name === 'AbortError') throw e
-    throw new AIError('网络请求失败：' + (e?.message || '无法连接到 AI 服务'))
+    throw new AIError(
+      '网络请求失败：' + (e?.message || '无法连接到 AI 服务'),
+      'NETWORK',
+    )
   }
 
   if (!resp.ok) {
     let detail = ''
     try {
-      detail = (await resp.text()).slice(0, 500)
+      detail = await resp.text()
     } catch {
       /* noop */
     }
-    throw new AIError(`AI 请求失败 (${resp.status})${detail ? '：' + detail : ''}`)
+    throw mapHttpError(resp.status, detail)
   }
 
   // 非流式: 直接解析 JSON
@@ -187,13 +244,13 @@ export async function aiChat(opts: {
       const data = await resp.json()
       return data?.choices?.[0]?.message?.content || ''
     } catch {
-      throw new AIError('AI 返回的响应无法解析')
+      throw new AIError('AI 返回的响应无法解析', 'PARSE')
     }
   }
 
   // 流式: 解析 SSE
   const reader = resp.body?.getReader()
-  if (!reader) throw new AIError('浏览器不支持流式响应')
+  if (!reader) throw new AIError('浏览器不支持流式响应', 'UNKNOWN')
   const decoder = new TextDecoder('utf-8')
   let acc = ''
   let buffer = ''
@@ -224,7 +281,10 @@ export async function aiChat(opts: {
     }
   } catch (e: any) {
     if (e?.name === 'AbortError') throw e
-    throw new AIError('读取 AI 响应时出错：' + (e?.message || '未知错误'))
+    throw new AIError(
+      '读取 AI 响应时出错：' + (e?.message || '未知错误'),
+      'NETWORK',
+    )
   }
   return acc
 }

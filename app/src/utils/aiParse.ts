@@ -20,6 +20,7 @@
 
 import { useAIStore } from '../stores/ai'
 import { AI_DASHSCOPE_BASE_URL } from './aiBase'
+import { mapHttpErrorForParse } from './aiCall'
 
 /** JSON Schema 简化版 (用于 system prompt 引导 AI 输出) */
 export interface AISchema {
@@ -112,11 +113,12 @@ ${exampleJson}
     })
     if (!resp.ok) {
       const errText = await resp.text()
+      // 不向上游原文暴露给 UI, 仅返回用户友好的错误提示
       return {
         ok: false,
         data: [],
         raw: '',
-        error: '请求失败: ' + resp.status + ' ' + errText.slice(0, 300),
+        error: mapHttpErrorForParse(resp.status, errText),
       }
     }
     const reader = resp.body?.getReader()

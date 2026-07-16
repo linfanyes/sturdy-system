@@ -15,6 +15,7 @@ import { useToastStore } from '../stores/toast'
 import { fmtScore } from '../utils/format'
 import Modal from '../components/common/Modal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import MarkdownView from '../components/common/MarkdownView.vue'
 import {
   Send,
   Settings as SettingsIcon,
@@ -50,6 +51,7 @@ import {
 import { aiChat, AIError, isVisionModel, VISION_MODEL_EXAMPLES } from '../utils/aiCall'
 import { parseByAI, type AISchema } from '../utils/aiParse'
 import ToolBackButton from '../components/common/ToolBackButton.vue'
+import AIModelHint from '../components/common/AIModelHint.vue'
 // @ts-ignore - Vite raw import
 import SYSTEM_MANUAL_TEXT from '../assets/SYSTEM_MANUAL.md?raw'
 
@@ -393,6 +395,8 @@ const pendingAttachments = ref<AIAttachment[]>([])
 const fileInputEl = ref<HTMLInputElement | null>(null)
 const messagesEl = ref<HTMLElement | null>(null)
 const isStreaming = ref(false)
+/** 流式输出中的消息 id, 用于 MarkdownView 启用节流 */
+const streamingMessageId = ref<string | null>(null)
 let abortCtrl: AbortController | null = null
 
 const activeChat = computed(() => ai.getActiveChat())
@@ -807,6 +811,9 @@ async function send() {
   }
 
   isStreaming.value = true
+  // 记录当前流式输出的 assistant 消息 id, 供 MarkdownView 启用节流
+  const lastMsg = chat.messages[chat.messages.length - 1]
+  streamingMessageId.value = lastMsg?.id || null
   abortCtrl = new AbortController()
   try {
     const context = buildContext()
@@ -866,6 +873,7 @@ async function send() {
     }
   } finally {
     isStreaming.value = false
+    streamingMessageId.value = null
     abortCtrl = null
     scrollToBottom()
   }
@@ -928,7 +936,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="ai-container min-h-screen bg-gradient-to-br from-butter-50 via-cream-50 to-sakura-50">
+  <div class="ai-container bg-gradient-to-br from-butter-50 via-cream-50 to-sakura-50">
     <!-- Left: chat list (desktop) -->
     <aside
       v-if="showSidebar && !isMobileSidebarOpen"
@@ -1105,6 +1113,11 @@ onUnmounted(() => {
         </div>
       </header>
 
+      <!-- AI 模型信息提示条 -->
+      <div class="px-3 pt-2 sm:px-4">
+        <AIModelHint :injected="true" />
+      </div>
+
       <!-- Message stream -->
       <div
         ref="messagesEl"
@@ -1119,7 +1132,7 @@ onUnmounted(() => {
         <div
           v-for="m in messages"
           :key="m.id"
-          class="flex gap-2 select-none"
+          class="flex gap-2"
           :class="m.role === 'user' ? 'justify-end' : ''"
         >
           <div
@@ -1132,15 +1145,12 @@ onUnmounted(() => {
             />
           </div>
           <div
-            class="max-w-[80%] sm:max-w-[78%] rounded-2xl px-3 py-2 sm:px-3.5 sm:py-2.5 text-sm whitespace-pre-wrap break-words select-none"
+            class="max-w-[80%] sm:max-w-[78%] rounded-2xl px-3 py-2 sm:px-3.5 sm:py-2.5 text-sm break-words"
             :class="
               m.role === 'user'
                 ? 'bg-butter-300 text-cocoa-900 rounded-tr-sm'
                 : 'card-flat !rounded-2xl rounded-tl-sm text-cocoa-900'
             "
-            @copy.prevent
-            @cut.prevent
-            @contextmenu.prevent
           >
             <!-- 附件预览 (仅 user 消息) -->
             <div
@@ -1182,11 +1192,22 @@ onUnmounted(() => {
                 </span>
               </div>
             </div>
-            {{ m.content || (m.role === 'assistant' && isStreaming ? '▍' : '') }}
-            <span
-              v-if="m.role === 'assistant' && !m.content && isStreaming"
-              class="inline-block w-2 h-4 bg-butter-500 ml-0.5 align-middle animate-pulse"
-            />
+            <!-- 用户消息保持纯文本 (用户输入可能有 & < 等字符, 不应被解释为 HTML);
+                 AI 消息渲染 Markdown, 流式时启用节流 -->
+            <template v-if="m.role === 'user'">
+              <span class="whitespace-pre-wrap">{{ m.content }}</span>
+            </template>
+            <template v-else>
+              <MarkdownView
+                v-if="m.content"
+                :md="m.content"
+                :streaming="isStreaming && m.id === streamingMessageId"
+              />
+              <span
+                v-if="!m.content && isStreaming"
+                class="inline-block w-2 h-4 bg-butter-500 ml-0.5 align-middle animate-pulse"
+              />
+            </template>
           </div>
           <div
             v-if="m.role === 'user'"
@@ -1724,7 +1745,9 @@ onUnmounted(() => {
 .ai-container {
   display: flex;
   gap: 0.75rem;
-  height: calc(100vh - 120px);
+  /* 桌面: 视口高度 - AppShell 顶栏(~56px) - main 的 pb-12(48px) - 留 16px 余量 = 120px
+     使用 dvh 动态视口单位, 避免移动端 URL 栏跳变导致输入框被遮挡 */
+  height: calc(100dvh - 140px);
 }
 .ai-sidebar {
   width: 15rem;
@@ -1735,11 +1758,11 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-/* 手机端：高度减去底部导航栏 + 顶栏 */
+/* 手机端: 顶栏 + main 的 pb-24(96px) + 底部导航(64px) + 余量 */
 @media (max-width: 1023px) {
   .ai-container {
-    height: calc(100vh - 120px - 64px);
-    min-height: 400px;
+    height: calc(100dvh - 220px);
+    min-height: 380px;
   }
 }
 

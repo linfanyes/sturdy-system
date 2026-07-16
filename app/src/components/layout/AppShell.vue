@@ -62,6 +62,7 @@ const navGroups = [
       { name: 'behavior', label: '行为观察', icon: '👀', emoji: true },
       { name: 'class-finance', label: '班费管理', icon: '💰', emoji: true },
       { name: 'class-activity', label: '班级活动', icon: '🎉', emoji: true },
+      { name: 'class-gallery', label: '班级风采', icon: '📸', emoji: true },
     ],
   },
   {

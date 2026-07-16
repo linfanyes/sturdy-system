@@ -85,4 +85,34 @@ export const gameRoutes: RouteRecordRaw[] = [
     component: () => import('../views/games/GameCarCrash.vue'),
     meta: { title: '汽车躲避', icon: '🚗', keepAlive: true },
   },
+  {
+    path: 'games/sudoku',
+    name: 'game-sudoku',
+    component: () => import('../views/games/GameSudoku.vue'),
+    meta: { title: '数独', icon: '🔢', keepAlive: true },
+  },
+  {
+    path: 'games/sequence',
+    name: 'game-sequence',
+    component: () => import('../views/games/GameSequence.vue'),
+    meta: { title: '数字排序', icon: '🚂', keepAlive: true },
+  },
+  {
+    path: 'games/memory',
+    name: 'game-memory',
+    component: () => import('../views/games/GameMemory.vue'),
+    meta: { title: '记忆翻牌', icon: '🃏', keepAlive: true },
+  },
+  {
+    path: 'games/slide-puzzle',
+    name: 'game-slide-puzzle',
+    component: () => import('../views/games/GameSlidePuzzle.vue'),
+    meta: { title: '图片拼图', icon: '🧩', keepAlive: true },
+  },
+  {
+    path: 'games/color-match',
+    name: 'game-color-match',
+    component: () => import('../views/games/GameColorMatch.vue'),
+    meta: { title: '颜色反应', icon: '🎨', keepAlive: true },
+  },
 ]

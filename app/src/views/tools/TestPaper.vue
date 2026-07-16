@@ -7,6 +7,8 @@ import { useGeneratedStore } from '../../stores/generated'
 import { useToastStore } from '../../stores/toast'
 import { aiChat, AIError } from '../../utils/aiCall'
 import ToolBackButton from '../../components/common/ToolBackButton.vue'
+import MarkdownView from '../../components/common/MarkdownView.vue'
+import AIModelHint from '../../components/common/AIModelHint.vue'
 import {
   downloadMarkdown,
   downloadDocx,
@@ -73,8 +75,6 @@ const result = ref('')
 const currentTitle = ref('')
 const currentMeta = ref<{ grade: string; subject: string; prompt: string } | null>(null)
 const abort = ref<AbortController | null>(null)
-
-const previewHtml = computed(() => (result.value ? renderMarkdownToHtml(result.value) : ''))
 
 function buildPrompt() {
   const t = title.value.trim() || `${grade.value}${subject.value}试卷`
@@ -346,6 +346,7 @@ function removeHistory(id: string) {
 <template>
   <div class="space-y-4">
     <ToolBackButton />
+    <AIModelHint :injected="true" />
     <!-- 顶部说明 -->
     <section class="card-soft p-5 bg-gradient-to-br from-sakura-100 via-cream-50 to-butter-100">
       <div class="flex items-start gap-4 flex-wrap">
@@ -641,10 +642,10 @@ function removeHistory(id: string) {
           >
             {{ result }}<span class="inline-block w-2 h-4 bg-butter-500 ml-0.5 align-middle animate-pulse" />
           </div>
-          <div
+          <MarkdownView
             v-else-if="result"
             class="min-h-[300px] prose-doc p-4 rounded-2xl bg-cream-50 text-sm leading-relaxed overflow-y-auto max-h-[70vh]"
-            v-html="previewHtml"
+            :md="result"
           />
           <div
             v-else

@@ -3,6 +3,20 @@ import { useUserStore } from '../stores/user'
 import { toolRoutes } from './tools'
 import { gameRoutes } from './games'
 
+/**
+ * 是否启用 /dev/seed 等开发专用路由.
+ * 按项目硬约束: 仅在开发环境 (import.meta.env.DEV) 注册,
+ * 例外: Electron 打包构建通过 preload 暴露的 window.__ELECTRON_PACKAGED__ 显式启用.
+ */
+declare global {
+  interface Window {
+    __ELECTRON_PACKAGED__?: boolean
+  }
+}
+const ENABLE_DEV_SEED = import.meta.env.DEV || Boolean(
+  typeof window !== 'undefined' && window.__ELECTRON_PACKAGED__,
+)
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
@@ -149,6 +163,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '班级活动', icon: '🎉' },
       },
       {
+        path: 'class-gallery',
+        name: 'class-gallery',
+        component: () => import('../views/ClassGallery.vue'),
+        meta: { title: '班级风采', icon: '📸' },
+      },
+      {
         path: 'games',
         name: 'games',
         component: () => import('../views/games/GamesIndex.vue'),
@@ -159,18 +179,22 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: '/dev/seed',
-    name: 'dev-seed',
-    component: () => import('../views/DevSeed.vue'),
-    meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
-  },
-  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('../views/NotFound.vue'),
     meta: { layout: 'blank' },
   },
 ]
+
+// 按环境隔离开发路由: 仅 dev 模式或 Electron 打包态注册 /dev/seed
+if (ENABLE_DEV_SEED) {
+  routes.splice(routes.length - 1, 0, {
+    path: '/dev/seed',
+    name: 'dev-seed',
+    component: () => import('../views/DevSeed.vue'),
+    meta: { layout: 'blank' as const, requiresAuth: true, title: '测试数据生成器' },
+  })
+}
 
 const router = createRouter({
   history: createWebHashHistory(),
