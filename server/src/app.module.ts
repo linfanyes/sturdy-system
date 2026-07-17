@@ -1,0 +1,88 @@
+import { Module } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { JwtModule } from '@nestjs/jwt'
+
+import { AuthModule } from './auth/auth.module'
+import { UsersModule } from './users/users.module'
+import { ConfigModule as PlatformConfigModule } from './config/config.module'
+import { AiModule } from './ai/ai.module'
+
+import { ClassesModule } from './classes/classes.module'
+import { StudentsModule } from './students/students.module'
+import { SeatsModule } from './seats/seats.module'
+import { ExamsModule } from './exams/exams.module'
+import { GradesModule } from './grades/grades.module'
+import { ParentContactModule } from './parent-contact/parent-contact.module'
+import { GeneratedModule } from './generated/generated.module'
+import { DutyRosterModule } from './duty-roster/duty-roster.module'
+import { SchoolModule } from './school/school.module'
+import { ClassOpsModule } from './class-ops/class-ops.module'
+import { GrowthModule } from './growth/growth.module'
+import { NotesModule } from './notes/notes.module'
+import { AwardModule } from './award/award.module'
+import { TeacherModule } from './teacher/teacher.module'
+import { AdminModule } from './admin/admin.module'
+import { EngagementModule } from './engagement/engagement.module'
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => {
+        const useSsl = c.get('DB_SSL') === 'true'
+        return {
+          type: 'mysql',
+          host: c.get('DB_HOST'),
+          port: +(c.get('DB_PORT') || 3306),
+          username: c.get('DB_USERNAME'),
+          password: c.get('DB_PASSWORD'),
+          database: c.get('DB_DATABASE'),
+          autoLoadEntities: true,
+          synchronize: c.get('DB_SYNCHRONIZE') === 'true',
+          charset: 'utf8mb4',
+          // 中国时区，避免容器默认 UTC 导致日期字段偏移 8 小时
+          timezone: '+08:00',
+          // 公网连接腾讯云数据库时可开启 SSL（内网/VPC 一般无需）
+          ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+          extra: {
+            connectionLimit: 10,
+            // 腾讯云 MySQL 8.0 默认认证插件为 caching_sha2_password；
+            // 在内网/VPC 无 TLS 连接下，mysql2 需允许获取 RSA 公钥才能完成认证
+            allowPublicKeyRetrieval: true,
+          },
+        }
+      },
+    }),
+    JwtModule.registerAsync({
+      global: true,
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => ({
+        secret: c.get('JWT_SECRET'),
+        signOptions: { expiresIn: c.get('JWT_EXPIRES_IN') || '30d' },
+      }),
+    }),
+    AuthModule,
+    UsersModule,
+    PlatformConfigModule,
+    AiModule,
+    ClassesModule,
+    StudentsModule,
+    SeatsModule,
+    ExamsModule,
+    GradesModule,
+    ParentContactModule,
+    GeneratedModule,
+    DutyRosterModule,
+    SchoolModule,
+    ClassOpsModule,
+    GrowthModule,
+    NotesModule,
+    AwardModule,
+    TeacherModule,
+    AdminModule,
+    EngagementModule,
+  ],
+})
+export class AppModule {}

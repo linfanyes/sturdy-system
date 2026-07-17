@@ -1,0 +1,34 @@
+# 生产/云托管部署用 compose（不含数据库）
+# 说明：正式部署请使用「腾讯云托管（CloudBase 云托管）」+「腾讯云数据库 MySQL（TencentDB/CDB）」。
+# 本文件仅用于「本地快捷起一个容器实例做联调」，数据库直接连云数据库内网/外网地址，
+# 或改用 docker-compose.local.yml 在本地起一个 MySQL 容器。
+version: '3.8'
+
+services:
+  app:
+    build: .
+    restart: always
+    environment:
+      PORT: 3000
+      # 生产填腾讯云数据库 MySQL 的连接地址（同 VPC 用内网地址，跨网络/本地联调用外网地址）
+      DB_HOST: ${DB_HOST:-127.0.0.1}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE:-gardener}
+      # 生产环境建议改为 false，使用 migration 管理表结构
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      JWT_SECRET: ${JWT_SECRET}
+      WECHAT_APPID: ${WECHAT_APPID}
+      WECHAT_SECRET: ${WECHAT_SECRET}
+      DEFAULT_SUBJECTS: ${DEFAULT_SUBJECTS}
+      LOGIN_CODE: ${LOGIN_CODE}
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_TEXT_MODEL: ${AI_TEXT_MODEL}
+      AI_VISION_MODEL: ${AI_VISION_MODEL}
+      AI_TEMPERATURE: ${AI_TEMPERATURE}
+      AI_NAME: ${AI_NAME}
+      AI_SYSTEM_PROMPT: ${AI_SYSTEM_PROMPT}
+    ports:
+      - "3000:3000"

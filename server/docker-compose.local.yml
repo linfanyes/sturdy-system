@@ -1,0 +1,20 @@
+# 仅本地开发用：在本机起一个 MySQL 容器，便于没有云数据库时联调。
+# 用法：docker compose -f docker-compose.local.yml up -d
+# 随后把 .env 的 DB_HOST 设为 127.0.0.1（或本机 IP）即可。
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-local_dev_pwd}
+      MYSQL_DATABASE: ${DB_DATABASE:-gardener}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-local-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  mysql-local-data:

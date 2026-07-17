@@ -1,0 +1,17 @@
+{
+  "name": "园丁工作台",
+  "appid": "__UNI__GARDENER",
+  "mp-weixin": {
+    "appid": "wxYOURAPPID",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "permission": {
+      "scope.userInfo": {
+        "desc": "用于识别登录的教师身份"
+      }
+    }
+  }
+}

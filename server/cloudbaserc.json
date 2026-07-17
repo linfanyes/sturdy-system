@@ -1,0 +1,42 @@
+{
+  "$schema": "https://framework-10081391.cos.ap-shanghai.myqcloud.com/schema/cloudbaserc.json",
+  "envId": "your-cloudbase-env-id",
+  "functionRoot": "dist",
+  "cloudRun": {
+    "services": [
+      {
+        "name": "gardener-api",
+        "image": "ccr.ccs.tencentyun.com/your-namespace/gardener-api:latest",
+        "cpu": 1,
+        "mem": 2,
+        "minNum": 0,
+        "maxNum": 5,
+        "port": 3000,
+        "containerPort": 3000,
+        "remark": "园丁工作台后端：微信授权登录 + 教师多租户 + 集中配置 + AI 代理",
+        "envVariables": {
+          "PORT": "3000",
+          "DB_HOST": "your-tencentdb-host.rds.tencent.com",
+          "DB_PORT": "3306",
+          "DB_USERNAME": "gardener",
+          "DB_PASSWORD": "CHANGE_TO_YOUR_TENCENTDB_PASSWORD",
+          "DB_DATABASE": "gardener",
+          "DB_SSL": "false",
+          "DB_SYNCHRONIZE": "true",
+          "JWT_SECRET": "CHANGE_TO_A_LONG_RANDOM_SECRET",
+          "WECHAT_APPID": "wx_your_appid",
+          "WECHAT_SECRET": "your_wechat_secret",
+          "DEFAULT_SUBJECTS": "语文,数学,英语,科学,品德,音乐,美术,体育,综合实践,信息技术",
+          "LOGIN_CODE": "1314520",
+          "AI_BASE_URL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "AI_API_KEY": "CHANGE_TO_YOUR_AI_KEY_OR_LEAVE_EMPTY",
+          "AI_TEXT_MODEL": "qwen-plus",
+          "AI_VISION_MODEL": "qwen-vl-plus",
+          "AI_TEMPERATURE": "0.7",
+          "AI_NAME": "小林子",
+          "AI_SYSTEM_PROMPT": "你是一位耐心、专业的中国中小学班主任助手。"
+        }
+      }
+    ]
+  }
+}
