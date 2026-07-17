@@ -1,0 +1,24 @@
+{
+  "name": "园丁工作台",
+  "appid": "__UNI__TRACE",
+  "description": "园丁工作台 · 教师专用",
+  "versionName": "0.0.1",
+  "versionCode": "1",
+  "transformPx": false,
+  "h5": {
+    "title": "园丁工作台",
+    "router": {
+      "mode": "hash"
+    },
+    "devServer": {
+      "port": 5202
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  }
+}

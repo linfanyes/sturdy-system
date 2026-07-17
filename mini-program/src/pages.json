@@ -1,0 +1,100 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/dashboard/index",
+      "style": {
+        "navigationBarTitleText": "工作台",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/classes/index",
+      "style": {
+        "navigationBarTitleText": "班级管理",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/students/index",
+      "style": {
+        "navigationBarTitleText": "学生管理",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/grades/index",
+      "style": {
+        "navigationBarTitleText": "成绩管理",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/attendance/index",
+      "style": {
+        "navigationBarTitleText": "考勤管理",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/homework/index",
+      "style": {
+        "navigationBarTitleText": "作业管理",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationBarBackgroundColor": "#FFF9EE",
+        "navigationBarTextStyle": "black"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "园丁工作台",
+    "navigationBarBackgroundColor": "#FFF9EE",
+    "backgroundColor": "#FFF9EE",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8E7858",
+    "selectedColor": "#F5BE52",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/dashboard/index",
+        "text": "工作台",
+        "iconPath": "static/tab/home.png",
+        "selectedIconPath": "static/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/classes/index",
+        "text": "班级",
+        "iconPath": "static/tab/class.png",
+        "selectedIconPath": "static/tab/class-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "static/tab/profile.png",
+        "selectedIconPath": "static/tab/profile-active.png"
+      }
+    ]
+  }
+}
