@@ -8,7 +8,7 @@ export class GrowthEntry extends BaseEntity {
   @Column() type: string
   @Column() date: string
   @Column() title: string
-  @Column({ type: 'text', default: '' }) content: string
+  @Column({ type: 'text', nullable: true }) content: string
 }
 
 @Entity('behavior_records')
@@ -17,5 +17,5 @@ export class BehaviorRecord extends BaseEntity {
   @Column() studentName: string
   @Column() date: string
   @Column() behavior: string
-  @Column({ type: 'text', default: '' }) note: string
+  @Column({ type: 'text', nullable: true }) note: string
 }

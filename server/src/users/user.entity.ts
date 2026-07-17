@@ -17,7 +17,7 @@ export class User {
   @Column({ default: '语文' })
   subject: string
 
-  @Column('simple-array', { default: '语文' })
+  @Column('simple-array', { nullable: true })
   subjects: string[]
 
   @Column({ default: '' })
@@ -29,7 +29,7 @@ export class User {
   @Column({ default: '🍎' })
   avatar: string
 
-  @Column({ type: 'text', default: '' })
+  @Column({ type: 'text', nullable: true })
   motto: string
 
   @Column({ nullable: true })

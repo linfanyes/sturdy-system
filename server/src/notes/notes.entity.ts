@@ -4,7 +4,7 @@ import { BaseEntity } from '../common/entities/base.entity'
 @Entity('notes')
 export class NoteItem extends BaseEntity {
   @Column() title: string
-  @Column({ type: 'text', default: '' }) content: string
+  @Column({ type: 'text', nullable: true }) content: string
   @Column({ default: '其他' }) category: string
   @Column({ type: 'boolean', default: false }) pinned: boolean
   @Column({ type: 'boolean', default: false }) favorite: boolean
@@ -13,7 +13,7 @@ export class NoteItem extends BaseEntity {
 @Entity('todos')
 export class TodoItem extends BaseEntity {
   @Column() title: string
-  @Column({ type: 'text', default: '' }) note: string
+  @Column({ type: 'text', nullable: true }) note: string
   @Column({ default: '' }) date: string
   @Column({ type: 'boolean', default: false }) done: boolean
 }

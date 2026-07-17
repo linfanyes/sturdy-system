@@ -9,7 +9,7 @@ export class AiSettings extends BaseEntity {
   @Column({ default: '' })
   baseUrl: string
 
-  @Column({ type: 'text', default: '' })
+  @Column({ type: 'text', nullable: true })
   apiKey: string
 
   @Column({ default: '' })
@@ -24,6 +24,6 @@ export class AiSettings extends BaseEntity {
   @Column({ default: '小林子' })
   aiName: string
 
-  @Column({ type: 'text', default: '' })
+  @Column({ type: 'text', nullable: true })
   systemPrompt: string
 }

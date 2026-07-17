@@ -8,8 +8,8 @@ export class ClassItem extends BaseEntity {
   @Column() classNo: string
   @Column({ default: '' }) slogan: string
   @Column({ default: '' }) headTeacher: string
-  @Column('simple-json', { default: '[]' }) teachers: string[]
+  @Column('simple-json', { nullable: true }) teachers: string[]
   @Column({ default: 'butter' }) color: string
   @Column({ default: '' }) term: string
-  @Column('simple-json', { default: '[]' }) subjects: string[]
+  @Column('simple-json', { nullable: true }) subjects: string[]
 }

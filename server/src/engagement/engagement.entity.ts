@@ -7,7 +7,7 @@ export class RewardRecord extends BaseEntity {
   @Column() studentId: string
   @Column() type: string
   @Column({ type: 'int', default: 0 }) points: number
-  @Column({ type: 'text', default: '' }) reason: string
+  @Column({ type: 'text', nullable: true }) reason: string
   @Column() date: string
 }
 
@@ -17,7 +17,7 @@ export class ScoreRecord extends BaseEntity {
   @Column() studentId: string
   @Column() studentName: string
   @Column({ type: 'int', default: 0 }) delta: number
-  @Column({ type: 'text', default: '' }) reason: string
+  @Column({ type: 'text', nullable: true }) reason: string
 }
 
 @Entity('group_scores')

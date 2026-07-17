@@ -8,7 +8,7 @@ export class ClassExpense extends BaseEntity {
   @Column({ default: '' }) category: string
   @Column({ type: 'float', default: 0 }) amount: number
   @Column() date: string
-  @Column({ type: 'text', default: '' }) description: string
+  @Column({ type: 'text', nullable: true }) description: string
   @Column({ default: '' }) handler: string
 }
 
@@ -17,8 +17,8 @@ export class ClassActivity extends BaseEntity {
   @Column() classId: string
   @Column() title: string
   @Column() date: string
-  @Column({ type: 'text', default: '' }) description: string
-  @Column('simple-json', { default: '[]' }) photos: string[]
+  @Column({ type: 'text', nullable: true }) description: string
+  @Column('simple-json', { nullable: true }) photos: string[]
 }
 
 @Entity('class_duty_configs')

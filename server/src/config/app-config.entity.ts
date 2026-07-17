@@ -18,6 +18,6 @@ export class AppConfig {
   @Column({ default: 'string' })
   type: string
 
-  @Column({ type: 'text', default: '' })
+  @Column({ type: 'text', nullable: true })
   description: string
 }

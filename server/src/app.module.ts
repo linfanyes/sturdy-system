@@ -48,9 +48,6 @@ import { EngagementModule } from './engagement/engagement.module'
           ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
           extra: {
             connectionLimit: 10,
-            // 腾讯云 MySQL 8.0 默认认证插件为 caching_sha2_password；
-            // 在内网/VPC 无 TLS 连接下，mysql2 需允许获取 RSA 公钥才能完成认证
-            allowPublicKeyRetrieval: true,
           },
         }
       },

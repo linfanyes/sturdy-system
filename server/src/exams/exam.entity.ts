@@ -9,6 +9,6 @@ export class Exam extends BaseEntity {
   @Column('simple-json') subjects: string[]
   @Column('simple-json', { nullable: true }) subjectFullScores: Record<string, number>
   @Column() date: string
-  @Column({ type: 'text', default: '' }) note: string
+  @Column({ type: 'text', nullable: true }) note: string
   @Column({ type: 'text', nullable: true }) analysisNote: string
 }

@@ -8,8 +8,8 @@ export class AwardRecord extends BaseEntity {
   @Column({ default: '' }) date: string
   @Column({ default: '' }) level: string
   @Column({ type: 'text', nullable: true }) image: string
-  @Column('simple-json', { default: '[]' }) tags: string[]
-  @Column({ type: 'text', default: '' }) note: string
+  @Column('simple-json', { nullable: true }) tags: string[]
+  @Column({ type: 'text', nullable: true }) note: string
   @Column({ type: 'int', nullable: true }) ratingScore: number
 }
 
