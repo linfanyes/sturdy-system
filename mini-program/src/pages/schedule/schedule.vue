@@ -13,7 +13,10 @@
 
     <view v-if="mode === 'class'" class="teach-bar">
       <text class="tstat">共 {{ teachStat.lessons }} 节课 · {{ teachStat.teachers }} 位教师</text>
-      <text class="tbtn" @click="showTeach = true">任教设置</text>
+      <view class="tbtns">
+        <text class="tbtn" @click="showTeach = true">任教设置</text>
+        <text class="tbtn auto" @click="openAuto">自动排课</text>
+      </view>
     </view>
 
     <view class="legend">
@@ -88,6 +91,32 @@
         </view>
       </view>
     </view>
+
+    <!-- 自动排课弹层 -->
+    <view class="mask" v-if="showAuto" @click="showAuto = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">自动排课（{{ selName }}）</view>
+        <view class="hint">按科目均匀轮转填充课表，可仅补齐空白或覆盖重建（替代 Web 拖拽自动排版）。</view>
+        <input v-model="autoForm.subjectsText" class="inp" placeholder="科目列表，逗号分隔，如：语文,数学,英语,体育" />
+        <picker :range="dayOpts" @change="(e) => (autoForm.days = dayVals[e.detail.value])">
+          <view class="picker sm">每周天数：{{ autoForm.days }} 天</view>
+        </picker>
+        <picker :range="periodOpts" @change="(e) => (autoForm.periods = periodVals[e.detail.value])">
+          <view class="picker sm">每天节数：{{ autoForm.periods }} 节</view>
+        </picker>
+        <picker :range="startOpts" @change="(e) => (autoForm.start = startVals[e.detail.value])">
+          <view class="picker sm">起始节次：第 {{ autoForm.start }} 节</view>
+        </picker>
+        <view class="sw-row">
+          <text>覆盖已有课程</text>
+          <switch :checked="autoForm.cover" @change="(e) => (autoForm.cover = e.detail.value)" color="#07c160" />
+        </view>
+        <view class="sh-bar">
+          <button class="btn del" @click="showAuto = false">取消</button>
+          <button class="btn ok" @click="confirmAuto">生成并保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -119,6 +148,14 @@ const edit = ref({ id: '', dayOfWeek: 0, period: 1, subject: '', teacher: '', se
 const editClassId = ref('')
 const showTeach = ref(false)
 const teachForm = ref({ subject: '', teacher: '' })
+const showAuto = ref(false)
+const dayOpts = ['5 天', '6 天', '7 天']
+const dayVals = [5, 6, 7]
+const periodOpts = ['6 节', '7 节', '8 节']
+const periodVals = [6, 7, 8]
+const startOpts = ['第 1 节', '第 2 节', '第 3 节']
+const startVals = [1, 2, 3]
+const autoForm = ref({ subjectsText: '', days: 5, periods: 8, start: 1, cover: false })
 const teachStat = computed(() => {
   if (mode.value !== 'class') return { lessons: 0, teachers: 0 }
   const t = new Set(items.value.map((s) => s.teacher).filter(Boolean))
@@ -260,6 +297,83 @@ async function saveTeach() {
     uni.hideLoading()
   }
 }
+
+// 自动排课：基于科目列表均匀轮转填充（替代 Web 拖拽自动排版，受小程序平台限制）
+function openAuto() {
+  const subs = Array.from(new Set(items.value.map((s) => s.subject).filter(Boolean)))
+  autoForm.value = { subjectsText: subs.join(','), days: 5, periods: 8, start: 1, cover: false }
+  showAuto.value = true
+}
+function buildPlan() {
+  const subs = autoForm.value.subjectsText.split(/[,，\s]+/).map((s) => s.trim()).filter(Boolean)
+  if (!subs.length) return { ok: false, err: '请填写科目列表' }
+  const dN = autoForm.value.days
+  const pN = autoForm.value.periods
+  const st = autoForm.value.start
+  if (st + pN - 1 > 8) return { ok: false, err: '节次超出范围（最大第 8 节）' }
+  if (dN > 7) return { ok: false, err: '天数超出范围（最大 7 天）' }
+  const plan = []
+  let idx = 0
+  for (let d = 0; d < dN; d++) {
+    const row = []
+    for (let p = 0; p < pN; p++) {
+      row.push(subs[(idx + d) % subs.length])
+      idx++
+    }
+    plan.push(row)
+  }
+  return { ok: true, plan }
+}
+async function confirmAuto() {
+  const r = buildPlan()
+  if (!r.ok) return uni.showToast({ title: r.err, icon: 'none' })
+  const total = autoForm.value.days * autoForm.value.periods
+  uni.showModal({
+    title: '确认排课',
+    content: `将${autoForm.value.cover ? '覆盖重建' : '补齐空白'}本班课表，共 ${total} 格，确认？`,
+    success: async (m) => {
+      if (m.confirm) await doSavePlan(r.plan)
+    },
+  })
+}
+async function doSavePlan(plan) {
+  const dN = autoForm.value.days
+  const pN = autoForm.value.periods
+  const st = autoForm.value.start
+  uni.showLoading({ title: '排课中…' })
+  try {
+    if (autoForm.value.cover) {
+      await Promise.all(items.value.map((s) => api.del('/schedules/' + s.id)))
+    }
+    const jobs = []
+    for (let d = 0; d < dN; d++) {
+      for (let p = 0; p < pN; p++) {
+        const period = st + p
+        const dow = d
+        const existing = items.value.find((s) => s.dayOfWeek === dow && s.period === period)
+        if (existing && !autoForm.value.cover) continue
+        const payload = {
+          classId: classId.value,
+          dayOfWeek: dow,
+          period,
+          subject: plan[d][p],
+          teacher: '',
+          section: '',
+          weekType: 'all',
+        }
+        jobs.push(existing ? api.patch('/schedules/' + existing.id, payload) : api.post('/schedules', payload))
+      }
+    }
+    await Promise.all(jobs)
+    uni.showToast({ title: '排课完成', icon: 'none' })
+    showAuto.value = false
+    await loadItems()
+  } catch (e) {
+    uni.showToast({ title: '排课失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
 </script>
 
 <style scoped>
@@ -274,7 +388,9 @@ async function saveTeach() {
 .legend { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
 .teach-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; background: #fff7ec; border-radius: 12rpx; padding: 14rpx 20rpx; }
 .tstat { font-size: 24rpx; color: #a07b3b; }
+.tbtns { display: flex; gap: 14rpx; }
 .tbtn { font-size: 24rpx; color: #fff; background: #e6a23c; padding: 10rpx 24rpx; border-radius: 30rpx; }
+.tbtn.auto { background: #07c160; }
 .dark .teach-bar { background: var(--c-card2); }
 .dark .tstat { color: var(--c-accent); }
 .lg { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; color: #fff; }
@@ -301,6 +417,8 @@ async function saveTeach() {
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx; font-size: 28rpx; background: #fff; }
 .picker.sm { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 20rpx; font-size: 28rpx; background: #fff; }
 .ro { font-size: 26rpx; color: #a07b3b; background: #fff7ec; border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 16rpx; }
+.hint { font-size: 22rpx; color: #9aa0a6; line-height: 1.5; margin-bottom: 16rpx; }
+.sw-row { display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: #4a3f35; margin-bottom: 20rpx; }
 .sh-bar { display: flex; gap: 20rpx; }
 .btn { flex: 1; border-radius: 50rpx; color: #fff; font-size: 28rpx; }
 .btn.ok { background: #07c160; }
