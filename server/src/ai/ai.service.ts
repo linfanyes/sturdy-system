@@ -128,8 +128,17 @@ export class AiService {
     return out || '（OCR 未识别到文字）'
   }
 
-  /** 调用多模态模型识别单张图片中的文字 */
-  private async ocrImage(s: any, dataUrl: string): Promise<string> {
+  /** 对外封装：传入图片 data URL，自动鉴权后调用多模态模型做 OCR 文字识别 */
+  async recognizeImage(teacherId: string, dataUrl: string): Promise<string> {
+    const s = await this.buildSettings(teacherId)
+    return this.ocrImage(s, dataUrl)
+  }
+
+  /**
+   * 调用多模态模型识别单张图片中的文字（公开方法，供课程表等导入场景复用）
+   * @param imageBase64 图片 base64（不含 data: 前缀），由调用方拼好 data URL
+   */
+  async ocrImage(s: any, dataUrl: string): Promise<string> {
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
@@ -163,8 +172,8 @@ export class AiService {
     return resp.data?.choices?.[0]?.message?.content || ''
   }
 
-  /** Excel 工作簿转为「每个工作表一段 CSV」的文本 */
-  private parseExcel(buf: Buffer): string {
+  /** Excel 工作簿转为「每个工作表一段 CSV」的文本（公开方法，供导入场景复用） */
+  parseExcel(buf: Buffer): string {
     const wb = XLSX.read(buf, { type: 'buffer' })
     const sheets = wb.SheetNames.map((name) => {
       const ws = wb.Sheets[name]

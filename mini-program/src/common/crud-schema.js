@@ -123,6 +123,7 @@ export const CRUD_SCHEMA = {
   'schedules': {
     title: '课程表',
     prefix: '/schedules',
+    bulkImport: 'schedule',
     fields: [
       { key: 'classId', label: '班级ID', type: 'input', required: true },
       { key: 'dayOfWeek', label: '星期(0-6)', type: 'number', required: true },
