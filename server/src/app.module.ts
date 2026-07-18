@@ -24,6 +24,7 @@ import { AwardModule } from './award/award.module'
 import { TeacherModule } from './teacher/teacher.module'
 import { AdminModule } from './admin/admin.module'
 import { EngagementModule } from './engagement/engagement.module'
+import { HealthController } from './health.controller'
 
 @Module({
   imports: [
@@ -81,5 +82,6 @@ import { EngagementModule } from './engagement/engagement.module'
     AdminModule,
     EngagementModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

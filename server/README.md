@@ -50,8 +50,8 @@ npm run start:dev         # http://localhost:3000/api
    - 环境变量：填 `DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_DATABASE`、`JWT_SECRET`、`WECHAT_APPID/WECHAT_SECRET`、`DEFAULT_SUBJECTS`、`LOGIN_CODE`、AI 相关（AI 也可不填，之后在小程序「设置」里配）。**敏感值（DB_PASSWORD / JWT_SECRET / AI_API_KEY）建议在云托管「密钥管理」里配置，不要写进镜像。**
    - 声明式管理：见仓库 `cloudbaserc.json`（含 service 定义与变量占位，可按需调整）。
 3. 访问方式（二选一）：
-   - **微信私有链路（推荐）**：开启后小程序请求走微信内部网络，免公网流量、更安全；小程序端把 API 地址改为云托管提供的私有域名（形如 `https://{envId}.api.tcloudbase.com`）。
-   - **公网访问**：绑定自定义域名 + 一键免费 SSL 证书；小程序 `request 合法域名` 填 `https://你的域名`。
+   - **微信私有链路（本项目采用）**：小程序已用 `wx.cloud.callContainer` 走微信内部网络，免公网域名、免流量、免登记合法域名；需云托管服务开启「微信私有链路」并关联云开发环境（环境 ID 填 `config.js` 的 `CLOUDRUN_ENV`）。
+   - **公网访问（可选）**：若改用公网，需在云托管绑定已备案自定义域名 + 免费 SSL，并在公众平台登记 `request 合法域名`。
 
 ### 4. 自管服务器（CVM）备选
 若暂不采用云托管，也可在 CVM 上用 Docker 自管：

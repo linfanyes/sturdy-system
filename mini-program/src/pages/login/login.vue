@@ -27,7 +27,8 @@ async function wechatLogin() {
     }
   } catch (e) {
     uni.hideLoading()
-    uni.showToast({ title: '登录失败，请重试', icon: 'none' })
+    const msg = (e && (e.message || e.errMsg)) || '登录失败，请重试'
+    uni.showToast({ title: String(msg).slice(0, 40), icon: 'none' })
   }
 }
 </script>

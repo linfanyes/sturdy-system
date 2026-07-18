@@ -18,7 +18,7 @@
     </view>
 
     <view v-if="tab === 'draw'" class="box">
-      <textarea class="ta" v-model="optsText" placeholder="选项一行一个&#10;如：&#10;去图书馆&#10;去操场&#10;自习" />
+      <textarea class="ta" v-model="optsText" :placeholder="ph" />
       <view class="result" v-if="drawResult">{{ drawResult }}</view>
       <button class="btn" @click="draw">抽签</button>
     </view>
@@ -44,6 +44,7 @@ function rollDice() {
 }
 
 const optsText = ref('')
+const ph = '选项一行一个\n如：\n去图书馆\n去操场\n自习'
 const opts = computed(() => optsText.value.split('\n').map((s) => s.trim()).filter(Boolean))
 const segColors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
 const wheelSegs = computed(() => opts.value.length ? opts.value : ['A', 'B', 'C', 'D'])

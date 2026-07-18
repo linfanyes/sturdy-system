@@ -10,7 +10,7 @@
     </view>
     <view class="list-box">
       <view class="lb-title">名单（每行一个，可编辑）</view>
-      <textarea class="ta" v-model="namesText" placeholder="张三&#10;李四&#10;王五" />
+      <textarea class="ta" v-model="namesText" :placeholder="ph" />
     </view>
     <view class="hist" v-if="history.length">最近：{{ history.slice(-5).join('、') }}</view>
   </view>
@@ -22,6 +22,7 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { api } from '../../common/request'
 
 const namesText = ref('')
+const ph = '张三\n李四\n王五'
 const names = computed(() => namesText.value.split('\n').map((s) => s.trim()).filter(Boolean))
 const picked = ref('')
 const spinning = ref(false)

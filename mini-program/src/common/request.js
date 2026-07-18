@@ -1,25 +1,35 @@
-import { API_BASE } from './config'
+import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
 import { getToken } from './store'
 
 /**
- * 统一请求封装：自动带 token，401 跳转登录。
+ * 统一请求封装：走微信云托管私有链路（wx.cloud.callContainer），不依赖公网域名。
+ * 自动带 token，401 跳转登录。
  */
 export function request(path, method = 'GET', data = {}) {
   return new Promise((resolve, reject) => {
-    uni.request({
-      url: API_BASE + path,
+    const cloud = typeof wx !== 'undefined' && wx.cloud
+    if (!cloud || typeof cloud.callContainer !== 'function') {
+      return reject(new Error('当前环境不支持云托管私有链路，请用微信开发者工具/真机（基础库 ≥ 2.13）'))
+    }
+    const callConfig = { env: CLOUDRUN_ENV }
+    if (CLOUDRUN_SERVICE) callConfig.service = CLOUDRUN_SERVICE
+
+    cloud.callContainer({
+      config: callConfig,
+      path: API_PREFIX + path,
       method,
       data,
       header: {
+        'content-type': 'application/json',
         Authorization: 'Bearer ' + (getToken() || ''),
-        'Content-Type': 'application/json',
       },
       success: (res) => {
-        if (res.statusCode === 401) {
+        const status = res.statusCode || (res.data && res.data.statusCode)
+        if (status === 401) {
           uni.reLaunch({ url: '/pages/login/login' })
           return reject(new Error('登录已过期'))
         }
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data)
+        if (status >= 200 && status < 300) resolve(res.data)
         else reject(res.data || new Error('请求失败'))
       },
       fail: (e) => reject(e),
@@ -35,5 +45,4 @@ export const api = {
   patch: (p, d) => request(p, 'PATCH', d),
   del: (p) => request(p, 'DELETE'),
 }
-
 export default api
