@@ -67,7 +67,7 @@ function submit() {
 .tcell { background: #faf3e3; border-radius: 8rpx; padding: 12rpx 14rpx; font-size: 24rpx; color: #6b5836; }
 .practice { background: #fff; border-radius: 16rpx; padding: 40rpx; text-align: center; }
 .q { font-size: 60rpx; font-weight: 800; color: #333; margin-bottom: 30rpx; }
-.in { border: 2rpx solid #e6c88a; border-radius: 12rpx; padding: 20rpx; font-size: 36rpx; text-align: center; margin-bottom: 20rpx; }
+.in { border: 2rpx solid #e6c88a; border-radius: 12rpx; padding: 20rpx; font-size: 36rpx; text-align: center; margin-bottom: 20rpx; height: 88rpx; min-height: 88rpx; line-height: 48rpx; box-sizing: border-box; color: #333; }
 .btn { background: #e6a23c; color: #fff; border-radius: 50rpx; }
 .stat { margin-top: 24rpx; color: #a07b3b; font-size: 26rpx; }
 .fb { margin-top: 20rpx; font-size: 30rpx; font-weight: 700; }

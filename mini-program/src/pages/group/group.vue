@@ -116,14 +116,14 @@ async function run() {
 
 <style scoped>
 .page { padding: 30rpx; }
-.picker { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.picker { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 20rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .seg { display: flex; background: #fff; border-radius: 16rpx; overflow: hidden; margin-bottom: 20rpx; }
 .seg-i { flex: 1; text-align: center; padding: 22rpx 0; font-size: 28rpx; color: #9aa0a6; }
 .seg-i.on { background: #e6a23c; color: #fff; font-weight: 600; }
 .cfg { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 20rpx; }
 .seg2 { display: flex; margin-bottom: 20rpx; }
 .seg2 .seg-i { border-radius: 12rpx; }
-.ctrl { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; }
+.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
 .go { background: #07c160; color: #fff; border-radius: 50rpx; }
 .tip { display: block; color: #e06c75; font-size: 24rpx; margin-top: 12rpx; }
 .result { margin-top: 10rpx; }

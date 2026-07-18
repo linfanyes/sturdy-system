@@ -53,7 +53,7 @@ onUnload(() => stop())
 .display { font-size: 140rpx; font-weight: 800; color: #e6a23c; margin: 40rpx 0; font-variant-numeric: tabular-nums; }
 .set { display: flex; gap: 30rpx; }
 .field { display: flex; align-items: center; gap: 10rpx; background: #fff; border-radius: 14rpx; padding: 10rpx 20rpx; }
-.field input { width: 90rpx; text-align: center; font-size: 40rpx; }
+.field input { width: 90rpx; text-align: center; font-size: 40rpx; height: 80rpx; min-height: 80rpx; line-height: 80rpx; box-sizing: border-box; color: #333; }
 .row { display: flex; gap: 20rpx; margin-top: 40rpx; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; }
 .btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }

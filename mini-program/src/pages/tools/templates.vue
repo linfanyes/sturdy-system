@@ -104,7 +104,7 @@ onShow(() => load())
 .empty { font-size: 24rpx; color: #9aa0a6; text-align: center; padding: 30rpx; }
 .add { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 10rpx; }
 .field-label { font-size: 26rpx; color: #8a6d3b; margin: 16rpx 0 10rpx; }
-.ctrl { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 10rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
+.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 10rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
 .area { min-height: 240rpx; }
 .gen { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 16rpx; }
 .cancel { background: #f5f5f5; color: #888; border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; }

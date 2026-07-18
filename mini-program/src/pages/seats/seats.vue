@@ -160,7 +160,7 @@ async function saveSeats() {
 
 <style scoped>
 .page { padding: 30rpx; }
-.picker { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.picker { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 20rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .item { background: #fff; border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; }
 .top { display: flex; justify-content: space-between; align-items: center; }
 .name { font-size: 30rpx; font-weight: 600; }
@@ -182,6 +182,6 @@ async function saveSeats() {
 .seat.filled { background: #fff3d6; color: #a07b3b; border-color: #e6a23c; font-weight: 600; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
 .sheet { width: 100%; background: #fff; padding: 30rpx; }
-.sheet .picker { padding: 24rpx; border: 1px solid #eee; border-radius: 12rpx; margin-bottom: 16rpx; }
+.sheet .picker { padding: 24rpx; border: 1px solid #eee; border-radius: 12rpx; margin-bottom: 16rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .cancel { background: #f4f4f4; border-radius: 50rpx; }
 </style>

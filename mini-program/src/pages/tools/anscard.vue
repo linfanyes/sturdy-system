@@ -80,7 +80,7 @@ gen()
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
 .cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
 .field-label { font-size: 26rpx; color: #8a6d3b; margin: 10rpx 0; }
-.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; }
+.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
 .ops { display: flex; gap: 16rpx; margin-top: 6rpx; }
 .op { width: 80rpx; height: 80rpx; border-radius: 14rpx; background: #f3e2c0; display: flex; align-items: center; justify-content: center; font-size: 36rpx; color: #bbb; }
 .op.on { background: #e6a23c; color: #fff; }
@@ -93,7 +93,7 @@ gen()
 .item.ok { background: #f0f9eb; }
 .item.bad { background: #fef0f0; }
 .q { color: #4a3f35; }
-.in { flex: 1; min-width: 80rpx; text-align: center; background: #faf8f3; border: 2rpx solid #e6c88a; border-radius: 8rpx; padding: 8rpx; }
+.in { flex: 1; min-width: 80rpx; text-align: center; background: #faf8f3; border: 2rpx solid #e6c88a; border-radius: 8rpx; padding: 8rpx; height: 64rpx; min-height: 64rpx; line-height: 44rpx; box-sizing: border-box; color: #333; }
 .myans { font-weight: 700; }
 .right { color: #07c160; margin-left: 6rpx; font-size: 24rpx; }
 </style>

@@ -148,8 +148,8 @@ onShow(() => {
 .page { padding: 30rpx; }
 .card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; }
 .sec-title { font-size: 30rpx; font-weight: 700; color: #a07b3b; margin-bottom: 16rpx; }
-.ctrl { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
-.picker { color: #4a3f35; }
+.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
+.picker { color: #4a3f35; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .stats { margin: 10rpx 0 20rpx; }
 .stat { background: #fff7e6; border-radius: 14rpx; padding: 20rpx; margin-bottom: 14rpx; }
 .st-sub { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 8rpx; }

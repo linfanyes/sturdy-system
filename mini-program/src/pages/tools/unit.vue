@@ -83,7 +83,7 @@ gen()
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
 .cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
 .field-label { font-size: 26rpx; color: #8a6d3b; margin: 10rpx 0; }
-.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; }
+.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
 .row { display: flex; gap: 20rpx; margin: 16rpx 0; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 40rpx; flex: 1; }
 .btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
@@ -94,7 +94,7 @@ gen()
 .item.bad { background: #fef0f0; }
 .no { color: #a07b3b; font-weight: 700; }
 .q { color: #4a3f35; }
-.in { width: 140rpx; text-align: center; background: #fff; border: 2rpx solid #e6c88a; border-radius: 8rpx; padding: 8rpx; }
+.in { width: 140rpx; text-align: center; background: #fff; border: 2rpx solid #e6c88a; border-radius: 8rpx; padding: 8rpx; height: 64rpx; min-height: 64rpx; line-height: 44rpx; box-sizing: border-box; color: #333; }
 .myans { min-width: 140rpx; text-align: center; font-weight: 700; }
 .right { color: #07c160; margin-left: 8rpx; }
 .tip { font-size: 22rpx; color: #b0a48a; line-height: 1.6; margin-top: 20rpx; }

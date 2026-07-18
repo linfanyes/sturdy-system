@@ -109,9 +109,9 @@ onShow(() => {
 .hint { font-size: 24rpx; color: #9aa0a6; margin-bottom: 20rpx; line-height: 1.5; }
 .field-label { font-size: 26rpx; color: #8a6d3b; margin-bottom: 10rpx; }
 .req { color: #e64340; margin-left: 6rpx; }
-.ctrl { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
+.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
 .area { min-height: 160rpx; }
-.picker { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: #4a3f35; }
+.picker { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: #4a3f35; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; background: #fff; }
 .gen { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 6rpx; }
 .gen[disabled] { opacity: 0.6; }
 .result-text { font-size: 28rpx; line-height: 1.7; color: #4a3f35; white-space: pre-wrap; margin-bottom: 20rpx; }

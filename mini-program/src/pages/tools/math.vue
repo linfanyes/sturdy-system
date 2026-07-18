@@ -58,7 +58,7 @@ function gen() {
 .cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
 .field { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
 .field text { font-size: 26rpx; color: #8a6d3b; width: 100rpx; }
-.field input { background: #f7f1e3; border-radius: 10rpx; padding: 10rpx 20rpx; width: 160rpx; font-size: 28rpx; }
+.field input { background: #f7f1e3; border-radius: 10rpx; padding: 10rpx 20rpx; width: 160rpx; font-size: 28rpx; height: 60rpx; min-height: 60rpx; line-height: 40rpx; box-sizing: border-box; color: #333; }
 .ops { display: flex; gap: 16rpx; }
 .op { width: 80rpx; height: 80rpx; border-radius: 14rpx; background: #f3e2c0; display: flex; align-items: center; justify-content: center; font-size: 36rpx; color: #bbb; }
 .op.on { background: #e6a23c; color: #fff; }
