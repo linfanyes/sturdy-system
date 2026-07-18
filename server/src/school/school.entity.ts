@@ -6,6 +6,10 @@ export class ScheduleItem extends BaseEntity {
   @Column() classId: string
   @Column({ type: 'int' }) dayOfWeek: number
   @Column({ type: 'int' }) period: number
+  // 周次：all=全周, single=单周, double=双周
+  @Column({ default: 'all' }) weekType: string
+  // 非数字节次名（早读/晨读/晚自习/晚修等）；普通数字节次为 null
+  @Column({ type: 'varchar', length: 20, nullable: true }) section: string | null
   @Column({ default: '' }) subject: string
   @Column({ default: '' }) teacher: string
   @Column({ type: 'text', nullable: true }) note: string

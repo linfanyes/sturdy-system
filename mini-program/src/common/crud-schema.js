@@ -127,12 +127,14 @@ export const CRUD_SCHEMA = {
     fields: [
       { key: 'classId', label: '班级ID', type: 'input', required: true },
       { key: 'dayOfWeek', label: '星期(0-6)', type: 'number', required: true },
-      { key: 'period', label: '节次', type: 'number', required: true },
+      { key: 'period', label: '节次(数字)', type: 'number', required: true },
+      { key: 'weekType', label: '周次', type: 'picker', options: ['全周', '单周', '双周'] },
+      { key: 'section', label: '节次类型(早读/晚自习等,可选)', type: 'input' },
       { key: 'subject', label: '科目', type: 'input' },
       { key: 'teacher', label: '教师', type: 'input' },
       { key: 'note', label: '备注', type: 'textarea' },
     ],
-    display: ['subject', 'dayOfWeek', 'period'],
+    display: ['subject', 'dayOfWeek', 'period', 'weekType'],
     search: 'subject',
   },
 

@@ -102,22 +102,49 @@ function normDay(v: any): number | null {
   return null
 }
 
-/** 把节次归一化为 >=1 的整数 */
-function normPeriod(v: any): number | null {
-  if (v === null || v === undefined || v === '') return null
-  if (typeof v === 'number') return Number.isInteger(v) && v >= 1 ? v : null
-  const m = String(v).match(/\d+/)
+/** 识别非数字节次名（早读/晨读/晚自习/晚修等），返回排序用的 period 与展示名 */
+function detectSectionWord(s: string): { period: number; section: string } | null {
+  if (!s) return null
+  const map: [RegExp, string, number][] = [
+    [/早读|晨读|早自习|早练|晨练|晨/, '早读', 0],
+    [/午休|午练|午读|午/, '午休', 50],
+    [/晚自习|晚修|晚自修|晚课|晚/, '晚自习', 99],
+  ]
+  for (const [re, name, order] of map) if (re.test(s)) return { period: order, section: name }
+  return null
+}
+
+/**
+ * 解析节次：优先识别早读/晚自习等文字节次；否则取 period 中的数字作为普通节次。
+ * 返回 { period: 排序序号, section: 展示名|null }
+ */
+function resolveSection(rawPeriod: any, rawSection: any): { period: number; section: string | null } | null {
+  const secText = String(rawSection ?? '').trim()
+  const perText = String(rawPeriod ?? '').trim()
+  const fromWord = detectSectionWord(secText) || detectSectionWord(perText)
+  if (fromWord) return fromWord
+  const m = perText.match(/\d+/)
   if (!m) return null
   const n = parseInt(m[0], 10)
-  return n >= 1 ? n : null
+  return n >= 1 ? { period: n, section: null } : null
+}
+
+/** 归一化周次类型：all/single/double（兼容中英文与「单/双/全」关键字） */
+function normWeekType(v: any): string {
+  const s = String(v ?? '').trim().toLowerCase()
+  if (!s || s === 'all' || s === '全周' || s === '每周' || s === '整周' || s.includes('全'))
+    return 'all'
+  if (s === 'single' || s === '单周' || s.includes('单')) return 'single'
+  if (s === 'double' || s === '双周' || s.includes('双')) return 'double'
+  return 'all'
 }
 
 const SCHEDULE_INSTRUCTION = `这是一份课程表，请识别其中每一节课并输出 JSON 数组。每个元素结构：
-{ "dayOfWeek": 数字(周一=1,周二=2,...,周日=7), "period": 数字(第几节,从1开始), "subject": "科目名称(如 语文/数学/英语)", "teacher": "任课教师姓名(可选,没有则省略或填空)", "note": "备注(可选)" }
+{ "dayOfWeek": 数字(周一=1,周二=2,...,周日=7), "period": 数字(第几节,从1开始), "section": "非数字节次名(可选,如 早读/晨读/晚自习/晚修;普通第几节留空)", "subject": "科目名称(如 语文/数学/英语)", "teacher": "任课教师姓名(可选)", "note": "备注(可选)", "weekType": "周次类型: 'all'表示全周都有, 'single'表示仅单周, 'double'表示仅双周(若课表未区分单双周默认 all)" }
 规则：
 - 只识别真实课程格，空单元格跳过；
-- dayOfWeek 用 1-7，period 用正整数；
-- 若某节课包含两周轮换/单双周，请拆成两条或多条；
+- dayOfWeek 用 1-7；普通数字节次 period 用正整数、section 留空；若节次是「早读/晨读」则 section 填"早读"且 period 填 0，若是「晚自习/晚修」则 section 填"晚自习"且 period 填 99；
+- 若某一格课程分单双周（如单周语文/双周数学），请拆成两条，分别填写 weekType='single'/'double' 与各自 subject；
 - 只返回 JSON 数组，不要任何解释或前后缀文字。`
 
 class ScheduleImportService {
@@ -171,14 +198,14 @@ class ScheduleImportService {
     const errors: any[] = []
     parsed.forEach((raw, i) => {
       const day = normDay(raw?.dayOfWeek)
-      const period = normPeriod(raw?.period)
+      const sec = resolveSection(raw?.period, raw?.section)
       const subject = String(raw?.subject || '').trim()
       const rowNo = i + 1
       if (day === null) {
         errors.push({ row: rowNo, reason: `星期无法识别: ${raw?.dayOfWeek}` })
         return
       }
-      if (period === null) {
+      if (sec === null) {
         errors.push({ row: rowNo, reason: `节次无法识别: ${raw?.period}` })
         return
       }
@@ -188,7 +215,9 @@ class ScheduleImportService {
       }
       items.push({
         dayOfWeek: day,
-        period,
+        period: sec.period,
+        section: sec.section,
+        weekType: normWeekType(raw?.weekType),
         subject,
         teacher: String(raw?.teacher || '').trim(),
         note: String(raw?.note || '').trim(),
@@ -207,12 +236,20 @@ class ScheduleImportService {
       const repo = manager.getRepository(ScheduleItem)
       for (const it of items) {
         const exist = await repo.findOne({
-          where: { classId, dayOfWeek: it.dayOfWeek, period: it.period, teacherId },
+          where: {
+            classId,
+            dayOfWeek: it.dayOfWeek,
+            period: it.period,
+            section: it.section || null,
+            teacherId,
+          },
         })
         if (exist) {
           exist.subject = it.subject
           exist.teacher = it.teacher || ''
           exist.note = it.note || ''
+          exist.weekType = it.weekType || 'all'
+          exist.section = it.section || null
           await repo.save(exist)
           updated++
         } else {
@@ -222,6 +259,8 @@ class ScheduleImportService {
             teacherId,
             dayOfWeek: it.dayOfWeek,
             period: it.period,
+            section: it.section || null,
+            weekType: it.weekType || 'all',
             subject: it.subject,
             teacher: it.teacher || '',
             note: it.note || '',

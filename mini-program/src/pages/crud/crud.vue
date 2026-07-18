@@ -101,7 +101,8 @@
           <scroll-view scroll-y class="pv-list">
             <view v-for="(it, i) in preview.items" :key="i" class="pv-row">
               <text class="c-dow">{{ dow[it.dayOfWeek] }}</text>
-              <text class="c-per">第{{ it.period }}节</text>
+              <text class="c-per">{{ it.section || ('第' + it.period + '节') }}</text>
+              <text class="c-wk">{{ weekTypeLabel(it.weekType) }}</text>
               <text class="c-subj">{{ it.subject }}</text>
               <text class="c-tech">{{ it.teacher || '-' }}</text>
             </view>
@@ -173,6 +174,16 @@ function displayValue(item, idx) {
   const key = schema.value.display[idx]
   const v = item[key]
   if (key === 'dayOfWeek' && typeof v === 'number') return dow[v] || v
+  if (key === 'weekType') {
+    const map = { all: '全周', single: '单周', double: '双周' }
+    const s = String(v || '').trim()
+    return map[s] || (['全周', '单周', '双周'].includes(s) ? s : '全周')
+  }
+  if (key === 'period') {
+    if (item.section) return item.section
+    if (v === undefined || v === null || v === '') return '-'
+    return /^\d+$/.test(String(v)) ? `第${v}节` : v
+  }
   return v === undefined || v === null || v === '' ? '-' : v
 }
 
@@ -249,6 +260,11 @@ const canRecognize = computed(() => !!picked.value && !!classNames.value[classId
 function selectedClassId() {
   const c = classList.value[classIdx.value]
   return c ? c.id : ''
+}
+
+function weekTypeLabel(w) {
+  const map = { all: '全周', single: '单周', double: '双周' }
+  return map[String(w || '').trim()] || '全周'
 }
 
 function openImport() {
@@ -411,6 +427,7 @@ async function confirmImport() {
 .pv-row { display: flex; gap: 12rpx; padding: 12rpx 0; border-bottom: 1px solid var(--c-border); font-size: 26rpx; color: var(--c-text); align-items: center; }
 .c-dow { width: 90rpx; color: var(--c-accent); font-weight: 600; }
 .c-per { width: 120rpx; color: var(--c-sub); }
+.c-wk { width: 72rpx; color: var(--c-accent); font-size: 22rpx; }
 .c-subj { flex: 1; color: var(--c-title); font-weight: 600; }
 .c-tech { width: 140rpx; color: var(--c-sub); text-align: right; }
 .sheet-ops { display: flex; gap: 16rpx; }
