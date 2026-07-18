@@ -11,6 +11,11 @@
     </picker>
     <view v-else class="picker ro">教师：{{ meName }}（本人任教课程）</view>
 
+    <view v-if="mode === 'class'" class="teach-bar">
+      <text class="tstat">共 {{ teachStat.lessons }} 节课 · {{ teachStat.teachers }} 位教师</text>
+      <text class="tbtn" @click="showTeach = true">任教设置</text>
+    </view>
+
     <view class="legend">
       <text class="lg lg-all">全周</text>
       <text class="lg lg-single">单周</text>
@@ -69,6 +74,20 @@
         </view>
       </view>
     </view>
+
+    <!-- 任教设置弹层 -->
+    <view class="mask" v-if="showTeach" @click="showTeach = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">设置任课教师（{{ selName }}）</view>
+        <picker :range="classSubjects" @change="onTeachSubject">
+          <view class="picker sm">{{ teachForm.subject || '选择科目' }}</view>
+        </picker>
+        <input v-model="teachForm.teacher" class="inp" placeholder="任教教师姓名" />
+        <view class="sh-bar">
+          <button class="btn ok" @click="saveTeach">保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -98,6 +117,14 @@ const items = ref([])
 const showEdit = ref(false)
 const edit = ref({ id: '', dayOfWeek: 0, period: 1, subject: '', teacher: '', section: '', weekType: 'all' })
 const editClassId = ref('')
+const showTeach = ref(false)
+const teachForm = ref({ subject: '', teacher: '' })
+const teachStat = computed(() => {
+  if (mode.value !== 'class') return { lessons: 0, teachers: 0 }
+  const t = new Set(items.value.map((s) => s.teacher).filter(Boolean))
+  return { lessons: items.value.length, teachers: t.size }
+})
+const classSubjects = computed(() => Array.from(new Set(items.value.map((s) => s.subject).filter(Boolean))))
 
 const meName = computed(() => (auth.user && auth.user.name) || '')
 const classOpts = computed(() => classes.value.map((c) => c.name))
@@ -212,6 +239,27 @@ async function removeItem() {
     uni.showToast({ title: '删除失败', icon: 'none' })
   }
 }
+
+function onTeachSubject(e) {
+  teachForm.value.subject = classSubjects.value[e.detail.value]
+}
+async function saveTeach() {
+  if (!teachForm.value.subject) return uni.showToast({ title: '请选择科目', icon: 'none' })
+  if (!teachForm.value.teacher.trim()) return uni.showToast({ title: '请填教师', icon: 'none' })
+  const targets = items.value.filter((s) => s.subject === teachForm.value.subject)
+  if (!targets.length) return uni.showToast({ title: '该班级无此科目课程', icon: 'none' })
+  uni.showLoading({ title: '设置中…' })
+  try {
+    await Promise.all(targets.map((s) => api.patch('/schedules/' + s.id, { teacher: teachForm.value.teacher.trim() })))
+    uni.showToast({ title: '已设置任课教师', icon: 'none' })
+    showTeach.value = false
+    await loadItems()
+  } catch (e) {
+    uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
 </script>
 
 <style scoped>
@@ -224,6 +272,11 @@ async function removeItem() {
 .picker { background: #fff; border-radius: 16rpx; padding: 22rpx 24rpx; margin-bottom: 16rpx; font-size: 28rpx; }
 .picker.ro { background: #fff7ec; color: #a07b3b; font-weight: 600; }
 .legend { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
+.teach-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; background: #fff7ec; border-radius: 12rpx; padding: 14rpx 20rpx; }
+.tstat { font-size: 24rpx; color: #a07b3b; }
+.tbtn { font-size: 24rpx; color: #fff; background: #e6a23c; padding: 10rpx 24rpx; border-radius: 30rpx; }
+.dark .teach-bar { background: var(--c-card2); }
+.dark .tstat { color: var(--c-accent); }
 .lg { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; color: #fff; }
 .lg-all { background: #e6a23c; }
 .lg-single { background: #67c23a; }

@@ -1,9 +1,28 @@
 <template>
   <view class="page" :class="{ dark }">
-    <view v-for="sec in sections" :key="sec.title" class="section">
-      <view class="sec-title">{{ sec.title }}</view>
+    <view class="topbar">
+      <text class="mtitle">常用工具箱</text>
+      <text class="mbtn" @click="manageMode = !manageMode">{{ manageMode ? '完成' : '管理' }}</text>
+    </view>
+    <view v-if="manageMode" class="hint">点击工具可隐藏/显示；点击分区 ↑↓ 调整顺序，改动自动保存</view>
+
+    <view v-for="sec in viewSections" :key="sec.title" class="section">
+      <view class="sec-head">
+        <view class="sec-title">{{ sec.title }}</view>
+        <view v-if="manageMode" class="sec-move">
+          <text class="mv" @click="moveSection(-1, sec.title)">↑</text>
+          <text class="mv" @click="moveSection(1, sec.title)">↓</text>
+        </view>
+      </view>
       <view class="grid">
-        <view v-for="t in sec.items" :key="t.label" class="cell" @click="go(t)">
+        <view
+          v-for="t in sec.items"
+          :key="t.label"
+          class="cell"
+          :class="manageMode && hidden.has(t.label) && 'hidden'"
+          @click="manageMode ? toggleHide(t) : go(t)"
+        >
+          <view v-if="manageMode" class="badge">{{ hidden.has(t.label) ? '已隐藏' : '显示' }}</view>
           <view class="ic">{{ t.icon }}</view>
           <view class="lb">{{ t.label }}</view>
         </view>
@@ -13,18 +32,46 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { auth, theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
-const sections = [
+const HIDDEN_KEY = 'tb_hidden'
+const ORDER_KEY = 'tb_order'
+
+const manageMode = ref(false)
+const hidden = ref(new Set(loadHidden()))
+const order = ref(loadOrder())
+
+function loadHidden() {
+  try {
+    return JSON.parse(uni.getStorageSync(HIDDEN_KEY) || '[]')
+  } catch (e) {
+    return []
+  }
+}
+function loadOrder() {
+  try {
+    const v = JSON.parse(uni.getStorageSync(ORDER_KEY) || 'null')
+    return Array.isArray(v) ? v : null
+  } catch (e) {
+    return null
+  }
+}
+function persist() {
+  uni.setStorageSync(HIDDEN_KEY, JSON.stringify([...hidden.value]))
+  if (order.value) uni.setStorageSync(ORDER_KEY, JSON.stringify(order.value))
+}
+
+const sections = ref([
   {
     title: '常用',
     items: [
       { label: '工作台', icon: '🏠', tab: '/pages/dashboard/dashboard' },
       { label: '班级管理', icon: '🏫', tab: '/pages/classes/classes' },
       { label: '学生管理', icon: '👧', tab: '/pages/students/students' },
+      { label: '数据统计', icon: '📊', path: '/pages/analysis/analysis' },
       { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
       { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
       { label: '随机分组', icon: '🎲', path: '/pages/group/group' },
@@ -156,7 +203,21 @@ const sections = [
       { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
     ],
   },
-]
+])
+
+const viewSections = computed(() => {
+  let secs = sections.value
+  if (order.value && order.value.length) {
+    secs = [...secs].sort((a, b) => order.value.indexOf(a.title) - order.value.indexOf(b.title))
+  }
+  return secs
+    .map((sec) => {
+      let items = sec.items
+      if (!manageMode.value) items = items.filter((it) => !hidden.value.has(it.label))
+      return { ...sec, items }
+    })
+    .filter((sec) => manageMode.value || sec.items.length)
+})
 
 function go(t) {
   if (t.tab) uni.switchTab({ url: t.tab })
@@ -166,6 +227,26 @@ function go(t) {
   else uni.navigateTo({ url: t.path })
 }
 
+function toggleHide(t) {
+  const ns = new Set(hidden.value)
+  if (ns.has(t.label)) ns.delete(t.label)
+  else ns.add(t.label)
+  hidden.value = ns
+  persist()
+}
+function moveSection(dir, title) {
+  if (!order.value) order.value = sections.value.map((s) => s.title)
+  const arr = order.value
+  const i = arr.indexOf(title)
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return
+  const tmp = arr[i]
+  arr[i] = arr[j]
+  arr[j] = tmp
+  order.value = [...arr]
+  persist()
+}
+
 onShow(() => {
   if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
 })
@@ -173,10 +254,23 @@ onShow(() => {
 
 <style scoped>
 .page { padding: 30rpx; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
+.mtitle { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
+.mbtn { font-size: 26rpx; color: #fff; background: var(--c-accent); padding: 10rpx 28rpx; border-radius: 30rpx; }
+.hint { font-size: 22rpx; color: var(--c-sub); background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 18rpx; line-height: 1.5; }
 .section { margin-bottom: 30rpx; }
-.sec-title { font-size: 28rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 16rpx; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
+.sec-title { font-size: 28rpx; font-weight: 700; color: var(--c-accent); }
+.sec-move { display: flex; gap: 16rpx; }
+.mv { font-size: 30rpx; color: var(--c-title); background: var(--c-card2); border-radius: 12rpx; padding: 4rpx 20rpx; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx; }
-.cell { background: var(--c-card); border-radius: 20rpx; padding: 30rpx 10rpx; display: flex; flex-direction: column; align-items: center; }
+.cell { position: relative; background: var(--c-card); border-radius: 20rpx; padding: 30rpx 10rpx; display: flex; flex-direction: column; align-items: center; }
+.cell.hidden { opacity: 0.45; }
+.badge { position: absolute; top: 8rpx; right: 8rpx; font-size: 18rpx; color: #fff; background: #9aa0a6; padding: 2rpx 10rpx; border-radius: 16rpx; }
+.cell.hidden .badge { background: #e06c75; }
 .ic { font-size: 56rpx; }
 .lb { margin-top: 10rpx; color: var(--c-title); font-size: 24rpx; }
+.dark .mtitle { color: var(--c-title); }
+.dark .cell { background: var(--c-card); }
+.dark .mv { background: var(--c-card2); }
 </style>

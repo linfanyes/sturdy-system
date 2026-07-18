@@ -11,6 +11,7 @@
           <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}</view>
         </view>
         <view class="ops">
+          <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
           <text class="op edit" @click.stop="edit(c)">编辑</text>
           <text class="op del" @click.stop="remove(c)">删除</text>
         </view>
@@ -68,6 +69,30 @@
 
       <button class="save" @click="save">{{ editingId ? '保存修改' : '保存' }}</button>
       <button v-if="editingId" class="cancel" @click="cancelEdit">取消编辑</button>
+    </view>
+
+    <!-- 班级详情（花名册/座位/课表/公告） -->
+    <view v-if="showDetail" class="mask" @click="showDetail = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">{{ detailC.name }} · 班级详情</view>
+        <view class="sh-meta">{{ detailC.grade }} · {{ detailC.term || '未设学期' }}<text v-if="detailC.headTeacher"> · 班主任 {{ detailC.headTeacher }}</text></view>
+        <view class="facets">
+          <view class="facet" @click="goStudents(detailC)">
+            <text class="f-n">{{ stuCount }}</text><text class="f-l">花名册</text>
+          </view>
+          <view class="facet" @click="goSeats(detailC)">
+            <text class="f-n">💺</text><text class="f-l">座位表</text>
+          </view>
+          <view class="facet" @click="goSchedule()">
+            <text class="f-n">🗓️</text><text class="f-l">班级课表</text>
+          </view>
+          <view class="facet" @click="goNotice(detailC)">
+            <text class="f-n">{{ noticesCount }}</text><text class="f-l">未结束公告</text>
+          </view>
+        </view>
+        <button class="enter" @click="goStudents(detailC)">进入学生管理</button>
+        <button class="cancel" @click="showDetail = false">关闭</button>
+      </view>
     </view>
   </view>
 </template>
@@ -183,6 +208,34 @@ function remove(c) {
     },
   })
 }
+
+const showDetail = ref(false)
+const detailC = ref({})
+const stuCount = ref(0)
+const noticesCount = ref(0)
+async function showDetailOf(c) {
+  detailC.value = c
+  showDetail.value = true
+  const [students, notices] = await Promise.all([api.get('/students').catch(() => []), api.get('/notices').catch(() => [])])
+  stuCount.value = (students || []).filter((s) => s.classId === c.id).length
+  noticesCount.value = (notices || []).filter((n) => n.classId === c.id && !n.ended).length
+}
+function goStudents(c) {
+  showDetail.value = false
+  uni.navigateTo({ url: `/pages/students/students?classId=${c.id}&name=${encodeURIComponent(c.name)}` })
+}
+function goSeats(c) {
+  showDetail.value = false
+  uni.navigateTo({ url: `/pages/seats/seats?classId=${c.id}` })
+}
+function goSchedule() {
+  showDetail.value = false
+  uni.switchTab({ url: '/pages/schedule/schedule' })
+}
+function goNotice(c) {
+  showDetail.value = false
+  uni.navigateTo({ url: '/pages/notice/notice' })
+}
 </script>
 
 <style scoped>
@@ -204,6 +257,21 @@ function remove(c) {
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
 .edit { color: var(--c-primary); background: rgba(7, 193, 96, 0.12); }
 .del { color: #e64340; background: rgba(230, 67, 64, 0.12); }
+.detail { color: #3a8ee6; background: rgba(58, 142, 230, 0.12); }
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 60; }
+.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; }
+.sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 8rpx; }
+.sh-meta { font-size: 24rpx; color: var(--c-sub); margin-bottom: 24rpx; }
+.facets { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
+.facet { flex: 1; background: var(--c-card2); border-radius: 16rpx; padding: 24rpx 0; display: flex; flex-direction: column; align-items: center; }
+.f-n { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
+.f-l { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
+.enter { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
+.cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; }
+.dark .mask { background: rgba(0,0,0,0.6); }
+.dark .sheet { background: var(--c-card); }
+.dark .facet { background: var(--c-card2); }
+.dark .enter { background: #07c160; }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
 .add {
   margin-top: 20rpx;

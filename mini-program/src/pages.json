@@ -69,7 +69,8 @@
     { "path": "pages/notes/notes", "style": { "navigationBarTitleText": "笔记" } },
     { "path": "pages/todos/todos", "style": { "navigationBarTitleText": "待办" } },
     { "path": "pages/picker-history/picker-history", "style": { "navigationBarTitleText": "抽签历史" } },
-    { "path": "pages/messages/messages", "style": { "navigationBarTitleText": "消息中心" } }
+    { "path": "pages/messages/messages", "style": { "navigationBarTitleText": "消息中心" } },
+    { "path": "pages/analysis/analysis", "style": { "navigationBarTitleText": "数据统计" } }
   ],
   "tabBar": {
     "color": "#9aa0a6",

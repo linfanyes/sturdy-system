@@ -27,7 +27,7 @@ const keys = [
   { t: '7', v: '7' }, { t: '8', v: '8' }, { t: '9', v: '9' }, { t: '×', v: '*', cls: 'op' },
   { t: '4', v: '4' }, { t: '5', v: '5' }, { t: '6', v: '6' }, { t: '−', v: '-', cls: 'op' },
   { t: '1', v: '1' }, { t: '2', v: '2' }, { t: '3', v: '3' }, { t: '+', v: '+', cls: 'op' },
-  { t: '0', v: '0', cls: 'zero' }, { t: '.', v: '.' }, { t: '=', v: '=', cls: 'eq' },
+  { t: '0', v: '0' }, { t: '.', v: '.' }, { t: '%', v: '%', cls: 'fn' }, { t: '=', v: '=', cls: 'eq' },
 ]
 
 function compute(a, b, o) {
@@ -42,6 +42,11 @@ function press(v) {
   if (v === 'C') { expr.value = ''; cur.value = '0'; op.value = null; prev.value = null; return }
   if (v === 'B') { cur.value = cur.value.length > 1 ? cur.value.slice(0, -1) : '0'; return }
   if (v === 'N') { cur.value = String(parseFloat(cur.value) * -1); return }
+  if (v === '%') {
+    const n = parseFloat(cur.value)
+    if (!isNaN(n)) cur.value = String(n / 100)
+    return
+  }
   if (['+', '-', '*', '/'].includes(v)) {
     if (op.value !== null && prev.value !== null) {
       const r = compute(prev.value, cur.value, op.value)

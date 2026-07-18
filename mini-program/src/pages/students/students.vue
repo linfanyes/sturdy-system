@@ -2,8 +2,24 @@
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="bar">{{ className }}</view>
 
+    <view class="toolbar">
+      <input v-model="kw" class="search" placeholder="搜索姓名/学号" />
+      <picker :range="genderOpts" @change="(e) => (genderFilter = genderOpts[e.detail.value])">
+        <view class="mini-picker">{{ genderFilter }}</view>
+      </picker>
+      <picker :range="sortOpts" @change="(e) => (sortBy = sortVals[e.detail.value])">
+        <view class="mini-picker">{{ sortLabel }}</view>
+      </picker>
+    </view>
+    <view class="toolbar2">
+      <text class="tbtn" :class="batchMode && 'on'" @click="batchMode = !batchMode">{{ batchMode ? '取消批量' : '批量管理' }}</text>
+      <text class="tbtn" @click="exportCsv">导出 CSV</text>
+      <text class="tcount">共 {{ shown.length }} 人</text>
+    </view>
+
     <view class="list">
-      <view v-for="s in list" :key="s.id" class="item" @click="openProfile(s)">
+      <view v-for="s in shown" :key="s.id" class="item" :class="batchMode && 'selectable'" @click="batchMode ? toggleSel(s) : openProfile(s)">
+        <view v-if="batchMode" class="check" :class="selected.has(s.id) && 'on'">✓</view>
         <view class="top">
           <text class="name">{{ s.name }}</text>
           <text class="no">学号 {{ s.studentNo || '—' }}</text>
@@ -15,7 +31,12 @@
           <text v-else class="seat">· 未排座</text>
         </view>
       </view>
-      <view v-if="!list.length" class="empty">暂无学生，点下方添加或批量导入</view>
+      <view v-if="!shown.length" class="empty">暂无学生，点下方添加或批量导入</view>
+    </view>
+
+    <view v-if="batchMode && selected.size" class="batchbar">
+      <text class="bsel">已选 {{ selected.size }} 人</text>
+      <text class="bdel" @click="batchDelete">删除所选</text>
     </view>
 
     <view class="actions">
@@ -86,14 +107,36 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { copyText } from '../../common/print'
 
 const classId = ref('')
 const className = ref('')
 const list = ref([])
+const kw = ref('')
+const genderOpts = ['全部', '男', '女']
+const genderFilter = ref('全部')
+const sortOpts = ['按学号', '按座位', '按姓名']
+const sortVals = ['studentNo', 'seat', 'name']
+const sortBy = ref('studentNo')
+const sortLabel = computed(() => sortOpts[sortVals.indexOf(sortBy.value)])
+const batchMode = ref(false)
+const selected = ref(new Set())
+const shown = computed(() => {
+  let arr = list.value.filter((s) => s.classId === classId.value)
+  const k = kw.value.trim().toLowerCase()
+  if (k) arr = arr.filter((s) => (s.name || '').toLowerCase().includes(k) || (s.studentNo || '').toLowerCase().includes(k))
+  if (genderFilter.value !== '全部') arr = arr.filter((s) => s.gender === genderFilter.value)
+  arr.sort((a, b) => {
+    if (sortBy.value === 'studentNo') return String(a.studentNo || '').localeCompare(String(b.studentNo || ''))
+    if (sortBy.value === 'seat') return (a.seatRow || 0) - (b.seatRow || 0) || (a.seatCol || 0) - (b.seatCol || 0)
+    return (a.name || '').localeCompare(b.name || '', 'zh')
+  })
+  return arr
+})
 const showForm = ref(false)
 const showImport = ref(false)
 const showTpl = ref(false)
@@ -116,6 +159,50 @@ onShow(load)
 
 function toggleForm() {
   showForm.value = !showForm.value
+}
+
+function toggleSel(s) {
+  const ns = new Set(selected.value)
+  if (ns.has(s.id)) ns.delete(s.id)
+  else ns.add(s.id)
+  selected.value = ns
+}
+async function batchDelete() {
+  const ids = [...selected.value]
+  if (!ids.length) return
+  uni.showModal({
+    title: '批量删除',
+    content: `确定删除选中的 ${ids.length} 名学生吗？`,
+    confirmColor: '#e64340',
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '删除中…' })
+      try {
+        await Promise.all(ids.map((id) => api.del('/students/' + id)))
+        selected.value = new Set()
+        batchMode.value = false
+        uni.showToast({ title: '已删除 ' + ids.length + ' 人', icon: 'success' })
+        load()
+      } catch (e) {
+        uni.showToast({ title: '删除失败：' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+function exportCsv() {
+  const rows = shown.value
+  if (!rows.length) return uni.showToast({ title: '没有可导出的学生', icon: 'none' })
+  const head = '姓名,性别,学号,家长姓名,家长电话,座位'
+  const body = rows
+    .map((s) =>
+      [s.name, s.gender, s.studentNo || '', s.parentName || '', s.parentPhone || '', s.seatRow ? s.seatRow + '行' + (s.seatCol || '') + '列' : '']
+        .map((x) => '"' + String(x).replace(/"/g, '""') + '"')
+        .join(','),
+    )
+    .join('\n')
+  copyText('\uFEFF' + head + '\n' + body)
 }
 
 async function save() {
@@ -310,6 +397,21 @@ function drawRadar() {
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .bar { font-size: 34rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
+.toolbar { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
+.search { flex: 1; border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); }
+.mini-picker { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 24rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
+.toolbar2 { display: flex; align-items: center; gap: 20rpx; margin-bottom: 16rpx; }
+.tbtn { font-size: 26rpx; color: #409eff; padding: 10rpx 22rpx; border-radius: 30rpx; background: var(--c-card); border: 1px solid var(--c-border); }
+.tbtn.on { background: #e8f1fb; color: #3a8ee6; }
+.tcount { margin-left: auto; font-size: 24rpx; color: var(--c-sub); }
+.item.selectable { display: flex; align-items: center; gap: 16rpx; }
+.check { width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid var(--c-border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #fff; }
+.check.on { background: #07c160; border-color: #07c160; }
+.batchbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--c-card); border-top: 1px solid var(--c-border); padding: 20rpx 30rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4rpx 16rpx var(--c-shadow); z-index: 40; }
+.bsel { font-size: 26rpx; color: var(--c-title); }
+.bdel { font-size: 28rpx; color: #fff; background: #e64340; padding: 14rpx 36rpx; border-radius: 40rpx; }
+.dark .search { border-color: var(--c-input-border); }
+.dark .mini-picker, .dark .tbtn { border-color: var(--c-input-border); background: var(--c-card); color: var(--c-title); }
 .item { background: var(--c-card); border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .top { display: flex; justify-content: space-between; align-items: center; }
 .name { font-size: 32rpx; font-weight: 600; color: var(--c-text); }
