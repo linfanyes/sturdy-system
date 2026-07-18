@@ -21,7 +21,7 @@ import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { api } from '../../common/request'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const namesText = ref('')
 const ph = '张三\n李四\n王五'

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">打地鼠</view>
     <view class="status">得分 {{ score }} · 剩余 {{ time }}s</view>
     <view class="board">
@@ -12,8 +12,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const moles = ref(Array(9).fill(false))
 const score = ref(0)
@@ -50,9 +52,9 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 34rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 26rpx; color: #4a3f35; margin: 12rpx 0; }
+.status { font-size: 26rpx; color: var(--c-title); margin: 12rpx 0; }
 .board { width: 600rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16rpx; }
 .cell { height: 170rpx; background: #8d6e63; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 80rpx; opacity: .5; }
 .cell.up { background: #a1887f; opacity: 1; }

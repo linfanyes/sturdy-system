@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">图片拼图</view>
     <view class="status">{{ status }}</view>
     <view class="board">
@@ -13,8 +13,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const tiles = ['🍎','🍌','🍇','🍉','🍓','🍒','🥝','🍑']
 const N = 3
@@ -44,9 +46,9 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 12rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 12rpx 0; }
 .board { width: 540rpx; height: 540rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8rpx; background: #8a6d3b; padding: 8rpx; border-radius: 14rpx; }
 .cell { background: #f3e2c0; border-radius: 10rpx; display: flex; align-items: center; justify-content: center; font-size: 80rpx; }
 .cell.blank { background: #d9c9a3; }

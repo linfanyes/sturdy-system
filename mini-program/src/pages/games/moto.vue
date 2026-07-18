@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">极速摩托</view>
     <view class="status">得分 {{ score }} · {{ status }}</view>
     <view class="board" @touchstart="ts" @touchend="te">
@@ -15,7 +15,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const ROWS = 12, LANES = 3
 const player = ref(1)
@@ -63,9 +65,9 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 34rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 8rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; }
 .board { width: 360rpx; height: 600rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4rpx; background: #555; padding: 4rpx; border-radius: 10rpx; }
 .cell { background: #6b6b6b; border-radius: 4rpx; }
 .cell.rock { background: #c0392b; }

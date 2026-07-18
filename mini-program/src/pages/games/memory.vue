@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">记忆翻牌</view>
     <view class="status">步数 {{ steps }} · 配对 {{ matched }}/8</view>
     <view class="board">
@@ -14,8 +14,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const faces = ['🍎','🍌','🍇','🍉','🍓','🍒','🥝','🍑']
 const cards = ref([])
@@ -53,9 +55,9 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 26rpx; color: #4a3f35; margin: 12rpx 0; }
+.status { font-size: 26rpx; color: var(--c-title); margin: 12rpx 0; }
 .board { width: 600rpx; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14rpx; }
 .cell { width: 130rpx; height: 130rpx; background: #c9a86a; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; font-size: 56rpx; }
 .cell.open { background: #fff; }

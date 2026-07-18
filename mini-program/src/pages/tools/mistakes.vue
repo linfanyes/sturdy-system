@@ -35,7 +35,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const KEY = 'math_mistakes'
 const subjects = ['语文', '数学', '英语', '科学', '其他']

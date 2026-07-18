@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">五子棋 · 双人对战（轮流落子）</view>
     <view class="status">{{ status }}</view>
     <view class="board">
@@ -13,8 +13,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const N = 13
 const board = ref(Array(N * N).fill(0))
@@ -76,9 +78,9 @@ onLoad(() => reset())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 26rpx; font-weight: 700; color: #a07b3b; }
-.status { margin: 10rpx 0; font-size: 26rpx; color: #4a3f35; }
+.status { margin: 10rpx 0; font-size: 26rpx; color: var(--c-title); }
 .board { width: 690rpx; height: 690rpx; display: grid; grid-template-columns: repeat(13, 1fr); gap: 2rpx; background: #dcb878; padding: 4rpx; border-radius: 10rpx; }
 .cell { background: #f3e2c0; display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
 .b { color: #222; }

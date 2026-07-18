@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">井字棋 · 你执 ❌，电脑执 ⭕</view>
     <view class="status">{{ status }}</view>
     <view class="board">
@@ -13,8 +13,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const board = ref(Array(9).fill(0))
 const turn = ref(1)
@@ -83,9 +85,9 @@ onLoad(() => reset())
 </script>
 
 <style scoped>
-.page { padding: 40rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 40rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 30rpx; font-weight: 700; color: #a07b3b; }
-.status { margin: 16rpx 0 24rpx; font-size: 28rpx; color: #4a3f35; }
+.status { margin: 16rpx 0 24rpx; font-size: 28rpx; color: var(--c-title); }
 .board { width: 540rpx; height: 540rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8rpx; background: #e9d8b8; padding: 8rpx; border-radius: 16rpx; }
 .cell { background: #fff; border-radius: 10rpx; display: flex; align-items: center; justify-content: center; font-size: 70rpx; }
 .btn { margin-top: 30rpx; background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; }

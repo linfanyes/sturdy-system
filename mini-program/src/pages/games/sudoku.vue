@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">数独</view>
     <view class="status">{{ status }}</view>
     <view class="board">
@@ -22,8 +22,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const SOL = [
   [5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],
@@ -74,9 +76,9 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 8rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; }
 .board { width: 630rpx; height: 630rpx; display: grid; grid-template-columns: repeat(9, 1fr); gap: 1rpx; background: #8a6d3b; padding: 4rpx; border-radius: 10rpx; }
 .cell { background: #fff; display: flex; align-items: center; justify-content: center; font-size: 32rpx; color: #2c3e50; }
 .cell.fixed { background: #f3e2c0; font-weight: 700; }

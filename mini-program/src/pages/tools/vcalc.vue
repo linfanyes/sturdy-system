@@ -35,9 +35,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const ops = ['addition', 'subtraction', 'multiplication', 'division']
 const opLabels = ['加法(含进位)', '减法(含退位)', '乘法(一位×多位)', '除法(多位÷一位)']

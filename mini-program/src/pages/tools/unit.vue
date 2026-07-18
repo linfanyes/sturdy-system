@@ -38,7 +38,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const configs = {
   length: { name: '长度(厘米/米/千米)', units: [['厘米', 1], ['米', 100], ['千米', 100000]] },

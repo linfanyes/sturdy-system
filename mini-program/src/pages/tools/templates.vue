@@ -30,10 +30,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const KEY = 'tpl_lib'
 const list = ref([])

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">扫雷</view>
     <view class="status">💣 {{ mines }} · 标记 {{ flags }} · {{ status }}</view>
     <view class="board">
@@ -17,8 +17,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const R = 9, C = 9, mines = 10
 const cells = ref([])
@@ -83,14 +85,14 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 8rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; }
 .board { width: 630rpx; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4rpx; background: #8a6d3b; padding: 4rpx; border-radius: 10rpx; }
 .cell { width: 62rpx; height: 62rpx; background: #e8dcc0; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #2c3e50; }
 .cell.open { background: #f7f1e3; }
 .cell.mine { background: #e74c3c; }
 .cell.flag { background: #f6c453; }
-.tip { font-size: 22rpx; color: #999; margin: 10rpx 0; }
+.tip { font-size: 22rpx; color: var(--c-sub); margin: 10rpx 0; }
 .btn { margin-top: 8rpx; background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; font-size: 26rpx; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">数字排序</view>
     <view class="status">{{ status }}</view>
     <view class="board">
@@ -11,8 +11,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const N = 9
 const arr = ref([])
@@ -42,9 +44,9 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 26rpx; color: #4a3f35; margin: 12rpx 0; }
+.status { font-size: 26rpx; color: var(--c-title); margin: 12rpx 0; }
 .board { width: 630rpx; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16rpx; }
 .cell { height: 130rpx; background: #e6a23c; color: #fff; border-radius: 14rpx; display: flex; align-items: center; justify-content: center; font-size: 48rpx; font-weight: 700; }
 .cell.sel { background: #a07b3b; outline: 4rpx solid #fff; }

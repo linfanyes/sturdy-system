@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">
       <text>2048</text>
       <text class="score">分数 {{ score }}</text>
@@ -22,8 +22,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const size = 4
 const board = ref([])
@@ -106,7 +108,7 @@ onLoad(() => reset())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { width: 560rpx; display: flex; justify-content: space-between; font-size: 40rpx; font-weight: 800; color: #a07b3b; }
 .score { font-size: 26rpx; color: #fff; background: #e6a23c; padding: 6rpx 18rpx; border-radius: 20rpx; align-self: center; }
 .board { width: 560rpx; height: 560rpx; margin: 20rpx 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12rpx; background: #bbada0; padding: 12rpx; border-radius: 16rpx; }

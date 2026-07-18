@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">消消乐</view>
     <view class="status">分数 {{ score }} · 点两个相邻方块交换</view>
     <view class="board">
@@ -11,8 +11,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const N = 8, K = 5
 const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6']
@@ -80,9 +82,9 @@ onLoad(() => gen())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 8rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; }
 .board { width: 600rpx; height: 600rpx; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4rpx; background: #5a4a2a; padding: 4rpx; border-radius: 10rpx; }
 .cell { border-radius: 8rpx; }
 .cell.sel { outline: 4rpx solid #fff; }

@@ -17,7 +17,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const max = 8
 const stages = ['🌱', '🌿', '🌷', '🌼', '🌺', '💐', '🌸', '🌸', '🌸']

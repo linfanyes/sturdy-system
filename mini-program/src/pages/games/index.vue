@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="banner">🎮 小游戏合集</view>
     <view v-for="cat in cats" :key="cat.title" class="sec">
       <view class="sec-title">{{ cat.title }}</view>
@@ -14,8 +14,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { auth } from '../../common/store'
+import { auth, theme} from '../../common/store'
+const dark = computed(() => theme.mode === 'dark')
 
 const cats = [
   {
@@ -58,12 +60,12 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; }
 .banner { font-size: 40rpx; font-weight: 800; color: #a07b3b; text-align: center; margin-bottom: 24rpx; }
 .sec { margin-bottom: 30rpx; }
 .sec-title { font-size: 28rpx; font-weight: 700; color: #a07b3b; margin-bottom: 16rpx; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx; }
-.cell { background: #fff; border-radius: 20rpx; padding: 28rpx 6rpx; display: flex; flex-direction: column; align-items: center; }
+.cell { background: var(--c-card); border-radius: 20rpx; padding: 28rpx 6rpx; display: flex; flex-direction: column; align-items: center; }
 .ic { font-size: 52rpx; }
-.lb { margin-top: 10rpx; color: #4a3f35; font-size: 24rpx; }
+.lb { margin-top: 10rpx; color: var(--c-title); font-size: 24rpx; }
 </style>

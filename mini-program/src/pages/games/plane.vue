@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">飞机大战</view>
     <view class="status">分数 {{ score }} · ❤️ {{ lives }}</view>
     <view class="board" @touchstart="ts" @touchend="te">
@@ -16,7 +16,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const COLS = 9, ROWS = 12
 const me = ref(4)
@@ -76,9 +78,9 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 16rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 16rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 34rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 6rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 6rpx 0; }
 .board { width: 540rpx; height: 720rpx; display: grid; grid-template-columns: repeat(9, 1fr); gap: 2rpx; background: #0b1d3a; padding: 4rpx; border-radius: 8rpx; }
 .cell { background: #0b1d3a; border-radius: 2rpx; }
 .cell.me { background: #2ecc71; border-radius: 6rpx; }

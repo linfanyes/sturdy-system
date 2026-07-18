@@ -1,5 +1,5 @@
 <template>
-  <view class="login">
+  <view class="login" :class="{ dark }">
     <view class="logo">🌻</view>
     <view class="title">园丁工作台</view>
     <view class="sub">微信一键登录，开启你的班级管家</view>
@@ -9,8 +9,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import api from '../../common/request'
-import { setAuth } from '../../common/store'
+import { setAuth, theme} from '../../common/store'
+const dark = computed(() => theme.mode === 'dark')
 
 async function wechatLogin() {
   uni.showLoading({ title: '登录中' })
@@ -34,7 +36,7 @@ async function wechatLogin() {
 </script>
 
 <style scoped>
-.login {
+.login { background: var(--c-bg); color: var(--c-text);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -48,11 +50,11 @@ async function wechatLogin() {
 .title {
   font-size: 52rpx;
   font-weight: 700;
-  color: #4a3f35;
+  color: var(--c-title);
   margin-top: 20rpx;
 }
 .sub {
-  color: #9aa0a6;
+  color: var(--c-sub);
   margin: 16rpx 0 60rpx;
 }
 .btn {
@@ -63,7 +65,7 @@ async function wechatLogin() {
   font-size: 32rpx;
 }
 .tip {
-  color: #c0c4cc;
+  color: var(--c-sub);
   font-size: 24rpx;
   margin-top: 30rpx;
 }

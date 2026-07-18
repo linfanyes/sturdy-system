@@ -13,9 +13,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { auth, theme } from '../../common/store'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const sections = [
   {

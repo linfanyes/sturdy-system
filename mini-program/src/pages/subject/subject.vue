@@ -48,7 +48,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
 import { getSubjectTool } from '../../common/subject-schema'
-const dark = theme.dark
+const dark = computed(() => theme.mode === 'dark')
 
 const type = ref('')
 const tool = ref(null)

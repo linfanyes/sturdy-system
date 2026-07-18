@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">颜色反应（Stroop）</view>
     <view class="status">得分 {{ score }} · 剩余 {{ time }}s</view>
     <view class="word" :style="{ color: ink }">{{ word }}</view>
@@ -11,8 +11,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed} from 'vue'
+import { theme } from '../../common/store'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const names = ['红', '蓝', '绿', '黄']
 const cols = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f']
@@ -55,9 +57,9 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 34rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 26rpx; color: #4a3f35; margin: 12rpx 0; }
+.status { font-size: 26rpx; color: var(--c-title); margin: 12rpx 0; }
 .word { font-size: 120rpx; font-weight: 800; margin: 30rpx 0; }
 .opts { width: 600rpx; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20rpx; }
 .opt { height: 140rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 48rpx; font-weight: 800; color: #fff; text-shadow: 0 2rpx 4rpx rgba(0,0,0,.3); }

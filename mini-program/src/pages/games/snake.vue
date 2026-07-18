@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">贪吃蛇</view>
     <view class="status">长度 {{ snake.length }} · 分数 {{ score }}</view>
     <view class="board" @touchstart="ts" @touchend="te">
@@ -19,7 +19,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+const dark = computed(() => theme.mode === 'dark')
 
 const N = 15
 const snake = ref([])
@@ -81,9 +83,9 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 20rpx; display: flex; flex-direction: column; align-items: center; }
 .hd { font-size: 34rpx; font-weight: 800; color: #a07b3b; }
-.status { font-size: 24rpx; color: #4a3f35; margin: 8rpx 0; }
+.status { font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; }
 .board { width: 600rpx; height: 600rpx; display: grid; grid-template-columns: repeat(15, 1fr); gap: 1rpx; background: #6b8e23; padding: 4rpx; border-radius: 10rpx; }
 .cell { background: #cfe8a8; border-radius: 3rpx; }
 .cell.body { background: #2e7d32; }
