@@ -45,10 +45,15 @@ import { HealthController } from './health.controller'
           charset: 'utf8mb4',
           // 中国时区，避免容器默认 UTC 导致日期字段偏移 8 小时
           timezone: '+08:00',
+          // 连不上时短重试后直接报错，避免真机一直等到 102002 网关超时
+          retryAttempts: 3,
+          retryDelay: 3000,
           // 公网连接腾讯云数据库时可开启 SSL（内网/VPC 一般无需）
           ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
           extra: {
             connectionLimit: 10,
+            // 初始 TCP/TLS 握手 5 秒不成就放弃，避免挂死
+            connectTimeout: 5000,
           },
         }
       },

@@ -1,6 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
+import https from 'node:https'
 import { ConfigService } from '../config/config.service'
+
+// 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
+// "self-signed certificate"，这里仅为 AI 调用单独放宽证书校验。
+const tlsAgent = new https.Agent({ rejectUnauthorized: false })
 
 @Injectable()
 export class AiService {
@@ -46,6 +51,7 @@ export class AiService {
           Authorization: `Bearer ${s.apiKey}`,
           'Content-Type': 'application/json',
         },
+        httpsAgent: tlsAgent,
         timeout: 120000,
       },
     )
@@ -103,6 +109,7 @@ export class AiService {
           Authorization: `Bearer ${s.apiKey}`,
           'Content-Type': 'application/json',
         },
+        httpsAgent: tlsAgent,
         timeout: 120000,
       },
     )
@@ -137,6 +144,7 @@ export class AiService {
           Authorization: `Bearer ${s.apiKey}`,
           'Content-Type': 'application/json',
         },
+        httpsAgent: tlsAgent,
         timeout: 120000,
       },
     )
