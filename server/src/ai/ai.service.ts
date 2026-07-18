@@ -1,10 +1,24 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
 import https from 'node:https'
+import * as path from 'path'
 import XLSX from 'xlsx'
 import mammoth from 'mammoth'
+import { createCanvas } from '@napi-rs/canvas'
 import pdfParse = require('pdf-parse/lib/pdf-parse.js')
 import { ConfigService } from '../config/config.service'
+
+// pdfjs 用 legacy 构建（Node 友好），用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfjs = require('pdfjs-dist/legacy/build/pdf.js')
+try {
+  pdfjs.GlobalWorkerOptions.workerSrc = path.join(
+    path.dirname(require.resolve('pdfjs-dist/legacy/build/pdf.js')),
+    'pdf.worker.js',
+  )
+} catch {
+  /* 某些环境无 worker 文件也能用 fake worker 兜底 */
+}
 
 // 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
 // "self-signed certificate"，这里仅为 AI 调用单独放宽证书校验。
@@ -49,12 +63,14 @@ export class AiService {
    */
   private async extractFilesText(
     files: Array<{ name: string; data: string }>,
+    s?: any,
   ): Promise<string> {
     const blocks: string[] = []
     for (const f of files) {
       const buf = Buffer.from(f.data || '', 'base64')
       const ext = (f.name.split('.').pop() || '').toLowerCase()
       let text = ''
+      let note = ''
       try {
         if (['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
           text = buf.toString('utf-8')
@@ -63,9 +79,19 @@ export class AiService {
         } else if (ext === 'docx') {
           const r = await mammoth.extractRawText({ buffer: buf })
           text = r.value
+          if (!text.trim())
+            note = '（Word 未提取到文字，若为图片型扫描件请导出 PDF 或截图发送）'
         } else if (ext === 'pdf') {
           const r = await pdfParse(buf)
           text = r.text
+          // 文本极少 → 疑似扫描件，尝试用多模态模型 OCR 识别
+          if (text.trim().length < 30 && s?.visionModel && s?.apiKey) {
+            try {
+              text = await this.ocrPdf(buf, s)
+            } catch (e: any) {
+              note = `（PDF 疑似扫描件，OCR 失败：${e?.message || e}）`
+            }
+          }
         } else {
           // 未知类型，尽力按文本读取
           text = buf.toString('utf-8')
@@ -73,6 +99,7 @@ export class AiService {
       } catch (e: any) {
         text = `[文件「${f.name}」解析失败：${e?.message || e}]`
       }
+      if (note) text = (text ? text + '\n' : '') + note
       const MAX = 30000
       if (text.length > MAX) {
         text = text.slice(0, MAX) + `\n…（内容过长已截断，原文约 ${text.length} 字）`
@@ -80,6 +107,60 @@ export class AiService {
       blocks.push(`【文件：${f.name}】\n${text}`)
     }
     return blocks.join('\n\n')
+  }
+
+  /** 把扫描版 PDF 逐页光栅化为 PNG，送多模态模型做 OCR 文字识别 */
+  private async ocrPdf(buf: Buffer, s: any): Promise<string> {
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise
+    const maxPages = Math.min(doc.numPages, 3) // 最多识别前 3 页，控制耗时
+    let out = ''
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await doc.getPage(i)
+      const viewport = page.getViewport({ scale: 2 })
+      const canvas = createCanvas(viewport.width, viewport.height)
+      const ctx = canvas.getContext('2d')
+      await page.render({ canvasContext: ctx, viewport, canvas }).promise
+      const png = canvas.toBuffer('image/png')
+      const dataUrl = 'data:image/png;base64,' + png.toString('base64')
+      const pageText = await this.ocrImage(s, dataUrl)
+      out += (i > 1 ? '\n' : '') + `[第${i}页]\n` + pageText
+    }
+    return out || '（OCR 未识别到文字）'
+  }
+
+  /** 调用多模态模型识别单张图片中的文字 */
+  private async ocrImage(s: any, dataUrl: string): Promise<string> {
+    const resp = await axios.post(
+      `${s.baseUrl}/chat/completions`,
+      {
+        model: s.visionModel,
+        temperature: 0,
+        stream: false,
+        messages: [
+          {
+            role: 'system',
+            content:
+              '你是 OCR 文字识别助手。请识别图片中的所有文字，保持原有段落与排版顺序，直接输出识别到的纯文本，不要添加任何解释或前缀。',
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: '请识别这张图片里的所有文字：' },
+              { type: 'image_url', image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${s.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        httpsAgent: tlsAgent,
+        timeout: 120000,
+      },
+    )
+    return resp.data?.choices?.[0]?.message?.content || ''
   }
 
   /** Excel 工作簿转为「每个工作表一段 CSV」的文本 */
@@ -105,7 +186,7 @@ export class AiService {
       ...(body.messages || []),
     ]
     if (body?.files?.length) {
-      const fileText = await this.extractFilesText(body.files)
+      const fileText = await this.extractFilesText(body.files, s)
       const last = messages[messages.length - 1]
       if (last && last.role === 'user') {
         if (typeof last.content === 'string') {

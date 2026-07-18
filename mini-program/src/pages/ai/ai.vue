@@ -19,6 +19,7 @@
         <view class="content">
           <view :class="['bubble', m.role]">
             <text v-if="m.loading" class="typing"><text class="dot">●</text><text class="dot">●</text><text class="dot">●</text></text>
+            <rich-text v-else-if="m.role === 'assistant'" class="md" :nodes="md(m.content || '')"></rich-text>
             <text v-else class="text">{{ m.content || '…' }}</text>
           </view>
           <!-- 用户发的文件/图片 展示 -->
@@ -64,8 +65,51 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { marked } from 'marked'
 import api from '../../common/request'
 import { auth } from '../../common/store'
+
+// —— Markdown 渲染：token 化 renderer + 内联样式，产物交给 <rich-text> 渲染 ——
+marked.setOptions({ gfm: true, breaks: true })
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const SZ = { 1: 40, 2: 36, 3: 32, 4: 30, 5: 28, 6: 26 }
+marked.use({
+  renderer: {
+    heading(t) {
+      return `<view style="font-size:${SZ[t.depth] || 30}rpx;font-weight:700;margin:18rpx 0 10rpx;color:#222;line-height:1.4;">${this.parser.parseInline(t.tokens) || t.text}</view>`
+    },
+    paragraph(t) {
+      return `<view style="margin:10rpx 0;line-height:1.7;">${this.parser.parseInline(t.tokens) || t.text}</view>`
+    },
+    listitem(t) {
+      return `<li style="margin:8rpx 0;line-height:1.7;">• ${this.parser.parseInline(t.tokens) || t.text}</li>`
+    },
+    code(t) {
+      return `<view style="background:#f5f5f5;border-radius:12rpx;padding:18rpx;font-size:24rpx;margin:12rpx 0;white-space:pre-wrap;word-break:break-all;color:#333;">${esc(t.text)}</view>`
+    },
+    codespan(t) {
+      return `<text style="background:#f5f5f5;padding:2rpx 8rpx;border-radius:6rpx;font-size:24rpx;color:#c7254e;">${t.text}</text>`
+    },
+    strong(t) {
+      return `<text style="font-weight:700;color:#222;">${t.text}</text>`
+    },
+    em(t) {
+      return `<text style="font-style:italic;">${t.text}</text>`
+    },
+    blockquote(t) {
+      return `<view style="border-left:6rpx solid #d9d9d9;padding:4rpx 20rpx;color:#888;margin:12rpx 0;">${this.parser.parse(t.tokens) || t.text}</view>`
+    },
+    hr() {
+      return '<view style="height:1rpx;background:#eee;margin:18rpx 0;"></view>'
+    },
+    link(t) {
+      return `<text style="color:#07c160;">${t.text}</text>`
+    },
+  },
+})
+function md(text) {
+  return marked.parse(text || '')
+}
 
 const MAX_FILE = 4 * 1024 * 1024 // 单文件上限 4MB
 
@@ -280,6 +324,7 @@ onShow(() => {
   box-shadow: 0 4rpx 14rpx rgba(7, 193, 96, 0.25);
 }
 .text { white-space: pre-wrap; word-break: break-word; }
+.md { font-size: 30rpx; line-height: 1.6; word-break: break-word; }
 
 /* 打字动画 */
 .typing { display: inline-flex; gap: 10rpx; align-items: center; }
