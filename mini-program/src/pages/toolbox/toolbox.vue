@@ -45,7 +45,7 @@ const sections = [
       { label: '知识点', icon: '💡', crud: 'generated/knowledges' },
       { label: '优选试卷', icon: '📃', crud: 'generated/papers' },
       { label: '试卷查询', icon: '🔍', crud: 'generated/queries' },
-      { label: '听课记录', icon: '👀', crud: 'lesson-observations' },
+      { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
     ],
   },
   {
@@ -129,9 +129,9 @@ const sections = [
       { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
       { label: '班级活动', icon: '🎉', path: '/pages/class-activity/class-activity' },
       { label: '班级风采', icon: '🖼️', path: '/pages/gallery/gallery' },
-      { label: '待办', icon: '✅', crud: 'todos' },
-      { label: '笔记', icon: '📓', crud: 'notes' },
-      { label: '抽签历史', icon: '🎰', crud: 'picker-history' },
+      { label: '待办', icon: '✅', path: '/pages/todos/todos' },
+      { label: '笔记', icon: '📓', path: '/pages/notes/notes' },
+      { label: '抽签历史', icon: '🎰', path: '/pages/picker-history/picker-history' },
       { label: '个人中心', icon: '👤', path: '/pages/profile/profile' },
     ],
   },
@@ -139,8 +139,8 @@ const sections = [
     title: '学生发展',
     items: [
       { label: '成长记录', icon: '🌱', path: '/pages/growth/growth' },
-      { label: '行为记录', icon: '⭐', crud: 'behavior-records' },
-      { label: '获奖记录', icon: '🏆', crud: 'award-records' },
+      { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
+      { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
       { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
       { label: '加减分', icon: '➕', crud: 'reward-records' },
       { label: '积分记录', icon: '💯', crud: 'score-records' },
@@ -153,7 +153,7 @@ const sections = [
     title: '教师行政',
     items: [
       { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/teacher/teacher' },
-      { label: '工作日志', icon: '🗒️', crud: 'work-logs' },
+      { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
     ],
   },
 ]
