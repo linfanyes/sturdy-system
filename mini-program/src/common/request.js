@@ -11,16 +11,15 @@ export function request(path, method = 'GET', data = {}) {
     if (!cloud || typeof cloud.callContainer !== 'function') {
       return reject(new Error('当前环境不支持云托管私有链路，请用微信开发者工具/真机（基础库 ≥ 2.13）'))
     }
-    const callConfig = { env: CLOUDRUN_ENV }
-    if (CLOUDRUN_SERVICE) callConfig.service = CLOUDRUN_SERVICE
-
     cloud.callContainer({
-      config: callConfig,
+      config: { env: CLOUDRUN_ENV },
       path: API_PREFIX + path,
       method,
       data,
       header: {
         'content-type': 'application/json',
+        // 服务名必须放在 header 的 X-WX-SERVICE（官方要求，不是 config.service）
+        'X-WX-SERVICE': CLOUDRUN_SERVICE,
         Authorization: 'Bearer ' + (getToken() || ''),
       },
       success: (res) => {
