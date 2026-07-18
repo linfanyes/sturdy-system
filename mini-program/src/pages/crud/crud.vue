@@ -194,7 +194,7 @@ function remove(item) {
 .empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
 .add { margin-top: 16rpx; background: #e6a23c; color: #fff; border-radius: 50rpx; }
 .form { margin-top: 24rpx; background: #fff; border-radius: 20rpx; padding: 30rpx; }
-.ctrl { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
-.picker { color: #4a3f35; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; }
+.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
+.picker { color: #4a3f35; min-height: 80rpx; line-height: 44rpx; }
+.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

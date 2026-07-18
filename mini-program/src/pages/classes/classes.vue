@@ -143,20 +143,21 @@ async function save() {
 .field { margin-bottom: 18rpx; }
 .label { display: block; font-size: 24rpx; color: #9aa0a6; margin-bottom: 8rpx; }
 .picker, .readonly {
-  border: 1px solid #eee;
+  border: 1px solid #e5e5e5;
   border-radius: 12rpx;
-  padding: 20rpx;
+  padding: 16rpx 20rpx;
   font-size: 28rpx;
   color: #4a3f35;
+  min-height: 80rpx;
+  line-height: 44rpx;
+  box-sizing: border-box;
 }
 .readonly { background: #f7f7f7; color: #8a6d3b; }
 .field input {
-  border: 1px solid #eee;
-  border-radius: 12rpx;
-  padding: 20rpx;
-  font-size: 28rpx;
-  width: 100%;
+  width: 100%; height: 80rpx; min-height: 80rpx; line-height: 44rpx;
+  border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx;
+  font-size: 28rpx; color: #333; background: #fff;
   box-sizing: border-box;
 }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; }
+.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

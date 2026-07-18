@@ -81,11 +81,12 @@ async function save() {
 .empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
 .add { margin-top: 16rpx; background: #e6a23c; color: #fff; border-radius: 50rpx; }
 .form { margin-top: 24rpx; background: #fff; border-radius: 20rpx; padding: 30rpx; }
-.form input, .picker { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; }
-.readonly { background: #f7f7f7; border-radius: 12rpx; padding: 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: #8a6d3b; }
-.sub-label { color: #9aa0a6; font-size: 26rpx; margin: 10rpx 0; }
+.form input, .picker, .readonly { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; color: #333; }
+.form input, .picker { background: #fff; }
+.readonly { background: #f7f7f7; color: #8a6d3b; }
+.sub-label { color: #9aa0a6; font-size: 26rpx; margin: 10rpx 0; line-height: 1.6; }
 .chips { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 20rpx; }
 .chip { padding: 12rpx 24rpx; border-radius: 30rpx; background: #f5f5f5; color: #666; font-size: 26rpx; }
 .chip.on { background: #e6a23c; color: #fff; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; }
+.save { background: #07c160; color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

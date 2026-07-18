@@ -85,16 +85,21 @@ function doLogout() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; }
-.card-title { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 20rpx; }
-.field { margin-bottom: 16rpx; }
-.label { display: block; font-size: 24rpx; color: #9aa0a6; margin-bottom: 8rpx; }
-.field input { border: 1px solid #eee; border-radius: 12rpx; padding: 20rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
-.hint { font-size: 24rpx; color: #9aa0a6; line-height: 1.6; margin: 6rpx 0 18rpx; word-break: break-word; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 8rpx; }
-.kv { display: flex; justify-content: space-between; align-items: flex-start; padding: 14rpx 0; border-bottom: 1px solid #f5f5f5; gap: 20rpx; }
-.k { color: #9aa0a6; font-size: 26rpx; flex-shrink: 0; }
-.v { color: #4a3f35; font-size: 26rpx; flex: 1; text-align: right; word-break: break-all; }
-.logout { background: #f56c6c; color: #fff; border-radius: 50rpx; margin-top: 10rpx; }
+.page { padding: 30rpx; background: #f7f1e3; min-height: 100vh; box-sizing: border-box; }
+.card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.04); }
+.card-title { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 24rpx; padding-bottom: 16rpx; border-bottom: 1px solid #f5f5f5; }
+.field { margin-bottom: 20rpx; }
+.label { display: block; font-size: 26rpx; color: #8a8a8a; margin-bottom: 10rpx; }
+.field input {
+  width: 100%; height: 80rpx; min-height: 80rpx; line-height: 44rpx;
+  border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx;
+  font-size: 28rpx; color: #333; background: #fff;
+  box-sizing: border-box;
+}
+.hint { display: block; font-size: 24rpx; color: #9aa0a6; line-height: 1.8; margin: 6rpx 0 18rpx; word-break: break-word; padding: 10rpx 0; }
+.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 8rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.kv { display: flex; justify-content: space-between; align-items: flex-start; padding: 16rpx 0; border-bottom: 1px solid #f5f5f5; gap: 20rpx; }
+.k { color: #9aa0a6; font-size: 26rpx; flex-shrink: 0; line-height: 1.6; }
+.v { color: #4a3f35; font-size: 26rpx; flex: 1; text-align: right; word-break: break-all; line-height: 1.6; }
+.logout { background: #f56c6c; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>
