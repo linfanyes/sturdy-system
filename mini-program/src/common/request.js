@@ -39,8 +39,9 @@ export function request(path, method = 'GET', data = {}) {
 export const api = {
   get: (p) => request(p),
   post: (p, d) => request(p, 'POST', d),
-  // 后端更新接口用 PATCH（@Patch），这里统一发 PATCH，避免 404/405
-  put: (p, d) => request(p, 'PATCH', d),
+  // 后端个人资料/AI配置等更新接口用 @Put，必须发 PUT（不要改发 PATCH，否则 404/405）
+  put: (p, d) => request(p, 'PUT', d),
+  // 通用 CRUD 基类用 @Patch(':id')，保持发 PATCH
   patch: (p, d) => request(p, 'PATCH', d),
   del: (p) => request(p, 'DELETE'),
 }
