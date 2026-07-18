@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="card">
       <view class="card-title">个人资料</view>
       <view class="field">
@@ -40,6 +40,17 @@
     </view>
 
     <view class="card">
+      <view class="card-title">外观</view>
+      <view class="row">
+        <view class="row-text">
+          <text class="row-name">深色模式</text>
+          <text class="row-sub">切换后全应用深色配色（含导航栏与底栏）</text>
+        </view>
+        <switch :checked="theme.mode === 'dark'" color="#07c160" @change="onTheme" />
+      </view>
+    </view>
+
+    <view class="card">
       <view class="card-title">平台配置（来自后端）</view>
       <view v-for="c in app" :key="c.key" class="kv">
         <text class="k">{{ c.key }}</text>
@@ -55,7 +66,7 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, setUser, logout } from '../../common/store'
+import { auth, setUser, logout, theme, setTheme } from '../../common/store'
 
 const profile = ref({ name: '', school: '', subjects: [] })
 const ai = ref({})
@@ -69,6 +80,9 @@ async function load() {
 }
 onShow(load)
 
+function onTheme(e) {
+  setTheme(e.detail.value ? 'dark' : 'light')
+}
 async function saveProfile() {
   await api.put('/users/me', { name: profile.value.name, school: profile.value.school })
   setUser({ ...auth.user, name: profile.value.name, school: profile.value.school })
@@ -85,21 +99,25 @@ function doLogout() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; background: #f7f1e3; min-height: 100vh; box-sizing: border-box; }
-.card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.04); }
-.card-title { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 24rpx; padding-bottom: 16rpx; border-bottom: 1px solid #f5f5f5; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.card { background: var(--c-card); border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.card-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 24rpx; padding-bottom: 16rpx; border-bottom: 1px solid var(--c-border); }
 .field { margin-bottom: 20rpx; }
-.label { display: block; font-size: 26rpx; color: #8a8a8a; margin-bottom: 10rpx; }
+.label { display: block; font-size: 26rpx; color: var(--c-sub); margin-bottom: 10rpx; }
 .field input {
   width: 100%; height: 80rpx; min-height: 80rpx; line-height: 44rpx;
-  border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx;
-  font-size: 28rpx; color: #333; background: #fff;
+  border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
+  font-size: 28rpx; color: var(--c-text); background: var(--c-input);
   box-sizing: border-box;
 }
-.hint { display: block; font-size: 24rpx; color: #9aa0a6; line-height: 1.8; margin: 6rpx 0 18rpx; word-break: break-word; padding: 10rpx 0; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 8rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
-.kv { display: flex; justify-content: space-between; align-items: flex-start; padding: 16rpx 0; border-bottom: 1px solid #f5f5f5; gap: 20rpx; }
-.k { color: #9aa0a6; font-size: 26rpx; flex-shrink: 0; line-height: 1.6; }
-.v { color: #4a3f35; font-size: 26rpx; flex: 1; text-align: right; word-break: break-all; line-height: 1.6; }
-.logout { background: #f56c6c; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.hint { display: block; font-size: 24rpx; color: var(--c-sub); line-height: 1.8; margin: 6rpx 0 18rpx; word-break: break-word; padding: 10rpx 0; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 8rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.kv { display: flex; justify-content: space-between; align-items: flex-start; padding: 16rpx 0; border-bottom: 1px solid var(--c-border); gap: 20rpx; }
+.k { color: var(--c-sub); font-size: 26rpx; flex-shrink: 0; line-height: 1.6; }
+.v { color: var(--c-title); font-size: 26rpx; flex: 1; text-align: right; word-break: break-all; line-height: 1.6; }
+.row { display: flex; align-items: center; justify-content: space-between; }
+.row-text { flex: 1; padding-right: 20rpx; }
+.row-name { display: block; font-size: 28rpx; color: var(--c-text); font-weight: 600; }
+.row-sub { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; line-height: 1.5; }
+.logout { background: var(--c-danger); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

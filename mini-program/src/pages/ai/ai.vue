@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <!-- 顶部标题栏 -->
     <view class="nav">
       <view class="nav-title">
@@ -17,10 +17,17 @@
       <view v-for="(m, i) in messages" :key="i" :id="'m' + i" :class="['row', m.role]">
         <view class="avatar">{{ m.role === 'assistant' ? '🤖' : '我' }}</view>
         <view class="content">
-          <view :class="['bubble', m.role]">
+          <view
+            :class="['bubble', m.role]"
+            @longpress="m.role === 'assistant' && !m.loading && copyText(m.content)"
+          >
             <text v-if="m.loading" class="typing"><text class="dot">●</text><text class="dot">●</text><text class="dot">●</text></text>
             <rich-text v-else-if="m.role === 'assistant'" class="md" :nodes="md(m.content || '')"></rich-text>
             <text v-else class="text">{{ m.content || '…' }}</text>
+          </view>
+          <!-- 助手消息：复制按钮 -->
+          <view v-if="m.role === 'assistant' && !m.loading" class="bubble-ops">
+            <text class="copy-btn" @click="copyText(m.content)">📋 复制</text>
           </view>
           <!-- 用户发的文件/图片 展示 -->
           <view v-if="m.role === 'user' && (m.files?.length || m.image)" class="attach">
@@ -67,43 +74,55 @@ import { ref, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { marked } from 'marked'
 import api from '../../common/request'
-import { auth } from '../../common/store'
+import { auth, theme } from '../../common/store'
 
 // —— Markdown 渲染：token 化 renderer + 内联样式，产物交给 <rich-text> 渲染 ——
+// rich-text 不继承外部 CSS 变量，故按当前主题直接输出对应色值（切换主题时组件重渲染，md() 重新生成）
 marked.setOptions({ gfm: true, breaks: true })
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const SZ = { 1: 40, 2: 36, 3: 32, 4: 30, 5: 28, 6: 26 }
+const LIGHT = { fg: '#333', sub: '#888', codeBg: '#f5f5f5', codeFg: '#c7254e', border: '#d9d9d9', link: '#07c160', strong: '#222' }
+const DARK = { fg: '#e6e6e6', sub: '#9aa0a6', codeBg: '#262b34', codeFg: '#ff9b9b', border: '#3a3f47', link: '#3fd07f', strong: '#ffffff' }
 marked.use({
   renderer: {
     heading(t) {
-      return `<view style="font-size:${SZ[t.depth] || 30}rpx;font-weight:700;margin:18rpx 0 10rpx;color:#222;line-height:1.4;">${this.parser.parseInline(t.tokens) || t.text}</view>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<view style="font-size:${SZ[t.depth] || 30}rpx;font-weight:700;margin:18rpx 0 10rpx;color:${c.fg};line-height:1.4;">${this.parser.parseInline(t.tokens) || t.text}</view>`
     },
     paragraph(t) {
-      return `<view style="margin:10rpx 0;line-height:1.7;">${this.parser.parseInline(t.tokens) || t.text}</view>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<view style="margin:10rpx 0;line-height:1.7;color:${c.fg};">${this.parser.parseInline(t.tokens) || t.text}</view>`
     },
     listitem(t) {
-      return `<li style="margin:8rpx 0;line-height:1.7;">• ${this.parser.parseInline(t.tokens) || t.text}</li>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<li style="margin:8rpx 0;line-height:1.7;color:${c.fg};">• ${this.parser.parseInline(t.tokens) || t.text}</li>`
     },
     code(t) {
-      return `<view style="background:#f5f5f5;border-radius:12rpx;padding:18rpx;font-size:24rpx;margin:12rpx 0;white-space:pre-wrap;word-break:break-all;color:#333;">${esc(t.text)}</view>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<view style="background:${c.codeBg};border-radius:12rpx;padding:18rpx;font-size:24rpx;margin:12rpx 0;white-space:pre-wrap;word-break:break-all;color:${c.codeFg};">${esc(t.text)}</view>`
     },
     codespan(t) {
-      return `<text style="background:#f5f5f5;padding:2rpx 8rpx;border-radius:6rpx;font-size:24rpx;color:#c7254e;">${t.text}</text>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<text style="background:${c.codeBg};padding:2rpx 8rpx;border-radius:6rpx;font-size:24rpx;color:${c.codeFg};">${t.text}</text>`
     },
     strong(t) {
-      return `<text style="font-weight:700;color:#222;">${t.text}</text>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<text style="font-weight:700;color:${c.strong};">${t.text}</text>`
     },
     em(t) {
       return `<text style="font-style:italic;">${t.text}</text>`
     },
     blockquote(t) {
-      return `<view style="border-left:6rpx solid #d9d9d9;padding:4rpx 20rpx;color:#888;margin:12rpx 0;">${this.parser.parse(t.tokens) || t.text}</view>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<view style="border-left:6rpx solid ${c.border};padding:4rpx 20rpx;color:${c.sub};margin:12rpx 0;">${this.parser.parse(t.tokens) || t.text}</view>`
     },
     hr() {
-      return '<view style="height:1rpx;background:#eee;margin:18rpx 0;"></view>'
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<view style="height:1rpx;background:${c.border};margin:18rpx 0;"></view>`
     },
     link(t) {
-      return `<text style="color:#07c160;">${t.text}</text>`
+      const c = theme.mode === 'dark' ? DARK : LIGHT
+      return `<text style="color:${c.link};">${t.text}</text>`
     },
   },
 })
@@ -134,6 +153,17 @@ function formatSize(b) {
 
 function removeFile(k) {
   fileList.value.splice(k, 1)
+}
+
+/** 复制助手回复原文到剪贴板 */
+function copyText(text) {
+  const t = (text || '').trim()
+  if (!t) return
+  uni.setClipboardData({
+    data: t,
+    success: () => uni.showToast({ title: '已复制', icon: 'none' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
 }
 
 function clearAll() {
@@ -259,7 +289,7 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: linear-gradient(180deg, #fff7e6 0%, #fffdf8 220rpx, #f6f7fb 100%);
+  background: var(--c-bg);
   box-sizing: border-box;
 }
 
@@ -284,6 +314,17 @@ onShow(() => {
   padding: 8rpx 24rpx;
   border-radius: 30rpx;
 }
+/* 深色下导航栏改用深蓝灰渐变 */
+.dark .nav {
+  background: linear-gradient(135deg, #2a2f3a 0%, #383f4d 100%);
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.35);
+}
+.dark .t1 { color: #f2f2f2; }
+.dark .t2 { color: #aab2c0; }
+.dark .nav-clear {
+  color: #e6e6e6;
+  background: rgba(255, 255, 255, 0.12);
+}
 
 /* 对话区 */
 .box { flex: 1; padding: 24rpx 22rpx; box-sizing: border-box; }
@@ -293,15 +334,15 @@ onShow(() => {
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: #fff;
+  background: var(--c-card);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 30rpx;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2rpx 8rpx var(--c-shadow);
 }
-.row.user .avatar { background: #07c160; color: #fff; }
+.row.user .avatar { background: var(--c-primary); color: #fff; }
 .content { max-width: 78%; display: flex; flex-direction: column; }
 .row.user .content { align-items: flex-end; }
 
@@ -312,10 +353,10 @@ onShow(() => {
   line-height: 1.6;
 }
 .bubble.assistant {
-  background: #fff;
-  color: #333;
+  background: var(--c-card);
+  color: var(--c-text);
   border-bottom-left-radius: 8rpx;
-  box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 14rpx var(--c-shadow);
 }
 .bubble.user {
   background: linear-gradient(135deg, #07c160 0%, #19d27e 100%);
@@ -325,6 +366,17 @@ onShow(() => {
 }
 .text { white-space: pre-wrap; word-break: break-word; }
 .md { font-size: 30rpx; line-height: 1.6; word-break: break-word; }
+
+/* 复制按钮 */
+.bubble-ops { display: flex; justify-content: flex-end; margin-top: 6rpx; }
+.copy-btn {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  padding: 6rpx 16rpx;
+  border-radius: 24rpx;
+  background: var(--c-card2);
+}
+.copy-btn:active { color: var(--c-primary); }
 
 /* 打字动画 */
 .typing { display: inline-flex; gap: 10rpx; align-items: center; }
@@ -340,19 +392,19 @@ onShow(() => {
   height: 140rpx;
   border-radius: 14rpx;
   overflow: hidden;
-  border: 2rpx solid #eee;
+  border: 2rpx solid var(--c-border);
 }
 .attach-img image { width: 100%; height: 100%; }
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #eee;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
   border-radius: 30rpx;
   padding: 8rpx 18rpx;
   font-size: 24rpx;
-  color: #4a3f35;
+  color: var(--c-title);
   max-width: 360rpx;
 }
 .chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -363,22 +415,22 @@ onShow(() => {
   flex-wrap: wrap;
   gap: 12rpx;
   padding: 14rpx 22rpx 0;
-  background: #f6f7fb;
+  background: var(--c-bg);
 }
 .filepill {
   display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  background: #fff;
-  border: 1px solid #ffe1b0;
+  background: var(--c-card);
+  border: 1px solid var(--c-input-border);
   border-radius: 30rpx;
   padding: 8rpx 16rpx;
   font-size: 24rpx;
-  color: #8a6d3b;
+  color: var(--c-sub);
 }
 .fp-name { max-width: 240rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fp-size { color: #bba; }
-.fp-del { color: #f56c6c; font-size: 32rpx; padding: 0 6rpx; }
+.fp-size { color: var(--c-sub); opacity: 0.7; }
+.fp-del { color: var(--c-danger); font-size: 32rpx; padding: 0 6rpx; }
 
 /* 输入区 */
 .input-bar {
@@ -386,12 +438,12 @@ onShow(() => {
   align-items: center;
   gap: 14rpx;
   padding: 16rpx 20rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  background: var(--c-card);
+  border-top: 1px solid var(--c-border);
 }
 .icon-btn {
-  background: #fff7e6;
-  color: #8a6d3b;
+  background: var(--c-card2);
+  color: var(--c-sub);
   border-radius: 50%;
   width: 72rpx;
   height: 72rpx;
@@ -403,7 +455,7 @@ onShow(() => {
 .icon-btn::after { border: none; }
 .ipt {
   flex: 1;
-  background: #f6f7fb;
+  background: var(--c-input);
   border-radius: 40rpx;
   padding: 18rpx 28rpx;
   font-size: 28rpx;
@@ -411,7 +463,7 @@ onShow(() => {
   min-height: 72rpx;
   line-height: 40rpx;
   box-sizing: border-box;
-  color: #333;
+  color: var(--c-text);
 }
 .send {
   background: linear-gradient(135deg, #07c160 0%, #19d27e 100%);

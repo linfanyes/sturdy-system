@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="sel">
       <view class="field">
         <text class="label">班级</text>
@@ -75,6 +75,7 @@
 import { ref, reactive } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { theme } from '../../common/store'
 
 const classes = ref([])
 const exams = ref([])
@@ -304,32 +305,32 @@ async function commit() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.sel { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.sel { background: var(--c-card); border-radius: 20rpx; padding: 24rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .field { margin-bottom: 16rpx; }
-.label { display: block; font-size: 24rpx; color: #9aa0a6; margin-bottom: 8rpx; }
+.label { display: block; font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; }
 .picker, .sel input {
-  border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx;
-  font-size: 28rpx; color: #4a3f35; min-height: 80rpx; line-height: 44rpx;
-  box-sizing: border-box; background: #fff;
+  border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
+  font-size: 28rpx; color: var(--c-title); min-height: 80rpx; line-height: 44rpx;
+  box-sizing: border-box; background: var(--c-input);
 }
-.exist { background: #e8f8ef; color: #07c160; font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
+.exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
 .clear { color: #e64340; font-size: 24rpx; }
-.item { background: #fff; border-radius: 16rpx; padding: 20rpx 26rpx; margin-bottom: 14rpx; display: flex; align-items: center; justify-content: space-between; }
-.name { font-size: 30rpx; color: #4a3f35; }
-.score { width: 220rpx; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 0 20rpx; text-align: center; font-size: 28rpx; box-sizing: border-box; background: #fff; }
-.empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 16rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.item { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 26rpx; margin-bottom: 14rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.name { font-size: 30rpx; color: var(--c-title); }
+.score { width: 220rpx; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; text-align: center; font-size: 28rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
+.empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 16rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .imp { background: #409eff; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
-.import-box { margin-top: 16rpx; background: #f6fbff; border-radius: 20rpx; padding: 24rpx; }
-.imp-tip { font-size: 24rpx; color: #6a7c8c; line-height: 1.6; margin-bottom: 14rpx; }
-.pick { background: #409eff; color: #fff; border-radius: 50rpx; font-size: 28rpx; }
-.preview { margin-top: 14rpx; border-top: 1px dashed #cfe3f5; padding-top: 14rpx; }
-.pv-sum { font-size: 26rpx; color: #4a3f35; }
-.pv-sum .ok { color: #07c160; }
+.import-box { margin-top: 16rpx; background: var(--c-card2); border-radius: 20rpx; padding: 24rpx; }
+.imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 14rpx; }
+.pick { background: #409eff; color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
+.preview { margin-top: 14rpx; border-top: 1px dashed var(--c-border); padding-top: 14rpx; }
+.pv-sum { font-size: 26rpx; color: var(--c-title); }
+.pv-sum .ok { color: var(--c-primary); }
 .pv-sum .bad { color: #e64340; }
 .pv-errs { margin: 8rpx 0; }
 .pv-err { font-size: 24rpx; color: #e64340; line-height: 1.6; }
-.confirm { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 6rpx; }
+.confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 </style>

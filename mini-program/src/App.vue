@@ -1,9 +1,10 @@
 <script>
 import { onLaunch } from '@dcloudio/uni-app'
-import { auth } from './common/store'
+import { auth, initTheme } from './common/store'
 
 export default {
   onLaunch() {
+    initTheme()
     if (!auth.token) {
       uni.reLaunch({ url: '/pages/login/login' })
     }
@@ -12,10 +13,42 @@ export default {
 </script>
 
 <style>
+/* 主题色板：亮色定义在 page，深色覆盖在 .dark（页面根 view 绑定 :class="{dark}" 时生效，子元素继承） */
 page {
-  background: #fff7e6;
+  --c-bg: #fff7e6;
+  --c-card: #ffffff;
+  --c-card2: #f6f7fb;
+  --c-text: #333333;
+  --c-title: #4a3f35;
+  --c-sub: #8a8a8a;
+  --c-border: #e5e5e5;
+  --c-input: #f6f7fb;
+  --c-input-border: #e5e5e5;
+  --c-primary: #07c160;
+  --c-primary-d: #19d27e;
+  --c-accent: #e6a23c;
+  --c-danger: #f56c6c;
+  --c-shadow: rgba(0, 0, 0, 0.04);
+  background: var(--c-bg);
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
 }
+.dark {
+  --c-bg: #15171c;
+  --c-card: #1f232b;
+  --c-card2: #262b34;
+  --c-text: #e6e6e6;
+  --c-title: #f2f2f2;
+  --c-sub: #9aa0a6;
+  --c-border: #2c313a;
+  --c-input: #262b34;
+  --c-input-border: #2c313a;
+  --c-primary: #07c160;
+  --c-primary-d: #19d27e;
+  --c-accent: #e6a23c;
+  --c-danger: #f56c6c;
+  --c-shadow: rgba(0, 0, 0, 0.35);
+}
+
 /* 小字提示/说明类文本默认换行，避免被截断显示不全 */
 text {
   word-break: break-word;

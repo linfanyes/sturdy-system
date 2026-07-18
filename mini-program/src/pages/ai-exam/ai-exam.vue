@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="card">
       <view class="sec-title">考试一键分析</view>
       <picker :range="examNames" @change="onPick">
@@ -33,7 +33,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth } from '../../common/store'
+import { auth, theme } from '../../common/store'
 
 const exams = ref([])
 const grades = ref([])
@@ -145,19 +145,19 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; }
-.sec-title { font-size: 30rpx; font-weight: 700; color: #a07b3b; margin-bottom: 16rpx; }
-.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
-.picker { color: #4a3f35; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.card { background: var(--c-card); border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
+.ctrl { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); }
+.picker { color: var(--c-title); min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .stats { margin: 10rpx 0 20rpx; }
-.stat { background: #fff7e6; border-radius: 14rpx; padding: 20rpx; margin-bottom: 14rpx; }
-.st-sub { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 8rpx; }
-.st-line { font-size: 24rpx; color: #8a7d6b; line-height: 1.6; }
+.stat { background: var(--c-card2); border-radius: 14rpx; padding: 20rpx; margin-bottom: 14rpx; }
+.st-sub { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 8rpx; }
+.st-line { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; }
 .seg { margin-right: 10rpx; }
-.empty { text-align: center; color: #c0c4cc; padding: 30rpx 0; font-size: 26rpx; }
-.gen { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 4rpx; }
+.empty { text-align: center; color: var(--c-sub); padding: 30rpx 0; font-size: 26rpx; }
+.gen { background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 4rpx; height: 84rpx; line-height: 84rpx; }
 .gen[disabled] { opacity: 0.6; }
-.result-text { font-size: 28rpx; line-height: 1.7; color: #4a3f35; white-space: pre-wrap; margin-bottom: 20rpx; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; }
+.result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
 </style>

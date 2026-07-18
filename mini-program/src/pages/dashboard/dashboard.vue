@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="header">
       <view class="hi">{{ greeting }}，{{ auth.user?.name || '老师' }}</view>
       <view class="school">{{ auth.user?.school || '未设置学校' }}</view>
@@ -22,7 +22,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { auth } from '../../common/store'
+import { auth, theme } from '../../common/store'
 
 const features = [
   { label: '班级管理', icon: '🏫', path: '/pages/classes/classes', tab: true },
@@ -53,6 +53,9 @@ onShow(() => {
 <style scoped>
 .page {
   padding: 30rpx;
+  background: var(--c-bg);
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 .header {
   padding: 30rpx 20rpx 40rpx;
@@ -60,10 +63,10 @@ onShow(() => {
 .hi {
   font-size: 44rpx;
   font-weight: 700;
-  color: #4a3f35;
+  color: var(--c-title);
 }
 .school {
-  color: #9aa0a6;
+  color: var(--c-sub);
   margin-top: 8rpx;
 }
 .grid {
@@ -72,20 +75,20 @@ onShow(() => {
   gap: 24rpx;
 }
 .cell {
-  background: #fff;
+  background: var(--c-card);
   border-radius: 24rpx;
   padding: 40rpx 20rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 6rpx 20rpx rgba(230, 162, 60, 0.08);
+  box-shadow: 0 6rpx 20rpx var(--c-shadow);
 }
 .ic {
   font-size: 70rpx;
 }
 .lb {
   margin-top: 16rpx;
-  color: #4a3f35;
+  color: var(--c-title);
   font-size: 30rpx;
 }
 </style>

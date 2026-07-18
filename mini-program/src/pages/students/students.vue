@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="bar">{{ className }}</view>
 
     <view class="list">
@@ -73,6 +73,7 @@
 import { ref } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { theme } from '../../common/store'
 
 const classId = ref('')
 const className = ref('')
@@ -180,40 +181,40 @@ async function commit() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.bar { font-size: 34rpx; font-weight: 700; color: #4a3f35; margin-bottom: 20rpx; }
-.item { background: #fff; border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.bar { font-size: 34rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
+.item { background: var(--c-card); border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .top { display: flex; justify-content: space-between; align-items: center; }
-.name { font-size: 32rpx; font-weight: 600; }
-.no { color: #9aa0a6; font-size: 24rpx; }
-.meta { color: #9aa0a6; font-size: 26rpx; margin-top: 8rpx; }
+.name { font-size: 32rpx; font-weight: 600; color: var(--c-text); }
+.no { color: var(--c-sub); font-size: 24rpx; }
+.meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .duty { color: #409eff; }
-.empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
+.empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
 .actions { display: flex; gap: 20rpx; margin-top: 16rpx; }
 .add, .import { flex: 1; border-radius: 50rpx; color: #fff; font-size: 28rpx; }
-.add { background: #e6a23c; }
+.add { background: var(--c-accent); }
 .import { background: #409eff; }
-.form { margin-top: 24rpx; background: #fff; border-radius: 20rpx; padding: 30rpx; }
-.form input, .picker { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 6rpx; }
-.import-box { background: #f6fbff; }
-.imp-title { font-size: 30rpx; font-weight: 700; color: #2a6fbb; margin-bottom: 10rpx; }
-.imp-tip { font-size: 24rpx; color: #6a7c8c; line-height: 1.6; margin-bottom: 16rpx; }
-.tpl, .pick { background: #fff; color: #2a6fbb; border: 1px solid #bcdcff; border-radius: 50rpx; font-size: 28rpx; margin-bottom: 14rpx; }
+.form { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.form input, .picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.import-box { background: var(--c-card2); }
+.imp-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
+.tpl, .pick { background: var(--c-card); color: #2a6fbb; border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; }
 .pick { background: #409eff; color: #fff; border: none; }
-.preview { margin-top: 10rpx; border-top: 1px dashed #cfe3f5; padding-top: 16rpx; }
-.pv-sum { font-size: 26rpx; color: #4a3f35; }
-.pv-sum .ok { color: #07c160; }
+.preview { margin-top: 10rpx; border-top: 1px dashed var(--c-border); padding-top: 16rpx; }
+.pv-sum { font-size: 26rpx; color: var(--c-title); }
+.pv-sum .ok { color: var(--c-primary); }
 .pv-sum .bad { color: #e64340; }
 .pv-errs { margin: 10rpx 0; }
 .pv-err { font-size: 24rpx; color: #e64340; line-height: 1.6; }
-.confirm { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 6rpx; }
+.confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.dialog { width: 620rpx; background: #fff; border-radius: 24rpx; padding: 36rpx; }
-.d-title { font-size: 32rpx; font-weight: 700; color: #4a3f35; margin-bottom: 10rpx; }
-.d-sub { font-size: 24rpx; color: #9aa0a6; line-height: 1.6; margin-bottom: 16rpx; }
+.dialog { width: 620rpx; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+.d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .d-code { background: #2b2b2b; color: #f6f6f6; font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
-.d-copy { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
-.d-close { background: #f2f3f5; color: #666; border-radius: 50rpx; }
+.d-copy { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="bar">
       <text class="title">{{ schema ? schema.title : '管理' }}</text>
       <input v-if="schema && schema.search" v-model="kw" placeholder="搜索" class="search" />
@@ -72,6 +72,7 @@ import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { CRUD_SCHEMA } from '../../common/crud-schema'
+import { theme } from '../../common/store'
 
 const schema = ref(null)
 const list = ref([])
@@ -180,21 +181,21 @@ function remove(item) {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
-.title { font-size: 34rpx; font-weight: 700; color: #4a3f35; }
-.search { border: 1px solid #eee; border-radius: 30rpx; padding: 10rpx 24rpx; font-size: 26rpx; width: 240rpx; }
-.item { background: #fff; border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; position: relative; }
+.title { font-size: 34rpx; font-weight: 700; color: var(--c-title); }
+.search { border: 1px solid var(--c-border); border-radius: 30rpx; padding: 10rpx 24rpx; font-size: 26rpx; width: 240rpx; background: var(--c-input); color: var(--c-text); }
+.item { background: var(--c-card); border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; position: relative; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .top { display: flex; justify-content: space-between; align-items: center; }
-.name { font-size: 32rpx; font-weight: 600; }
-.meta { color: #9aa0a6; font-size: 26rpx; margin-top: 8rpx; }
+.name { font-size: 32rpx; font-weight: 600; color: var(--c-text); }
+.meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .meta .m { margin-right: 18rpx; }
 .ops { position: absolute; right: 26rpx; bottom: 26rpx; }
 .del { color: #e06c75; font-size: 26rpx; }
-.empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
-.add { margin-top: 16rpx; background: #e6a23c; color: #fff; border-radius: 50rpx; }
-.form { margin-top: 24rpx; background: #fff; border-radius: 20rpx; padding: 30rpx; }
-.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
-.picker { color: #4a3f35; min-height: 80rpx; line-height: 44rpx; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
+.add { margin-top: 16rpx; background: var(--c-accent); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.form { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.ctrl { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); }
+.picker { color: var(--c-title); min-height: 80rpx; line-height: 44rpx; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

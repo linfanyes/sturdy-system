@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="list">
       <view
         v-for="c in list"
@@ -76,6 +76,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { theme } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
@@ -185,56 +186,58 @@ function remove(c) {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .item {
-  background: #fff;
+  background: var(--c-card);
   border-radius: 20rpx;
   padding: 26rpx 30rpx;
   margin-bottom: 20rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 2rpx 10rpx var(--c-shadow);
 }
 .info { flex: 1; }
-.name { font-size: 34rpx; font-weight: 600; color: #4a3f35; }
-.meta { color: #9aa0a6; font-size: 26rpx; margin-top: 8rpx; }
+.name { font-size: 34rpx; font-weight: 600; color: var(--c-title); }
+.meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .ops { display: flex; gap: 24rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
-.edit { color: #07c160; background: #e8f8ef; }
-.del { color: #e64340; background: #fdeced; }
-.empty { text-align: center; color: #c0c4cc; padding: 80rpx 0; }
+.edit { color: var(--c-primary); background: rgba(7, 193, 96, 0.12); }
+.del { color: #e64340; background: rgba(230, 67, 64, 0.12); }
+.empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
 .add {
   margin-top: 20rpx;
-  background: #e6a23c;
+  background: var(--c-accent);
   color: #fff;
   border-radius: 50rpx;
 }
 .form {
   margin-top: 24rpx;
-  background: #fff;
+  background: var(--c-card);
   border-radius: 20rpx;
   padding: 30rpx;
+  box-shadow: 0 2rpx 10rpx var(--c-shadow);
 }
-.form-title { font-size: 30rpx; font-weight: 700; color: #8a6d3b; margin-bottom: 16rpx; }
+.form-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 .field { margin-bottom: 18rpx; }
-.label { display: block; font-size: 24rpx; color: #9aa0a6; margin-bottom: 8rpx; line-height: 1.6; }
+.label { display: block; font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; line-height: 1.6; }
 .picker, .readonly {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--c-input-border);
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
   font-size: 28rpx;
-  color: #4a3f35;
+  color: var(--c-title);
   min-height: 80rpx;
   line-height: 44rpx;
   box-sizing: border-box;
 }
-.readonly { background: #f7f7f7; color: #8a6d3b; }
+.readonly { background: var(--c-input); color: var(--c-sub); }
 .field input {
   width: 100%; height: 80rpx; min-height: 80rpx; line-height: 44rpx;
-  border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx;
-  font-size: 28rpx; color: #333; background: #fff;
+  border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
+  font-size: 28rpx; color: var(--c-text); background: var(--c-input);
   box-sizing: border-box;
 }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
-.cancel { background: #f2f3f5; color: #666; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 </style>
