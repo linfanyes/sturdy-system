@@ -37,7 +37,11 @@
     <view v-if="content" class="card result">
       <view class="sec-title">生成结果</view>
       <view class="result-text" user-select selectable>{{ content }}</view>
-      <button class="copy" @click="copy">📋 复制结果</button>
+      <view class="ops-row">
+        <button class="copy" @click="copy">📋 复制结果</button>
+        <button class="speak" v-if="!speaking" @click="speak">🔊 朗读</button>
+        <button class="speak stop" v-else @click="stopSpeak">⏹ 停止</button>
+      </view>
     </view>
   </view>
 </template>
@@ -55,6 +59,8 @@ const tool = ref(null)
 const form = ref({})
 const content = ref('')
 const loading = ref(false)
+const speaking = ref(false)
+let audioCtx = null
 
 const fields = computed(() => (tool.value ? tool.value.fields : []))
 
@@ -101,6 +107,42 @@ function copy() {
   uni.setClipboardData({ data: content.value, success: () => uni.showToast({ title: '已复制', icon: 'success' }) })
 }
 
+// 语音朗读：web 端用浏览器 SpeechSynthesis；小程序需「微信同声传译」插件（受限）。
+// 未配置插件时优雅降级为提示。
+function speak() {
+  if (!content.value) return
+  if (typeof wx === 'undefined' || !wx.requirePlugin) {
+    return uni.showToast({ title: '当前环境不支持朗读', icon: 'none' })
+  }
+  try {
+    const plugin = wx.requirePlugin('WechatSI')
+    speaking.value = true
+    plugin.textToSpeech({
+      lang: 'zh_CN',
+      tts: true,
+      content: content.value,
+      success(res) {
+        if (audioCtx) { audioCtx.destroy(); audioCtx = null }
+        audioCtx = wx.createInnerAudioContext()
+        audioCtx.src = res.filename
+        audioCtx.onEnded(() => { speaking.value = false; audioCtx = null })
+        audioCtx.play()
+      },
+      fail() {
+        speaking.value = false
+        uni.showToast({ title: '朗读需在小程序后台添加「微信同声传译」插件', icon: 'none' })
+      },
+    })
+  } catch (e) {
+    speaking.value = false
+    uni.showToast({ title: '朗读需配置「微信同声传译」插件', icon: 'none' })
+  }
+}
+function stopSpeak() {
+  if (audioCtx) { audioCtx.stop(); audioCtx.destroy(); audioCtx = null }
+  speaking.value = false
+}
+
 onShow(() => {
   if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
 })
@@ -120,4 +162,7 @@ onShow(() => {
 .gen[disabled] { opacity: 0.6; }
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .copy { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; }
+.ops-row { display: flex; gap: 20rpx; margin-top: 20rpx; }
+.speak { background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 30rpx; flex: 1; }
+.speak.stop { background: #e64340; }
 </style>

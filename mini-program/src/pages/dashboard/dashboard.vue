@@ -120,6 +120,7 @@ const features = [
   { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
   { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
   { label: '工具箱', icon: '🧰', path: '/pages/toolbox/toolbox', tab: true },
+  { label: '消息中心', icon: '📥', path: '/pages/messages/messages' },
   { label: '设置', icon: '⚙️', path: '/pages/config/config', tab: true },
 ]
 

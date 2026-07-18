@@ -3,7 +3,7 @@
     <view class="bar">{{ className }}</view>
 
     <view class="list">
-      <view v-for="s in list" :key="s.id" class="item">
+      <view v-for="s in list" :key="s.id" class="item" @click="openProfile(s)">
         <view class="top">
           <text class="name">{{ s.name }}</text>
           <text class="no">学号 {{ s.studentNo || '—' }}</text>
@@ -66,11 +66,27 @@
         <button class="d-close" @click="showTpl = false">关闭</button>
       </view>
     </view>
+
+    <!-- 学生档案（雷达图） -->
+    <view v-if="showProfile" class="mask" @click="showProfile = false">
+      <view class="dialog" @click.stop>
+        <view class="d-title">{{ profile.name }} 的档案</view>
+        <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
+        <canvas type="2d" id="radarCanvas" class="radar"></canvas>
+        <view class="pf-stats">
+          <view class="pf-st"><text class="pf-n">{{ radar.avg }}</text><text class="pf-l">成绩均分</text></view>
+          <view class="pf-st"><text class="pf-n">{{ radar.attRate }}%</text><text class="pf-l">出勤率</text></view>
+          <view class="pf-st"><text class="pf-n">{{ radar.behScore }}</text><text class="pf-l">行为活跃</text></view>
+        </view>
+        <view class="pf-tip">雷达基于成绩 / 考勤 / 行为观察数据自动生成（0–100）。</view>
+        <button class="d-close" @click="showProfile = false">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
@@ -82,6 +98,9 @@ const showForm = ref(false)
 const showImport = ref(false)
 const showTpl = ref(false)
 const preview = ref(null)
+const showProfile = ref(false)
+const profile = ref({})
+const radar = ref({ avg: 0, attRate: 0, behScore: 0 })
 const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '' })
 
 onLoad((q) => {
@@ -178,6 +197,114 @@ async function commit() {
     uni.hideLoading()
   }
 }
+
+async function openProfile(s) {
+  profile.value = s
+  showProfile.value = true
+  radar.value = { avg: 0, attRate: 0, behScore: 0 }
+  await computeProfile(s)
+}
+async function computeProfile(s) {
+  const [grades, atts, beh] = await Promise.all([
+    api.get('/grades').catch(() => []),
+    api.get('/attendances').catch(() => []),
+    api.get('/behavior-records').catch(() => []),
+  ])
+  // 成绩均分
+  const sc = []
+  ;(grades || []).forEach((g) => (g.scores || []).forEach((x) => { if (x.studentId === s.id && x.score != null) sc.push(Number(x.score)) }))
+  const avg = sc.length ? Math.round(sc.reduce((a, b) => a + b, 0) / sc.length) : 0
+  // 出勤率
+  let total = 0
+  let present = 0
+  ;(atts || []).forEach((a) => {
+    const recs = typeof a.records === 'string' ? (() => { try { return JSON.parse(a.records) } catch (e) { return [] } })() : (a.records || [])
+    recs.forEach((r) => { if (r.studentId === s.id) { total++; if (r.status === '出勤') present++ } })
+  })
+  const attRate = total ? Math.round((present / total) * 100) : 0
+  // 行为活跃（封顶 20 条 = 100）
+  const behCount = (beh || []).filter((b) => b.studentId === s.id).length
+  const behScore = Math.min(100, Math.round((behCount / 20) * 100))
+  radar.value = { avg, attRate, behScore }
+  nextTick(drawRadar)
+}
+function drawRadar() {
+  const q = uni.createSelectorQuery()
+  q.select('#radarCanvas').fields({ node: true, size: true }).exec((res) => {
+    if (!res || !res[0] || !res[0].node) return
+    const canvas = res[0].node
+    const dpr = (uni.getSystemInfoSync().pixelRatio || 2)
+    const size = 300
+    canvas.width = size * dpr
+    canvas.height = size * dpr
+    const ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+    const cx = size / 2
+    const cy = size / 2
+    const R = 100
+    const vals = [radar.value.avg, radar.value.attRate, radar.value.behScore]
+    const labels = ['成绩', '出勤', '行为']
+    const n = 3
+    // 网格环
+    for (let r = 1; r <= 4; r++) {
+      ctx.beginPath()
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+        const rr = (R * r) / 4
+        const x = cx + rr * Math.cos(a)
+        const y = cy + rr * Math.sin(a)
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.closePath()
+      ctx.strokeStyle = '#e3e3e3'
+      ctx.stroke()
+    }
+    // 轴线 + 标签
+    ctx.font = '13px sans-serif'
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const x = cx + R * Math.cos(a)
+      const y = cy + R * Math.sin(a)
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(x, y)
+      ctx.strokeStyle = '#eee'
+      ctx.stroke()
+      const lx = cx + (R + 18) * Math.cos(a)
+      const ly = cy + (R + 18) * Math.sin(a)
+      ctx.fillStyle = '#888'
+      ctx.textAlign = 'center'
+      ctx.fillText(labels[i], lx, ly + 4)
+    }
+    // 数据多边形
+    ctx.beginPath()
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const rr = (R * vals[i]) / 100
+      const x = cx + rr * Math.cos(a)
+      const y = cy + rr * Math.sin(a)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(230,162,60,0.35)'
+    ctx.strokeStyle = '#e6a23c'
+    ctx.lineWidth = 2
+    ctx.fill()
+    ctx.stroke()
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const rr = (R * vals[i]) / 100
+      const x = cx + rr * Math.cos(a)
+      const y = cy + rr * Math.sin(a)
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, 2 * Math.PI)
+      ctx.fillStyle = '#e6a23c'
+      ctx.fill()
+    }
+  })
+}
 </script>
 
 <style scoped>
@@ -217,4 +344,11 @@ async function commit() {
 .d-code { background: #2b2b2b; color: #f6f6f6; font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
 .d-copy { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.radar { width: 300px; height: 300px; display: block; margin: 10rpx auto; }
+.pf-meta { font-size: 24rpx; color: var(--c-sub); text-align: center; margin-bottom: 6rpx; }
+.pf-stats { display: flex; justify-content: space-around; margin: 10rpx 0; }
+.pf-st { display: flex; flex-direction: column; align-items: center; }
+.pf-n { font-size: 34rpx; font-weight: 800; color: var(--c-accent); }
+.pf-l { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.pf-tip { font-size: 20rpx; color: var(--c-sub); text-align: center; line-height: 1.5; margin-bottom: 16rpx; }
 </style>

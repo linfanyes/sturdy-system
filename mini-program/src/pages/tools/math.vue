@@ -18,12 +18,28 @@
         <text class="q">{{ p.q }} = {{ showAns ? p.a : '？' }}</text>
       </view>
     </view>
+
+    <view v-if="problems.length" class="export">
+      <view class="exp-title">导出 / 打印</view>
+      <view class="exp-tip">小程序无 window.print，可「复制文本」粘贴到文档打印，或「保存图片」到相册后打印。</view>
+      <view class="exp-row">
+        <text class="exp-sw">含答案</text>
+        <switch :checked="exportAns" @change="e => exportAns = e.detail.value" color="#07c160" />
+      </view>
+      <view class="exp-btns">
+        <button class="ebtn" @click="copyPaper">📋 复制文本</button>
+        <button class="ebtn alt" @click="savePaper" :disabled="saving">{{ saving ? '生成中…' : '🖼 保存图片' }}</button>
+      </view>
+    </view>
+
+    <canvas type="2d" id="mathCanvas" class="offscreen"></canvas>
   </view>
 </template>
 
 <script setup>
 import { ref, computed} from 'vue'
 import { theme } from '../../common/store'
+import { drawAndSave, saveToAlbum, copyText } from '../../common/print'
 const dark = computed(() => theme.mode === 'dark')
 
 const count = ref(10)
@@ -31,6 +47,8 @@ const max = ref(20)
 const allOps = ['+', '-', '×', '÷']
 const ops = ref(['+', '-'])
 const showAns = ref(false)
+const exportAns = ref(false)
+const saving = ref(false)
 const problems = ref([])
 
 function toggleOp(o) {
@@ -52,6 +70,25 @@ function gen() {
   problems.value = list
   showAns.value = false
 }
+
+function paperLines() {
+  return problems.value.map((p, i) => `${i + 1}. ${p.q} = ${exportAns.value ? p.a : '______'}`)
+}
+function copyPaper() {
+  copyText(paperLines().join('\n'))
+}
+async function savePaper() {
+  saving.value = true
+  try {
+    const fp = await drawAndSave('mathCanvas', paperLines(), `口算练习（${problems.value.length}题）`)
+    await saveToAlbum(fp)
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '生成失败，已改为复制文本', icon: 'none' })
+    copyPaper()
+  }
+  saving.value = false
+}
 </script>
 
 <style scoped>
@@ -70,4 +107,14 @@ function gen() {
 .list { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; }
 .item { display: flex; gap: 12rpx; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-border); font-size: 30rpx; }
 .no { color: var(--c-accent); font-weight: 700; }
+.export { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin-top: 24rpx; }
+.exp-title { font-size: 28rpx; font-weight: 700; color: var(--c-accent); }
+.exp-tip { font-size: 22rpx; color: var(--c-sub); line-height: 1.6; margin: 10rpx 0; }
+.exp-row { display: flex; align-items: center; justify-content: space-between; margin: 14rpx 0; }
+.exp-sw { font-size: 26rpx; color: var(--c-title); }
+.exp-btns { display: flex; gap: 20rpx; }
+.ebtn { flex: 1; background: #e6a23c; color: #fff; border-radius: 40rpx; font-size: 26rpx; }
+.ebtn.alt { background: var(--c-accent); }
+.ebtn[disabled] { opacity: 0.6; }
+.offscreen { position: fixed; left: -9999rpx; top: -9999rpx; width: 720px; height: 2000px; }
 </style>

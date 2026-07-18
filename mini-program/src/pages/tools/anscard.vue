@@ -30,12 +30,28 @@
         <text v-else class="myans">{{ answers[i] === '' ? '-' : answers[i] }}<text v-if="!isRight(i)" class="right">({{ q.ans }})</text></text>
       </view>
     </view>
+
+    <view v-if="list.length" class="export">
+      <view class="exp-title">导出 / 打印</view>
+      <view class="exp-tip">小程序无 window.print，可「复制文本」粘贴到文档打印，或「保存图片」到相册后打印。</view>
+      <view class="exp-row">
+        <text class="exp-sw">含答案</text>
+        <switch :checked="exportAns" @change="e => exportAns = e.detail.value" color="#07c160" />
+      </view>
+      <view class="exp-btns">
+        <button class="ebtn" @click="copyPaper">📋 复制文本</button>
+        <button class="ebtn alt" @click="savePaper" :disabled="saving">{{ saving ? '生成中…' : '🖼 保存图片' }}</button>
+      </view>
+    </view>
+
+    <canvas type="2d" id="acCanvas" class="offscreen"></canvas>
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { theme } from '../../common/store'
+import { drawAndSave, saveToAlbum, copyText } from '../../common/print'
 const dark = computed(() => theme.mode === 'dark')
 
 const countOpts = [10, 20, 30, 50]
@@ -47,6 +63,8 @@ const ops = ref(['+', '−'])
 const list = ref([])
 const answers = ref([])
 const checked = ref(false)
+const exportAns = ref(false)
+const saving = ref(false)
 
 function toggleOp(o) {
   const i = ops.value.indexOf(o)
@@ -74,6 +92,25 @@ function isRight(i) { return answers.value[i] !== '' && Number(answers.value[i])
 function check() { checked.value = true }
 const correct = computed(() => list.value.reduce((s, _, i) => s + (isRight(i) ? 1 : 0), 0))
 const rate = computed(() => list.value.length ? Math.round(correct.value / list.value.length * 100) : 0)
+
+function paperLines() {
+  return list.value.map((q, i) => `${i + 1}. ${q.text} = ${exportAns.value ? q.ans : '______'}`)
+}
+function copyPaper() {
+  copyText(paperLines().join('\n'))
+}
+async function savePaper() {
+  saving.value = true
+  try {
+    const fp = await drawAndSave('acCanvas', paperLines(), `口算答题卡（${list.value.length}题）`)
+    await saveToAlbum(fp)
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '生成失败，已改为复制文本', icon: 'none' })
+    copyPaper()
+  }
+  saving.value = false
+}
 gen()
 </script>
 
@@ -98,4 +135,14 @@ gen()
 .in { flex: 1; min-width: 80rpx; text-align: center; background: var(--c-input); border: 2rpx solid var(--c-input-border); border-radius: 8rpx; padding: 8rpx; height: 64rpx; min-height: 64rpx; line-height: 44rpx; box-sizing: border-box; color: var(--c-title); }
 .myans { font-weight: 700; }
 .right { color: #07c160; margin-left: 6rpx; font-size: 24rpx; }
+.export { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin-top: 24rpx; }
+.exp-title { font-size: 28rpx; font-weight: 700; color: var(--c-accent); }
+.exp-tip { font-size: 22rpx; color: var(--c-sub); line-height: 1.6; margin: 10rpx 0; }
+.exp-row { display: flex; align-items: center; justify-content: space-between; margin: 14rpx 0; }
+.exp-sw { font-size: 26rpx; color: var(--c-title); }
+.exp-btns { display: flex; gap: 20rpx; }
+.ebtn { flex: 1; background: #e6a23c; color: #fff; border-radius: 40rpx; font-size: 26rpx; }
+.ebtn.alt { background: var(--c-accent); }
+.ebtn[disabled] { opacity: 0.6; }
+.offscreen { position: fixed; left: -9999rpx; top: -9999rpx; width: 720px; height: 2000px; }
 </style>

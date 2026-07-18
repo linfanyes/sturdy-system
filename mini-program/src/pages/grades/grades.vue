@@ -32,6 +32,7 @@
         ✅ 已录入 {{ doneCount }} / {{ students.length }} 人（点击「保存」可更新）
         <text class="clear" @click="removeGrade">删除该成绩</text>
       </view>
+      <button v-if="existing" class="ana" @click="showAnalysis = true">📈 综合分析</button>
 
       <view class="list">
         <view v-for="s in students" :key="s.id" class="item">
@@ -68,11 +69,46 @@
         </view>
       </view>
     </block>
+
+    <view v-if="showAnalysis" class="mask" @click="showAnalysis = false">
+      <view class="modal" @click.stop>
+        <view class="m-h">{{ examName }} · {{ subject }} 综合分析</view>
+
+        <view class="stat-grid">
+          <view class="st"><view class="st-n">{{ analysis.avg }}</view><view class="st-l">平均分</view></view>
+          <view class="st"><view class="st-n">{{ analysis.max }}</view><view class="st-l">最高分</view></view>
+          <view class="st"><view class="st-n">{{ analysis.min }}</view><view class="st-l">最低分</view></view>
+          <view class="st"><view class="st-n">{{ analysis.median }}</view><view class="st-l">中位数</view></view>
+          <view class="st"><view class="st-n" style="color:#07c160">{{ analysis.passRate }}%</view><view class="st-l">及格率</view></view>
+          <view class="st"><view class="st-n" style="color:#e6a23c">{{ analysis.excellentRate }}%</view><view class="st-l">优秀率</view></view>
+        </view>
+
+        <view class="dist">
+          <view class="dh">分数段分布</view>
+          <view v-for="seg in analysis.segs" :key="seg.label" class="seg-row">
+            <text class="seg-l">{{ seg.label }}</text>
+            <view class="seg-bar"><view class="seg-fill" :style="{ width: seg.pct + '%' }"></view></view>
+            <text class="seg-c">{{ seg.count }}人</text>
+          </view>
+        </view>
+
+        <view class="rank" v-if="analysis.rank.length">
+          <view class="rh">名次（前 20）</view>
+          <view v-for="(r, i) in analysis.rank.slice(0, 20)" :key="r.id" class="rk">
+            <text class="rk-no">{{ i + 1 }}</text>
+            <text class="rk-n">{{ r.name }}</text>
+            <text class="rk-s">{{ r.score }}</text>
+          </view>
+        </view>
+
+        <button class="m-close" @click="showAnalysis = false">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
@@ -97,6 +133,43 @@ const doneCount = ref(0)
 
 const showImport = ref(false)
 const preview = ref(null)
+const showAnalysis = ref(false)
+
+const analysis = computed(() => {
+  const empty = { avg: '-', max: '-', min: '-', median: '-', passRate: 0, excellentRate: 0, segs: [], rank: [] }
+  if (!existing.value) return empty
+  const all = (existing.value.scores || []).filter((x) => x.score != null)
+  const sc = all.map((x) => Number(x.score))
+  if (!sc.length) return empty
+  const sorted = [...sc].sort((a, b) => a - b)
+  const avg = (sc.reduce((a, b) => a + b, 0) / sc.length).toFixed(1)
+  const max = Math.max(...sc)
+  const min = Math.min(...sc)
+  const mid = sorted.length % 2
+    ? sorted[(sorted.length - 1) / 2]
+    : ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2).toFixed(1)
+  const pass = sc.filter((s) => s >= 60).length
+  const excellent = sc.filter((s) => s >= 90).length
+  const passRate = Math.round((pass / sc.length) * 100)
+  const excellentRate = Math.round((excellent / sc.length) * 100)
+  const segments = [
+    { label: '<60', min: 0, max: 59.999 },
+    { label: '60-69', min: 60, max: 69.999 },
+    { label: '70-79', min: 70, max: 79.999 },
+    { label: '80-89', min: 80, max: 89.999 },
+    { label: '90-100', min: 90, max: 100 },
+  ]
+  const segs = segments.map((s) => {
+    const c = sc.filter((x) => x >= s.min && x <= s.max).length
+    return { label: s.label, count: c, pct: Math.round((c / sc.length) * 100) }
+  })
+  const nameMap = {}
+  students.value.forEach((s) => (nameMap[s.id] = s.name))
+  const rank = all
+    .map((x) => ({ id: x.studentId, name: nameMap[x.studentId] || '—', score: x.score }))
+    .sort((a, b) => b.score - a.score)
+  return { avg, max, min, median: mid, passRate, excellentRate, segs, rank }
+})
 
 const classOpts = ref([])
 const examOpts = ref([])
@@ -333,4 +406,23 @@ async function commit() {
 .pv-err { font-size: 24rpx; color: #e64340; line-height: 1.6; }
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
+.ana { background: #e6a23c; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal { width: 640rpx; max-height: 86vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 32rpx; box-sizing: border-box; }
+.m-h { font-size: 30rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 22rpx; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14rpx; margin-bottom: 22rpx; }
+.st { background: var(--c-card2); border-radius: 14rpx; padding: 16rpx 6rpx; text-align: center; }
+.st-n { font-size: 34rpx; font-weight: 800; color: var(--c-accent); }
+.st-l { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.dh, .rh { font-size: 26rpx; font-weight: 700; color: var(--c-title); margin: 10rpx 0; }
+.seg-row { display: flex; align-items: center; gap: 14rpx; margin-bottom: 12rpx; }
+.seg-l { width: 100rpx; font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
+.seg-bar { flex: 1; height: 20rpx; background: var(--c-card2); border-radius: 10rpx; overflow: hidden; }
+.seg-fill { height: 100%; background: linear-gradient(90deg,#e6a23c,#07c160); border-radius: 10rpx; }
+.seg-c { width: 80rpx; text-align: right; font-size: 22rpx; color: var(--c-sub); flex-shrink: 0; }
+.rk { display: flex; align-items: center; gap: 16rpx; padding: 10rpx 0; border-bottom: 1rpx solid var(--c-border); }
+.rk-no { width: 44rpx; height: 44rpx; border-radius: 50%; background: var(--c-accent); color: #fff; text-align: center; line-height: 44rpx; font-size: 22rpx; flex-shrink: 0; }
+.rk-n { flex: 1; font-size: 26rpx; color: var(--c-title); }
+.rk-s { font-size: 28rpx; font-weight: 700; color: var(--c-accent); }
+.m-close { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 24rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 </style>
