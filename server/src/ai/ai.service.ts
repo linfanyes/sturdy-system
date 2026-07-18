@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
 import https from 'node:https'
+import XLSX from 'xlsx'
+import mammoth from 'mammoth'
+import pdfParse = require('pdf-parse/lib/pdf-parse.js')
 import { ConfigService } from '../config/config.service'
 
 // 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
@@ -41,6 +44,88 @@ export class AiService {
   }
 
   /**
+   * 把多类型文件（Excel/Word/PDF/Markdown/文本）解析为纯文本，拼成可注入 AI 的提示块。
+   * 单个文件文本上限 30000 字，超出截断，避免请求体过大。
+   */
+  private async extractFilesText(
+    files: Array<{ name: string; data: string }>,
+  ): Promise<string> {
+    const blocks: string[] = []
+    for (const f of files) {
+      const buf = Buffer.from(f.data || '', 'base64')
+      const ext = (f.name.split('.').pop() || '').toLowerCase()
+      let text = ''
+      try {
+        if (['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
+          text = buf.toString('utf-8')
+        } else if (['xlsx', 'xls'].includes(ext)) {
+          text = this.parseExcel(buf)
+        } else if (ext === 'docx') {
+          const r = await mammoth.extractRawText({ buffer: buf })
+          text = r.value
+        } else if (ext === 'pdf') {
+          const r = await pdfParse(buf)
+          text = r.text
+        } else {
+          // 未知类型，尽力按文本读取
+          text = buf.toString('utf-8')
+        }
+      } catch (e: any) {
+        text = `[文件「${f.name}」解析失败：${e?.message || e}]`
+      }
+      const MAX = 30000
+      if (text.length > MAX) {
+        text = text.slice(0, MAX) + `\n…（内容过长已截断，原文约 ${text.length} 字）`
+      }
+      blocks.push(`【文件：${f.name}】\n${text}`)
+    }
+    return blocks.join('\n\n')
+  }
+
+  /** Excel 工作簿转为「每个工作表一段 CSV」的文本 */
+  private parseExcel(buf: Buffer): string {
+    const wb = XLSX.read(buf, { type: 'buffer' })
+    const sheets = wb.SheetNames.map((name) => {
+      const ws = wb.Sheets[name]
+      const csv = XLSX.utils.sheet_to_csv(ws)
+      return `—— 工作表「${name}」——\n${csv}`
+    })
+    return sheets.join('\n\n')
+  }
+
+  /**
+   * 组装发给模型的消息：
+   * 1) 系统提示 + 历史消息；
+   * 2) 若本次携带 files，把解析后的文本作为一条 text 部分追加到最后一条用户消息（没有则新建一条）。
+   * 图片以 OpenAI 视觉格式（image_url）原样保留，模型选择逻辑不变。
+   */
+  private async buildMessages(body: any, s: any): Promise<any[]> {
+    const messages: any[] = [
+      { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
+      ...(body.messages || []),
+    ]
+    if (body?.files?.length) {
+      const fileText = await this.extractFilesText(body.files)
+      const last = messages[messages.length - 1]
+      if (last && last.role === 'user') {
+        if (typeof last.content === 'string') {
+          last.content = [
+            { type: 'text', text: last.content },
+            { type: 'text', text: fileText },
+          ]
+        } else if (Array.isArray(last.content)) {
+          last.content.push({ type: 'text', text: fileText })
+        } else {
+          last.content = fileText
+        }
+      } else {
+        messages.push({ role: 'user', content: [{ type: 'text', text: fileText }] })
+      }
+    }
+    return messages
+  }
+
+  /**
    * 流式对话：密钥与服务端配置均在后端，小程序只传消息。
    * onDelta 每收到一段文本回调一次（用于 SSE 推送给前端）。
    */
@@ -51,10 +136,7 @@ export class AiService {
   ): Promise<void> {
     const s = await this.buildSettings(teacherId)
     const model = this.resolveModel(body, s)
-    const messages = [
-      { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
-      ...(body.messages || []),
-    ]
+    const messages = await this.buildMessages(body, s)
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
@@ -110,10 +192,7 @@ export class AiService {
   async chatSync(teacherId: string, body: any): Promise<string> {
     const s = await this.buildSettings(teacherId)
     const model = this.resolveModel(body, s)
-    const messages = [
-      { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
-      ...(body.messages || []),
-    ]
+    const messages = await this.buildMessages(body, s)
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
