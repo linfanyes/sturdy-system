@@ -17,6 +17,7 @@ export class ConfigService implements OnModuleInit {
 
   async onModuleInit() {
     await this.seed()
+    await this.migrateModelDefaults()
   }
 
   /** 用环境变量首次填充平台配置（仅当 key 不存在时） */
@@ -75,6 +76,42 @@ export class ConfigService implements OnModuleInit {
     for (const d of defaults) {
       const exist = await this.appRepo.findOne({ where: { key: d.key } })
       if (!exist) await this.appRepo.save(this.appRepo.create(d))
+    }
+  }
+
+  /**
+   * 一次性迁移：把已部署实例里仍存的旧模型默认值（qwen-plus / qwen-vl-plus）
+   * 升级为新的默认模型，使设置页无需手动改就能显示新默认值。
+   * 仅对这两个已知旧值生效，不会动教师手动改过的其它配置。
+   */
+  private async migrateModelDefaults() {
+    const OLD = new Set(['qwen-plus', 'qwen-vl-plus'])
+    const NEW_TEXT = 'qwen3.7-plus'
+    const NEW_VISION = 'qwen3-vl-plus'
+
+    for (const [key, newVal] of [
+      ['aiTextModel', NEW_TEXT],
+      ['aiVisionModel', NEW_VISION],
+    ]) {
+      const c = await this.appRepo.findOne({ where: { key } })
+      if (c && OLD.has(c.value)) {
+        c.value = newVal
+        await this.appRepo.save(c)
+      }
+    }
+
+    const rows = await this.aiRepo.find()
+    for (const s of rows) {
+      let changed = false
+      if (OLD.has(s.textModel)) {
+        s.textModel = NEW_TEXT
+        changed = true
+      }
+      if (OLD.has(s.visionModel)) {
+        s.visionModel = NEW_VISION
+        changed = true
+      }
+      if (changed) await this.aiRepo.save(s)
     }
   }
 

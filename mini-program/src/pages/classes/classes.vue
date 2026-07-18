@@ -16,25 +16,79 @@
     <button class="add" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建班级' }}</button>
 
     <view v-if="showForm" class="form">
-      <input v-model="form.name" placeholder="班级名称，如 三年级二班" />
-      <input v-model="form.grade" placeholder="年级，如 三年级" />
-      <input v-model="form.classNo" placeholder="班号，如 2" />
-      <input v-model="form.term" placeholder="学期，如 2026春季学期" />
-      <input v-model="form.headTeacher" placeholder="班主任姓名" />
+      <view class="field">
+        <text class="label">年级</text>
+        <picker :range="grades" :value="form.gradeIdx" @change="(e) => (form.gradeIdx = +e.detail.value)">
+          <view class="picker">{{ grades[form.gradeIdx] }}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="label">班级</text>
+        <picker :range="classOpts" :value="form.classIdx" @change="(e) => (form.classIdx = +e.detail.value)">
+          <view class="picker">{{ classOpts[form.classIdx] }}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="label">班级名称（自动生成）</text>
+        <view class="readonly">{{ className }}</view>
+      </view>
+
+      <view class="field">
+        <text class="label">年度</text>
+        <picker :range="years" :value="form.yearIdx" @change="(e) => (form.yearIdx = +e.detail.value)">
+          <view class="picker">{{ years[form.yearIdx] }} 年</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="label">季度</text>
+        <picker :range="quarters" :value="form.quarterIdx" @change="(e) => (form.quarterIdx = +e.detail.value)">
+          <view class="picker">{{ quarters[form.quarterIdx] }}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="label">学期（自动生成）</text>
+        <view class="readonly">{{ term }}</view>
+      </view>
+
+      <view class="field">
+        <text class="label">班主任姓名</text>
+        <input v-model="form.headTeacher" placeholder="班主任姓名" />
+      </view>
+
       <button class="save" @click="save">保存</button>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
-const form = ref({ name: '', grade: '', classNo: '', term: '', headTeacher: '' })
+
+const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
+const classOpts = ['一班', '二班', '三班', '四班', '五班', '六班', '七班', '八班', '九班', '十班']
+const quarters = ['春季', '秋季']
+
+const thisYear = new Date().getFullYear()
+const years = Array.from({ length: 6 }, (_, i) => String(thisYear - 5 + i)) // 当前年前5年 + 当年
+
+const form = ref({
+  gradeIdx: 0,
+  classIdx: 0,
+  yearIdx: years.length - 1, // 默认当年
+  quarterIdx: 0,
+  headTeacher: '',
+})
+
+const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.value.classIdx])
+const term = computed(() => years[form.value.yearIdx] + quarters[form.value.quarterIdx] + '学期')
 
 async function load() {
   list.value = await api.get('/classes')
@@ -46,10 +100,19 @@ function open(c) {
 }
 
 async function save() {
-  if (!form.value.name) return uni.showToast({ title: '请填写班级名称', icon: 'none' })
-  await api.post('/classes', { ...form.value, subjects: [] })
+  if (!form.value.headTeacher.trim()) {
+    return uni.showToast({ title: '请填写班主任姓名', icon: 'none' })
+  }
+  await api.post('/classes', {
+    name: className.value,
+    grade: grades[form.value.gradeIdx],
+    classNo: classOpts[form.value.classIdx],
+    term: term.value,
+    headTeacher: form.value.headTeacher,
+    subjects: [],
+  })
   showForm.value = false
-  form.value = { name: '', grade: '', classNo: '', term: '', headTeacher: '' }
+  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '' }
   load()
 }
 </script>
@@ -77,12 +140,23 @@ async function save() {
   border-radius: 20rpx;
   padding: 30rpx;
 }
-.form input {
+.field { margin-bottom: 18rpx; }
+.label { display: block; font-size: 24rpx; color: #9aa0a6; margin-bottom: 8rpx; }
+.picker, .readonly {
   border: 1px solid #eee;
   border-radius: 12rpx;
   padding: 20rpx;
-  margin-bottom: 18rpx;
   font-size: 28rpx;
+  color: #4a3f35;
+}
+.readonly { background: #f7f7f7; color: #8a6d3b; }
+.field input {
+  border: 1px solid #eee;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 .save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 10rpx; }
 </style>
