@@ -24,6 +24,7 @@ import { AwardModule } from './award/award.module'
 import { TeacherModule } from './teacher/teacher.module'
 import { AdminModule } from './admin/admin.module'
 import { EngagementModule } from './engagement/engagement.module'
+import { GalleryModule } from './gallery/gallery.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -86,6 +87,7 @@ import { HealthController } from './health.controller'
     TeacherModule,
     AdminModule,
     EngagementModule,
+    GalleryModule,
   ],
   controllers: [HealthController],
 })

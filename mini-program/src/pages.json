@@ -47,7 +47,21 @@
     { "path": "pages/tools/multitable", "style": { "navigationBarTitleText": "乘法口诀" } },
     { "path": "pages/tools/unit", "style": { "navigationBarTitleText": "单位换算" } },
     { "path": "pages/tools/mistakes", "style": { "navigationBarTitleText": "错题本" } },
-    { "path": "pages/subject/subject", "style": { "navigationBarTitleText": "学科练习" } }
+    { "path": "pages/subject/subject", "style": { "navigationBarTitleText": "学科练习" } },
+    { "path": "pages/schedule/schedule", "style": { "navigationBarTitleText": "我的课表" } },
+    { "path": "pages/attendance/attendance", "style": { "navigationBarTitleText": "考勤管理" } },
+    { "path": "pages/homework/homework", "style": { "navigationBarTitleText": "作业管理" } },
+    { "path": "pages/notice/notice", "style": { "navigationBarTitleText": "班级公告" } },
+    { "path": "pages/profile/profile", "style": { "navigationBarTitleText": "个人中心" } },
+    { "path": "pages/grade-trend/grade-trend", "style": { "navigationBarTitleText": "成绩趋势" } },
+    { "path": "pages/resource/resource", "style": { "navigationBarTitleText": "教学资源" } },
+    { "path": "pages/growth/growth", "style": { "navigationBarTitleText": "成长档案" } },
+    { "path": "pages/parent-contact/parent-contact", "style": { "navigationBarTitleText": "家长联系" } },
+    { "path": "pages/teacher/teacher", "style": { "navigationBarTitleText": "教师通讯录" } },
+    { "path": "pages/duty-roster/duty-roster", "style": { "navigationBarTitleText": "轮值表" } },
+    { "path": "pages/class-activity/class-activity", "style": { "navigationBarTitleText": "班级活动" } },
+    { "path": "pages/class-finance/class-finance", "style": { "navigationBarTitleText": "班费管理" } },
+    { "path": "pages/gallery/gallery", "style": { "navigationBarTitleText": "班级风采" } }
   ],
   "tabBar": {
     "color": "#9aa0a6",

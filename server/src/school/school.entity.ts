@@ -50,4 +50,5 @@ export class Resource extends BaseEntity {
   @Column({ default: '' }) category: string
   @Column('simple-json', { nullable: true }) tags: string[]
   @Column({ type: 'text', nullable: true }) description: string
+  @Column({ type: 'text', nullable: true }) image: string
 }
