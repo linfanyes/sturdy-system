@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">单位换算练习</view>
     <view class="cfg">
       <view class="field-label">换算类型</view>
@@ -37,6 +37,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const configs = {
   length: { name: '长度(厘米/米/千米)', units: [['厘米', 1], ['米', 100], ['千米', 100000]] },
@@ -79,23 +81,23 @@ gen()
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
-.cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
-.field-label { font-size: 26rpx; color: #8a6d3b; margin: 10rpx 0; }
-.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; }
+.cfg { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
+.field-label { font-size: 26rpx; color: var(--c-accent); margin: 10rpx 0; }
+.picker { background: var(--c-card2); border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-title); min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
 .row { display: flex; gap: 20rpx; margin: 16rpx 0; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 40rpx; flex: 1; }
-.btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
-.score { background: #fff7e6; border-radius: 12rpx; padding: 20rpx; text-align: center; color: #a07b3b; font-weight: 700; margin-bottom: 16rpx; }
-.list { background: #fff; border-radius: 16rpx; padding: 20rpx; }
-.item { display: flex; align-items: center; gap: 12rpx; padding: 16rpx; border-radius: 10rpx; margin-bottom: 12rpx; background: #faf8f3; font-size: 28rpx; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
+.score { background: var(--c-card2); border-radius: 12rpx; padding: 20rpx; text-align: center; color: var(--c-accent); font-weight: 700; margin-bottom: 16rpx; }
+.list { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; }
+.item { display: flex; align-items: center; gap: 12rpx; padding: 16rpx; border-radius: 10rpx; margin-bottom: 12rpx; background: var(--c-input); font-size: 28rpx; }
 .item.ok { background: #f0f9eb; }
 .item.bad { background: #fef0f0; }
-.no { color: #a07b3b; font-weight: 700; }
-.q { color: #4a3f35; }
-.in { width: 140rpx; text-align: center; background: #fff; border: 2rpx solid #e6c88a; border-radius: 8rpx; padding: 8rpx; height: 64rpx; min-height: 64rpx; line-height: 44rpx; box-sizing: border-box; color: #333; }
+.no { color: var(--c-accent); font-weight: 700; }
+.q { color: var(--c-title); }
+.in { width: 140rpx; text-align: center; background: var(--c-input); border: 2rpx solid var(--c-input-border); border-radius: 8rpx; padding: 8rpx; height: 64rpx; min-height: 64rpx; line-height: 44rpx; box-sizing: border-box; color: var(--c-title); }
 .myans { min-width: 140rpx; text-align: center; font-weight: 700; }
 .right { color: #07c160; margin-left: 8rpx; }
-.tip { font-size: 22rpx; color: #b0a48a; line-height: 1.6; margin-top: 20rpx; }
+.tip { font-size: 22rpx; color: var(--c-sub); line-height: 1.6; margin-top: 20rpx; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">错题本</view>
     <view class="card">
       <view class="field-label">科目</view>
@@ -34,6 +34,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const KEY = 'math_mistakes'
 const subjects = ['语文', '数学', '英语', '科学', '其他']
@@ -71,24 +73,24 @@ onShow(load)
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; margin-bottom: 20rpx; }
-.card { background: #fff; border-radius: 16rpx; padding: 24rpx; }
-.field-label { font-size: 26rpx; color: #8a6d3b; margin: 10rpx 0; }
-.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
-.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; margin-bottom: 20rpx; }
+.card { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; }
+.field-label { font-size: 26rpx; color: var(--c-accent); margin: 10rpx 0; }
+.picker { background: var(--c-card2); border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-title); min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
+.ctrl { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-title); background: var(--c-input); }
 .area { min-height: 120rpx; }
 .btn { background: #e6a23c; color: #fff; border-radius: 50rpx; margin-top: 20rpx; }
 .filter { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 24rpx 0 12rpx; }
-.chip { padding: 10rpx 26rpx; background: #fff; border-radius: 40rpx; font-size: 24rpx; color: #a07b3b; }
+.chip { padding: 10rpx 26rpx; background: var(--c-card); border-radius: 40rpx; font-size: 24rpx; color: var(--c-accent); }
 .chip.on { background: #e6a23c; color: #fff; }
-.empty { text-align: center; color: #b0a48a; padding: 60rpx 0; font-size: 26rpx; }
-.mitem { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.empty { text-align: center; color: var(--c-sub); padding: 60rpx 0; font-size: 26rpx; }
+.mitem { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
 .mtop { display: flex; justify-content: space-between; align-items: center; }
-.tag { background: #faf3e3; color: #a07b3b; border-radius: 8rpx; padding: 4rpx 16rpx; font-size: 22rpx; }
+.tag { background: var(--c-card2); color: var(--c-accent); border-radius: 8rpx; padding: 4rpx 16rpx; font-size: 22rpx; }
 .del { color: #e64340; font-size: 24rpx; }
-.mq { font-size: 28rpx; color: #333; margin: 12rpx 0; }
+.mq { font-size: 28rpx; color: var(--c-title); margin: 12rpx 0; }
 .ma { font-size: 26rpx; color: #07c160; }
-.mr { font-size: 24rpx; color: #8a6d3b; margin-top: 6rpx; }
-.mt { font-size: 22rpx; color: #bbb; margin-top: 10rpx; }
+.mr { font-size: 24rpx; color: var(--c-accent); margin-top: 6rpx; }
+.mt { font-size: 22rpx; color: var(--c-sub); margin-top: 10rpx; }
 </style>

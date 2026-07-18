@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">竖式计算练习</view>
     <view class="cfg">
       <view class="field-label">运算类型</view>
@@ -36,6 +36,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const ops = ['addition', 'subtraction', 'multiplication', 'division']
 const opLabels = ['加法(含进位)', '减法(含退位)', '乘法(一位×多位)', '除法(多位÷一位)']
@@ -71,21 +73,21 @@ gen()
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
-.cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
-.field-label { font-size: 26rpx; color: #8a6d3b; margin: 10rpx 0; }
-.picker { background: #f7f1e3; border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: #4a3f35; min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; }
+.cfg { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
+.field-label { font-size: 26rpx; color: var(--c-accent); margin: 10rpx 0; }
+.picker { background: var(--c-card2); border-radius: 10rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-title); min-height: 72rpx; line-height: 40rpx; box-sizing: border-box; }
 .row { display: flex; gap: 20rpx; margin: 16rpx 0; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 40rpx; flex: 1; }
-.btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20rpx; margin-top: 10rpx; }
-.cell { background: #fff; border-radius: 16rpx; padding: 24rpx; }
-.vc { display: flex; flex-direction: column; align-items: flex-end; font-family: monospace; font-size: 40rpx; color: #333; }
+.cell { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; }
+.vc { display: flex; flex-direction: column; align-items: flex-end; font-family: monospace; font-size: 40rpx; color: var(--c-title); }
 .rline { display: flex; align-items: center; gap: 10rpx; }
-.op { color: #a07b3b; }
-.bar { width: 100%; height: 3rpx; background: #333; margin-top: 8rpx; }
+.op { color: var(--c-accent); }
+.bar { width: 100%; height: 3rpx; background: var(--c-title); margin-top: 8rpx; }
 .ans { color: #07c160; font-weight: 800; margin-top: 6rpx; }
-.blank { color: #ccc; margin-top: 6rpx; }
-.idx { display: block; text-align: center; font-size: 22rpx; color: #bbb; margin-top: 10rpx; }
+.blank { color: var(--c-sub); margin-top: 6rpx; }
+.idx { display: block; text-align: center; font-size: 22rpx; color: var(--c-sub); margin-top: 10rpx; }
 </style>

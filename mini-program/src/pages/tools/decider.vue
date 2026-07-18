@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">随机决定器</view>
     <view class="tabs">
       <view v-for="t in tabs" :key="t.k" class="tab" :class="{ on: tab === t.k }" @click="tab = t.k">{{ t.n }}</view>
@@ -27,6 +27,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const tabs = [
   { k: 'dice', n: '🎲 骰子' },
@@ -80,17 +82,17 @@ function draw() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
+.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
 .tabs { display: flex; gap: 16rpx; margin: 20rpx 0; }
-.tab { background: #fff; border-radius: 40rpx; padding: 12rpx 28rpx; font-size: 26rpx; color: #8a6d3b; }
+.tab { background: var(--c-card); border-radius: 40rpx; padding: 12rpx 28rpx; font-size: 26rpx; color: var(--c-accent); }
 .tab.on { background: #e6a23c; color: #fff; }
 .box { display: flex; flex-direction: column; align-items: center; margin-top: 30rpx; }
-.dice { width: 200rpx; height: 200rpx; background: #fff; border-radius: 30rpx; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx rgba(0,0,0,.12); margin-bottom: 24rpx; }
+.dice { width: 200rpx; height: 200rpx; background: var(--c-card); border-radius: 30rpx; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx var(--c-shadow); margin-bottom: 24rpx; }
 .pip { font-size: 120rpx; font-weight: 800; color: #e6a23c; }
-.wheel { width: 400rpx; height: 400rpx; border-radius: 50%; position: relative; overflow: hidden; margin-bottom: 24rpx; background: #eee; transition: transform 2.4s cubic-bezier(.17,.67,.3,1); border: 8rpx solid #a07b3b; }
+.wheel { width: 400rpx; height: 400rpx; border-radius: 50%; position: relative; overflow: hidden; margin-bottom: 24rpx; background: var(--c-card2); transition: transform 2.4s cubic-bezier(.17,.67,.3,1); border: 8rpx solid var(--c-accent); }
 .seg { display: flex; align-items: flex-start; justify-content: center; padding-top: 20rpx; font-size: 24rpx; color: #fff; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; margin-top: 10rpx; }
-.ta { width: 560rpx; height: 240rpx; background: #fff; border-radius: 16rpx; padding: 16rpx; font-size: 28rpx; }
+.ta { width: 560rpx; height: 240rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; font-size: 28rpx; color: var(--c-title); box-sizing: border-box; }
 .result { margin: 20rpx 0; font-size: 44rpx; font-weight: 800; color: #e6a23c; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">乘法口诀</view>
     <view class="tabs">
       <view class="tab" :class="{ on: mode === 'table' }" @click="mode = 'table'">口诀表</view>
@@ -26,6 +26,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const mode = ref('table')
 const cur = ref(null)
@@ -57,19 +59,19 @@ function submit() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; }
 .tabs { display: flex; gap: 20rpx; margin: 24rpx 0; }
-.tab { flex: 1; text-align: center; padding: 20rpx; background: #fff; border-radius: 40rpx; color: #a07b3b; font-size: 28rpx; }
+.tab { flex: 1; text-align: center; padding: 20rpx; background: var(--c-card); border-radius: 40rpx; color: var(--c-accent); font-size: 28rpx; }
 .tab.on { background: #e6a23c; color: #fff; }
-.table { background: #fff; border-radius: 16rpx; padding: 20rpx; }
+.table { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; }
 .trow { display: flex; flex-wrap: wrap; gap: 10rpx; margin-bottom: 10rpx; }
-.tcell { background: #faf3e3; border-radius: 8rpx; padding: 12rpx 14rpx; font-size: 24rpx; color: #6b5836; }
-.practice { background: #fff; border-radius: 16rpx; padding: 40rpx; text-align: center; }
-.q { font-size: 60rpx; font-weight: 800; color: #333; margin-bottom: 30rpx; }
-.in { border: 2rpx solid #e6c88a; border-radius: 12rpx; padding: 20rpx; font-size: 36rpx; text-align: center; margin-bottom: 20rpx; height: 88rpx; min-height: 88rpx; line-height: 48rpx; box-sizing: border-box; color: #333; }
+.tcell { background: var(--c-card2); border-radius: 8rpx; padding: 12rpx 14rpx; font-size: 24rpx; color: var(--c-title); }
+.practice { background: var(--c-card); border-radius: 16rpx; padding: 40rpx; text-align: center; }
+.q { font-size: 60rpx; font-weight: 800; color: var(--c-title); margin-bottom: 30rpx; }
+.in { border: 2rpx solid var(--c-input-border); border-radius: 12rpx; padding: 20rpx; font-size: 36rpx; text-align: center; margin-bottom: 20rpx; height: 88rpx; min-height: 88rpx; line-height: 48rpx; box-sizing: border-box; color: var(--c-title); background: var(--c-input); }
 .btn { background: #e6a23c; color: #fff; border-radius: 50rpx; }
-.stat { margin-top: 24rpx; color: #a07b3b; font-size: 26rpx; }
+.stat { margin-top: 24rpx; color: var(--c-accent); font-size: 26rpx; }
 .fb { margin-top: 20rpx; font-size: 30rpx; font-weight: 700; }
 .fb.ok { color: #07c160; }
 .fb.bad { color: #e64340; }

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">口算生成</view>
     <view class="cfg">
       <view class="field"><text>题数</text><input type="number" v-model="count" /></view>
@@ -23,6 +23,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const count = ref(10)
 const max = ref(20)
@@ -53,19 +55,19 @@ function gen() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; text-align: center; }
-.cfg { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; }
+.cfg { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin: 20rpx 0; }
 .field { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
-.field text { font-size: 26rpx; color: #8a6d3b; width: 100rpx; }
-.field input { background: #f7f1e3; border-radius: 10rpx; padding: 10rpx 20rpx; width: 160rpx; font-size: 28rpx; height: 60rpx; min-height: 60rpx; line-height: 40rpx; box-sizing: border-box; color: #333; }
+.field text { font-size: 26rpx; color: var(--c-accent); width: 100rpx; }
+.field input { background: var(--c-card2); border-radius: 10rpx; padding: 10rpx 20rpx; width: 160rpx; font-size: 28rpx; height: 60rpx; min-height: 60rpx; line-height: 40rpx; box-sizing: border-box; color: var(--c-title); }
 .ops { display: flex; gap: 16rpx; }
 .op { width: 80rpx; height: 80rpx; border-radius: 14rpx; background: #f3e2c0; display: flex; align-items: center; justify-content: center; font-size: 36rpx; color: #bbb; }
 .op.on { background: #e6a23c; color: #fff; }
 .row { display: flex; gap: 20rpx; margin: 16rpx 0; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 50rpx; }
-.btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
-.list { background: #fff; border-radius: 16rpx; padding: 20rpx; }
-.item { display: flex; gap: 12rpx; padding: 12rpx 0; border-bottom: 1rpx solid #f0ece2; font-size: 30rpx; }
-.no { color: #a07b3b; font-weight: 700; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
+.list { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; }
+.item { display: flex; gap: 12rpx; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-border); font-size: 30rpx; }
+.no { color: var(--c-accent); font-weight: 700; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="card">
       <view class="sec-title">📑 文案模板库</view>
       <view class="hint">收藏常用文案模板（通知、评语、开场白…），随时复制复用。本地保存，不上云。</view>
@@ -32,6 +32,8 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const KEY = 'tpl_lib'
 const list = ref([])
@@ -91,21 +93,21 @@ onShow(() => load())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.card { background: #fff; border-radius: 20rpx; padding: 30rpx; }
-.sec-title { font-size: 30rpx; font-weight: 700; color: #a07b3b; margin-bottom: 12rpx; }
-.hint { font-size: 24rpx; color: #9aa0a6; margin-bottom: 20rpx; line-height: 1.5; }
-.item { border: 1px solid #f0f0f0; border-radius: 16rpx; padding: 22rpx; margin-bottom: 18rpx; }
-.item-name { font-size: 28rpx; font-weight: 600; color: #4a3f35; }
-.item-content { font-size: 24rpx; color: #9aa0a6; margin: 10rpx 0; max-height: 120rpx; overflow: hidden; white-space: pre-wrap; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.card { background: var(--c-card); border-radius: 20rpx; padding: 30rpx; }
+.sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 12rpx; }
+.hint { font-size: 24rpx; color: var(--c-sub); margin-bottom: 20rpx; line-height: 1.5; }
+.item { border: 1px solid var(--c-border); border-radius: 16rpx; padding: 22rpx; margin-bottom: 18rpx; }
+.item-name { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
+.item-content { font-size: 24rpx; color: var(--c-sub); margin: 10rpx 0; max-height: 120rpx; overflow: hidden; white-space: pre-wrap; }
 .item-ops { display: flex; gap: 30rpx; }
 .op { font-size: 24rpx; color: #e6a23c; }
 .op.del { color: #e64340; }
-.empty { font-size: 24rpx; color: #9aa0a6; text-align: center; padding: 30rpx; }
+.empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 30rpx; }
 .add { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 10rpx; }
-.field-label { font-size: 26rpx; color: #8a6d3b; margin: 16rpx 0 10rpx; }
-.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 10rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
+.field-label { font-size: 26rpx; color: var(--c-accent); margin: 16rpx 0 10rpx; }
+.ctrl { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 10rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-title); background: var(--c-input); }
 .area { min-height: 240rpx; }
 .gen { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 16rpx; }
-.cancel { background: #f5f5f5; color: #888; border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; }
+.cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; }
 </style>

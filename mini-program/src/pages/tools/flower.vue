@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="card">
       <view class="sec-title">🌸 笑口常开</view>
       <view class="hint">点 8 下，让花朵从花骨朵到盛开，给心情放个假～</view>
@@ -16,6 +16,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const max = 8
 const stages = ['🌱', '🌿', '🌷', '🌼', '🌺', '💐', '🌸', '🌸', '🌸']
@@ -45,12 +47,12 @@ function bloom() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; }
-.card { background: #fff; border-radius: 20rpx; padding: 40rpx; text-align: center; }
-.sec-title { font-size: 32rpx; font-weight: 700; color: #a07b3b; }
-.hint { font-size: 24rpx; color: #9aa0a6; margin: 12rpx 0 30rpx; }
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.card { background: var(--c-card); border-radius: 20rpx; padding: 40rpx; text-align: center; }
+.sec-title { font-size: 32rpx; font-weight: 700; color: var(--c-accent); }
+.hint { font-size: 24rpx; color: var(--c-sub); margin: 12rpx 0 30rpx; }
 .bloom { padding: 40rpx 0; }
 .flower { font-size: 200rpx; line-height: 1; transition: all .3s; }
-.stage-text { margin-top: 24rpx; font-size: 28rpx; color: #4a3f35; }
+.stage-text { margin-top: 24rpx; font-size: 28rpx; color: var(--c-title); }
 .gen { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 20rpx; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">倒计时</view>
     <view class="display">{{ mm }}:{{ ss }}</view>
     <view class="set" v-if="!running">
@@ -16,6 +16,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const total = ref(0)
 const left = ref(0)
@@ -48,13 +50,13 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 40rpx; display: flex; flex-direction: column; align-items: center; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
+.page { padding: 40rpx; display: flex; flex-direction: column; align-items: center; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
 .display { font-size: 140rpx; font-weight: 800; color: #e6a23c; margin: 40rpx 0; font-variant-numeric: tabular-nums; }
 .set { display: flex; gap: 30rpx; }
-.field { display: flex; align-items: center; gap: 10rpx; background: #fff; border-radius: 14rpx; padding: 10rpx 20rpx; }
-.field input { width: 90rpx; text-align: center; font-size: 40rpx; height: 80rpx; min-height: 80rpx; line-height: 80rpx; box-sizing: border-box; color: #333; }
+.field { display: flex; align-items: center; gap: 10rpx; background: var(--c-card); border-radius: 14rpx; padding: 10rpx 20rpx; }
+.field input { width: 90rpx; text-align: center; font-size: 40rpx; height: 80rpx; min-height: 80rpx; line-height: 80rpx; box-sizing: border-box; color: var(--c-title); }
 .row { display: flex; gap: 20rpx; margin-top: 40rpx; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; }
-.btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
 </style>

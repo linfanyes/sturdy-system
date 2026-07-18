@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">课堂计算器</view>
     <view class="screen">
       <view class="expr">{{ expr || '0' }}</view>
@@ -13,6 +13,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const expr = ref('')
 const cur = ref('0')
@@ -66,15 +68,15 @@ function press(v) {
 </script>
 
 <style scoped>
-.page { padding: 24rpx; }
-.hd { font-size: 32rpx; font-weight: 800; color: #a07b3b; text-align: center; margin-bottom: 16rpx; }
+.page { padding: 24rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 32rpx; font-weight: 800; color: var(--c-accent); text-align: center; margin-bottom: 16rpx; }
 .screen { background: #2c3e50; border-radius: 16rpx; padding: 24rpx; min-height: 160rpx; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; }
 .expr { color: #95a5a6; font-size: 28rpx; }
 .res { color: #fff; font-size: 64rpx; font-weight: 700; }
 .keys { margin-top: 20rpx; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx; }
-.key { background: #fff; border-radius: 16rpx; height: 110rpx; display: flex; align-items: center; justify-content: center; font-size: 44rpx; color: #4a3f35; }
+.key { background: var(--c-card); border-radius: 16rpx; height: 110rpx; display: flex; align-items: center; justify-content: center; font-size: 44rpx; color: var(--c-title); }
 .key.zero { grid-column: span 2; }
 .key.op { background: #f3e2c0; color: #a07b3b; font-weight: 700; }
 .key.eq { background: #e6a23c; color: #fff; font-weight: 700; }
-.key.fn { background: #ecf0f1; color: #7f8c8d; }
+.key.fn { background: var(--c-card2); color: var(--c-sub); }
 </style>

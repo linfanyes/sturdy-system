@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="hd">随机点名</view>
     <view class="stage" @click="roll">
       <text class="name" :class="{ spin: spinning }">{{ picked || '点击开始' }}</text>
@@ -20,6 +20,8 @@
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { api } from '../../common/request'
+import { theme } from '../../common/store'
+const dark = theme.dark
 
 const namesText = ref('')
 const ph = '张三\n李四\n王五'
@@ -64,16 +66,16 @@ onUnload(() => stop())
 </script>
 
 <style scoped>
-.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; }
-.hd { font-size: 36rpx; font-weight: 800; color: #a07b3b; }
-.stage { width: 600rpx; height: 240rpx; margin: 30rpx 0; background: #fff; border-radius: 24rpx; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx rgba(160,123,59,.15); }
+.page { padding: 30rpx; display: flex; flex-direction: column; align-items: center; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
+.stage { width: 600rpx; height: 240rpx; margin: 30rpx 0; background: var(--c-card); border-radius: 24rpx; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx var(--c-shadow); }
 .name { font-size: 64rpx; font-weight: 800; color: #e6a23c; }
-.name.spin { color: #bbb; }
+.name.spin { color: var(--c-sub); }
 .row { display: flex; gap: 20rpx; }
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 50rpx; }
-.btn.ghost { background: #fff; color: #a07b3b; border: 2rpx solid #e6a23c; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
 .list-box { width: 600rpx; margin-top: 30rpx; }
-.lb-title { font-size: 24rpx; color: #8a6d3b; margin-bottom: 10rpx; }
-.ta { width: 100%; height: 220rpx; background: #fff; border-radius: 16rpx; padding: 16rpx; font-size: 26rpx; box-sizing: border-box; }
-.hist { margin-top: 16rpx; font-size: 24rpx; color: #999; }
+.lb-title { font-size: 24rpx; color: var(--c-accent); margin-bottom: 10rpx; }
+.ta { width: 100%; height: 220rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; font-size: 26rpx; box-sizing: border-box; color: var(--c-title); }
+.hist { margin-top: 16rpx; font-size: 24rpx; color: var(--c-sub); }
 </style>
