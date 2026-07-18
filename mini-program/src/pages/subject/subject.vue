@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view class="card">
       <view class="sec-title">{{ tool ? tool.icon + ' ' + tool.title : '学科练习' }}</view>
       <view class="hint">填写下方信息，AI 生成贴合年级的练习内容，可复制使用。</view>
@@ -46,8 +46,9 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth } from '../../common/store'
+import { auth, theme } from '../../common/store'
 import { getSubjectTool } from '../../common/subject-schema'
+const dark = theme.dark
 
 const type = ref('')
 const tool = ref(null)
@@ -107,16 +108,16 @@ onShow(() => {
 
 <style scoped>
 .page { padding: 30rpx; }
-.card { background: #fff; border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; }
-.sec-title { font-size: 30rpx; font-weight: 700; color: #a07b3b; margin-bottom: 12rpx; }
-.hint { font-size: 24rpx; color: #9aa0a6; margin-bottom: 20rpx; line-height: 1.5; }
-.field-label { font-size: 26rpx; color: #8a6d3b; margin-bottom: 10rpx; }
+.card { background: var(--c-card); border-radius: 20rpx; padding: 30rpx; margin-bottom: 24rpx; }
+.sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 12rpx; }
+.hint { font-size: 24rpx; color: var(--c-sub); margin-bottom: 20rpx; line-height: 1.5; }
+.field-label { font-size: 26rpx; color: var(--c-accent); margin-bottom: 10rpx; }
 .req { color: #e64340; margin-left: 6rpx; }
-.ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
+.ctrl { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-title); background: var(--c-card2); }
 .area { min-height: 160rpx; }
-.picker { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: #4a3f35; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; background: #fff; }
-.gen { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 6rpx; }
+.picker { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: var(--c-title); box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; background: var(--c-card2); }
+.gen { background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 6rpx; }
 .gen[disabled] { opacity: 0.6; }
-.result-text { font-size: 28rpx; line-height: 1.7; color: #4a3f35; white-space: pre-wrap; margin-bottom: 20rpx; }
+.result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .copy { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; }
 </style>

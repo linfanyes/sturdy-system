@@ -10,8 +10,8 @@
         <text class="label">学校</text>
         <input v-model="profile.school" placeholder="如 阳光小学" />
       </view>
-      <button class="save" @click="saveProfile">保存资料</button>
-    </view>
+    <button class="save" :disabled="savingProfile" @click="saveProfile">{{ savingProfile ? '保存中…' : '保存资料' }}</button>
+  </view>
 
     <view class="card">
       <view class="card-title">AI 配置（密钥仅存后端）</view>
@@ -36,7 +36,7 @@
         <input v-model="ai.aiName" placeholder="AI 名字" />
       </view>
       <view class="hint">文本模型默认 qwen3.7-plus，多模态默认 qwen3-vl-plus，系统会按消息是否含图自动切换。</view>
-      <button class="save" @click="saveAi">保存 AI 配置</button>
+      <button class="save" :disabled="savingAi" @click="saveAi">{{ savingAi ? '保存中…' : '保存 AI 配置' }}</button>
     </view>
 
     <view class="card">
@@ -71,6 +71,8 @@ import { auth, setUser, logout, theme, setTheme } from '../../common/store'
 const profile = ref({ name: '', school: '', subjects: [] })
 const ai = ref({})
 const app = ref([])
+const savingProfile = ref(false)
+const savingAi = ref(false)
 
 async function load() {
   const me = await api.get('/users/me')
@@ -84,17 +86,41 @@ function onTheme(e) {
   setTheme(e.detail.value ? 'dark' : 'light')
 }
 async function saveProfile() {
-  await api.put('/users/me', { name: profile.value.name, school: profile.value.school })
-  setUser({ ...auth.user, name: profile.value.name, school: profile.value.school })
-  uni.showToast({ title: '已保存' })
+  if (savingProfile.value) return
+  savingProfile.value = true
+  try {
+    await api.put('/users/me', { name: profile.value.name, school: profile.value.school })
+    setUser({ ...auth.user, name: profile.value.name, school: profile.value.school })
+    uni.showToast({ title: '资料已保存', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    savingProfile.value = false
+  }
 }
 async function saveAi() {
-  await api.put('/config/ai', ai.value)
-  uni.showToast({ title: 'AI 配置已保存' })
+  if (savingAi.value) return
+  savingAi.value = true
+  try {
+    await api.put('/config/ai', ai.value)
+    uni.showToast({ title: 'AI 配置已保存', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    savingAi.value = false
+  }
 }
 function doLogout() {
-  logout()
-  uni.reLaunch({ url: '/pages/login/login' })
+  uni.showModal({
+    title: '退出登录',
+    content: '确定要退出当前账号吗？',
+    confirmColor: '#e64340',
+    success: (r) => {
+      if (!r.confirm) return
+      logout()
+      uni.reLaunch({ url: '/pages/login/login' })
+    },
+  })
 }
 </script>
 

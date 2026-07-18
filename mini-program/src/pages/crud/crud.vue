@@ -65,7 +65,7 @@
       >
         <view class="ctrl picker">{{ form[f.key] || '选择' + f.label }}</view>
       </picker>
-      <button class="save" @click="save">保存</button>
+      <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
 
     <!-- 课程表 AI 批量导入弹层 -->
@@ -134,6 +134,7 @@ const kw = ref('')
 const showForm = ref(false)
 const editingId = ref('')
 const form = ref({})
+const saving = ref(false)
 
 onLoad((q) => {
   const s = CRUD_SCHEMA[q.type]
@@ -212,6 +213,7 @@ function edit(item) {
 }
 
 async function save() {
+  if (saving.value) return
   for (const f of schema.value.fields) {
     if (f.required && !String(form.value[f.key] ?? '').trim()) {
       return uni.showToast({ title: '请填写' + f.label, icon: 'none' })
@@ -227,19 +229,37 @@ async function save() {
     payload[field.key] = v
   })
   const p = schema.value.prefix
-  if (editingId.value) await api.patch(p + '/' + editingId.value, payload)
-  else await api.post(p, payload)
-  showForm.value = false
-  load()
+  saving.value = true
+  try {
+    if (editingId.value) {
+      await api.patch(p + '/' + editingId.value, payload)
+      uni.showToast({ title: '已更新', icon: 'success' })
+    } else {
+      await api.post(p, payload)
+      uni.showToast({ title: '已添加', icon: 'success' })
+    }
+    showForm.value = false
+    await load()
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
 function remove(item) {
   uni.showModal({
     title: '确认删除',
+    content: '确定删除这条记录吗？此操作不可恢复。',
+    confirmColor: '#e64340',
     success: async (r) => {
-      if (r.confirm) {
+      if (!r.confirm) return
+      try {
         await api.del(schema.value.prefix + '/' + item.id)
+        uni.showToast({ title: '已删除', icon: 'success' })
         load()
+      } catch (e) {
+        uni.showToast({ title: '删除失败：' + (e.message || '请重试'), icon: 'none' })
       }
     },
   })

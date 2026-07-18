@@ -15,6 +15,7 @@
       <view class="sec-title">生成结果</view>
       <view class="result-text">{{ content }}</view>
       <button class="save" @click="save">💾 存入知识库</button>
+      <button class="copy" @click="copy">📋 复制结果</button>
       <button v-if="saved" class="link" @click="goLib">查看知识库 →</button>
     </view>
   </view>
@@ -84,6 +85,15 @@ function goLib() {
   uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent('generated/knowledges') })
 }
 
+function copy() {
+  if (!content.value) return
+  uni.setClipboardData({
+    data: content.value,
+    success: () => uni.showToast({ title: '已复制', icon: 'success' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
+
 onShow(() => {
   if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
 })
@@ -99,5 +109,6 @@ onShow(() => {
 .gen[disabled] { opacity: 0.6; }
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
+.copy { background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; }
 .link { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; font-size: 26rpx; margin-top: 16rpx; height: 80rpx; line-height: 80rpx; }
 </style>

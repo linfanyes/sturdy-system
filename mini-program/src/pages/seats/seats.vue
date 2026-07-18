@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <!-- 列表态 -->
     <block v-if="!editing">
       <picker :range="classOpts" @change="pickClass">
@@ -13,19 +13,19 @@
             <text v-if="l.active" class="on">使用中</text>
           </view>
           <view class="btns">
-            <button v-if="!l.active" class="act" size="mini" @click="activate(l.id)">启用</button>
+            <button v-if="!l.active" class="act" size="mini" :disabled="busy" @click="activate(l.id)">启用</button>
             <button class="edit" size="mini" @click="openEdit(l)">编辑座位</button>
           </view>
         </view>
         <view v-if="!layouts.length" class="empty">该班级还没有座位布局</view>
       </view>
 
-      <button class="add" v-if="classId" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建布局' }}</button>
+      <button class="add" v-if="classId" :disabled="saving" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建布局' }}</button>
       <view v-if="showForm" class="form">
         <input v-model="form.name" placeholder="布局名称" />
         <input v-model="form.rows" type="number" placeholder="行数" />
         <input v-model="form.cols" type="number" placeholder="列数" />
-        <button class="save" @click="save">保存</button>
+        <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
       </view>
     </block>
 
@@ -47,7 +47,7 @@
           {{ cell.name || '空' }}
         </view>
       </view>
-      <button class="save" @click="saveSeats">保存座位</button>
+      <button class="save" :disabled="busy" @click="saveSeats">{{ busy ? '保存中…' : '保存座位' }}</button>
     </block>
 
     <!-- 学生选择弹层 -->
@@ -66,11 +66,14 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { theme } from '../../common/store'
 
 const classes = ref([])
 const classId = ref('')
 const layouts = ref([])
 const showForm = ref(false)
+const saving = ref(false)
+const busy = ref(false)
 const form = ref({ name: '默认座位', rows: 6, cols: 7 })
 const editing = ref(null)
 const students = ref([])
@@ -113,16 +116,35 @@ function pickClass(ev) {
 async function save() {
   const rows = +form.value.rows
   const cols = +form.value.cols
-  const seats = Array.from({ length: rows }, () => Array(cols).fill(null))
-  await api.post('/seat-layouts', { classId: classId.value, name: form.value.name, rows, cols, seats })
-  showForm.value = false
-  load()
+  if (!form.value.name || !rows || !cols) {
+    return uni.showToast({ title: '请填写布局名称与行列数', icon: 'none' })
+  }
+  saving.value = true
+  try {
+    const seats = Array.from({ length: rows }, () => Array(cols).fill(null))
+    await api.post('/seat-layouts', { classId: classId.value, name: form.value.name, rows, cols, seats })
+    uni.showToast({ title: '布局已创建', icon: 'success' })
+    showForm.value = false
+    form.value = { name: '默认座位', rows: 6, cols: 7 }
+    await load()
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
 async function activate(id) {
-  await api.post(`/seat-layouts/${id}/activate`, {})
-  uni.showToast({ title: '已启用，学生行列已回写' })
-  load()
+  busy.value = true
+  try {
+    await api.post(`/seat-layouts/${id}/activate`, {})
+    uni.showToast({ title: '已启用，学生行列已回写', icon: 'success' })
+    await load()
+  } catch (e) {
+    uni.showToast({ title: '启用失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    busy.value = false
+  }
 }
 
 function openEdit(l) {
@@ -151,10 +173,17 @@ function onPick(ev) {
 }
 
 async function saveSeats() {
-  await api.patch(`/seat-layouts/${editing.value.id}`, { seats: editing.value.seats })
-  uni.showToast({ title: '已保存' })
-  editing.value = null
-  load()
+  busy.value = true
+  try {
+    await api.patch(`/seat-layouts/${editing.value.id}`, { seats: editing.value.seats })
+    uni.showToast({ title: '座位已保存', icon: 'success' })
+    editing.value = null
+    await load()
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    busy.value = false
+  }
 }
 </script>
 
@@ -184,4 +213,16 @@ async function saveSeats() {
 .sheet { width: 100%; background: #fff; padding: 30rpx; }
 .sheet .picker { padding: 24rpx; border: 1px solid #eee; border-radius: 12rpx; margin-bottom: 16rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
 .cancel { background: #f4f4f4; border-radius: 50rpx; }
+/* 深色适配 */
+.dark .page { background: var(--c-bg); }
+.dark .picker, .dark .item, .dark .form, .dark .sheet { background: var(--c-card); }
+.dark .name { color: var(--c-title); }
+.dark .on { color: var(--c-primary); }
+.dark .title { color: var(--c-title); }
+.dark .form input { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
+.dark .seat { background: var(--c-card2); color: var(--c-sub); border-color: var(--c-border); }
+.dark .seat.filled { background: var(--c-card2); color: var(--c-accent); border-color: var(--c-accent); }
+.dark .podium { background: var(--c-card2); color: var(--c-sub); }
+.dark .sheet .picker { border-color: var(--c-border); }
+.dark .cancel { background: var(--c-card2); color: var(--c-sub); }
 </style>

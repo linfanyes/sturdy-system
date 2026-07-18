@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark }">
     <view v-for="sec in sections" :key="sec.title" class="section">
       <view class="sec-title">{{ sec.title }}</view>
       <view class="grid">
@@ -14,7 +14,8 @@
 
 <script setup>
 import { onShow } from '@dcloudio/uni-app'
-import { auth } from '../../common/store'
+import { auth, theme } from '../../common/store'
+const dark = theme.dark
 
 const sections = [
   {
@@ -170,9 +171,9 @@ onShow(() => {
 <style scoped>
 .page { padding: 30rpx; }
 .section { margin-bottom: 30rpx; }
-.sec-title { font-size: 28rpx; font-weight: 700; color: #a07b3b; margin-bottom: 16rpx; }
+.sec-title { font-size: 28rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 16rpx; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx; }
-.cell { background: #fff; border-radius: 20rpx; padding: 30rpx 10rpx; display: flex; flex-direction: column; align-items: center; }
+.cell { background: var(--c-card); border-radius: 20rpx; padding: 30rpx 10rpx; display: flex; flex-direction: column; align-items: center; }
 .ic { font-size: 56rpx; }
-.lb { margin-top: 10rpx; color: #4a3f35; font-size: 24rpx; }
+.lb { margin-top: 10rpx; color: var(--c-title); font-size: 24rpx; }
 </style>

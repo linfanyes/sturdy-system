@@ -31,7 +31,7 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
 
@@ -40,6 +40,7 @@ const grades = ref([])
 const selExam = ref(null)
 const content = ref('')
 const loading = ref(false)
+const pendingExamId = ref('')
 
 const examNames = computed(() => exams.value.map((e) => `${e.name}（${e.date}）`))
 
@@ -129,11 +130,23 @@ async function load() {
   try {
     exams.value = await api.get('/exams')
     grades.value = await api.get('/grades')
+    if (pendingExamId.value && exams.value.length) {
+      const found = exams.value.find((x) => x.id === pendingExamId.value)
+      if (found) {
+        selExam.value = found
+        content.value = ''
+      }
+      pendingExamId.value = ''
+    }
   } catch (e) {
     exams.value = []
     grades.value = []
   }
 }
+
+onLoad((q) => {
+  pendingExamId.value = (q && q.examId) ? decodeURIComponent(q.examId) : ''
+})
 
 onShow(() => {
   if (!auth.token) {

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <picker :range="classOpts" @change="pickClass">
       <view class="picker">班级：{{ selName }}</view>
     </picker>
@@ -15,15 +15,19 @@
         <text :class="['seg-i', by === 'size' && 'on']" @click="by = 'size'">按每组人数</text>
       </view>
       <input v-model="num" type="number" class="ctrl" :placeholder="by === 'groups' ? '分成几组' : '每组几人'" />
-      <button class="go" @click="run">开始分组</button>
+      <button class="go" :disabled="loading" @click="run">{{ loading ? '分组中…' : '开始分组' }}</button>
     </view>
 
     <view v-else class="cfg">
-      <button class="go" @click="run">按座位列分组</button>
+      <button class="go" :disabled="loading" @click="run">{{ loading ? '分组中…' : '按座位列分组' }}</button>
       <text class="tip" v-if="!hasLayout && tried">（需先在该班座位表中启用一个布局）</text>
     </view>
 
     <view class="result" v-if="groups.length">
+      <view class="res-bar">
+        <text class="res-t">分组结果（共 {{ groups.length }} 组 {{ totalPeople }} 人）</text>
+        <text class="res-copy" @click="copyResult">📋 复制</text>
+      </view>
       <view v-for="(g, gi) in groups" :key="gi" class="grp">
         <view class="gh">第 {{ gi + 1 }} 组 · {{ g.length }} 人</view>
         <view class="mem" v-for="m in g" :key="m.id">{{ m.name }}</view>
@@ -36,6 +40,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { theme } from '../../common/store'
 
 const classes = ref([])
 const classId = ref('')
@@ -46,6 +51,9 @@ const students = ref([])
 const groups = ref([])
 const hasLayout = ref(false)
 const tried = ref(false)
+const loading = ref(false)
+
+const totalPeople = computed(() => groups.value.reduce((s, g) => s + g.length, 0))
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -64,53 +72,81 @@ function pickClass(ev) {
 
 async function run() {
   tried.value = true
+  if (loading.value) return
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
-  const all = await api.get('/students')
-  students.value = all.filter((s) => s.classId === classId.value)
-  if (!students.value.length) return uni.showToast({ title: '该班暂无学生', icon: 'none' })
-
-  if (mode.value === 'column') {
-    const layouts = (await api.get('/seat-layouts')).filter(
-      (l) => l.classId === classId.value && l.active
-    )
-    if (!layouts.length || !layouts[0].seats || !layouts[0].seats.length) {
-      hasLayout.value = false
-      return uni.showToast({ title: '该班未启用座位布局', icon: 'none' })
+  loading.value = true
+  try {
+    const all = await api.get('/students')
+    students.value = all.filter((s) => s.classId === classId.value)
+    if (!students.value.length) {
+      loading.value = false
+      return uni.showToast({ title: '该班暂无学生', icon: 'none' })
     }
-    hasLayout.value = true
-    const seats = layouts[0].seats
-    const res = []
-    const colCount = seats[0] ? seats[0].length : 0
-    for (let c = 0; c < colCount; c++) {
-      const col = []
-      for (let r = 0; r < seats.length; r++) {
-        const sid = seats[r][c]
-        if (sid) {
-          const st = students.value.find((x) => x.id === sid)
-          if (st) col.push(st)
-        }
+
+    if (mode.value === 'column') {
+      const layouts = (await api.get('/seat-layouts')).filter(
+        (l) => l.classId === classId.value && l.active
+      )
+      if (!layouts.length || !layouts[0].seats || !layouts[0].seats.length) {
+        hasLayout.value = false
+        loading.value = false
+        return uni.showToast({ title: '该班未启用座位布局', icon: 'none' })
       }
-      if (col.length) res.push(col)
+      hasLayout.value = true
+      const seats = layouts[0].seats
+      const res = []
+      const colCount = seats[0] ? seats[0].length : 0
+      for (let c = 0; c < colCount; c++) {
+        const col = []
+        for (let r = 0; r < seats.length; r++) {
+          const sid = seats[r][c]
+          if (sid) {
+            const st = students.value.find((x) => x.id === sid)
+            if (st) col.push(st)
+          }
+        }
+        if (col.length) res.push(col)
+      }
+      groups.value = res
+      loading.value = false
+      return
+    }
+
+    const n = parseInt(num.value)
+    if (!n || n < 1) {
+      loading.value = false
+      return uni.showToast({ title: '请填写有效数量', icon: 'none' })
+    }
+    const arr = [...students.value]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    const res = []
+    if (by.value === 'groups') {
+      const per = Math.ceil(arr.length / n)
+      for (let i = 0; i < arr.length; i += per) res.push(arr.slice(i, i + per))
+    } else {
+      for (let i = 0; i < arr.length; i += n) res.push(arr.slice(i, i + n))
     }
     groups.value = res
-    return
+  } catch (e) {
+    uni.showToast({ title: '分组失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    loading.value = false
   }
+}
 
-  const n = parseInt(num.value)
-  if (!n || n < 1) return uni.showToast({ title: '请填写有效数量', icon: 'none' })
-  const arr = [...students.value]
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  const res = []
-  if (by.value === 'groups') {
-    const per = Math.ceil(arr.length / n)
-    for (let i = 0; i < arr.length; i += per) res.push(arr.slice(i, i + per))
-  } else {
-    for (let i = 0; i < arr.length; i += n) res.push(arr.slice(i, i + n))
-  }
-  groups.value = res
+function copyResult() {
+  const text = groups.value
+    .map((g, i) => `第${i + 1}组：${g.map((m) => m.name).join('、')}`)
+    .join('\n')
+  if (!text) return
+  uni.setClipboardData({
+    data: text,
+    success: () => uni.showToast({ title: '已复制分组结果', icon: 'none' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
 }
 </script>
 
@@ -130,4 +166,14 @@ async function run() {
 .grp { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 16rpx; }
 .gh { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 12rpx; }
 .mem { font-size: 28rpx; color: #5a5048; padding: 6rpx 0; }
+/* 深色适配 */
+.dark .page { background: var(--c-bg); }
+.dark .picker, .dark .seg, .dark .cfg, .dark .grp, .dark .sheet { background: var(--c-card); }
+.dark .seg-i { color: var(--c-sub); }
+.dark .seg-i.on { background: var(--c-accent); color: #fff; }
+.dark .ctrl { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
+.dark .gh { color: var(--c-title); }
+.dark .mem { color: var(--c-sub); }
+.dark .res-t { color: var(--c-title); }
+.dark .res-copy { color: var(--c-accent); }
 </style>
