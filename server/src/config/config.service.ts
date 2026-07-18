@@ -46,12 +46,12 @@ export class ConfigService implements OnModuleInit {
       },
       {
         key: 'aiTextModel',
-        value: this.env.get('AI_TEXT_MODEL') || 'qwen-plus',
+        value: this.env.get('AI_TEXT_MODEL') || 'qwen3.7-plus',
         description: '文本模型',
       },
       {
         key: 'aiVisionModel',
-        value: this.env.get('AI_VISION_MODEL') || 'qwen-vl-plus',
+        value: this.env.get('AI_VISION_MODEL') || 'qwen3-vl-plus',
         description: '多模态模型',
       },
       {
@@ -111,9 +111,9 @@ export class ConfigService implements OnModuleInit {
         teacherId,
         baseUrl: (await this.getAppConfigValue('aiBaseUrl')) || '',
         apiKey: (await this.getAppConfigValue('aiApiKey')) || '',
-        textModel: (await this.getAppConfigValue('aiTextModel')) || 'qwen-plus',
+        textModel: (await this.getAppConfigValue('aiTextModel')) || 'qwen3.7-plus',
         visionModel:
-          (await this.getAppConfigValue('aiVisionModel')) || 'qwen-vl-plus',
+          (await this.getAppConfigValue('aiVisionModel')) || 'qwen3-vl-plus',
         temperature: parseFloat(
           (await this.getAppConfigValue('aiTemperature')) || '0.7',
         ),

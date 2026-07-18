@@ -23,6 +23,24 @@ export class AiService {
   }
 
   /**
+   * 按场景自动选择模型：
+   * 1) 前端显式指定 modelType='vision' → 多模态模型；
+   * 2) 否则检测消息体是否含图片（OpenAI 视觉格式 content[].type==='image_url'）→ 含则用多模态模型；
+   * 3) 其余一律文本模型。
+   * 这样前端无需关心模型名，系统根据内容自动切换。
+   */
+  private resolveModel(body: any, s: any): string {
+    if (body?.modelType === 'vision') return s.visionModel
+    const msgs: any[] = body?.messages || []
+    const hasImage = msgs.some(
+      (m) =>
+        Array.isArray(m?.content) &&
+        m.content.some((c: any) => c && c.type === 'image_url'),
+    )
+    return hasImage ? s.visionModel : s.textModel
+  }
+
+  /**
    * 流式对话：密钥与服务端配置均在后端，小程序只传消息。
    * onDelta 每收到一段文本回调一次（用于 SSE 推送给前端）。
    */
@@ -32,7 +50,7 @@ export class AiService {
     onDelta: (text: string) => void,
   ): Promise<void> {
     const s = await this.buildSettings(teacherId)
-    const model = body.modelType === 'vision' ? s.visionModel : s.textModel
+    const model = this.resolveModel(body, s)
     const messages = [
       { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
       ...(body.messages || []),
@@ -91,7 +109,7 @@ export class AiService {
    */
   async chatSync(teacherId: string, body: any): Promise<string> {
     const s = await this.buildSettings(teacherId)
-    const model = body.modelType === 'vision' ? s.visionModel : s.textModel
+    const model = this.resolveModel(body, s)
     const messages = [
       { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
       ...(body.messages || []),
