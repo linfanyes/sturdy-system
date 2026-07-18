@@ -111,8 +111,8 @@ async function del(it) {
 .picker { background: #fff; border-radius: 16rpx; padding: 22rpx 24rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .bar { text-align: right; margin-bottom: 14rpx; }
 .add { font-size: 28rpx; color: #e6a23c; font-weight: 600; }
-.list { background: #fff; border-radius: 16rpx; padding: 10rpx 24rpx; }
-.a { padding: 18rpx 0; border-bottom: 1px solid #f3f3f3; }
+.list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; background: #fff; border-radius: 16rpx; padding: 20rpx; }
+.a { padding: 16rpx; border-radius: 12rpx; background: #fafafa; border: 1px solid #f0f0f0; }
 .top { display: flex; justify-content: space-between; }
 .tt { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
 .dt { font-size: 24rpx; color: #9aa0a6; }
@@ -120,7 +120,7 @@ async function del(it) {
 .ph { display: flex; flex-wrap: wrap; gap: 10rpx; margin: 10rpx 0; }
 .phimg { width: 140rpx; height: 140rpx; border-radius: 12rpx; }
 .del { font-size: 24rpx; color: #e06c75; }
-.empty { text-align: center; color: #9aa0a6; padding: 40rpx 0; }
+.empty { grid-column: 1 / 3; text-align: center; color: #9aa0a6; padding: 40rpx 0; }
 .sheet { margin-top: 16rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .area { height: 100rpx; }
@@ -132,7 +132,7 @@ async function del(it) {
 .dark .picker, .dark .list, .dark .sheet { background: var(--c-card); }
 .dark .tt { color: var(--c-title); }
 .dark .ct { color: var(--c-sub); }
-.dark .a { border-color: var(--c-input-border); }
+.dark .a { background: var(--c-input); border-color: var(--c-input-border); }
 .dark .inp, .dark .picker.sm { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
 .dark .up { border-color: var(--c-accent); color: var(--c-accent); }
 </style>

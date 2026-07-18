@@ -32,6 +32,13 @@
         ✅ 已录入 {{ doneCount }} / {{ students.length }} 人（点击「保存」可更新）
         <text class="clear" @click="removeGrade">删除该成绩</text>
       </view>
+      <view v-if="existing" class="oview">
+        <view class="ov2"><text class="n">{{ analysis.avg }}</text><text class="l">平均分</text></view>
+        <view class="ov2"><text class="n" style="color:#07c160">{{ analysis.passRate }}%</text><text class="l">及格率</text></view>
+        <view class="ov2"><text class="n" style="color:#e6a23c">{{ analysis.excellentRate }}%</text><text class="l">优秀率</text></view>
+        <view class="ov2"><text class="n">{{ analysis.max }}</text><text class="l">最高</text></view>
+        <view class="ov2"><text class="n">{{ analysis.min }}</text><text class="l">最低</text></view>
+      </view>
       <button v-if="existing" class="ana" @click="showAnalysis = true">📈 综合分析</button>
 
       <view class="list">
@@ -407,6 +414,10 @@ async function commit() {
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 .ana { background: #e6a23c; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.oview { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10rpx; margin-bottom: 16rpx; }
+.ov2 { background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 4rpx; text-align: center; }
+.ov2 .n { display: block; font-size: 30rpx; font-weight: 800; color: var(--c-accent); }
+.ov2 .l { display: block; font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
 .modal { width: 640rpx; max-height: 86vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 32rpx; box-sizing: border-box; }
 .m-h { font-size: 30rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 22rpx; }

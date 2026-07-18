@@ -25,8 +25,13 @@
     </view>
 
     <view class="sheet" v-if="showAdd">
-      <input v-model="form.type" class="inp" placeholder="类型（收入/支出）" />
-      <input v-model="form.category" class="inp" placeholder="分类" />
+      <view class="seg">
+        <text class="seg-i" :class="form.type==='收入' && 'on'" @click="form.type='收入'">收入</text>
+        <text class="seg-i" :class="form.type==='支出' && 'on'" @click="form.type='支出'">支出</text>
+      </view>
+      <picker :range="cats" @change="(e)=>form.category=cats[e.detail.value]">
+        <view class="picker sm">分类：{{ form.category || '请选择' }}</view>
+      </picker>
       <input v-model="form.amount" type="digit" class="inp" placeholder="金额（正为收入，负为支出）" />
       <input v-model="form.handler" class="inp" placeholder="经手人" />
       <picker mode="date" :value="form.date" @change="(e)=>form.date = e.detail.value">
@@ -44,6 +49,7 @@ import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
+const cats = ['班费', '活动', '资料', '奖品', '午餐', '交通', '其他']
 const classes = ref([])
 const classId = ref('')
 const list = ref([])
@@ -77,7 +83,7 @@ async function add() {
   try {
     const r = await api.post('/class-expenses', {
       classId: classId.value, type: form.value.type, category: form.value.category,
-      amount: Number(form.value.amount), handler: form.value.handler,
+      amount: (form.value.type === '支出' ? -1 : 1) * Math.abs(Number(form.value.amount) || 0), handler: form.value.handler,
       date: form.value.date, description: form.value.description,
     })
     list.value.unshift(r)
@@ -121,6 +127,9 @@ async function del(it) {
 .sheet { margin-top: 16rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .area { height: 100rpx; }
+.seg { display: flex; background: #f3f3f3; border-radius: 12rpx; padding: 6rpx; margin-bottom: 14rpx; }
+.seg-i { flex: 1; text-align: center; font-size: 28rpx; padding: 14rpx 0; border-radius: 10rpx; color: #888; }
+.seg-i.on { background: #fff; color: #07c160; font-weight: 700; box-shadow: 0 2rpx 6rpx rgba(0,0,0,.08); }
 .picker.sm { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; background: #fff; }
 .ok { background: #07c160; color: #fff; border-radius: 50rpx; }
 /* 深色 */
@@ -130,4 +139,6 @@ async function del(it) {
 .dark .ct { color: var(--c-sub); }
 .dark .e { border-color: var(--c-input-border); }
 .dark .inp, .dark .picker.sm { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
+.dark .seg { background: var(--c-input); }
+.dark .seg-i.on { background: var(--c-card); color: var(--c-accent); }
 </style>

@@ -12,6 +12,11 @@
       </view>
     </view>
 
+    <scroll-view scroll-x class="tabs" v-if="list.length">
+      <text class="tab" :class="!activeAlbum && 'on'" @click="activeAlbum=''">全部 ({{ totalCount }})</text>
+      <text class="tab" v-for="it in list" :key="it.id" :class="activeAlbum===it.id && 'on'" @click="activeAlbum=it.id">{{ it.title }} ({{ photosOf(it).length }})</text>
+    </scroll-view>
+
     <view class="grid" v-if="photoItems.length">
       <view v-for="(p, i) in photoItems" :key="p.albumId + '-' + i" class="cell">
         <image
@@ -74,6 +79,7 @@ const list = ref([])
 const showAdd = ref(false)
 const manage = ref(false)
 const movePhoto = ref(null)
+const activeAlbum = ref('')
 const form = ref({ title: '', date: '', description: '', photos: [] })
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
@@ -87,10 +93,12 @@ function photosOf(it) {
 const photoItems = computed(() => {
   const all = []
   list.value.forEach((it) => {
+    if (activeAlbum.value && it.id !== activeAlbum.value) return
     photosOf(it).forEach((p) => all.push({ src: p, albumId: it.id, albumTitle: it.title }))
   })
   return all
 })
+const totalCount = computed(() => list.value.reduce((s, it) => s + photosOf(it).length, 0))
 const targetAlbums = computed(() => list.value.filter((x) => x.id !== (movePhoto.value && movePhoto.value.albumId)))
 function safeParse(s) {
   try { return JSON.parse(s) || [] } catch (e) { return [] }
@@ -107,7 +115,7 @@ async function loadList() {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 onShow(load)
-function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; loadList() }
+function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; activeAlbum.value = ''; loadList() }
 
 function preview(src) {
   uni.previewImage({ current: src, urls: photoItems.value.map((x) => x.src) })
@@ -186,6 +194,9 @@ async function del(it) {
 .add { font-size: 28rpx; color: #e6a23c; font-weight: 600; }
 .mgr { font-size: 26rpx; color: var(--c-accent); }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10rpx; margin-bottom: 20rpx; }
+.tabs { white-space: nowrap; margin-bottom: 14rpx; }
+.tab { display: inline-block; font-size: 24rpx; padding: 10rpx 22rpx; border-radius: 30rpx; margin-right: 12rpx; background: #f5f5f5; color: #666; }
+.tab.on { background: var(--c-accent); color: #fff; font-weight: 700; }
 .cell { position: relative; }
 .img { width: 100%; height: 220rpx; border-radius: 12rpx; background: #f3f3f3; }
 .move { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 22rpx; color: #fff; background: rgba(0,0,0,0.55); border-radius: 0 0 12rpx 12rpx; padding: 8rpx 0; }
@@ -213,6 +224,7 @@ async function del(it) {
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .picker, .dark .albums, .dark .sheet { background: var(--c-card); }
+.dark .tab { background: var(--c-card2); color: var(--c-sub); }
 .dark .tt { color: var(--c-title); }
 .dark .ct { color: var(--c-sub); }
 .dark .al { border-color: var(--c-input-border); }
