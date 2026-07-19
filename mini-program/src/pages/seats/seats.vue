@@ -44,7 +44,8 @@
           :class="{ filled: cell.id }"
           @click="tapCell(Math.floor(idx / editing.cols), idx % editing.cols)"
         >
-          {{ cell.name || '空' }}
+          <text v-if="cell.id" class="sno">{{ cell.no }}</text>
+          <text class="sname">{{ cell.name || '空' }}</text>
         </view>
       </view>
       <button class="save" :disabled="busy" @click="saveSeats">{{ busy ? '保存中…' : '保存座位' }}</button>
@@ -92,7 +93,7 @@ const flatSeats = computed(() => {
     for (let c = 0; c < editing.value.seats[r].length; c++) {
       const sid = editing.value.seats[r][c]
       const st = students.value.find((x) => x.id === sid)
-      arr.push({ id: sid, name: st ? st.name : '' })
+      arr.push({ id: sid, name: st ? st.name : '', no: r * editing.value.cols + c + 1 })
     }
   return arr
 })
@@ -207,8 +208,10 @@ async function saveSeats() {
 .title { font-size: 28rpx; color: #4a3f35; }
 .podium { text-align: center; background: #f3e9d2; color: #a07b3b; border-radius: 12rpx; padding: 12rpx; margin-bottom: 20rpx; font-size: 26rpx; }
 .grid { display: grid; gap: 12rpx; margin-bottom: 20rpx; }
-.seat { background: #fff; border-radius: 14rpx; padding: 22rpx 6rpx; text-align: center; font-size: 24rpx; color: #9aa0a6; border: 1px solid #eee; }
+.seat { position: relative; background: #fff; border-radius: 14rpx; padding: 22rpx 6rpx; text-align: center; font-size: 24rpx; color: #9aa0a6; border: 1px solid #eee; }
 .seat.filled { background: #fff3d6; color: #a07b3b; border-color: #e6a23c; font-weight: 600; }
+.sno { position: absolute; top: 4rpx; left: 8rpx; font-size: 18rpx; line-height: 1; color: #c08a3e; opacity: .85; font-weight: 700; }
+.sname { display: block; margin-top: 10rpx; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
 .sheet { width: 100%; background: #fff; padding: 30rpx; }
 .sheet .picker { padding: 24rpx; border: 1px solid #eee; border-radius: 12rpx; margin-bottom: 16rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; }
@@ -222,6 +225,7 @@ async function saveSeats() {
 .dark .form input { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
 .dark .seat { background: var(--c-card2); color: var(--c-sub); border-color: var(--c-border); }
 .dark .seat.filled { background: var(--c-card2); color: var(--c-accent); border-color: var(--c-accent); }
+.dark .sno { color: var(--c-accent); }
 .dark .podium { background: var(--c-card2); color: var(--c-sub); }
 .dark .sheet .picker { border-color: var(--c-border); }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }

@@ -27,7 +27,7 @@
         <view class="meta">
           <text>{{ s.gender }}</text>
           <text v-if="s.duty" class="duty">· {{ s.duty }}</text>
-          <text v-if="s.seatRow" class="seat">· 第{{ s.seatRow }}行第{{ s.seatCol }}列</text>
+          <text v-if="s.seatRow" class="seat">· 座号{{ s.seatNo || '—' }}（第{{ s.seatRow }}行第{{ s.seatCol }}列）</text>
           <text v-else class="seat">· 未排座</text>
         </view>
         <view class="tags" v-if="s.tags && s.tags.length">
@@ -102,6 +102,11 @@
       <view class="dialog" @click.stop>
         <view class="d-title">{{ profile.name }} 的档案</view>
         <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
+        <view class="pf-line" v-if="profile.seatRow">座位：座号 {{ profile.seatNo || '—' }}（第{{ profile.seatRow }}行第{{ profile.seatCol }}列）</view>
+        <view class="pf-composite" :class="levelClass">
+          <text class="pf-c-n">{{ radar.composite }}</text>
+          <text class="pf-c-l">综合能力评分 · {{ radar.level }}</text>
+        </view>
         <view class="pf-tags" v-if="profile.tags && profile.tags.length">
           <text v-for="t in profile.tags" :key="t" class="pf-tag">{{ t }}</text>
         </view>
@@ -157,7 +162,11 @@ const showTpl = ref(false)
 const preview = ref(null)
 const showProfile = ref(false)
 const profile = ref({})
-const radar = ref({ avg: 0, attRate: 0, behScore: 0 })
+const radar = ref({ avg: 0, attRate: 0, behScore: 0, composite: 0, level: '' })
+const levelClass = computed(() => {
+  const c = radar.value.composite
+  return c >= 85 ? 'lv-excellent' : c >= 70 ? 'lv-good' : c >= 60 ? 'lv-mid' : 'lv-low'
+})
 const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' })
 
 onLoad((q) => {
@@ -227,7 +236,6 @@ async function save() {
     await api.post('/students', {
       ...form.value,
       classId: classId.value,
-      seatNo: list.value.length + 1,
       tags: parseTags(form.value.tags),
     })
     uni.showToast({ title: '已保存', icon: 'success' })
@@ -337,7 +345,10 @@ async function computeProfile(s) {
   // 行为活跃（封顶 20 条 = 100）
   const behCount = (beh || []).filter((b) => b.studentId === s.id).length
   const behScore = Math.min(100, Math.round((behCount / 20) * 100))
-  radar.value = { avg, attRate, behScore }
+  // 综合能力评分：成绩 50% + 出勤 30% + 行为 20%
+  const composite = Math.round(avg * 0.5 + attRate * 0.3 + behScore * 0.2)
+  const level = composite >= 85 ? '优秀' : composite >= 70 ? '良好' : composite >= 60 ? '中等' : '待提升'
+  radar.value = { avg, attRate, behScore, composite, level }
   nextTick(drawRadar)
 }
 function drawRadar() {
@@ -478,6 +489,13 @@ function drawRadar() {
 .pf-n { font-size: 34rpx; font-weight: 800; color: var(--c-accent); }
 .pf-l { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .pf-tip { font-size: 20rpx; color: var(--c-sub); text-align: center; line-height: 1.5; margin-bottom: 16rpx; }
+.pf-composite { text-align: center; margin: 12rpx 0 4rpx; padding: 16rpx; border-radius: 16rpx; background: var(--c-card2); }
+.pf-c-n { display: block; font-size: 48rpx; font-weight: 800; line-height: 1.1; color: var(--c-title); }
+.pf-c-l { display: block; font-size: 24rpx; margin-top: 4rpx; color: var(--c-sub); }
+.lv-excellent .pf-c-n, .lv-excellent .pf-c-l { color: #07c160; }
+.lv-good .pf-c-n, .lv-good .pf-c-l { color: #409eff; }
+.lv-mid .pf-c-n, .lv-mid .pf-c-l { color: #e6a23c; }
+.lv-low .pf-c-n, .lv-low .pf-c-l { color: #e64340; }
 .tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
 .tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
 .row-acts { margin-top: 10rpx; }

@@ -47,6 +47,8 @@ class SeatsService extends CrudService<SeatLayout> {
       const pos = posMap.get(st.id)
       st.seatRow = pos?.row ?? null
       st.seatCol = pos?.col ?? null
+      // 统一座位号编码：按行优先（从左到右、从前到后）生成，未排座为 0
+      st.seatNo = pos ? (pos.row - 1) * layout.cols + pos.col : 0
       await this.studentRepo.save(st)
     }
     return layout
