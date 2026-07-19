@@ -110,9 +110,9 @@ async function load() {
 }
 async function loadList() {
   if (!classId.value) return
-  list.value = (await api.get('/class-galleries'))
-    .filter((x) => x.classId === classId.value)
-    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  // 服务端按 classId 过滤，避免拉全量再前端 filter
+  const arr = await api.getList('/class-galleries?classId=' + encodeURIComponent(classId.value), { silent: true })
+  list.value = arr.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 onShow(load)
 onPullDownRefresh(async () => {

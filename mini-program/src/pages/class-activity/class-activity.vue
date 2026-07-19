@@ -63,7 +63,7 @@ async function load() {
 }
 async function loadList() {
   if (!classId.value) return
-  list.value = (await api.get('/class-activities')).filter((x) => x.classId === classId.value)
+  list.value = await api.getList('/class-activities?classId=' + encodeURIComponent(classId.value), { silent: true })
 }
 onShow(load)
 onPullDownRefresh(async () => {

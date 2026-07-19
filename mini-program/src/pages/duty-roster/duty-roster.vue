@@ -100,7 +100,7 @@ async function load() {
 }
 async function loadRoster() {
   if (!classId.value) { rosters.value = []; return }
-  const list = (await api.get('/duty-rosters')).filter((x) => x.classId === classId.value)
+  const list = await api.getList('/duty-rosters?classId=' + encodeURIComponent(classId.value), { silent: true })
   rosters.value = list.map((r) => ({
     ...r,
     assignments: (typeof r.assignments === 'string' ? JSON.parse(r.assignments) : r.assignments) || [],

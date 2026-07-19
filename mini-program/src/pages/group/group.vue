@@ -80,15 +80,15 @@ async function run() {
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   loading.value = true
   try {
-    const all = await api.get('/students')
-    students.value = all.filter((s) => s.classId === classId.value)
+    // 服务端按 classId 过滤，避免拉全量再前端 filter
+    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
     if (!students.value.length) {
       loading.value = false
       return uni.showToast({ title: '该班暂无学生', icon: 'none' })
     }
 
     if (mode.value === 'column') {
-      const layouts = (await api.get('/seat-layouts')).filter(
+      const layouts = (await api.get('/seat-layouts?classId=' + encodeURIComponent(classId.value))).filter(
         (l) => l.classId === classId.value && l.active
       )
       if (!layouts.length || !layouts[0].seats || !layouts[0].seats.length) {

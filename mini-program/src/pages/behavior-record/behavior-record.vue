@@ -113,7 +113,7 @@ onPullDownRefresh(async () => {
 })
 
 async function loadStudents() {
-  students.value = (await api.get('/students')).filter((s) => s.classId === classId.value)
+  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
 }
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id

@@ -82,7 +82,7 @@ async function load() {
   if (classId.value) await loadStudents()
 }
 async function loadStudents() {
-  students.value = (await api.get('/students')).filter((s) => s.classId === classId.value)
+  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
   await loadAtt()
 }
 onShow(load)

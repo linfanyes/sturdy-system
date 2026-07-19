@@ -244,8 +244,8 @@ function onSubject(e) {
 }
 
 async function loadStudents() {
-  const all = await api.getList('/students', { silent: true })
-  students.value = all.filter((s) => s.classId === classId.value)
+  // 服务端按 classId 过滤，避免拉全量再前端 filter
+  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
 }
 
 function checkExisting() {

@@ -8,9 +8,12 @@ import { NotFoundException } from '@nestjs/common'
 export class CrudService<T extends { id: string; teacherId: string }> {
   constructor(protected readonly repo: Repository<T>) {}
 
-  findAll(teacherId: string): Promise<T[]> {
+  findAll(teacherId: string, classId?: string): Promise<T[]> {
+    const where: FindOptionsWhere<T> = { teacherId } as FindOptionsWhere<T>
+    // 服务端按 classId 过滤：实体有 classId 字段时自动生效，避免前端拉全量再 filter
+    if (classId) (where as any).classId = classId
     return this.repo.find({
-      where: { teacherId } as FindOptionsWhere<T>,
+      where,
       order: { createdAt: 'DESC' } as any,
     })
   }

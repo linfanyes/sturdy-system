@@ -149,7 +149,8 @@ const selected = ref(new Set())
 const PAGE_SIZE = 20
 const page = ref(1)
 const shownAll = computed(() => {
-  let arr = list.value.filter((s) => s.classId === classId.value)
+  // list 已由服务端按 classId 过滤，此处仅做搜索/性别/排序
+  let arr = list.value
   const k = kw.value.trim().toLowerCase()
   if (k) arr = arr.filter((s) => (s.name || '').toLowerCase().includes(k) || (s.studentNo || '').toLowerCase().includes(k))
   if (genderFilter.value !== '全部') arr = arr.filter((s) => s.gender === genderFilter.value)
@@ -184,8 +185,8 @@ onLoad((q) => {
 })
 
 async function load() {
-  const all = await api.getList('/students', { loading: true, loadingText: '加载学生' })
-  list.value = all.filter((s) => s.classId === classId.value)
+  // 服务端按 classId 过滤，避免拉全量再前端 filter
+  list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: true, loadingText: '加载学生' })
   resetPage()
 }
 onShow(load)

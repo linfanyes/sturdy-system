@@ -72,7 +72,7 @@ async function load() {
 }
 async function loadList() {
   if (!classId.value) return
-  list.value = (await api.get('/class-expenses')).filter((x) => x.classId === classId.value)
+  list.value = await api.getList('/class-expenses?classId=' + encodeURIComponent(classId.value), { silent: true })
 }
 onShow(load)
 onPullDownRefresh(async () => {

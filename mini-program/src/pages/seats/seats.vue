@@ -102,9 +102,9 @@ const pickOpts = computed(() => ['（清空座位）', ...students.value.map((s)
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) {
-    layouts.value = (await api.get('/seat-layouts')).filter((l) => l.classId === classId.value)
-    const all = await api.get('/students')
-    students.value = all.filter((s) => s.classId === classId.value)
+    // 服务端按 classId 过滤，避免拉全量再前端 filter
+    layouts.value = await api.getList('/seat-layouts?classId=' + encodeURIComponent(classId.value), { silent: true })
+    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
   }
 }
 onShow(load)
