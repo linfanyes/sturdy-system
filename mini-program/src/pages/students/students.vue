@@ -30,6 +30,12 @@
           <text v-if="s.seatRow" class="seat">· 第{{ s.seatRow }}行第{{ s.seatCol }}列</text>
           <text v-else class="seat">· 未排座</text>
         </view>
+        <view class="tags" v-if="s.tags && s.tags.length">
+          <text v-for="t in s.tags" :key="t" class="tag">{{ t }}</text>
+        </view>
+        <view class="row-acts" v-if="s.parentPhone">
+          <text class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
+        </view>
       </view>
       <view v-if="!shown.length" class="empty">暂无学生，点下方添加或批量导入</view>
     </view>
@@ -52,6 +58,9 @@
       <input v-model="form.studentNo" placeholder="学号" />
       <input v-model="form.parentName" placeholder="家长姓名" />
       <input v-model="form.parentPhone" placeholder="家长电话" />
+      <input v-model="form.duty" placeholder="班级职务（如 班长/课代表）" />
+      <input v-model="form.tags" placeholder="标签（逗号分隔，如 活跃,进步）" />
+      <textarea v-model="form.note" class="area" placeholder="备注（联系方式、特殊事项等）"></textarea>
       <button class="save" @click="save">保存</button>
     </view>
 
@@ -93,6 +102,11 @@
       <view class="dialog" @click.stop>
         <view class="d-title">{{ profile.name }} 的档案</view>
         <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
+        <view class="pf-tags" v-if="profile.tags && profile.tags.length">
+          <text v-for="t in profile.tags" :key="t" class="pf-tag">{{ t }}</text>
+        </view>
+        <view class="pf-line" v-if="profile.parentName">家长：{{ profile.parentName }} <text v-if="profile.parentPhone" class="pf-dial" @click="dial(profile.parentPhone)">📞 拨号</text></view>
+        <view class="pf-note" v-if="profile.note">备注：{{ profile.note }}</view>
         <canvas type="2d" id="radarCanvas" class="radar"></canvas>
         <view class="pf-stats">
           <view class="pf-st"><text class="pf-n">{{ radar.avg }}</text><text class="pf-l">成绩均分</text></view>
@@ -144,7 +158,7 @@ const preview = ref(null)
 const showProfile = ref(false)
 const profile = ref({})
 const radar = ref({ avg: 0, attRate: 0, behScore: 0 })
-const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '' })
+const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' })
 
 onLoad((q) => {
   classId.value = q.classId
@@ -194,10 +208,10 @@ async function batchDelete() {
 function exportCsv() {
   const rows = shown.value
   if (!rows.length) return uni.showToast({ title: '没有可导出的学生', icon: 'none' })
-  const head = '姓名,性别,学号,家长姓名,家长电话,座位'
+  const head = '姓名,性别,学号,家长姓名,家长电话,职务,标签,备注,座位'
   const body = rows
     .map((s) =>
-      [s.name, s.gender, s.studentNo || '', s.parentName || '', s.parentPhone || '', s.seatRow ? s.seatRow + '行' + (s.seatCol || '') + '列' : '']
+      [s.name, s.gender, s.studentNo || '', s.parentName || '', s.parentPhone || '', s.duty || '', (s.tags || []).join('/'), s.note || '', s.seatRow ? s.seatRow + '行' + (s.seatCol || '') + '列' : '']
         .map((x) => '"' + String(x).replace(/"/g, '""') + '"')
         .join(','),
     )
@@ -214,15 +228,26 @@ async function save() {
       ...form.value,
       classId: classId.value,
       seatNo: list.value.length + 1,
-      tags: [],
+      tags: parseTags(form.value.tags),
     })
     uni.showToast({ title: '已保存', icon: 'success' })
     showForm.value = false
-    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '' }
+    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' }
     load()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
   }
+}
+
+function parseTags(str) {
+  return String(str || '')
+    .split(/[,，、\s]+/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+}
+function dial(phone) {
+  if (!phone) return uni.showToast({ title: '无联系电话', icon: 'none' })
+  uni.makePhoneCall({ phoneNumber: String(phone), fail: () => {} })
 }
 
 function copyTpl() {
@@ -453,4 +478,16 @@ function drawRadar() {
 .pf-n { font-size: 34rpx; font-weight: 800; color: var(--c-accent); }
 .pf-l { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .pf-tip { font-size: 20rpx; color: var(--c-sub); text-align: center; line-height: 1.5; margin-bottom: 16rpx; }
+.tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
+.tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
+.row-acts { margin-top: 10rpx; }
+.dial { font-size: 24rpx; color: #07c160; background: rgba(7,193,96,.12); padding: 8rpx 20rpx; border-radius: 30rpx; }
+.pf-tags { display: flex; flex-wrap: wrap; gap: 10rpx; justify-content: center; margin: 8rpx 0; }
+.pf-tag { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
+.pf-line { font-size: 24rpx; color: var(--c-sub); text-align: center; margin-bottom: 6rpx; }
+.pf-dial { color: #07c160; margin-left: 8rpx; }
+.pf-note { font-size: 22rpx; color: var(--c-sub); text-align: center; line-height: 1.6; margin-bottom: 8rpx; }
+.form .area { height: 120rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; color: var(--c-text); background: var(--c-input); width: 100%; }
+.dark .tag, .dark .pf-tag { background: var(--c-card2); color: #6db3f2; }
+.dark .dial { background: rgba(7,193,96,.2); }
 </style>

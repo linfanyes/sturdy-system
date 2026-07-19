@@ -7,8 +7,8 @@
         class="item"
       >
         <view class="info" @click="open(c)">
-          <view class="name">{{ c.name }}</view>
-          <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}</view>
+          <view class="name"><text class="dot" :style="{ background: c.color || '#07c160' }"></text>{{ c.name }}</view>
+          <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}<text v-if="c.slogan" class="slogan"> · {{ c.slogan }}</text></view>
         </view>
         <view class="ops">
           <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
@@ -67,6 +67,26 @@
         <input v-model="form.headTeacher" placeholder="班主任姓名" />
       </view>
 
+      <view class="field">
+        <text class="label">班级口号</text>
+        <input v-model="form.slogan" placeholder="如 团结拼搏，永不言弃" />
+      </view>
+
+      <view class="field">
+        <text class="label">班级颜色</text>
+        <view class="swatches">
+          <view v-for="c in colorOpts" :key="c" class="sw" :class="form.color === c && 'on'" :style="{ background: c }" @click="form.color = c"></view>
+          <view class="sw custom" :class="!colorOpts.includes(form.color) && 'on'" :style="{ background: form.color }">
+            <input v-model="form.color" class="sw-inp" placeholder="自定" />
+          </view>
+        </view>
+      </view>
+
+      <view class="field">
+        <text class="label">自定义班号（选填，留空则用上方班序）</text>
+        <input v-model="form.customNo" placeholder="如 1 / A / 火箭班" />
+      </view>
+
       <button class="save" @click="save">{{ editingId ? '保存修改' : '保存' }}</button>
       <button v-if="editingId" class="cancel" @click="cancelEdit">取消编辑</button>
     </view>
@@ -91,6 +111,7 @@
           </view>
         </view>
         <button class="enter" @click="goStudents(detailC)">进入学生管理</button>
+        <button class="sync" @click="syncTerm">📅 将本学期同步到其他班级</button>
         <button class="cancel" @click="showDetail = false">关闭</button>
       </view>
     </view>
@@ -111,6 +132,8 @@ const grades = ['一年级', '二年级', '三年级', '四年级', '五年级',
 const classOpts = ['一班', '二班', '三班', '四班', '五班', '六班', '七班', '八班', '九班', '十班']
 const quarters = ['春季', '秋季']
 
+const colorOpts = ['#07c160', '#409eff', '#e6a23c', '#e06c75', '#9b59b6', '#1abc9c', '#34495e', '#f39c12']
+
 const thisYear = new Date().getFullYear()
 const years = Array.from({ length: 6 }, (_, i) => String(thisYear - 5 + i)) // 当前年前5年 + 当年
 
@@ -120,6 +143,9 @@ const form = ref({
   yearIdx: years.length - 1, // 默认当年
   quarterIdx: 0,
   headTeacher: '',
+  slogan: '',
+  color: '#07c160',
+  customNo: '',
 })
 
 const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.value.classIdx])
@@ -154,6 +180,9 @@ function edit(c) {
     yearIdx: years.includes(y) ? years.indexOf(y) : years.length - 1,
     quarterIdx: q ? quarters.indexOf(q) : 0,
     headTeacher: c.headTeacher || '',
+    slogan: c.slogan || '',
+    color: c.color || '#07c160',
+    customNo: '',
   }
   showForm.value = true
 }
@@ -161,19 +190,22 @@ function edit(c) {
 function cancelEdit() {
   editingId.value = ''
   showForm.value = false
-  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '' }
+  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '', slogan: '', color: '#07c160', customNo: '' }
 }
 
 async function save() {
   if (!form.value.headTeacher.trim()) {
     return uni.showToast({ title: '请填写班主任姓名', icon: 'none' })
   }
+  const classNo = form.value.customNo.trim() || classOpts[form.value.classIdx]
   const payload = {
-    name: className.value,
+    name: grades[form.value.gradeIdx] + classNo,
     grade: grades[form.value.gradeIdx],
-    classNo: classOpts[form.value.classIdx],
+    classNo,
     term: term.value,
     headTeacher: form.value.headTeacher,
+    slogan: form.value.slogan.trim(),
+    color: form.value.color || '#07c160',
     subjects: [],
   }
   try {
@@ -236,6 +268,28 @@ function goNotice(c) {
   showDetail.value = false
   uni.navigateTo({ url: '/pages/notice/notice' })
 }
+
+async function syncTerm() {
+  const others = list.value.filter((c) => c.id !== detailC.value.id)
+  if (!others.length) return uni.showToast({ title: '没有其他班级可同步', icon: 'none' })
+  uni.showModal({
+    title: '同步学期',
+    content: `将「${detailC.value.term || '未设学期'}」同步到其余 ${others.length} 个班级？`,
+    success: async (m) => {
+      if (!m.confirm) return
+      uni.showLoading({ title: '同步中…' })
+      try {
+        await Promise.all(others.map((c) => api.patch('/classes/' + c.id, { term: detailC.value.term })))
+        uni.showToast({ title: '已同步 ' + others.length + ' 个班级', icon: 'success' })
+        load()
+      } catch (e) {
+        uni.showToast({ title: '同步失败：' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
 </script>
 
 <style scoped>
@@ -251,8 +305,10 @@ function goNotice(c) {
   box-shadow: 0 2rpx 10rpx var(--c-shadow);
 }
 .info { flex: 1; }
-.name { font-size: 34rpx; font-weight: 600; color: var(--c-title); }
+.name { font-size: 34rpx; font-weight: 600; color: var(--c-title); display: flex; align-items: center; }
+.dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin-right: 12rpx; flex-shrink: 0; }
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
+.slogan { color: #a07b3b; }
 .ops { display: flex; gap: 24rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
 .edit { color: var(--c-primary); background: rgba(7, 193, 96, 0.12); }
@@ -267,7 +323,14 @@ function goNotice(c) {
 .f-n { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
 .f-l { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
 .enter { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
+.sync { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; }
+.swatches { display: flex; flex-wrap: wrap; gap: 16rpx; align-items: center; }
+.sw { width: 56rpx; height: 56rpx; border-radius: 50%; border: 4rpx solid transparent; box-sizing: border-box; }
+.sw.on { border-color: #333; box-shadow: 0 0 0 2rpx #fff inset; }
+.sw.custom { display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+.sw-inp { width: 100%; height: 100%; font-size: 18rpx; text-align: center; color: #fff; background: transparent; border: none; }
+.dark .slogan { color: #d9a85a; }
 .dark .mask { background: rgba(0,0,0,0.6); }
 .dark .sheet { background: var(--c-card); }
 .dark .facet { background: var(--c-card2); }

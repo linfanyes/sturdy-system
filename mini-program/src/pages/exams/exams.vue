@@ -1,17 +1,30 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
+    <view class="filters">
+      <picker :range="classFilterOpts" @change="(e) => { const i = e.detail.value; filterClass = i === 0 ? '' : classes[i - 1].id }">
+        <view class="fpick">班级：{{ filterClassName }}</view>
+      </picker>
+      <picker :range="termOpts" @change="(e) => { const i = e.detail.value; filterTerm = i === 0 ? '' : termOpts[i] }">
+        <view class="fpick">学期：{{ filterTerm || '全部' }}</view>
+      </picker>
+      <text class="freset" @click="filterClass = ''; filterTerm = ''">重置</text>
+    </view>
+
     <view class="list">
-      <view v-for="e in list" :key="e.id" class="item">
+      <view v-for="e in filtered" :key="e.id" class="item">
         <view class="info">
           <view class="name">{{ e.name }}</view>
-          <view class="meta">{{ e.date }} · {{ (e.subjects || []).join('、') }}</view>
+          <view class="meta">{{ e.date }} · {{ e.term || '未设学期' }}</view>
+          <view class="subjects">
+            <text v-for="s in (e.subjects || [])" :key="s" class="schip">{{ s }}<text v-if="e.subjectFullScores && e.subjectFullScores[s]" class="fs"> ·{{ e.subjectFullScores[s] }}</text></text>
+          </view>
         </view>
         <view class="ops">
           <text class="op ana" @click.stop="analyze(e)">分析</text>
           <text class="op del" @click.stop="remove(e)">删除</text>
         </view>
       </view>
-      <view v-if="!list.length" class="empty">暂无考试，点下方新建</view>
+      <view v-if="!filtered.length" class="empty">暂无考试，点下方新建</view>
     </view>
 
     <button class="add" :disabled="loading" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建考试' }}</button>
@@ -33,6 +46,13 @@
           @click="toggle(s)"
         >{{ s }}</view>
       </view>
+      <view class="sub-label">各科满分（默认 100）</view>
+      <view class="fs-rows">
+        <view v-for="s in form.subjects" :key="s" class="fs-row">
+          <text class="fs-name">{{ s }}</text>
+          <input v-model.number="formFullScores[s]" class="fs-inp" type="number" placeholder="100" />
+        </view>
+      </view>
       <button class="save" :disabled="loading" @click="save">{{ loading ? '保存中…' : '保存（自动建成绩表）' }}</button>
     </view>
   </view>
@@ -50,8 +70,25 @@ const subjects = ref([])
 const showForm = ref(false)
 const loading = ref(false)
 const form = ref({ name: '', classId: '', date: '', subjects: [] })
+const formFullScores = ref({})
+const filterClass = ref('')
+const filterTerm = ref('')
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
+const classFilterOpts = computed(() => ['全部', ...classes.value.map((c) => c.name)])
+const filterClassName = computed(() => {
+  if (!filterClass.value) return '全部'
+  const c = classes.value.find((x) => x.id === filterClass.value)
+  return c ? c.name : '全部'
+})
+const termOpts = computed(() => ['全部', ...Array.from(new Set(list.value.map((e) => e.term).filter(Boolean)))])
+const filtered = computed(() =>
+  list.value.filter((e) => {
+    if (filterClass.value && e.classId !== filterClass.value) return false
+    if (filterTerm.value && e.term !== filterTerm.value) return false
+    return true
+  }),
+)
 const selClassName = computed(() => {
   const c = classes.value.find((x) => x.id === form.value.classId)
   return c ? c.name : '请选择'
@@ -81,10 +118,15 @@ async function save() {
   }
   loading.value = true
   try {
-    await api.post('/exams', { ...form.value })
+    const subjectFullScores = {}
+    form.value.subjects.forEach((s) => {
+      subjectFullScores[s] = Number(formFullScores.value[s]) || 100
+    })
+    await api.post('/exams', { ...form.value, subjectFullScores })
     uni.showToast({ title: '考试已创建', icon: 'success' })
     showForm.value = false
     form.value = { name: '', classId: '', date: '', subjects: [], term: '' }
+    formFullScores.value = {}
     await load()
   } catch (err) {
     uni.showToast({ title: '保存失败：' + (err.message || '请重试'), icon: 'none' })
@@ -134,4 +176,14 @@ function remove(e) {
 .chip.on { background: var(--c-accent); color: #fff; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .save[disabled] { opacity: 0.6; }
+.filters { display: flex; align-items: center; gap: 14rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
+.fpick { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 12rpx 24rpx; font-size: 26rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
+.freset { font-size: 24rpx; color: #409eff; padding: 12rpx 8rpx; }
+.subjects { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; }
+.schip { font-size: 22rpx; padding: 6rpx 16rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-sub); }
+.fs { color: #e6a23c; }
+.fs-rows { margin-bottom: 20rpx; }
+.fs-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
+.fs-name { font-size: 26rpx; color: var(--c-title); width: 140rpx; }
+.fs-inp { flex: 1; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 12rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); }
 </style>
