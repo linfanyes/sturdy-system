@@ -31,17 +31,32 @@
     </view>
 
     <view v-if="tab === 'draw'" class="box">
-      <textarea class="ta" v-model="optsText" :placeholder="ph" />
+      <textarea class="ta" v-model="optsText" :placeholder="ph" @blur="saveDrawDraft" />
+      <view class="draw-meta" v-if="opts.length">共 {{ opts.length }} 个选项</view>
+      <view class="draw-hist" v-if="drawHist.length">
+        <text class="dh-l">最近抽中：</text>
+        <text v-for="(n, i) in drawHist.slice(-6)" :key="i" class="dh-i">{{ n }}</text>
+        <text class="dh-c" @click="drawHist = []">清空</text>
+      </view>
       <view class="result" v-if="drawResult">{{ drawResult }}</view>
-      <button class="btn" @click="draw">抽签</button>
+      <view class="row">
+        <button class="btn" @click="draw">抽签</button>
+        <button class="btn ghost" @click="clearDraw">清空选项</button>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { theme } from '../../common/store'
+import { ref, computed, watch } from 'vue'
+import { theme, auth } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
+
+const DRAW_KEY = 'decider_draw'
+function sk() {
+  const uid = (auth.user && (auth.user.id || auth.user.username)) || 'anon'
+  return `${DRAW_KEY}_${uid}`
+}
 
 const tabs = [
   { k: 'dice', n: '🎲 骰子' },
@@ -114,9 +129,38 @@ function spin() {
 
 /* 抽签 */
 const drawResult = ref('')
+const drawHist = ref([])
+
+function loadDrawDraft() {
+  try {
+    const raw = uni.getStorageSync(sk()) || {}
+    optsText.value = raw.optsText || ''
+    drawHist.value = Array.isArray(raw.drawHist) ? raw.drawHist : []
+  } catch (e) {}
+}
+function saveDrawDraft() {
+  try {
+    uni.setStorageSync(sk(), {
+      optsText: optsText.value,
+      drawHist: (drawHist.value || []).slice(-30),
+    })
+  } catch (e) {}
+}
+loadDrawDraft()
+watch([optsText, drawHist], saveDrawDraft, { deep: true })
+
 function draw() {
   if (!opts.value.length) { uni.showToast({ title: '请先输入选项', icon: 'none' }); return }
   drawResult.value = opts.value[Math.floor(Math.random() * opts.value.length)]
+  drawHist.value.push(drawResult.value)
+}
+function clearDraw() {
+  if (!optsText.value) return
+  uni.showModal({
+    title: '清空选项',
+    content: '确定清空所有选项？',
+    success: (r) => { if (r.confirm) { optsText.value = ''; drawResult.value = '' } },
+  })
 }
 </script>
 
@@ -144,4 +188,11 @@ function draw() {
 .btn { background: #e6a23c; color: #fff; border-radius: 40rpx; padding: 0 60rpx; margin-top: 10rpx; }
 .ta { width: 560rpx; height: 240rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; font-size: 28rpx; color: var(--c-title); box-sizing: border-box; }
 .result { margin: 20rpx 0; font-size: 44rpx; font-weight: 800; color: #e6a23c; }
+.row { display: flex; gap: 16rpx; }
+.btn.ghost { background: var(--c-card); color: var(--c-accent); border: 2rpx solid #e6a23c; }
+.draw-meta { font-size: 22rpx; color: var(--c-sub); margin-top: 8rpx; }
+.draw-hist { width: 560rpx; margin-top: 14rpx; padding: 12rpx 16rpx; background: var(--c-card); border-radius: 12rpx; display: flex; flex-wrap: wrap; gap: 10rpx; align-items: center; font-size: 22rpx; color: var(--c-sub); box-sizing: border-box; }
+.dh-l { color: var(--c-accent); }
+.dh-i { padding: 4rpx 12rpx; background: var(--c-card2); border-radius: 12rpx; color: var(--c-title); }
+.dh-c { color: #e64340; margin-left: auto; }
 </style>

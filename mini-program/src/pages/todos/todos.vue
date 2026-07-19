@@ -31,7 +31,7 @@
       </picker>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -42,11 +42,13 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const list = ref([])
 const show = ref(false)
 const editing = ref(null)
 const form = ref({ title: '', note: '', date: today() })
+const saving = ref(false)
 
 function today() {
   const d = new Date()
@@ -77,12 +79,15 @@ function openEdit(t) {
   show.value = true
 }
 async function toggle(t) {
+  uni.showLoading({ title: '处理中…', mask: true })
   try { const r = await api.patch('/todos/' + t.id, { done: !t.done }); t.done = r.done }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
+  finally { uni.hideLoading() }
 }
 async function save() {
-  if (!form.value.title.trim()) return uni.showToast({ title: '请填写待办内容', icon: 'none' })
+  if (!isNonEmpty(form.value.title)) return uni.showToast({ title: '请填写待办标题', icon: 'none' })
   const payload = { ...form.value }
+  saving.value = true
   try {
     if (editing.value) {
       const r = await api.patch('/todos/' + editing.value.id, payload)
@@ -95,13 +100,17 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function del(t) {
   uni.showModal({ title: '删除', content: '确定删除此待办？', success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…' })
     try { await api.del('/todos/' + t.id); list.value = list.value.filter((x) => x.id !== t.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

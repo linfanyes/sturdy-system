@@ -38,7 +38,7 @@
         <view class="picker sm">日期：{{ form.date || '今天' }}</view>
       </picker>
       <textarea v-model="form.description" class="inp area" placeholder="说明（可选）" />
-      <button class="ok" @click="add">保存</button>
+      <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
   </view>
 </template>
@@ -48,6 +48,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isAmount } from '../../common/validators'
 
 const cats = ['班费', '活动', '资料', '奖品', '午餐', '交通', '其他']
 const classes = ref([])
@@ -55,6 +56,7 @@ const classId = ref('')
 const list = ref([])
 const showAdd = ref(false)
 const form = ref({ type: '支出', category: '', amount: '', handler: '', date: '', description: '' })
+const saving = ref(false)
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -84,6 +86,9 @@ function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; load
 async function add() {
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   if (form.value.amount === '') return uni.showToast({ title: '请填金额', icon: 'none' })
+  if (!isAmount(form.value.amount)) return uni.showToast({ title: '金额必须为正数（最多两位小数）', icon: 'none' })
+  if (!['收入', '支出'].includes(form.value.type)) return uni.showToast({ title: '类型必须是收入或支出', icon: 'none' })
+  saving.value = true
   try {
     const r = await api.post('/class-expenses', {
       classId: classId.value, type: form.value.type, category: form.value.category,
@@ -95,12 +100,15 @@ async function add() {
     form.value = { type: '支出', category: '', amount: '', handler: '', date: '', description: '' }
     uni.showToast({ title: '已记录', icon: 'none' })
   } catch (e) { uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' }) }
+  finally { saving.value = false }
 }
 async function del(it) {
   uni.showModal({ title: '删除', content: String(it.amount), success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/class-expenses/' + it.id); list.value = list.value.filter((x) => x.id !== it.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

@@ -24,7 +24,7 @@
           <text class="op del" @click.stop="remove(e)">删除</text>
         </view>
       </view>
-      <view v-if="!filtered.length" class="empty">暂无考试，点下方新建</view>
+      <EmptyState v-if="!filtered.length" icon="📝" text="暂无考试" hint="点击下方按钮创建第一场考试" />
     </view>
 
     <button class="add" :disabled="loading" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建考试' }}</button>
@@ -63,6 +63,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const list = ref([])
 const classes = ref([])
@@ -117,9 +118,9 @@ function analyze(e) {
 
 async function save() {
   if (loading.value) return
-  if (!form.value.name || !form.value.classId || !form.value.subjects.length) {
-    return uni.showToast({ title: '请完善考试信息', icon: 'none' })
-  }
+  if (!isNonEmpty(form.value.name)) return uni.showToast({ title: '请完善考试信息', icon: 'none' })
+  if (!isNonEmpty(form.value.classId)) return uni.showToast({ title: '请完善考试信息', icon: 'none' })
+  if (!form.value.subjects || !form.value.subjects.length) return uni.showToast({ title: '请完善考试信息', icon: 'none' })
   loading.value = true
   try {
     const subjectFullScores = {}

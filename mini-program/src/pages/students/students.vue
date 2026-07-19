@@ -62,7 +62,7 @@
       <input v-model="form.duty" placeholder="班级职务（如 班长/课代表）" />
       <input v-model="form.tags" placeholder="标签（逗号分隔，如 活跃,进步）" />
       <textarea v-model="form.note" class="area" placeholder="备注（联系方式、特殊事项等）"></textarea>
-      <button class="save" @click="save">保存</button>
+      <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
 
     <view v-if="showImport" class="form import-box">
@@ -129,7 +129,8 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import api, { batchRun } from '../../common/request'
+import { isPhone, isStudentNo } from '../../common/validators'
 import { theme } from '../../common/store'
 import { copyText } from '../../common/print'
 
@@ -178,6 +179,7 @@ const levelClass = computed(() => {
   return c >= 85 ? 'lv-excellent' : c >= 70 ? 'lv-good' : c >= 60 ? 'lv-mid' : 'lv-low'
 })
 const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' })
+const saving = ref(false)
 
 onLoad((q) => {
   classId.value = q.classId
@@ -218,10 +220,14 @@ async function batchDelete() {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…' })
       try {
-        await Promise.all(ids.map((id) => api.del('/students/' + id)))
+        const { success, failed } = await batchRun(ids.map((id) => api.del('/students/' + id)))
         selected.value = new Set()
         batchMode.value = false
-        uni.showToast({ title: '已删除 ' + ids.length + ' 人', icon: 'success' })
+        if (failed === 0) {
+          uni.showToast({ title: `已删除 ${success} 人`, icon: 'success' })
+        } else {
+          uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: 'none' })
+        }
         load()
       } catch (e) {
         uni.showToast({ title: '删除失败：' + (e.message || ''), icon: 'none' })
@@ -246,9 +252,13 @@ function exportCsv() {
 }
 
 async function save() {
+  if (saving.value) return
   if (!form.value.name.trim()) return uni.showToast({ title: '请填写姓名', icon: 'none' })
   if (form.value.gender !== '男' && form.value.gender !== '女')
     return uni.showToast({ title: '请选择性别', icon: 'none' })
+  if (!isStudentNo(form.value.studentNo)) return uni.showToast({ title: '学号格式错误（仅字母数字，2-32位）', icon: 'none' })
+  if (form.value.parentPhone && !isPhone(form.value.parentPhone)) return uni.showToast({ title: '家长电话格式错误（应为 11 位手机号）', icon: 'none' })
+  saving.value = true
   try {
     await api.post('/students', {
       ...form.value,
@@ -261,6 +271,8 @@ async function save() {
     load()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 

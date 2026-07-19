@@ -61,7 +61,7 @@
       <view class="status-row">
         <text class="st" v-for="s in ['待批改', '已批改', '已发还']" :key="s" :class="form.status === s && 'on'" @click="form.status = s">{{ s }}</text>
       </view>
-      <button class="ok" @click="save">{{ editing ? '保存' : '布置' }}</button>
+      <button class="ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editing ? '保存' : '布置') }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
     </view>
   </view>
@@ -69,9 +69,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme, auth } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const FALLBACK = ['语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育', '综合实践', '信息技术', '劳动', '阅读', '午自习', '课后服务']
 const statusOpts = ['全部', '待批改', '已批改', '已发还']
@@ -87,6 +88,7 @@ const filterStatus = ref('全部')
 const sortBy = ref('deadline')
 const showAdd = ref(false)
 const editing = ref(null)
+const saving = ref(false)
 const collapsed = ref(new Set())
 const form = ref({ classId: '', subject: '语文', startDate: '', deadline: '', title: '', content: '', status: '待批改' })
 
@@ -172,6 +174,12 @@ async function load() {
 }
 onShow(load)
 
+// 下拉刷新：重新加载作业列表
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
+
 function openCreate() {
   editing.value = null
   const cid = classFilter.value || (classes.value[0] && classes.value[0].id) || ''
@@ -198,10 +206,11 @@ function openEdit(h) {
 }
 async function save() {
   if (!form.value.classId) return uni.showToast({ title: '请选择班级', icon: 'none' })
-  if (!form.value.title.trim()) return uni.showToast({ title: '请填标题', icon: 'none' })
-  if (!form.value.content.trim()) return uni.showToast({ title: '请填内容', icon: 'none' })
+  if (!isNonEmpty(form.value.title)) return uni.showToast({ title: '请填标题', icon: 'none' })
+  if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填内容', icon: 'none' })
   if (form.value.deadline && form.value.startDate && form.value.deadline < form.value.startDate)
     return uni.showToast({ title: '截止不能早于开始', icon: 'none' })
+  saving.value = true
   try {
     if (editing.value) {
       const prev = editing.value.status
@@ -215,6 +224,8 @@ async function save() {
     load()
   } catch (e) {
     uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function makeNotice(h) {
@@ -227,15 +238,20 @@ async function makeNotice(h) {
       pinned: false,
       ended: false,
     })
-  } catch (e) {}
+  } catch (e) {
+    uni.showToast({ title: '通知公告发送失败：' + (e.message || ''), icon: 'none' })
+  }
 }
 async function quickDone(h) {
+  uni.showLoading({ title: '标记中…', mask: true })
   try {
     await api.patch('/homework/' + h.id, { status: '已批改' })
     h.status = '已批改'
     uni.showToast({ title: '已标记已批改', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    uni.hideLoading()
   }
 }
 async function del(h) {
@@ -244,11 +260,14 @@ async function del(h) {
     content: h.title,
     success: async (r) => {
       if (!r.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
       try {
         await api.del('/homework/' + h.id)
         all.value = all.value.filter((x) => x.id !== h.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
       }
     },
   })

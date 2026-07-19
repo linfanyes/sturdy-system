@@ -87,7 +87,7 @@
         <input v-model="form.customNo" placeholder="如 1 / A / 火箭班" />
       </view>
 
-      <button class="save" @click="save">{{ editingId ? '保存修改' : '保存' }}</button>
+      <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editingId ? '保存修改' : '保存') }}</button>
       <button v-if="editingId" class="cancel" @click="cancelEdit">取消编辑</button>
     </view>
 
@@ -121,12 +121,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import api, { batchRun } from '../../common/request'
 import { theme } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
 const editingId = ref('')
+const saving = ref(false)
 
 const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const classOpts = ['一班', '二班', '三班', '四班', '五班', '六班', '七班', '八班', '九班', '十班']
@@ -198,6 +199,7 @@ function cancelEdit() {
 }
 
 async function save() {
+  if (saving.value) return
   if (!form.value.headTeacher.trim()) {
     return uni.showToast({ title: '请填写班主任姓名', icon: 'none' })
   }
@@ -212,6 +214,7 @@ async function save() {
     color: form.value.color || '#07c160',
     subjects: [],
   }
+  saving.value = true
   try {
     if (editingId.value) {
       await api.patch('/classes/' + editingId.value, payload)
@@ -224,6 +227,8 @@ async function save() {
     load()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 
@@ -234,12 +239,15 @@ function remove(c) {
     confirmColor: '#e64340',
     success: async (r) => {
       if (!r.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
       try {
         await api.del('/classes/' + c.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         load()
       } catch (e) {
         uni.showToast({ title: '删除失败：' + (e.message || '请重试'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
       }
     },
   })
@@ -283,8 +291,14 @@ async function syncTerm() {
       if (!m.confirm) return
       uni.showLoading({ title: '同步中…' })
       try {
-        await Promise.all(others.map((c) => api.patch('/classes/' + c.id, { term: detailC.value.term })))
-        uni.showToast({ title: '已同步 ' + others.length + ' 个班级', icon: 'success' })
+        const { success, failed } = await batchRun(
+          others.map((c) => api.patch('/classes/' + c.id, { term: detailC.value.term })),
+        )
+        if (failed === 0) {
+          uni.showToast({ title: `已同步 ${success} 个班级`, icon: 'success' })
+        } else {
+          uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: 'none' })
+        }
         load()
       } catch (e) {
         uni.showToast({ title: '同步失败：' + (e.message || ''), icon: 'none' })

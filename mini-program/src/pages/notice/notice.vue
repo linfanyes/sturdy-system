@@ -17,6 +17,7 @@
             <text v-if="!n.ended" class="a" @click="setEnded(n, true)">结束</text>
             <text v-else class="a" @click="setEnded(n, false)">恢复</text>
             <text class="a" @click="openEdit(n)">编辑</text>
+            <text class="a print" @click="printNotice(n)">🖨 打印</text>
             <text class="a del" @click="del(n)">删除</text>
           </view>
         </view>
@@ -35,23 +36,29 @@
       <input v-model="form.title" class="inp" placeholder="公告标题" />
       <textarea v-model="form.content" class="inp area" placeholder="公告内容" />
       <label class="row"><checkbox :checked="form.pinned" @change="(e) => (form.pinned = e.detail.value)" color="#e6a23c" /> 置顶这条公告</label>
-      <button class="ok" @click="save">{{ editing ? '保存' : '发布' }}</button>
+      <button class="ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editing ? '保存' : '发布') }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
     </view>
+
+    <!-- 打印用隐藏 canvas -->
+    <canvas type="2d" id="printCanvas" class="print-canvas"></canvas>
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
+import { drawAndSave, saveToAlbum, copyText } from '../../common/print'
 
 const classes = ref([])
 const list = ref([])
 const hideEnded = ref(true)
 const showAdd = ref(false)
 const editing = ref(null)
+const saving = ref(false)
 const form = ref({ classId: '全校', title: '', content: '', pinned: false })
 
 const scopeValues = computed(() => ['', '全校', ...classes.value.map((c) => c.id)])
@@ -98,6 +105,12 @@ async function load() {
 }
 onShow(load)
 
+// 下拉刷新：重新加载公告列表
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
+
 function openCreate() {
   editing.value = null
   form.value = {
@@ -115,6 +128,8 @@ function openEdit(n) {
 }
 async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填标题', icon: 'none' })
+  if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填内容', icon: 'none' })
+  saving.value = true
   try {
     if (editing.value) {
       await api.patch('/notices/' + editing.value.id, { ...form.value })
@@ -127,23 +142,31 @@ async function save() {
     load()
   } catch (e) {
     uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function togglePin(n) {
+  uni.showLoading({ title: '处理中…', mask: true })
   try {
     await api.patch('/notices/' + n.id, { pinned: !n.pinned })
     n.pinned = !n.pinned
   } catch (e) {
     uni.showToast({ title: '操作失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
   }
 }
 async function setEnded(n, v) {
+  uni.showLoading({ title: '处理中…', mask: true })
   try {
     await api.patch('/notices/' + n.id, { ended: v })
     n.ended = v
     uni.showToast({ title: v ? '已结束' : '已重新发布', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '操作失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
   }
 }
 async function del(n) {
@@ -152,11 +175,14 @@ async function del(n) {
     content: n.title,
     success: async (r) => {
       if (!r.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
       try {
         await api.del('/notices/' + n.id)
         list.value = list.value.filter((x) => x.id !== n.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
       }
     },
   })
@@ -167,6 +193,52 @@ function fmt(d) {
   if (isNaN(dt)) return String(d)
   const p = (n) => (n < 10 ? '0' : '') + n
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`
+}
+
+// 打印公告：渲染 canvas → 保存到相册（用户可走相册打印或转发）
+// 失败自动降级为复制纯文本
+async function printNotice(n) {
+  const scope = scopeName(n.classId)
+  const lines = [
+    `范围：${scope === '全部' ? '全校' : scope}`,
+    `时间：${fmt(n.createdAt)}`,
+    n.pinned ? '（置顶）' : '',
+    '',
+    '———————————',
+    '',
+    ...String(n.content || '').split('\n'),
+    '',
+    '———————————',
+    '（此公告由工作系统小程序生成）',
+  ]
+  uni.showLoading({ title: '生成图片…', mask: true })
+  try {
+    const tmp = await drawAndSave('printCanvas', lines, '📢 ' + (n.title || '公告'))
+    uni.hideLoading()
+    uni.showModal({
+      title: '已生成公告图片',
+      content: '是否保存到相册？保存后可通过相册打印或转发给家长。',
+      confirmText: '保存到相册',
+      cancelText: '复制文本',
+      success: async (m) => {
+        if (m.confirm) {
+          try {
+            await saveToAlbum(tmp)
+            uni.showToast({ title: '已保存到相册', icon: 'success' })
+          } catch (e) {
+            uni.showToast({ title: '保存失败：' + (e.errMsg || ''), icon: 'none' })
+          }
+        } else if (m.cancel) {
+          copyText(`${n.title}\n范围：${scope}\n时间：${fmt(n.createdAt)}\n\n${n.content || ''}`)
+        }
+      },
+    })
+  } catch (e) {
+    uni.hideLoading()
+    // 降级：复制文本
+    copyText(`【${n.title}】\n范围：${scope}\n时间：${fmt(n.createdAt)}\n\n${n.content || ''}`)
+    uni.showToast({ title: '图片生成失败，已复制文本', icon: 'none' })
+  }
 }
 </script>
 
@@ -211,4 +283,6 @@ function fmt(d) {
 .dark .inp { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
 .dark .ok { background: #07c160; }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
+.a.print { color: #e6a23c; }
+.print-canvas { position: fixed; left: -9999rpx; top: 0; width: 720rpx; height: 400rpx; pointer-events: none; }
 </style>

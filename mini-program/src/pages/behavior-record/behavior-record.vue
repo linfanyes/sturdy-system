@@ -55,7 +55,7 @@
       <textarea v-model="form.note" class="inp area" placeholder="简要描述..."></textarea>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :class="{ disabled: saving }" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -65,6 +65,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const types = ['积极发言', '认真听讲', '走神', '帮助同学', '违纪', '其他']
@@ -93,6 +94,7 @@ const stats = computed(() => {
 
 const show = ref(false)
 const editing = ref(null)
+const saving = ref(false)
 const form = ref({ studentId: '', studentName: '', date: today(), behavior: '积极发言', note: '' })
 
 function today() {
@@ -136,8 +138,11 @@ function openEdit(b) {
   show.value = true
 }
 async function save() {
+  if (saving.value) return
   if (!form.value.studentId) return uni.showToast({ title: '请选择学生', icon: 'none' })
+  if (!isNonEmpty(form.value.behavior)) return uni.showToast({ title: '请选择行为类型', icon: 'none' })
   const payload = { ...form.value }
+  saving.value = true
   try {
     if (editing.value) {
       const r = await api.patch('/behavior-records/' + editing.value.id, payload)
@@ -150,13 +155,17 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function del(b) {
   uni.showModal({ title: '删除', content: '确定删除此条记录？', success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/behavior-records/' + b.id); records.value = records.value.filter((x) => x.id !== b.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>
@@ -212,6 +221,7 @@ function del(b) {
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
 .mb.ok { background: #07c160; color: #fff; }
+.mb.disabled { opacity: 0.6; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }
 .dark .picker, .dark .list { background: var(--c-card); }

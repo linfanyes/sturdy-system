@@ -1,5 +1,5 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
-import { getToken } from './store'
+import { getToken, logout } from './store'
 
 /**
  * 把任意 reject 值归一化为 Error，确保页面层 e.message 永远可用。
@@ -12,6 +12,24 @@ function toError(e, fallback) {
     (typeof e === 'string' ? e : '') ||
     fallback
   return new Error(msg)
+}
+
+/**
+ * 批量执行的容错帮手：用 allSettled 替代 Promise.all，避免单条失败导致整体 reject
+ * 及已成功项不可回滚的问题。返回 { success, failed, results }。
+ * - success: 成功条数
+ * - failed: 失败条数
+ * - results: 与 tasks 同序的数组，元素为 { status: 'fulfilled'|'rejected', value?, reason? }
+ */
+async function batchRun(tasks) {
+  const results = await Promise.allSettled(tasks)
+  let success = 0
+  let failed = 0
+  for (const r of results) {
+    if (r.status === 'fulfilled') success++
+    else failed++
+  }
+  return { success, failed, results }
 }
 
 /**
@@ -38,6 +56,8 @@ export function request(path, method = 'GET', data = {}) {
       success: (res) => {
         const status = res.statusCode || (res.data && res.data.statusCode)
         if (status === 401) {
+          // 清除本地登录态，避免带着过期 token 反复触发 401 跳转
+          try { logout() } catch (e) {}
           uni.reLaunch({ url: '/pages/login/login' })
           return reject(new Error('登录已过期'))
         }
@@ -90,9 +110,10 @@ export const api = {
  * @param {string} path 接口路径（不含前缀）
  * @param {object} data 请求体（messages / files 等）
  * @param {(delta:string, full:string)=>void} onDelta 每收到一段增量时的回调
+ * @param {{ onTask?: (task: { abort: () => void }) => void }} [opts] 可选；onTask 回调用于把 task 暴露给调用方，调用 task.abort() 可中断流式
  * @returns {Promise<string>} 完整回复文本
  */
-export function streamChat(path, data, onDelta) {
+export function streamChat(path, data, onDelta, opts = {}) {
   return new Promise((resolve, reject) => {
     const cloud = typeof wx !== 'undefined' && wx.cloud
     if (!cloud || typeof cloud.callContainer !== 'function') {
@@ -101,6 +122,7 @@ export function streamChat(path, data, onDelta) {
     let buf = ''
     let full = ''
     let finished = false
+    let aborted = false
 
     const feed = (text) => {
       if (typeof text !== 'string') return
@@ -148,6 +170,11 @@ export function streamChat(path, data, onDelta) {
       },
       enableChunked: true,
       success: (res) => {
+        if (aborted) {
+          // 用户已主动中断，按完成处理，保留已收到的部分内容
+          resolve(full)
+          return
+        }
         // 兜底：未走分片（整体缓冲）时从 res.data 解析全部 data: 行
         if (!finished && buf === '' && res && res.data) {
           const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
@@ -156,8 +183,21 @@ export function streamChat(path, data, onDelta) {
         if (finished || full) resolve(full)
         else reject(new Error('AI 未返回内容'))
       },
-      fail: (e) => reject(e),
+      fail: (e) => {
+        if (aborted) resolve(full) // 中断导致的 fail 也视为完成
+        else reject(toError(e, 'AI 流式请求失败'))
+      },
     })
+
+    // 把 task 暴露给调用方，调用 task.abort() 可中断
+    if (opts.onTask && typeof opts.onTask === 'function') {
+      opts.onTask({
+        abort: () => {
+          aborted = true
+          try { task && task.abort && task.abort() } catch (e) {}
+        },
+      })
+    }
 
     if (task && typeof task.onChunkReceived === 'function') {
       task.onChunkReceived((res) => {
@@ -197,6 +237,7 @@ function ab2str(buf) {
   return out
 }
 
+export { batchRun }
 export default api
 
 

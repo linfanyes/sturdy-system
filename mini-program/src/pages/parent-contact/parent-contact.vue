@@ -38,20 +38,22 @@
       <input v-model="form.phone" class="inp" placeholder="电话" />
       <input v-model="form.wechat" class="inp" placeholder="微信" />
       <textarea v-model="form.content" class="inp area" placeholder="沟通内容" />
-      <button class="ok" @click="add">保存</button>
+      <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isPhone } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const list = ref([])
 const classList = ref([])
 const showAdd = ref(false)
+const saving = ref(false)
 // 顶部筛选：0 = 全部；>0 对应 classList[idx-1]
 const classIdx = ref(0)
 // 新增表单中选中的班级下标（-1 未选）
@@ -87,6 +89,13 @@ onShow(async () => {
   await load()
 })
 
+// 下拉刷新：与 onShow 行为一致，先加载班级再加载联系记录
+onPullDownRefresh(async () => {
+  await loadClasses()
+  await load()
+  uni.stopPullDownRefresh()
+})
+
 function onClassChange(e) {
   classIdx.value = e.detail.value
   load()
@@ -108,6 +117,8 @@ async function add() {
     return uni.showToast({ title: '请选择班级', icon: 'none' })
   }
   const cls = classList.value[formClassIdx.value]
+  if (form.value.phone && !isPhone(form.value.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  saving.value = true
   try {
     const r = await api.post('/parent-contacts', {
       ...form.value,
@@ -120,22 +131,27 @@ async function add() {
     form.value = { studentName: '', parentName: '', relation: '', phone: '', wechat: '', content: '' }
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) { uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' }) }
+  finally { saving.value = false }
 }
 async function follow(p) {
   uni.showModal({
     title: '跟进记录', editable: true, placeholderText: '填写后续跟进',
     success: async (m) => {
       if (!m.confirm) return
+      uni.showLoading({ title: '保存中…', mask: true })
       try { const r = await api.patch('/parent-contacts/' + p.id, { followUp: m.content }); p.followUp = r.followUp; uni.showToast({ title: '已更新', icon: 'none' }) }
       catch (e) { uni.showToast({ title: '失败', icon: 'none' }) }
+      finally { uni.hideLoading() }
     },
   })
 }
 async function del(p) {
   uni.showModal({ title: '删除', content: p.studentName, success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/parent-contacts/' + p.id); list.value = list.value.filter((x) => x.id !== p.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

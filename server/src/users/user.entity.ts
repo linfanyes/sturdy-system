@@ -26,6 +26,12 @@ export class User {
   @Column({ default: '' })
   school: string
 
+  @Column({ default: '' })
+  phone: string
+
+  @Column({ default: '' })
+  email: string
+
   @Column({ default: '🍎' })
   avatar: string
 

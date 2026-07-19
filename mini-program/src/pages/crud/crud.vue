@@ -127,6 +127,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { CRUD_SCHEMA } from '../../common/crud-schema'
 import { theme } from '../../common/store'
+import { compressImage } from '../../common/image'
 
 const schema = ref(null)
 const list = ref([])
@@ -308,19 +309,34 @@ function chooseImage() {
   uni.chooseMedia({
     count: 1,
     mediaType: ['image'],
-    sizeType: ['compressed'],
-    success: (res) => {
+    sizeType: ['compressed', 'original'],
+    success: async (res) => {
       const f = res.tempFiles[0]
-      if (f.size > 4 * 1024 * 1024)
-        return uni.showToast({ title: '图片过大（>4MB）', icon: 'none' })
-      readBase64(f.tempFilePath).then((b) =>
+      if (f.size > 10 * 1024 * 1024)
+        return uni.showToast({ title: '图片过大（>10MB）', icon: 'none' })
+      uni.showLoading({ title: '压缩中…' })
+      let finalPath = f.tempFilePath
+      let finalSize = f.size
+      try {
+        const r = await compressImage({ src: f.tempFilePath, maxWidth: 1600, maxHeight: 1600, quality: 80, fileType: 'jpg' })
+        if (r.tempFilePath && r.size) {
+          finalPath = r.tempFilePath
+          finalSize = r.size
+        }
+      } catch (e) {
+        // 压缩失败回退原图
+      } finally {
+        uni.hideLoading()
+      }
+      readBase64(finalPath).then((b) =>
         (picked.value = {
-          name: (f.tempFilePath || '').split('/').pop() || 'image.png',
-          size: f.size,
+          name: (finalPath || '').split('/').pop() || 'image.jpg',
+          size: finalSize,
           data: b,
           mode: 'image',
         }),
       )
+      uni.showToast({ title: '已压缩 ' + Math.round(finalSize / 1024) + 'KB', icon: 'none' })
     },
     fail: () => {},
   })

@@ -30,7 +30,7 @@
           <text class="del" @click.stop="remove(t)">删除</text>
         </view>
       </view>
-      <view class="empty" v-if="!shown.length">无匹配教师</view>
+      <EmptyState v-if="!shown.length" icon="👤" text="暂无教师" hint="点击下方按钮添加" />
     </view>
 
     <!-- 编辑弹窗 -->
@@ -96,7 +96,7 @@
 
         <view class="sh-acts">
           <button class="btn-c" @click="editOpen = false">取消</button>
-          <button class="btn-s" @click="save">保存</button>
+          <button class="btn-s" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
         </view>
       </view>
     </view>
@@ -107,12 +107,14 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isPhone, isEmail } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const list = ref([])
 const classes = ref([])
 const kw = ref('')
 const subjectFilter = ref('all')
+const saving = ref(false)
 
 const subjectOpts = ['语文', '数学', '英语', '音乐', '美术', '体育', '品德', '科学', '综合实践', '信息技术', '劳动', '阅读', '午自习', '课后服务']
 const positionOpts = ['教师', '班主任', '副班主任', '教研组长', '年级组长', '学科带头人', '教务主任', '德育主任', '校长', '副校长', '其他']
@@ -198,6 +200,9 @@ function toggleTeach(classId, subject) {
 }
 async function save() {
   if (!draft.value.name.trim()) return uni.showToast({ title: '请填写姓名', icon: 'none' })
+  if (draft.value.phone && !isPhone(draft.value.phone)) return uni.showToast({ title: '手机号格式错误（11 位）', icon: 'none' })
+  if (draft.value.email && !isEmail(draft.value.email)) return uni.showToast({ title: '邮箱格式错误', icon: 'none' })
+  saving.value = true
   try {
     if (editId.value) {
       const r = await api.patch('/teachers/' + editId.value, { ...draft.value })
@@ -211,6 +216,8 @@ async function save() {
     editOpen.value = false
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function remove(t) {

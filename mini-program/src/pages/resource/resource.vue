@@ -44,7 +44,7 @@
         <text class="tag" v-for="(t, i) in form.tags" :key="t" @click="form.tags.splice(i, 1)">#{{ t }} ✕</text>
       </view>
       <textarea v-model="form.description" class="inp area" placeholder="简介（可选）" />
-      <button class="ok" @click="save">添加</button>
+      <button class="ok" :disabled="saving" @click="save">{{ saving ? '添加中…' : '添加' }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
     </view>
   </view>
@@ -55,6 +55,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const list = ref([])
 const showAdd = ref(false)
@@ -63,6 +64,7 @@ const searchKw = ref('')
 const catFilter = ref('all')
 const tagInput = ref('')
 const form = ref({ title: '', url: '', image: '', category: '教学素材', tags: [], description: '' })
+const saving = ref(false)
 
 const catOpts = ['官方平台', '教学素材', '工具', '班级管理', '其他']
 const catLabels = computed(() => ['全部分类', ...catOpts, ...Array.from(new Set(list.value.map((r) => r.category).filter((c) => c && !catOpts.includes(c))))])
@@ -129,8 +131,9 @@ function copy(u) {
   uni.setClipboardData({ data: u, success: () => uni.showToast({ title: '链接已复制', icon: 'none' }) })
 }
 async function save() {
-  if (!form.value.title) return uni.showToast({ title: '请填名称', icon: 'none' })
-  if (!form.value.url && !form.value.image) return uni.showToast({ title: '请填链接或选图片', icon: 'none' })
+  if (!isNonEmpty(form.value.title)) return uni.showToast({ title: '请填名称', icon: 'none' })
+  if (!isNonEmpty(form.value.url) && !form.value.image) return uni.showToast({ title: '请填链接或选图片', icon: 'none' })
+  saving.value = true
   try {
     await api.post('/resources', { ...form.value })
     showAdd.value = false
@@ -139,6 +142,8 @@ async function save() {
     load()
   } catch (e) {
     uni.showToast({ title: '添加失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function del(r) {
@@ -147,11 +152,14 @@ async function del(r) {
     content: r.title,
     success: async (m) => {
       if (!m.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
       try {
         await api.del('/resources/' + r.id)
         list.value = list.value.filter((x) => x.id !== r.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
       }
     },
   })

@@ -233,7 +233,9 @@ async function loadAll() {
       .sort((a, b) => (a.period || 99) - (b.period || 99))
       .slice(0, 6)
     noticeList.value = notices || []
-  } catch (e) {}
+  } catch (e) {
+    uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })
+  }
   finally { loading.value = false }
 }
 onShow(() => {
@@ -261,11 +263,23 @@ async function addTodo() {
 async function toggleTodo(t) {
   t.done = !t.done
   try { await api.patch('/todos/' + t.id, { done: t.done }) }
-  catch (e) { t.done = !t.done }
+  catch (e) {
+    // 回滚前给用户明确反馈，避免状态被悄悄撤销造成困惑
+    uni.showToast({ title: '更新失败，已回滚', icon: 'none' })
+    t.done = !t.done
+  }
 }
 async function delTodo(t) {
-  try { await api.del('/todos/' + t.id); todoList.value = todoList.value.filter((x) => x.id !== t.id) }
-  catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+  uni.showModal({
+    title: '删除待办',
+    content: `确定删除「${t.title || '该待办'}」？`,
+    confirmColor: '#e64340',
+    success: async (r) => {
+      if (!r.confirm) return
+      try { await api.del('/todos/' + t.id); todoList.value = todoList.value.filter((x) => x.id !== t.id) }
+      catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    },
+  })
 }
 
 function go(f) {

@@ -59,7 +59,7 @@
       <textarea v-model="form.note" class="inp area" placeholder="备注..."></textarea>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :class="{ disabled: saving }" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -70,11 +70,13 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const levels = ['国家级', '省级', '市级', '区级', '校级', '其他']
 const list = ref([])
 const show = ref(false)
 const editing = ref(null)
+const saving = ref(false)
 const tagText = ref('')
 const form = ref({ name: '', issuer: '', date: today(), level: '校级', tags: [], ratingScore: 0, image: '', note: '' })
 
@@ -135,9 +137,11 @@ function preview(src) {
   }
 }
 async function save() {
-  if (!form.value.name.trim()) return uni.showToast({ title: '请填写奖项名称', icon: 'none' })
+  if (saving.value) return
+  if (!isNonEmpty(form.value.name)) return uni.showToast({ title: '请填写奖项名称', icon: 'none' })
   const tags = tagText.value.split(/[,，]/).map((t) => t.trim()).filter(Boolean)
   const payload = { ...form.value, tags }
+  saving.value = true
   try {
     if (editing.value) {
       const r = await api.patch('/award-records/' + editing.value.id, payload)
@@ -150,13 +154,17 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function del(a) {
   uni.showModal({ title: '删除', content: '确定删除「' + a.name + '」？', success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/award-records/' + a.id); list.value = list.value.filter((x) => x.id !== a.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>
@@ -203,6 +211,7 @@ function del(a) {
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
 .mb.ok { background: #07c160; color: #fff; }
+.mb.disabled { opacity: 0.6; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }
 .dark .list, .dark .modal { background: var(--c-card); }

@@ -72,8 +72,8 @@
           <view class="picker sm">{{ weekLabel(edit.weekType) }}</view>
         </picker>
         <view class="sh-bar">
-          <button class="btn del" v-if="edit.id" @click="removeItem">删除</button>
-          <button class="btn ok" @click="saveItem">保存</button>
+          <button class="btn del" v-if="edit.id" :disabled="saving" @click="removeItem">{{ saving ? '删除中…' : '删除' }}</button>
+          <button class="btn ok" :disabled="saving" @click="saveItem">{{ saving ? '保存中…' : '保存' }}</button>
         </view>
       </view>
     </view>
@@ -87,7 +87,7 @@
         </picker>
         <input v-model="teachForm.teacher" class="inp" placeholder="任教教师姓名" />
         <view class="sh-bar">
-          <button class="btn ok" @click="saveTeach">保存</button>
+          <button class="btn ok" :disabled="savingTeach" @click="saveTeach">{{ savingTeach ? '保存中…' : '保存' }}</button>
         </view>
       </view>
     </view>
@@ -113,7 +113,7 @@
         </view>
         <view class="sh-bar">
           <button class="btn del" @click="showAuto = false">取消</button>
-          <button class="btn ok" @click="confirmAuto">生成并保存</button>
+          <button class="btn ok" :disabled="savingPlan" @click="confirmAuto">{{ savingPlan ? '排课中…' : '生成并保存' }}</button>
         </view>
       </view>
     </view>
@@ -123,8 +123,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import api, { batchRun } from '../../common/request'
 import { auth, theme } from '../../common/store'
+import { isInt } from '../../common/validators'
 
 const days = [
   { k: 0, label: '周一' },
@@ -146,6 +147,9 @@ const items = ref([])
 const showEdit = ref(false)
 const edit = ref({ id: '', dayOfWeek: 0, period: 1, subject: '', teacher: '', section: '', weekType: 'all' })
 const editClassId = ref('')
+const saving = ref(false)
+const savingTeach = ref(false)
+const savingPlan = ref(false)
 const showTeach = ref(false)
 const teachForm = ref({ subject: '', teacher: '' })
 const showAuto = ref(false)
@@ -246,7 +250,10 @@ function onCell(day, period) {
 }
 
 async function saveItem() {
+  if (saving.value) return
   if (!edit.value.subject) return uni.showToast({ title: '请填科目', icon: 'none' })
+  if (!isInt(edit.value.period, 1, 8)) return uni.showToast({ title: '节次应为 1-8', icon: 'none' })
+  if (!isInt(edit.value.dayOfWeek, 0, 6)) return uni.showToast({ title: '周几应为 0-6', icon: 'none' })
   const isTeacher = mode.value === 'teacher'
   const payload = {
     classId: isTeacher ? editClassId.value : classId.value,
@@ -257,6 +264,7 @@ async function saveItem() {
     section: edit.value.section,
     weekType: edit.value.weekType,
   }
+  saving.value = true
   try {
     if (edit.value.id) {
       await api.patch('/schedules/' + edit.value.id, payload)
@@ -268,9 +276,14 @@ async function saveItem() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function removeItem() {
+  if (saving.value) return
+  uni.showLoading({ title: '删除中…', mask: true })
+  saving.value = true
   try {
     await api.del('/schedules/' + edit.value.id)
     showEdit.value = false
@@ -278,6 +291,9 @@ async function removeItem() {
     uni.showToast({ title: '已删除', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '删除失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
+    saving.value = false
   }
 }
 
@@ -285,20 +301,29 @@ function onTeachSubject(e) {
   teachForm.value.subject = classSubjects.value[e.detail.value]
 }
 async function saveTeach() {
+  if (savingTeach.value) return
   if (!teachForm.value.subject) return uni.showToast({ title: '请选择科目', icon: 'none' })
   if (!teachForm.value.teacher.trim()) return uni.showToast({ title: '请填教师', icon: 'none' })
   const targets = items.value.filter((s) => s.subject === teachForm.value.subject)
   if (!targets.length) return uni.showToast({ title: '该班级无此科目课程', icon: 'none' })
   uni.showLoading({ title: '设置中…' })
+  savingTeach.value = true
   try {
-    await Promise.all(targets.map((s) => api.patch('/schedules/' + s.id, { teacher: teachForm.value.teacher.trim() })))
-    uni.showToast({ title: '已设置任课教师', icon: 'none' })
+    const { success, failed } = await batchRun(
+      targets.map((s) => api.patch('/schedules/' + s.id, { teacher: teachForm.value.teacher.trim() })),
+    )
+    if (failed === 0) {
+      uni.showToast({ title: `已设置 ${success} 节课任课教师`, icon: 'success' })
+    } else {
+      uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: 'none' })
+    }
     showTeach.value = false
     await loadItems()
   } catch (e) {
     uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' })
   } finally {
     uni.hideLoading()
+    savingTeach.value = false
   }
 }
 
@@ -329,6 +354,7 @@ function buildPlan() {
   return { ok: true, plan }
 }
 async function confirmAuto() {
+  if (savingPlan.value) return
   const r = buildPlan()
   if (!r.ok) return uni.showToast({ title: r.err, icon: 'none' })
   const total = autoForm.value.days * autoForm.value.periods
@@ -341,13 +367,19 @@ async function confirmAuto() {
   })
 }
 async function doSavePlan(plan) {
+  if (savingPlan.value) return
   const dN = autoForm.value.days
   const pN = autoForm.value.periods
   const st = autoForm.value.start
   uni.showLoading({ title: '排课中…' })
+  savingPlan.value = true
   try {
-    if (autoForm.value.cover) {
-      await Promise.all(items.value.map((s) => api.del('/schedules/' + s.id)))
+    if (autoForm.value.cover && items.value.length) {
+      const dr = await batchRun(items.value.map((s) => api.del('/schedules/' + s.id)))
+      if (dr.failed > 0) {
+        uni.showToast({ title: `覆盖删除失败 ${dr.failed} 条，已中止`, icon: 'none' })
+        return
+      }
     }
     const jobs = []
     for (let d = 0; d < dN; d++) {
@@ -368,14 +400,19 @@ async function doSavePlan(plan) {
         jobs.push(existing ? api.patch('/schedules/' + existing.id, payload) : api.post('/schedules', payload))
       }
     }
-    await Promise.all(jobs)
-    uni.showToast({ title: '排课完成', icon: 'none' })
+    const { success, failed } = await batchRun(jobs)
+    if (failed === 0) {
+      uni.showToast({ title: `排课完成 ${success} 节`, icon: 'success' })
+    } else {
+      uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: 'none' })
+    }
     showAuto.value = false
     await loadItems()
   } catch (e) {
     uni.showToast({ title: '排课失败：' + (e.message || ''), icon: 'none' })
   } finally {
     uni.hideLoading()
+    savingPlan.value = false
   }
 }
 </script>

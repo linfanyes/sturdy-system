@@ -71,7 +71,7 @@
 
         <view class="sh-acts">
           <button class="btn-c" @click="editOpen = false">取消</button>
-          <button class="btn-s" @click="save">保存</button>
+          <button class="btn-s" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
         </view>
       </view>
     </view>
@@ -83,6 +83,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isNonEmpty } from '../../common/validators'
 
 const classes = ref([])
 const classId = ref('')
@@ -138,6 +139,7 @@ function fmt(d) {
 // 编辑
 const editOpen = ref(false)
 const editId = ref(null)
+const saving = ref(false)
 const draft = ref({ name: '', type: '值日', assignments: [] })
 
 function openCreate() {
@@ -166,7 +168,7 @@ function delRow(idx) {
   draft.value.assignments.splice(idx, 1)
 }
 async function save() {
-  if (!draft.value.name.trim()) return uni.showToast({ title: '请输入名称', icon: 'none' })
+  if (!isNonEmpty(draft.value.name)) return uni.showToast({ title: '请输入名称', icon: 'none' })
   const payload = {
     classId: classId.value,
     name: draft.value.name,
@@ -175,6 +177,7 @@ async function save() {
       .filter((a) => a.persons.some((p) => (p || '').trim()))
       .map((a) => ({ date: a.date, persons: a.persons.map((p) => (p || '').trim()).filter(Boolean) })),
   }
+  saving.value = true
   try {
     if (editId.value) {
       const r = await api.patch('/duty-rosters/' + editId.value, payload)
@@ -188,6 +191,8 @@ async function save() {
     editOpen.value = false
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function remove(r) {
@@ -195,8 +200,10 @@ function remove(r) {
     title: '删除轮值表', content: '确定删除「' + r.name + '」？',
     success: async (res) => {
       if (!res.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
       try { await api.del('/duty-rosters/' + r.id); rosters.value = rosters.value.filter((x) => x.id !== r.id); uni.showToast({ title: '已删除', icon: 'none' }) }
       catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+      finally { uni.hideLoading() }
     }
   })
 }

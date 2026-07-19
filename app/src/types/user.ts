@@ -8,6 +8,8 @@ export interface User {
   school: string
   avatar: string // emoji
   motto: string
+  phone?: string
+  email?: string
   createdAt: number
 }
 

@@ -52,7 +52,7 @@
     { "path": "pages/attendance/attendance", "style": { "navigationBarTitleText": "考勤管理", "enablePullDownRefresh": true } },
     { "path": "pages/homework/homework", "style": { "navigationBarTitleText": "作业管理", "enablePullDownRefresh": true } },
     { "path": "pages/notice/notice", "style": { "navigationBarTitleText": "班级公告", "enablePullDownRefresh": true } },
-    { "path": "pages/profile/profile", "style": { "navigationBarTitleText": "个人中心" } },
+    { "path": "pages/profile/profile", "style": { "navigationBarTitleText": "个人中心", "enablePullDownRefresh": true } },
     { "path": "pages/grade-trend/grade-trend", "style": { "navigationBarTitleText": "成绩趋势", "enablePullDownRefresh": true } },
     { "path": "pages/resource/resource", "style": { "navigationBarTitleText": "教学资源", "enablePullDownRefresh": true } },
     { "path": "pages/growth/growth", "style": { "navigationBarTitleText": "成长档案", "enablePullDownRefresh": true } },

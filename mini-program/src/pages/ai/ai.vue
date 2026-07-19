@@ -24,6 +24,7 @@
             <text v-else class="text">{{ m.content || '…' }}</text>
           </view>
           <view v-if="m.role === 'assistant' && !m.loading" class="bubble-ops">
+            <text v-if="m.error" class="retry-btn" @click="retryLast">🔄 重试</text>
             <text class="copy-btn" @click="copyText(m.content)">📋 复制</text>
           </view>
           <view v-if="m.role === 'user' && (m.files?.length || m.image)" class="attach">
@@ -61,6 +62,7 @@
       <button class="send" :class="{ disabled: loading }" @click="send">
         {{ loading ? '…' : '发送' }}
       </button>
+      <button v-if="loading" class="stop-btn" @click="stopSend">⏹</button>
     </view>
 
     <!-- 会话抽屉 -->
@@ -70,9 +72,13 @@
           <text>对话</text>
           <text class="new" @click="newSession">+ 新建</text>
         </view>
+        <view class="dr-search">
+          <input v-model="sessionKw" class="dr-ipt" placeholder="🔍 搜索对话标题或内容" />
+          <text v-if="sessionKw" class="dr-clr" @click="sessionKw = ''">×</text>
+        </view>
         <scroll-view class="dr-list" scroll-y>
           <view
-            v-for="s in sessions"
+            v-for="s in filteredSessions"
             :key="s.id"
             class="dr-item"
             :class="{ active: s.id === curId }"
@@ -83,6 +89,9 @@
               <text class="dr-op" @click.stop="renameSession(s)">✎</text>
               <text class="dr-op" v-if="sessions.length > 1" @click.stop="delSession(s)">🗑</text>
             </view>
+          </view>
+          <view v-if="!filteredSessions.length" class="dr-empty">
+            {{ sessions.length ? '没有匹配的对话' : '暂无对话，点右上新建' }}
           </view>
         </scroll-view>
       </view>
@@ -115,6 +124,7 @@ import { onShow, onUnload } from '@dcloudio/uni-app'
 import { marked } from 'marked'
 import api, { streamChat } from '../../common/request'
 import { auth, theme } from '../../common/store'
+import { compressImage } from '../../common/image'
 
 // —— Markdown 渲染：token 化 renderer + 内联样式，产物交给 <rich-text> 渲染 ——
 marked.setOptions({ gfm: true, breaks: true })
@@ -190,6 +200,21 @@ const loading = ref(false)
 const scrollId = ref('')
 const imageData = ref('')
 const fileList = ref([])
+// 会话搜索关键字
+const sessionKw = ref('')
+// filteredSessions：标题或任一消息内容命中关键字（不区分大小写）
+const filteredSessions = computed(() => {
+  const k = sessionKw.value.trim().toLowerCase()
+  if (!k) return sessions.value
+  return sessions.value.filter((s) => {
+    if ((s.title || '').toLowerCase().includes(k)) return true
+    return (s.messages || []).some((m) => (m.content || '').toLowerCase().includes(k))
+  })
+})
+// 流式任务句柄，用于支持「停止生成」
+let abortTask = null
+// 最近一次发送的 payload，用于失败后「重试」
+let lastPayload = null
 
 function storageKey() {
   return 'ai_sessions_' + uid.value
@@ -322,17 +347,34 @@ function scrollBottom() {
 function chooseImage() {
   uni.chooseImage({
     count: 1,
-    sizeType: ['compressed'],
-    success: (res) => {
+    sizeType: ['compressed', 'original'],
+    success: async (res) => {
       const path = res.tempFilePaths[0]
-      uni.getFileSystemManager().readFile({
-        filePath: path,
-        encoding: 'base64',
-        success: (r) => {
-          imageData.value = 'data:image/jpeg;base64,' + r.data
-        },
-        fail: () => uni.showToast({ title: '图片读取失败', icon: 'none' }),
-      })
+      uni.showLoading({ title: '压缩中…' })
+      try {
+        // 主动压缩到 ≤1280px、jpg 质量 80，降低 token/带宽消耗
+        const r = await compressImage({ src: path, maxWidth: 1280, maxHeight: 1280, quality: 80, fileType: 'jpg' })
+        const finalPath = r.tempFilePath
+        uni.getFileSystemManager().readFile({
+          filePath: finalPath,
+          encoding: 'base64',
+          success: (rr) => {
+            imageData.value = 'data:image/jpeg;base64,' + rr.data
+            uni.showToast({ title: '已压缩 ' + Math.round((r.size || 0) / 1024) + 'KB', icon: 'none' })
+          },
+          fail: () => uni.showToast({ title: '图片读取失败', icon: 'none' }),
+        })
+      } catch (e) {
+        // 压缩失败回退到原图
+        uni.getFileSystemManager().readFile({
+          filePath: path,
+          encoding: 'base64',
+          success: (rr) => { imageData.value = 'data:image/jpeg;base64,' + rr.data },
+          fail: () => uni.showToast({ title: '图片读取失败', icon: 'none' }),
+        })
+      } finally {
+        uni.hideLoading()
+      }
     },
   })
 }
@@ -399,16 +441,72 @@ async function send() {
   const idx = sess.messages.length - 1
   await nextTick()
   scrollId.value = 'm' + idx
+  lastPayload = payload
 
   try {
     await streamChat('/ai/chat', payload, (delta, full) => {
       sess.messages[idx].content = full
       scrollId.value = 'm' + idx
+    }, {
+      onTask: (t) => { abortTask = t },
     })
+    sess.messages[idx].error = false
   } catch (e) {
     sess.messages[idx].content = '调用失败：' + (e?.errMsg || e?.message || '请检查后端 AI 配置')
+    sess.messages[idx].error = true
   }
   sess.messages[idx].loading = false
+  abortTask = null
+  loading.value = false
+  sess.updatedAt = Date.now()
+  scrollBottom()
+  saveSessions()
+}
+
+// 停止生成：中断流式请求，保留已接收到的部分回复
+function stopSend() {
+  if (abortTask) {
+    try { abortTask.abort() } catch (e) {}
+    abortTask = null
+  }
+  loading.value = false
+  const sess = curSession.value
+  if (sess) {
+    const last = sess.messages[sess.messages.length - 1]
+    if (last && last.role === 'assistant' && last.loading) {
+      last.loading = false
+      if (!last.content) last.content = '（已停止生成）'
+    }
+  }
+}
+
+// 重试上一次发送：移除失败的 assistant 消息后重新发送
+async function retryLast() {
+  const sess = curSession.value
+  if (!sess || !lastPayload) return
+  // 移除最后一条失败的 assistant 消息
+  if (sess.messages.length && sess.messages[sess.messages.length - 1].role === 'assistant') {
+    sess.messages.pop()
+  }
+  sess.messages.push({ role: 'assistant', content: '', loading: true })
+  const idx = sess.messages.length - 1
+  loading.value = true
+  await nextTick()
+  scrollId.value = 'm' + idx
+  try {
+    await streamChat('/ai/chat', lastPayload, (delta, full) => {
+      sess.messages[idx].content = full
+      scrollId.value = 'm' + idx
+    }, {
+      onTask: (t) => { abortTask = t },
+    })
+    sess.messages[idx].error = false
+  } catch (e) {
+    sess.messages[idx].content = '调用失败：' + (e?.errMsg || e?.message || '请检查后端 AI 配置')
+    sess.messages[idx].error = true
+  }
+  sess.messages[idx].loading = false
+  abortTask = null
   loading.value = false
   sess.updatedAt = Date.now()
   scrollBottom()
@@ -504,6 +602,9 @@ onUnload(() => saveSessions())
 .send { background: linear-gradient(135deg, #07c160 0%, #19d27e 100%); color: #fff; border-radius: 40rpx; font-size: 28rpx; padding: 0 32rpx; height: 72rpx; line-height: 72rpx; }
 .send.disabled { opacity: 0.6; }
 .send::after { border: none; }
+.stop-btn { background: var(--c-card2); color: var(--c-danger, #e64340); border-radius: 50%; width: 72rpx; height: 72rpx; line-height: 72rpx; font-size: 32rpx; padding: 0; flex-shrink: 0; }
+.stop-btn::after { border: none; }
+.retry-btn { font-size: 22rpx; color: var(--c-danger, #e64340); padding: 6rpx 16rpx; border-radius: 24rpx; background: var(--c-card2); margin-right: 12rpx; }
 
 /* 抽屉 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; z-index: 60; }
@@ -513,6 +614,10 @@ onUnload(() => saveSessions())
 .dr-head { display: flex; align-items: center; justify-content: space-between; padding: 36rpx 28rpx 20rpx; font-size: 32rpx; font-weight: 700; color: var(--c-title); border-bottom: 1px solid var(--c-border); }
 .dr-head .new { font-size: 26rpx; color: #07c160; font-weight: 600; }
 .dr-list { flex: 1; padding: 10rpx 0; }
+.dr-search { display: flex; align-items: center; gap: 12rpx; padding: 16rpx 28rpx 8rpx; }
+.dr-ipt { flex: 1; background: var(--c-input); border-radius: 32rpx; padding: 14rpx 24rpx; font-size: 26rpx; color: var(--c-text); }
+.dr-clr { color: var(--c-sub); font-size: 36rpx; padding: 0 8rpx; }
+.dr-empty { padding: 60rpx 28rpx; text-align: center; color: var(--c-sub); font-size: 26rpx; }
 .dr-item { display: flex; align-items: center; justify-content: space-between; padding: 24rpx 28rpx; border-bottom: 1px solid var(--c-border); }
 .dr-item.active { background: var(--c-card2); }
 .dr-title { font-size: 28rpx; color: var(--c-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }

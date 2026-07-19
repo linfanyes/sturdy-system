@@ -40,7 +40,7 @@
       </view>
     </view>
 
-    <button class="save" :disabled="saving" @click="save">保存考勤</button>
+    <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存考勤' }}</button>
   </view>
 </template>
 
@@ -117,20 +117,26 @@ async function loadAtt() {
 function cur(id) {
   return map.value[id] || '出勤'
 }
-function setStu(id, s) {
+async function setStu(id, s) {
   const prev = cur(id)
   map.value[id] = s
   // 对齐 web：新标记为「旷课」时自动生成班级公告
   if (s === '旷课' && prev !== '旷课') {
     const stu = students.value.find((x) => x.id === id)
     const cls = classes.value.find((x) => x.id === classId.value)
-    api.post('/notices', {
-      classId: classId.value,
-      title: (stu ? stu.name : '某同学') + '今日旷课',
-      content: (cls ? cls.name : '') + ' ' + (stu ? stu.name : '') + ' 于 ' + (date.value || '今天') + ' 旷课，请家长关注。',
-      pinned: false,
-    }).catch(() => {})
-    uni.showToast({ title: '已生成旷课通知', icon: 'none' })
+    try {
+      await api.post('/notices', {
+        classId: classId.value,
+        title: (stu ? stu.name : '某同学') + '今日旷课',
+        content: (cls ? cls.name : '') + ' ' + (stu ? stu.name : '') + ' 于 ' + (date.value || '今天') + ' 旷课，请家长关注。',
+        pinned: false,
+      })
+      uni.showToast({ title: '已生成旷课通知', icon: 'none' })
+    } catch (e) {
+      // 公告生成失败：回滚本次状态变更，避免出现「标记旷课但无通知」的不一致
+      map.value[id] = prev
+      uni.showToast({ title: '旷课通知发送失败，已回滚状态：' + (e.message || ''), icon: 'none' })
+    }
   }
 }
 function markAll(s) {
@@ -138,6 +144,8 @@ function markAll(s) {
 }
 
 async function save() {
+  // 防重入：保存中直接返回
+  if (saving.value) return
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   saving.value = true
   const records = students.value.map((s) => ({ studentId: s.id, status: map.value[s.id] || '出勤' }))

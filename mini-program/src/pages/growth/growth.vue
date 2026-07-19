@@ -36,7 +36,7 @@
         <view class="picker sm">日期：{{ form.date || '今天' }}</view>
       </picker>
       <textarea v-model="form.content" class="inp area" placeholder="内容（可选）" />
-      <button class="ok" @click="add">保存</button>
+      <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存' }}</button>
     </view>
   </view>
 </template>
@@ -45,6 +45,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const types = ['品德', '学业', '体育', '艺术', '劳动', '其他']
@@ -54,6 +55,7 @@ const showAdd = ref(false)
 const form = ref({ studentName: '', title: '', type: '', date: '', content: '' })
 const kw = ref('')
 const activeType = ref('')
+const saving = ref(false)
 
 const sorted = computed(() =>
   [...list.value].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
@@ -87,6 +89,8 @@ onPullDownRefresh(async () => {
 async function add() {
   if (!form.value.studentName || !form.value.title)
     return uni.showToast({ title: '请填学生和标题', icon: 'none' })
+  if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填写内容', icon: 'none' })
+  saving.value = true
   try {
     const r = await api.post('/growth-entries', { ...form.value })
     list.value.unshift(r)
@@ -95,13 +99,17 @@ async function add() {
     uni.showToast({ title: '已添加', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '添加失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function del(g) {
   uni.showModal({ title: '删除', content: g.title, success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/growth-entries/' + g.id); list.value = list.value.filter((x) => x.id !== g.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

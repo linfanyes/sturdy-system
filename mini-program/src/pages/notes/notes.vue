@@ -49,7 +49,7 @@
       <scroll-view v-else scroll-y class="mdpreview"><rich-text :nodes="mdPreview"></rich-text></scroll-view>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -59,6 +59,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const cats = ['教学反思', '班会记录', '学习资料', '其他']
@@ -73,6 +74,7 @@ const show = ref(false)
 const editing = ref(null)
 const form = ref({ title: '', category: '教学反思', content: '' })
 const previewing = ref(false)
+const saving = ref(false)
 
 const isMd = (c) => /^#{1,6}\s|^\s*[-*]\s|\*\*|\[.+\]\(|```|^\s*>\s/.test(c || '')
 const mdPreview = computed(() => md2html(form.value.content))
@@ -216,7 +218,9 @@ function openEdit(n) {
 }
 async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填写标题', icon: 'none' })
+  if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填写内容', icon: 'none' })
   const payload = { ...form.value }
+  saving.value = true
   try {
     if (editing.value) {
       const r = await api.patch('/notes/' + editing.value.id, payload)
@@ -229,21 +233,29 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 async function togglePin(n) {
+  uni.showLoading({ title: '处理中…', mask: true })
   try { const r = await api.patch('/notes/' + n.id, { pinned: !n.pinned }); n.pinned = r.pinned; load() }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
+  finally { uni.hideLoading() }
 }
 async function toggleFav(n) {
+  uni.showLoading({ title: '处理中…', mask: true })
   try { const r = await api.patch('/notes/' + n.id, { favorite: !n.favorite }); n.favorite = r.favorite }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
+  finally { uni.hideLoading() }
 }
 function del(n) {
   uni.showModal({ title: '删除', content: '确定删除「' + n.title + '」？', success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…' })
     try { await api.del('/notes/' + n.id); list.value = list.value.filter((x) => x.id !== n.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

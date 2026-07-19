@@ -33,13 +33,15 @@
           <text v-for="s in subjectOpts" :key="s" class="sb" :class="form.subjects.includes(s) && 'on'" @click="toggleSub(s)">{{ form.subjects.includes(s) ? '✓ ' : '' }}{{ s }}</text>
         </view>
         <view class="fld"><text class="lab">教育格言</text><input v-model="form.motto" class="inp" maxlength="50" /></view>
+        <view class="fld"><text class="lab">手机号</text><input v-model="form.phone" class="inp" placeholder="选填，便于联系" /></view>
+        <view class="fld"><text class="lab">邮箱</text><input v-model="form.email" class="inp" placeholder="选填，便于联系" /></view>
         <text class="lab">头像</text>
         <view class="avatars">
           <text v-for="a in avatarOpts" :key="a" class="avopt" :class="form.avatar === a && 'on'" @click="form.avatar = a">{{ a }}</text>
         </view>
         <view class="sh-acts">
           <button class="btn-c" @click="editing = false">取消</button>
-          <button class="btn-s" :disabled="saving" @click="save">保存</button>
+          <button class="btn-s" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
         </view>
       </view>
     </view>
@@ -73,12 +75,13 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import api, { batchRun } from '../../common/request'
+import { isPhone, isEmail } from '../../common/validators'
 import { theme, setTheme, setUser, setColorScheme, cycleColorScheme, logout as doLogout, SCHEMES } from '../../common/store'
 
 const me = reactive({})
-const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '' })
+const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '', phone: '', email: '' })
 const editing = ref(false)
 const saving = ref(false)
 
@@ -100,6 +103,9 @@ async function load() {
       subjects: Array.isArray(u.subjects) ? [...u.subjects] : (u.subject ? [u.subject] : []),
       motto: u.motto || '',
       avatar: u.avatar || '🍎',
+      // 同步 phone/email 到 form，使 save 中的格式校验不再是死代码
+      phone: u.phone || '',
+      email: u.email || '',
     })
     if (u.colorScheme) setColorScheme(u.colorScheme)
   } catch (e) {
@@ -107,6 +113,12 @@ async function load() {
   }
 }
 onShow(load)
+
+// 下拉刷新：重新加载当前用户资料
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function toggleSub(s) {
   const i = form.subjects.indexOf(s)
@@ -116,13 +128,22 @@ function toggleSub(s) {
 function onTheme(e) {
   setTheme(e.detail.value ? 'dark' : 'light')
 }
-function cycle() {
+async function cycle() {
   const next = cycleColorScheme()
-  api.put('/users/me', { colorScheme: next }).catch(() => {})
-  uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' })
+  uni.showLoading({ title: '切换中…', mask: true })
+  try {
+    await api.put('/users/me', { colorScheme: next })
+    uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' })
+  } catch (e) {
+    uni.showToast({ title: '切换失败：' + (e.message||''), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
 }
 
 async function save() {
+  if (form.phone && !isPhone(form.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  if (form.email && !isEmail(form.email)) return uni.showToast({ title: '邮箱格式错误', icon: 'none' })
   saving.value = true
   const payload = {
     name: form.name,
@@ -132,6 +153,9 @@ async function save() {
     avatar: form.avatar,
     subjects: form.subjects,
     subject: form.subjects.length ? form.subjects[0] : (form.subject || '语文'),
+    // 一并提交 phone/email，配合上方格式校验形成完整链路
+    phone: form.phone,
+    email: form.email,
   }
   try {
     const u = await api.put('/users/me', payload)
@@ -178,16 +202,24 @@ function resetData() {
           if (!r2.confirm) return
           const paths = ['/classes', '/students', '/grades', '/notes', '/teachers', '/schedules', '/homework', '/notices', '/resources', '/attendances', '/exams', '/award-records', '/todos', '/growth-entries', '/parent-contacts', '/behavior-records', '/duty-rosters', '/class-activities', '/class-expenses', '/class-galleries']
           uni.showLoading({ title: '清空中' })
+          // 先收集所有删除任务，再用 batchRun 批量执行，单条失败不再被静默吞掉
+          const tasks = []
           for (const p of paths) {
             try {
               const list = await api.get(p)
               for (const item of (list || [])) {
-                if (item && item.id) await api.del(p + '/' + item.id).catch(() => {})
+                if (item && item.id) tasks.push(api.del(p + '/' + item.id))
               }
             } catch (e) {}
           }
+          const { success, failed } = await batchRun(tasks)
           uni.hideLoading()
-          uni.showToast({ title: '已清空', icon: 'none' })
+          // 失败数大于 0 时提示部分失败，全成功时保持原提示
+          if (failed > 0) {
+            uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: 'none' })
+          } else {
+            uni.showToast({ title: '已清空', icon: 'none' })
+          }
           load()
         }
       })

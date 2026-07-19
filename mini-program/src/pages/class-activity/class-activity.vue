@@ -30,7 +30,7 @@
         <text v-if="!form.photos.length">📷 添加活动照片（{{ form.photos.length }}）</text>
         <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" /></view>
       </view>
-      <button class="ok" @click="add">发布</button>
+      <button class="ok" :disabled="saving" @click="add">{{ saving ? '发布中…' : '发布' }}</button>
     </view>
   </view>
 </template>
@@ -39,6 +39,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const classes = ref([])
@@ -46,6 +47,7 @@ const classId = ref('')
 const list = ref([])
 const showAdd = ref(false)
 const form = ref({ title: '', date: '', description: '', photos: [] })
+const saving = ref(false)
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -90,6 +92,8 @@ function pickImg() {
 async function add() {
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   if (!form.value.title) return uni.showToast({ title: '请填标题', icon: 'none' })
+  if (!isNonEmpty(form.value.description)) return uni.showToast({ title: '请填写活动描述', icon: 'none' })
+  saving.value = true
   try {
     const r = await api.post('/class-activities', {
       classId: classId.value, title: form.value.title, date: form.value.date,
@@ -100,12 +104,15 @@ async function add() {
     form.value = { title: '', date: '', description: '', photos: [] }
     uni.showToast({ title: '已发布', icon: 'none' })
   } catch (e) { uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' }) }
+  finally { saving.value = false }
 }
 async function del(it) {
   uni.showModal({ title: '删除', content: it.title, success: async (m) => {
     if (!m.confirm) return
+    uni.showLoading({ title: '删除中…', mask: true })
     try { await api.del('/class-activities/' + it.id); list.value = list.value.filter((x) => x.id !== it.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+    finally { uni.hideLoading() }
   } })
 }
 </script>

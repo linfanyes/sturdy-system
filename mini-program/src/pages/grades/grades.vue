@@ -32,6 +32,10 @@
         ✅ 已录入 {{ doneCount }} / {{ students.length }} 人（点击「保存」可更新）
         <text class="clear" @click="removeGrade">删除该成绩</text>
       </view>
+      <view v-if="existing" class="exp-row">
+        <text class="exp-csv" @click="exportCsv">📋 导出 CSV</text>
+        <text class="exp-rank" @click="exportRank">🏆 导出名次表</text>
+      </view>
       <view v-if="existing" class="oview">
         <view class="ov2"><text class="n">{{ analysis.avg }}</text><text class="l">平均分</text></view>
         <view class="ov2"><text class="n" style="color:#07c160">{{ analysis.passRate }}%</text><text class="l">及格率</text></view>
@@ -55,7 +59,7 @@
         <view v-if="!students.length" class="empty">该班级还没有学生，请先在「学生管理」添加</view>
       </view>
 
-      <button class="save" @click="saveManual">💾 保存成绩</button>
+      <button class="save" :disabled="saving" @click="saveManual">{{ saving ? '保存中…' : '💾 保存成绩' }}</button>
       <button class="imp" @click="showImport = !showImport">{{ showImport ? '收起导入' : '📥 批量导入成绩' }}</button>
 
       <view v-if="showImport" class="import-box">
@@ -119,6 +123,8 @@ import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { isScore } from '../../common/validators'
+import { copyText } from '../../common/print'
 
 const classes = ref([])
 const exams = ref([])
@@ -141,6 +147,7 @@ const doneCount = ref(0)
 const showImport = ref(false)
 const preview = ref(null)
 const showAnalysis = ref(false)
+const saving = ref(false)
 
 const analysis = computed(() => {
   const empty = { avg: '-', max: '-', min: '-', median: '-', passRate: 0, excellentRate: 0, segs: [], rank: [] }
@@ -271,6 +278,7 @@ function checkExisting() {
 }
 
 async function saveManual() {
+  if (saving.value) return
   if (!classId.value || !examName.value || !subject.value)
     return uni.showToast({ title: '请先选择班级/考试/科目', icon: 'none' })
   if (!date.value) return uni.showToast({ title: '请填写日期', icon: 'none' })
@@ -280,11 +288,13 @@ async function saveManual() {
     if (v !== '') {
       const n = Number(v)
       if (isNaN(n)) return uni.showToast({ title: `${s.name} 分数不是数字`, icon: 'none' })
+      if (!isScore(n, 100)) return uni.showToast({ title: `${s.name} 分数应为 0-100`, icon: 'none' })
       sc.push({ studentId: s.id, score: n })
     }
   })
   if (!sc.length) return uni.showToast({ title: '请至少录入一个分数', icon: 'none' })
-  uni.showLoading({ title: '保存中…' })
+  saving.value = true
+  uni.showLoading({ title: '保存中…', mask: true })
   try {
     const r = await api.post('/grades/merge', {
       classId: classId.value,
@@ -300,6 +310,7 @@ async function saveManual() {
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
   } finally {
+    saving.value = false
     uni.hideLoading()
   }
 }
@@ -312,6 +323,7 @@ async function removeGrade() {
     confirmColor: '#e64340',
     success: async (r) => {
       if (!r.confirm) return
+      uni.showLoading({ title: '删除中…' })
       try {
         await api.del('/grades/' + existing.value.id)
         uni.showToast({ title: '已删除', icon: 'success' })
@@ -320,9 +332,57 @@ async function removeGrade() {
         for (const k in scores) delete scores[k]
       } catch (e) {
         uni.showToast({ title: '删除失败：' + (e.message || '请重试'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
       }
     },
   })
+}
+
+// 导出 CSV：含学号、姓名、性别、班级、考试、科目、日期、分数
+function exportCsv() {
+  if (!existing.value || !students.value.length) {
+    return uni.showToast({ title: '暂无成绩可导出', icon: 'none' })
+  }
+  const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
+  const scoreMap = {}
+  ;(existing.value.scores || []).forEach((x) => (scoreMap[x.studentId] = x.score))
+  const head = '学号,姓名,性别,班级,考试,科目,日期,分数'
+  const body = students.value
+    .map((s) => {
+      const sc = scoreMap[s.id]
+      return [s.studentNo || '', s.name, s.gender || '', className, examName.value, subject.value, date.value, sc != null ? sc : '']
+        .map((x) => '"' + String(x).replace(/"/g, '""') + '"')
+        .join(',')
+    })
+    .join('\n')
+  copyText('\uFEFF' + head + '\n' + body)
+}
+
+// 导出名次表：按分数倒序，附名次、平均/及格率等统计
+function exportRank() {
+  if (!existing.value || !students.value.length) {
+    return uni.showToast({ title: '暂无成绩可导出', icon: 'none' })
+  }
+  const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
+  const scoreMap = {}
+  ;(existing.value.scores || []).forEach((x) => (scoreMap[x.studentId] = x.score))
+  const rows = students.value
+    .map((s) => ({ name: s.name, studentNo: s.studentNo || '', score: scoreMap[s.id] }))
+    .filter((r) => r.score != null)
+    .sort((a, b) => b.score - a.score)
+  if (!rows.length) return uni.showToast({ title: '暂无成绩可导出', icon: 'none' })
+  const a = analysis.value
+  const lines = []
+  lines.push(`班级：${className}`)
+  lines.push(`考试：${examName.value}  科目：${subject.value}  日期：${date.value}`)
+  lines.push(`应考 ${students.value.length} 人 · 实考 ${rows.length} 人 · 平均 ${a.avg} · 最高 ${a.max} · 最低 ${a.min} · 及格率 ${a.passRate}% · 优秀率 ${a.excellentRate}%`)
+  lines.push('')
+  lines.push('名次,姓名,学号,分数')
+  rows.forEach((r, i) => {
+    lines.push(`${i + 1},"${r.name}","${r.studentNo}",${r.score}`)
+  })
+  copyText('\uFEFF' + lines.join('\n'))
 }
 
 function pickFile() {
@@ -365,6 +425,9 @@ function readAsBase64(path) {
 async function commit() {
   const rows = preview.value.rows.filter((r) => r.valid && r.studentId)
   if (!rows.length) return
+  for (const r of rows) {
+    if (!isScore(r.score, 100)) return uni.showToast({ title: `${r.name || ''} 分数应为 0-100`, icon: 'none' })
+  }
   uni.showLoading({ title: '导入中…' })
   try {
     const r = await api.post('/grades/import-commit', {
@@ -400,6 +463,9 @@ async function commit() {
 }
 .exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
 .clear { color: #e64340; font-size: 24rpx; }
+.exp-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
+.exp-csv, .exp-rank { flex: 1; text-align: center; font-size: 26rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-accent); border: 1px solid var(--c-border); }
+.exp-csv:active, .exp-rank:active { opacity: 0.6; }
 .item { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 26rpx; margin-bottom: 14rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .name { font-size: 30rpx; color: var(--c-title); }
 .score { width: 220rpx; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; text-align: center; font-size: 28rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
