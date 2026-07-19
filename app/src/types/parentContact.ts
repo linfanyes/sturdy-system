@@ -3,6 +3,7 @@ export interface ParentContact {
   id: string
   studentId: string
   studentName: string
+  classId: string // 班级隔离键：写入时绑定学生所在班级，支持按班级过滤
   parentName: string
   relation: string // 如：母亲、父亲
   phone: string

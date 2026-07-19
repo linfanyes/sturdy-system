@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common'
 import { Student } from './student.entity'
+import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
@@ -82,11 +83,14 @@ class StudentsService extends CrudService<Student> {
     return { rows, validCount, errorCount }
   }
 
-  /** 事务批量写入，任意一行失败整体回滚 */
+  /** 事务批量写入，任意一行失败整体回滚；同步为带家长信息的学生生成 parent-contact 记录 */
   async importStudents(teacherId: string, classId: string, items: any[]) {
     return await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Student)
+      const pRepo = manager.getRepository(ParentContact)
       const ids: string[] = []
+      let contactCount = 0
+      const today = new Date().toISOString().slice(0, 10)
       for (let i = 0; i < items.length; i++) {
         const it = items[i]
         const e = new Student()
@@ -103,8 +107,29 @@ class StudentsService extends CrudService<Student> {
         })
         const saved = await repo.save(e)
         ids.push(saved.id)
+
+        // 同步生成家长联系记录（至少要有家长姓名或电话）
+        if (it.parentName || it.parentPhone) {
+          const pc = new ParentContact()
+          Object.assign(pc, {
+            studentId: saved.id,
+            studentName: it.name,
+            classId,
+            parentName: it.parentName || '家长',
+            relation: '家长',
+            phone: it.parentPhone || '',
+            wechat: '',
+            method: it.parentPhone ? '电话' : '其他',
+            content: '导入学生时自动建立',
+            date: today,
+            followUp: '',
+            teacherId,
+          })
+          await pRepo.save(pc)
+          contactCount++
+        }
       }
-      return { count: ids.length, ids }
+      return { count: ids.length, ids, contactCount }
     })
   }
 }
@@ -154,7 +179,7 @@ class StudentsController extends CrudController<Student> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student])],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact])],
   providers: [StudentsService],
   controllers: [StudentsController],
 })

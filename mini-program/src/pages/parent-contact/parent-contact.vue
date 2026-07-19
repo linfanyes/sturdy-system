@@ -1,10 +1,18 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view class="bar"><text class="add" @click="showAdd = !showAdd">+ 新增联系</text></view>
+    <view class="filter">
+      <picker :range="classOptions" range-key="label" :value="classIdx" @change="onClassChange">
+        <view class="picker-val">班级：{{ classOptions[classIdx] && classOptions[classIdx].label }}</view>
+      </picker>
+      <text class="count">共 {{ list.length }} 条</text>
+    </view>
+
+    <view class="bar"><text class="add" @click="openAdd">+ 新增联系</text></view>
     <view class="list">
       <view class="c" v-for="p in list" :key="p.id">
         <view class="top">
           <text class="stu">{{ p.studentName }}</text>
+          <text class="cls" v-if="classNameOf(p.classId)">{{ classNameOf(p.classId) }}</text>
           <text class="rel">{{ p.relation || '家长' }} · {{ p.parentName }}</text>
         </view>
         <view class="meta">{{ p.method || '电话' }} · {{ p.phone || p.wechat || '' }} · {{ p.date }}</view>
@@ -19,7 +27,12 @@
     </view>
 
     <view class="sheet" v-if="showAdd">
-      <input v-model="form.studentName" class="inp" placeholder="学生姓名" />
+      <view class="row">
+        <picker class="half" :range="classList" range-key="name" :value="formClassIdx" @change="(e) => (formClassIdx = e.detail.value)">
+          <view class="inp picker">班级：{{ formClassIdx >= 0 ? classList[formClassIdx].name : '请选择' }}</view>
+        </picker>
+        <input v-model="form.studentName" class="inp half" placeholder="学生姓名" />
+      </view>
       <input v-model="form.parentName" class="inp" placeholder="家长姓名" />
       <input v-model="form.relation" class="inp" placeholder="关系（父/母/其他）" />
       <input v-model="form.phone" class="inp" placeholder="电话" />
@@ -31,22 +44,84 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
 const list = ref([])
+const classList = ref([])
 const showAdd = ref(false)
+// 顶部筛选：0 = 全部；>0 对应 classList[idx-1]
+const classIdx = ref(0)
+// 新增表单中选中的班级下标（-1 未选）
+const formClassIdx = ref(-1)
 const form = ref({ studentName: '', parentName: '', relation: '', phone: '', wechat: '', content: '' })
 
-async function load() { list.value = await api.get('/parent-contacts') }
-onShow(load)
+const classOptions = computed(() => [
+  { label: '全部', value: '' },
+  ...classList.value.map((c) => ({ label: c.name, value: c.id })),
+])
+
+const classNameOf = (id) => {
+  if (!id) return ''
+  const c = classList.value.find((x) => x.id === id)
+  return c ? c.name : ''
+}
+
+async function loadClasses() {
+  try {
+    classList.value = await api.get('/classes')
+  } catch (e) {
+    classList.value = []
+  }
+}
+
+async function load() {
+  const sel = classOptions.value[classIdx.value]
+  const cid = sel ? sel.value : ''
+  try {
+    list.value = cid
+      ? await api.get('/parent-contacts?classId=' + encodeURIComponent(cid))
+      : await api.get('/parent-contacts')
+  } catch (e) {
+    list.value = []
+  }
+}
+
+onShow(async () => {
+  await loadClasses()
+  await load()
+})
+
+function onClassChange(e) {
+  classIdx.value = e.detail.value
+  load()
+}
+
+function openAdd() {
+  // 默认预选当前筛选班级（若非「全部」）
+  if (classIdx.value > 0) {
+    formClassIdx.value = classIdx.value - 1
+  } else {
+    formClassIdx.value = classList.value.length ? 0 : -1
+  }
+  showAdd.value = !showAdd.value
+}
 
 async function add() {
   if (!form.value.studentName) return uni.showToast({ title: '请填学生姓名', icon: 'none' })
+  if (formClassIdx.value < 0 || !classList.value[formClassIdx.value]) {
+    return uni.showToast({ title: '请选择班级', icon: 'none' })
+  }
+  const cls = classList.value[formClassIdx.value]
   try {
-    const r = await api.post('/parent-contacts', { ...form.value, method: form.value.phone ? '电话' : '微信' })
+    const r = await api.post('/parent-contacts', {
+      ...form.value,
+      classId: cls.id,
+      method: form.value.phone ? '电话' : '微信',
+      date: new Date().toISOString().slice(0, 10),
+    })
     list.value.unshift(r)
     showAdd.value = false
     form.value = { studentName: '', parentName: '', relation: '', phone: '', wechat: '', content: '' }
@@ -74,12 +149,16 @@ async function del(p) {
 
 <style scoped>
 .page { padding: 24rpx; }
+.filter { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.picker-val { font-size: 26rpx; color: #4a3f35; background: #fff; border-radius: 30rpx; padding: 12rpx 24rpx; border: 1px solid #eee; }
+.count { margin-left: auto; font-size: 24rpx; color: #9aa0a6; }
 .bar { text-align: right; margin-bottom: 16rpx; }
 .add { font-size: 28rpx; color: #e6a23c; font-weight: 600; }
 .list { background: #fff; border-radius: 16rpx; padding: 10rpx 24rpx; }
 .c { padding: 18rpx 0; border-bottom: 1px solid #f3f3f3; }
-.top { display: flex; gap: 12rpx; align-items: center; }
+.top { display: flex; gap: 12rpx; align-items: center; flex-wrap: wrap; }
 .stu { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.cls { font-size: 20rpx; color: #409eff; background: #e8f1fb; padding: 4rpx 14rpx; border-radius: 20rpx; }
 .rel { font-size: 24rpx; color: #9aa0a6; }
 .meta { font-size: 24rpx; color: #9aa0a6; margin: 6rpx 0; }
 .ct { font-size: 26rpx; color: #5a5048; white-space: pre-wrap; }
@@ -89,14 +168,19 @@ async function del(p) {
 .a.del { color: #e06c75; }
 .empty { text-align: center; color: #9aa0a6; padding: 40rpx 0; }
 .sheet { margin-top: 16rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
+.row { display: flex; gap: 14rpx; margin-bottom: 14rpx; }
+.half { flex: 1; }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
+.inp.picker { color: #4a3f35; line-height: 44rpx; }
 .area { height: 110rpx; }
 .ok { background: #07c160; color: #fff; border-radius: 50rpx; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
-.dark .list, .dark .sheet { background: var(--c-card); }
+.dark .picker-val, .dark .list, .dark .sheet { background: var(--c-card); color: var(--c-title); border-color: var(--c-border); }
+.dark .picker-val { color: var(--c-title); }
 .dark .stu { color: var(--c-title); }
 .dark .ct { color: var(--c-sub); }
 .dark .c { border-color: var(--c-input-border); }
 .dark .inp { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
+.dark .cls { background: var(--c-card2); color: #6db3f2; }
 </style>

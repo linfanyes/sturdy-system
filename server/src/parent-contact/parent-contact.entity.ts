@@ -5,6 +5,8 @@ import { BaseEntity } from '../common/entities/base.entity'
 export class ParentContact extends BaseEntity {
   @Column() studentId: string
   @Column() studentName: string
+  // 班级隔离键：写入时绑定学生所在班级，支持按班级过滤
+  @Column({ default: '' }) classId: string
   @Column() parentName: string
   @Column() relation: string
   @Column() phone: string
