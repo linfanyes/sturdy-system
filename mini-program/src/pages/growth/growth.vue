@@ -43,7 +43,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -76,9 +76,13 @@ function chipStyle(t) {
 }
 
 async function load() {
-  list.value = await api.get('/growth-entries')
+  list.value = await api.getList('/growth-entries', { loading: true, loadingText: '加载档案' })
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 async function add() {
   if (!form.value.studentName || !form.value.title)

@@ -63,7 +63,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -82,11 +82,15 @@ const totalClasses = computed(() => list.value.reduce((s, l) => s + (l.classCoun
 const totalHomework = computed(() => list.value.reduce((s, l) => s + (l.homeworkCount || 0), 0))
 
 async function load() {
-  const arr = await api.get('/work-logs')
+  const arr = await api.getList('/work-logs', { loading: true, loadingText: '加载工作日志' })
   arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   list.value = arr
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function openCreate() {
   editing.value = null

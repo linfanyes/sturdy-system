@@ -38,6 +38,7 @@
         </view>
       </view>
       <view v-if="!shown.length" class="empty">暂无学生，点下方添加或批量导入</view>
+      <view v-if="hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
     </view>
 
     <view v-if="batchMode && selected.size" class="batchbar">
@@ -126,8 +127,8 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
-import { onShow, onLoad } from '@dcloudio/uni-app'
+import { ref, computed, nextTick, watch } from 'vue'
+import { onShow, onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -144,7 +145,10 @@ const sortBy = ref('studentNo')
 const sortLabel = computed(() => sortOpts[sortVals.indexOf(sortBy.value)])
 const batchMode = ref(false)
 const selected = ref(new Set())
-const shown = computed(() => {
+// 长列表分页：避免大班级一次渲染几十上百项卡顿
+const PAGE_SIZE = 20
+const page = ref(1)
+const shownAll = computed(() => {
   let arr = list.value.filter((s) => s.classId === classId.value)
   const k = kw.value.trim().toLowerCase()
   if (k) arr = arr.filter((s) => (s.name || '').toLowerCase().includes(k) || (s.studentNo || '').toLowerCase().includes(k))
@@ -156,6 +160,11 @@ const shown = computed(() => {
   })
   return arr
 })
+// 实际渲染的切片：前 page * PAGE_SIZE 条
+const shown = computed(() => shownAll.value.slice(0, page.value * PAGE_SIZE))
+const hasMore = computed(() => shown.value.length < shownAll.value.length)
+// 筛选/搜索/排序变化时重置分页
+function resetPage() { page.value = 1 }
 const showForm = ref(false)
 const showImport = ref(false)
 const showTpl = ref(false)
@@ -175,10 +184,17 @@ onLoad((q) => {
 })
 
 async function load() {
-  const all = await api.get('/students')
+  const all = await api.getList('/students', { loading: true, loadingText: '加载学生' })
   list.value = all.filter((s) => s.classId === classId.value)
+  resetPage()
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
+// 筛选/搜索/排序变化时重置分页到第 1 页
+watch([kw, genderFilter, sortBy], () => resetPage())
 
 function toggleForm() {
   showForm.value = !showForm.value
@@ -455,6 +471,7 @@ function drawRadar() {
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .duty { color: #409eff; }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
+.load-more { text-align: center; color: var(--c-accent); padding: 24rpx 0; font-size: 26rpx; border-top: 1px solid var(--c-border); }
 .actions { display: flex; gap: 20rpx; margin-top: 16rpx; }
 .add, .import { flex: 1; border-radius: 50rpx; color: #fff; font-size: 28rpx; }
 .add { background: var(--c-accent); }

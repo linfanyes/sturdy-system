@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -62,9 +62,13 @@ const selName = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { loading: true, loadingText: '加载分组班级' })
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id

@@ -37,7 +37,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -58,7 +58,7 @@ function photos(it) {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -66,6 +66,10 @@ async function loadList() {
   list.value = (await api.get('/class-activities')).filter((x) => x.classId === classId.value)
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; loadList() }
 
 function pickImg() {

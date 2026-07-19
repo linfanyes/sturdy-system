@@ -57,7 +57,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -170,7 +170,7 @@ function md2html(src) {
 }
 
 async function load() {
-  const arr = await api.get('/notes')
+  const arr = await api.getList('/notes', { loading: true, loadingText: '加载笔记' })
   arr.sort((a, b) => {
     if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1
     return (b.updatedAt || '').localeCompare(a.updatedAt || '')
@@ -178,6 +178,10 @@ async function load() {
   list.value = arr
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function countOf(t) {
   if (t === '全部') return list.value.length

@@ -65,7 +65,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -100,7 +100,7 @@ const flatSeats = computed(() => {
 const pickOpts = computed(() => ['（清空座位）', ...students.value.map((s) => s.name)])
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) {
     layouts.value = (await api.get('/seat-layouts')).filter((l) => l.classId === classId.value)
     const all = await api.get('/students')
@@ -108,6 +108,10 @@ async function load() {
   }
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id

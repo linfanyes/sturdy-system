@@ -60,7 +60,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -95,12 +95,16 @@ const selClassName = computed(() => {
 })
 
 async function load() {
-  list.value = await api.get('/exams')
-  classes.value = await api.get('/classes')
+  list.value = await api.getList('/exams', { loading: true, loadingText: '加载考试' })
+  classes.value = await api.getList('/classes', { silent: true })
   const pub = await api.get('/config/public')
   subjects.value = pub.defaultSubjects || []
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function toggle(s) {
   const arr = form.value.subjects

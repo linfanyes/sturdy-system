@@ -116,7 +116,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -184,20 +184,24 @@ const subjectOpts = ref([])
 
 async function load() {
   const [cs, es, pub, gs] = await Promise.all([
-    api.get('/classes'),
-    api.get('/exams'),
+    api.getList('/classes', { silent: true }),
+    api.getList('/exams', { silent: true }),
     api.get('/config/public'),
-    api.get('/grades'),
+    api.getList('/grades', { loading: true, loadingText: '加载成绩' }),
   ])
   classes.value = cs
   exams.value = es
-  pubSubjects.value = pub.defaultSubjects || []
+  pubSubjects.value = (pub && pub.defaultSubjects) || []
   grades.value = gs
   classOpts.value = cs.map((c) => c.name)
   rebuildExamOpts()
 }
 
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function rebuildExamOpts() {
   examOpts.value = exams.value
@@ -240,7 +244,7 @@ function onSubject(e) {
 }
 
 async function loadStudents() {
-  const all = await api.get('/students')
+  const all = await api.getList('/students', { silent: true })
   students.value = all.filter((s) => s.classId === classId.value)
 }
 

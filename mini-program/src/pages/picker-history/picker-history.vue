@@ -21,7 +21,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -29,12 +29,16 @@ const list = ref([])
 const classMap = ref({})
 
 async function load() {
-  const classes = await api.get('/classes')
+  const classes = await api.getList('/classes', { silent: true })
   classMap.value = {}
   for (const c of classes) classMap.value[c.id] = c.name
-  list.value = await api.get('/picker-history')
+  list.value = await api.getList('/picker-history', { loading: true, loadingText: '加载抽签历史' })
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 const groups = computed(() => {
   const m = {}

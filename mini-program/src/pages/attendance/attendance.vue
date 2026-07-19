@@ -46,7 +46,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -78,7 +78,7 @@ const stats = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) await loadStudents()
 }
 async function loadStudents() {
@@ -86,6 +86,10 @@ async function loadStudents() {
   await loadAtt()
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id

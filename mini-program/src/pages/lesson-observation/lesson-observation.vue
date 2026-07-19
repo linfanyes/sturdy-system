@@ -59,7 +59,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -81,12 +81,16 @@ function today() {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
-  const arr = await api.get('/lesson-observations')
+  classes.value = await api.getList('/classes', { silent: true })
+  const arr = await api.getList('/lesson-observations', { loading: true, loadingText: '加载听课' })
   arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   list.value = arr
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function pickClass(ev) {
   const c = classes.value[ev.detail.value]

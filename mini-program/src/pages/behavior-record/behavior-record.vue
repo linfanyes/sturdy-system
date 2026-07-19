@@ -63,7 +63,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -102,11 +102,15 @@ function today() {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) await loadStudents()
-  records.value = await api.get('/behavior-records')
+  records.value = await api.getList('/behavior-records', { loading: true, loadingText: '加载行为记录' })
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 async function loadStudents() {
   students.value = (await api.get('/students')).filter((s) => s.classId === classId.value)

@@ -39,7 +39,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -59,8 +59,12 @@ const sorted = computed(() => [...list.value].sort((a, b) => {
   return (a.date || '').localeCompare(b.date || '')
 }))
 
-async function load() { list.value = await api.get('/todos') }
+async function load() { list.value = await api.getList('/todos', { loading: true, loadingText: '加载待办' }) }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function openCreate() {
   editing.value = null

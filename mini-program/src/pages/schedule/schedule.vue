@@ -122,7 +122,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
 
@@ -182,7 +182,7 @@ function weekLabel(v) {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   await loadItems()
 }
@@ -207,6 +207,10 @@ function switchMode(m) {
   loadItems()
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id

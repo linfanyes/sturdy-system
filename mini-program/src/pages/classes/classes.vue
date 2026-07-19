@@ -120,7 +120,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -152,9 +152,13 @@ const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.va
 const term = computed(() => years[form.value.yearIdx] + quarters[form.value.quarterIdx] + '学期')
 
 async function load() {
-  list.value = await api.get('/classes')
+  list.value = await api.getList('/classes', { loading: true, loadingText: '加载班级' })
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function open(c) {
   uni.navigateTo({ url: `/pages/students/students?classId=${c.id}&name=${encodeURIComponent(c.name)}` })

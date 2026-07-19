@@ -69,7 +69,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -105,7 +105,7 @@ function safeParse(s) {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -115,6 +115,10 @@ async function loadList() {
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; activeAlbum.value = ''; loadList() }
 
 function preview(src) {

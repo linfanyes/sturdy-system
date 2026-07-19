@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -149,11 +149,15 @@ function teachSummary(t) {
 }
 
 async function load() {
-  const [t, c] = await Promise.all([api.get('/teachers'), api.get('/classes')])
+  const [t, c] = await Promise.all([api.getList('/teachers', { loading: true, loadingText: '加载通讯录' }), api.getList('/classes', { silent: true })])
   list.value = t || []
   classes.value = c || []
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 
 function call(p) {
   uni.makePhoneCall({ phoneNumber: p, fail: () => {} })

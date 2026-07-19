@@ -45,7 +45,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -67,7 +67,7 @@ const totalOut = computed(() => list.value.filter((x) => Number(x.amount) < 0).r
 const balance = computed(() => totalIn.value + totalOut.value)
 
 async function load() {
-  classes.value = await api.get('/classes')
+  classes.value = await api.getList('/classes', { silent: true })
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -75,6 +75,10 @@ async function loadList() {
   list.value = (await api.get('/class-expenses')).filter((x) => x.classId === classId.value)
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; loadList() }
 
 async function add() {

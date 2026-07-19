@@ -130,7 +130,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
 
@@ -241,6 +241,10 @@ onShow(() => {
   currentMood.value = uni.getStorageSync('mood_' + todayStr) || ''
   selKeys.value = uni.getStorageSync('dash_widgets') || widgetCands.slice(0, 4).map((w) => w.label)
   loadAll()
+})
+onPullDownRefresh(async () => {
+  await loadAll()
+  uni.stopPullDownRefresh()
 })
 
 // 待办交互
