@@ -4,6 +4,14 @@ const TOKEN_KEY = 'g_token'
 const USER_KEY = 'g_user'
 const THEME_KEY = 'g_theme'
 const SCHEME_KEY = 'g_scheme'
+const FONT_KEY = 'g_fontsize'
+
+// 字体大小档位（对齐 web 三档）
+export const FONT_SIZES = [
+  { value: 'sm', label: '小', scale: 0.9 },
+  { value: 'md', label: '标准', scale: 1 },
+  { value: 'lg', label: '大', scale: 1.15 },
+]
 
 // 主题色板（对齐 web 4 色）：奶黄/薄荷/樱花/天蓝
 export const SCHEMES = [
@@ -25,6 +33,7 @@ const sysDark =
 export const theme = reactive({
   mode: uni.getStorageSync(THEME_KEY) || (sysDark ? 'dark' : 'light'),
   colorScheme: uni.getStorageSync(SCHEME_KEY) || 'butter',
+  fontSize: uni.getStorageSync(FONT_KEY) || 'md',
 })
 
 export function setTheme(mode) {
@@ -66,6 +75,7 @@ export function applyAppearance(mode) {
 export function initTheme() {
   applyAppearance(theme.mode)
   applyColorScheme(theme.colorScheme)
+  applyFontSize(theme.fontSize)
 }
 
 // 应用主题色：同步全局 tabBar 选中色，使主题色在全局可见（对齐 web 强调色变化）
@@ -89,6 +99,21 @@ export function setColorScheme(scheme) {
   theme.colorScheme = scheme
   uni.setStorageSync(SCHEME_KEY, scheme)
   applyColorScheme(scheme)
+}
+
+// 字体大小：sm / md / lg
+export function setFontSize(size) {
+  if (!FONT_SIZES.find((x) => x.value === size)) size = 'md'
+  theme.fontSize = size
+  uni.setStorageSync(FONT_KEY, size)
+  applyFontSize(size)
+}
+
+// 应用字体大小：通过 setTabBarStyle 不可调字体，仅作为页面 CSS 变量来源
+export function applyFontSize(size) {
+  const f = FONT_SIZES.find((x) => x.value === size) || FONT_SIZES[1]
+  // 仅作记录，由页面 root view 的 :class 控制 CSS 变量缩放
+  theme.fontScale = f.scale
 }
 
 export function getToken() {

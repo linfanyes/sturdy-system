@@ -66,7 +66,39 @@
     <view class="card">
       <view class="card-h">数据管理</view>
       <view class="dm" @click="exportData"><text class="dm-ic" style="background:#e8f9e8">📤</text><view><text class="dm-t">导出数据</text><text class="dm-s">复制全部数据为 JSON</text></view></view>
+      <view class="dm" @click="importData"><text class="dm-ic" style="background:#e8f0fe">📥</text><view><text class="dm-t">导入数据</text><text class="dm-s">从 JSON 文件导入，覆盖现有数据</text></view></view>
       <view class="dm" @click="resetData"><text class="dm-ic" style="background:#fde8ea">🗑️</text><view><text class="dm-t" style="color:#e06c75">清空所有数据</text><text class="dm-s">不可恢复，请先导出</text></view></view>
+    </view>
+
+    <!-- 备份与恢复：服务端定时/手动备份，支持一键恢复 -->
+    <view class="card">
+      <view class="card-h">备份与恢复</view>
+      <view class="row">
+        <view>
+          <text class="lab">⏰ 自动备份</text>
+          <text class="dm-s" style="margin-top:4rpx">每 2 小时自动备份一次，最多保留 10 条</text>
+        </view>
+        <switch :checked="autoBackupOn" @change="toggleAutoBackup" color="#3fd07f" />
+      </view>
+      <view class="row" v-if="autoBackupOn">
+        <text class="lab">上次自动备份</text>
+        <text class="bk-time">{{ lastAutoText }}</text>
+      </view>
+      <button class="bk-btn" :disabled="bkSaving" @click="createBackup">{{ bkSaving ? '备份中…' : '📥 立即创建备份' }}</button>
+      <view class="bk-list" v-if="backups.length">
+        <view class="bk-item" v-for="b in backups" :key="b.id">
+          <view class="bk-info">
+            <text class="bk-label">{{ b.label || '未命名备份' }}</text>
+            <text class="bk-meta">{{ b.type === 'auto' ? '自动' : '手动' }} · {{ fmtTime(b.createdAt) }}</text>
+          </view>
+          <view class="bk-acts">
+            <text class="bk-act" @click="restoreBackup(b)">恢复</text>
+            <text class="bk-act danger" @click="deleteBackup(b)">删除</text>
+          </view>
+        </view>
+      </view>
+      <view class="bk-empty" v-else-if="!bkLoading">暂无备份记录</view>
+      <view class="bk-empty" v-else>加载中…</view>
     </view>
 
     <button class="logout" @click="logout">退出登录</button>
@@ -78,12 +110,20 @@ import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { isPhone, isEmail } from '../../common/validators'
-import { theme, setTheme, setUser, setColorScheme, cycleColorScheme, logout as doLogout, SCHEMES } from '../../common/store'
+import { theme, auth, setTheme, setUser, setColorScheme, cycleColorScheme, logout as doLogout, SCHEMES } from '../../common/store'
 
 const me = reactive({})
 const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '', phone: '', email: '' })
 const editing = ref(false)
 const saving = ref(false)
+
+// 备份历史与自动备份相关状态
+const backups = ref([])
+const bkLoading = ref(false)
+const bkSaving = ref(false)
+const autoBackupOn = ref(false)
+const lastAutoAt = ref(0)
+const lastAutoText = computed(() => lastAutoAt.value ? fmtTime(lastAutoAt.value) : '尚未触发')
 
 const subjectOpts = ['语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育', '综合实践', '信息技术']
 const avatarOpts = ['🍎', '👩‍🏫', '🧑‍🏫', '🧑', '👩', '👨‍🏫', '🌟', '🌈', '📚', '☕']
@@ -111,6 +151,11 @@ async function load() {
   } catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }
+  // 用户信息加载完成后，并行加载备份列表和自动备份开关
+  loadAutoBackupPref()
+  loadBackups()
+  // 若开启了自动备份，按 2 小时阈值决定是否触发一次
+  maybeAutoBackup()
 }
 onShow(load)
 
@@ -191,6 +236,98 @@ async function exportData() {
   }
 }
 
+// 导入：从 JSON 文件读取数据并批量写入后端
+// 流程：首次 modal 确认 → 选 .json 文件 → 读取并解析 → 第二次 modal 显示摘要 → 批量写入
+async function importData() {
+  uni.showModal({
+    title: '导入数据',
+    content: '导入会覆盖现有数据，确定？',
+    success: (r) => {
+      if (!r.confirm) return
+      uni.chooseMessageFile({
+        count: 1,
+        type: 'file',
+        extension: ['json'],
+        success: (res) => {
+          const f = res.tempFiles[0]
+          uni.showLoading({ title: '读取中…' })
+          uni.getFileSystemManager().readFile({
+            filePath: f.path,
+            encoding: 'utf-8',
+            success: async (rr) => {
+              try {
+                const data = JSON.parse(rr.data)
+                await doImport(data)
+              } catch (e) {
+                uni.hideLoading()
+                uni.showToast({ title: 'JSON 解析失败：' + (e.message || ''), icon: 'none' })
+              }
+            },
+            fail: () => {
+              uni.hideLoading()
+              uni.showToast({ title: '文件读取失败', icon: 'none' })
+            },
+          })
+        },
+      })
+    },
+  })
+}
+
+// 执行批量导入：构建各资源写入任务，弹出摘要确认后并行执行
+async function doImport(data) {
+  // 收集所有写入任务（每项是一个返回 Promise 的函数，便于按需触发）
+  const tasks = []
+  if (data.user) tasks.push(() => api.put('/users/me', data.user))
+  if (data.aiSettings) tasks.push(() => api.put('/config/ai', data.aiSettings))
+  if (Array.isArray(data.classes)) data.classes.forEach(c => tasks.push(() => api.post('/classes', c)))
+  if (Array.isArray(data.students)) data.students.forEach(s => tasks.push(() => api.post('/students', s)))
+  if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => api.post('/notes', n)))
+  if (Array.isArray(data.teachers)) data.teachers.forEach(t => tasks.push(() => api.post('/teachers', t)))
+  if (Array.isArray(data.exams)) data.exams.forEach(e => tasks.push(() => api.post('/exams', e)))
+  if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => api.post('/awards', a)))
+  if (Array.isArray(data.todos)) data.todos.forEach(t => tasks.push(() => api.post('/todos', t)))
+  // 成绩使用 merge 接口合并写入
+  if (Array.isArray(data.grades)) data.grades.forEach(g => tasks.push(() => api.post('/grades/merge', g)))
+
+  // 构建按类别统计的摘要文本
+  const parts = []
+  if (data.user) parts.push('用户资料')
+  if (data.aiSettings) parts.push('AI 配置')
+  if (Array.isArray(data.classes) && data.classes.length) parts.push(`${data.classes.length} 个班级`)
+  if (Array.isArray(data.students) && data.students.length) parts.push(`${data.students.length} 个学生`)
+  if (Array.isArray(data.grades) && data.grades.length) parts.push(`${data.grades.length} 条成绩`)
+  if (Array.isArray(data.notes) && data.notes.length) parts.push(`${data.notes.length} 条笔记`)
+  if (Array.isArray(data.teachers) && data.teachers.length) parts.push(`${data.teachers.length} 位教师`)
+  if (Array.isArray(data.exams) && data.exams.length) parts.push(`${data.exams.length} 个考试`)
+  if (Array.isArray(data.awards) && data.awards.length) parts.push(`${data.awards.length} 条奖惩`)
+  if (Array.isArray(data.todos) && data.todos.length) parts.push(`${data.todos.length} 条待办`)
+
+  // 读取阶段已完成，关闭读取 loading，避免确认弹窗与 loading 叠加
+  uni.hideLoading()
+
+  if (tasks.length === 0) {
+    uni.showToast({ title: '文件中无可导入数据', icon: 'none' })
+    return
+  }
+
+  const summary = parts.length ? parts.join('、') : `${tasks.length} 条`
+  uni.showModal({
+    title: '确认导入',
+    content: `将导入 ${summary}，共 ${tasks.length} 条，确定？`,
+    success: async (m) => {
+      if (!m.confirm) return
+      uni.showLoading({ title: '导入中…', mask: true })
+      // 触发所有任务并用 batchRun 并行执行，统计成功/失败数
+      const { success, failed } = await batchRun(tasks.map(fn => fn()))
+      uni.hideLoading()
+      uni.showToast({ title: `成功 ${success} 失败 ${failed}`, icon: failed === 0 ? 'success' : 'none' })
+      // 有成功写入时刷新数据
+      if (success > 0) load()
+    },
+  })
+}
+
 function resetData() {
   uni.showModal({
     title: '清空所有数据', content: '此操作不可恢复，建议先导出备份。确定继续吗？',
@@ -237,6 +374,117 @@ function logout() {
     },
   })
 }
+
+// —— 备份与恢复 ——
+// 时间格式化：备份列表/上次自动备份均使用同一格式
+function fmtTime(t) {
+  if (!t) return '-'
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return '-'
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+async function loadBackups() {
+  bkLoading.value = true
+  try {
+    const list = await api.get('/backups')
+    backups.value = Array.isArray(list) ? list : []
+  } catch (e) {
+    // 静默：备份接口失败不应阻塞 Profile 页加载
+    backups.value = []
+  } finally {
+    bkLoading.value = false
+  }
+}
+
+async function createBackup() {
+  if (bkSaving.value) return
+  bkSaving.value = true
+  try {
+    await api.post('/backups', { label: '手动备份 ' + fmtTime(Date.now()) })
+    uni.showToast({ title: '已创建备份', icon: 'success' })
+    await loadBackups()
+  } catch (e) {
+    uni.showToast({ title: '备份失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    bkSaving.value = false
+  }
+}
+
+// 恢复备份：拉取 payload → JSON 解析 → 复用 doImport 批量写入
+async function restoreBackup(b) {
+  uni.showModal({
+    title: '恢复备份',
+    content: `将用「${b.label || '备份'}」覆盖现有数据，确定？`,
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '恢复中…', mask: true })
+      try {
+        const rec = await api.get('/backups/' + b.id)
+        const raw = rec?.payload
+        if (!raw) throw new Error('备份内容为空')
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw
+        // doImport 内部会关闭 loading 并弹摘要确认
+        await doImport(data)
+        await load()
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '恢复失败：' + (e.message || ''), icon: 'none' })
+      }
+    },
+  })
+}
+
+async function deleteBackup(b) {
+  uni.showModal({
+    title: '删除备份',
+    content: `确定删除「${b.label || '备份'}」？`,
+    success: async (r) => {
+      if (!r.confirm) return
+      try {
+        await api.del('/backups/' + b.id)
+        uni.showToast({ title: '已删除', icon: 'none' })
+        await loadBackups()
+      } catch (e) {
+        uni.showToast({ title: '删除失败：' + (e.message || ''), icon: 'none' })
+      }
+    },
+  })
+}
+
+// 自动备份开关：按用户 ID 持久化到本地存储，避免多账号串扰
+function toggleAutoBackup(e) {
+  autoBackupOn.value = e.detail.value
+  const uid = (auth && auth.id) || 'default'
+  uni.setStorageSync('autoBackup_' + uid, autoBackupOn.value ? '1' : '0')
+  // 开启时立即尝试触发一次（受 2 小时阈值控制）
+  if (autoBackupOn.value) maybeAutoBackup(true)
+}
+
+function loadAutoBackupPref() {
+  const uid = (auth && auth.id) || 'default'
+  autoBackupOn.value = uni.getStorageSync('autoBackup_' + uid) === '1'
+  lastAutoAt.value = +(uni.getStorageSync('lastAutoBackupAt_' + uid) || 0)
+}
+
+// 自动备份触发：开启后每 2 小时一次，由 onShow 调用；force=true 跳过阈值检查
+async function maybeAutoBackup(force = false) {
+  if (!autoBackupOn.value && !force) return
+  const now = Date.now()
+  const TWO_HOURS = 2 * 60 * 60 * 1000
+  if (!force && now - lastAutoAt.value < TWO_HOURS) return
+  try {
+    await api.post('/backups/auto')
+    const uid = (auth && auth.id) || 'default'
+    uni.setStorageSync('lastAutoBackupAt_' + uid, String(now))
+    lastAutoAt.value = now
+    // 自动备份成功后静默刷新列表（不弹 toast，避免打扰）
+    loadBackups()
+  } catch (e) {
+    /* 静默失败，不影响主流程 */
+  }
+}
 </script>
 
 <style scoped>
@@ -282,6 +530,20 @@ function logout() {
 .btn-c { flex: 1; background: var(--c-card2); color: #5a5048; border-radius: 50rpx; }
 .btn-s { flex: 1; background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 .logout { background: var(--c-card2); color: var(--c-danger); border-radius: 50rpx; margin-top: 10rpx; }
+/* 备份与恢复 */
+.bk-time { font-size: 24rpx; color: var(--c-sub); }
+.bk-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin: 16rpx 0; font-size: 28rpx; }
+.bk-btn[disabled] { opacity: 0.6; }
+.bk-list { margin-top: 8rpx; max-height: 720rpx; overflow-y: auto; }
+.bk-item { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; border-bottom: 1px solid var(--c-card2); }
+.bk-item:last-child { border-bottom: none; }
+.bk-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.bk-label { font-size: 26rpx; color: var(--c-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-meta { font-size: 22rpx; color: var(--c-sub); }
+.bk-acts { display: flex; gap: 16rpx; flex: 0 0 auto; }
+.bk-act { font-size: 26rpx; color: var(--c-accent); padding: 4rpx 12rpx; }
+.bk-act.danger { color: var(--c-danger); }
+.bk-empty { text-align: center; font-size: 24rpx; color: var(--c-sub); padding: 30rpx 0; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .hd, .dark .card, .dark .sheet { background: var(--c-card); }
@@ -292,4 +554,7 @@ function logout() {
 .dark .inp, .dark .sb, .dark .avopt { background: var(--c-input); color: var(--c-title); }
 .dark .btn-c { background: var(--c-card2); color: var(--c-title); }
 .dark .logout { background: var(--c-card2); }
+.dark .bk-item { border-color: var(--c-input-border); }
+.dark .bk-label { color: var(--c-title); }
+.dark .bk-meta, .dark .bk-time, .dark .bk-empty { color: var(--c-sub); }
 </style>

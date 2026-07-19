@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
 import axios from 'axios'
 import https from 'node:https'
 import * as path from 'path'
@@ -7,6 +9,14 @@ import mammoth from 'mammoth'
 import { createCanvas } from '@napi-rs/canvas'
 import pdfParse = require('pdf-parse/lib/pdf-parse.js')
 import { ConfigService } from '../config/config.service'
+import { User } from '../users/user.entity'
+import { ClassItem } from '../classes/class.entity'
+import { Student } from '../students/student.entity'
+import { Teacher } from '../teacher/teacher.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
+import { AwardRecord } from '../award/award.entity'
+import { NoteItem } from '../notes/notes.entity'
 
 // pdfjs 用 legacy 构建（Node 友好），用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -26,7 +36,17 @@ const tlsAgent = new https.Agent({ rejectUnauthorized: false })
 
 @Injectable()
 export class AiService {
-  constructor(private readonly cfg: ConfigService) {}
+  constructor(
+    private readonly cfg: ConfigService,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
+    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
+    @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
+    @InjectRepository(AwardRecord) private readonly awardRepo: Repository<AwardRecord>,
+    @InjectRepository(NoteItem) private readonly noteRepo: Repository<NoteItem>,
+  ) {}
 
   private async buildSettings(teacherId: string) {
     const s = await this.cfg.getAiSettings(teacherId)
@@ -185,13 +205,25 @@ export class AiService {
 
   /**
    * 组装发给模型的消息：
-   * 1) 系统提示 + 历史消息；
+   * 1) 系统提示 + 自动注入的本地上下文（教师/班级/学生/成绩等）+ 历史消息；
    * 2) 若本次携带 files，把解析后的文本作为一条 text 部分追加到最后一条用户消息（没有则新建一条）。
    * 图片以 OpenAI 视觉格式（image_url）原样保留，模型选择逻辑不变。
    */
-  private async buildMessages(body: any, s: any): Promise<any[]> {
+  private async buildMessages(body: any, s: any, teacherId?: string): Promise<any[]> {
+    const sysParts: string[] = []
+    if (s.systemPrompt) sysParts.push(s.systemPrompt)
+    // 自动注入本地上下文（对齐 web buildContext，由后端构造）
+    if (teacherId) {
+      try {
+        const ctx = await this.buildLocalContext(teacherId)
+        if (ctx) sysParts.push(ctx)
+      } catch {
+        /* 上下文构造失败不影响主流程 */
+      }
+    }
+    const sysText = sysParts.filter(Boolean).join('\n\n') || '你是一位耐心、专业的班主任助手'
     const messages: any[] = [
-      { role: 'system', content: s.systemPrompt || '你是一位耐心、专业的班主任助手' },
+      { role: 'system', content: sysText },
       ...(body.messages || []),
     ]
     if (body?.files?.length) {
@@ -216,6 +248,64 @@ export class AiService {
   }
 
   /**
+   * 构造本地上下文（教师本人 + 班级 + 学生 + 教师通讯录 + 最近成绩 + 考试 + 奖惩 + 笔记）
+   * 数据量上限做了控制，避免 token 过大。
+   */
+  private async buildLocalContext(teacherId: string): Promise<string> {
+    const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
+    // 教师本人
+    const u = await this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null)
+    if (u) {
+      lines.push(
+        `# 当前教师\n姓名: ${u.name || '-'} | 学校: ${u.school || '-'} | 任教学科: ${u.subject || '-'} | 任教学期: ${u.term || '-'}`,
+      )
+    }
+    // 班级（限 20 个）
+    const classes = (await this.classRepo.find({ take: 20 }).catch(() => [])) as any[]
+    if (classes.length) {
+      lines.push('# 班级列表')
+      lines.push(classes.map((c, i) => `${i + 1}. ${c.name || '-'}（${c.studentCount || '?'}人，班主任：${c.headTeacher || '-'}）`).join('\n'))
+    }
+    // 学生（限 50 个，按班级聚合）
+    const students = (await this.studentRepo.find({ take: 50 }).catch(() => [])) as any[]
+    if (students.length) {
+      lines.push('# 学生名单（最多 50 条）')
+      lines.push(students.map((s) => `- ${s.name || '-'} | 学号: ${s.studentNo || '-'} | 性别: ${s.gender || '-'} | 班级ID: ${s.classId || '-'}`).join('\n'))
+    }
+    // 教师通讯录（限 20 条）
+    const teachers = (await this.teacherRepo.find({ take: 20 }).catch(() => [])) as any[]
+    if (teachers.length) {
+      lines.push('# 教师通讯录（最多 20 条）')
+      lines.push(teachers.map((t) => `- ${t.name || '-'} | 学科: ${t.subject || '-'} | 电话: ${t.phone || '-'}`).join('\n'))
+    }
+    // 最近成绩（限 30 条）
+    const grades = (await this.gradeRepo.find({ take: 30, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
+    if (grades.length) {
+      lines.push('# 最近成绩记录（最多 30 条）')
+      lines.push(grades.map((g) => `- 学生ID: ${g.studentId || '-'} | 科目: ${g.subject || '-'} | 分数: ${g.score ?? '-'} | 考试: ${g.examName || '-'}`).join('\n'))
+    }
+    // 考试（限 10 条）
+    const exams = (await this.examRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
+    if (exams.length) {
+      lines.push('# 最近考试（最多 10 条）')
+      lines.push(exams.map((e) => `- ${e.name || '-'} | 班级ID: ${e.classId || '-'} | 科目: ${(e.subjects || []).join('/')}`).join('\n'))
+    }
+    // 奖惩记录（限 20 条）
+    const awards = (await this.awardRepo.find({ take: 20, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
+    if (awards.length) {
+      lines.push('# 最近奖惩记录（最多 20 条）')
+      lines.push(awards.map((a) => `- ${a.studentName || a.name || '-'} | 类型: ${a.type || '-'} | 等级: ${a.level || '-'} | 时间: ${a.date || '-'}`).join('\n'))
+    }
+    // 笔记（限 10 条）
+    const notes = (await this.noteRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
+    if (notes.length) {
+      lines.push('# 最近笔记（最多 10 条标题）')
+      lines.push(notes.map((n) => `- ${n.title || '-'}`).join('\n'))
+    }
+    return lines.length > 1 ? lines.join('\n\n') : ''
+  }
+
+  /**
    * 流式对话：密钥与服务端配置均在后端，小程序只传消息。
    * onDelta 每收到一段文本回调一次（用于 SSE 推送给前端）。
    */
@@ -226,7 +316,7 @@ export class AiService {
   ): Promise<void> {
     const s = await this.buildSettings(teacherId)
     const model = this.resolveModel(body, s)
-    const messages = await this.buildMessages(body, s)
+    const messages = await this.buildMessages(body, s, teacherId)
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
@@ -282,7 +372,7 @@ export class AiService {
   async chatSync(teacherId: string, body: any): Promise<string> {
     const s = await this.buildSettings(teacherId)
     const model = this.resolveModel(body, s)
-    const messages = await this.buildMessages(body, s)
+    const messages = await this.buildMessages(body, s, teacherId)
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {

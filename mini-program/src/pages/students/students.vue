@@ -70,6 +70,8 @@
       <view class="imp-tip">支持 Excel(.xlsx/.xls) 或 TXT/CSV，每行：姓名,性别,学号,家长姓名,家长电话</view>
       <button class="tpl" @click="showTpl = true">📄 下载/查看模板</button>
       <button class="pick" @click="pickFile">📂 选择文件</button>
+      <button class="pick ai" @click="pickImage" :disabled="aiRecognizing">{{ aiRecognizing ? '识别中…' : '📷 拍照/选图识别' }}</button>
+      <view class="imp-tip ai-tip">用 AI 识别学生名单图片（需后端配置多模态模型）</view>
 
       <view v-if="preview" class="preview">
         <view class="pv-sum">
@@ -133,6 +135,7 @@ import api, { batchRun } from '../../common/request'
 import { isPhone, isStudentNo } from '../../common/validators'
 import { theme } from '../../common/store'
 import { copyText } from '../../common/print'
+import { compressImage } from '../../common/image'
 
 const classId = ref('')
 const className = ref('')
@@ -171,6 +174,8 @@ const showForm = ref(false)
 const showImport = ref(false)
 const showTpl = ref(false)
 const preview = ref(null)
+// AI 识别图片进行中标记：用于按钮 disabled 与文案切换
+const aiRecognizing = ref(false)
 const showProfile = ref(false)
 const profile = ref({})
 const radar = ref({ avg: 0, attRate: 0, behScore: 0, composite: 0, level: '' })
@@ -312,6 +317,53 @@ function pickFile() {
         uni.showToast({ title: '解析失败：' + (e.message || '文件格式错误'), icon: 'none' })
       } finally {
         uni.hideLoading()
+      }
+    },
+    fail: () => {},
+  })
+}
+
+// AI 识图导入（P3-g/h）：选图 → 压缩 → base64 → POST /students/import-ai
+// 返回结构与 /students/import 一致，可直接复用 preview UI 与 commit 函数
+function pickImage() {
+  if (aiRecognizing.value) return
+  uni.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+    sizeType: ['compressed', 'original'],
+    success: async (res) => {
+      const tempPath = res.tempFiles[0].tempFilePath
+      aiRecognizing.value = true
+      uni.showLoading({ title: 'AI 识别中…', mask: true })
+      try {
+        // 离屏 canvas 压缩到 1280px / 质量 80，控制 base64 体积
+        const cmp = await compressImage({
+          src: tempPath,
+          maxWidth: 1280,
+          maxHeight: 1280,
+          quality: 80,
+          fileType: 'jpg',
+        })
+        // 压缩失败时 compressImage 会返回原图路径，统一用结果路径读 base64
+        const compressedPath = cmp?.tempFilePath || tempPath
+        const base64 = await readAsBase64(compressedPath)
+        const r = await api.post('/students/import-ai', {
+          mode: 'image',
+          data: base64,
+          filename: 'student_list.jpg',
+        })
+        preview.value = r
+        if (!r.validCount) {
+          uni.showToast({ title: '未识别到有效学生，请换张图试试', icon: 'none' })
+        } else {
+          uni.showToast({ title: `识别到 ${r.validCount} 名学生`, icon: 'success' })
+        }
+      } catch (e) {
+        uni.showToast({ title: '识别失败：' + (e.message || '请先配置 AI'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+        aiRecognizing.value = false
       }
     },
     fail: () => {},
@@ -497,6 +549,10 @@ function drawRadar() {
 .imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .tpl, .pick { background: var(--c-card); color: #2a6fbb; border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; }
 .pick { background: #409eff; color: #fff; border: none; }
+/* AI 识别按钮使用绿色突出，与普通文件导入区分；disabled 时半透明 */
+.pick.ai { background: var(--c-primary); color: #fff; }
+.pick.ai[disabled] { opacity: 0.6; }
+.ai-tip { margin-top: -8rpx; margin-bottom: 14rpx; }
 .preview { margin-top: 10rpx; border-top: 1px dashed var(--c-border); padding-top: 16rpx; }
 .pv-sum { font-size: 26rpx; color: var(--c-title); }
 .pv-sum .ok { color: var(--c-primary); }

@@ -25,17 +25,35 @@
       </view>
       <view class="field">
         <text class="label">文本模型</text>
-        <input v-model="ai.textModel" placeholder="文本模型" />
+        <picker :range="textModelOpts" :value="textModelIdx" @change="onTextModelPick">
+          <view class="picker-view">{{ textModelOpts[textModelIdx] }}</view>
+        </picker>
+        <input v-if="textModelIdx === textModelOpts.length - 1" v-model="ai.textModel" placeholder="自定义模型名称" />
       </view>
       <view class="field">
         <text class="label">多模态模型</text>
-        <input v-model="ai.visionModel" placeholder="多模态模型" />
+        <picker :range="visionModelOpts" :value="visionModelIdx" @change="onVisionModelPick">
+          <view class="picker-view">{{ visionModelOpts[visionModelIdx] }}</view>
+        </picker>
+        <input v-if="visionModelIdx === visionModelOpts.length - 1" v-model="ai.visionModel" placeholder="自定义模型名称" />
+      </view>
+      <view class="field">
+        <text class="label">温度（{{ ai.temperature }}）</text>
+        <input type="digit" v-model="ai.temperature" placeholder="0 - 2" />
+        <slider :value="ai.temperature" :min="0" :max="2" :step="0.1" @change="e => ai.temperature = e.detail.value" activeColor="#07c160" />
       </view>
       <view class="field">
         <text class="label">AI 名字</text>
         <input v-model="ai.aiName" placeholder="AI 名字" />
       </view>
+      <view class="field">
+        <text class="label">系统提示词</text>
+        <textarea v-model="ai.systemPrompt" class="ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
+      </view>
       <view class="hint">文本模型默认 qwen3.7-plus，多模态默认 qwen3-vl-plus，系统会按消息是否含图自动切换。</view>
+      <view class="reset-row">
+        <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
+      </view>
       <button class="save" :disabled="savingAi" @click="saveAi">{{ savingAi ? '保存中…' : '保存 AI 配置' }}</button>
     </view>
 
@@ -47,6 +65,37 @@
           <text class="row-sub">切换后全应用深色配色（含导航栏与底栏）</text>
         </view>
         <switch :checked="theme.mode === 'dark'" color="#07c160" @change="onTheme" />
+      </view>
+      <view class="row">
+        <view class="row-text">
+          <text class="row-name">字体大小</text>
+          <text class="row-sub">小 / 标准 / 大，影响主要文字</text>
+        </view>
+        <view class="font-group">
+          <text
+            v-for="f in FONT_SIZES"
+            :key="f.value"
+            class="font-i"
+            :class="{ on: theme.fontSize === f.value }"
+            @click="onFont(f.value)"
+          >{{ f.label }}</text>
+        </view>
+      </view>
+      <view class="row">
+        <view class="row-text">
+          <text class="row-name">主题色</text>
+          <text class="row-sub">影响 tabBar 选中色与默认强调色</text>
+        </view>
+        <view class="scheme-group">
+          <text
+            v-for="s in SCHEMES"
+            :key="s.value"
+            class="scheme-i"
+            :class="{ on: theme.colorScheme === s.value }"
+            :style="{ background: s.color }"
+            @click="onScheme(s.value)"
+          >{{ s.label }}</text>
+        </view>
       </view>
     </view>
 
@@ -63,10 +112,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, setUser, logout, theme, setTheme } from '../../common/store'
+import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FONT_SIZES, SCHEMES } from '../../common/store'
+
+// AI 模型预设与默认值常量
+const DEFAULT_TEXT_MODELS = ['qwen3.7-plus', 'deepseek-chat', 'deepseek-reasoner']
+const DEFAULT_VISION_MODELS = ['qwen3-vl-plus', 'gpt-4o', 'qwen-vl-max']
+const DEFAULT_TEMPERATURE = 0.7
+const DEFAULT_AI_NAME = '小林子'
+const DEFAULT_SYSTEM_PROMPT =
+  '你是一位亲切、专业的教师助理，名字叫「小林子」。回答要简洁、清晰、有条理。涉及数据时尽量用列表或表格，方便老师快速理解。'
 
 const profile = ref({ name: '', school: '', subjects: [] })
 const ai = ref({})
@@ -74,16 +131,83 @@ const app = ref([])
 const savingProfile = ref(false)
 const savingAi = ref(false)
 
+// 下拉选项 = 预设模型 + "自定义"
+const textModelOpts = [...DEFAULT_TEXT_MODELS, '自定义']
+const visionModelOpts = [...DEFAULT_VISION_MODELS, '自定义']
+
+// 当前选中索引：命中预设返回其索引，否则返回最后一项（自定义）
+const textModelIdx = computed(() => {
+  const i = DEFAULT_TEXT_MODELS.indexOf(ai.value.textModel)
+  return i >= 0 ? i : textModelOpts.length - 1
+})
+const visionModelIdx = computed(() => {
+  const i = DEFAULT_VISION_MODELS.indexOf(ai.value.visionModel)
+  return i >= 0 ? i : visionModelOpts.length - 1
+})
+
+// 选择预设模型：选"自定义"时清空让用户输入新值，否则设为对应预设
+function onTextModelPick(e) {
+  const idx = Number(e.detail.value)
+  if (idx === textModelOpts.length - 1) {
+    ai.value.textModel = ''
+  } else {
+    ai.value.textModel = DEFAULT_TEXT_MODELS[idx]
+  }
+}
+function onVisionModelPick(e) {
+  const idx = Number(e.detail.value)
+  if (idx === visionModelOpts.length - 1) {
+    ai.value.visionModel = ''
+  } else {
+    ai.value.visionModel = DEFAULT_VISION_MODELS[idx]
+  }
+}
+
+// 恢复默认：保留 baseUrl 和 apiKey 不动，其它字段重置为默认值
+function resetAiDefaults() {
+  const { baseUrl, apiKey } = ai.value
+  ai.value = {
+    baseUrl,
+    apiKey,
+    textModel: DEFAULT_TEXT_MODELS[0],
+    visionModel: DEFAULT_VISION_MODELS[0],
+    temperature: DEFAULT_TEMPERATURE,
+    aiName: DEFAULT_AI_NAME,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  }
+}
+
 async function load() {
   const me = await api.get('/users/me')
   profile.value = { name: me.name, school: me.school, subjects: me.subjects || [] }
-  ai.value = await api.get('/config/ai')
+  const a = await api.get('/config/ai')
+  // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
+  ai.value = {
+    baseUrl: a.baseUrl ?? '',
+    apiKey: a.apiKey ?? '',
+    textModel: a.textModel ?? DEFAULT_TEXT_MODELS[0],
+    visionModel: a.visionModel ?? DEFAULT_VISION_MODELS[0],
+    temperature:
+      typeof a.temperature === 'number' && !isNaN(a.temperature)
+        ? a.temperature
+        : DEFAULT_TEMPERATURE,
+    aiName: a.aiName ?? DEFAULT_AI_NAME,
+    systemPrompt: a.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+  }
   app.value = await api.get('/config/app')
 }
 onShow(load)
 
 function onTheme(e) {
   setTheme(e.detail.value ? 'dark' : 'light')
+}
+function onFont(v) {
+  setFontSize(v)
+  uni.showToast({ title: '已切换字体', icon: 'none' })
+}
+function onScheme(v) {
+  setColorScheme(v)
+  uni.showToast({ title: '已切换主题色', icon: 'none' })
 }
 async function saveProfile() {
   if (savingProfile.value) return
@@ -145,5 +269,16 @@ function doLogout() {
 .row-text { flex: 1; padding-right: 20rpx; }
 .row-name { display: block; font-size: 28rpx; color: var(--c-text); font-weight: 600; }
 .row-sub { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; line-height: 1.5; }
+.picker-view { height: 80rpx; line-height: 80rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; font-size: 28rpx; color: var(--c-text); background: var(--c-input); box-sizing: border-box; }
+.picker-view + input { margin-top: 12rpx; }
+.ta { width: 100%; min-height: 220rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-text); background: var(--c-input); box-sizing: border-box; line-height: 1.6; }
+.ghost-btn { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.reset-row { margin-top: 16rpx; margin-bottom: 16rpx; }
+.font-group { display: flex; gap: 8rpx; }
+.font-i { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 24rpx; background: var(--c-card2); color: var(--c-sub); }
+.font-i.on { background: var(--c-primary); color: #fff; }
+.scheme-group { display: flex; gap: 8rpx; }
+.scheme-i { font-size: 22rpx; padding: 8rpx 16rpx; border-radius: 24rpx; color: #fff; opacity: 0.55; }
+.scheme-i.on { opacity: 1; box-shadow: 0 0 0 4rpx rgba(255,255,255,0.6); }
 .logout { background: var(--c-danger); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

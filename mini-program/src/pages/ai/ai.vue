@@ -26,6 +26,7 @@
           <view v-if="m.role === 'assistant' && !m.loading" class="bubble-ops">
             <text v-if="m.error" class="retry-btn" @click="retryLast">🔄 重试</text>
             <text class="copy-btn" @click="copyText(m.content)">📋 复制</text>
+            <text class="copy-btn" @click="addToNotes(m)">📝 存笔记</text>
           </view>
           <view v-if="m.role === 'user' && (m.files?.length || m.image)" class="attach">
             <view v-if="m.image" class="attach-img"><image :src="m.image" mode="aspectFill" /></view>
@@ -101,6 +102,12 @@
     <view class="mask" v-if="showSkills" @click="showSkills = false">
       <view class="drawer right" @click.stop>
         <view class="dr-head"><text>AI 技能</text></view>
+        <view class="sk-section">快捷指令</view>
+        <view v-for="c in quickCmds" :key="c.k" class="skill" @click="runQuick(c)">
+          <text class="sk-ico">{{ c.icon }}</text>
+          <view class="sk-body"><text class="sk-t">{{ c.t }}</text><text class="sk-sub">{{ c.sub }}</text></view>
+        </view>
+        <view class="sk-section">专项工具</view>
         <view class="skill" @click="goSkill('/pages/ai-exam/ai-exam')">
           <text class="sk-ico">📊</text>
           <view class="sk-body"><text class="sk-t">考试分析</text><text class="sk-sub">按考试生成分析描述</text></view>
@@ -321,6 +328,25 @@ function goSkill(url) {
   uni.navigateTo({ url })
 }
 
+// 8 个预设快捷指令（对齐 web 端 AI.vue）
+const quickCmds = [
+  { k: 'analyze', icon: '📈', t: '分析成绩', sub: '分析班级最近一次考试成绩', prompt: '请帮我分析最近一次考试的成绩情况，给出分数分布、薄弱点、改进建议。' },
+  { k: 'plan', icon: '📒', t: '生成教案', sub: '生成一节课的教案框架', prompt: '请帮我生成一节课的教案，包含教学目标、重难点、教学过程、板书设计、作业布置。' },
+  { k: 'comment', icon: '✍️', t: '写评语', sub: '为学生写期末评语', prompt: '请帮我给一位学生写期末评语，包含学习态度、行为表现、改进方向、鼓励话语。' },
+  { k: 'quiz', icon: '❓', t: '出题', sub: '按知识点出练习题', prompt: '请帮我出 5 道练习题（含答案与解析），覆盖本单元的核心知识点。' },
+  { k: 'parent', icon: '💬', t: '家长沟通', sub: '起草家校沟通话术', prompt: '请帮我起草一段家长沟通话术，针对学生在校表现反馈给家长，语气友好、专业。' },
+  { k: 'activity', icon: '🎉', t: '课堂活动', sub: '设计课堂互动活动', prompt: '请帮我设计 3 个 5-10 分钟的课堂互动活动，适合小学高年级，能激发学生兴趣。' },
+  { k: 'outline', icon: '🗂️', t: '知识点梳理', sub: '梳理单元知识结构', prompt: '请帮我梳理本单元的知识结构，给出知识图谱、重点难点、典型例题。' },
+  { k: 'grade', icon: '✔️', t: '作业批改', sub: '辅助批改学生作业', prompt: '请帮我分析一道学生作业题的常见错误类型与批改建议。' },
+]
+
+function runQuick(c) {
+  showSkills.value = false
+  input.value = c.prompt
+  // 自动发送
+  send()
+}
+
 function formatSize(b) {
   if (b < 1024) return b + 'B'
   if (b < 1024 * 1024) return (b / 1024).toFixed(0) + 'KB'
@@ -336,6 +362,32 @@ function copyText(text) {
     data: t,
     success: () => uni.showToast({ title: '已复制', icon: 'none' }),
     fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
+
+// 把 AI 回复保存为笔记，自动加「AI 助教」分类与原标题
+async function addToNotes(m) {
+  const content = (m.content || '').trim()
+  if (!content) return uni.showToast({ title: '内容为空', icon: 'none' })
+  uni.showModal({
+    title: '保存为笔记',
+    editable: true,
+    placeholderText: '笔记标题（可改）',
+    content: (curSession.value?.title || 'AI 回复').slice(0, 30),
+    success: async (r) => {
+      if (!r.confirm) return
+      const title = (r.content || 'AI 回复').trim().slice(0, 50)
+      try {
+        await api.post('/notes', {
+          title,
+          content,
+          category: 'AI 助教',
+        })
+        uni.showToast({ title: '已存到笔记', icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+      }
+    },
   })
 }
 function scrollBottom() {
@@ -628,4 +680,5 @@ onUnload(() => saveSessions())
 .sk-body { display: flex; flex-direction: column; }
 .sk-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .sk-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 4rpx; }
+.sk-section { font-size: 22rpx; color: var(--c-sub); padding: 18rpx 28rpx 8rpx; background: var(--c-card2); font-weight: 600; }
 </style>

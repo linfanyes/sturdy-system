@@ -15,12 +15,25 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { AiModule } from '../ai/ai.module'
+import { AiService } from '../ai/ai.service'
 import * as XLSX from 'xlsx'
+
+// 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
+const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
+{ "name": "学生姓名(必填)", "gender": "性别：男 或 女", "studentNo": "学号(可选,字母数字组合)", "parentName": "家长姓名(可选)", "parentPhone": "家长电话(可选,纯数字)" }
+规则：
+- 只识别真实学生行，跳过表头/标题/合计/序号行；
+- 性别统一归一化为「男」或「女」（M/m/男→男，F/f/女→女）；
+- 学号若图片里没有则留空字符串；
+- 家长电话只保留数字，去除空格/横线；
+- 只返回 JSON 数组，不要任何解释或前后缀文字。`
 
 class StudentsService extends CrudService<Student> {
   constructor(
     @InjectRepository(Student) repo: Repository<Student>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly ai: AiService,
   ) {
     super(repo)
   }
@@ -132,6 +145,79 @@ class StudentsService extends CrudService<Student> {
       return { count: ids.length, ids, contactCount }
     })
   }
+
+  /**
+   * AI 识别学生名单（P3-g/h）：图片走 OCR、Excel/CSV 提取文本，再交给 AI 结构化解析。
+   * 返回与 parseFile 一致的 { rows, validCount, errorCount }，前端可直接复用预览 UI 与 commit。
+   */
+  async importAi(
+    teacherId: string,
+    mode: string,
+    data: string,
+    filename: string,
+  ) {
+    if (!data) throw new BadRequestException('缺少文件数据')
+    const ext = (filename || '').split('.').pop() || ''
+    let text = ''
+
+    if (mode === 'image') {
+      const mime = /png/i.test(ext)
+        ? 'image/png'
+        : /jpe?g/i.test(ext)
+          ? 'image/jpeg'
+          : 'image/png'
+      text = await this.ai.recognizeImage(teacherId, `data:${mime};base64,${data}`)
+    } else {
+      const buf = Buffer.from(data, 'base64')
+      if (/xlsx?/i.test(ext)) {
+        text = this.ai.parseExcel(buf)
+      } else {
+        text = buf.toString('utf-8')
+      }
+    }
+
+    let parsed: any[] = []
+    try {
+      parsed = await this.ai.parse(teacherId, { text, instruction: STUDENT_INSTRUCTION })
+    } catch (e: any) {
+      throw new BadRequestException('AI 解析失败：' + (e?.message || e))
+    }
+    if (!Array.isArray(parsed)) parsed = []
+
+    // 复用 parseFile 的校验逻辑：把 AI 解析出的对象重新组装成「行」再校验
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    parsed.forEach((raw, i) => {
+      const name = String(raw?.name || '').trim()
+      let gender = String(raw?.gender || '').trim()
+      const studentNo = String(raw?.studentNo || '').trim()
+      const parentName = String(raw?.parentName || '').trim()
+      let parentPhone = String(raw?.parentPhone || '').trim().replace(/[^\d]/g, '')
+      // 性别归一化
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+
+      let error = ''
+      if (!name) error = '缺少姓名'
+      else if (gender !== '男' && gender !== '女') error = '性别须为男/女'
+      else if (parentPhone && !/^\d{6,15}$/.test(parentPhone))
+        error = '家长电话格式不正确（应为6-15位数字）'
+      if (error) errorCount++
+      else validCount++
+      rows.push({
+        name,
+        gender,
+        studentNo,
+        parentName,
+        parentPhone,
+        line: i + 1,
+        valid: !error,
+        error,
+      })
+    })
+    return { rows, validCount, errorCount }
+  }
 }
 
 @Controller('students')
@@ -176,10 +262,34 @@ class StudentsController extends CrudController<Student> {
       body.items,
     )
   }
+
+  /**
+   * AI 识别学生名单（P3-g/h）：
+   * - mode='image' 走 OCR 多模态识别图片中的学生信息
+   * - mode='xlsx'/'csv' 等走文件文本提取 + AI 结构化
+   * 返回与 /students/import 一致的 { rows, validCount, errorCount }，
+   * 前端可直接复用现有预览 UI 与 /students/import-commit 落库。
+   */
+  @Post('import-ai')
+  @UseGuards(JwtAuthGuard)
+  importAi(
+    @Body() body: { mode: string; data: string; filename?: string },
+    @CurrentTeacher() t: any,
+  ) {
+    if (!body?.mode || !body?.data) {
+      throw new BadRequestException('缺少识别数据')
+    }
+    return (this.service as StudentsService).importAi(
+      t.sub,
+      body.mode,
+      body.data,
+      body.filename || '',
+    )
+  }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact])],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact]), AiModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })
