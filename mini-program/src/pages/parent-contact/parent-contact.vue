@@ -70,23 +70,16 @@ const classNameOf = (id) => {
 }
 
 async function loadClasses() {
-  try {
-    classList.value = await api.get('/classes')
-  } catch (e) {
-    classList.value = []
-  }
+  classList.value = await api.getList('/classes', { silent: true })
 }
 
 async function load() {
   const sel = classOptions.value[classIdx.value]
   const cid = sel ? sel.value : ''
-  try {
-    list.value = cid
-      ? await api.get('/parent-contacts?classId=' + encodeURIComponent(cid))
-      : await api.get('/parent-contacts')
-  } catch (e) {
-    list.value = []
-  }
+  list.value = await api.getList(
+    cid ? '/parent-contacts?classId=' + encodeURIComponent(cid) : '/parent-contacts',
+    { loading: true, loadingText: '加载联系记录' },
+  )
 }
 
 onShow(async () => {

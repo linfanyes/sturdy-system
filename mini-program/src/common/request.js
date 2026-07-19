@@ -2,6 +2,19 @@ import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
 import { getToken } from './store'
 
 /**
+ * 把任意 reject 值归一化为 Error，确保页面层 e.message 永远可用。
+ * 处理后端返回 { message } / { error }、wx fail 回调 { errMsg }、字符串、undefined 等情况。
+ */
+function toError(e, fallback) {
+  if (e instanceof Error) return e
+  const msg =
+    (e && (e.message || e.error || e.errMsg)) ||
+    (typeof e === 'string' ? e : '') ||
+    fallback
+  return new Error(msg)
+}
+
+/**
  * 统一请求封装：走微信云托管私有链路（wx.cloud.callContainer），不依赖公网域名。
  * 自动带 token，401 跳转登录。
  */
@@ -29,9 +42,9 @@ export function request(path, method = 'GET', data = {}) {
           return reject(new Error('登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(res.data)
-        else reject(res.data || new Error('请求失败'))
+        else reject(toError(res.data, '请求失败(' + status + ')'))
       },
-      fail: (e) => reject(e),
+      fail: (e) => reject(toError(e, '网络异常，请检查网络或稍后重试')),
     })
   })
 }
@@ -44,6 +57,30 @@ export const api = {
   // 通用 CRUD 基类用 @Patch(':id')，保持发 PATCH
   patch: (p, d) => request(p, 'PATCH', d),
   del: (p) => request(p, 'DELETE'),
+  /**
+   * 列表加载帮手：自动管理 loading 提示 + 失败 toast + 空数组兜底。
+   * 用于 onShow 的 load() 场景，避免每个页面重复 try/catch/showLoading 样板代码。
+   * @param {string} path 接口路径（不含前缀）
+   * @param {object} opts { loading?: boolean, loadingText?: string, silent?: boolean }
+   * @returns {Promise<any[]>} 永远返回数组（失败/非数组时返回 []）
+   */
+  async getList(p, opts = {}) {
+    const { loading = false, loadingText = '加载中', silent = false } = opts
+    if (loading) {
+      try { uni.showLoading({ title: loadingText, mask: false }) } catch (e) {}
+    }
+    try {
+      const data = await request(p)
+      return Array.isArray(data) ? data : (data && data.list) || []
+    } catch (e) {
+      if (!silent) uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+      return []
+    } finally {
+      if (loading) {
+        try { uni.hideLoading() } catch (e) {}
+      }
+    }
+  },
 }
 
 /**

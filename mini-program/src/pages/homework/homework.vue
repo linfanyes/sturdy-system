@@ -161,8 +161,13 @@ function toggle(cid) {
 }
 
 async function load() {
-  classes.value = await api.get('/classes')
-  all.value = await api.get('/homework')
+  // 并行加载 + 各自兜底，避免 classes 失败导致作业列表也不渲染
+  const [cls, hw] = await Promise.all([
+    api.getList('/classes', { silent: true }),
+    api.getList('/homework', { loading: true, loadingText: '加载作业' }),
+  ])
+  classes.value = cls
+  all.value = hw
   if (!form.value.classId && classes.value[0]) form.value.classId = classes.value[0].id
 }
 onShow(load)

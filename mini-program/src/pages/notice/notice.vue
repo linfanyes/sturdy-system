@@ -88,8 +88,13 @@ const shown = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.get('/classes')
-  list.value = await api.get('/notices')
+  // 并行加载 + 各自兜底，避免 classes 失败导致 notices 也不渲染
+  const [cls, ns] = await Promise.all([
+    api.getList('/classes', { silent: true }),
+    api.getList('/notices', { loading: true, loadingText: '加载公告' }),
+  ])
+  classes.value = cls
+  list.value = ns
 }
 onShow(load)
 
