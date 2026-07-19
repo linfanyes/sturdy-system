@@ -42,6 +42,22 @@
 
     <!-- 打印用隐藏 canvas -->
     <canvas type="2d" id="printCanvas" class="print-canvas"></canvas>
+
+    <!-- 打印预览弹层：先生成图片，用户确认预览后再保存到相册或复制文本 -->
+    <view class="mask" v-if="showPrintPreview" @click="showPrintPreview = false">
+      <view class="sheet preview-sheet" @click.stop>
+        <view class="st">打印预览</view>
+        <view class="hint">长按图片可保存，或点下方按钮保存到相册</view>
+        <scroll-view scroll-y class="preview-box">
+          <image :src="printTmpPath" mode="widthFix" class="preview-img" :show-menu-by-longpress="true" />
+        </scroll-view>
+        <view class="pv-acts">
+          <button class="cancel" @click="showPrintPreview = false">关闭</button>
+          <button class="copy-btn" @click="copyPrintText">📋 复制文本</button>
+          <button class="ok" @click="savePreviewToAlbum">💾 保存到相册</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -60,6 +76,10 @@ const showAdd = ref(false)
 const editing = ref(null)
 const saving = ref(false)
 const form = ref({ classId: '全校', title: '', content: '', pinned: false })
+// 打印预览相关状态
+const showPrintPreview = ref(false)
+const printTmpPath = ref('')
+const printText = ref('')
 
 const scopeValues = computed(() => ['', '全校', ...classes.value.map((c) => c.id)])
 const scopeLabels = computed(() => ['全部公告', '全校', ...classes.value.map((c) => c.name)])
@@ -195,7 +215,7 @@ function fmt(d) {
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`
 }
 
-// 打印公告：渲染 canvas → 保存到相册（用户可走相册打印或转发）
+// 打印公告：渲染 canvas → 弹预览 sheet → 用户确认后保存到相册或复制文本
 // 失败自动降级为复制纯文本
 async function printNotice(n) {
   const scope = scopeName(n.classId)
@@ -211,34 +231,38 @@ async function printNotice(n) {
     '———————————',
     '（此公告由工作系统小程序生成）',
   ]
+  // 文本备用：图片失败或用户选「复制文本」时使用
+  printText.value = `【${n.title}】\n范围：${scope}\n时间：${fmt(n.createdAt)}\n\n${n.content || ''}`
   uni.showLoading({ title: '生成图片…', mask: true })
   try {
     const tmp = await drawAndSave('printCanvas', lines, '📢 ' + (n.title || '公告'))
     uni.hideLoading()
-    uni.showModal({
-      title: '已生成公告图片',
-      content: '是否保存到相册？保存后可通过相册打印或转发给家长。',
-      confirmText: '保存到相册',
-      cancelText: '复制文本',
-      success: async (m) => {
-        if (m.confirm) {
-          try {
-            await saveToAlbum(tmp)
-            uni.showToast({ title: '已保存到相册', icon: 'success' })
-          } catch (e) {
-            uni.showToast({ title: '保存失败：' + (e.errMsg || ''), icon: 'none' })
-          }
-        } else if (m.cancel) {
-          copyText(`${n.title}\n范围：${scope}\n时间：${fmt(n.createdAt)}\n\n${n.content || ''}`)
-        }
-      },
-    })
+    // 弹出预览 sheet，用户预览后再选「保存到相册」或「复制文本」
+    printTmpPath.value = tmp
+    showPrintPreview.value = true
   } catch (e) {
     uni.hideLoading()
-    // 降级：复制文本
-    copyText(`【${n.title}】\n范围：${scope}\n时间：${fmt(n.createdAt)}\n\n${n.content || ''}`)
+    // 降级：直接复制文本
+    copyText(printText.value)
     uni.showToast({ title: '图片生成失败，已复制文本', icon: 'none' })
   }
+}
+
+// 保存预览图到相册
+async function savePreviewToAlbum() {
+  if (!printTmpPath.value) return
+  try {
+    await saveToAlbum(printTmpPath.value)
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+    showPrintPreview.value = false
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.errMsg || ''), icon: 'none' })
+  }
+}
+
+// 复制公告文本（预览 sheet 内按钮）
+function copyPrintText() {
+  copyText(printText.value)
 }
 </script>
 
@@ -285,4 +309,17 @@ async function printNotice(n) {
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
 .a.print { color: var(--c-accent); }
 .print-canvas { position: fixed; left: -9999rpx; top: 0; width: 720rpx; height: 400rpx; pointer-events: none; }
+/* 打印预览 sheet */
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 50; }
+.preview-sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; box-sizing: border-box; max-height: 88vh; }
+.preview-sheet .st { font-size: 32rpx; font-weight: 700; color: var(--c-title); }
+.preview-sheet .hint { font-size: 22rpx; color: var(--c-sub); margin-bottom: 12rpx; }
+.preview-box { max-height: 60vh; margin-bottom: 16rpx; }
+.preview-img { width: 100%; border-radius: 8rpx; }
+.pv-acts { display: flex; gap: 14rpx; }
+.pv-acts .ok { flex: 1; margin-top: 0; }
+.pv-acts .cancel { flex: 1; margin-top: 0; }
+.pv-acts .copy-btn { flex: 1; background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; }
+.dark .preview-sheet { background: var(--c-card); }
+.dark .copy-btn { background: var(--c-card2); color: var(--c-title); }
 </style>

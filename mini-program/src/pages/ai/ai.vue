@@ -6,7 +6,10 @@
       <view class="nav-text">
         <text class="t1">AI 助教</text>
         <text class="t2">{{ curSession?.title || '新对话' }}</text>
+        <!-- 模型提示徽章：未配置 AI 时醒目提示 -->
+        <text v-if="modelHint" class="model-hint" :class="{ off: !modelReady }" @click="goConfig">{{ modelHint }}</text>
       </view>
+      <text class="nav-ico" @click="exportCurSession">📤</text>
       <text class="nav-ico" @click="openSkills">🧩</text>
     </view>
 
@@ -328,6 +331,43 @@ function goSkill(url) {
   uni.navigateTo({ url })
 }
 
+// —— 模型提示徽章：从后端拉取 AI 配置，未配置时醒目提示 ——
+const aiSettings = ref(null)
+const modelReady = computed(() => !!(aiSettings.value && aiSettings.value.apiKey && aiSettings.value.baseUrl))
+const modelHint = computed(() => {
+  if (!aiSettings.value) return ''
+  if (!modelReady.value) return '⚠️ 未配置 AI'
+  return aiSettings.value.textModel || 'AI'
+})
+function goConfig() {
+  uni.navigateTo({ url: '/pages/config/config' })
+}
+
+// 导出当前会话为纯文本到剪贴板（便于分享或粘贴到其他工具）
+function exportCurSession() {
+  const sess = curSession.value
+  if (!sess || !sess.messages || !sess.messages.length) {
+    return uni.showToast({ title: '当前会话为空', icon: 'none' })
+  }
+  const lines = [`# ${sess.title || 'AI 对话'}`, '']
+  sess.messages.forEach((m) => {
+    if (m.role === 'user') {
+      lines.push('## 我')
+      lines.push(m.content || '（图片/文档）')
+    } else {
+      lines.push('## AI')
+      lines.push(m.content || '')
+    }
+    lines.push('')
+  })
+  lines.push('— 由工作系统小程序 AI 助教导出 —')
+  uni.setClipboardData({
+    data: lines.join('\n'),
+    success: () => uni.showToast({ title: '已复制对话文本', icon: 'success' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
+
 // 8 个预设快捷指令（对齐 web 端 AI.vue）
 const quickCmds = [
   { k: 'analyze', icon: '📈', t: '分析成绩', sub: '分析班级最近一次考试成绩', prompt: '请帮我分析最近一次考试的成绩情况，给出分数分布、薄弱点、改进建议。' },
@@ -571,6 +611,8 @@ onShow(() => {
     return
   }
   loadSessions()
+  // 拉取 AI 配置用于模型提示徽章（失败静默，不影响主流程）
+  api.get('/config/ai').then((r) => { aiSettings.value = r }).catch(() => { aiSettings.value = null })
 })
 onUnload(() => saveSessions())
 </script>
@@ -681,4 +723,9 @@ onUnload(() => saveSessions())
 .sk-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .sk-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 4rpx; }
 .sk-section { font-size: 22rpx; color: var(--c-sub); padding: 18rpx 28rpx 8rpx; background: var(--c-card2); font-weight: 600; }
+
+/* 模型提示徽章 */
+.model-hint { font-size: 20rpx; color: var(--c-primary); background: rgba(255, 255, 255, 0.65); padding: 2rpx 14rpx; border-radius: 16rpx; margin-top: 6rpx; max-width: 360rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-hint.off { color: var(--c-danger, #e64340); background: rgba(230, 67, 64, 0.12); }
+.dark .model-hint { background: rgba(255, 255, 255, 0.08); }
 </style>

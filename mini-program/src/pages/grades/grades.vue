@@ -95,11 +95,27 @@
         </view>
 
         <view class="dist">
-          <view class="dh">分数段分布</view>
-          <view v-for="seg in analysis.segs" :key="seg.label" class="seg-row">
-            <text class="seg-l">{{ seg.label }}</text>
-            <view class="seg-bar"><view class="seg-fill" :style="{ width: seg.pct + '%' }"></view></view>
-            <text class="seg-c">{{ seg.count }}人</text>
+          <view class="dh">分数段分布（每 10 分一段）</view>
+          <!-- 10 段垂直柱状图：对齐 web 端 GradeManage.vue 的分布柱状图 -->
+          <view class="bar-chart">
+            <view v-for="(d, i) in analysis.dist" :key="i" class="bar-col">
+              <text class="bar-num">{{ d.count }}</text>
+              <view class="bar-track">
+                <view
+                  class="bar-fill"
+                  :class="'bar-c' + d.colorIdx"
+                  :style="{ height: (d.heightPct || 4) + '%' }"
+                ></view>
+              </view>
+              <text class="bar-label">{{ d.label }}</text>
+              <text class="bar-pct">{{ d.pct }}%</text>
+            </view>
+          </view>
+          <view class="bar-legend">
+            <view class="lg-item"><view class="lg-c bar-c0"></view><text>极低/不及格 (&lt;60)</text></view>
+            <view class="lg-item"><view class="lg-c bar-c1"></view><text>待提高 (40-69)</text></view>
+            <view class="lg-item"><view class="lg-c bar-c2"></view><text>中等 (70-89)</text></view>
+            <view class="lg-item"><view class="lg-c bar-c3"></view><text>优秀 (90+)</text></view>
           </view>
         </view>
 
@@ -150,7 +166,7 @@ const showAnalysis = ref(false)
 const saving = ref(false)
 
 const analysis = computed(() => {
-  const empty = { avg: '-', max: '-', min: '-', median: '-', passRate: 0, excellentRate: 0, segs: [], rank: [] }
+  const empty = { avg: '-', max: '-', min: '-', median: '-', passRate: 0, excellentRate: 0, segs: [], rank: [], dist: [], distMax: 1, count: 0 }
   if (!existing.value) return empty
   const all = (existing.value.scores || []).filter((x) => x.score != null)
   const sc = all.map((x) => Number(x.score))
@@ -166,6 +182,7 @@ const analysis = computed(() => {
   const excellent = sc.filter((s) => s >= 90).length
   const passRate = Math.round((pass / sc.length) * 100)
   const excellentRate = Math.round((excellent / sc.length) * 100)
+  // 5 段汇总分布（兼容旧 UI：综合分析弹层下方的水平分布条）
   const segments = [
     { label: '<60', min: 0, max: 59.999 },
     { label: '60-69', min: 60, max: 69.999 },
@@ -177,12 +194,36 @@ const analysis = computed(() => {
     const c = sc.filter((x) => x >= s.min && x <= s.max).length
     return { label: s.label, count: c, pct: Math.round((c / sc.length) * 100) }
   })
+  // 10 段细分分布（对齐 web 端 GradeManage.vue：每 10 分一段，垂直柱状图）
+  const bands = 10
+  const distLabels = []
+  for (let b = 0; b < bands; b++) {
+    const lo = b * 10
+    const hi = (b + 1) * 10
+    distLabels.push(b === bands - 1 ? `${lo}-${hi}` : `${lo}-${hi - 1}`)
+  }
+  const dist = new Array(bands).fill(0)
+  sc.forEach((n) => {
+    let idx = Math.floor(n / 10)
+    if (idx < 0) idx = 0
+    if (idx > bands - 1) idx = bands - 1
+    dist[idx]++
+  })
+  const distMax = Math.max(...dist, 1)
+  const distWithMeta = dist.map((c, i) => ({
+    label: distLabels[i],
+    count: c,
+    pct: Math.round((c / sc.length) * 100),
+    // 4 色梯度：极低(红)/待提高(黄)/中等(绿)/优秀(蓝)
+    colorIdx: i < 4 ? 0 : i < 6 ? 1 : i < 8 ? 2 : 3,
+    heightPct: Math.round((c / distMax) * 100),
+  }))
   const nameMap = {}
   students.value.forEach((s) => (nameMap[s.id] = s.name))
   const rank = all
     .map((x) => ({ id: x.studentId, name: nameMap[x.studentId] || '—', score: x.score }))
     .sort((a, b) => b.score - a.score)
-  return { avg, max, min, median: mid, passRate, excellentRate, segs, rank }
+  return { avg, max, min, median: mid, passRate, excellentRate, segs, rank, dist: distWithMeta, distMax, count: sc.length }
 })
 
 const classOpts = ref([])
@@ -501,6 +542,24 @@ async function commit() {
 .seg-bar { flex: 1; height: 20rpx; background: var(--c-card2); border-radius: 10rpx; overflow: hidden; }
 .seg-fill { height: 100%; background: linear-gradient(90deg,#e6a23c,#07c160); border-radius: 10rpx; }
 .seg-c { width: 80rpx; text-align: right; font-size: 22rpx; color: var(--c-sub); flex-shrink: 0; }
+/* 10 段垂直柱状图 */
+.bar-chart { display: flex; align-items: flex-end; gap: 6rpx; height: 280rpx; padding: 12rpx 4rpx 0; margin-bottom: 14rpx; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4rpx; }
+.bar-num { font-size: 20rpx; color: var(--c-title); line-height: 1; }
+.bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; min-height: 8rpx; }
+.bar-fill { width: 100%; border-radius: 8rpx 8rpx 0 0; transition: height 0.3s; }
+.bar-label { font-size: 18rpx; color: var(--c-sub); line-height: 1.2; white-space: nowrap; }
+.bar-pct { font-size: 18rpx; color: var(--c-sub); opacity: 0.7; line-height: 1.2; }
+/* 4 色梯度 */
+.bar-c0 { background: linear-gradient(180deg, #ff8a8a 0%, #ffd1d1 100%); }
+.bar-c1 { background: linear-gradient(180deg, #ffc14e 0%, #ffe7b3 100%); }
+.bar-c2 { background: linear-gradient(180deg, #5ed8a6 0%, #b8f0d4 100%); }
+.bar-c3 { background: linear-gradient(180deg, #5aa9ff 0%, #b8d9ff 100%); }
+.dark .bar-num { color: var(--c-title); }
+.dark .bar-label, .dark .bar-pct { color: var(--c-sub); }
+.bar-legend { display: flex; flex-wrap: wrap; gap: 12rpx 18rpx; justify-content: center; margin-top: 10rpx; }
+.lg-item { display: flex; align-items: center; gap: 6rpx; font-size: 20rpx; color: var(--c-sub); }
+.lg-c { width: 18rpx; height: 18rpx; border-radius: 4rpx; }
 .rk { display: flex; align-items: center; gap: 16rpx; padding: 10rpx 0; border-bottom: 1rpx solid var(--c-border); }
 .rk-no { width: 44rpx; height: 44rpx; border-radius: 50%; background: var(--c-accent); color: #fff; text-align: center; line-height: 44rpx; font-size: 22rpx; flex-shrink: 0; }
 .rk-n { flex: 1; font-size: 26rpx; color: var(--c-title); }

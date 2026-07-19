@@ -16,6 +16,7 @@
       <view class="tbtns">
         <text class="tbtn" @click="showTeach = true">任教设置</text>
         <text class="tbtn auto" @click="openAuto">自动排课</text>
+        <text class="tbtn print" @click="openPrint">🖨 排版打印</text>
       </view>
     </view>
 
@@ -117,6 +118,25 @@
         </view>
       </view>
     </view>
+
+    <!-- 排版打印：canvas 渲染课表为图片，可保存到相册或复制为文本 -->
+    <view class="mask" v-if="showPrint" @click="showPrint = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">{{ selName }} 课表排版</view>
+        <view class="hint">选择排版样式后生成图片，可保存到相册打印。</view>
+        <picker :range="printStyleOpts" :value="printStyleIdx" @change="(e) => (printStyleIdx = e.detail.value)">
+          <view class="picker sm">{{ printStyleOpts[printStyleIdx] }}</view>
+        </picker>
+        <scroll-view scroll-y class="print-preview">
+          <canvas canvas-id="scheduleCanvas" id="scheduleCanvas" class="print-canvas" :style="{ width: canvasW + 'px', height: canvasH + 'px' }"></canvas>
+        </scroll-view>
+        <view class="sh-bar">
+          <button class="btn del" @click="showPrint = false">关闭</button>
+          <button class="btn ok" :disabled="printing" @click="saveImage">{{ printing ? '生成中…' : '🖼 生成并保存图片' }}</button>
+          <button class="btn" @click="copyAsText">📋 复制文本</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -160,6 +180,13 @@ const periodVals = [6, 7, 8]
 const startOpts = ['第 1 节', '第 2 节', '第 3 节']
 const startVals = [1, 2, 3]
 const autoForm = ref({ subjectsText: '', days: 5, periods: 8, start: 1, cover: false })
+// 排版打印相关状态
+const showPrint = ref(false)
+const printing = ref(false)
+const printStyleOpts = ['紧凑表格（5天×8节）', '宽松表格（含节次名）', '仅任教课程']
+const printStyleIdx = ref(0)
+const canvasW = ref(360)
+const canvasH = ref(480)
 const teachStat = computed(() => {
   if (mode.value !== 'class') return { lessons: 0, teachers: 0 }
   const t = new Set(items.value.map((s) => s.teacher).filter(Boolean))
@@ -415,6 +442,192 @@ async function doSavePlan(plan) {
     savingPlan.value = false
   }
 }
+
+// —— 课表排版打印 ——
+// 打开打印面板：先按当前班级课表数据计算 canvas 尺寸并预渲染
+function openPrint() {
+  if (mode.value !== 'class') {
+    return uni.showToast({ title: '请切到班级课表再打印', icon: 'none' })
+  }
+  if (!classId.value) {
+    return uni.showToast({ title: '请先选择班级', icon: 'none' })
+  }
+  showPrint.value = true
+  // 等下一帧 canvas 挂载后再渲染
+  setTimeout(() => renderScheduleCanvas(), 60)
+}
+
+// 渲染课表到 canvas：根据样式 idx 选择布局
+function renderScheduleCanvas() {
+  const ctx = uni.createCanvasContext('scheduleCanvas')
+  const dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
+  const dayCount = printStyleIdx.value === 2 ? 7 : (printStyleIdx.value === 1 ? 7 : 5)
+  const periodCount = printStyleIdx.value === 1 ? 8 : 8
+  // 单元格尺寸（按 5天8节 紧凑布局算）
+  const cellW = 56
+  const cellH = printStyleIdx.value === 1 ? 56 : 44
+  const labelW = 50
+  const headH = 50
+  const titleH = 60
+  const pad = 20
+  const W = pad * 2 + labelW + dayCount * cellW
+  const H = pad * 2 + titleH + headH + periodCount * cellH
+  canvasW.value = W
+  canvasH.value = H
+  // 等尺寸生效后再画
+  setTimeout(() => {
+    // 背景
+    ctx.setFillStyle('#ffffff')
+    ctx.fillRect(0, 0, W, H)
+    // 标题
+    ctx.setFillStyle('#222')
+    ctx.setFontSize(20)
+    ctx.setTextAlign('center')
+    ctx.fillText(`${selName.value} 课表`, W / 2, pad + 28)
+    ctx.setFontSize(11)
+    ctx.setFillStyle('#888')
+    ctx.fillText(`生成于 ${new Date().toLocaleString('zh-CN')}`, W / 2, pad + 50)
+    // 表头
+    const daysList = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'].slice(0, dayCount)
+    let x0 = pad + labelW
+    let y0 = pad + titleH
+    ctx.setFillStyle('#f5f7fa')
+    ctx.fillRect(x0, y0, dayCount * cellW, headH)
+    ctx.setFillStyle('#333')
+    ctx.setFontSize(13)
+    ctx.setTextAlign('center')
+    daysList.forEach((d, i) => {
+      ctx.fillText(d, x0 + i * cellW + cellW / 2, y0 + headH / 2 + 4)
+    })
+    // 节次列
+    for (let p = 0; p < periodCount; p++) {
+      const y = y0 + headH + p * cellH
+      ctx.setFillStyle('#f5f7fa')
+      ctx.fillRect(pad, y, labelW, cellH)
+      ctx.setFillStyle('#555')
+      ctx.setFontSize(12)
+      ctx.fillText(`第${p + 1}节`, pad + labelW / 2, y + cellH / 2 + 4)
+    }
+    // 课表内容
+    ctx.setFontSize(13)
+    for (let d = 0; d < dayCount; d++) {
+      for (let p = 0; p < periodCount; p++) {
+        const arr = cellItems(d, p + 1)
+        const x = x0 + d * cellW
+        const y = y0 + headH + p * cellH
+        // 单元格背景
+        if (arr.length) {
+          const types = arr.map((a) => a.weekType || 'all')
+          let bg = '#e8f4ff'
+          if (types.every((t) => t === 'single')) bg = '#fff4e6'
+          else if (types.every((t) => t === 'double')) bg = '#e6fffb'
+          ctx.setFillStyle(bg)
+          ctx.fillRect(x, y, cellW, cellH)
+        }
+        // 边框
+        ctx.setStrokeStyle('#d0d7de')
+        ctx.setLineWidth(0.5)
+        ctx.strokeRect(x, y, cellW, cellH)
+        // 文字
+        if (arr.length) {
+          const subj = arr.map((a) => a.subject).filter(Boolean).join('/')
+          const tea = arr.map((a) => a.teacher).filter(Boolean).join('/')
+          ctx.setFillStyle('#222')
+          ctx.setFontSize(13)
+          ctx.fillText(subj || '', x + cellW / 2, y + cellH / 2)
+          if (tea && printStyleIdx.value !== 0) {
+            ctx.setFillStyle('#888')
+            ctx.setFontSize(10)
+            ctx.fillText(tea, x + cellW / 2, y + cellH / 2 + 14)
+          }
+        }
+      }
+    }
+    // 图例
+    const lgY = pad + titleH + headH + periodCount * cellH + 20
+    if (lgY + 20 < H) {
+      ctx.setFontSize(10)
+      ctx.setTextAlign('left')
+      ctx.setFillStyle('#e8f4ff')
+      ctx.fillRect(pad, lgY, 14, 14)
+      ctx.setFillStyle('#555')
+      ctx.fillText('全周', pad + 20, lgY + 11)
+      ctx.setFillStyle('#fff4e6')
+      ctx.fillRect(pad + 70, lgY, 14, 14)
+      ctx.setFillStyle('#555')
+      ctx.fillText('单周', pad + 90, lgY + 11)
+      ctx.setFillStyle('#e6fffb')
+      ctx.fillRect(pad + 140, lgY, 14, 14)
+      ctx.setFillStyle('#555')
+      ctx.fillText('双周', pad + 160, lgY + 11)
+    }
+    ctx.draw()
+  }, 50)
+}
+
+// 保存 canvas 为图片到相册
+async function saveImage() {
+  if (printing.value) return
+  printing.value = true
+  try {
+    // 先重新渲染确保最新
+    await new Promise((resolve) => {
+      renderScheduleCanvas()
+      setTimeout(resolve, 120)
+    })
+    const res = await new Promise((resolve, reject) => {
+      uni.canvasToTempFilePath({
+        canvasId: 'scheduleCanvas',
+        fileType: 'png',
+        quality: 1,
+        success: resolve,
+        fail: reject,
+      })
+    })
+    await new Promise((resolve, reject) => {
+      uni.saveImageToPhotosAlbum({
+        filePath: res.tempFilePath,
+        success: resolve,
+        fail: reject,
+      })
+    })
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+  } catch (e) {
+    // 拒绝相册权限时降级为复制文本
+    if (String(e?.errMsg || '').includes('auth') || String(e?.errMsg || '').includes('deny')) {
+      uni.showModal({
+        title: '无相册权限',
+        content: '已为你复制课表文本，可粘贴到任意应用打印',
+        showCancel: false,
+        success: () => copyAsText(),
+      })
+    } else {
+      uni.showToast({ title: '保存失败：' + (e?.errMsg || ''), icon: 'none' })
+    }
+  } finally {
+    printing.value = false
+  }
+}
+
+// 复制课表为纯文本（备用方案）
+function copyAsText() {
+  const dayCount = 5
+  const lines = [`${selName.value} 课表（生成于 ${new Date().toLocaleString('zh-CN')}）`, '']
+  const daysList = ['周一', '周二', '周三', '周四', '周五']
+  lines.push('节次\t' + daysList.join('\t'))
+  for (let p = 1; p <= 8; p++) {
+    const row = [`第${p}节`]
+    for (let d = 0; d < dayCount; d++) {
+      const arr = cellItems(d, p)
+      row.push(arr.map((a) => a.subject + (a.teacher ? `(${a.teacher})` : '')).join(',') || '—')
+    }
+    lines.push(row.join('\t'))
+  }
+  uni.setClipboardData({
+    data: lines.join('\n'),
+    success: () => uni.showToast({ title: '已复制', icon: 'success' }),
+  })
+}
 </script>
 
 <style scoped>
@@ -432,6 +645,7 @@ async function doSavePlan(plan) {
 .tbtns { display: flex; gap: 14rpx; }
 .tbtn { font-size: 24rpx; color: #fff; background: var(--c-accent); padding: 10rpx 24rpx; border-radius: 30rpx; }
 .tbtn.auto { background: var(--c-primary); }
+.tbtn.print { background: #409eff; }
 .dark .teach-bar { background: var(--c-card2); }
 .dark .tstat { color: var(--c-accent); }
 .lg { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; color: #fff; }
@@ -461,6 +675,9 @@ async function doSavePlan(plan) {
 .hint { font-size: 22rpx; color: var(--c-sub); line-height: 1.5; margin-bottom: 16rpx; }
 .sw-row { display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; }
 .sh-bar { display: flex; gap: 20rpx; }
+/* 打印预览 */
+.print-preview { max-height: 60vh; margin: 16rpx 0; }
+.print-canvas { background: #fff; display: block; margin: 0 auto; }
 .btn { flex: 1; border-radius: 50rpx; color: #fff; font-size: 28rpx; }
 .btn.ok { background: var(--c-primary); }
 .btn.del { background: var(--c-danger); flex: 0 0 200rpx; }

@@ -87,7 +87,7 @@ const sections = ref([
       { label: '作业', icon: '📝', path: '/pages/homework/homework' },
       { label: '公告', icon: '📢', path: '/pages/notice/notice' },
       { label: '资源', icon: '📚', path: '/pages/resource/resource' },
-      { label: '教案', icon: '📄', crud: 'generated/lesson-plans' },
+      { label: '教案', icon: '📄', path: '/pages/ai-lesson/ai-lesson' },
       { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
       { label: '知识点', icon: '💡', crud: 'generated/knowledges' },
       { label: '优选试卷', icon: '📃', crud: 'generated/papers' },
@@ -98,6 +98,7 @@ const sections = ref([
   {
     title: 'AI 智能生成',
     items: [
+      { label: '优质教案生成', icon: '📄', path: '/pages/ai-lesson/ai-lesson' },
       { label: '知识点生成', icon: '💡', path: '/pages/ai-knowledge/ai-knowledge' },
       { label: '优选试卷生成', icon: '📃', path: '/pages/ai-paper/ai-paper' },
       { label: '考试一键分析', icon: '📊', path: '/pages/ai-exam/ai-exam' },
