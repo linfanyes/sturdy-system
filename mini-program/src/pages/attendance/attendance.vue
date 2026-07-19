@@ -164,24 +164,24 @@ async function save() {
 
 <style scoped>
 .page { padding: 24rpx; }
-.picker { background: #fff; border-radius: 16rpx; padding: 22rpx 24rpx; margin-bottom: 14rpx; font-size: 28rpx; }
+.picker { background: var(--c-card); border-radius: 16rpx; padding: 22rpx 24rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .stats { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
 .st { flex: 1; border-radius: 14rpx; padding: 16rpx 0; text-align: center; }
 .ic { font-size: 34rpx; }
 .num { display: block; font-size: 38rpx; font-weight: 800; margin: 4rpx 0; }
-.lab { font-size: 22rpx; color: #666; }
+.lab { font-size: 22rpx; color: var(--c-sub); }
 .quick { display: flex; gap: 12rpx; margin-bottom: 18rpx; flex-wrap: wrap; }
-.q { font-size: 24rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: #f2ead8; color: #a07b3b; }
-.list { background: #fff; border-radius: 16rpx; padding: 10rpx 20rpx; margin-bottom: 24rpx; }
-.stu { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1px solid #f3f3f3; }
+.q { font-size: 24rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-accent); }
+.list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 20rpx; margin-bottom: 24rpx; }
+.stu { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1px solid var(--c-border); }
 .stu:last-child { border-bottom: none; }
-.av { width: 60rpx; height: 60rpx; border-radius: 50%; background: #f7f1e6; text-align: center; line-height: 60rpx; font-size: 30rpx; flex: 0 0 auto; }
+.av { width: 60rpx; height: 60rpx; border-radius: 50%; background: var(--c-card2); text-align: center; line-height: 60rpx; font-size: 30rpx; flex: 0 0 auto; }
 .info { flex: 1; min-width: 0; }
-.nm { font-size: 28rpx; color: #4a3f35; font-weight: 600; display: block; }
-.sub { font-size: 22rpx; color: #9aa0a6; }
+.nm { font-size: 28rpx; color: var(--c-title); font-weight: 600; display: block; }
+.sub { font-size: 22rpx; color: var(--c-sub); }
 .opts { display: flex; gap: 8rpx; }
-.opt { font-size: 20rpx; padding: 8rpx 12rpx; border-radius: 20rpx; background: #f3f3f3; color: #999; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; }
+.opt { font-size: 20rpx; padding: 8rpx 12rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-sub); }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .picker, .dark .list { background: var(--c-card); }

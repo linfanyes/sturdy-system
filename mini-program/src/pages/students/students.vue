@@ -471,10 +471,10 @@ function drawRadar() {
 .tcount { margin-left: auto; font-size: 24rpx; color: var(--c-sub); }
 .item.selectable { display: flex; align-items: center; gap: 16rpx; }
 .check { width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid var(--c-border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #fff; }
-.check.on { background: #07c160; border-color: #07c160; }
+.check.on { background: var(--c-primary); border-color: var(--c-primary); }
 .batchbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--c-card); border-top: 1px solid var(--c-border); padding: 20rpx 30rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4rpx 16rpx var(--c-shadow); z-index: 40; }
 .bsel { font-size: 26rpx; color: var(--c-title); }
-.bdel { font-size: 28rpx; color: #fff; background: #e64340; padding: 14rpx 36rpx; border-radius: 40rpx; }
+.bdel { font-size: 28rpx; color: #fff; background: var(--c-danger); padding: 14rpx 36rpx; border-radius: 40rpx; }
 .dark .search { border-color: var(--c-input-border); }
 .dark .mini-picker, .dark .tbtn { border-color: var(--c-input-border); background: var(--c-card); color: var(--c-title); }
 .item { background: var(--c-card); border-radius: 20rpx; padding: 26rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
@@ -500,16 +500,16 @@ function drawRadar() {
 .preview { margin-top: 10rpx; border-top: 1px dashed var(--c-border); padding-top: 16rpx; }
 .pv-sum { font-size: 26rpx; color: var(--c-title); }
 .pv-sum .ok { color: var(--c-primary); }
-.pv-sum .bad { color: #e64340; }
+.pv-sum .bad { color: var(--c-danger); }
 .pv-errs { margin: 10rpx 0; }
-.pv-err { font-size: 24rpx; color: #e64340; line-height: 1.6; }
+.pv-err { font-size: 24rpx; color: var(--c-danger); line-height: 1.6; }
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .dialog { width: 620rpx; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
 .d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
 .d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
-.d-code { background: #2b2b2b; color: #f6f6f6; font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
+.d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
 .d-copy { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .radar { width: 300px; height: 300px; display: block; margin: 10rpx auto; }
@@ -529,11 +529,11 @@ function drawRadar() {
 .tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
 .tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
 .row-acts { margin-top: 10rpx; }
-.dial { font-size: 24rpx; color: #07c160; background: rgba(7,193,96,.12); padding: 8rpx 20rpx; border-radius: 30rpx; }
+.dial { font-size: 24rpx; color: var(--c-primary); background: rgba(7,193,96,.12); padding: 8rpx 20rpx; border-radius: 30rpx; }
 .pf-tags { display: flex; flex-wrap: wrap; gap: 10rpx; justify-content: center; margin: 8rpx 0; }
 .pf-tag { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
 .pf-line { font-size: 24rpx; color: var(--c-sub); text-align: center; margin-bottom: 6rpx; }
-.pf-dial { color: #07c160; margin-left: 8rpx; }
+.pf-dial { color: var(--c-primary); margin-left: 8rpx; }
 .pf-note { font-size: 22rpx; color: var(--c-sub); text-align: center; line-height: 1.6; margin-bottom: 8rpx; }
 .form .area { height: 120rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; color: var(--c-text); background: var(--c-input); width: 100%; }
 .dark .tag, .dark .pf-tag { background: var(--c-card2); color: #6db3f2; }

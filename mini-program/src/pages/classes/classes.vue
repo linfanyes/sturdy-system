@@ -330,7 +330,7 @@ async function syncTerm() {
 .ops { display: flex; gap: 24rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
 .edit { color: var(--c-primary); background: rgba(7, 193, 96, 0.12); }
-.del { color: #e64340; background: rgba(230, 67, 64, 0.12); }
+.del { color: var(--c-danger); background: rgba(230, 67, 64, 0.12); }
 .detail { color: #3a8ee6; background: rgba(58, 142, 230, 0.12); }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 60; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; }
@@ -345,7 +345,7 @@ async function syncTerm() {
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; }
 .swatches { display: flex; flex-wrap: wrap; gap: 16rpx; align-items: center; }
 .sw { width: 56rpx; height: 56rpx; border-radius: 50%; border: 4rpx solid transparent; box-sizing: border-box; }
-.sw.on { border-color: #333; box-shadow: 0 0 0 2rpx #fff inset; }
+.sw.on { border-color: var(--c-title); box-shadow: 0 0 0 2rpx #fff inset; }
 .sw.custom { display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
 .sw-inp { width: 100%; height: 100%; font-size: 18rpx; text-align: center; color: #fff; background: transparent; border: none; }
 .dark .slogan { color: #d9a85a; }

@@ -321,14 +321,14 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .c-班会记录 { background: #e8f9e8; color: #07c160; }
 .c-学习资料 { background: #e8f1fb; color: #409eff; }
 .c-其他 { background: #f7f1e6; color: #a07b3b; }
-.bord { border-left: 6rpx solid #e06c75; padding-left: 14rpx; }
+.bord { border-left: 6rpx solid var(--c-danger); padding-left: 14rpx; }
 /* 待办 */
 .todo-add { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
 .ta-inp { flex: 1; background: var(--c-input); border-radius: 12rpx; padding: 14rpx 18rpx; font-size: 26rpx; }
 .ta-btn { font-size: 26rpx; color: #fff; background: var(--c-accent); padding: 0 28rpx; border-radius: 12rpx; display: flex; align-items: center; }
 .todo { gap: 14rpx; }
 .cb { width: 36rpx; height: 36rpx; border-radius: 50%; border: 3rpx solid var(--c-sub); flex-shrink: 0; }
-.cb.on { background: #07c160; border-color: #07c160; }
+.cb.on { background: var(--c-primary); border-color: var(--c-primary); }
 .li-del { font-size: 26rpx; color: var(--c-danger); flex-shrink: 0; margin-left: 10rpx; }
 .empty { text-align: center; color: var(--c-sub); padding: 30rpx 0; font-size: 24rpx; }
 .sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin: 30rpx 6rpx 18rpx; }

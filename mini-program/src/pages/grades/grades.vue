@@ -38,8 +38,8 @@
       </view>
       <view v-if="existing" class="oview">
         <view class="ov2"><text class="n">{{ analysis.avg }}</text><text class="l">平均分</text></view>
-        <view class="ov2"><text class="n" style="color:#07c160">{{ analysis.passRate }}%</text><text class="l">及格率</text></view>
-        <view class="ov2"><text class="n" style="color:#e6a23c">{{ analysis.excellentRate }}%</text><text class="l">优秀率</text></view>
+        <view class="ov2"><text class="n" style="color:var(--c-primary)">{{ analysis.passRate }}%</text><text class="l">及格率</text></view>
+        <view class="ov2"><text class="n" style="color:var(--c-accent)">{{ analysis.excellentRate }}%</text><text class="l">优秀率</text></view>
         <view class="ov2"><text class="n">{{ analysis.max }}</text><text class="l">最高</text></view>
         <view class="ov2"><text class="n">{{ analysis.min }}</text><text class="l">最低</text></view>
       </view>
@@ -90,8 +90,8 @@
           <view class="st"><view class="st-n">{{ analysis.max }}</view><view class="st-l">最高分</view></view>
           <view class="st"><view class="st-n">{{ analysis.min }}</view><view class="st-l">最低分</view></view>
           <view class="st"><view class="st-n">{{ analysis.median }}</view><view class="st-l">中位数</view></view>
-          <view class="st"><view class="st-n" style="color:#07c160">{{ analysis.passRate }}%</view><view class="st-l">及格率</view></view>
-          <view class="st"><view class="st-n" style="color:#e6a23c">{{ analysis.excellentRate }}%</view><view class="st-l">优秀率</view></view>
+          <view class="st"><view class="st-n" style="color:var(--c-primary)">{{ analysis.passRate }}%</view><view class="st-l">及格率</view></view>
+          <view class="st"><view class="st-n" style="color:var(--c-accent)">{{ analysis.excellentRate }}%</view><view class="st-l">优秀率</view></view>
         </view>
 
         <view class="dist">
@@ -462,7 +462,7 @@ async function commit() {
   box-sizing: border-box; background: var(--c-input);
 }
 .exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
-.clear { color: #e64340; font-size: 24rpx; }
+.clear { color: var(--c-danger); font-size: 24rpx; }
 .exp-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
 .exp-csv, .exp-rank { flex: 1; text-align: center; font-size: 26rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-accent); border: 1px solid var(--c-border); }
 .exp-csv:active, .exp-rank:active { opacity: 0.6; }
@@ -478,12 +478,12 @@ async function commit() {
 .preview { margin-top: 14rpx; border-top: 1px dashed var(--c-border); padding-top: 14rpx; }
 .pv-sum { font-size: 26rpx; color: var(--c-title); }
 .pv-sum .ok { color: var(--c-primary); }
-.pv-sum .bad { color: #e64340; }
+.pv-sum .bad { color: var(--c-danger); }
 .pv-errs { margin: 8rpx 0; }
-.pv-err { font-size: 24rpx; color: #e64340; line-height: 1.6; }
+.pv-err { font-size: 24rpx; color: var(--c-danger); line-height: 1.6; }
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
-.ana { background: #e6a23c; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.ana { background: var(--c-accent); color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .oview { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10rpx; margin-bottom: 16rpx; }
 .ov2 { background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 4rpx; text-align: center; }
 .ov2 .n { display: block; font-size: 30rpx; font-weight: 800; color: var(--c-accent); }
