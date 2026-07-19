@@ -23,7 +23,7 @@
           <text class="a del" @click="del(p)">删除</text>
         </view>
       </view>
-      <view class="empty" v-if="!list.length">暂无联系记录</view>
+      <EmptyState v-if="!list.length" icon="📞" text="暂无联系记录" hint="点击「+ 新增联系」记录与家长的沟通" />
     </view>
 
     <view class="sheet" v-if="showAdd">

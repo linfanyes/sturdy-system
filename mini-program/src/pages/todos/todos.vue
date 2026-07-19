@@ -8,7 +8,7 @@
       <view class="add" @click="openCreate">+ 新增</view>
     </view>
 
-    <view class="empty" v-if="!list.length">还没有待办事项</view>
+    <EmptyState v-if="!list.length" icon="✅" text="还没有待办事项" hint="享受片刻安静，或新增一条待办" />
 
     <view class="list" v-else>
       <view class="c" v-for="t in sorted" :key="t.id">

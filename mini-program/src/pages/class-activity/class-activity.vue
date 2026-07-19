@@ -13,7 +13,7 @@
         </view>
         <view class="ct" v-if="it.description">{{ it.description }}</view>
         <view class="ph" v-if="photos(it).length">
-          <image v-for="(p, i) in photos(it)" :key="i" :src="p" class="phimg" mode="aspectFill" />
+          <image v-for="(p, i) in photos(it)" :key="i" :src="p" class="phimg" mode="aspectFill" lazy-load />
         </view>
         <text class="del" @click="del(it)">删除</text>
       </view>

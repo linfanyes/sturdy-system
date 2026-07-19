@@ -48,7 +48,7 @@
           </view>
         </view>
       </view>
-      <view class="empty" v-if="!grouped.length">暂无作业</view>
+      <EmptyState v-if="!grouped.length" icon="📚" text="暂无作业" hint="点击下方按钮布置第一次作业" />
     </view>
 
     <view class="sheet" v-if="showAdd">

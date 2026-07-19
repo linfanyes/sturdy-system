@@ -23,6 +23,7 @@
           :src="p.src"
           class="img"
           mode="aspectFill"
+          lazy-load
           @click="manage ? null : preview(p.src)"
         />
         <view v-if="manage" class="move" @click="startMove(p)">移动</view>

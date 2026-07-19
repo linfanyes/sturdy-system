@@ -12,7 +12,7 @@
 
     <view class="grid">
       <view class="card" v-for="r in shown" :key="r.id">
-        <image v-if="r.image" :src="r.image" class="thumb" mode="aspectFill" />
+        <image v-if="r.image" :src="r.image" class="thumb" mode="aspectFill" lazy-load />
         <text class="tt">{{ r.title }}</text>
         <text class="desc" v-if="r.description">{{ r.description }}</text>
         <view class="chips">
@@ -24,7 +24,7 @@
           <text class="a del" @click="del(r)">删除</text>
         </view>
       </view>
-      <view class="empty" v-if="!shown.length">暂无资源</view>
+      <EmptyState v-if="!shown.length" icon="📦" text="暂无资源" hint="点击下方按钮上传教学资源" />
     </view>
 
     <view class="sheet" v-if="showAdd">

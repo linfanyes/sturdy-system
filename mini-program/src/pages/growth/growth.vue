@@ -23,7 +23,7 @@
           <text class="del" @click="del(g)">删除</text>
         </view>
       </view>
-      <view class="empty" v-if="!filtered.length">暂无成长记录</view>
+      <EmptyState v-if="!filtered.length" icon="🌱" text="暂无成长记录" hint="记录学生成长的每一个瞬间" />
     </view>
 
     <view class="sheet" v-if="showAdd">

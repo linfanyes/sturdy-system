@@ -24,7 +24,7 @@
         <text class="content">{{ n.content }}</text>
         <text class="foot">📣 发布于 {{ fmt(n.createdAt) }}</text>
       </view>
-      <view class="empty" v-if="!shown.length">暂无公告</view>
+      <EmptyState v-if="!shown.length" icon="📢" text="暂无公告" hint="点击右上角发布第一条公告" />
     </view>
 
     <view class="sheet" v-if="showAdd">

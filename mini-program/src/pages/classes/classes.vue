@@ -16,7 +16,7 @@
           <text class="op del" @click.stop="remove(c)">删除</text>
         </view>
       </view>
-      <view v-if="!list.length" class="empty">还没有班级，点下方按钮新建</view>
+      <EmptyState v-if="!list.length" icon="🏫" text="还没有班级" hint="点下方按钮新建第一个班级" />
     </view>
 
     <button class="add" @click="toggleForm">{{ showForm && !editingId ? '收起' : '＋ 新建班级' }}</button>

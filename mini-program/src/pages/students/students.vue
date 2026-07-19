@@ -37,7 +37,7 @@
           <text class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
         </view>
       </view>
-      <view v-if="!shown.length" class="empty">暂无学生，点下方添加或批量导入</view>
+      <EmptyState v-if="!shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
       <view v-if="hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
     </view>
 

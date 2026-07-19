@@ -8,11 +8,11 @@
       <view class="add" @click="openCreate">+ 新增</view>
     </view>
 
-    <view class="empty" v-if="!list.length">还没有获奖记录，记录每一份荣誉</view>
+    <EmptyState v-if="!list.length" icon="🏆" text="还没有获奖记录" hint="记录每一份荣誉" />
 
     <view class="list" v-else>
       <view class="c" v-for="a in list" :key="a.id">
-        <image v-if="a.image" :src="a.image" class="thumb" mode="aspectFill" @click="preview(a.image)"></image>
+        <image v-if="a.image" :src="a.image" class="thumb" mode="aspectFill" lazy-load @click="preview(a.image)"></image>
         <view class="mid">
           <view class="top">
             <text class="nm">{{ a.name }}</text>

@@ -13,7 +13,7 @@
       <text v-for="t in tabs" :key="t" class="tab" :class="active === t && 'on'" @click="active = t">{{ t }} ({{ countOf(t) }})</text>
     </scroll-view>
 
-    <view class="empty" v-if="!filtered.length">还没有笔记，记下每一个教学瞬间</view>
+    <EmptyState v-if="!filtered.length" icon="📝" text="还没有笔记" hint="记下每一个教学瞬间" />
 
     <view class="grid" v-else>
       <view class="c" v-for="n in filtered" :key="n.id" @click="openEdit(n)">
