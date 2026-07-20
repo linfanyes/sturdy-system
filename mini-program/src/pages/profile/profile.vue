@@ -285,7 +285,7 @@ async function doImport(data) {
   if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => api.post('/notes', n)))
   if (Array.isArray(data.teachers)) data.teachers.forEach(t => tasks.push(() => api.post('/teachers', t)))
   if (Array.isArray(data.exams)) data.exams.forEach(e => tasks.push(() => api.post('/exams', e)))
-  if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => api.post('/awards', a)))
+  if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => api.post('/award-records', a)))
   if (Array.isArray(data.todos)) data.todos.forEach(t => tasks.push(() => api.post('/todos', t)))
   // 成绩使用 merge 接口合并写入
   if (Array.isArray(data.grades)) data.grades.forEach(g => tasks.push(() => api.post('/grades/merge', g)))
