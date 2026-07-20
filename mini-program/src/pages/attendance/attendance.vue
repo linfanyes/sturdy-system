@@ -20,6 +20,15 @@
       <text class="q" v-for="s in statusList" :key="s" @click="markAll(s)">全班{{ s }}</text>
     </view>
 
+    <view class="trend-card" v-if="trendLabels.length">
+      <view class="trend-h">📈 本周出勤率趋势</view>
+      <canvas canvas-id="trendCanvas" class="trend-canvas"></canvas>
+      <view class="trend-legend">
+        <text class="tl-i"><text class="tl-dot" style="background:#07c160"></text>出勤</text>
+        <text class="tl-i"><text class="tl-dot" style="background:#e06c75"></text>旷课</text>
+      </view>
+    </view>
+
     <view class="list">
       <view class="stu" v-for="st in students" :key="st.id">
         <text class="av">{{ st.gender === '女' ? '👧' : '👦' }}</text>
@@ -45,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
@@ -85,6 +94,7 @@ async function load() {
 async function loadStudents() {
   students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
   await loadAtt()
+  loadTrend()
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -114,6 +124,94 @@ async function loadAtt() {
     } catch (e) {}
   }
   for (const s of students.value) if (!map.value[s.id]) map.value[s.id] = '出勤'
+}
+
+// 本周出勤趋势（近7天）
+const trendData = ref([])
+const trendLabels = computed(() => trendData.value.map((d) => d.label))
+const trendPresent = computed(() => trendData.value.map((d) => d.presentRate))
+const trendAbsent = computed(() => trendData.value.map((d) => d.absentRate))
+
+async function loadTrend() {
+  if (!classId.value || !students.value.length) return
+  const days = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const label = (d.getMonth() + 1) + '/' + d.getDate()
+    const datestr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+    const atts = (await api.get('/attendances')).filter((a) => a.classId === classId.value && a.date === datestr)
+    if (atts.length) {
+      const best = atts[0]
+      const recs = typeof best.records === 'string' ? JSON.parse(best.records) : (best.records || [])
+      const total = recs.length || 1
+      const present = recs.filter((r) => r.status !== '旷课').length
+      const absent = recs.filter((r) => r.status === '旷课').length
+      days.push({ label, presentRate: Math.round(present / total * 100), absentRate: Math.round(absent / total * 100) })
+    } else {
+      days.push({ label, presentRate: -1, absentRate: -1 })
+    }
+  }
+  trendData.value = days
+  nextTick(drawTrend)
+}
+
+function drawTrend() {
+  if (!trendLabels.value.length) return
+  const ctx = uni.createCanvasContext('trendCanvas')
+  const W = 660, H = 260, pad = 40, bottom = 40, top = 20
+  const chartW = W - pad * 2, chartH = H - bottom - top
+  ctx.clearRect(0, 0, W, H)
+
+  const valid = trendData.value.filter((d) => d.presentRate >= 0)
+  if (!valid.length) { ctx.draw(); return }
+
+  const maxY = 100
+  const stepX = chartW / (trendLabels.value.length - 1 || 1)
+
+  // 背景网格
+  ctx.setStrokeStyle(theme.mode === 'dark' ? '#2c313a' : '#f0eadc')
+  ctx.setLineWidth(1)
+  for (let y = 0; y <= 100; y += 25) {
+    const yy = top + chartH - (y / maxY) * chartH
+    ctx.beginPath(); ctx.moveTo(pad, yy); ctx.lineTo(W - pad, yy); ctx.stroke()
+  }
+
+  // 画折线 - 出勤率
+  ctx.setStrokeStyle('#07c160')
+  ctx.setLineWidth(3)
+  ctx.beginPath()
+  trendLabels.value.forEach((_, i) => {
+    const d = trendData.value[i]
+    const x = pad + i * stepX
+    const y = top + chartH - (Math.max(0, d.presentRate) / maxY) * chartH
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  })
+  ctx.stroke()
+
+  // 画折线 - 旷课率
+  ctx.setStrokeStyle('#e06c75')
+  ctx.setLineWidth(2)
+  ctx.setLineDash([4, 4])
+  ctx.beginPath()
+  trendLabels.value.forEach((_, i) => {
+    const d = trendData.value[i]
+    const x = pad + i * stepX
+    const y = top + chartH - (Math.max(0, d.absentRate) / maxY) * chartH
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  })
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // 标签
+  ctx.setFontSize(20)
+  ctx.setTextAlign('center')
+  ctx.setFillStyle(theme.mode === 'dark' ? '#9aa0a6' : '#8a8a8a')
+  trendLabels.value.forEach((label, i) => {
+    ctx.fillText(label, pad + i * stepX, H - 10)
+  })
+
+  ctx.draw()
 }
 
 function cur(id) {
@@ -181,6 +279,12 @@ onUnload(() => {
 .lab { font-size: 22rpx; color: var(--c-sub); }
 .quick { display: flex; gap: 12rpx; margin-bottom: 18rpx; flex-wrap: wrap; }
 .q { font-size: 24rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-accent); }
+.trend-card { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; margin-bottom: 18rpx; }
+.trend-h { font-size: 26rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.trend-canvas { width: 660rpx; height: 260rpx; margin: 0 auto; display: block; }
+.trend-legend { display: flex; gap: 24rpx; justify-content: center; margin-top: 8rpx; }
+.tl-i { font-size: 20rpx; color: var(--c-sub); display: flex; align-items: center; gap: 6rpx; }
+.tl-dot { width: 16rpx; height: 16rpx; border-radius: 50%; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 20rpx; margin-bottom: 24rpx; }
 .stu { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1px solid var(--c-border); }
 .stu:last-child { border-bottom: none; }
