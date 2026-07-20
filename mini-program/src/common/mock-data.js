@@ -146,6 +146,86 @@ const BEHAVIOR_RECORDS = [
   { id: 'b6', studentId: 's15', studentName: '邓欣', behavior: '作业工整', date: todayStr, note: '数学作业书写规范、正确率高' },
 ]
 
+/* ---------------- 作业 ---------------- */
+const HOMEWORK = [
+  // c1 一年级一班
+  { id: 'hw1', classId: 'c1', subject: '语文', title: '抄写生字', content: '课文第12课生字，每个写3遍，组词1个。', startDate: todayStr, deadline: todayStr, status: '待批改' },
+  { id: 'hw2', classId: 'c1', subject: '数学', title: '口算练习', content: '完成《口算天天练》第35页。', startDate: todayStr, deadline: todayStr, status: '已批改' },
+  { id: 'hw3', classId: 'c1', subject: '英语', title: '朗读打卡', content: '跟读 Unit 3 课文 3 遍，录制音频发班级群。', startDate: todayStr, deadline: todayStr, status: '已发还' },
+  { id: 'hw4', classId: 'c1', subject: '语文', title: '背诵古诗', content: '背诵《静夜思》，明天课前提问。', startDate: todayStr, deadline: todayStr, status: '待批改' },
+  // c2 二年级二班
+  { id: 'hw5', classId: 'c2', subject: '语文', title: '背诵课文', content: '背诵《秋天的雨》第三自然段，家长签字。', startDate: todayStr, deadline: todayStr, status: '待批改' },
+  { id: 'hw6', classId: 'c2', subject: '数学', title: '应用题练习', content: '完成课本第68页第1-8题，写在作业本上。', startDate: todayStr, deadline: todayStr, status: '已批改' },
+  { id: 'hw7', classId: 'c2', subject: '科学', title: '观察日记', content: '观察一种植物的生长情况，写一篇100字观察日记。', startDate: todayStr, deadline: todayStr, status: '待批改' },
+  // c3 三年级一班
+  { id: 'hw8', classId: 'c3', subject: '语文', title: '作文：我的暑假计划', content: '写一篇400字作文《我的暑假计划》，要求有开头、正文、结尾。', startDate: todayStr, deadline: todayStr, status: '已批改' },
+  { id: 'hw9', classId: 'c3', subject: '数学', title: '练习册第六单元', content: '完成《数学练习册》第六单元全部，含思维拓展题。', startDate: todayStr, deadline: todayStr, status: '待批改' },
+  { id: 'hw10', classId: 'c3', subject: '英语', title: '单词听写准备', content: '复习 Unit 4 单词表，准备下周一听写。', startDate: todayStr, deadline: todayStr, status: '已发还' },
+]
+
+/* ---------------- 获奖记录 ---------------- */
+const AWARD_RECORDS = [
+  { id: 'aw1', name: '校级三好学生', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['综合', '荣誉'], note: '学习成绩优异，品德表现突出', ratingScore: 95 },
+  { id: 'aw2', name: '绘画比赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', tags: ['美术', '竞赛'], note: '《春天的校园》获区级少儿绘画一等奖', ratingScore: 92 },
+  { id: 'aw3', name: '优秀班干部', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['班务', '管理'], note: '担任班长期间班级纪律显著提升', ratingScore: 90 },
+  { id: 'aw4', name: '书法比赛二等奖', issuer: '市书法协会', date: todayStr, level: '市级', tags: ['书法', '竞赛'], note: '作品获市少儿书法大赛二等奖', ratingScore: 88 },
+  { id: 'aw5', name: '数学竞赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', tags: ['数学', '竞赛'], note: '区小学生数学思维竞赛个人一等奖', ratingScore: 96 },
+  { id: 'aw6', name: '科技创新奖', issuer: '市科协', date: todayStr, level: '市级', tags: ['科技', '创新'], note: '航模制作项目获市青少年科技创新大赛优秀奖', ratingScore: 90 },
+  { id: 'aw7', name: '阅读之星', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['阅读', '习惯'], note: '本学期课外阅读量全校第一', ratingScore: 88 },
+  { id: 'aw8', name: '文明礼仪标兵', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['品德'], note: '日常行为规范表现突出', ratingScore: 85 },
+]
+
+/* ---------------- 班级活动 ---------------- */
+const CLASS_ACTIVITIES = [
+  { id: 'ca1', classId: 'c1', title: '春游动物园', date: todayStr, description: '组织学生参观动物园，认识各种动物习性，培养观察能力。', photos: [] },
+  { id: 'ca2', classId: 'c1', title: '六一儿童节联欢', date: todayStr, description: '班级联欢会，学生表演节目（唱歌/舞蹈/朗诵），发放小礼物。', photos: [] },
+  { id: 'ca3', classId: 'c2', title: '参观科技馆', date: todayStr, description: '参观市科技馆，体验互动展项，激发科学兴趣。', photos: [] },
+  { id: 'ca4', classId: 'c2', title: '班级读书会', date: todayStr, description: '每人分享一本喜欢的书，评选「最佳图书推荐」。', photos: [] },
+  { id: 'ca5', classId: 'c3', title: '运动会', date: todayStr, description: '校运动会，班级参加接力跑、跳绳、拔河等项目。', photos: [] },
+  { id: 'ca6', classId: 'c3', title: '植树节活动', date: todayStr, description: '在校园种植区种下10棵小树苗，学习环保知识。', photos: [] },
+]
+
+/* ---------------- 轮值表 ---------------- */
+const DUTY_ROSTERS = [
+  { id: 'dr1', classId: 'c1', name: '第20周值日表', type: '按组', assignments: [
+    { date: todayStr, persons: ['张小明', '李小华', '王小芳'] },
+    { date: todayStr, persons: ['赵小刚', '刘思琪', '孙浩然'] },
+    { date: todayStr, persons: ['周雅婷', '吴梓涵', '郑欣然'] },
+  ] },
+  { id: 'dr2', classId: 'c2', name: '第20周值日表', type: '按人', assignments: [
+    { date: todayStr, persons: ['陈子轩', '杨一诺'] },
+    { date: todayStr, persons: ['郑凯', '冯雪'] },
+    { date: todayStr, persons: ['黄子涵', '陈子轩'] },
+  ] },
+  { id: 'dr3', classId: 'c3', name: '第20周值日表', type: '按组', assignments: [
+    { date: todayStr, persons: ['何苗', '许乐'] },
+    { date: todayStr, persons: ['邓欣', '曹宇轩'] },
+  ] },
+]
+
+/* ---------------- 班费 ---------------- */
+const CLASS_EXPENSES = [
+  { id: 'ce1', classId: 'c1', type: '收入', category: '班费收取', amount: 450, handler: '珊珊老师', date: todayStr, description: '本学期班费，每人50元，共9人。' },
+  { id: 'ce2', classId: 'c1', type: '支出', category: '教学用品', amount: -68, handler: '珊珊老师', date: todayStr, description: '购买拼音卡片、识字挂图。' },
+  { id: 'ce3', classId: 'c1', type: '支出', category: '活动经费', amount: -120, handler: '珊珊老师', date: todayStr, description: '六一儿童节联欢零食及小礼物。' },
+  { id: 'ce4', classId: 'c2', type: '收入', category: '班费收取', amount: 250, handler: '张老师', date: todayStr, description: '本学期班费，每人50元，共5人。' },
+  { id: 'ce5', classId: 'c2', type: '支出', category: '图书购置', amount: -95, handler: '张老师', date: todayStr, description: '班级图书角新增绘本12册。' },
+  { id: 'ce6', classId: 'c2', type: '支出', category: '教学用品', amount: -35, handler: '张老师', date: todayStr, description: '课堂奖励贴纸、印章。' },
+  { id: 'ce7', classId: 'c3', type: '收入', category: '班费收取', amount: 200, handler: '李老师', date: todayStr, description: '本学期班费，每人50元，共4人。' },
+  { id: 'ce8', classId: 'c3', type: '支出', category: '竞赛费用', amount: -80, handler: '李老师', date: todayStr, description: '数学竞赛报名及资料费。' },
+  { id: 'ce9', classId: 'c3', type: '支出', category: '活动经费', amount: -60, handler: '李老师', date: todayStr, description: '植树节树苗及工具费用。' },
+]
+
+/* ---------------- 班级相册 ---------------- */
+const CLASS_GALLERIES = [
+  { id: 'cg1', classId: 'c1', title: '春游动物园', date: todayStr, description: '孩子们与长颈鹿、大熊猫的合影，开心的一天！', photos: [] },
+  { id: 'cg2', classId: 'c1', title: '课堂精彩瞬间', date: todayStr, description: '语文课上积极举手发言、小组讨论的热烈场景。', photos: [] },
+  { id: 'cg3', classId: 'c2', title: '运动会风采', date: todayStr, description: '接力跑比赛中同学们奋力冲刺、啦啦队加油助威。', photos: [] },
+  { id: 'cg4', classId: 'c2', title: '书法作品展', date: todayStr, description: '班级硬笔书法作品展示，端正秀丽，各有特色。', photos: [] },
+  { id: 'cg5', classId: 'c3', title: '数学竞赛留影', date: todayStr, description: '赛后获奖同学合影，展现拼搏精神。', photos: [] },
+  { id: 'cg6', classId: 'c3', title: '班级黑板报', date: todayStr, description: '本期主题「保护环境从我做起」黑板报展示。', photos: [] },
+]
+
 const MOCK = {
   '/classes': CLASSES,
   '/students': STUDENTS,
@@ -162,12 +242,12 @@ const MOCK = {
   '/users/me': { id: 'u1', name: '珊珊老师', school: '阳光实验小学', subjects: ['语文', '品德'] },
   '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' },
   '/config/app': [{ key: '版本', value: '1.0.0 (demo)' }, { key: '环境', value: '演示模式' }],
-  '/duty-rosters': [],
-  '/class-activities': [],
-  '/class-expenses': [],
-  '/award-records': [],
-  '/homework': [],
-  '/class-galleries': [],
+  '/duty-rosters': DUTY_ROSTERS,
+  '/class-activities': CLASS_ACTIVITIES,
+  '/class-expenses': CLASS_EXPENSES,
+  '/award-records': AWARD_RECORDS,
+  '/homework': HOMEWORK,
+  '/class-galleries': CLASS_GALLERIES,
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 
