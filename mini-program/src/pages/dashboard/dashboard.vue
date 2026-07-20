@@ -76,7 +76,7 @@
       <view v-for="n in recentNotes" :key="n.id" class="li col">
         <view class="li-top">
           <text class="li-t">{{ n.title }}</text>
-          <text class="cat" :class="'c-' + (n.category || '其他')">{{ n.category || '其他' }}</text>
+          <text class="cat" :class="'c-' + catKey(n.category || '其他')">{{ n.category || '其他' }}</text>
         </view>
         <text class="li-s clamp">{{ n.content }}</text>
       </view>
@@ -171,6 +171,12 @@ function genBirthdayCard(b) {
 }
 function copyBirthdayCard() {
   copyText(`🎂 亲爱的${cardName.value}同学：\n\n生日快乐！${cardMsg.value}\n\n——${auth.user?.name||'老师'} ${new Date().toLocaleDateString('zh-CN')}`)
+}
+
+// 笔记分类色块：将中文分类映射为 ASCII 类名，规避 WXSS 不支持中文类名的 \XXXX Unicode 转义
+const catKeyMap = { '教学反思': 'reflection', '班会记录': 'meeting', '学习资料': 'material' }
+function catKey(cat) {
+  return catKeyMap[cat] || 'other'
 }
 
 const features = [
@@ -390,10 +396,10 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .li-s { color: var(--c-sub); font-size: 22rpx; margin-left: 16rpx; flex-shrink: 0; }
 .clamp { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 16rpx; flex-shrink: 0; }
-.c-教学反思 { background: #fde8ea; color: #e06c75; }
-.c-班会记录 { background: #e8f9e8; color: #07c160; }
-.c-学习资料 { background: #e8f1fb; color: #409eff; }
-.c-其他 { background: #f7f1e6; color: #a07b3b; }
+.c-reflection { background: #fde8ea; color: #e06c75; }
+.c-meeting { background: #e8f9e8; color: #07c160; }
+.c-material { background: #e8f1fb; color: #409eff; }
+.c-other { background: #f7f1e6; color: #a07b3b; }
 .bord { border-left: 6rpx solid var(--c-danger); padding-left: 14rpx; }
 /* P1-4: 本周生日 */
 .bd-li { gap: 12rpx; }
