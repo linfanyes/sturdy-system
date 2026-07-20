@@ -109,6 +109,7 @@ const sections = ref([
     items: [
       { label: '古诗词助手', icon: '📜', subject: 'poetry' },
       { label: '汉字听写', icon: '🎧', subject: 'dictation' },
+      { label: '笔顺演示', icon: '✏️', path: '/pages/tools/stroke/stroke' },
       { label: '阅读理解生成', icon: '📖', subject: 'reading' },
       { label: '小作文助手', icon: '✍️', subject: 'essay' },
       { label: '成语词典', icon: '🔤', subject: 'idiom' },
@@ -190,6 +191,8 @@ const sections = ref([
       { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
       { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
       { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
+      { label: '计分板', icon: '🎯', path: '/pages/tools/score-panel/score-panel' },
+      { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
       { label: '加减分', icon: '➕', crud: 'reward-records' },
       { label: '积分记录', icon: '💯', crud: 'score-records' },
       { label: '小组评分', icon: '👥', crud: 'group-scores' },

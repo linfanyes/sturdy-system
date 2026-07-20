@@ -119,6 +119,18 @@
           </view>
         </view>
 
+        <!-- P1-3: 各科对比雷达图（维度：均分/及格率/优秀率/最高/最低） -->
+        <view class="radar" v-if="radarData.subjects.length">
+          <view class="dh">📊 各科对比雷达图</view>
+          <canvas canvas-id="radarChart" id="radarChart" class="radar-cv"></canvas>
+          <view class="radar-legend">
+            <view v-for="(s, i) in radarData.subjects" :key="s.name" class="rl-item">
+              <view class="rl-c" :style="{ background: radarData.colors[i % radarData.colors.length] }"></view>
+              <text>{{ s.name }}</text>
+            </view>
+          </view>
+        </view>
+
         <view class="rank" v-if="analysis.rank.length">
           <view class="rh">名次（前 20）</view>
           <view v-for="(r, i) in analysis.rank.slice(0, 20)" :key="r.id" class="rk">
@@ -135,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
@@ -224,6 +236,128 @@ const analysis = computed(() => {
     .map((x) => ({ id: x.studentId, name: nameMap[x.studentId] || '—', score: x.score }))
     .sort((a, b) => b.score - a.score)
   return { avg, max, min, median: mid, passRate, excellentRate, segs, rank, dist: distWithMeta, distMax, count: sc.length }
+})
+
+// P1-3: 各科雷达图数据 - 取当前班级、当前考试所有已录入成绩的科目，每科 5 维
+const RADAR_COLORS = ['#e6a23c', '#07c160', '#409eff', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
+const radarData = computed(() => {
+  const result = { subjects: [], colors: RADAR_COLORS }
+  if (!existing.value || !examName.value || !classId.value) return result
+  const list = grades.value.filter(
+    (g) => g.classId === classId.value && g.examName === examName.value,
+  )
+  list.forEach((g) => {
+    const sc = (g.scores || []).map((x) => Number(x.score)).filter((n) => !isNaN(n))
+    if (!sc.length) return
+    const pass = sc.filter((s) => s >= 60).length
+    const excellent = sc.filter((s) => s >= 90).length
+    result.subjects.push({
+      name: g.subject || '—',
+      avg: +(sc.reduce((a, b) => a + b, 0) / sc.length).toFixed(1),
+      passRate: Math.round((pass / sc.length) * 100),
+      excellentRate: Math.round((excellent / sc.length) * 100),
+      max: Math.max(...sc),
+      min: Math.min(...sc),
+    })
+  })
+  return result
+})
+
+function hexToRgba(hex, alpha) {
+  const h = (hex || '#999').replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16) || 0
+  const g = parseInt(h.substring(2, 4), 16) || 0
+  const b = parseInt(h.substring(4, 6), 16) || 0
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')'
+}
+
+function renderRadar() {
+  const data = radarData.value
+  if (!data.subjects.length) return
+  const ctx = uni.createCanvasContext('radarChart')
+  const W = 300
+  const H = 300
+  const cx = W / 2
+  const cy = H / 2
+  const R = 100
+  const dims = ['均分', '及格率', '优秀率', '最高', '最低']
+  const n = dims.length
+  // 网格 5 圈
+  ctx.setStrokeStyle('#dcdfe6')
+  ctx.setLineWidth(1)
+  for (let k = 1; k <= 5; k++) {
+    const r = (R * k) / 5
+    ctx.beginPath()
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const x = cx + r * Math.cos(a)
+      const y = cy + r * Math.sin(a)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.stroke()
+  }
+  // 轴线
+  ctx.setStrokeStyle('#e4e7ed')
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a))
+    ctx.stroke()
+  }
+  // 维度标签
+  ctx.setFillStyle('#909399')
+  ctx.setFontSize(11)
+  ctx.setTextAlign('center')
+  ctx.setTextBaseline('middle')
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+    const lx = cx + (R + 18) * Math.cos(a)
+    const ly = cy + (R + 18) * Math.sin(a)
+    ctx.fillText(dims[i], lx, ly)
+  }
+  // 数据多边形
+  data.subjects.forEach((s, idx) => {
+    const vals = [s.avg, s.passRate, s.excellentRate, s.max, s.min]
+    const color = data.colors[idx % data.colors.length]
+    ctx.setStrokeStyle(color)
+    ctx.setFillStyle(hexToRgba(color, 0.15))
+    ctx.setLineWidth(2)
+    ctx.beginPath()
+    for (let i = 0; i < n; i++) {
+      const v = Math.max(0, Math.min(100, vals[i])) / 100
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const x = cx + R * v * Math.cos(a)
+      const y = cy + R * v * Math.sin(a)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+    // 顶点
+    ctx.setFillStyle(color)
+    for (let i = 0; i < n; i++) {
+      const v = Math.max(0, Math.min(100, vals[i])) / 100
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+      const x = cx + R * v * Math.cos(a)
+      const y = cy + R * v * Math.sin(a)
+      ctx.beginPath()
+      ctx.arc(x, y, 3, 0, 2 * Math.PI)
+      ctx.fill()
+    }
+  })
+  ctx.draw()
+}
+
+watch(showAnalysis, (v) => {
+  if (v) {
+    nextTick(() => {
+      setTimeout(renderRadar, 120)
+    })
+  }
 })
 
 const classOpts = ref([])
@@ -565,4 +699,10 @@ async function commit() {
 .rk-n { flex: 1; font-size: 26rpx; color: var(--c-title); }
 .rk-s { font-size: 28rpx; font-weight: 700; color: var(--c-accent); }
 .m-close { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 24rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+/* P1-3: 各科雷达图 */
+.radar { margin-top: 22rpx; padding-top: 14rpx; border-top: 1px dashed var(--c-border); }
+.radar-cv { width: 600rpx; height: 600rpx; margin: 0 auto; display: block; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 10rpx 18rpx; justify-content: center; margin-top: 6rpx; }
+.rl-item { display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; color: var(--c-sub); }
+.rl-c { width: 18rpx; height: 18rpx; border-radius: 4rpx; }
 </style>

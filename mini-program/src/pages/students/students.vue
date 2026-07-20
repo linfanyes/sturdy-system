@@ -60,6 +60,9 @@
       <input v-model="form.parentName" placeholder="家长姓名" />
       <input v-model="form.parentPhone" placeholder="家长电话" />
       <input v-model="form.duty" placeholder="班级职务（如 班长/课代表）" />
+      <picker mode="date" :value="form.birthDate" @change="(e) => (form.birthDate = e.detail.value)">
+        <view class="picker">🎂 生日：{{ form.birthDate || '请选择日期（可选）' }}</view>
+      </picker>
       <input v-model="form.tags" placeholder="标签（逗号分隔，如 活跃,进步）" />
       <textarea v-model="form.note" class="area" placeholder="备注（联系方式、特殊事项等）"></textarea>
       <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
@@ -105,6 +108,7 @@
       <view class="dialog" @click.stop>
         <view class="d-title">{{ profile.name }} 的档案</view>
         <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
+        <view class="pf-line" v-if="profile.birthDate">🎂 生日：{{ profile.birthDate }}</view>
         <view class="pf-line" v-if="profile.seatRow">座位：座号 {{ profile.seatNo || '—' }}（第{{ profile.seatRow }}行第{{ profile.seatCol }}列）</view>
         <view class="pf-composite" :class="levelClass">
           <text class="pf-c-n">{{ radar.composite }}</text>
@@ -141,6 +145,16 @@ const classId = ref('')
 const className = ref('')
 const list = ref([])
 const kw = ref('')
+// P2-2: 搜索关键词防抖（200ms），避免每次输入立即触发 computed 重新过滤
+const kwDebounced = ref('')
+let kwTimer = null
+watch(kw, (v) => {
+  if (kwTimer) clearTimeout(kwTimer)
+  kwTimer = setTimeout(() => {
+    kwDebounced.value = v
+    resetPage()
+  }, 200)
+})
 const genderOpts = ['全部', '男', '女']
 const genderFilter = ref('全部')
 const sortOpts = ['按学号', '按座位', '按姓名']
@@ -155,7 +169,8 @@ const page = ref(1)
 const shownAll = computed(() => {
   // list 已由服务端按 classId 过滤，此处仅做搜索/性别/排序
   let arr = list.value
-  const k = kw.value.trim().toLowerCase()
+  // 用防抖后的关键词，避免每次按键触发过滤
+  const k = kwDebounced.value.trim().toLowerCase()
   if (k) arr = arr.filter((s) => (s.name || '').toLowerCase().includes(k) || (s.studentNo || '').toLowerCase().includes(k))
   if (genderFilter.value !== '全部') arr = arr.filter((s) => s.gender === genderFilter.value)
   arr.sort((a, b) => {
@@ -183,7 +198,7 @@ const levelClass = computed(() => {
   const c = radar.value.composite
   return c >= 85 ? 'lv-excellent' : c >= 70 ? 'lv-good' : c >= 60 ? 'lv-mid' : 'lv-low'
 })
-const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' })
+const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' })
 const saving = ref(false)
 
 onLoad((q) => {
@@ -201,8 +216,8 @@ onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()
 })
-// 筛选/搜索/排序变化时重置分页到第 1 页
-watch([kw, genderFilter, sortBy], () => resetPage())
+// 筛选/排序变化时重置分页到第 1 页（kw 由防抖 watch 内部触发 resetPage）
+watch([genderFilter, sortBy], () => resetPage())
 
 function toggleForm() {
   showForm.value = !showForm.value
@@ -272,7 +287,7 @@ async function save() {
     })
     uni.showToast({ title: '已保存', icon: 'success' })
     showForm.value = false
-    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', tags: '', note: '' }
+    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' }
     load()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })

@@ -21,6 +21,38 @@
       <picker :range="subLabels" @change="onSub"><view class="picker sm">{{ subLabel }}</view></picker>
       <picker :range="statusOpts" @change="(e) => (filterStatus = statusOpts[e.detail.value])"><view class="picker sm">{{ filterStatus }}</view></picker>
       <picker :range="sortOpts" @change="(e) => (sortBy = sortVals[e.detail.value])"><view class="picker sm">{{ sortLabel }}</view></picker>
+      <text class="seg-btn" :class="showAnalysis && 'on'" @click="showAnalysis = !showAnalysis">📊 完成分析</text>
+    </view>
+
+    <!-- P1-5: 完成分析 seg -->
+    <view v-if="showAnalysis" class="analysis">
+      <view class="ana-h">📊 班级作业完成情况</view>
+      <view v-if="!analysisData.length" class="empty">暂无可分析数据</view>
+      <view v-for="a in analysisData" :key="a.classId" class="ana-row">
+        <view class="ana-name">{{ a.className }}（{{ a.total }} 项）</view>
+        <view class="ana-bar">
+          <view class="ana-fill b-pen" :style="{ width: a.penPct + '%' }" v-if="a.pen"></view>
+          <view class="ana-fill b-ok" :style="{ width: a.okPct + '%' }" v-if="a.ok"></view>
+          <view class="ana-fill b-done" :style="{ width: a.donePct + '%' }" v-if="a.done"></view>
+        </view>
+        <view class="ana-legend">
+          <text class="lg b-pen">待批改 {{ a.pen }}</text>
+          <text class="lg b-ok">已批改 {{ a.ok }}</text>
+          <text class="lg b-done">已发还 {{ a.done }}</text>
+          <text class="lg-rate">完成率 {{ a.rate }}%</text>
+        </view>
+      </view>
+
+      <view class="ana-h" style="margin-top:20rpx">⚠️ 逾期未批改（{{ overdueList.length }} 项）</view>
+      <view v-if="!overdueList.length" class="empty">无逾期作业</view>
+      <view v-for="o in overdueList" :key="o.id" class="overdue-item">
+        <view class="ov-top">
+          <text class="ov-sub">{{ o.subject }}</text>
+          <text class="ov-tt">{{ o.title }}</text>
+          <text class="ov-class">{{ o.className }}</text>
+        </view>
+        <text class="ov-meta">截止 {{ o.deadline || '—' }} · 已逾期 {{ o.days }} 天</text>
+      </view>
     </view>
 
     <view class="groups">
@@ -139,6 +171,53 @@ const grouped = computed(() => {
 const total = computed(() => filtered.value.length)
 const pending = computed(() => filtered.value.filter((h) => h.status === '待批改').length)
 const done = computed(() => filtered.value.filter((h) => h.status === '已批改' || h.status === '已发还').length)
+
+// P1-5: 完成分析 - 按班级聚合作业状态分布
+const showAnalysis = ref(false)
+const analysisData = computed(() => {
+  return grouped.value.map((g) => {
+    const list = g.list
+    const total = list.length
+    const pen = list.filter((h) => h.status === '待批改').length
+    const ok = list.filter((h) => h.status === '已批改').length
+    const dn = list.filter((h) => h.status === '已发还').length
+    const rate = total ? Math.round(((ok + dn) / total) * 100) : 0
+    return {
+      classId: g.classId,
+      className: g.className,
+      total,
+      pen,
+      ok,
+      done: dn,
+      rate,
+      penPct: total ? (pen / total) * 100 : 0,
+      okPct: total ? (ok / total) * 100 : 0,
+      donePct: total ? (dn / total) * 100 : 0,
+    }
+  })
+})
+const overdueList = computed(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  const now = new Date(today + 'T00:00:00')
+  const out = []
+  filtered.value.forEach((h) => {
+    if (h.status !== '待批改') return
+    if (!h.deadline) return
+    const d = new Date(h.deadline + 'T00:00:00')
+    if (isNaN(d.getTime())) return
+    if (d >= now) return
+    const days = Math.floor((now - d) / 86400000)
+    out.push({
+      id: h.id,
+      subject: h.subject,
+      title: h.title,
+      deadline: h.deadline,
+      days,
+      className: classMap.value[h.classId] || '已删除班级',
+    })
+  })
+  return out.sort((a, b) => b.days - a.days)
+})
 
 function badgeCls(s) {
   return s === '已发还' ? 'b-done' : s === '已批改' ? 'b-ok' : 'b-pen'
@@ -295,6 +374,27 @@ function after(n) {
 .filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10rpx; background: var(--c-card); border-radius: 16rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; }
 .chk { font-size: 24rpx; color: var(--c-title); display: flex; align-items: center; }
 .picker.sm { border: 1px solid var(--c-border); border-radius: 30rpx; padding: 10rpx 20rpx; font-size: 24rpx; background: var(--c-input); }
+.seg-btn { font-size: 24rpx; color: var(--c-accent); background: var(--c-card2); padding: 10rpx 22rpx; border-radius: 30rpx; }
+.seg-btn.on { background: var(--c-accent); color: #fff; }
+/* P1-5: 完成分析 */
+.analysis { background: var(--c-card); border-radius: 16rpx; padding: 22rpx; margin-bottom: 14rpx; }
+.ana-h { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 12rpx; }
+.ana-row { margin-bottom: 18rpx; }
+.ana-name { font-size: 24rpx; color: var(--c-title); margin-bottom: 8rpx; }
+.ana-bar { display: flex; height: 32rpx; border-radius: 16rpx; overflow: hidden; background: var(--c-card2); }
+.ana-fill { height: 100%; transition: width 0.3s; }
+.ana-legend { display: flex; flex-wrap: wrap; gap: 8rpx 14rpx; margin-top: 8rpx; font-size: 22rpx; color: var(--c-sub); }
+.ana-legend .lg { display: flex; align-items: center; gap: 6rpx; padding: 4rpx 14rpx; border-radius: 16rpx; }
+.ana-legend .lg.b-pen { background: #fff3e0; color: #e6a23c; }
+.ana-legend .lg.b-ok { background: #e8f1fb; color: #409eff; }
+.ana-legend .lg.b-done { background: #e8f9e8; color: #07c160; }
+.lg-rate { margin-left: auto; font-weight: 700; color: var(--c-accent); }
+.overdue-item { padding: 14rpx 0; border-top: 1rpx solid var(--c-border); }
+.ov-top { display: flex; align-items: center; gap: 10rpx; flex-wrap: wrap; }
+.ov-sub { font-size: 20rpx; color: var(--c-accent); background: var(--c-card2); padding: 4rpx 12rpx; border-radius: 16rpx; }
+.ov-tt { font-size: 26rpx; font-weight: 700; color: var(--c-title); flex: 1; }
+.ov-class { font-size: 22rpx; color: var(--c-sub); }
+.ov-meta { font-size: 22rpx; color: var(--c-danger); margin-top: 6rpx; }
 .groups { background: var(--c-card); border-radius: 16rpx; overflow: hidden; }
 .group { border-bottom: 1rpx solid var(--c-border); }
 .group:last-child { border-bottom: none; }

@@ -93,6 +93,20 @@
       </view>
     </view>
 
+    <!-- 本周生日 -->
+    <view class="card" v-if="weekBirthdays.length">
+      <view class="card-h">
+        <text class="ch-t">🎂 本周生日（{{ weekBirthdays.length }} 人）</text>
+      </view>
+      <view v-for="b in weekBirthdays" :key="b.id" class="li bd-li">
+        <text class="bd-emoji">🎂</text>
+        <text class="li-t">{{ b.name }}</text>
+        <text class="bd-date">{{ b.birthLabel }}</text>
+        <text v-if="b.daysLeft === 0" class="bd-today">今天</text>
+        <text v-else class="bd-days">{{ b.daysLeft }} 天后</text>
+      </view>
+    </view>
+
     <!-- 课堂神器（可勾选≤5） -->
     <view class="card">
       <view class="card-h">
@@ -200,6 +214,40 @@ const todayTodos = computed(() =>
     .sort((a, b) => Number(a.done) - Number(b.done))
 )
 const doneCount = computed(() => todayTodos.value.filter((t) => t.done).length)
+
+// P1-4: 本周生日（7 天内过生日的学生，按 birthDate 月日匹配，忽略年份）
+const weekBirthdays = computed(() => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const list = []
+  studentList.value.forEach((s) => {
+    if (!s.birthDate) return
+    // 兼容 YYYY-MM-DD / YYYY/MM/DD
+    const m = String(s.birthDate).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+    if (!m) return
+    const mm = +m[2]
+    const dd = +m[3]
+    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return
+    // 今年生日
+    let birthThisYear = new Date(now.getFullYear(), mm - 1, dd)
+    // 如果今年生日已过，看明年；这里允许"今天"算 0 天
+    const diffDays = Math.round((birthThisYear - today) / 86400000)
+    let daysLeft = diffDays
+    if (diffDays < 0) {
+      // 已过，看明年
+      birthThisYear = new Date(now.getFullYear() + 1, mm - 1, dd)
+      daysLeft = Math.round((birthThisYear - today) / 86400000)
+    }
+    if (daysLeft < 0 || daysLeft > 7) return
+    list.push({
+      id: s.id,
+      name: s.name,
+      birthLabel: (mm < 10 ? '0' + mm : mm) + '-' + (dd < 10 ? '0' + dd : dd),
+      daysLeft,
+    })
+  })
+  return list.sort((a, b) => a.daysLeft - b.daysLeft)
+})
 
 // 今日心情（本地持久化）
 const moodOptions = ['元气满满', '有些小累', '需要鼓励', '灵感爆棚']
@@ -322,6 +370,12 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .c-学习资料 { background: #e8f1fb; color: #409eff; }
 .c-其他 { background: #f7f1e6; color: #a07b3b; }
 .bord { border-left: 6rpx solid var(--c-danger); padding-left: 14rpx; }
+/* P1-4: 本周生日 */
+.bd-li { gap: 12rpx; }
+.bd-emoji { font-size: 28rpx; flex-shrink: 0; }
+.bd-date { font-size: 24rpx; color: var(--c-sub); margin-left: auto; flex-shrink: 0; }
+.bd-today { font-size: 22rpx; color: #fff; background: var(--c-danger); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
+.bd-days { font-size: 22rpx; color: var(--c-accent); background: rgba(230,162,60,.15); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
 /* 待办 */
 .todo-add { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
 .ta-inp { flex: 1; background: var(--c-input); border-radius: 12rpx; padding: 14rpx 18rpx; font-size: 26rpx; }

@@ -7,6 +7,7 @@ export class Student extends BaseEntity {
   @Column() name: string
   @Column() gender: string
   @Column() studentNo: string
+  @Column({ type: 'varchar', nullable: true }) birthDate: string | null
   @Column({ type: 'int', default: 0 }) seatNo: number
   @Column({ type: 'int', nullable: true }) seatRow: number
   @Column({ type: 'int', nullable: true }) seatCol: number

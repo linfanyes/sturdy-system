@@ -29,7 +29,10 @@
     </view>
 
     <view class="sheet" v-if="showAdd">
-      <text class="st">公告范围</text>
+      <view class="add-bar">
+        <text class="st">公告范围</text>
+        <text class="tpl-btn" @click="openTemplates">📋 使用模板</text>
+      </view>
       <picker :range="scopeLabels" @change="(e) => (form.classId = scopeValues[e.detail.value])">
         <view class="picker sm">{{ scopeName(form.classId) }}</view>
       </picker>
@@ -38,6 +41,23 @@
       <label class="row"><checkbox :checked="form.pinned" @change="(e) => (form.pinned = e.detail.value)" color="#e6a23c" /> 置顶这条公告</label>
       <button class="ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editing ? '保存' : '发布') }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
+    </view>
+
+    <!-- 模板选择 sheet -->
+    <view class="mask" v-if="showTpl" @click="showTpl = false">
+      <view class="sheet tpl-sheet" @click.stop>
+        <view class="st">📋 公告模板库</view>
+        <view v-if="!tplList.length && !tplLoading" class="tpl-empty">
+          暂无模板，可在「工具箱 → 通知模板」中创建
+        </view>
+        <scroll-view scroll-y class="tpl-list">
+          <view v-for="t in tplList" :key="t.id" class="tpl-item" @click="useTemplate(t)">
+            <text class="tpl-name">{{ t.name || t.title || '未命名模板' }}</text>
+            <text class="tpl-prev">{{ (t.content || '').slice(0, 50) }}{{ (t.content || '').length > 50 ? '…' : '' }}</text>
+          </view>
+        </scroll-view>
+        <button class="cancel" @click="showTpl = false">关闭</button>
+      </view>
     </view>
 
     <!-- 打印用隐藏 canvas -->
@@ -80,6 +100,10 @@ const form = ref({ classId: '全校', title: '', content: '', pinned: false })
 const showPrintPreview = ref(false)
 const printTmpPath = ref('')
 const printText = ref('')
+// 模板相关状态
+const showTpl = ref(false)
+const tplList = ref([])
+const tplLoading = ref(false)
 
 const scopeValues = computed(() => ['', '全校', ...classes.value.map((c) => c.id)])
 const scopeLabels = computed(() => ['全部公告', '全校', ...classes.value.map((c) => c.name)])
@@ -264,6 +288,37 @@ async function savePreviewToAlbum() {
 function copyPrintText() {
   copyText(printText.value)
 }
+
+// 打开模板库：拉取通知模板列表
+async function openTemplates() {
+  showTpl.value = true
+  tplLoading.value = true
+  try {
+    const list = await api.getList('/notice-templates', { silent: true })
+    tplList.value = Array.isArray(list) ? list : []
+  } catch (e) {
+    tplList.value = []
+  } finally {
+    tplLoading.value = false
+  }
+}
+
+// 使用模板：填充标题和内容（支持变量占位符 {班级} {日期}）
+function useTemplate(t) {
+  const today = new Date()
+  const p = (n) => (n < 10 ? '0' : '') + n
+  const dateStr = `${today.getFullYear()}-${p(today.getMonth() + 1)}-${p(today.getDate())}`
+  const className = scopeName(form.value.classId) === '全部' ? '全校' : scopeName(form.value.classId)
+  const fill = (s) => (s || '')
+    .replace(/\{班级\}/g, className)
+    .replace(/\{日期\}/g, dateStr)
+    .replace(/\{date\}/g, dateStr)
+    .replace(/\{class\}/g, className)
+  form.value.title = fill(t.title || t.name || '')
+  form.value.content = fill(t.content || '')
+  showTpl.value = false
+  uni.showToast({ title: '已套用模板', icon: 'success' })
+}
 </script>
 
 <style scoped>
@@ -322,4 +377,16 @@ function copyPrintText() {
 .pv-acts .copy-btn { flex: 1; background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; }
 .dark .preview-sheet { background: var(--c-card); }
 .dark .copy-btn { background: var(--c-card2); color: var(--c-title); }
+/* 表单顶部行：标题 + 模板按钮 */
+.add-bar { display: flex; align-items: center; justify-content: space-between; margin: 10rpx 0 6rpx; }
+.add-bar .st { margin: 0; }
+.tpl-btn { font-size: 24rpx; color: var(--c-accent); padding: 6rpx 16rpx; border-radius: 20rpx; background: rgba(230,162,60,0.12); }
+/* 模板 sheet */
+.tpl-sheet { max-height: 80vh; }
+.tpl-list { max-height: 60vh; margin-bottom: 14rpx; }
+.tpl-item { padding: 18rpx 12rpx; border-bottom: 1rpx solid var(--c-border); }
+.tpl-item:active { background: var(--c-card2); }
+.tpl-name { display: block; font-size: 28rpx; font-weight: 600; color: var(--c-title); margin-bottom: 6rpx; }
+.tpl-prev { display: block; font-size: 22rpx; color: var(--c-sub); line-height: 1.5; }
+.tpl-empty { padding: 40rpx 0; text-align: center; color: var(--c-sub); font-size: 24rpx; }
 </style>

@@ -107,7 +107,62 @@
       </view>
     </view>
 
+    <button class="help-btn" @click="showHelp = true">📖 使用帮助</button>
+
     <button class="logout" @click="doLogout">退出登录</button>
+
+    <!-- 使用帮助弹层 -->
+    <view v-if="showHelp" class="mask" @click="showHelp = false">
+      <view class="help-modal" @click.stop>
+        <view class="hm-title">📖 使用帮助</view>
+        <scroll-view scroll-y class="hm-body">
+          <view class="hm-sec">
+            <view class="hm-h">🎓 应用简介</view>
+            <view class="hm-p">园丁工作台是面向中小学教师的一站式班务管理工具，覆盖班级、学生、考试、成绩、作业、公告、考勤、座位表、班费、活动、AI 教案/试卷/知识点生成等场景。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">🚀 快速上手</view>
+            <view class="hm-p">1. 在「班级管理」创建班级，在「学生管理」批量录入学生（支持 Excel/图片 AI 识别）。</view>
+            <view class="hm-p">2. 在「考试管理」创建考试，在「成绩管理」按班级/考试/科目录入或导入成绩。</view>
+            <view class="hm-p">3. 在「作业管理」布置作业，状态自动同步到「班级公告」。</view>
+            <view class="hm-p">4. 在「工具箱」使用随机点名、计时器、计分板、奖励兑换、笔顺演示等课堂神器。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">🤖 AI 配置说明</view>
+            <view class="hm-p">· AI 接口地址和密钥仅保存在后端，前端不存储。</view>
+            <view class="hm-p">· 文本模型默认 qwen3.7-plus，多模态默认 qwen3-vl-plus（用于图片识别）。</view>
+            <view class="hm-p">· 温度越高回答越发散，越低越确定。教学场景建议 0.5-0.7。</view>
+            <view class="hm-p">· 系统提示词决定 AI 角色和回答风格，可按学科/学段自定义。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">📊 数据导入</view>
+            <view class="hm-p">· 学生：支持 .xlsx/.xls/.txt/.csv 格式，每行：姓名,性别,学号,家长姓名,家长电话。</view>
+            <view class="hm-p">· 成绩：先选好「班级/考试/科目/日期」，再导入 Excel/TXT，列：学号或姓名,分数。</view>
+            <view class="hm-p">· 图片识别：可拍照学生名单图片，AI 自动识别后导入。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">🎨 个性化</view>
+            <view class="hm-p">· 深色模式：夜间护眼。</view>
+            <view class="hm-p">· 字体大小：小/标准/大。</view>
+            <view class="hm-p">· 主题色：橙/绿/蓝等多种选择。</view>
+            <view class="hm-p">· 工具箱「管理」模式：可隐藏不常用工具、调整分区顺序。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">🔒 隐私说明</view>
+            <view class="hm-p">· 数据通过微信云托管私有链路传输，仅本人账号可见。</view>
+            <view class="hm-p">· 学生生日、家长电话等敏感信息不会对外公开。</view>
+            <view class="hm-p">· 退出登录后本地缓存自动清理。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">❓ 常见问题</view>
+            <view class="hm-p">Q: AI 没反应？A: 请检查 AI 接口地址、密钥是否正确，模型是否支持。</view>
+            <view class="hm-p">Q: 数据加载慢？A: 请检查网络，下拉刷新或重启小程序。</view>
+            <view class="hm-p">Q: 成绩导入失败？A: 请确认 Excel 列顺序、分数范围（0-100）、学生姓名/学号匹配。</view>
+          </view>
+        </scroll-view>
+        <button class="hm-close" @click="showHelp = false">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -130,6 +185,7 @@ const ai = ref({})
 const app = ref([])
 const savingProfile = ref(false)
 const savingAi = ref(false)
+const showHelp = ref(false)
 
 // 下拉选项 = 预设模型 + "自定义"
 const textModelOpts = [...DEFAULT_TEXT_MODELS, '自定义']
@@ -281,4 +337,14 @@ function doLogout() {
 .scheme-i { font-size: 22rpx; padding: 8rpx 16rpx; border-radius: 24rpx; color: #fff; opacity: 0.55; }
 .scheme-i.on { opacity: 1; box-shadow: 0 0 0 4rpx rgba(255,255,255,0.6); }
 .logout { background: var(--c-danger); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.help-btn { background: var(--c-card); color: var(--c-accent); border: 1px solid var(--c-accent); border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+/* P2-1: 使用帮助弹层 */
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.help-modal { width: 640rpx; max-height: 84vh; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; display: flex; flex-direction: column; box-sizing: border-box; }
+.hm-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 16rpx; }
+.hm-body { flex: 1; max-height: 60vh; }
+.hm-sec { margin-bottom: 20rpx; }
+.hm-h { font-size: 28rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 8rpx; }
+.hm-p { display: block; font-size: 24rpx; color: var(--c-title); line-height: 1.7; margin-bottom: 6rpx; }
+.hm-close { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 16rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 </style>
