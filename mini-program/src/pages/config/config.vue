@@ -43,6 +43,22 @@
         </picker>
         <input v-if="visionModelIdx === visionModelOpts.length - 1" v-model="ai.visionModel" placeholder="自定义模型名称" />
       </view>
+      <view class="field" v-if="hasImageModels">
+        <text class="label">文生图模型</text>
+        <picker :range="imageModelOpts" :value="imageModelIdx" @change="onImageModelPick">
+          <view class="picker-view">{{ imageModelOpts[imageModelIdx] }}</view>
+        </picker>
+        <input v-if="imageModelIdx === imageModelOpts.length - 1" v-model="ai.imageModel" placeholder="自定义模型名称" />
+        <view class="hint" style="margin-top:6rpx">用于「图像创造」的文生图功能（当前服务商：{{ PROVIDER_NAMES[providerIdx] }}）</view>
+      </view>
+      <view class="field" v-if="hasVideoModels">
+        <text class="label">文生视频模型</text>
+        <picker :range="videoModelOpts" :value="videoModelIdx" @change="onVideoModelPick">
+          <view class="picker-view">{{ videoModelOpts[videoModelIdx] }}</view>
+        </picker>
+        <input v-if="videoModelIdx === videoModelOpts.length - 1" v-model="ai.videoModel" placeholder="自定义模型名称" />
+        <view class="hint" style="margin-top:6rpx">用于「图像创造」的文生视频功能（当前服务商：{{ PROVIDER_NAMES[providerIdx] }}）</view>
+      </view>
       <view class="field">
         <text class="label">温度（{{ ai.temperature }}）</text>
         <input type="digit" v-model="ai.temperature" placeholder="0 - 2" />
@@ -200,16 +216,29 @@ const PROVIDER_PRESETS = {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     textModels: ['qwen-plus', 'qwen-max', 'qwen-turbo-latest'],
     visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
+    imageModels: [],
+    videoModels: [],
   },
   'DeepSeek': {
     baseUrl: 'https://api.deepseek.com/v1',
     textModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
-    visionModels: ['deepseek-v4-pro'], // DeepSeek v4 原生多模态，文本与视觉使用同一模型
+    visionModels: ['deepseek-v4-pro'],
+    imageModels: [],
+    videoModels: [],
+  },
+  '智谱GLM': {
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    textModels: ['GLM-4.7-Flash'],
+    visionModels: ['GLM-4.6V-Flash'],
+    imageModels: ['GLM-4.6V-Flash'],   // 文生图
+    videoModels: ['CogVideoX-Flash'],  // 文生视频
   },
   '自定义': {
     baseUrl: '',
     textModels: [],
     visionModels: [],
+    imageModels: [],
+    videoModels: [],
   },
 }
 const PROVIDER_NAMES = Object.keys(PROVIDER_PRESETS)
@@ -223,7 +252,8 @@ const DEFAULT_SYSTEM_PROMPT =
 function detectProvider(baseUrl) {
   if (baseUrl && baseUrl.includes('dashscope.aliyuncs.com')) return 0
   if (baseUrl && baseUrl.includes('api.deepseek.com')) return 1
-  return 2
+  if (baseUrl && baseUrl.includes('open.bigmodel.cn')) return 2
+  return 3
 }
 
 const profile = ref({ name: '', school: '', subjects: [] })
@@ -237,10 +267,18 @@ const providerIdx = ref(0)
 // 当前服务商的模型列表（computed）
 const currentTextModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].textModels)
 const currentVisionModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].visionModels)
+const currentImageModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].imageModels)
+const currentVideoModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].videoModels)
+
+// 是否支持文生图/文生视频（有预设模型时显示对应字段）
+const hasImageModels = computed(() => currentImageModels.value.length > 0)
+const hasVideoModels = computed(() => currentVideoModels.value.length > 0)
 
 // 下拉选项 = 当前服务商模型 + "自定义"
 const textModelOpts = computed(() => [...currentTextModels.value, '自定义'])
 const visionModelOpts = computed(() => [...currentVisionModels.value, '自定义'])
+const imageModelOpts = computed(() => [...currentImageModels.value, '自定义'])
+const videoModelOpts = computed(() => [...currentVideoModels.value, '自定义'])
 
 // 当前选中索引：命中当前服务商预设返回其索引，否则返回最后一项（自定义）
 const textModelIdx = computed(() => {
@@ -251,8 +289,16 @@ const visionModelIdx = computed(() => {
   const i = currentVisionModels.value.indexOf(ai.value.visionModel)
   return i >= 0 ? i : visionModelOpts.value.length - 1
 })
+const imageModelIdx = computed(() => {
+  const i = currentImageModels.value.indexOf(ai.value.imageModel)
+  return i >= 0 ? i : imageModelOpts.value.length - 1
+})
+const videoModelIdx = computed(() => {
+  const i = currentVideoModels.value.indexOf(ai.value.videoModel)
+  return i >= 0 ? i : videoModelOpts.value.length - 1
+})
 
-// 服务商切换：自动填充接口地址 + 默认模型
+// 服务商切换：自动填充接口地址 + 默认模型（含文生图/文生视频）
 function onProviderChange(e) {
   const idx = Number(e.detail.value)
   if (idx === providerIdx.value) return
@@ -261,6 +307,8 @@ function onProviderChange(e) {
   ai.value.baseUrl = preset.baseUrl || ai.value.baseUrl
   if (preset.textModels.length) ai.value.textModel = preset.textModels[0]
   if (preset.visionModels.length) ai.value.visionModel = preset.visionModels[0]
+  if (preset.imageModels.length) ai.value.imageModel = preset.imageModels[0]
+  if (preset.videoModels.length) ai.value.videoModel = preset.videoModels[0]
 }
 
 // 选择预设模型：选"自定义"时不清空（保留当前值方便微调），否则设为对应预设
@@ -276,6 +324,18 @@ function onVisionModelPick(e) {
     ai.value.visionModel = currentVisionModels.value[idx]
   }
 }
+function onImageModelPick(e) {
+  const idx = Number(e.detail.value)
+  if (idx !== imageModelOpts.value.length - 1) {
+    ai.value.imageModel = currentImageModels.value[idx]
+  }
+}
+function onVideoModelPick(e) {
+  const idx = Number(e.detail.value)
+  if (idx !== videoModelOpts.value.length - 1) {
+    ai.value.videoModel = currentVideoModels.value[idx]
+  }
+}
 
 // 恢复默认：重置为当前服务商的默认配置
 function resetAiDefaults() {
@@ -285,6 +345,8 @@ function resetAiDefaults() {
     apiKey: ai.value.apiKey,
     textModel: preset.textModels[0] || '',
     visionModel: preset.visionModels[0] || '',
+    imageModel: preset.imageModels[0] || '',
+    videoModel: preset.videoModels[0] || '',
     temperature: DEFAULT_TEMPERATURE,
     aiName: DEFAULT_AI_NAME,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -302,6 +364,8 @@ async function load() {
     apiKey: a.apiKey ?? '',
     textModel: a.textModel ?? firstProvider.textModels[0],
     visionModel: a.visionModel ?? firstProvider.visionModels[0],
+    imageModel: a.imageModel ?? (firstProvider.imageModels[0] || ''),
+    videoModel: a.videoModel ?? (firstProvider.videoModels[0] || ''),
     temperature:
       typeof a.temperature === 'number' && !isNaN(a.temperature)
         ? a.temperature

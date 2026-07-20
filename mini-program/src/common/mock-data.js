@@ -226,6 +226,17 @@ const CLASS_GALLERIES = [
   { id: 'cg6', classId: 'c3', title: '班级黑板报', date: todayStr, description: '本期主题「保护环境从我做起」黑板报展示。', photos: [] },
 ]
 
+/* ---------------- 我的相册 ---------------- */
+const MY_GALLERIES = [
+  { id: 'mg1', title: '风景', date: todayStr, description: '旅行与户外风景', photos: [] },
+  { id: 'mg2', title: '美食', date: todayStr, description: '日常美食记录', photos: [] },
+  { id: 'mg3', title: '教学', date: todayStr, description: '教学素材与记录', photos: [] },
+]
+
+/* ---------------- AI 生成结果占位（POST 返回含 id） ---------------- */
+const GEN_IMAGE_RESULT = { imageUrl: '', prompt: '', model: '' }
+const GEN_VIDEO_RESULT = { videoUrl: '', prompt: '', model: '' }
+
 const MOCK = {
   '/classes': CLASSES,
   '/students': STUDENTS,
@@ -240,7 +251,7 @@ const MOCK = {
   '/behavior-records': BEHAVIOR_RECORDS,
   '/config/public': { defaultSubjects: ['语文', '数学', '英语', '科学', '道德与法治', '体育', '音乐', '美术', '信息科技'] },
   '/users/me': { id: 'u1', name: '珊珊老师', school: '阳光实验小学', subjects: ['语文', '品德'] },
-  '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' /* 切换 DeepSeek：服务商选 DeepSeek → 自动改 baseUrl=https://api.deepseek.com/v1 模型 deepseek-v4-flash */ },
+  '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', imageModel: '', videoModel: '', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' /* 切换智谱GLM：服务商选智谱GLM → baseUrl=https://open.bigmodel.cn/api/paas/v4 模型 GLM-4.7-Flash，文生图 GLM-4.6V-Flash，文生视频 CogVideoX-Flash */ },
   '/config/app': [{ key: '版本', value: '1.0.0 (demo)' }, { key: '环境', value: '演示模式' }],
   '/duty-rosters': DUTY_ROSTERS,
   '/class-activities': CLASS_ACTIVITIES,
@@ -248,6 +259,9 @@ const MOCK = {
   '/award-records': AWARD_RECORDS,
   '/homework': HOMEWORK,
   '/class-galleries': CLASS_GALLERIES,
+  '/my-galleries': MY_GALLERIES,
+  '/ai/gen-image': GEN_IMAGE_RESULT,
+  '/ai/gen-video': GEN_VIDEO_RESULT,
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 
