@@ -240,7 +240,7 @@ const MOCK = {
   '/behavior-records': BEHAVIOR_RECORDS,
   '/config/public': { defaultSubjects: ['语文', '数学', '英语', '科学', '道德与法治', '体育', '音乐', '美术', '信息科技'] },
   '/users/me': { id: 'u1', name: '珊珊老师', school: '阳光实验小学', subjects: ['语文', '品德'] },
-  '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' /* 支持切换 DeepSeek 等：改接口地址为 https://api.deepseek.com/v1，模型选 deepseek-chat */ },
+  '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' /* 切换 DeepSeek：服务商选 DeepSeek → 自动改 baseUrl=https://api.deepseek.com/v1 模型 deepseek-v4-flash */ },
   '/config/app': [{ key: '版本', value: '1.0.0 (demo)' }, { key: '环境', value: '演示模式' }],
   '/duty-rosters': DUTY_ROSTERS,
   '/class-activities': CLASS_ACTIVITIES,
