@@ -9,7 +9,7 @@ export function setMockMode(enabled) {
   _mockMode = enabled
   if (enabled) {
     auth.token = 'mock-token'
-    auth.user = { name: '演示老师', school: '阳光实验小学（演示版）' }
+    auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
   }
 }
 export function getMockMode() { return _mockMode }

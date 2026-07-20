@@ -50,7 +50,7 @@
         <text class="label">系统提示词</text>
         <textarea v-model="ai.systemPrompt" class="ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
       </view>
-      <view class="hint">文本模型默认 qwen3.7-plus，多模态默认 qwen3-vl-plus，系统会按消息是否含图自动切换。</view>
+      <view class="hint">默认使用阿里百炼（通义千问）：文本模型 qwen-plus，多模态 qwen-vl-plus，系统会按消息是否含图自动切换。</view>
       <view class="reset-row">
         <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
       </view>
@@ -143,7 +143,7 @@
           <view class="hm-sec">
             <view class="hm-h">🤖 AI 配置说明</view>
             <view class="hm-p">· AI 接口地址和密钥仅保存在后端，前端不存储。</view>
-            <view class="hm-p">· 文本模型默认 qwen3.7-plus，多模态默认 qwen3-vl-plus（用于图片识别）。</view>
+            <view class="hm-p">· 默认使用阿里百炼（通义千问）：文本模型 qwen-plus，多模态 qwen-vl-plus（用于图片识别）。</view>
             <view class="hm-p">· 温度越高回答越发散，越低越确定。教学场景建议 0.5-0.7。</view>
             <view class="hm-p">· 系统提示词决定 AI 角色和回答风格，可按学科/学段自定义。</view>
           </view>
@@ -185,9 +185,9 @@ import { onShow } from '@dcloudio/uni-app'
 import api, { setMockMode } from '../../common/request'
 import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES } from '../../common/store'
 
-// AI 模型预设与默认值常量
-const DEFAULT_TEXT_MODELS = ['qwen3.7-plus', 'deepseek-chat', 'deepseek-reasoner']
-const DEFAULT_VISION_MODELS = ['qwen3-vl-plus', 'gpt-4o', 'qwen-vl-max']
+// AI 模型预设与默认值常量（默认阿里百炼 / 通义千问）
+const DEFAULT_TEXT_MODELS = ['qwen-plus', 'qwen-max', 'deepseek-chat']
+const DEFAULT_VISION_MODELS = ['qwen-vl-plus', 'qwen-vl-max', 'gpt-4o']
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_AI_NAME = '小林子'
 const DEFAULT_SYSTEM_PROMPT =
