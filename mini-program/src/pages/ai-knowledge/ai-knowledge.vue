@@ -16,6 +16,7 @@
       <view class="result-text">{{ content }}</view>
       <button class="save" @click="save">💾 存入知识库</button>
       <button class="copy" @click="copy">📋 复制结果</button>
+      <button class="copy docx" @click="exportAsDocx">📄 导出 Word</button>
       <button v-if="saved" class="link" @click="goLib">查看知识库 →</button>
     </view>
   </view>
@@ -26,6 +27,7 @@ import { ref, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
+import { exportDocx } from '../../common/exporter'
 
 const form = ref({ title: '', grade: '', subject: '', textbook: '', term: '' })
 const content = ref('')
@@ -93,6 +95,11 @@ function copy() {
     fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
   })
 }
+async function exportAsDocx() {
+  if (!content.value) return
+  const title = form.value.title || '知识点'
+  await exportDocx(title, content.value, title)
+}
 
 onShow(() => {
   if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
@@ -110,5 +117,6 @@ onShow(() => {
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
 .copy { background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; }
+.copy.docx { background: #409eff; color: #fff; border-color: #409eff; }
 .link { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; font-size: 26rpx; margin-top: 16rpx; height: 80rpx; line-height: 80rpx; }
 </style>

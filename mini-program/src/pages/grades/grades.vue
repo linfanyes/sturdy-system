@@ -153,6 +153,7 @@ import api from '../../common/request'
 import { theme } from '../../common/store'
 import { isScore } from '../../common/validators'
 import { copyText } from '../../common/print'
+import { exportXlsx, exportDocx } from '../../common/exporter'
 
 const classes = ref([])
 const exams = ref([])
@@ -522,16 +523,12 @@ function exportCsv() {
   const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
   const scoreMap = {}
   ;(existing.value.scores || []).forEach((x) => (scoreMap[x.studentId] = x.score))
-  const head = '学号,姓名,性别,班级,考试,科目,日期,分数'
-  const body = students.value
-    .map((s) => {
-      const sc = scoreMap[s.id]
-      return [s.studentNo || '', s.name, s.gender || '', className, examName.value, subject.value, date.value, sc != null ? sc : '']
-        .map((x) => '"' + String(x).replace(/"/g, '""') + '"')
-        .join(',')
-    })
-    .join('\n')
-  copyText('\uFEFF' + head + '\n' + body)
+  const header = ['学号', '姓名', '性别', '班级', '考试', '科目', '日期', '分数']
+  const rows = students.value.map((s) => [
+    s.studentNo || '', s.name, s.gender || '', className, examName.value, subject.value, date.value,
+    scoreMap[s.id] != null ? String(scoreMap[s.id]) : '',
+  ])
+  exportXlsx(header, rows, className + '_' + examName.value + '_' + subject.value, '成绩')
 }
 
 // 导出名次表：按分数倒序，附名次、平均/及格率等统计
@@ -548,16 +545,13 @@ function exportRank() {
     .sort((a, b) => b.score - a.score)
   if (!rows.length) return uni.showToast({ title: '暂无成绩可导出', icon: 'none' })
   const a = analysis.value
-  const lines = []
-  lines.push(`班级：${className}`)
-  lines.push(`考试：${examName.value}  科目：${subject.value}  日期：${date.value}`)
-  lines.push(`应考 ${students.value.length} 人 · 实考 ${rows.length} 人 · 平均 ${a.avg} · 最高 ${a.max} · 最低 ${a.min} · 及格率 ${a.passRate}% · 优秀率 ${a.excellentRate}%`)
-  lines.push('')
-  lines.push('名次,姓名,学号,分数')
-  rows.forEach((r, i) => {
-    lines.push(`${i + 1},"${r.name}","${r.studentNo}",${r.score}`)
-  })
-  copyText('\uFEFF' + lines.join('\n'))
+  const header = ['名次', '姓名', '学号', '分数']
+  const data = rows.map((r, i) => [String(i + 1), r.name, r.studentNo, String(r.score)])
+  // 附统计信息
+  const summaryHeader = ['', '班级', className, '考试', examName.value, '科目', subject.value, '日期', date.value]
+  const summaryRow1 = ['', '应考', String(students.value.length), '实考', String(rows.length), '平均', String(a.avg), '最高', String(a.max)]
+  const summaryRow2 = ['', '最低', String(a.min), '及格率', a.passRate + '%', '优秀率', a.excellentRate + '%', '', '']
+  exportXlsx(summaryHeader, [summaryRow1, summaryRow2, header, ...data], className + '_名次_' + subject.value, '名次表')
 }
 
 function pickFile() {

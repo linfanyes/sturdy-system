@@ -26,6 +26,7 @@
       <view class="result-text">{{ content }}</view>
       <button class="save" @click="save">💾 保存到考试记录</button>
       <button class="copy" @click="copyText(content)">📋 复制分析文案</button>
+      <button class="copy docx" @click="exportAsDocx">📄 导出 Word</button>
     </view>
   </view>
 </template>
@@ -35,6 +36,7 @@ import { ref, computed, nextTick } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { copyText } from '../../common/print'
+import { exportDocx } from '../../common/exporter'
 import { auth, theme } from '../../common/store'
 
 const exams = ref([])
@@ -157,6 +159,11 @@ onShow(() => {
   }
   load()
 })
+async function exportAsDocx() {
+  if (!content.value) return
+  const title = '考试分析_' + (stats.value[0]?.subject || '')
+  await exportDocx(title, content.value, title)
+}
 </script>
 
 <style scoped>
@@ -176,4 +183,5 @@ onShow(() => {
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
 .copy { background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; }
+.copy.docx { background: #409eff; color: #fff; border-color: #409eff; }
 </style>
