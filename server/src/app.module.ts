@@ -26,6 +26,8 @@ import { AdminModule } from './admin/admin.module'
 import { EngagementModule } from './engagement/engagement.module'
 import { GalleryModule } from './gallery/gallery.module'
 import { BackupModule } from './backup/backup.module'
+import { LessonObservationModule } from './lesson-observation/lesson-observation.module'
+import { WorkLogModule } from './work-log/work-log.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -90,6 +92,8 @@ import { HealthController } from './health.controller'
     EngagementModule,
     GalleryModule,
     BackupModule,
+    LessonObservationModule,
+    WorkLogModule,
   ],
   controllers: [HealthController],
 })
