@@ -28,7 +28,7 @@
         <picker :range="textModelOpts" :value="textModelIdx" @change="onTextModelPick">
           <view class="picker-view">{{ textModelOpts[textModelIdx] }}</view>
         </picker>
-        <input v-if="textModelIdx === textModelOpts.length - 1" v-model="ai.textModel" placeholder="自定义模型名称" />
+        <input v-if="textModelIdx === textModelOpts.length - 1" v-model="ai.textModel" placeholder="输入模型名，如 claude-3.5-sonnet" />
       </view>
       <view class="field">
         <text class="label">多模态模型</text>
@@ -50,7 +50,7 @@
         <text class="label">系统提示词</text>
         <textarea v-model="ai.systemPrompt" class="ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
       </view>
-      <view class="hint">默认使用阿里百炼（通义千问）：文本模型 qwen-plus，多模态 qwen-vl-plus，系统会按消息是否含图自动切换。</view>
+      <view class="hint">支持阿里百炼（通义千问）、DeepSeek 等兼容 OpenAI 接口的服务商。切换服务商时需同步修改接口地址与密钥。系统会按消息是否含图自动在文本/多模态模型间切换。</view>
       <view class="reset-row">
         <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
       </view>
@@ -143,7 +143,9 @@
           <view class="hm-sec">
             <view class="hm-h">🤖 AI 配置说明</view>
             <view class="hm-p">· AI 接口地址和密钥仅保存在后端，前端不存储。</view>
-            <view class="hm-p">· 默认使用阿里百炼（通义千问）：文本模型 qwen-plus，多模态 qwen-vl-plus（用于图片识别）。</view>
+            <view class="hm-p">· 默认使用阿里百炼（通义千问），可从下拉列表切换 DeepSeek、GPT 等主流模型。</view>
+            <view class="hm-p">· 切换服务商时需同时修改「接口地址」和「密钥」：DeepSeek 地址为 https://api.deepseek.com/v1，阿里百炼为 https://dashscope.aliyuncs.com/compatible-mode/v1。</view>
+            <view class="hm-p">· 从下拉列表选不到想要的模型？选「自定义」手动输入模型名称即可（如 claude-3.5-sonnet、moonshot-v1 等）。</view>
             <view class="hm-p">· 温度越高回答越发散，越低越确定。教学场景建议 0.5-0.7。</view>
             <view class="hm-p">· 系统提示词决定 AI 角色和回答风格，可按学科/学段自定义。</view>
           </view>
@@ -185,8 +187,8 @@ import { onShow } from '@dcloudio/uni-app'
 import api, { setMockMode } from '../../common/request'
 import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES } from '../../common/store'
 
-// AI 模型预设与默认值常量（默认阿里百炼 / 通义千问）
-const DEFAULT_TEXT_MODELS = ['qwen-plus', 'qwen-max', 'deepseek-chat']
+// AI 模型预设与默认值常量（默认阿里百炼 / 通义千问，可切换 DeepSeek 等）
+const DEFAULT_TEXT_MODELS = ['qwen-plus', 'qwen-max', 'qwen-turbo-latest', 'deepseek-chat', 'deepseek-reasoner']
 const DEFAULT_VISION_MODELS = ['qwen-vl-plus', 'qwen-vl-max', 'gpt-4o']
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_AI_NAME = '小林子'
@@ -214,20 +216,17 @@ const visionModelIdx = computed(() => {
   return i >= 0 ? i : visionModelOpts.length - 1
 })
 
-// 选择预设模型：选"自定义"时清空让用户输入新值，否则设为对应预设
+// 选择预设模型：选"自定义"时不清空（保留当前值方便微调），否则设为对应预设
 function onTextModelPick(e) {
   const idx = Number(e.detail.value)
-  if (idx === textModelOpts.length - 1) {
-    ai.value.textModel = ''
-  } else {
+  if (idx !== textModelOpts.length - 1) {
     ai.value.textModel = DEFAULT_TEXT_MODELS[idx]
   }
+  // idx === last → 保持 ai.textModel 当前值，由用户在下方输入框修改
 }
 function onVisionModelPick(e) {
   const idx = Number(e.detail.value)
-  if (idx === visionModelOpts.length - 1) {
-    ai.value.visionModel = ''
-  } else {
+  if (idx !== visionModelOpts.length - 1) {
     ai.value.visionModel = DEFAULT_VISION_MODELS[idx]
   }
 }
