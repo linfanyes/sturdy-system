@@ -35,6 +35,37 @@
       <EmptyState v-if="!shown.length" icon="👤" text="暂无教师" hint="点击下方按钮添加" />
     </view>
 
+    <!-- 导入区域 -->
+    <view class="bar" style="justify-content: flex-end; margin-bottom: 20rpx;">
+      <text class="add" @click="showImport = !showImport" style="background:var(--c-accent); padding:12rpx 26rpx; border-radius:40rpx; color:#fff; font-size:28rpx;">{{ showImport ? '收起' : '📥 批量导入' }}</text>
+    </view>
+
+    <view v-if="showImport" class="form import-box">
+      <view class="imp-title">批量导入教师</view>
+      <view class="imp-tip">支持 Excel(.xlsx/.xls) 或 TXT/CSV，每行：姓名,职务,电话,邮箱,任教班级学科(逗号分隔)</view>
+      <button class="tpl" @click="showTpl = true">📄 下载/查看模板</button>
+      <button class="pick" @click="pickFile">📂 选择文件</button>
+      <view v-if="importPreview" class="preview">
+        <view class="pv-sum">
+          识别 <text class="ok">{{ importPreview.length }}</text> 条，点击确认逐一保存
+        </view>
+        <button class="confirm" :disabled="importing" @click="commitImport">{{ importing ? '导入中…' : '确认导入 ' + importPreview.length + ' 条' }}</button>
+      </view>
+    </view>
+
+    <!-- 模板弹窗 -->
+    <view v-if="showTpl" class="mask" @click="showTpl = false; showTpl = false">
+      <view class="dialog" @click.stop>
+        <view class="d-title">导入模板格式</view>
+        <view class="d-sub">第一行可写表头，数据从下一行开始：</view>
+        <view class="d-code">姓名,职务,电话,邮箱,任教班级(逗号分隔)
+王老师,班主任,13800000001,wang@school.com,一年级一班·语文,二年级二班·数学
+李老师,数学教师,13800000002,li@school.com,一年级一班·数学</view>
+        <button class="d-copy" @click="copyTpl">📋 复制示例</button>
+        <button class="d-close" @click="showTpl = false">关闭</button>
+      </view>
+    </view>
+
     <!-- 编辑弹窗 -->
     <view class="mask" v-if="editOpen" @click="editOpen = false">
       <view class="sheet" @click.stop>
@@ -111,6 +142,64 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { isPhone, isEmail } from '../../common/validators'
 import { theme } from '../../common/store'
+import { copyText } from '../../common/print'
+
+// 批量导入
+const showImport = ref(false)
+const showTpl = ref(false)
+const importPreview = ref([])
+const importing = ref(false)
+function pickFile() {
+  uni.chooseMessageFile({
+    count: 1, type: 'file', extension: ['xlsx', 'xls', 'txt', 'csv'],
+    success: (res) => {
+      const f = res.tempFiles[0]
+      if (f.size > 4 * 1024 * 1024) return uni.showToast({ title: '文件过大(>4MB)', icon: 'none' })
+      uni.getFileSystemManager().readFile({
+        filePath: f.path, encoding: 'base64',
+        success: (r) => parseImport(f.name, r.data),
+        fail: () => uni.showToast({ title: '读取失败', icon: 'none' }),
+      })
+    },
+  })
+}
+function parseImport(name, data) {
+  // 简单 CSV/TXT 解析：逐行逗号分割
+  try {
+    const raw = atob(data)
+    const lines = raw.split('\n').filter((l) => l.trim()).slice(0, 200)
+    const rows = []
+    for (let i = 0; i < lines.length; i++) {
+      const cols = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
+      if (cols.length < 1 || !cols[0]) continue
+      // 跳过表头行
+      if (cols[0] === '姓名' || cols[0] === 'name') continue
+      rows.push({ name: cols[0], position: cols[1] || '', phone: cols[2] || '', email: cols[3] || '' })
+    }
+    importPreview.value = rows
+    if (!rows.length) uni.showToast({ title: '未识别到有效数据', icon: 'none' })
+  } catch (e) {
+    uni.showToast({ title: '解析失败：' + (e.message || ''), icon: 'none' })
+  }
+}
+async function commitImport() {
+  if (importing.value || !importPreview.value.length) return
+  importing.value = true
+  let ok = 0, fail = 0
+  for (const row of importPreview.value) {
+    try {
+      const r = await api.post('/teachers', { name: row.name, position: row.position, phone: row.phone, email: row.email })
+      list.value.push(r)
+      ok++
+    } catch (e) { fail++ }
+  }
+  uni.showToast({ title: `导入完成：成功 ${ok} 条${fail ? '，失败 ' + fail + ' 条' : ''}`, icon: fail ? 'none' : 'success' })
+  importPreview.value = []
+  importing.value = false
+}
+function copyTpl() {
+  copyText('姓名,职务,电话,邮箱\n王老师,班主任,13800000001,wang@school.com\n李老师,数学教师,13800000002,li@school.com')
+}
 
 const list = ref([])
 const classes = ref([])
@@ -296,4 +385,22 @@ function remove(t) {
 .dark .f { background: var(--c-card); color: var(--c-sub); }
 .dark .inp, .dark .avopt, .dark .ts { background: var(--c-input); color: var(--c-title); }
 .dark .btn-c { background: var(--c-card2); color: var(--c-title); }
+/* 批量导入 */
+.import-box { background: var(--c-card2); border-radius: 20rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.imp-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 12rpx; }
+.imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
+.tpl, .pick { background: var(--c-card); border-radius: 14rpx; padding: 18rpx; text-align: center; font-size: 26rpx; color: var(--c-title); margin-bottom: 12rpx; width: 100%; }
+.pick.ai { background: #e6a23c; color: #fff; }
+.preview { background: var(--c-card); border-radius: 14rpx; padding: 16rpx; margin-top: 12rpx; }
+.pv-sum { font-size: 26rpx; color: var(--c-title); margin-bottom: 10rpx; }
+.pv-sum .ok { color: var(--c-primary); }
+.pv-sum .bad { color: var(--c-danger); }
+.confirm { background: var(--c-primary); color: #fff; border-radius: 40rpx; padding: 18rpx; text-align: center; font-size: 28rpx; width: 100%; }
+.confirm[disabled] { opacity: 0.5; }
+.dialog { width: 600rpx; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; }
+.d-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.d-sub { font-size: 24rpx; color: var(--c-sub); margin-bottom: 14rpx; }
+.d-code { background: #f5f5f5; border-radius: 12rpx; padding: 16rpx; font-size: 22rpx; color: #333; white-space: pre-wrap; line-height: 1.7; margin-bottom: 14rpx; }
+.d-copy { background: var(--c-primary); color: #fff; border-radius: 30rpx; padding: 16rpx; text-align: center; font-size: 26rpx; margin-bottom: 10rpx; }
+.d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 30rpx; padding: 16rpx; text-align: center; font-size: 26rpx; }
 </style>

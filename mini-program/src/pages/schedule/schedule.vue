@@ -9,7 +9,7 @@
     <picker v-if="mode === 'class'" :range="classOpts" @change="pickClass">
       <view class="picker">班级：{{ selName }}</view>
     </picker>
-    <view v-else class="picker ro">教师：{{ meName }}（本人任教课程）</view>
+    <view v-else class="picker ro">教师：{{ meName }}（本人任教课程）<text class="exp-link" @click="copyTeacherSchedule">📋 复制课表</text></view>
 
     <view v-if="mode === 'class'" class="teach-bar">
       <text class="tstat">共 {{ teachStat.lessons }} 节课 · {{ teachStat.teachers }} 位教师</text>
@@ -148,6 +148,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { auth, theme } from '../../common/store'
 import { isInt } from '../../common/validators'
+import { copyText } from '../../common/print'
 
 const days = [
   { k: 0, label: '周一' },
@@ -247,6 +248,21 @@ function switchMode(m) {
   mode.value = m
   showEdit.value = false
   loadItems()
+}
+// 教师课表：复制为文本
+function copyTeacherSchedule() {
+  if (!items.value.length) return uni.showToast({ title: '暂无课表可导出', icon: 'none' })
+  const lines = [`${meName.value} 老师课表`, '']
+  lines.push('节次\t' + days.map((d) => d.label).join('\t'))
+  for (let p = 1; p <= 8; p++) {
+    const row = ['第' + p + '节']
+    for (let d = 0; d < 7; d++) {
+      const arr = items.value.filter((s) => s.dayOfWeek === d && s.period === p)
+      row.push(arr.map((a) => a.subject).join('/') || '—')
+    }
+    lines.push(row.join('\t'))
+  }
+  copyText(lines.join('\n'))
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -682,7 +698,8 @@ function copyAsText() {
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
 .inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx; font-size: 28rpx; background: var(--c-input); }
 .picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 20rpx; font-size: 28rpx; background: var(--c-input); }
-.ro { font-size: 26rpx; color: var(--c-accent); background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 16rpx; }
+.ro { font-size: 26rpx; color: var(--c-accent); background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 16rpx; display: flex; align-items: center; justify-content: space-between; }
+.exp-link { font-size: 22rpx; color: var(--c-primary); padding: 4rpx 12rpx; border-radius: 12rpx; background: rgba(7,193,96,.1); flex-shrink: 0; }
 .hint { font-size: 22rpx; color: var(--c-sub); line-height: 1.5; margin-bottom: 16rpx; }
 .sw-row { display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; }
 .sh-bar { display: flex; gap: 20rpx; }

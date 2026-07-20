@@ -25,6 +25,7 @@
       <view class="sec-title">分析情况描述</view>
       <view class="result-text">{{ content }}</view>
       <button class="save" @click="save">💾 保存到考试记录</button>
+      <button class="copy" @click="copyText(content)">📋 复制分析文案</button>
     </view>
   </view>
 </template>
@@ -33,6 +34,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { copyText } from '../../common/print'
 import { auth, theme } from '../../common/store'
 
 const exams = ref([])
@@ -173,4 +175,5 @@ onShow(() => {
 .gen[disabled] { opacity: 0.6; }
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
+.copy { background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; }
 </style>
