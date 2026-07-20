@@ -188,6 +188,7 @@ const sections = ref([
       { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
       { label: '加减分', icon: '➕', crud: 'reward-records' },
       { label: '积分记录', icon: '💯', crud: 'score-records' },
+      { label: '积分排行榜', icon: '🏆', path: '/pages/leaderboard/leaderboard' },
       { label: '小组评分', icon: '👥', crud: 'group-scores' },
       { label: '家长联系', icon: '📞', path: '/pages/parent-contact/parent-contact' },
       { label: '通知模板', icon: '✉️', crud: 'notice-templates' },

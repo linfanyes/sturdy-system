@@ -7,6 +7,7 @@
     { "path": "pages/exams/exams", "style": { "navigationBarTitleText": "考试管理", "enablePullDownRefresh": true } },
     { "path": "pages/grades/grades", "style": { "navigationBarTitleText": "成绩管理", "enablePullDownRefresh": true } },
     { "path": "pages/seats/seats", "style": { "navigationBarTitleText": "座位表", "enablePullDownRefresh": true } },
+    { "path": "pages/leaderboard/leaderboard", "style": { "navigationBarTitleText": "积分排行榜", "enablePullDownRefresh": true } },
     { "path": "pages/group/group", "style": { "navigationBarTitleText": "随机分组", "enablePullDownRefresh": true } },
     { "path": "pages/crud/crud", "style": { "navigationBarTitleText": "管理", "enablePullDownRefresh": true } },
     { "path": "pages/toolbox/toolbox", "style": { "navigationBarTitleText": "常用工具箱" } },
