@@ -7,6 +7,7 @@
 
     <!-- 倒计时 -->
     <block v-if="mode === 'down'">
+      <canvas canvas-id="ringCanvas" class="ring-canvas"></canvas>
       <view class="display" :class="{ warn: left <= 10 && left > 0 && running }">{{ mm }}:{{ ss }}</view>
       <view class="presets" v-if="!running">
         <view v-for="p in presets" :key="p" class="preset" @click="setPreset(p)">{{ p }}分</view>
@@ -43,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { onUnload } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
@@ -72,6 +73,35 @@ let downTimer = null
 
 const mm = computed(() => String(Math.floor(left.value / 60)).padStart(2, '0'))
 const ss = computed(() => String(left.value % 60).padStart(2, '0'))
+const totalSec = computed(() => min.value * 60 + sec.value)
+const progress = computed(() => totalSec.value > 0 ? 1 - left.value / totalSec.value : 0)
+
+// canvas 彩虹进度环
+function drawRing() {
+  const ctx = uni.createCanvasContext('ringCanvas')
+  const W = 400, H = 400, cx = W / 2, cy = H / 2, r = 150, lw = 20
+  ctx.clearRect(0, 0, W, H)
+  // 背景环
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+  ctx.setLineWidth(lw)
+  ctx.setStrokeStyle(dark.value ? '#2c313a' : '#f0eadc')
+  ctx.stroke()
+  // 彩色进度：从绿(120°)渐变到红(0°)
+  const pct = Math.min(1, Math.max(0, progress.value))
+  if (pct < 1) {
+    const hue = 120 - pct * 120
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + pct * 2 * Math.PI)
+    ctx.setLineWidth(lw)
+    ctx.setLineCap('round')
+    ctx.setStrokeStyle(`hsl(${hue}, 80%, 55%)`)
+    ctx.stroke()
+  }
+  ctx.draw()
+}
+// 监听倒计时变化重绘进度环
+watch([left, totalSec], () => nextTick(drawRing), { immediate: true })
 
 function setPreset(m) { min.value = m; sec.value = 0; if (!running.value) left.value = m * 60 }
 function toggleDown() {
@@ -123,7 +153,10 @@ onUnload(stopAll)
 .tabs { display: flex; gap: 16rpx; margin-bottom: 30rpx; }
 .tab { background: var(--c-card); border-radius: 40rpx; padding: 14rpx 36rpx; font-size: 28rpx; color: var(--c-accent); }
 .tab.on { background: #e6a23c; color: #fff; }
-.display { font-size: 130rpx; font-weight: 800; color: #e6a23c; margin: 30rpx 0; font-variant-numeric: tabular-nums; }
+.display { font-size: 130rpx; font-weight: 800; color: #e6a23c; margin: 20rpx 0; font-variant-numeric: tabular-nums; text-align: center; }
+.display.warn { color: #e06c75; animation: pulse 0.5s infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.4; } }
+.ring-canvas { width: 400rpx; height: 400rpx; margin: 10rpx auto; display: block; }
 .display.warn { color: #e64340; }
 .presets { display: flex; flex-wrap: wrap; gap: 16rpx; justify-content: center; margin-bottom: 20rpx; }
 .preset { background: var(--c-card); border-radius: 30rpx; padding: 14rpx 30rpx; font-size: 26rpx; color: var(--c-accent); }

@@ -23,13 +23,13 @@ export default {
 page {
   --c-bg: #fff7e6;
   --c-card: #ffffff;
-  --c-card2: #f6f7fb;
+  --c-card2: #f8f4ec;
   --c-text: #333333;
   --c-title: #4a3f35;
   --c-sub: #8a8a8a;
-  --c-border: #e5e5e5;
-  --c-input: #f6f7fb;
-  --c-input-border: #e5e5e5;
+  --c-border: #ece4d7;
+  --c-input: #f8f4ec;
+  --c-input-border: #e0d5c4;
   --c-primary: #07c160;
   --c-primary-d: #19d27e;
   --c-accent: #e6a23c;
