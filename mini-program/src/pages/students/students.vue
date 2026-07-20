@@ -134,7 +134,7 @@
 
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
-import { onShow, onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onLoad, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { isPhone, isStudentNo } from '../../common/validators'
 import { theme } from '../../common/store'
@@ -218,6 +218,11 @@ onPullDownRefresh(async () => {
 })
 // 筛选/排序变化时重置分页到第 1 页（kw 由防抖 watch 内部触发 resetPage）
 watch([genderFilter, sortBy], () => resetPage())
+
+// 页面卸载时清理防抖定时器，避免实例残留
+onUnload(() => {
+  if (kwTimer) { clearTimeout(kwTimer); kwTimer = null }
+})
 
 function toggleForm() {
   showForm.value = !showForm.value

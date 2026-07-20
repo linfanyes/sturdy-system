@@ -18,7 +18,7 @@
     <scroll-view scroll-x class="hist" v-if="history.length">
       <view class="hist-h">最近</view>
       <view class="hist-list">
-        <text v-for="(h, i) in history" :key="i" class="hist-item" @click="reuse(h)">{{ h }}</text>
+        <text v-for="h in history" :key="h" class="hist-item" @click="reuse(h)">{{ h }}</text>
       </view>
     </scroll-view>
 
@@ -151,8 +151,10 @@ function parseJson(text) {
   if (!text) return null
   // 去除 markdown 代码块
   let t = text.replace(/```json/gi, '').replace(/```/g, '').trim()
-  // 提取首个 {...}
-  const m = t.match(/\{[\s\S]*\}/)
+  // 先直接尝试解析（最稳）
+  try { return JSON.parse(t) } catch (e) {}
+  // 退回：非贪婪提取首个 {...}（避免贪婪吞掉 JSON 后噪声的 }）
+  const m = t.match(/\{[\s\S]*?\}/)
   if (!m) return null
   try {
     return JSON.parse(m[0])
@@ -161,21 +163,27 @@ function parseJson(text) {
   }
 }
 
+// 单例 audio context，避免每次朗读创建新实例导致内存泄漏
+let audioCtx = null
 function speak() {
-  if (!result.value || !result.value.pinyin) {
-    return uni.showToast({ title: '无拼音可朗读', icon: 'none' })
+  if (!result.value || !result.value.hanzi) {
+    return uni.showToast({ title: '无内容可朗读', icon: 'none' })
   }
   const text = result.value.hanzi || ''
   if (!text) return
+  // 复用单例：先销毁旧实例再创建，避免底层音频对象累积
+  if (audioCtx) {
+    try { audioCtx.destroy() } catch (e) {}
+    audioCtx = null
+  }
   // 使用百度 TTS 公共接口（在线）
   const url = 'https://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=3&pit=5&vol=9&per=4118&text=' + encodeURIComponent(text)
-  const ctx = uni.createInnerAudioContext()
-  ctx.src = url
-  ctx.autoplay = true
-  ctx.onError(() => {
-    uni.showToast({ title: '朗读失败，请检查网络', icon: 'none' })
+  audioCtx = uni.createInnerAudioContext()
+  audioCtx.src = url
+  audioCtx.autoplay = true
+  audioCtx.onError(() => {
+    uni.showToast({ title: '朗读失败，请检查网络或在小程序后台配置 tts.baidu.com 为合法域名', icon: 'none' })
   })
-  ctx.play()
 }
 
 onShow(() => {
