@@ -5,6 +5,7 @@ const USER_KEY = 'g_user'
 const THEME_KEY = 'g_theme'
 const SCHEME_KEY = 'g_scheme'
 const FONT_KEY = 'g_fontsize'
+const MOCK_KEY = 'g_mock_mode'
 
 // 字体大小档位（对齐 web 三档）
 export const FONT_SIZES = [
@@ -34,6 +35,11 @@ export const theme = reactive({
   mode: uni.getStorageSync(THEME_KEY) || (sysDark ? 'dark' : 'light'),
   colorScheme: uni.getStorageSync(SCHEME_KEY) || 'butter',
   fontSize: uni.getStorageSync(FONT_KEY) || 'md',
+})
+
+// 演示模式开关（持久化到 localStorage，页面层通过 import { setMockMode } 生效）
+export const mockMode = reactive({
+  enabled: uni.getStorageSync(MOCK_KEY) === 'true',
 })
 
 export function setTheme(mode) {

@@ -99,6 +99,19 @@
       </view>
     </view>
 
+    <!-- 演示模式 -->
+    <view class="card">
+      <view class="card-title">🛝 演示模式</view>
+      <view class="row">
+        <view class="row-text">
+          <text class="row-name">启用演示模式</text>
+          <text class="row-sub">开启后所有数据使用本地模拟内容，无需后端即可预览全部功能。适合展示、试用场景。</text>
+        </view>
+        <switch :checked="mockMode.enabled" color="#e6a23c" @change="onMockMode" />
+      </view>
+      <view v-if="mockMode.enabled" class="hint" style="color:#e6a23c;">⚡ 演示模式已开启，数据不会影响真实后端。关闭后需重新登录。</view>
+    </view>
+
     <view class="card">
       <view class="card-title">平台配置（来自后端）</view>
       <view v-for="c in app" :key="c.key" class="kv">
@@ -169,8 +182,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
-import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FONT_SIZES, SCHEMES } from '../../common/store'
+import api, { setMockMode } from '../../common/request'
+import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES } from '../../common/store'
 
 // AI 模型预设与默认值常量
 const DEFAULT_TEXT_MODELS = ['qwen3.7-plus', 'deepseek-chat', 'deepseek-reasoner']
@@ -264,6 +277,19 @@ function onFont(v) {
 function onScheme(v) {
   setColorScheme(v)
   uni.showToast({ title: '已切换主题色', icon: 'none' })
+}
+function onMockMode(e) {
+  const enabled = e.detail.value
+  mockMode.enabled = enabled
+  uni.setStorageSync('g_mock_mode', String(enabled))
+  setMockMode(enabled)
+  if (enabled) {
+    uni.showToast({ title: '演示模式已开启，请下拉刷新', icon: 'none' })
+  } else {
+    // 关闭演示模式 → 清除模拟 token → 跳登录
+    logout()
+    uni.reLaunch({ url: '/pages/login/login' })
+  }
 }
 async function saveProfile() {
   if (savingProfile.value) return

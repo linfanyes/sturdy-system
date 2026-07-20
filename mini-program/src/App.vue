@@ -1,9 +1,15 @@
 <script>
 import { onLaunch } from '@dcloudio/uni-app'
-import { auth, initTheme } from './common/store'
+import { auth, mockMode, initTheme } from './common/store'
+import { setMockMode } from './common/request'
 
 export default {
   onLaunch() {
+    // 演示模式：启动时自动恢复
+    if (uni.getStorageSync('g_mock_mode') === 'true') {
+      mockMode.enabled = true
+      setMockMode(true)
+    }
     initTheme()
     if (!auth.token) {
       uni.reLaunch({ url: '/pages/login/login' })

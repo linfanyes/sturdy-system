@@ -1,6 +1,10 @@
 {
   "name": "园丁工作台",
   "appid": "__UNI__GARDENER",
+  "h5": {
+    "title": "园丁工作台",
+    "router": { "mode": "hash" }
+  },
   "mp-weixin": {
     "appid": "wx1e6d151c7eb428cc",
     "setting": {

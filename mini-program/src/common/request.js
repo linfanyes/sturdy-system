@@ -1,5 +1,18 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
-import { getToken, logout } from './store'
+import { getToken, logout, auth } from './store'
+import { getMockData } from './mock-data'
+
+// —— 演示模式（Mock）开关 ——
+let _mockMode = false
+/** 开���后所有 API 返回本地模拟数据，无需后端即可全功能预览 */
+export function setMockMode(enabled) {
+  _mockMode = enabled
+  if (enabled) {
+    auth.token = 'mock-token'
+    auth.user = { name: '演示老师', school: '阳光实验小学（演示版）' }
+  }
+}
+export function getMockMode() { return _mockMode }
 
 /**
  * 把任意 reject 值归一化为 Error，确保页面层 e.message 永远可用。
@@ -37,6 +50,10 @@ async function batchRun(tasks) {
  * 自动带 token，401 跳转登录。
  */
 export function request(path, method = 'GET', data = {}) {
+  // 演示模式：返回本地模拟数据，无需真实后端
+  if (_mockMode) {
+    return new Promise((resolve) => resolve(getMockData(path, method, data)))
+  }
   return new Promise((resolve, reject) => {
     const cloud = typeof wx !== 'undefined' && wx.cloud
     if (!cloud || typeof cloud.callContainer !== 'function') {
@@ -114,6 +131,28 @@ export const api = {
  * @returns {Promise<string>} 完整回复文本
  */
 export function streamChat(path, data, onDelta, opts = {}) {
+  // 演示模式：返回模拟回复
+  if (_mockMode) {
+    const mockReply = '这是演示模式下的模拟回复。您可以在「设置 → 演示模式」中关闭此功能连接到真实后端。'
+    if (opts.onTask) opts.onTask({ abort: () => {} })
+    return new Promise((resolve) => {
+      // 模拟流式效果：逐字输出
+      if (onDelta) {
+        let i = 0
+        const iv = setInterval(() => {
+          if (i < mockReply.length) {
+            onDelta(mockReply[i], mockReply.slice(0, i + 1))
+            i++
+          } else {
+            clearInterval(iv)
+            resolve(mockReply)
+          }
+        }, 30)
+      } else {
+        resolve(mockReply)
+      }
+    })
+  }
   return new Promise((resolve, reject) => {
     const cloud = typeof wx !== 'undefined' && wx.cloud
     if (!cloud || typeof cloud.callContainer !== 'function') {
