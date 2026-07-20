@@ -104,6 +104,17 @@
         <text class="bd-date">{{ b.birthLabel }}</text>
         <text v-if="b.daysLeft === 0" class="bd-today">今天</text>
         <text v-else class="bd-days">{{ b.daysLeft }} 天后</text>
+        <text class="bd-card" @click.stop="genBirthdayCard(b)">🎉 卡片</text>
+      </view>
+      <view v-if="showCard" class="mask" @click="showCard=false">
+        <view class="bd-card-dialog" @click.stop>
+          <view class="bd-card-bg">{{ cardEmoji }}</view>
+          <view class="bd-card-title">生日快乐！</view>
+          <view class="bd-card-name">{{ cardName }} 同学</view>
+          <view class="bd-card-msg">{{ cardMsg }}</view>
+          <button class="bd-card-copy" @click="copyBirthdayCard">📋 复制祝福语</button>
+          <button class="bd-card-close" @click="showCard=false">关闭</button>
+        </view>
       </view>
     </view>
 
@@ -147,6 +158,20 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme } from '../../common/store'
+import { copyText } from '../../common/print'
+
+// 生日卡片
+const showCard = ref(false), cardName = ref(''), cardMsg = ref(''), cardEmoji = ref('🎂')
+const greetings = ['愿你健康快乐，学习进步！🌟','愿你像小树一样茁壮成长！🌱','新的一岁，新的精彩，加油！💪','愿你每天都有阳光般的笑容！☀️','祝聪明可爱的你生日快乐！🎈']
+function genBirthdayCard(b) {
+  cardName.value = b.name
+  cardEmoji.value = b.daysLeft === 0 ? '🎂🎉' : '🎂'
+  cardMsg.value = greetings[Math.floor(Math.random() * greetings.length)]
+  showCard.value = true
+}
+function copyBirthdayCard() {
+  copyText(`🎂 亲爱的${cardName.value}同学：\n\n生日快乐！${cardMsg.value}\n\n——${auth.user?.name||'老师'} ${new Date().toLocaleDateString('zh-CN')}`)
+}
 
 const features = [
   { label: '班级管理', icon: '🏫', path: '/pages/classes/classes', tab: true },
@@ -376,6 +401,14 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .bd-date { font-size: 24rpx; color: var(--c-sub); margin-left: auto; flex-shrink: 0; }
 .bd-today { font-size: 22rpx; color: #fff; background: var(--c-danger); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
 .bd-days { font-size: 22rpx; color: var(--c-accent); background: rgba(230,162,60,.15); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
+.bd-card { font-size: 20rpx; color: #fff; background: #e06c75; padding: 4rpx 12rpx; border-radius: 16rpx; flex-shrink: 0; }
+.bd-card-dialog { width: 580rpx; background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%); border-radius: 28rpx; padding: 40rpx 30rpx; text-align: center; }
+.bd-card-bg { font-size: 72rpx; }
+.bd-card-title { font-size: 36rpx; font-weight: 800; color: #e06c75; margin: 10rpx 0; }
+.bd-card-name { font-size: 44rpx; font-weight: 800; color: #4a3f35; }
+.bd-card-msg { font-size: 28rpx; color: #5a5048; margin: 16rpx 0; line-height: 1.6; }
+.bd-card-copy { width: 100%; background: #07c160; color: #fff; border-radius: 50rpx; font-size: 28rpx; margin-top: 10rpx; height: 80rpx; line-height: 80rpx; }
+.bd-card-close { width: 100%; background: transparent; color: #999; border-radius: 50rpx; font-size: 26rpx; margin-top: 6rpx; height: 60rpx; line-height: 60rpx; }
 /* 待办 */
 .todo-add { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
 .ta-inp { flex: 1; background: var(--c-input); border-radius: 12rpx; padding: 14rpx 18rpx; font-size: 26rpx; }

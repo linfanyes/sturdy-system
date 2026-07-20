@@ -28,6 +28,9 @@ import { GalleryModule } from './gallery/gallery.module'
 import { BackupModule } from './backup/backup.module'
 import { LessonObservationModule } from './lesson-observation/lesson-observation.module'
 import { WorkLogModule } from './work-log/work-log.module'
+import { ReadingLogModule } from './reading-log/reading-log.module'
+import { CheckinModule } from './checkin/checkin.module'
+import { HomeVisitModule } from './home-visit/home-visit.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -94,6 +97,9 @@ import { HealthController } from './health.controller'
     BackupModule,
     LessonObservationModule,
     WorkLogModule,
+    ReadingLogModule,
+    CheckinModule,
+    HomeVisitModule,
   ],
   controllers: [HealthController],
 })

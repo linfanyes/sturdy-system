@@ -95,6 +95,7 @@ const sections = ref([
       { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
       { label: '试卷查询', icon: '🔍', crud: 'generated/queries' },
       { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
+      { label: '教学日历', icon: '📅', path: '/pages/teaching-calendar/teaching-calendar' },
     ],
   },
   {
@@ -184,6 +185,8 @@ const sections = ref([
       { label: '成长记录', icon: '🌱', path: '/pages/growth/growth' },
       { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
       { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
+      { label: '课外阅读', icon: '📖', path: '/pages/reading-log/reading-log' },
+      { label: '学生打卡', icon: '✅', path: '/pages/checkin/checkin' },
       { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
       { label: '计分板', icon: '🎯', path: '/pages/tools/score-panel/score-panel' },
       { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
