@@ -9,27 +9,27 @@
       </view>
     </view>
 
-    <!-- 统计卡 -->
+    <!-- 统计卡（2×2 微信风格，4 列太挤） -->
     <view class="ov-grid">
       <view class="ov" @click="goCrud('classes')">
         <view class="ov-ic" style="background:#fff3d6">🏫</view>
         <view class="ov-num">{{ classList.length }}</view>
-        <view class="ov-lb">班级数</view>
+        <view class="ov-lb">班级</view>
       </view>
       <view class="ov" @click="goCrud('students')">
         <view class="ov-ic" style="background:#e8f9e8">🧒</view>
         <view class="ov-num">{{ studentList.length }}</view>
-        <view class="ov-lb">学生数</view>
+        <view class="ov-lb">学生</view>
       </view>
       <view class="ov" @click="goCrud('notes')">
         <view class="ov-ic" style="background:#fde8ea">📒</view>
         <view class="ov-num">{{ noteList.length }}</view>
-        <view class="ov-lb">笔记数</view>
+        <view class="ov-lb">笔记</view>
       </view>
       <view class="ov" @click="goPage('/pages/grades/grades')">
         <view class="ov-ic" style="background:#e8f1fb">📊</view>
         <view class="ov-num">{{ gradeList.length }}</view>
-        <view class="ov-lb">考试数</view>
+        <view class="ov-lb">考试</view>
       </view>
     </view>
 
@@ -346,11 +346,11 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .moods { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 18rpx; }
 .mood { font-size: 22rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card); color: var(--c-sub); }
 .mood.on { background: var(--c-accent); color: #fff; }
-.ov-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18rpx; margin: 10rpx 0 20rpx; }
-.ov { background: var(--c-card); border-radius: 22rpx; padding: 22rpx 8rpx; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
-.ov-ic { width: 56rpx; height: 56rpx; border-radius: 16rpx; text-align: center; line-height: 56rpx; font-size: 32rpx; }
-.ov-num { font-size: 40rpx; font-weight: 800; color: var(--c-accent); margin: 6rpx 0; }
-.ov-lb { font-size: 20rpx; color: var(--c-sub); }
+.ov-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; margin: 10rpx 0 20rpx; }
+.ov { background: var(--c-card); border-radius: 22rpx; padding: 24rpx; display: flex; align-items: center; gap: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
+.ov-ic { width: 64rpx; height: 64rpx; border-radius: 18rpx; text-align: center; line-height: 64rpx; font-size: 32rpx; flex-shrink: 0; }
+.ov-num { font-size: 44rpx; font-weight: 800; color: var(--c-accent); flex: 1; text-align: right; }
+.ov-lb { font-size: 22rpx; color: var(--c-sub); }
 .card { margin-top: 20rpx; background: var(--c-card); border-radius: 20rpx; padding: 24rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .card-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .ch-t { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
@@ -386,15 +386,15 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .li-del { font-size: 26rpx; color: var(--c-danger); flex-shrink: 0; margin-left: 10rpx; }
 .empty { text-align: center; color: var(--c-sub); padding: 30rpx 0; font-size: 24rpx; }
 .sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin: 30rpx 6rpx 18rpx; }
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24rpx; }
-.wgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18rpx; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16rpx; }
+.wgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14rpx; }
 .wcell { display: flex; flex-direction: column; align-items: center; padding: 18rpx 6rpx; border-radius: 16rpx; background: var(--c-input); }
 .wcell.on { outline: 3rpx solid var(--c-accent); }
 .wic { font-size: 44rpx; }
 .wlb { margin-top: 8rpx; font-size: 22rpx; color: var(--c-title); }
 .wtip { grid-column: 1 / 5; text-align: center; font-size: 22rpx; color: var(--c-sub); }
-.cell { background: var(--c-card); border-radius: 24rpx; padding: 40rpx 20rpx; display: flex; flex-direction: column; align-items: center; box-shadow: 0 6rpx 20rpx var(--c-shadow); }
-.ic { font-size: 70rpx; }
-.lb { margin-top: 16rpx; color: var(--c-title); font-size: 30rpx; }
+.cell { background: var(--c-card); border-radius: 20rpx; padding: 28rpx 14rpx; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4rpx 14rpx var(--c-shadow); }
+.ic { font-size: 52rpx; }
+.lb { margin-top: 12rpx; color: var(--c-title); font-size: 26rpx; }
 .loadtip { text-align: center; color: var(--c-sub); font-size: 24rpx; padding: 20rpx 0; }
 </style>
