@@ -46,7 +46,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -65,6 +65,7 @@ const date = ref('')
 const map = ref({}) // studentId -> status
 const attId = ref('')
 const saving = ref(false)
+let dirty = false // 是否有未保存的考勤改动
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -99,6 +100,7 @@ function pickClass(ev) {
 async function loadAtt() {
   map.value = {}
   attId.value = ''
+  dirty = false
   if (!classId.value) return
   const list = (await api.get('/attendances')).filter(
     (a) => a.classId === classId.value && (date.value ? a.date === date.value : true)
@@ -120,6 +122,7 @@ function cur(id) {
 async function setStu(id, s) {
   const prev = cur(id)
   map.value[id] = s
+  dirty = true
   // 对齐 web：新标记为「旷课」时自动生成班级公告
   if (s === '旷课' && prev !== '旷课') {
     const stu = students.value.find((x) => x.id === id)
@@ -141,25 +144,31 @@ async function setStu(id, s) {
 }
 function markAll(s) {
   for (const st of students.value) map.value[st.id] = s
+  dirty = true
 }
 
-async function save() {
+async function save(silent = false) {
   // 防重入：保存中直接返回
   if (saving.value) return
-  if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
+  if (!classId.value) return
   saving.value = true
   const records = students.value.map((s) => ({ studentId: s.id, status: map.value[s.id] || '出勤' }))
   const payload = { classId: classId.value, date: date.value || undefined, records }
   try {
     if (attId.value) await api.patch('/attendances/' + attId.value, payload)
     else await api.post('/attendances', payload)
-    uni.showToast({ title: '考勤已保存', icon: 'none' })
+    dirty = false
+    if (!silent) uni.showToast({ title: '考勤已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
   } finally {
     saving.value = false
   }
 }
+// 离开页面时若有未保存改动，自动落库，避免「已发旷课通知但考勤未保存」的不一致
+onUnload(() => {
+  if (dirty && classId.value && !saving.value) save(true)
+})
 </script>
 
 <style scoped>

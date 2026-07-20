@@ -22,9 +22,11 @@
             <text class="star off" v-else @click.stop="star(t, true)">☆</text>
           </view>
           <text class="teach" v-if="teachSummary(t)">{{ teachSummary(t) }}</text>
-          <text class="meta">{{ t.phone || '' }}{{ t.email ? ' · ' + t.email : '' }}</text>
+          <text class="meta" :class="{ tap: t.phone }" v-if="t.phone" @click.stop="call(t.phone)">{{ t.phone }}{{ t.email ? ' · ' + t.email : '' }}</text>
+          <text class="meta" v-else-if="t.email">{{ t.email }}</text>
         </view>
         <view class="acts">
+          <text class="call" v-if="t.phone" @click.stop="call(t.phone)">拨打</text>
           <text class="cp" @click.stop="copy(t)">复制</text>
           <text class="ed" @click.stop="openEdit(t)">编辑</text>
           <text class="del" @click.stop="remove(t)">删除</text>
@@ -252,7 +254,9 @@ function remove(t) {
 .star.off { color: #ccc; }
 .teach { font-size: 22rpx; color: #5a5048; display: block; }
 .meta { font-size: 22rpx; color: #9aa0a6; display: block; }
+.meta.tap { color: var(--c-primary); }
 .acts { display: flex; flex-direction: column; gap: 8rpx; flex: 0 0 auto; }
+.call { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; background: #e8f1fb; color: #409eff; }
 .cp, .ed, .del { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; }
 .cp { background: #eef7ee; color: var(--c-primary); }
 .ed { background: #f3f1e6; color: #a07b3b; }

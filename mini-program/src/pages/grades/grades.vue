@@ -113,8 +113,8 @@
           </view>
           <view class="bar-legend">
             <view class="lg-item"><view class="lg-c bar-c0"></view><text>极低/不及格 (&lt;60)</text></view>
-            <view class="lg-item"><view class="lg-c bar-c1"></view><text>待提高 (40-69)</text></view>
-            <view class="lg-item"><view class="lg-c bar-c2"></view><text>中等 (70-89)</text></view>
+    <view class="lg-item"><view class="lg-c bar-c1"></view><text>及格 (60-69)</text></view>
+    <view class="lg-item"><view class="lg-c bar-c2"></view><text>良好 (70-89)</text></view>
             <view class="lg-item"><view class="lg-c bar-c3"></view><text>优秀 (90+)</text></view>
           </view>
         </view>
@@ -227,7 +227,7 @@ const analysis = computed(() => {
     count: c,
     pct: Math.round((c / sc.length) * 100),
     // 4 色梯度：极低(红)/待提高(黄)/中等(绿)/优秀(蓝)
-    colorIdx: i < 4 ? 0 : i < 6 ? 1 : i < 8 ? 2 : 3,
+    colorIdx: i < 6 ? 0 : i === 6 ? 1 : i < 9 ? 2 : 3,
     heightPct: Math.round((c / distMax) * 100),
   }))
   const nameMap = {}
@@ -235,7 +235,7 @@ const analysis = computed(() => {
   const rank = all
     .map((x) => ({ id: x.studentId, name: nameMap[x.studentId] || '—', score: x.score }))
     .sort((a, b) => b.score - a.score)
-  return { avg, max, min, median: mid, passRate, excellentRate, segs, rank, dist: distWithMeta, distMax, count: sc.length }
+  return { avg, max, min, median: Number(mid), passRate, excellentRate, segs, rank, dist: distWithMeta, distMax, count: sc.length }
 })
 
 // P1-3: 各科雷达图数据 - 取当前班级、当前考试所有已录入成绩的科目，每科 5 维

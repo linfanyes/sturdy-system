@@ -145,7 +145,6 @@ onLoad((q) => {
   }
   schema.value = s
   uni.setNavigationBarTitle({ title: s.title })
-  load()
 })
 
 onShow(load)

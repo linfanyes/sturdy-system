@@ -17,7 +17,7 @@
         </view>
         <text class="del" @click="del(it)">删除</text>
       </view>
-      <view class="empty" v-if="!list.length">暂无班级活动</view>
+      <view class="empty" v-if="!list.length">{{ classId ? '暂无班级活动' : '请先在上方选择班级' }}</view>
     </view>
 
     <view class="sheet" v-if="showAdd">
@@ -61,6 +61,7 @@ function photos(it) {
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
+  if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -90,6 +91,7 @@ function pickImg() {
   })
 }
 async function add() {
+  if (saving.value) return
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   if (!form.value.title) return uni.showToast({ title: '请填标题', icon: 'none' })
   if (!isNonEmpty(form.value.description)) return uni.showToast({ title: '请填写活动描述', icon: 'none' })

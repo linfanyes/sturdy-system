@@ -63,66 +63,79 @@ const stat = ref({
 const classRows = ref([])
 
 async function load() {
-  const [classes, students, atts, grades, homework, notes, todos, notices] = await Promise.all([
-    api.get('/classes').catch(() => []),
-    api.get('/students').catch(() => []),
-    api.get('/attendances').catch(() => []),
-    api.get('/grades').catch(() => []),
-    api.get('/homework').catch(() => []),
-    api.get('/notes').catch(() => []),
-    api.get('/todos').catch(() => []),
-    api.get('/notices').catch(() => []),
-  ])
+  uni.showLoading({ title: '统计中…', mask: false })
+  try {
+    const res = await Promise.allSettled([
+      api.get('/classes'),
+      api.get('/students'),
+      api.get('/attendances'),
+      api.get('/grades'),
+      api.get('/homework'),
+      api.get('/notes'),
+      api.get('/todos'),
+      api.get('/notices'),
+    ])
+    const [classes, students, atts, grades, homework, notes, todos, notices] = res.map((r) =>
+      r.status === 'fulfilled' ? r.value || [] : [],
+    )
 
-  // 出勤率
-  let atTotal = 0
-  let atPresent = 0
-  ;(atts || []).forEach((a) => {
-    const recs = typeof a.records === 'string' ? safeParse(a.records) : a.records || []
-    recs.forEach((r) => {
-      atTotal++
-      if (r.status === '出勤' || r.status === '迟到' || r.status === '请假') atPresent++
+    // 出勤率
+    let atTotal = 0
+    let atPresent = 0
+    ;(atts || []).forEach((a) => {
+      const recs = typeof a.records === 'string' ? safeParse(a.records) : a.records || []
+      recs.forEach((r) => {
+        atTotal++
+        if (r.status === '出勤' || r.status === '迟到' || r.status === '请假') atPresent++
+      })
     })
-  })
-  const attRate = atTotal ? Math.round((atPresent / atTotal) * 100) : 0
+    const attRate = atTotal ? Math.round((atPresent / atTotal) * 100) : 0
 
-  // 作业完成率（已批改 + 已发还）
-  const hw = homework || []
-  const hwDone = hw.length ? Math.round((hw.filter((h) => h.status === '已批改' || h.status === '已发还').length / hw.length) * 100) : 0
+    // 作业完成率（已批改 + 已发还）
+    const hw = homework || []
+    const hwDone = hw.length ? Math.round((hw.filter((h) => h.status === '已批改' || h.status === '已发还').length / hw.length) * 100) : 0
 
-  // 考试均分
-  const sc = []
-  ;(grades || []).forEach((g) => (g.scores || []).forEach((x) => { if (x.score != null) sc.push(Number(x.score)) }))
-  const avgScore = sc.length ? Math.round((sc.reduce((a, b) => a + b, 0) / sc.length) * 10) / 10 : 0
+    // 考试均分
+    const sc = []
+    ;(grades || []).forEach((g) => (g.scores || []).forEach((x) => { if (x.score != null) sc.push(Number(x.score)) }))
+    const avgScore = sc.length ? Math.round((sc.reduce((a, b) => a + b, 0) / sc.length) * 10) / 10 : 0
 
-  // 待办完成率
-  const td = todos || []
-  const todoDone = td.length ? Math.round((td.filter((t) => t.done).length / td.length) * 100) : 0
+    // 待办完成率
+    const td = todos || []
+    const todoDone = td.length ? Math.round((td.filter((t) => t.done).length / td.length) * 100) : 0
 
-  // 未结束公告
-  const nt = (notices || []).filter((n) => !n.ended).length
+    // 未结束公告
+    const nt = (notices || []).filter((n) => !n.ended).length
 
-  stat.value = {
-    classes: (classes || []).length,
-    students: (students || []).length,
-    attRate,
-    hwDone,
-    avgScore,
-    todoDone,
-    notes: (notes || []).length,
-    notices: nt,
+    stat.value = {
+      classes: (classes || []).length,
+      students: (students || []).length,
+      attRate,
+      hwDone,
+      avgScore,
+      todoDone,
+      notes: (notes || []).length,
+      notices: nt,
+    }
+
+    // 各班学生数
+    const map = {}
+    ;(students || []).forEach((s) => { map[s.classId] = (map[s.classId] || 0) + 1 })
+    const max = Math.max(1, ...Object.values(map))
+    classRows.value = (classes || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      count: map[c.id] || 0,
+      pct: Math.round(((map[c.id] || 0) / max) * 100),
+    }))
+
+    const failed = res.filter((r) => r.status === 'rejected').length
+    if (failed) uni.showToast({ title: `有 ${failed} 项数据获取失败`, icon: 'none' })
+  } catch (e) {
+    uni.showToast({ title: '统计加载失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
   }
-
-  // 各班学生数
-  const map = {}
-  ;(students || []).forEach((s) => { map[s.classId] = (map[s.classId] || 0) + 1 })
-  const max = Math.max(1, ...Object.values(map))
-  classRows.value = (classes || []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    count: map[c.id] || 0,
-    pct: Math.round(((map[c.id] || 0) / max) * 100),
-  }))
 }
 function safeParse(s) {
   try {

@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
@@ -53,19 +53,22 @@ const items = computed(() => {
   notices.value.forEach((n) => arr.push({
     type: 'notice', tag: n.pinned ? '置顶公告' : '班级公告', pinned: n.pinned,
     title: n.title, sub: n.content, time: fmt(n.createdAt || n.updatedAt),
+    ts: n.createdAt || n.updatedAt,
     raw: n,
   }))
   todos.value.forEach((t) => arr.push({
     type: 'todo', tag: t.done ? '已完成' : '待办', pinned: false,
     title: t.title, sub: t.date ? '日期：' + t.date : '', time: fmt(t.createdAt || t.updatedAt),
+    ts: t.createdAt || t.updatedAt,
     raw: t,
   }))
   notes.value.forEach((n) => arr.push({
     type: 'note', tag: '笔记' + (n.favorite ? '·收藏' : ''), pinned: n.favorite,
     title: n.title, sub: n.content, time: fmt(n.updatedAt),
+    ts: n.updatedAt,
     raw: n,
   }))
-  return arr.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
+  return arr.sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
 })
 const shown = computed(() => (tab.value === 'all' ? items.value : items.value.filter((x) => x.type === tab.value)))
 
@@ -86,6 +89,10 @@ async function load() {
   notes.value = Array.isArray(k) ? k : (k.items || [])
 }
 onShow(load)
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
 </script>
 
 <style scoped>

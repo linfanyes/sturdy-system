@@ -122,7 +122,7 @@ function upload() {
     success: (res) => {
       const p = res.tempFiles[0].tempFilePath
       const ext = p.split('.').pop() || 'jpeg'
-      wx.getFileSystemManager().readFile({
+      uni.getFileSystemManager().readFile({
         filePath: p,
         encoding: 'base64',
         success: (r) => { form.value.image = 'data:image/' + ext + ';base64,' + r.data },
@@ -132,9 +132,7 @@ function upload() {
   })
 }
 function preview(src) {
-  if (src && src.startsWith('data:image')) {
-    uni.previewImage({ urls: [src] })
-  }
+  if (src) uni.previewImage({ urls: [src] })
 }
 async function save() {
   if (saving.value) return

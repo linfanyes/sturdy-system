@@ -51,7 +51,9 @@
       </view>
     </view>
     <view v-if="!items.length" class="empty-tip">
-      {{ mode === 'class' ? '请选择班级并添加课程' : '暂无本人任教课程，点击格子添加' }}
+      {{ mode === 'class'
+        ? '请选择班级并添加课程'
+        : '暂无您的任教课程。请确认课表「教师」栏填写的姓名与通讯录一致；或在「班级课表」点击格子，任教教师填您的姓名后保存。' }}
     </view>
 
     <!-- 新增/编辑弹层 -->
@@ -226,9 +228,18 @@ async function loadItems() {
     items.value = (await api.get('/schedules')).filter((s) => s.classId === classId.value)
   } else {
     // 教师课表：展示本人任教的全部课程（跨班级）
+    // 匹配本人姓名；若通讯录带有工号(employeeNo/no)，则一并匹配工号写法，避免后端存工号时恒空
     const me = meName.value.trim()
+    const emp = auth.user && (auth.user.employeeNo || auth.user.no || '')
+      ? String(auth.user.employeeNo || auth.user.no).trim()
+      : ''
     const all = await api.get('/schedules')
-    items.value = me ? all.filter((s) => (s.teacher || '').trim() === me) : []
+    items.value = (me || emp)
+      ? all.filter((s) => {
+          const t = (s.teacher || '').trim()
+          return (me && t === me) || (emp && t === emp)
+        })
+      : []
   }
 }
 function switchMode(m) {

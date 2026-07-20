@@ -29,7 +29,7 @@
         <view v-if="manage" class="move" @click="startMove(p)">移动</view>
       </view>
     </view>
-    <view class="empty" v-else>还没有班级风采照片</view>
+    <view class="empty" v-else>{{ classId ? '还没有班级风采照片' : '请先在上方选择班级' }}</view>
 
     <view v-if="movePhoto" class="mask" @click="movePhoto = null">
       <view class="sheet2" @click.stop>
@@ -63,7 +63,7 @@
         <text v-if="!form.photos.length">📷 添加照片（{{ form.photos.length }}）</text>
         <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" /></view>
       </view>
-      <button class="ok" @click="add">保存相册</button>
+      <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存相册' }}</button>
     </view>
   </view>
 </template>
@@ -82,6 +82,7 @@ const manage = ref(false)
 const movePhoto = ref(null)
 const activeAlbum = ref('')
 const form = ref({ title: '', date: '', description: '', photos: [] })
+const saving = ref(false)
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -107,6 +108,7 @@ function safeParse(s) {
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
+  if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -167,9 +169,11 @@ function pickImg() {
   })
 }
 async function add() {
+  if (saving.value) return
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   if (!form.value.title) return uni.showToast({ title: '请填标题', icon: 'none' })
   if (!form.value.photos.length) return uni.showToast({ title: '请添加照片', icon: 'none' })
+  saving.value = true
   try {
     const r = await api.post('/class-galleries', {
       classId: classId.value, title: form.value.title, date: form.value.date,
@@ -180,6 +184,7 @@ async function add() {
     form.value = { title: '', date: '', description: '', photos: [] }
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) { uni.showToast({ title: '失败：' + (e.message || ''), icon: 'none' }) }
+  finally { saving.value = false }
 }
 async function del(it) {
   uni.showModal({ title: '删除相册', content: it.title, success: async (m) => {

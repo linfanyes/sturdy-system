@@ -49,6 +49,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { onUnload } from '@dcloudio/uni-app'
 import { theme, auth } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
@@ -80,6 +81,7 @@ function rollDice() {
 const coinFace = ref('正面')
 const coinStats = ref({ front: 0, back: 0 })
 let coinTimer = null
+let wheelTimer = null
 function flipCoin() {
   if (coinTimer) clearInterval(coinTimer)
   coinTimer = setInterval(() => { coinFace.value = Math.random() < 0.5 ? '正面' : '反面' }, 60)
@@ -124,7 +126,7 @@ function spin() {
   const idx = Math.floor(Math.random() * n)
   const target = 360 * 5 + (360 - idx * step - step / 2)
   rot.value = target
-  setTimeout(() => { uni.showToast({ title: '结果：' + wheelSegs.value[idx], icon: 'none' }) }, 2600)
+  wheelTimer = setTimeout(() => { uni.showToast({ title: '结果：' + wheelSegs.value[idx], icon: 'none' }) }, 2600)
 }
 
 /* 抽签 */
@@ -162,6 +164,12 @@ function clearDraw() {
     success: (r) => { if (r.confirm) { optsText.value = ''; drawResult.value = '' } },
   })
 }
+
+onUnload(() => {
+  if (diceTimer) clearInterval(diceTimer)
+  if (coinTimer) clearInterval(coinTimer)
+  if (wheelTimer) clearTimeout(wheelTimer)
+})
 </script>
 
 <style scoped>

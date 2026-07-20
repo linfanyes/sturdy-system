@@ -53,6 +53,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'

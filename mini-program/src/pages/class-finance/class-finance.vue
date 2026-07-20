@@ -21,7 +21,7 @@
         <view class="ct" v-if="it.description">{{ it.description }}</view>
         <text class="del" @click="del(it)">删除</text>
       </view>
-      <view class="empty" v-if="!sorted.length">暂无记录</view>
+      <view class="empty" v-if="!sorted.length">{{ classId ? '暂无记录' : '请先在上方选择班级' }}</view>
     </view>
 
     <view class="sheet" v-if="showAdd">
@@ -70,6 +70,7 @@ const balance = computed(() => totalIn.value + totalOut.value)
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
+  if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadList()
 }
 async function loadList() {
@@ -84,6 +85,7 @@ onPullDownRefresh(async () => {
 function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; loadList() }
 
 async function add() {
+  if (saving.value) return
   if (!classId.value) return uni.showToast({ title: '请先选班级', icon: 'none' })
   if (form.value.amount === '') return uni.showToast({ title: '请填金额', icon: 'none' })
   if (!isAmount(form.value.amount)) return uni.showToast({ title: '金额必须为正数（最多两位小数）', icon: 'none' })

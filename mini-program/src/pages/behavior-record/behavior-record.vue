@@ -17,7 +17,7 @@
       <text v-for="s in stats" :key="s.type" class="sc" :class="'b-' + s.key">{{ s.type }}：{{ s.count }}</text>
     </view>
 
-    <view class="empty" v-if="!filtered.length">还没有行为记录，记录课堂上的积极发言、走神等</view>
+    <view class="empty" v-if="!filtered.length">{{ emptyText }}</view>
 
     <view class="list" v-else>
       <view class="c" v-for="b in filtered" :key="b.id">
@@ -91,6 +91,8 @@ const stats = computed(() => {
   for (const b of classRecords.value) m[b.behavior] = (m[b.behavior] || 0) + 1
   return Object.keys(m).map((type) => ({ type, key: keyOf(type), count: m[type] }))
 })
+// 空态文案：未选班级时引导选班，否则提示暂无记录（避免误导为「没有数据」）
+const emptyText = computed(() => (classId.value ? '还没有行为记录，记录课堂上的积极发言、走神等' : '请先在上方选择班级'))
 
 const show = ref(false)
 const editing = ref(null)
@@ -105,6 +107,7 @@ function today() {
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
+  if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadStudents()
   records.value = await api.getList('/behavior-records', { loading: true, loadingText: '加载行为记录' })
 }

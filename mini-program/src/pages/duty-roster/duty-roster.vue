@@ -8,7 +8,7 @@
       <view class="new" @click="openCreate">＋ 新建轮值表</view>
     </view>
 
-    <view v-if="!rosters.length" class="empty">还没有轮值表，点击右上角创建</view>
+    <view v-if="!rosters.length" class="empty">{{ classId ? '还没有轮值表，点击右上角创建' : '请先在上方选择班级' }}</view>
 
     <view class="roster" v-for="r in rosters" :key="r.id">
       <view class="r-h">
@@ -97,6 +97,7 @@ const selName = computed(() => {
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })
+  if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadRoster()
 }
 async function loadRoster() {
@@ -168,6 +169,7 @@ function delRow(idx) {
   draft.value.assignments.splice(idx, 1)
 }
 async function save() {
+  if (saving.value) return
   if (!isNonEmpty(draft.value.name)) return uni.showToast({ title: '请输入名称', icon: 'none' })
   const payload = {
     classId: classId.value,

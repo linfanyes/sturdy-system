@@ -60,6 +60,7 @@ const spinning = ref(false)
 const history = ref([])
 const excludePicked = ref(false)
 let timer = null
+let rollTimer = null
 
 // 按用户 + 班级隔离的存储 key
 function sk(suffix) {
@@ -212,7 +213,7 @@ function roll() {
     picked.value = pool[n % pool.length]
     n++
   }, 70)
-  setTimeout(() => {
+  rollTimer = setTimeout(() => {
     clearInterval(timer)
     spinning.value = false
     const final = pool[Math.floor(Math.random() * pool.length)]
@@ -221,7 +222,7 @@ function roll() {
     uni.vibrateShort({ fail() {} })
   }, 1500)
 }
-function stop() { if (timer) clearInterval(timer) }
+function stop() { if (timer) clearInterval(timer); if (rollTimer) clearTimeout(rollTimer) }
 onLoad(loadClasses)
 onUnload(stop)
 </script>
