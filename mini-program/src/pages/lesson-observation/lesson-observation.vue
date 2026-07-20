@@ -51,7 +51,7 @@
 
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :class="{ disabled: saving }" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -73,6 +73,7 @@ const classOpts = computed(() => classes.value.map((c) => c.name))
 const show = ref(false)
 const editing = ref(null)
 const form = ref({ classId: '', className: '', teacherName: '', subject: '', topic: '', date: today(), strengths: '', suggestions: '', overallRating: '良好' })
+const saving = ref(false)
 
 function today() {
   const d = new Date()
@@ -108,8 +109,10 @@ function openEdit(o) {
   show.value = true
 }
 async function save() {
+  if (saving.value) return
   if (!form.value.teacherName.trim()) return uni.showToast({ title: '请输入授课教师', icon: 'none' })
   if (!form.value.topic.trim()) return uni.showToast({ title: '请输入听课主题', icon: 'none' })
+  saving.value = true
   const payload = { ...form.value }
   try {
     if (editing.value) {
@@ -123,6 +126,8 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function del(o) {
@@ -178,6 +183,7 @@ function del(o) {
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
 .mb.ok { background: #07c160; color: #fff; }
+.mb.disabled { opacity: 0.5; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }
 .dark .list, .dark .modal { background: var(--c-card); }

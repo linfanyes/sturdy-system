@@ -46,7 +46,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -145,6 +145,7 @@ function safeParse(s) {
   }
 }
 onShow(load)
+onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 </script>
 
 <style scoped>

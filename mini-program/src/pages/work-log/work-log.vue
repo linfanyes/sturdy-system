@@ -55,7 +55,7 @@
 
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
-        <view class="mb ok" @click="save">保存</view>
+        <view class="mb ok" :class="{ disabled: saving }" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
       </view>
     </view>
   </view>
@@ -71,6 +71,7 @@ const list = ref([])
 const show = ref(false)
 const editing = ref(null)
 const form = ref({ date: today(), classCount: 0, homeworkCount: 0, content: '', note: '' })
+const saving = ref(false)
 
 function today() {
   const d = new Date()
@@ -103,7 +104,9 @@ function openEdit(l) {
   show.value = true
 }
 async function save() {
+  if (saving.value) return
   if (!form.value.content.trim()) return uni.showToast({ title: '请填写工作内容', icon: 'none' })
+  saving.value = true
   const payload = {
     date: form.value.date,
     classCount: Number(form.value.classCount) || 0,
@@ -123,6 +126,8 @@ async function save() {
     uni.showToast({ title: '已保存', icon: 'none' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 function del(l) {
@@ -170,6 +175,7 @@ function del(l) {
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
 .mb.ok { background: #07c160; color: #fff; }
+.mb.disabled { opacity: 0.5; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }
 .dark .st, .dark .list, .dark .modal { background: var(--c-card); }

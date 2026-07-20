@@ -70,7 +70,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 
@@ -243,6 +243,7 @@ async function load() {
   drawLine()
 }
 onShow(load)
+onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id
