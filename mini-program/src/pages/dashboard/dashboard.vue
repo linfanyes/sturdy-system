@@ -181,7 +181,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, theme } from '../../common/store'
+import { auth, theme, flushTabBarStyle } from '../../common/store'
 import { copyText } from '../../common/print'
 
 // 生日卡片
@@ -393,6 +393,8 @@ onShow(() => {
   selKeys.value = uni.getStorageSync('dash_widgets') || widgetCands.slice(0, 4).map((w) => w.label)
   loadAll()
 })
+// 进入 tabBar 页面时落地待应用的主题/tabBar 样式（非 tabBar 页面修改主题后需此兜底）
+onShow(() => flushTabBarStyle())
 onPullDownRefresh(async () => {
   await loadAll()
   uni.stopPullDownRefresh()

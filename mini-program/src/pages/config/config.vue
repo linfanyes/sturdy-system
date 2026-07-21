@@ -251,7 +251,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api, { setMockMode } from '../../common/request'
-import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES } from '../../common/store'
+import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES, flushTabBarStyle } from '../../common/store'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
@@ -525,6 +525,7 @@ async function load() {
   app.value = await api.get('/config/app')
 }
 onShow(load)
+onShow(() => flushTabBarStyle())
 
 function onTheme(e) {
   setTheme(e.detail.value ? 'dark' : 'light')

@@ -148,7 +148,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onLoad, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { isPhone, isStudentNo } from '../../common/validators'
-import { theme } from '../../common/store'
+import { theme, flushTabBarStyle } from '../../common/store'
 import { copyText } from '../../common/print'
 import { compressImage } from '../../common/image'
 
@@ -257,6 +257,7 @@ async function load() {
   resetPage()
 }
 onShow(load)
+onShow(() => flushTabBarStyle())
 onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()

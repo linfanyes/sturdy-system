@@ -124,7 +124,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
-import { theme } from '../../common/store'
+import { theme, flushTabBarStyle } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
@@ -172,6 +172,7 @@ async function load() {
   loadSemesters()
 }
 onShow(load)
+onShow(() => flushTabBarStyle())
 onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()

@@ -30,6 +30,50 @@ export const auth = reactive({
   features: [], // 管理员配置的功能列表,空数组=全部可用
 })
 
+// tabBar 页面清单：微信限制 setTabBarStyle 只能在 tabBar 页面调用，
+// 否则报 "setTabBarStyle:fail not TabBar page"
+const TABBAR_PAGES = [
+  'pages/dashboard/dashboard',
+  'pages/classes/classes',
+  'pages/students/students',
+  'pages/toolbox/toolbox',
+  'pages/config/config',
+]
+
+// 当前是否处于 tabBar 页面（微信要求 setTabBarStyle 的调用前提）
+export function isOnTabBarPage() {
+  try {
+    const pages = getCurrentPages()
+    if (!pages || !pages.length) return false
+    const cur = pages[pages.length - 1].route
+    return TABBAR_PAGES.includes(cur)
+  } catch (e) {
+    return false
+  }
+}
+
+// 待应用的 tabBar 样式：在非 tabBar 页面修改主题时先缓存，待进入 tabBar 页面再落地
+let pendingTabBarStyle = null
+
+// 安全调用 setTabBarStyle：非 tabBar 页面仅缓存不调用（避免微信报 not TabBar page）
+function updateTabBarStyle(partial) {
+  pendingTabBarStyle = { ...(pendingTabBarStyle || {}), ...partial }
+  if (!isOnTabBarPage()) return
+  flushTabBarStyle()
+}
+
+// 立即把待应用样式落地（仅在 tabBar 页面生效）
+export function flushTabBarStyle() {
+  if (!pendingTabBarStyle) return
+  if (!isOnTabBarPage()) return
+  const opts = pendingTabBarStyle
+  pendingTabBarStyle = null
+  uni.setTabBarStyle({
+    ...opts,
+    fail: () => {},
+  })
+}
+
 // 主题：light / dark。默认跟随系统；用户手动切换后持久化。
 const sysDark =
   typeof uni.getSystemInfoSync === 'function' &&
@@ -91,14 +135,13 @@ export function applyAppearance(mode) {
       backgroundColor: dark ? '#1f232b' : '#fff7e6',
     })
   } catch (e) {}
-  try {
-    uni.setTabBarStyle({
-      color: dark ? '#8a909a' : '#9aa0a6',
-      selectedColor: dark ? '#3fd07f' : '#e6a23c',
-      backgroundColor: dark ? '#1a1d23' : '#ffffff',
-      borderStyle: dark ? 'white' : 'black',
-    })
-  } catch (e) {}
+  // setTabBarStyle 仅允许在 tabBar 页面调用：非 tabBar 页面时仅缓存，待进入 tabBar 页落地
+  updateTabBarStyle({
+    color: dark ? '#8a909a' : '#9aa0a6',
+    selectedColor: dark ? '#3fd07f' : '#e6a23c',
+    backgroundColor: dark ? '#1a1d23' : '#ffffff',
+    borderStyle: dark ? 'white' : 'black',
+  })
 }
 
 export function initTheme() {
@@ -110,9 +153,7 @@ export function initTheme() {
 // 应用主题色：同步全局 tabBar 选中色，使主题色在全局可见（对齐 web 强调色变化）
 export function applyColorScheme(scheme) {
   const s = SCHEMES.find((x) => x.value === scheme) || SCHEMES[0]
-  try {
-    uni.setTabBarStyle({ selectedColor: s.color })
-  } catch (e) {}
+  updateTabBarStyle({ selectedColor: s.color })
 }
 
 // 切换主题色（循环到下一个）

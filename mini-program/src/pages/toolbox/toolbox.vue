@@ -34,7 +34,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { auth, theme } from '../../common/store'
+import { auth, theme, flushTabBarStyle } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
 const HIDDEN_KEY = 'tb_hidden'
@@ -314,6 +314,7 @@ function moveSection(dir, title) {
 onShow(() => {
   if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
 })
+onShow(() => flushTabBarStyle())
 </script>
 
 <style scoped>
