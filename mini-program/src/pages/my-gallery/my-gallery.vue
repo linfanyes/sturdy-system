@@ -116,7 +116,7 @@ function pickImg() {
     sizeType: ['compressed'],
     success: (res) => {
       res.tempFilePaths.forEach((p) => {
-        try { wx.getFileSystemManager().readFile({ filePath: p, encoding: 'base64', success: (r) => { form.value.photos.push('data:image/jpeg;base64,' + r.data) } }) }
+        try { uni.getFileSystemManager().readFile({ filePath: p, encoding: 'base64', success: (r) => { form.value.photos.push('data:image/jpeg;base64,' + r.data) } }) }
         catch (_) { form.value.photos.push(p) }
       })
     },
@@ -177,7 +177,7 @@ function preview(src) {
 function savePreview() {
   if (!previewSrc.value) return
   if (previewSrc.value.startsWith('data:')) {
-    const fs = wx.getFileSystemManager()
+    const fs = uni.getFileSystemManager()
     const fp = wx.env.USER_DATA_PATH + '/gallery_' + Date.now() + '.jpg'
     fs.writeFile({ filePath: fp, data: previewSrc.value.replace(/^data:image\/\w+;base64,/, ''), encoding: 'base64', success: () => {
       uni.saveImageToPhotosAlbum({ filePath: fp, success: () => uni.showToast({ title: '已保存到系统相册', icon: 'success' }), fail: () => uni.showToast({ title: '保存失败', icon: 'none' }) })

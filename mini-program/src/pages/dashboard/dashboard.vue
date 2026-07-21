@@ -3,7 +3,7 @@
     <!-- 欢迎条 -->
     <view class="header">
       <view class="hi">{{ greeting }}，{{ auth.user?.name || '老师' }}</view>
-      <view class="school">{{ auth.user?.school || '未设置学校' }}</view>
+      <view class="school">{{ auth.user?.school || '未设置学校' }}<text v-if="semesterName" class="sem"> · {{ semesterName }}</text></view>
       <view class="moods">
         <text class="mood" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)">{{ moodEmojis[i] }} {{ m }}</text>
       </view>
@@ -232,6 +232,15 @@ const gradeList = ref([])
 const todoList = ref([])
 const todayLessons = ref([])
 const noticeList = ref([])
+const semesterName = ref('')
+
+async function loadSemester() {
+  try {
+    const arr = await api.get('/semesters')
+    const cur = (arr || []).find((s) => s.current)
+    semesterName.value = cur ? cur.name : ''
+  } catch (e) { semesterName.value = '' }
+}
 
 const recentNotes = computed(() =>
   [...noteList.value].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 4)
@@ -292,6 +301,7 @@ function pickMood(m) {
 
 async function loadAll() {
   loading.value = true
+  loadSemester()
   try {
     const [classes, students, notes, grades, todos, schedules, notices] = await Promise.all([
       api.get('/classes').catch(() => []),
@@ -374,6 +384,7 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .header { padding: 10rpx 6rpx 20rpx; }
 .hi { font-size: 44rpx; font-weight: 700; color: var(--c-title); }
 .school { color: var(--c-sub); margin-top: 8rpx; }
+.sem { color: var(--c-accent); font-weight: 600; }
 .moods { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 18rpx; }
 .mood { font-size: 22rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card); color: var(--c-sub); }
 .mood.on { background: var(--c-accent); color: #fff; }
