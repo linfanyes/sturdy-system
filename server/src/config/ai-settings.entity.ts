@@ -18,6 +18,12 @@ export class AiSettings extends BaseEntity {
   @Column({ default: '' })
   visionModel: string
 
+  @Column({ default: '' })
+  imageModel: string
+
+  @Column({ default: '' })
+  videoModel: string
+
   @Column({ type: 'float', default: 0.7 })
   temperature: number
 
