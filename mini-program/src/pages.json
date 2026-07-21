@@ -83,6 +83,7 @@
     { "path": "pages/class-finance/class-finance", "style": { "navigationBarTitleText": "班费管理", "enablePullDownRefresh": true } },
     { "path": "pages/gallery/gallery", "style": { "navigationBarTitleText": "班级风采", "enablePullDownRefresh": true } },
     { "path": "pages/my-gallery/my-gallery", "style": { "navigationBarTitleText": "我的相册", "enablePullDownRefresh": true } },
+    { "path": "pages/im/im", "style": { "navigationBarTitleText": "家校沟通", "enablePullDownRefresh": true } },
     { "path": "pages/image-creation/image-creation", "style": { "navigationBarTitleText": "图像创造", "enablePullDownRefresh": false } },
     { "path": "pages/lesson-observation/lesson-observation", "style": { "navigationBarTitleText": "听课记录", "enablePullDownRefresh": true } },
     { "path": "pages/work-log/work-log", "style": { "navigationBarTitleText": "工作日志", "enablePullDownRefresh": true } },
