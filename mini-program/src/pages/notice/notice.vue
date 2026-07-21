@@ -173,6 +173,14 @@ function openEdit(n) {
 async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填标题', icon: 'none' })
   if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填内容', icon: 'none' })
+  // 微信内容安全审核（后端已配置则审核，未配置/异常放行）
+  try {
+    const text = (form.value.title + '\n' + form.value.content).trim()
+    const r = await api.post('/security/msg-check', { content: text })
+    if (r && r.pass === false) {
+      return uni.showToast({ title: '内容未通过安全审核：' + (r.reason || ''), icon: 'none' })
+    }
+  } catch (e) {}
   saving.value = true
   try {
     if (editing.value) {

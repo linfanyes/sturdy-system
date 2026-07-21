@@ -11,6 +11,10 @@
       "maps": {
         "version": "3.3.5",
         "provider": "wx5bc2ac602a747594"
+      },
+      "WechatSI": {
+        "version": "latest",
+        "provider": "wx069ba97219f66d99"
       }
     },
     "setting": {

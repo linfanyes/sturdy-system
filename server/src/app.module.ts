@@ -33,6 +33,8 @@ import { CheckinModule } from './checkin/checkin.module'
 import { HomeVisitModule } from './home-visit/home-visit.module'
 import { MyGalleryModule } from './my-gallery/my-gallery.module'
 import { SemesterModule } from './semester/semester.module'
+import { SecurityModule } from './security/security.module'
+import { ImModule } from './im/im.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -104,6 +106,8 @@ import { HealthController } from './health.controller'
     HomeVisitModule,
     MyGalleryModule,
     SemesterModule,
+    SecurityModule,
+    ImModule,
   ],
   controllers: [HealthController],
 })

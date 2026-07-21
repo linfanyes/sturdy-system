@@ -72,6 +72,26 @@ export class ConfigService implements OnModuleInit {
           '你是一位耐心、专业的中国中小学班主任助手。',
         description: '系统提示词',
       },
+      {
+        key: 'wxAppId',
+        value: this.env.get('WX_APPID') || 'wx1e6d151c7eb428cc',
+        description: '微信小程序 AppID（内容安全审核用）',
+      },
+      {
+        key: 'wxAppSecret',
+        value: this.env.get('WX_APP_SECRET') || '',
+        description: '微信小程序 AppSecret（内容安全审核用，未配置则放行）',
+      },
+      {
+        key: 'imSdkAppId',
+        value: this.env.get('IM_SDK_APP_ID') || '',
+        description: '腾讯云 IM SDKAppID（家校沟通，体验版免费，未配置则用演示模式）',
+      },
+      {
+        key: 'imSecretKey',
+        value: this.env.get('IM_SECRET_KEY') || '',
+        description: '腾讯云 IM 密钥（生成 UserSig 用，不与前端分享）',
+      },
     ]
     for (const d of defaults) {
       const exist = await this.appRepo.findOne({ where: { key: d.key } })

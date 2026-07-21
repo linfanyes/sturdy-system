@@ -48,6 +48,7 @@
       </view>
       <view class="toolbar" v-if="!previewing">
         <text class="tb-btn" @click="startVoice">🎤 语音输入</text>
+        <text class="tb-btn" @click="readAloud">🔊 朗读</text>
         <text class="tb-btn" @click="pickOcr">📷 图片识文</text>
         <text class="tb-btn" @click="pickTxt">📄 导入 TXT</text>
         <text class="tb-btn" @click="pickPdf">📑 导入 PDF</text>
@@ -100,9 +101,63 @@ const voiceTip = ref('')
 const recorder = ref(null)
 let recording = false
 
+// 获取微信同声传译插件（免费，比自建 ASR 更稳更准）
+function getWechatSI() {
+  try {
+    const w = globalThis
+    const rp = w.requirePlugin
+    if (typeof rp !== 'function') return null
+    return rp('WechatSI')
+  } catch (e) {
+    return null
+  }
+}
+
+// 语音输入：优先用同声传译插件，失败降级为原生录音 + 自建 ASR
 function startVoice() {
+  const si = getWechatSI()
+  if (si && si.getRecordRecognitionManager) {
+    if (recording) {
+      recorder.value && recorder.value.stop()
+      return
+    }
+    const mgr = si.getRecordRecognitionManager()
+    recorder.value = mgr
+    mgr.onStart = () => {
+      recording = true
+      voiceTip.value = '🎤 录音中，再次点击结束'
+    }
+    mgr.onRecognize = (res) => {
+      if (res && res.result) voiceTip.value = '🎤 识别中…' + res.result
+    }
+    mgr.onStop = (res) => {
+      recording = false
+      if (res && res.result) {
+        form.value.content += (form.value.content ? '\n' : '') + res.result
+        voiceTip.value = ''
+        uni.showToast({ title: '语音已识别', icon: 'success' })
+      } else {
+        voiceTip.value = ''
+        uni.showToast({ title: '未能识别语音', icon: 'none' })
+      }
+    }
+    mgr.onError = (res) => {
+      recording = false
+      voiceTip.value = ''
+      uni.showToast({ title: '插件不可用，改用本地识别', icon: 'none' })
+      startVoiceNative()
+    }
+    recording = true
+    mgr.start({ duration: 60000, lang: 'zh_CN' })
+    return
+  }
+  startVoiceNative()
+}
+
+// 原生录音 + 自建 ASR（降级方案）
+function startVoiceNative() {
   if (recording) { uni.showToast({ title: '正在录音中…', icon: 'none' }); return }
-  uni.showToast({ title: '录音中，点击发送按钮开始识别', icon: 'none' })
+  uni.showToast({ title: '录音中，点击按钮结束并识别', icon: 'none' })
   voiceTip.value = '🎤 录音中…'
   const rm = uni.getRecorderManager()
   recorder.value = rm
@@ -130,6 +185,38 @@ function startVoice() {
   rm.start({ format: 'mp3', sampleRate: 16000, numberOfChannels: 1, encodeBitRate: 48000 })
   // 3分钟后自动停止
   setTimeout(() => { if (recording) { rm.stop(); uni.showToast({ title: '录音超时已自动结束', icon: 'none' }) } }, 180000)
+}
+
+// TTS 朗读（同声传译插件 textToSpeech，课文/笔记朗读）
+function readAloud() {
+  const si = getWechatSI()
+  if (!si || !si.textToSpeech) {
+    uni.showToast({ title: '当前环境不支持朗读', icon: 'none' })
+    return
+  }
+  const text = (form.value.content || '').trim()
+  if (!text) {
+    uni.showToast({ title: '没有可朗读的内容', icon: 'none' })
+    return
+  }
+  uni.showLoading({ title: '合成语音…' })
+  si.textToSpeech({
+    lang: 'zh_CN',
+    tts: true,
+    content: text.slice(0, 500),
+    success: (res) => {
+      uni.hideLoading()
+      if (res && res.filename) {
+        uni.playVoice({ filePath: res.filename, fail: () => uni.showToast({ title: '播放失败', icon: 'none' }) })
+      } else {
+        uni.showToast({ title: '合成失败', icon: 'none' })
+      }
+    },
+    fail: () => {
+      uni.hideLoading()
+      uni.showToast({ title: '朗读失败', icon: 'none' })
+    },
+  })
 }
 
 // 导入 TXT 文件
@@ -434,6 +521,26 @@ async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填写标题', icon: 'none' })
   if (!isNonEmpty(form.value.content) && !(form.value.images && form.value.images.length))
     return uni.showToast({ title: '请填写内容或插入图片', icon: 'none' })
+  // 微信内容安全审核（后端已配置则审核，未配置/异常放行，不阻塞保存）
+  try {
+    if (form.value.content && form.value.content.trim()) {
+      const r = await api.post('/security/msg-check', { content: form.value.content })
+      if (r && r.pass === false) {
+        return uni.showToast({ title: '内容未通过安全审核：' + (r.reason || ''), icon: 'none' })
+      }
+    }
+    if (form.value.images && form.value.images.length) {
+      for (const img of form.value.images) {
+        const b64 = img.split(',')[1] || img
+        const r = await api.post('/security/img-check', { image: b64 })
+        if (r && r.pass === false) {
+          return uni.showToast({ title: '图片未通过安全审核：' + (r.reason || ''), icon: 'none' })
+        }
+      }
+    }
+  } catch (e) {
+    // 审核接口异常不阻塞保存
+  }
   const payload = { ...form.value }
   saving.value = true
   try {
