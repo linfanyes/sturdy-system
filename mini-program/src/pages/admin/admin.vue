@@ -35,7 +35,6 @@
             <text class="meta">用户名：{{ a.username }}</text>
           </view>
           <view class="acts">
-            <text class="act" @click.stop="openEdit(a)">编辑</text>
             <text class="act" @click.stop="openReset(a)">重置密码</text>
             <text class="act del" @click.stop="delAdmin(a)">删除</text>
           </view>
