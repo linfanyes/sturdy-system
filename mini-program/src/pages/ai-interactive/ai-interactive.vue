@@ -16,8 +16,13 @@
       <view class="sec-title">生成结果</view>
       <view class="result-text">{{ content }}</view>
       <button class="save" @click="saveNote">💾 存为笔记</button>
+      <button class="lib" @click="saveLib">📚 存为知识库</button>
       <button class="copy" @click="copy">📋 复制</button>
       <button class="copy docx" @click="exportAsDocx">📄 导出 Word</button>
+      <view class="sub-sec">学生作答（课堂小测练习）</view>
+      <textarea v-model="studentAnswer" class="ans" placeholder="学生在此输入答案，点批改后由 AI 对照原题评分…" />
+      <button class="grade" :disabled="grading" @click="grade">{{ grading ? '批改中…' : '📝 AI 批改' }}</button>
+      <view v-if="gradeResult" class="grade-result">{{ gradeResult }}</view>
     </view>
   </view>
 </template>
@@ -34,6 +39,9 @@ const dark = computed(() => theme.mode === 'dark')
 const form = ref({ title: '', grade: '', subject: '' })
 const content = ref('')
 const loading = ref(false)
+const studentAnswer = ref('')
+const grading = ref(false)
+const gradeResult = ref('')
 
 async function gen() {
   if (loading.value) return
@@ -77,6 +85,60 @@ async function saveNote() {
   }
 }
 
+async function saveLib() {
+  if (!content.value) return
+  try {
+    await api.post('/generated/knowledges', {
+      title: form.value.title + '（互动讲义）',
+      grade: form.value.grade || '',
+      subject: form.value.subject || '',
+      prompt: form.value.title,
+      content: content.value,
+    })
+    uni.showToast({ title: '已存为知识库', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  }
+}
+
+async function grade() {
+  if (grading.value) return
+  if (!content.value) {
+    return uni.showToast({ title: '请先生成讲义', icon: 'none' })
+  }
+  if (!studentAnswer.value.trim()) {
+    return uni.showToast({ title: '请先输入学生作答', icon: 'none' })
+  }
+  grading.value = true
+  gradeResult.value = ''
+  try {
+    const res = await api.post('/ai/chat-sync', {
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是一名严谨的中小学教师，负责批改学生的随堂小测练习。请对照下方「原题与答案」，' +
+            '对学生的作答进行批改：先逐题判断是否正确，再给出得分（满分 100）、错误原因与针对性的订正建议，' +
+            '最后用 2-3 句话给出整体评语。语气鼓励、具体、可操作。',
+        },
+        {
+          role: 'user',
+          content:
+            '【原题与参考答案】\n' +
+            content.value +
+            '\n\n【学生作答】\n' +
+            studentAnswer.value,
+        },
+      ],
+    })
+    gradeResult.value = res.content || ''
+  } catch (e) {
+    uni.showToast({ title: '批改失败，请检查后端 AI 配置', icon: 'none' })
+  }
+  grading.value = false
+  await nextTick()
+}
+
 function copy() {
   if (!content.value) return
   uni.setClipboardData({
@@ -109,4 +171,10 @@ onShow(() => {
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
 .copy { background: var(--c-card2); color: var(--c-title); border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; }
 .copy.docx { background: #409eff; color: #fff; border-color: #409eff; }
+.lib { background: #67c23a; color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; margin-top: 14rpx; }
+.sub-sec { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin: 28rpx 0 14rpx; border-top: 1px dashed var(--c-border); padding-top: 24rpx; }
+.ans { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; width: 100%; box-sizing: border-box; font-size: 28rpx; min-height: 200rpx; line-height: 1.6; color: var(--c-text); background: var(--c-input); }
+.grade { background: #e6a23c; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 16rpx; height: 84rpx; line-height: 84rpx; }
+.grade[disabled] { opacity: 0.6; }
+.grade-result { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-top: 20rpx; background: var(--c-input); border-radius: 12rpx; padding: 20rpx; }
 </style>
