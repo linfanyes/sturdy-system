@@ -621,32 +621,54 @@ async function commit() {
   }
 }
 
-// 分享单个学生成绩到微信
+// 分享单个学生全部科目成绩到微信
 function shareStudent(s) {
   const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
-  const sc = scores[s.id]
-  const text = `📚 ${className} · ${examName.value} · ${subject.value}\n学生：${s.name}\n分数：${sc || '未录入'}\n班级均分：${analysis.avg} · 最高：${analysis.max} · 最低：${analysis.min}\n\n以上成绩由「园丁工作台」生成，供家长参考。`
+  // 获取本次考试所有科目的该生成绩
+  const allSubjects = grades.value.filter((g) => g.examName === examName.value)
+  const lines = allSubjects.map((g) => {
+    const sc = (g.scores || []).find((x) => x.studentId === s.id)
+    const score = sc && sc.score != null ? sc.score : '—'
+    // 该科目班级均分
+    const allSc = (g.scores || []).filter((x) => x.score != null).map((x) => Number(x.score))
+    const avg = allSc.length > 0 ? (allSc.reduce((a, b) => a + b, 0) / allSc.length).toFixed(1) : '—'
+    return `${g.subject}：${score}分（班级均分 ${avg}）`
+  })
+  const text = `📚 ${className} · ${examName.value}\n学生：${s.name}\n${lines.join('\n')}\n\n以上成绩由「园丁工作台」生成，供家长参考。`
   uni.setClipboardData({
     data: text,
-    success: () => uni.showToast({ title: '已复制，可粘贴到微信发送给家长', icon: 'success' }),
+    success: () => uni.showToast({ title: '已复制所有科目成绩，可粘贴到微信', icon: 'success' }),
     fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
   })
 }
 
-// 分享全部学生成绩到微信
+// 分享全部学生全部科目成绩到微信
 function shareAll() {
   if (!existing.value || !students.value.length) return
   const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
-  const scoreMap = {}
-  ;(existing.value.scores || []).forEach((x) => (scoreMap[x.studentId] = x.score))
+  // 获取本次考试所有科目
+  const allSubjects = grades.value.filter((g) => g.examName === examName.value)
+  // 每个学生汇总所有科目
   const lines = students.value.map((s) => {
-    const sc = scoreMap[s.id]
-    return `${s.name}：${sc != null ? sc : '—'}分`
+    const subs = allSubjects.map((g) => {
+      const sc = (g.scores || []).find((x) => x.studentId === s.id)
+      return sc && sc.score != null ? `${g.subject}:${sc.score}` : ''
+    }).filter(Boolean).join(' · ')
+    return `${s.name}：${subs || '无成绩'}`
   })
-  const text = `📚 ${className} · ${examName.value} · ${subject.value}\n\n${lines.join('\n')}\n\n平均 ${analysis.avg} · 最高 ${analysis.max} · 最低 ${analysis.min}\n及格率 ${analysis.passRate}% · 优秀率 ${analysis.excellentRate}%\n\n由「园丁工作台」生成`
+  // 各科统计
+  const stats = allSubjects.map((g) => {
+    const allSc = (g.scores || []).filter((x) => x.score != null).map((x) => Number(x.score))
+    if (!allSc.length) return ''
+    const avg = (allSc.reduce((a, b) => a + b, 0) / allSc.length).toFixed(1)
+    const max = Math.max(...allSc)
+    const min = Math.min(...allSc)
+    return `${g.subject}：均分${avg} 最高${max} 最低${min}`
+  }).filter(Boolean).join('\n')
+  const text = `📚 ${className} · ${examName.value}\n\n${lines.join('\n')}\n\n${stats}\n\n由「园丁工作台」生成`
   uni.setClipboardData({
     data: text,
-    success: () => uni.showToast({ title: '已复制全班成绩，可粘贴到微信群', icon: 'success' }),
+    success: () => uni.showToast({ title: '已复制全班多科成绩，可粘贴到微信群', icon: 'success' }),
     fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
   })
 }
