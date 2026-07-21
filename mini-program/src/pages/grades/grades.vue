@@ -35,6 +35,7 @@
       <view v-if="existing" class="exp-row">
         <text class="exp-csv" @click="exportCsv">📋 导出 CSV</text>
         <text class="exp-rank" @click="exportRank">🏆 导出名次表</text>
+        <text class="exp-share" @click="shareAll">📤 分享全部</text>
       </view>
       <view v-if="existing" class="oview">
         <view class="ov2"><text class="n">{{ analysis.avg }}</text><text class="l">平均分</text></view>
@@ -55,6 +56,7 @@
             :placeholder="s.studentNo ? s.studentNo : '分数'"
             @input="(e) => (scores[s.id] = e.detail.value)"
           />
+          <text v-if="existing && scores[s.id] != null && scores[s.id] !== ''" class="share-stu" @click.stop="shareStudent(s)">📤</text>
         </view>
         <view v-if="!students.length" class="empty">该班级还没有学生，请先在「学生管理」添加</view>
       </view>
@@ -618,6 +620,36 @@ async function commit() {
     uni.hideLoading()
   }
 }
+
+// 分享单个学生成绩到微信
+function shareStudent(s) {
+  const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
+  const sc = scores[s.id]
+  const text = `📚 ${className} · ${examName.value} · ${subject.value}\n学生：${s.name}\n分数：${sc || '未录入'}\n班级均分：${analysis.avg} · 最高：${analysis.max} · 最低：${analysis.min}\n\n以上成绩由「园丁工作台」生成，供家长参考。`
+  uni.setClipboardData({
+    data: text,
+    success: () => uni.showToast({ title: '已复制，可粘贴到微信发送给家长', icon: 'success' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
+
+// 分享全部学生成绩到微信
+function shareAll() {
+  if (!existing.value || !students.value.length) return
+  const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
+  const scoreMap = {}
+  ;(existing.value.scores || []).forEach((x) => (scoreMap[x.studentId] = x.score))
+  const lines = students.value.map((s) => {
+    const sc = scoreMap[s.id]
+    return `${s.name}：${sc != null ? sc : '—'}分`
+  })
+  const text = `📚 ${className} · ${examName.value} · ${subject.value}\n\n${lines.join('\n')}\n\n平均 ${analysis.avg} · 最高 ${analysis.max} · 最低 ${analysis.min}\n及格率 ${analysis.passRate}% · 优秀率 ${analysis.excellentRate}%\n\n由「园丁工作台」生成`
+  uni.setClipboardData({
+    data: text,
+    success: () => uni.showToast({ title: '已复制全班成绩，可粘贴到微信群', icon: 'success' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
 </script>
 
 <style scoped>
@@ -633,8 +665,10 @@ async function commit() {
 .exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
 .clear { color: var(--c-danger); font-size: 24rpx; }
 .exp-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
-.exp-csv, .exp-rank { flex: 1; text-align: center; font-size: 26rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-accent); border: 1px solid var(--c-border); }
-.exp-csv:active, .exp-rank:active { opacity: 0.6; }
+.exp-csv, .exp-rank, .exp-share { flex: 1; text-align: center; font-size: 26rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-accent); border: 1px solid var(--c-border); }
+.exp-csv:active, .exp-rank:active, .exp-share:active { opacity: 0.6; }
+.exp-share { color: #409eff; }
+.share-stu { font-size: 28rpx; padding: 4rpx 10rpx; color: #409eff; flex-shrink: 0; }
 .item { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 26rpx; margin-bottom: 14rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .name { font-size: 30rpx; color: var(--c-title); }
 .score { width: 220rpx; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; text-align: center; font-size: 28rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
