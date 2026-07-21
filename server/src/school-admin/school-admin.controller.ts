@@ -8,8 +8,8 @@ export class SchoolAdminController {
   constructor(private readonly svc: SchoolAdminService) {}
 
   @Post('login')
-  login(@Body() b: { schoolCode?: string; username?: string; password?: string }) {
-    return this.svc.login(b?.schoolCode || '', b?.username || '', b?.password || '')
+  login(@Body() b: { username?: string; password?: string }) {
+    return this.svc.login(b?.username || '', b?.password || '')
   }
 
   @Get('teachers')

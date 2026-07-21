@@ -5,7 +5,6 @@ import { Repository } from 'typeorm'
 import * as crypto from 'node:crypto'
 import { SchoolAdmin } from './school-admin.entity'
 import { User } from '../users/user.entity'
-import { School } from '../school/school.entity'
 import { Student } from '../students/student.entity'
 
 @Injectable()
@@ -14,20 +13,17 @@ export class SchoolAdminService {
     private readonly jwt: JwtService,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
-  /** 学校管理员登录：学校编号 + 用户名 + 密码 */
-  async login(schoolCode: string, username: string, password: string) {
-    const school = await this.schoolRepo.findOne({ where: { code: schoolCode } })
-    if (!school) throw new UnauthorizedException('学校编号不存在')
-    const admin = await this.saRepo.findOne({ where: { username, schoolId: school.id } })
+  /** 学校管理员登录：用户名 + 密码（已被超管绑定到学校，无需再输编号） */
+  async login(username: string, password: string) {
+    const admin = await this.saRepo.findOne({ where: { username } })
     if (!admin) throw new UnauthorizedException('账号或密码错误')
     const hash = crypto.createHash('sha256').update(password).digest('hex')
     if (hash !== admin.passwordHash) throw new UnauthorizedException('账号或密码错误')
     const token = this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId })
-    return { token, admin: { id: admin.id, name: admin.name, schoolId: admin.schoolId, schoolCode } }
+    return { token, admin: { id: admin.id, name: admin.name, schoolId: admin.schoolId } }
   }
 
   /** 本校教师列表 */
