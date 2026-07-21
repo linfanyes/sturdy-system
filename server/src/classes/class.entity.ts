@@ -11,5 +11,6 @@ export class ClassItem extends BaseEntity {
   @Column('simple-json', { nullable: true }) teachers: string[]
   @Column({ default: 'butter' }) color: string
   @Column({ default: '' }) term: string
+  @Column({ default: '' }) semesterId: string
   @Column('simple-json', { nullable: true }) subjects: string[]
 }

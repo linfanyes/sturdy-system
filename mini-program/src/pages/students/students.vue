@@ -126,7 +126,18 @@
           <view class="pf-st"><text class="pf-n">{{ radar.behScore }}</text><text class="pf-l">行为活跃</text></view>
         </view>
         <view class="pf-tip">雷达基于成绩 / 考勤 / 行为观察数据自动生成（0–100）。</view>
-        <button class="d-close" @click="showProfile = false">关闭</button>
+        <view class="pf-comment" v-if="profile.comment">
+          <text class="pf-cm-h">📝 评语</text>
+          <text class="pf-cm-t">{{ profile.comment }}</text>
+        </view>
+        <view class="pf-comment" v-else-if="profile.id">
+          <text class="pf-cm-h">📝 评语</text>
+          <text class="pf-cm-t pf-cm-empty">暂无评语</text>
+        </view>
+        <view class="pf-acts">
+          <button class="btn-gen" :disabled="genCommentLoading" @click="genComment(profile)">{{ genCommentLoading ? '生成中…' : '🤖 AI 生成本学期评语' }}</button>
+          <button class="d-close" @click="showProfile = false">关闭</button>
+        </view>
       </view>
     </view>
   </view>
@@ -194,6 +205,40 @@ const aiRecognizing = ref(false)
 const showProfile = ref(false)
 const profile = ref({})
 const radar = ref({ avg: 0, attRate: 0, behScore: 0, composite: 0, level: '' })
+const genCommentLoading = ref(false)
+
+async function genComment(stu) {
+  if (genCommentLoading.value) return
+  // 获取该生本学期考试成绩作为评语依据
+  const allGrades = await api.getList('/grades', { silent: true })
+  const semester = form.value.semesterId || ''
+  const myGrades = allGrades.filter((g) => g.scores && g.scores.some((s) => s.studentId === stu.id && s.score != null))
+  const lines = myGrades.map((g) => {
+    const sc = g.scores.find((s) => s.studentId === stu.id)
+    return `${g.subject}：${sc.score}分`
+  })
+  if (!lines.length) return uni.showToast({ title: '该生暂无成绩数据', icon: 'none' })
+  genCommentLoading.value = true
+  try {
+    const prompt = `请根据以下学生考试成绩，为该学生写一段学期评语。评语要求：语气亲切、重点突出优点和进步方向，约100-150字。不要出现具体分数数字，用描述性语言代替。\n学生姓名：${stu.name}\n成绩：\n${lines.join('\n')}`
+    const r = await api.post('/ai/chat-sync', {
+      messages: [{ role: 'user', content: prompt }],
+      modelType: 'text',
+    })
+    const comment = r.content || ''
+    if (comment) {
+      // 保存到学生档案
+      await api.patch('/students/' + stu.id, { comment })
+      profile.value.comment = comment
+      stu.comment = comment
+      uni.showToast({ title: '评语已生成并保存', icon: 'success' })
+    }
+  } catch (e) {
+    uni.showToast({ title: '生成失败', icon: 'none' })
+  } finally {
+    genCommentLoading.value = false
+  }
+}
 const levelClass = computed(() => {
   const c = radar.value.composite
   return c >= 85 ? 'lv-excellent' : c >= 70 ? 'lv-good' : c >= 60 ? 'lv-mid' : 'lv-low'
@@ -595,6 +640,12 @@ function drawRadar() {
 .pf-n { font-size: 34rpx; font-weight: 800; color: var(--c-accent); }
 .pf-l { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .pf-tip { font-size: 20rpx; color: var(--c-sub); text-align: center; line-height: 1.5; margin-bottom: 16rpx; }
+.pf-comment { background: var(--c-card2); border-radius: 14rpx; padding: 16rpx; margin: 14rpx 0; }
+.pf-cm-h { display: block; font-size: 24rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 8rpx; }
+.pf-cm-t { display: block; font-size: 26rpx; color: var(--c-title); line-height: 1.7; }
+.pf-cm-empty { color: var(--c-sub); }
+.pf-acts { margin-top: 6rpx; }
+.btn-gen { background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 26rpx; padding: 20rpx 0; width: 100%; margin-bottom: 12rpx; }
 .pf-composite { text-align: center; margin: 12rpx 0 4rpx; padding: 16rpx; border-radius: 16rpx; background: var(--c-card2); }
 .pf-c-n { display: block; font-size: 48rpx; font-weight: 800; line-height: 1.1; color: var(--c-title); }
 .pf-c-l { display: block; font-size: 24rpx; margin-top: 4rpx; color: var(--c-sub); }
