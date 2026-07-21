@@ -7,6 +7,7 @@
     <view class="tip">首次登录将自动创建教师账号</view>
     <view class="parent-entry" @click="goParent">我是家长，去沟通 →</view>
     <view class="or">— 或 —</view>
+    <input v-model="pwdSchool" class="inp2" placeholder="学校编号" />
     <input v-model="pwdUser" class="inp2" placeholder="教师用户名" />
     <input v-model="pwdPass" class="inp2" placeholder="密码" password />
     <button class="btn2" @click="pwdLogin">账号登录</button>
@@ -44,12 +45,12 @@ function goParent() {
   uni.navigateTo({ url: '/pages/parent-login/parent-login' })
 }
 
-const pwdUser = ref(''), pwdPass = ref('')
+const pwdSchool = ref(''), pwdUser = ref(''), pwdPass = ref('')
 async function pwdLogin() {
-  if (!pwdUser.value.trim() || !pwdPass.value) return uni.showToast({ title: '请输入用户名和密码', icon: 'none' })
+  if (!pwdSchool.value.trim() || !pwdUser.value.trim() || !pwdPass.value) return uni.showToast({ title: '请填学校编号/用户名/密码', icon: 'none' })
   uni.showLoading({ title: '登录中' })
   try {
-    const res = await api.post('/auth/password-login', { username: pwdUser.value.trim(), password: pwdPass.value })
+    const res = await api.post('/auth/password-login', { schoolCode: pwdSchool.value.trim(), username: pwdUser.value.trim(), password: pwdPass.value })
     setAuth(res.token, res.user)
     uni.hideLoading()
     uni.switchTab({ url: '/pages/dashboard/dashboard' })

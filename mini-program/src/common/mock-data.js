@@ -318,10 +318,12 @@ const MOCK = {
   '/admin/schools': [{ id: 'sc1', name: '阳光实验小学', code: 'S3A7F2', status: 'active' }],
   '/admin/school-admins': [{ id: 'sa1', username: 'school1', name: '李校长', schoolId: 'sc1' }],
   '/admin/teachers': [],
-  '/school-admin/login': { token: 'mock-school-token', admin: { id: 'sa1', name: '李校长', schoolId: 'sc1' } },
-  '/school-admin/teachers': [{ id: 'u1', name: '珊珊老师', username: 'teacher1', subject: '语文', phone: '', school: '阳光实验小学' }],
+  '/school-admin/login': { token: 'mock-school-token', admin: { id: 'sa1', name: '李校长', schoolId: 'sc1', schoolCode: 'S3A7F2' } },
+  '/school-admin/teachers': [{ id: 'u1', name: '珊珊老师', username: 'teacher1', subject: '语文', phone: '', school: '阳光实验小学', features: [] }],
   '/school-admin/stats': { teacherCount: 1, studentCount: 9, noticeCount: 2 },
+  '/school-admin/parent-logins': [{ studentId: 's1', name: '张小明', studentNo: '2024001', classId: 'c1', parentName: '张伟', parentPhone: '13800001001', parentLoginEnabled: true }],
   '/auth/password-login': { token: 'mock-teacher-token', user: { id: 'u1', name: '珊珊老师', school: '阳光实验小学' } },
+  '/students/s1/toggle-parent-login': { studentId: 's1', parentLoginEnabled: true },
 }
 
 /** 根据路径返回模拟数据，支持 ?classId= 过滤 */

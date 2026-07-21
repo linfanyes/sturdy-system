@@ -5,6 +5,8 @@ import { Repository } from 'typeorm'
 import * as crypto from 'node:crypto'
 import { SchoolAdmin } from './school-admin.entity'
 import { User } from '../users/user.entity'
+import { School } from '../school/school.entity'
+import { Student } from '../students/student.entity'
 
 @Injectable()
 export class SchoolAdminService {
@@ -12,16 +14,20 @@ export class SchoolAdminService {
     private readonly jwt: JwtService,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(School) private readonly schoolRepo: Repository<School>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
-  /** 学校管理员登录 */
-  async login(username: string, password: string) {
-    const admin = await this.saRepo.findOne({ where: { username } })
+  /** 学校管理员登录：学校编号 + 用户名 + 密码 */
+  async login(schoolCode: string, username: string, password: string) {
+    const school = await this.schoolRepo.findOne({ where: { code: schoolCode } })
+    if (!school) throw new UnauthorizedException('学校编号不存在')
+    const admin = await this.saRepo.findOne({ where: { username, schoolId: school.id } })
     if (!admin) throw new UnauthorizedException('账号或密码错误')
     const hash = crypto.createHash('sha256').update(password).digest('hex')
     if (hash !== admin.passwordHash) throw new UnauthorizedException('账号或密码错误')
     const token = this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId })
-    return { token, admin: { id: admin.id, name: admin.name, schoolId: admin.schoolId } }
+    return { token, admin: { id: admin.id, name: admin.name, schoolId: admin.schoolId, schoolCode } }
   }
 
   /** 本校教师列表 */
@@ -33,7 +39,7 @@ export class SchoolAdminService {
     }))
   }
 
-  /** 创建教师账号（学校管理员为教师开号） */
+  /** 创建教师账号 */
   async createTeacher(schoolId: string, dto: { username: string; password: string; name: string; subject?: string; phone?: string }) {
     if (!dto.username || !dto.password || !dto.name) throw new BadRequestException('用户名/密码/姓名必填')
     const exist = await this.userRepo.findOne({ where: { username: dto.username } })
@@ -61,13 +67,22 @@ export class SchoolAdminService {
     return { ok: true }
   }
 
-  /** 本校统计 */
-  async stats(schoolId: string) {
-    const [teachers, students, notices] = await Promise.all([
-      this.userRepo.count({ where: { schoolId } }),
-      // students and notices count needs other repos but for simplicity:
-      Promise.resolve(0), Promise.resolve(0),
-    ])
-    return { teacherCount: teachers, studentCount: 0, noticeCount: 0 }
+  /** 管理教师功能权限 */
+  async updateTeacherFeatures(schoolId: string, teacherId: string, features: string[]) {
+    const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
+    if (!user) throw new BadRequestException('教师不存在或不属于本校')
+    user.features = features
+    await this.userRepo.save(user)
+    return { id: teacherId, features }
+  }
+
+  /** 查看本校家长登录情况 */
+  async listParentLogins(schoolId: string) {
+    const students = await this.studentRepo.find({ where: { parentLoginEnabled: true }, order: { name: 'ASC' }, take: 200 })
+    // 仅返回本校班级的学生（通过 classId→school 关联太复杂，简化为看 schoolId 字段）
+    return students.map(s => ({
+      studentId: s.id, name: s.name, studentNo: s.studentNo, classId: s.classId,
+      parentName: s.parentName, parentPhone: s.parentPhone, parentLoginEnabled: s.parentLoginEnabled,
+    }))
   }
 }

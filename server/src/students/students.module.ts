@@ -5,7 +5,9 @@ import { Repository, DataSource } from 'typeorm'
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Param,
   UseGuards,
   BadRequestException,
 } from '@nestjs/common'
@@ -218,6 +220,15 @@ class StudentsService extends CrudService<Student> {
     })
     return { rows, validCount, errorCount }
   }
+
+  /** 切换家长登录权限 */
+  async toggleParentLogin(teacherId: string, studentId: string) {
+    const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
+    if (!s) throw new BadRequestException('学生不存在')
+    s.parentLoginEnabled = !s.parentLoginEnabled
+    await this.repo.save(s)
+    return { studentId, parentLoginEnabled: s.parentLoginEnabled }
+  }
 }
 
 @Controller('students')
@@ -285,6 +296,13 @@ class StudentsController extends CrudController<Student> {
       body.data,
       body.filename || '',
     )
+  }
+
+  /** 教师开启/关闭该学生的家长登录权限 */
+  @Post(':id/toggle-parent-login')
+  @UseGuards(JwtAuthGuard)
+  async toggleParentLogin(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return (this.service as StudentsService).toggleParentLogin(t.sub, id)
   }
 }
 

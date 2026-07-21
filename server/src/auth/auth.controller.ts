@@ -12,7 +12,7 @@ export class AuthController {
   }
 
   @Post('password-login')
-  passwordLogin(@Body() b: { username?: string; password?: string }) {
-    return this.auth.passwordLogin(b?.username || '', b?.password || '')
+  passwordLogin(@Body() b: { schoolCode?: string; username?: string; password?: string }) {
+    return this.auth.passwordLogin(b?.schoolCode || '', b?.username || '', b?.password || '')
   }
 }

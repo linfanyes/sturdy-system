@@ -36,6 +36,7 @@ export class ParentAuthService {
     const no = studentNo.trim()
     const stu = await this.studentRepo.findOne({ where: { studentNo: no } })
     if (!stu) throw new BadRequestException('未找到该学号对应的学生，请检查学号是否正确')
+    if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权，请联系老师开启')
     const parentName = stu.parentName || '家长'
     const imUserId = parentImUserId({ studentId: stu.id, relation: '家长', parentName })
     const token = this.jwt.sign({
