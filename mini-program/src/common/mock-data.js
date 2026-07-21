@@ -12,9 +12,9 @@ const todayDow = new Date().getDay() || 7
 
 /* ---------------- 班级 ---------------- */
 const CLASSES = [
-  { id: 'c1', name: '一年级一班', teacherName: '珊珊老师', studentCount: 9 },
-  { id: 'c2', name: '二年级二班', teacherName: '张老师', studentCount: 5 },
-  { id: 'c3', name: '三年级一班', teacherName: '李老师', studentCount: 4 },
+  { id: 'c1', name: '一年级一班', teacherName: '珊珊老师', studentCount: 9, imGroupId: '' },
+  { id: 'c2', name: '二年级二班', teacherName: '张老师', studentCount: 5, imGroupId: '' },
+  { id: 'c3', name: '三年级一班', teacherName: '李老师', studentCount: 4, imGroupId: '' },
 ]
 
 /* ---------------- 学生（共 18 人） ---------------- */
@@ -269,6 +269,11 @@ const MOCK = {
   '/security/msg-check': { pass: true },
   '/security/img-check': { pass: true },
   '/im/user-sig': { sdkAppId: '', userSig: 'demo-user-sig' },
+  '/im/parents': [
+    { imUserId: 'p_demo_zhang', studentId: 's1', studentName: '张小明', classId: 'c1', parentName: '张伟', relation: '爸爸', phone: '13800001001', wechat: '' },
+    { imUserId: 'p_demo_li', studentId: 's2', studentName: '李小华', classId: 'c1', parentName: '李强', relation: '爸爸', phone: '13800001002', wechat: '' },
+    { imUserId: 'p_demo_wang', studentId: 's3', studentName: '王小芳', classId: 'c1', parentName: '王磊', relation: '爸爸', phone: '13800001003', wechat: '' },
+  ],
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 

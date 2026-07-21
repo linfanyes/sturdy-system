@@ -23,6 +23,11 @@
       </view>
     </scroll-view>
 
+    <view class="convhead" v-if="activeConv.id">
+      <view class="cn">{{ activeConv.name }}</view>
+      <view class="cs" v-if="activeConv.sub">{{ activeConv.sub }}</view>
+    </view>
+
     <scroll-view scroll-y class="msgs" :scroll-into-view="scrollTarget" scroll-with-animation>
       <view
         v-for="m in activeConv.messages"
@@ -71,6 +76,7 @@ const convList = ref([]) // 会话列表（归一化）
 const activeConvId = ref('')
 const draft = ref('')
 const scrollTarget = ref('')
+const classes = ref([]) // 教师班级列表（用于花名册选家长 / 全班群）
 
 // 演示模式种子数据（与真实会话使用同一归一化结构）
 const demoSeed = [
@@ -81,6 +87,7 @@ const demoSeed = [
     to: 'parent_zhang',
     type: 'C2C',
     lastText: '',
+    sub: '',
     messages: [
       { id: 'd1', me: false, type: 'text', text: '老师好，小明今天作业完成了吗？', isRead: true },
       { id: 'd2', me: true, type: 'text', text: '完成的，课堂表现也很积极 👍', isRead: false },
@@ -93,6 +100,7 @@ const demoSeed = [
     to: 'parent_li',
     type: 'C2C',
     lastText: '',
+    sub: '',
     messages: [{ id: 'd3', me: false, type: 'text', text: '明天家长会我能请假来参加吗？', isRead: true }],
   },
   {
@@ -102,6 +110,7 @@ const demoSeed = [
     to: 'parent_wang',
     type: 'C2C',
     lastText: '',
+    sub: '',
     messages: [{ id: 'd4', me: false, type: 'text', text: '孩子最近在幼儿园吃饭乖吗？', isRead: true }],
   },
 ]
@@ -109,7 +118,7 @@ const demoSeed = [
 const activeConv = computed(
   () =>
     convList.value.find((c) => c.id === activeConvId.value) ||
-    convList.value[0] || { id: '', name: '', avatar: '', to: '', type: '', lastText: '', messages: [] },
+    convList.value[0] || { id: '', name: '', avatar: '', to: '', type: '', lastText: '', sub: '', messages: [] },
 )
 
 const statusText = computed(() => {
@@ -148,7 +157,7 @@ function normConv(c) {
     name = '系统通知'
     avatar = '🔔'
   }
-  return { id: c.conversationID, name, avatar, to, type, lastText: preview(c.lastMessage), messages: [] }
+  return { id: c.conversationID, name, avatar, to, type, lastText: preview(c.lastMessage), sub: '', messages: [] }
 }
 
 function normMsg(m) {
@@ -217,6 +226,7 @@ function onMessageReceived(event) {
         to: m.from,
         type: convId.indexOf('GROUP') === 0 ? 'GROUP' : 'C2C',
         lastText: '',
+        sub: '',
         messages: [],
       }
       convList.value.push(conv)
@@ -285,11 +295,11 @@ async function openConv(id) {
   scrollToBottom()
 }
 
-async function openByTo(to, name, type) {
+async function openByTo(to, name, type, sub = '') {
   const id = type + to
   let conv = convList.value.find((c) => c.id === id)
   if (!conv) {
-    conv = { id, name, avatar: type === 'GROUP' ? '👥' : '👤', to, type, lastText: '', messages: [] }
+    conv = { id, name, avatar: type === 'GROUP' ? '👥' : '👤', to, type, lastText: '', sub, messages: [] }
     convList.value.push(conv)
   }
   activeConvId.value = id
@@ -384,18 +394,107 @@ function previewImg(url) {
 }
 
 // —— 新建会话 ——
-function newConv() {
-  if (demoMode.value) {
-    uni.showToast({ title: '演示模式：仅模拟', icon: 'none' })
+// —— 班级 / 家长花名册 ——
+async function loadClasses() {
+  if (classes.value.length) return classes.value
+  try {
+    classes.value = (await api.getList('/classes', { silent: true })) || []
+  } catch (e) {
+    classes.value = []
+  }
+  return classes.value
+}
+
+function classLabel(c) {
+  return c && (c.name || `${c.grade || ''}（${c.classNo || ''}）班`)
+}
+
+function pickClass() {
+  return new Promise((resolve) => {
+    loadClasses().then((list) => {
+      if (!list.length) {
+        uni.showToast({ title: '暂无班级', icon: 'none' })
+        return resolve(null)
+      }
+      if (list.length === 1) return resolve(list[0])
+      uni.showActionSheet({
+        itemList: list.map(classLabel),
+        success: (r) => resolve(list[r.tapIndex]),
+        fail: () => resolve(null),
+      })
+    })
+  })
+}
+
+async function pickParentFromRoster() {
+  const cls = await pickClass()
+  if (!cls) return
+  let roster = []
+  try {
+    roster = (await api.get('/im/parents?classId=' + cls.id)) || []
+  } catch (e) {
+    roster = []
+  }
+  if (!roster.length) {
+    uni.showToast({ title: '该班暂无家长联系记录', icon: 'none' })
     return
   }
   uni.showActionSheet({
-    itemList: ['发起单聊（输入对方账号）', '进入班级群（输入群号）', '创建班级群', '示例：张三妈妈'],
+    itemList: roster.map((p) => `${p.parentName}（${p.studentName} ${p.relation}）`),
     success: (r) => {
-      if (r.tapIndex === 0) promptC2C()
-      else if (r.tapIndex === 1) promptGroup()
-      else if (r.tapIndex === 2) createGroup()
-      else if (r.tapIndex === 3) openByTo('parent_zhang', '张三妈妈', 'C2C')
+      const p = roster[r.tapIndex]
+      openByTo(p.imUserId, p.parentName, 'C2C', `${classLabel(cls)}·${p.studentName}`)
+    },
+  })
+}
+
+async function createClassGroup() {
+  const cls = await pickClass()
+  if (!cls) return
+  // 已建群：直接打开
+  if (cls.imGroupId) {
+    openByTo(cls.imGroupId, classLabel(cls), 'GROUP')
+    return
+  }
+  if (demoMode.value) {
+    openByTo('demo_group_' + cls.id, classLabel(cls), 'GROUP')
+    return
+  }
+  let roster = []
+  try {
+    roster = (await api.get('/im/parents?classId=' + cls.id)) || []
+  } catch (e) {
+    roster = []
+  }
+  const members = roster.map((p) => ({ userID: p.imUserId }))
+  try {
+    const res = await tim.createGroup({
+      name: classLabel(cls),
+      type: TIM.TYPES.GRP_PUBLIC,
+      memberList: members,
+    })
+    const gid = res.data.group.groupID
+    uni.showToast({ title: '班级群已创建', icon: 'success' })
+    try {
+      await api.post('/im/class-group', { classId: cls.id, groupId: gid })
+    } catch (e) {}
+    const idx = classes.value.findIndex((c) => c.id === cls.id)
+    if (idx >= 0) classes.value[idx].imGroupId = gid
+    openByTo(gid, classLabel(cls), 'GROUP')
+  } catch (e) {
+    uni.showToast({ title: '建群失败，请检查 IM 配置', icon: 'none' })
+  }
+}
+
+function newConv() {
+  uni.showActionSheet({
+    itemList: ['从花名册选家长', '一键全班群', '发起单聊（输入账号）', '进入班级群（输入群号）', '示例：张三妈妈'],
+    success: (r) => {
+      if (r.tapIndex === 0) pickParentFromRoster()
+      else if (r.tapIndex === 1) createClassGroup()
+      else if (r.tapIndex === 2) promptC2C()
+      else if (r.tapIndex === 3) promptGroup()
+      else if (r.tapIndex === 4) openByTo('parent_zhang', '张三妈妈', 'C2C', '示例')
     },
   })
 }
@@ -498,6 +597,9 @@ onShow(async () => {
 .ava { font-size: 48rpx; text-align: center; }
 .nm { font-size: 24rpx; text-align: center; color: var(--c-title); font-weight: 700; margin-top: 6rpx; }
 .last { font-size: 20rpx; color: var(--c-sub); margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.convhead { display: flex; align-items: baseline; gap: 14rpx; padding: 4rpx 6rpx 12rpx; }
+.convhead .cn { font-size: 30rpx; font-weight: 800; color: var(--c-title); }
+.convhead .cs { font-size: 22rpx; color: var(--c-sub); }
 .msgs { flex: 1; background: var(--c-card2); border-radius: 16rpx; padding: 18rpx; margin-bottom: 14rpx; }
 .row { display: flex; margin-bottom: 16rpx; }
 .row.me { justify-content: flex-end; }

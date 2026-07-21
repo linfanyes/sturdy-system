@@ -13,4 +13,5 @@ export class ClassItem extends BaseEntity {
   @Column({ default: '' }) term: string
   @Column({ default: '' }) semesterId: string
   @Column('simple-json', { nullable: true }) subjects: string[]
+  @Column({ default: '' }) imGroupId: string
 }
