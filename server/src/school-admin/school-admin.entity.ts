@@ -21,6 +21,9 @@ export class SchoolAdmin {
   @Column('simple-json', { nullable: true })
   permissions: string[]  // 可管理模块：teachers / classes / notices ...
 
+  @Column({ type: 'boolean', default: true })
+  enabled: boolean  // 开启标志：true=启用 / false=禁用
+
   @CreateDateColumn()
   createdAt: Date
 

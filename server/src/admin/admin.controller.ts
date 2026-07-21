@@ -11,48 +11,28 @@ export class AdminController {
     return this.svc.login(b?.username || '', b?.password || '')
   }
 
-  /* ===== 学校 CRUD ===== */
-  @Get('schools')
-  @UseGuards(SuperAdminGuard)
-  listSchools() { return this.svc.listSchools() }
-
-  @Post('schools')
-  @UseGuards(SuperAdminGuard)
-  createSchool(@Body() b: any) { return this.svc.createSchool(b) }
-
-  @Patch('schools/:id')
-  @UseGuards(SuperAdminGuard)
-  updateSchool(@Param('id') id: string, @Body() b: any) { return this.svc.updateSchool(id, b) }
-
-  @Delete('schools/:id')
-  @UseGuards(SuperAdminGuard)
-  deleteSchool(@Param('id') id: string) { return this.svc.deleteSchool(id) }
-
-  /* ===== 学校管理员 CRUD ===== */
+  /* ===== 学校管理员管理（超管只管理学校管理员） ===== */
   @Get('school-admins')
   @UseGuards(SuperAdminGuard)
-  listAdmins(@Body() b?: { schoolId?: string }) { return this.svc.listAdmins(b?.schoolId) }
+  listAdmins() { return this.svc.listAdmins() }
 
   @Post('school-admins')
   @UseGuards(SuperAdminGuard)
   createAdmin(@Body() b: any) { return this.svc.createAdmin(b) }
 
+  @Patch('school-admins/:id/enabled')
+  @UseGuards(SuperAdminGuard)
+  toggleEnabled(@Param('id') id: string, @Body() b: { enabled?: boolean }) {
+    return this.svc.toggleAdminEnabled(id, b?.enabled !== false)
+  }
+
+  @Patch('school-admins/:id/password')
+  @UseGuards(SuperAdminGuard)
+  resetPassword(@Param('id') id: string, @Body() b: { password?: string }) {
+    return this.svc.resetAdminPassword(id, b?.password || '')
+  }
+
   @Delete('school-admins/:id')
   @UseGuards(SuperAdminGuard)
   deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
-
-  /* ===== 教师总览 ===== */
-  @Get('teachers')
-  @UseGuards(SuperAdminGuard)
-  listTeachers(@Body() b?: { schoolId?: string }) { return this.svc.listTeachers(b?.schoolId) }
-
-  @Delete('users/:id')
-  @UseGuards(SuperAdminGuard)
-  deleteUser(@Param('id') id: string) { return this.svc.deleteUser(id) }
-
-  @Patch('users/:id/features')
-  @UseGuards(SuperAdminGuard)
-  updateFeatures(@Param('id') id: string, @Body() b: { features?: string[] }) {
-    return this.svc.updateUserFeatures(id, b?.features || [])
-  }
 }

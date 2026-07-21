@@ -22,6 +22,7 @@ export class SchoolAdminService {
     if (!admin) throw new UnauthorizedException('账号或密码错误')
     const hash = crypto.createHash('sha256').update(password).digest('hex')
     if (hash !== admin.passwordHash) throw new UnauthorizedException('账号或密码错误')
+    if (admin.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
     const token = this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId })
     return { token, admin: { id: admin.id, name: admin.name, schoolId: admin.schoolId } }
   }

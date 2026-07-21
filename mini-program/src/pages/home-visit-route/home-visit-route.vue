@@ -85,13 +85,29 @@ function toggleStu(id) {
 function openMap() {
   const sel = students.value.filter((s) => selected.value.has(s.id))
   if (sel.length < 2) return uni.showToast({ title: '请至少选择2名学生', icon: 'none' })
-  // 用腾讯地图小程序插件打开路线规划
-  const plugin = requirePlugin('maps')
-  const locations = sel.map((s) => s.address || s.parentPhone || s.name).filter(Boolean)
-  plugin.routePlan({
-    endPoint: locations[locations.length - 1],
-    mode: 'car', // 驾车路线
-  })
+  // 优先用腾讯地图小程序插件；未授权时降级为复制地址列表 + 打开内置地图
+  try {
+    const plugin = requirePlugin('maps')
+    const locations = sel.map((s) => s.address || s.parentPhone || s.name).filter(Boolean)
+    plugin.routePlan({
+      endPoint: locations[locations.length - 1],
+      mode: 'car',
+    })
+  } catch (e) {
+    // 插件未授权，降级：复制地址清单 + 打开第一个学生的位置
+    const list = sel.map((s, i) => `${i + 1}. ${s.name} - ${s.address || '地址待确认'}`).join('\n')
+    uni.setClipboardData({
+      data: list,
+      success: () => uni.showToast({ title: '地址清单已复制，可粘贴到地图APP', icon: 'none' }),
+    })
+    const first = sel[0]
+    if (first.address) {
+      uni.openLocation({
+        latitude: 0, longitude: 0, name: first.name, address: first.address,
+        fail: () => uni.showToast({ title: '请在地图APP中查看路线', icon: 'none' }),
+      })
+    }
+  }
 }
 
 function openMapSingle() {
@@ -99,8 +115,15 @@ function openMapSingle() {
   if (!sel.length) return
   const loc = sel[0].address || sel[0].name || ''
   if (!loc) return uni.showToast({ title: '该学生暂无地址信息', icon: 'none' })
-  const plugin = requirePlugin('maps')
-  plugin.openLocation({ latitude: 0, longitude: 0, name: sel[0].name, address: loc })
+  try {
+    const plugin = requirePlugin('maps')
+    plugin.openLocation({ latitude: 0, longitude: 0, name: sel[0].name, address: loc })
+  } catch (e) {
+    uni.openLocation({
+      latitude: 0, longitude: 0, name: sel[0].name, address: loc,
+      fail: () => uni.showToast({ title: '请在地图APP中查看', icon: 'none' }),
+    })
+  }
 }
 </script>
 

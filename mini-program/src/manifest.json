@@ -1,22 +1,12 @@
 {
-  "name": "园丁工作台",
+  "name": "师者小站",
   "appid": "__UNI__GARDENER",
   "h5": {
-    "title": "园丁工作台",
+    "title": "师者小站",
     "router": { "mode": "hash" }
   },
   "mp-weixin": {
     "appid": "wx1e6d151c7eb428cc",
-    "plugins": {
-      "maps": {
-        "version": "3.3.5",
-        "provider": "wx5bc2ac602a747594"
-      },
-      "WechatSI": {
-        "version": "latest",
-        "provider": "wx069ba97219f66d99"
-      }
-    },
     "setting": {
       "urlCheck": false,
       "es6": true,
