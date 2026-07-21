@@ -20,6 +20,10 @@ export class AdminController {
   @UseGuards(SuperAdminGuard)
   createAdmin(@Body() b: any) { return this.svc.createAdmin(b) }
 
+  @Patch('school-admins/:id')
+  @UseGuards(SuperAdminGuard)
+  updateAdmin(@Param('id') id: string, @Body() b: any) { return this.svc.updateAdmin(id, b) }
+
   @Patch('school-admins/:id/enabled')
   @UseGuards(SuperAdminGuard)
   toggleEnabled(@Param('id') id: string, @Body() b: { enabled?: boolean }) {

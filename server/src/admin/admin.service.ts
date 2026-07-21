@@ -113,6 +113,30 @@ export class AdminService {
     return { id, enabled: a.enabled }
   }
 
+  /** 更新管理员信息（学校名/姓名/用户名/enabled） */
+  async updateAdmin(id: string, dto: { schoolName?: string; name?: string; username?: string; enabled?: boolean }) {
+    const a = await this.saRepo.findOne({ where: { id } })
+    if (!a) throw new BadRequestException('管理员不存在')
+
+    // 更新学校名称（同步到 schools 表）
+    if (dto.schoolName && dto.schoolName.trim()) {
+      await this.schoolRepo.update(a.schoolId, { name: dto.schoolName.trim() })
+    }
+
+    // 用户名唯一性校验
+    if (dto.username && dto.username !== a.username) {
+      const exist = await this.saRepo.findOne({ where: { username: dto.username } })
+      if (exist) throw new BadRequestException('用户名已存在')
+      a.username = dto.username
+    }
+
+    if (dto.name && dto.name.trim()) a.name = dto.name.trim()
+    if (dto.enabled !== undefined) a.enabled = dto.enabled
+
+    await this.saRepo.save(a)
+    return { ok: true }
+  }
+
   /** 重置管理员密码 */
   async resetAdminPassword(id: string, newPassword: string) {
     if (!newPassword) throw new BadRequestException('新密码必填')
@@ -125,7 +149,8 @@ export class AdminService {
 
   /** 删除管理员（不删学校，保留学校数据） */
   async deleteAdmin(id: string) {
-    await this.saRepo.delete(id)
+    const result = await this.saRepo.delete(id)
+    if (!result.affected) throw new BadRequestException('删除失败：管理员不存在或已被删除')
     return { ok: true }
   }
 }

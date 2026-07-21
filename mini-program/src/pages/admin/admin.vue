@@ -24,40 +24,69 @@
         <text class="act" @click="openCreate">＋ 新增</text>
       </view>
       <view class="list">
-        <view v-if="!schoolAdmins.length" class="empty">暂无学校管理员，点击右上角新增</view>
+        <view v-if="!schoolAdmins.length" class="empty">暂无学校管理员，点击右上角「新增」</view>
         <view class="row" v-for="a in schoolAdmins" :key="a.id">
-          <view class="info">
-            <text class="nm">{{ a.name }}
+          <view class="info" @click="openEdit(a)">
+            <view class="nm-line">
+              <text class="nm">{{ a.name }}</text>
               <text class="badge" :class="a.enabled ? 'on' : 'off'">{{ a.enabled ? '开启' : '禁用' }}</text>
-            </text>
+            </view>
             <text class="meta">学校：{{ a.schoolName || '未关联' }} · 编号：{{ a.schoolCode || '-' }}</text>
             <text class="meta">用户名：{{ a.username }}</text>
-          </view>
-          <view class="acts">
-            <text class="act" @click="toggleEnabled(a)">{{ a.enabled ? '禁用' : '开启' }}</text>
-            <text class="act" @click="openReset(a)">重置密码</text>
-            <text class="act del" @click="delAdmin(a)">删除</text>
+            <view class="acts">
+              <text class="act" @click.stop="openEdit(a)">编辑</text>
+              <text class="act" @click.stop="openReset(a)">重置密码</text>
+              <text class="act del" @click.stop="delAdmin(a)">删除</text>
+            </view>
           </view>
         </view>
       </view>
 
-      <!-- 新增学校管理员 -->
-      <view v-if="showAdminForm" class="mask" @click="showAdminForm=false">
-        <view class="sheet" @click.stop>
-          <view class="sh-t">新增学校管理员</view>
-          <view class="hint-block">
-            系统将自动创建学校并生成 6 位字母+数字学校编号，管理员账号绑定到该学校。
+      <!-- 新增/编辑学校管理员（全屏） -->
+      <view v-if="showForm" class="full-mask">
+        <view class="full-page">
+          <view class="full-head">
+            <text class="full-back" @click="showForm=false">← 返回</text>
+            <text class="full-title">{{ editingId ? '编辑学校管理员' : '新增学校管理员' }}</text>
+            <text class="full-placeholder"></text>
           </view>
-          <input v-model="adminForm.schoolName" class="inp" placeholder="学校名称（必填，如：阳光小学）" />
-          <input v-model="adminForm.name" class="inp" placeholder="管理员姓名（必填）" />
-          <input v-model="adminForm.username" class="inp" placeholder="用户名（必填，登录用）" />
-          <input v-model="adminForm.password" class="inp" placeholder="密码（必填）" password />
-          <view class="switch-row">
-            <text class="switch-label">开启标志</text>
-            <switch :checked="adminForm.enabled" color="#4CAF50" @change="onEnabledChange" />
-            <text class="switch-val">{{ adminForm.enabled ? '开启（默认）' : '禁用' }}</text>
+          <scroll-view scroll-y class="full-body">
+            <view v-if="!editingId" class="hint-block">
+              系统将自动创建学校并生成 6 位字母+数字学校编号，管理员账号绑定到该学校。
+            </view>
+            <view class="form-item">
+              <text class="label">学校名称 <text class="req">*</text></text>
+              <input v-model="form.schoolName" class="inp" placeholder="如：阳光小学" />
+            </view>
+            <view class="form-item">
+              <text class="label">管理员姓名 <text class="req">*</text></text>
+              <input v-model="form.name" class="inp" placeholder="如：张老师" />
+            </view>
+            <view class="form-item">
+              <text class="label">用户名 <text class="req">*</text></text>
+              <input v-model="form.username" class="inp" placeholder="登录用，如：zhangsan" />
+            </view>
+            <view v-if="!editingId" class="form-item">
+              <text class="label">密码 <text class="req">*</text></text>
+              <input v-model="form.password" class="inp" placeholder="登录密码" password />
+            </view>
+            <view v-else class="form-item">
+              <text class="label">新密码 <text class="opt">（留空则不修改）</text></text>
+              <input v-model="form.password" class="inp" placeholder="输入新密码可重置" password />
+            </view>
+            <view class="form-item switch-item">
+              <view class="label-line">
+                <text class="label">开启标志</text>
+                <text class="switch-val">{{ form.enabled ? '开启' : '禁用' }}</text>
+              </view>
+              <switch :checked="form.enabled" color="#4CAF50" @change="onEnabledChange" />
+            </view>
+            <view v-if="editingId" class="hint-tip">学校编号：{{ form.schoolCode || '-' }}（不可修改）</view>
+            <view v-else class="hint-tip">学校编号将在创建后自动生成并显示在列表中</view>
+          </scroll-view>
+          <view class="full-foot">
+            <button class="save-btn" :disabled="saving" @click="saveForm">{{ saving ? '保存中…' : (editingId ? '保存修改' : '确认创建') }}</button>
           </view>
-          <button class="save-btn" :disabled="saving" @click="createAdmin">{{ saving ? '创建中…' : '创建（自动生成学校编号）' }}</button>
         </view>
       </view>
 
@@ -65,7 +94,7 @@
       <view v-if="resetTarget" class="mask" @click="resetTarget=null">
         <view class="sheet" @click.stop>
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
-          <input v-model="resetPassword" class="inp" placeholder="新密码（必填）" password />
+          <input v-model="resetPwd" class="inp" placeholder="新密码（必填）" password />
           <button class="save-btn" :disabled="saving" @click="confirmReset">{{ saving ? '保存中…' : '确认重置' }}</button>
         </view>
       </view>
@@ -84,22 +113,55 @@ const logging = ref(false)
 const schoolAdmins = ref([])
 const saving = ref(false)
 
-const showAdminForm = ref(false)
-const adminForm = ref({ schoolName: '', name: '', username: '', password: '', enabled: true })
+// 统一的表单状态（新增/编辑复用）
+const showForm = ref(false)
+const editingId = ref('')  // 空=新增，非空=编辑
+const form = ref({ schoolName: '', name: '', username: '', password: '', enabled: true, schoolCode: '' })
 
 const resetTarget = ref(null)
-const resetPassword = ref('')
+const resetPwd = ref('')
+
+const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53'
+const CLOUDRUN_SERVICE = 'tec-work'
 
 async function apiCall(method, path, data) {
   const cloud = typeof wx !== 'undefined' && wx.cloud
+  if (!cloud || typeof cloud.callContainer !== 'function') {
+    throw new Error('当前环境不支持云托管私有链路')
+  }
   return new Promise((resolve, reject) => {
-    cloud.callContainer({
-      config: { env: 'prod-d6g1zoq8c7be4ce53' },
-      path: SERVER_URL + path, method, data,
-      header: { Authorization: 'Bearer ' + adminToken.value, 'content-type': 'application/json' },
-      success: (r) => resolve(r.data),
-      fail: reject,
-    })
+    const opts = {
+      config: { env: CLOUDRUN_ENV },
+      path: SERVER_URL + path,
+      method,
+      header: {
+        'content-type': 'application/json',
+        'X-WX-SERVICE': CLOUDRUN_SERVICE,
+        Authorization: 'Bearer ' + adminToken.value,
+      },
+      success: (r) => {
+        const status = r.statusCode || (r.data && r.data.statusCode) || 200
+        if (status === 401) {
+          adminToken.value = ''
+          uni.removeStorageSync(ADMIN_TOKEN_KEY)
+          return reject(new Error('登录已过期'))
+        }
+        if (status >= 200 && status < 300) resolve(r.data)
+        else {
+          const msg = (r.data && (r.data.message || r.data.error)) || ('请求失败(' + status + ')')
+          reject(new Error(msg))
+        }
+      },
+      fail: (e) => {
+        const msg = (e && (e.errMsg || e.message)) || '网络异常'
+        reject(new Error(msg))
+      },
+    }
+    // GET/DELETE 不传 data（微信小程序对无 body 请求更稳定）
+    if (data !== undefined && method !== 'GET' && method !== 'DELETE') {
+      opts.data = data
+    }
+    cloud.callContainer(opts)
   })
 }
 
@@ -121,7 +183,6 @@ onMounted(() => {
   if (adminToken.value) {
     loadAdmins()
   } else {
-    // 无 token 时自动以默认超管身份登录
     autoLogin()
   }
 })
@@ -132,61 +193,78 @@ async function loadAdmins() {
 }
 
 function openCreate() {
-  adminForm.value = { schoolName: '', name: '', username: '', password: '', enabled: true }
-  showAdminForm.value = true
+  editingId.value = ''
+  form.value = { schoolName: '', name: '', username: '', password: '', enabled: true, schoolCode: '' }
+  showForm.value = true
+}
+
+function openEdit(a) {
+  editingId.value = a.id
+  form.value = {
+    schoolName: a.schoolName || '',
+    name: a.name || '',
+    username: a.username || '',
+    password: '',  // 编辑时密码留空，不修改
+    enabled: a.enabled,
+    schoolCode: a.schoolCode || '',
+  }
+  showForm.value = true
 }
 
 function onEnabledChange(e) {
-  adminForm.value.enabled = e.detail.value
+  form.value.enabled = e.detail.value
 }
 
-async function createAdmin() {
-  const f = adminForm.value
-  if (!f.schoolName || !f.name || !f.username || !f.password) {
-    return uni.showToast({ title: '学校名称/姓名/用户名/密码必填', icon: 'none' })
+async function saveForm() {
+  const f = form.value
+  if (!f.schoolName || !f.name || !f.username) {
+    return uni.showToast({ title: '学校名称/姓名/用户名必填', icon: 'none' })
+  }
+  if (!editingId.value && !f.password) {
+    return uni.showToast({ title: '新增时密码必填', icon: 'none' })
   }
   saving.value = true
   try {
-    await apiCall('POST', '/admin/school-admins', f)
-    showAdminForm.value = false
-    await loadAdmins()
-    uni.showToast({ title: '创建成功', icon: 'success' })
+    if (editingId.value) {
+      // 编辑：PATCH 更新基本信息
+      const payload = { schoolName: f.schoolName, name: f.name, username: f.username, enabled: f.enabled }
+      await apiCall('PATCH', '/admin/school-admins/' + editingId.value, payload)
+      // 如果填了新密码，额外调用重置密码接口
+      if (f.password) {
+        await apiCall('PATCH', '/admin/school-admins/' + editingId.value + '/password', { password: f.password })
+      }
+      showForm.value = false
+      await loadAdmins()
+      uni.showToast({ title: '已保存', icon: 'success' })
+    } else {
+      // 新增：POST 创建
+      await apiCall('POST', '/admin/school-admins', {
+        schoolName: f.schoolName, name: f.name, username: f.username,
+        password: f.password, enabled: f.enabled,
+      })
+      showForm.value = false
+      await loadAdmins()
+      uni.showToast({ title: '创建成功', icon: 'success' })
+    }
   } catch (e) {
-    uni.showToast({ title: e?.data?.message || '创建失败', icon: 'none' })
+    uni.showToast({ title: e.message || '操作失败', icon: 'none' })
   }
   saving.value = false
 }
 
-async function toggleEnabled(a) {
-  const next = !a.enabled
-  uni.showModal({
-    title: next ? '开启账号' : '禁用账号',
-    content: `确定${next ? '开启' : '禁用'}「${a.name}」？${next ? '' : '禁用后该管理员将无法登录'}`,
-    confirmColor: next ? '#4CAF50' : '#e64340',
-    success: async (m) => {
-      if (!m.confirm) return
-      try {
-        await apiCall('PATCH', '/admin/school-admins/' + a.id + '/enabled', { enabled: next })
-        await loadAdmins()
-        uni.showToast({ title: '已更新', icon: 'success' })
-      } catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
-    },
-  })
-}
-
 function openReset(a) {
   resetTarget.value = a
-  resetPassword.value = ''
+  resetPwd.value = ''
 }
 
 async function confirmReset() {
-  if (!resetPassword.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
+  if (!resetPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
   saving.value = true
   try {
-    await apiCall('PATCH', '/admin/school-admins/' + resetTarget.value.id + '/password', { password: resetPassword.value })
+    await apiCall('PATCH', '/admin/school-admins/' + resetTarget.value.id + '/password', { password: resetPwd.value })
     resetTarget.value = null
     uni.showToast({ title: '密码已重置', icon: 'success' })
-  } catch (e) { uni.showToast({ title: '重置失败', icon: 'none' }) }
+  } catch (e) { uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
   saving.value = false
 }
 
@@ -199,9 +277,14 @@ async function delAdmin(a) {
       if (!m.confirm) return
       try {
         await apiCall('DELETE', '/admin/school-admins/' + a.id)
-        await loadAdmins()
+        // 先从本地列表移除，确保 UI 立即响应
+        schoolAdmins.value = schoolAdmins.value.filter(x => x.id !== a.id)
         uni.showToast({ title: '已删除', icon: 'success' })
-      } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
+        // 延迟重新加载，确保后端数据已同步
+        setTimeout(() => { loadAdmins() }, 500)
+      } catch (e) {
+        uni.showToast({ title: e.message || '删除失败', icon: 'none' })
+      }
     },
   })
 }
@@ -211,7 +294,7 @@ async function delAdmin(a) {
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; }
 .login-card { background: var(--c-card); border-radius: 24rpx; padding: 40rpx 30rpx; width: 560rpx; margin: 80rpx auto; }
 .login-title { font-size: 36rpx; font-weight: 800; color: var(--c-title); text-align: center; margin-bottom: 30rpx; }
-.inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; margin-bottom: 16rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
+.inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; margin-bottom: 4rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .login-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
 .hint { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
@@ -223,20 +306,35 @@ async function delAdmin(a) {
 .act.del { color: #e64340; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
 .empty { padding: 60rpx 0; text-align: center; font-size: 26rpx; color: var(--c-sub); }
-.row { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; border-bottom: 1px solid var(--c-border); gap: 12rpx; }
+.row { padding: 18rpx 0; border-bottom: 1px solid var(--c-border); }
 .info { flex: 1; }
-.nm { display: block; font-size: 30rpx; font-weight: 700; color: var(--c-title); }
-.badge { display: inline-block; font-size: 20rpx; font-weight: 600; padding: 2rpx 12rpx; border-radius: 16rpx; margin-left: 12rpx; vertical-align: middle; }
+.nm-line { display: flex; align-items: center; gap: 12rpx; margin-bottom: 6rpx; }
+.nm { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
+.badge { display: inline-block; font-size: 20rpx; font-weight: 600; padding: 2rpx 14rpx; border-radius: 16rpx; }
 .badge.on { background: rgba(76, 175, 80, .15); color: #4CAF50; }
 .badge.off { background: rgba(230, 67, 64, .15); color: #e64340; }
 .meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
-.acts { display: flex; gap: 18rpx; flex-shrink: 0; }
+.acts { display: flex; gap: 24rpx; margin-top: 10rpx; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
-.hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-bg); padding: 14rpx; border-radius: 12rpx; margin-bottom: 16rpx; line-height: 1.6; }
-.switch-row { display: flex; align-items: center; gap: 14rpx; padding: 14rpx 0; margin-bottom: 12rpx; }
-.switch-label { font-size: 28rpx; color: var(--c-title); flex: 1; }
-.switch-val { font-size: 24rpx; color: var(--c-sub); }
-.save-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+/* 全屏表单 */
+.full-mask { position: fixed; inset: 0; z-index: 200; background: var(--c-bg); }
+.full-page { display: flex; flex-direction: column; height: 100vh; }
+.full-head { display: flex; align-items: center; justify-content: space-between; padding: 0 24rpx; height: 88rpx; background: var(--c-card); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+.full-back { font-size: 28rpx; color: var(--c-accent); width: 120rpx; }
+.full-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); }
+.full-placeholder { width: 120rpx; }
+.full-body { flex: 1; padding: 24rpx 30rpx; box-sizing: border-box; }
+.full-foot { padding: 16rpx 30rpx 30rpx; background: var(--c-card); border-top: 1px solid var(--c-border); flex-shrink: 0; }
+.hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-card2, #f5f5f5); padding: 14rpx 18rpx; border-radius: 12rpx; margin-bottom: 20rpx; line-height: 1.6; border-left: 4rpx solid var(--c-accent, #4CAF50); }
+.form-item { margin-bottom: 18rpx; }
+.label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
+.req { color: #e64340; }
+.opt { color: var(--c-sub); font-weight: 400; font-size: 22rpx; }
+.label-line { flex: 1; }
+.switch-item { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 0; }
+.switch-val { font-size: 24rpx; color: var(--c-sub); display: block; margin-top: 4rpx; }
+.hint-tip { font-size: 22rpx; color: var(--c-sub); text-align: center; margin: 8rpx 0 14rpx; }
+.save-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 </style>

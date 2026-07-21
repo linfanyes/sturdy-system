@@ -20,6 +20,12 @@ export class SchoolAdminController {
   @UseGuards(SchoolAdminGuard)
   createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createTeacher(a.schoolId, b) }
 
+  @Patch('teachers/:id')
+  @UseGuards(SchoolAdminGuard)
+  updateTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.updateTeacher(a.schoolId, id, b)
+  }
+
   @Patch('teachers/:id/features')
   @UseGuards(SchoolAdminGuard)
   updateFeatures(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: { features?: string[] }) {

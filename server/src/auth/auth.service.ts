@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service'
 import { WechatService } from './wechat.service'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
+import { School } from '../school/school.entity'
 import { parentImUserId } from '../im/parent-im.util'
 import * as crypto from 'node:crypto'
 
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly config: ConfigService,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(School) private readonly schoolRepo: Repository<School>,
   ) {}
 
   /** 统一登录：遍历超管→学校管理员→教师→家长，命中即返回 */
@@ -39,11 +41,13 @@ export class AuthService {
     // 2) 学校管理员
     const admin = await this.saRepo.findOne({ where: { username: u } })
     if (admin) {
+      if (admin.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
       if (p === admin.passwordHash || crypto.createHash('sha256').update(p).digest('hex') === admin.passwordHash) {
+        const school = await this.schoolRepo.findOne({ where: { id: admin.schoolId } })
         return {
           role: 'school_admin',
           token: this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId }),
-          user: { id: admin.id, name: admin.name, schoolId: admin.schoolId },
+          user: { id: admin.id, name: admin.name, schoolId: admin.schoolId, schoolName: school?.name || '', schoolCode: school?.code || '' },
         }
       }
       throw new UnauthorizedException('密码错误')
@@ -52,6 +56,7 @@ export class AuthService {
     // 3) 教师（用户名密码由学校管理员创建）
     const teacher = await this.users.findByUsername(u)
     if (teacher) {
+      if (teacher.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
       if (!teacher.passwordHash) throw new UnauthorizedException('该账号未设置密码，请用微信登录')
       const h = crypto.createHash('sha256').update(p).digest('hex')
       if (h !== teacher.passwordHash) throw new UnauthorizedException('密码错误')

@@ -62,6 +62,9 @@ export class User {
   @Column('simple-json', { nullable: true, comment: '管理员配置的功能权限,空数组或null=全部可用' })
   features: string[]
 
+  @Column({ type: 'boolean', default: true, comment: '是否启用（学校管理员控制）' })
+  enabled: boolean
+
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date
 

@@ -6,9 +6,10 @@ import { WechatService } from './wechat.service'
 import { UsersModule } from '../users/users.module'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
+import { School } from '../school/school.entity'
 
 @Module({
-  imports: [UsersModule, TypeOrmModule.forFeature([SchoolAdmin, Student])],
+  imports: [UsersModule, TypeOrmModule.forFeature([SchoolAdmin, Student, School])],
   providers: [AuthService, WechatService],
   controllers: [AuthController],
   exports: [AuthService],
