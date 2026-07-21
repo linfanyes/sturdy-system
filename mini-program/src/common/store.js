@@ -25,6 +25,7 @@ export const SCHEMES = [
 export const auth = reactive({
   token: uni.getStorageSync(TOKEN_KEY) || '',
   user: uni.getStorageSync(USER_KEY) || null,
+  features: [], // 管理员配置的功能列表,空数组=全部可用
 })
 
 // 主题：light / dark。默认跟随系统；用户手动切换后持久化。

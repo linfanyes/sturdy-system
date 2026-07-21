@@ -50,6 +50,9 @@ export class User {
   @Column({ default: 'md' })
   fontSize: string
 
+  @Column('simple-json', { nullable: true, comment: '管理员配置的功能权限,空数组或null=全部可用' })
+  features: string[]
+
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date
 
