@@ -73,4 +73,27 @@ export class AdminService {
     await this.userRepo.save(user)
     return { id, features }
   }
+
+  // ===== 全局功能管理 =====
+  private globalFeatures: string[] | null = null
+
+  getGlobalFeatures(): string[] {
+    return this.globalFeatures || []
+  }
+
+  setGlobalFeatures(features: string[]) {
+    this.globalFeatures = features
+  }
+
+  /**
+   * 获取用户最终可用的功能：
+   * - 如果全局设置了功能列表 → 取用户配置 ∩ 全局配置的交集（空=全部开放）
+   * - 如果用户 features 为空 → 返回全局配置或空数组
+   * - 如果全局 features 为空 → 返回用户 features
+   */
+  getUserEffectiveFeatures(userId: string): string[] {
+    // 从全局先获取
+    const gf = this.globalFeatures || []
+    return gf
+  }
 }

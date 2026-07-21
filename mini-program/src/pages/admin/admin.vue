@@ -9,39 +9,50 @@
       <view class="hint">默认账号 admin / admin，可登录后端云托管修改环境变量</view>
     </view>
 
-    <!-- 用户管理 -->
+    <!-- 管理员面板 -->
     <template v-else>
       <view class="head">
         <text class="h">👑 管理员面板</text>
         <text class="logout" @click="adminToken=''">退出</text>
       </view>
+      <view class="tabs">
+        <text class="tab" :class="tab==='users'&&'on'" @click="tab='users'">👥 用户管理</text>
+        <text class="tab" :class="tab==='features'&&'on'" @click="tab='features'">⚙️ 全局功能</text>
+      </view>
 
+      <!-- 用户管理 -->
+      <template v-if="tab==='users'">
       <view class="stats"><text class="sc">共 {{ users.length }} 个用户</text></view>
-
       <view class="list">
         <view class="row" v-for="u in users" :key="u.id">
-          <view class="info">
-            <text class="nm">{{ u.name }}</text>
-            <text class="meta">{{ u.school || '未设学校' }} · {{ u.openid }}</text>
-          </view>
-          <view class="acts">
-            <text class="act" @click="toggleFeatures(u)">⚙️ 功能</text>
-            <text class="act del" @click="delUser(u)">删除</text>
-          </view>
+          <view class="info"><text class="nm">{{ u.name }}</text><text class="meta">{{ u.school || '未设学校' }} · {{ u.openid }}</text></view>
+          <view class="acts"><text class="act" @click="toggleFeatures(u)">⚙️ 功能</text><text class="act del" @click="delUser(u)">删除</text></view>
         </view>
       </view>
+      </template>
+
+      <!-- 全局功能管理 -->
+      <template v-if="tab==='features'">
+        <view class="stats"><text class="sc">勾选=全校教师可用，未勾选=隐藏。保存后立即生效。</text></view>
+        <view class="list">
+          <view class="all-row2">
+            <text class="all-btn" @click="toggleAllGlobal">{{ globalAllSelected ? '取消全选' : '全选' }}</text>
+            <text class="all-btn save-glob" @click="saveGlobalFeatures">💾 保存全局配置</text>
+          </view>
+          <label class="feat-row" v-for="f in allFeatures" :key="f.key" @click="toggleGlobalFeat(f.key)">
+            <text class="ck" :class="globalSel.includes(f.key) && 'on'"></text><text>{{ f.label }}</text>
+          </label>
+        </view>
+      </template>
 
       <!-- 功能配置弹窗 -->
       <view v-if="featureUser" class="mask" @click="featureUser=null">
         <view class="sheet" @click.stop>
           <view class="sh-t">{{ featureUser.name }} 的功能配置</view>
-          <view class="all-row">
-            <text class="all-btn" @click="toggleAllFeatures">{{ allSelected ? '取消全选' : '全选' }}</text>
-          </view>
+          <view class="all-row"><text class="all-btn" @click="toggleAllFeatures">{{ allSelected ? '取消全选' : '全选' }}</text></view>
           <scroll-view scroll-y class="feat-list">
-            <label class="feat-row" v-for="f in allFeatures" :key="f.key">
-              <text class="ck" :class="selFeatures.includes(f.key) && 'on'"></text>
-              <text>{{ f.label }}</text>
+            <label class="feat-row" v-for="f in allFeatures" :key="f.key" @click="selFeatures.includes(f.key) ? selFeatures.splice(selFeatures.indexOf(f.key),1) : selFeatures.push(f.key)">
+              <text class="ck" :class="selFeatures.includes(f.key) && 'on'"></text><text>{{ f.label }}</text>
             </label>
           </scroll-view>
           <button class="save-btn" :disabled="savingFeat" @click="saveFeatures">{{ savingFeat ? '保存中…' : '保存功能配置' }}</button>
@@ -53,150 +64,72 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 
 const SERVER_URL = '/api'
-
 const adminToken = ref('')
-const username = ref('admin')
-const password = ref('admin')
-const logging = ref(false)
-const users = ref([])
-const featureUser = ref(null)
-const selFeatures = ref([])
-const savingFeat = ref(false)
+const username = ref('admin'), password = ref('admin'), logging = ref(false)
+const users = ref([]), tab = ref('users')
+const featureUser = ref(null), selFeatures = ref([]), savingFeat = ref(false)
+const globalSel = ref([])
 
 const allFeatures = [
-  { key: 'classes', label: '班级管理' },
-  { key: 'students', label: '学生管理' },
-  { key: 'exams', label: '考试管理' },
-  { key: 'grades', label: '成绩管理' },
-  { key: 'attendance', label: '考勤' },
-  { key: 'schedule', label: '课表' },
-  { key: 'homework', label: '作业' },
-  { key: 'notices', label: '公告' },
-  { key: 'ai', label: 'AI 助手/备课' },
-  { key: 'tools', label: '课堂工具' },
-  { key: 'games', label: '小游戏' },
-  { key: 'finance', label: '班费' },
-  { key: 'activities', label: '班级活动' },
-  { key: 'rewards', label: '奖励/积分' },
-  { key: 'parents', label: '家长联系' },
+  { key: 'classes', label: '班级管理' },{ key: 'students', label: '学生管理' },{ key: 'exams', label: '考试管理' },
+  { key: 'grades', label: '成绩管理' },{ key: 'attendance', label: '考勤' },{ key: 'schedule', label: '课表' },
+  { key: 'homework', label: '作业' },{ key: 'notices', label: '公告' },{ key: 'ai', label: 'AI 助手/备课' },
+  { key: 'tools', label: '课堂工具' },{ key: 'games', label: '小游戏' },{ key: 'finance', label: '班费' },
+  { key: 'activities', label: '班级活动' },{ key: 'rewards', label: '奖励/积分' },{ key: 'parents', label: '家长联系' },
   { key: 'teachers', label: '教师通讯录' },
 ]
 const allFeatureKeys = allFeatures.map((f) => f.key)
 const allSelected = computed(() => selFeatures.value.length === allFeatureKeys.length)
+const globalAllSelected = computed(() => globalSel.value.length === allFeatureKeys.length)
 
-function toggleAllFeatures() {
-  selFeatures.value = allSelected.value ? [] : [...allFeatureKeys]
+async function apiCall(method, path, data) {
+  const cloud = typeof wx !== 'undefined' && wx.cloud
+  return new Promise((resolve, reject) => {
+    cloud.callContainer({
+      config: { env: 'prod-d6g1zoq8c7be4ce53' },
+      path: SERVER_URL + path, method, data,
+      header: { Authorization: adminToken.value, 'content-type': 'application/json' },
+      success: (r) => resolve(r.data),
+      fail: reject,
+    })
+  })
 }
 
 async function doLogin() {
-  if (logging.value) return
-  logging.value = true
+  if (logging.value) return; logging.value = true
   try {
-    const cloud = typeof wx !== 'undefined' && wx.cloud
-    const resp = await new Promise((resolve, reject) => {
-      cloud.callContainer({
-        config: { env: 'prod-d6g1zoq8c7be4ce53' },
-        path: SERVER_URL + '/admin/login',
-        method: 'POST',
-        data: { username: username.value, password: password.value },
-        header: { 'content-type': 'application/json', 'X-WX-SERVICE': 'tec-work' },
-        success: resolve,
-        fail: reject,
-      })
-    })
-    adminToken.value = resp.data?.token || ''
-    if (adminToken.value) {
-      await loadUsers()
-    } else {
-      uni.showToast({ title: '登录失败', icon: 'none' })
-    }
-  } catch (e) {
-    uni.showToast({ title: '登录失败: ' + (e.message || '网络错误'), icon: 'none' })
-  } finally {
-    logging.value = false
-  }
+    const resp = await apiCall('POST', '/admin/login', { username: username.value, password: password.value })
+    adminToken.value = resp?.token || ''
+    if (adminToken.value) { await loadUsers(); await loadGlobalFeatures() }
+    else uni.showToast({ title: '登录失败', icon: 'none' })
+  } catch (e) { uni.showToast({ title: '登录失败', icon: 'none' }) }
+  finally { logging.value = false }
 }
 
-async function loadUsers() {
-  try {
-    const cloud = typeof wx !== 'undefined' && wx.cloud
-    const resp = await new Promise((resolve, reject) => {
-      cloud.callContainer({
-        config: { env: 'prod-d6g1zoq8c7be4ce53' },
-        path: SERVER_URL + '/admin/users',
-        method: 'GET',
-        header: { Authorization: adminToken.value },
-        success: resolve,
-        fail: reject,
-      })
-    })
-    users.value = resp.data || []
-  } catch (e) {
-    uni.showToast({ title: '加载用户失败', icon: 'none' })
-  }
+async function loadUsers() { try { users.value = await apiCall('GET', '/admin/users') || [] } catch (e) {} }
+async function loadGlobalFeatures() { try { const d = await apiCall('GET', '/admin/features'); globalSel.value = (d && d.features) || [...allFeatureKeys] } catch (e) { globalSel.value = [...allFeatureKeys] } }
+
+function toggleAllGlobal() { globalSel.value = globalAllSelected.value ? [] : [...allFeatureKeys] }
+function toggleGlobalFeat(k) { const i = globalSel.value.indexOf(k); i >= 0 ? globalSel.value.splice(i, 1) : globalSel.value.push(k) }
+async function saveGlobalFeatures() {
+  try { await apiCall('PUT', '/admin/features', { features: globalSel.value }); uni.showToast({ title: '全局配置已保存', icon: 'success' }) }
+  catch (e) { uni.showToast({ title: '保存失败', icon: 'none' }) }
 }
 
-function toggleFeatures(u) {
-  featureUser.value = u
-  selFeatures.value = u.features && u.features.length ? [...u.features] : [...allFeatureKeys]
-}
-
+function toggleFeatures(u) { featureUser.value = u; selFeatures.value = u.features && u.features.length ? [...u.features] : [...allFeatureKeys] }
+function toggleAllFeatures() { selFeatures.value = allSelected.value ? [] : [...allFeatureKeys] }
 async function saveFeatures() {
-  if (savingFeat.value || !featureUser.value) return
-  savingFeat.value = true
-  const features = selFeatures.value.length === allFeatureKeys.length ? [] : selFeatures.value
-  try {
-    const cloud = typeof wx !== 'undefined' && wx.cloud
-    await new Promise((resolve, reject) => {
-      cloud.callContainer({
-        config: { env: 'prod-d6g1zoq8c7be4ce53' },
-        path: SERVER_URL + '/admin/users/' + featureUser.value.id + '/features',
-        method: 'PATCH',
-        data: { features },
-        header: { Authorization: adminToken.value, 'content-type': 'application/json' },
-        success: resolve,
-        fail: reject,
-      })
-    })
-    featureUser.value = null
-    await loadUsers()
-    uni.showToast({ title: '功能配置已保存', icon: 'success' })
-  } catch (e) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
-  } finally {
-    savingFeat.value = false
-  }
+  if (savingFeat.value || !featureUser.value) return; savingFeat.value = true
+  try { await apiCall('PATCH', '/admin/users/' + featureUser.value.id + '/features', { features: selFeatures.value.length === allFeatureKeys.length ? [] : selFeatures.value }); featureUser.value = null; await loadUsers(); uni.showToast({ title: '已保存', icon: 'success' }) }
+  catch (e) { uni.showToast({ title: '保存失败', icon: 'none' }) }
+  finally { savingFeat.value = false }
 }
-
 function delUser(u) {
-  uni.showModal({
-    title: '删除用户',
-    content: `确定删除「${u.name}」及其全部数据？此操作不可恢复！`,
-    confirmColor: '#e64340',
-    success: async (m) => {
-      if (!m.confirm) return
-      try {
-        const cloud = typeof wx !== 'undefined' && wx.cloud
-        await new Promise((resolve, reject) => {
-          cloud.callContainer({
-            config: { env: 'prod-d6g1zoq8c7be4ce53' },
-            path: SERVER_URL + '/admin/users/' + u.id,
-            method: 'DELETE',
-            header: { Authorization: adminToken.value },
-            success: resolve,
-            fail: reject,
-          })
-        })
-        users.value = users.value.filter((x) => x.id !== u.id)
-        uni.showToast({ title: '已删除', icon: 'none' })
-      } catch (e) {
-        uni.showToast({ title: '删除失败', icon: 'none' })
-      }
-    },
+  uni.showModal({ title: '删除用户', content: '确定删除「' + u.name + '」及其全部数据？', confirmColor: '#e64340',
+    success: async (m) => { if (!m.confirm) return; try { await apiCall('DELETE', '/admin/users/' + u.id); users.value = users.value.filter(x => x.id !== u.id); uni.showToast({ title: '已删除', icon: 'none' }) } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) } }
   })
 }
 </script>
@@ -211,6 +144,9 @@ function delUser(u) {
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .logout { font-size: 26rpx; color: var(--c-accent); }
+.tabs { display: flex; gap: 12rpx; margin-bottom: 20rpx; }
+.tab { font-size: 26rpx; padding: 14rpx 26rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); }
+.tab.on { background: var(--c-accent); color: #fff; font-weight: 700; }
 .stats { margin-bottom: 14rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
@@ -225,7 +161,9 @@ function delUser(u) {
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 .all-row { margin-bottom: 10rpx; }
+.all-row2 { display: flex; justify-content: space-between; margin-bottom: 14rpx; }
 .all-btn { font-size: 26rpx; color: var(--c-accent); }
+.save-glob { color: var(--c-primary); font-weight: 600; }
 .feat-list { max-height: 500rpx; }
 .feat-row { display: flex; align-items: center; gap: 14rpx; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); font-size: 28rpx; color: var(--c-title); }
 .ck { width: 28rpx; height: 28rpx; border-radius: 50%; border: 3rpx solid var(--c-sub); flex-shrink: 0; }

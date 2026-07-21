@@ -43,6 +43,31 @@ export class AdminController {
     return this.svc.updateUserFeatures(id, body.features || [])
   }
 
+  // ===== 全局功能管理 =====
+
+  @Get('features')
+  getGlobalFeatures(@Headers('authorization') auth: string) {
+    this.verify(auth)
+    return { features: this.svc.getGlobalFeatures() }
+  }
+
+  @Put('features')
+  setGlobalFeatures(
+    @Headers('authorization') auth: string,
+    @Body() body: { features: string[] },
+  ) {
+    this.verify(auth)
+    this.svc.setGlobalFeatures(body.features || [])
+    return { ok: true }
+  }
+
+  // ===== 普通用户功能查询（供小程序前端用） =====
+
+  @Get('user-features/:userId')
+  getUserFeatures(@Param('userId') userId: string) {
+    return { features: this.svc.getUserEffectiveFeatures(userId) }
+  }
+
   private verify(auth: string) {
     const token = (auth || '').replace('Bearer ', '')
     if (!this.svc.verifyAdminToken(token)) {
