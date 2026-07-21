@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, In, Not } from 'typeorm'
 import crypto from 'node:crypto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
@@ -17,6 +17,8 @@ import { NotFoundException, BadRequestException } from '@nestjs/common'
 import { AppConfig } from '../config/app-config.entity'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassItem } from '../classes/class.entity'
+import { Student } from '../students/student.entity'
+import { parentImUserId } from './parent-im.util'
 
 /**
  * 腾讯云 IM（体验版免费）：家校沟通。
@@ -25,20 +27,13 @@ import { ClassItem } from '../classes/class.entity'
  * 未配置 SDKAppID/密钥时返回空签名，前端自动进入演示模式。
  */
 
-/** 由（学生ID + 关系 + 家长姓名）稳定派生一个 ASCII IM 账号（≤32 字符，保证唯一且可复现） */
-function parentImUserId(p: { studentId: string; relation: string; parentName: string }): string {
-  const raw = `${p.studentId}|${p.relation}|${p.parentName}`
-  let h = 0
-  for (let i = 0; i < raw.length; i++) h = (Math.imul(h, 31) + raw.charCodeAt(i)) >>> 0
-  return 'p_' + h.toString(36)
-}
-
 @Injectable()
 export class ImService {
   constructor(
     @InjectRepository(AppConfig) private readonly appRepo: Repository<AppConfig>,
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
   private async cfg() {
@@ -91,24 +86,67 @@ export class ImService {
       const cls = await this.classRepo.findOne({ where: { id: classId, teacherId } })
       if (!cls) return []
     }
-    const where: any = { teacherId }
-    if (classId) where.classId = classId
-    const contacts = await this.pcRepo.find({ where, order: { createdAt: 'DESC' } })
+    // 规范键：studentId + parentName（忽略 relation，避免同一家长因称呼不同被拆成多个账号）
     const map = new Map<string, any>()
-    for (const c of contacts) {
-      const key = `${c.studentId}|${c.relation}|${c.parentName}`
-      if (!map.has(key)) {
+    const ensure = (item: {
+      studentId: string
+      studentName: string
+      classId: string
+      parentName: string
+      relation: string
+      phone: string
+      wechat: string
+    }) => {
+      const key = `${item.studentId}|${item.parentName}`
+      if (item.studentId && item.parentName && !map.has(key)) {
         map.set(key, {
-          imUserId: parentImUserId(c),
-          studentId: c.studentId,
-          studentName: c.studentName,
-          classId: c.classId,
-          parentName: c.parentName,
-          relation: c.relation,
-          phone: c.phone,
-          wechat: c.wechat,
+          imUserId: parentImUserId({ studentId: item.studentId, relation: '家长', parentName: item.parentName }),
+          studentId: item.studentId,
+          studentName: item.studentName,
+          classId: item.classId,
+          parentName: item.parentName,
+          relation: item.relation || '家长',
+          phone: item.phone || '',
+          wechat: item.wechat || '',
         })
       }
+    }
+    // 1) 家校联系日志中的家长
+    const cWhere: any = { teacherId }
+    if (classId) cWhere.classId = classId
+    const contacts = await this.pcRepo.find({ where: cWhere, order: { createdAt: 'DESC' } })
+    for (const c of contacts) {
+      ensure({
+        studentId: c.studentId,
+        studentName: c.studentName,
+        classId: c.classId,
+        parentName: c.parentName,
+        relation: c.relation,
+        phone: c.phone,
+        wechat: c.wechat,
+      })
+    }
+    // 2) 学生表里带 parentName 的家长（补全花名册，使其也能被选中并发起沟通）
+    const sWhere: any = { parentName: Not('') }
+    if (classId) {
+      sWhere.classId = classId
+    } else {
+      const myClasses = await this.classRepo.find({ where: { teacherId }, select: ['id'] })
+      const classIds = myClasses.map((c) => c.id)
+      if (!classIds.length) return Array.from(map.values())
+      sWhere.classId = In(classIds)
+    }
+    const students = await this.studentRepo.find({ where: sWhere })
+    for (const s of students) {
+      ensure({
+        studentId: s.id,
+        studentName: s.name,
+        classId: s.classId,
+        parentName: s.parentName,
+        relation: '家长',
+        phone: s.parentPhone,
+        wechat: '',
+      })
     }
     return Array.from(map.values())
   }
@@ -151,7 +189,7 @@ export class ImController {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AppConfig, ParentContact, ClassItem])],
+  imports: [TypeOrmModule.forFeature([AppConfig, ParentContact, ClassItem, Student])],
   providers: [ImService],
   controllers: [ImController],
   exports: [ImService],

@@ -35,6 +35,7 @@ import { MyGalleryModule } from './my-gallery/my-gallery.module'
 import { SemesterModule } from './semester/semester.module'
 import { SecurityModule } from './security/security.module'
 import { ImModule } from './im/im.module'
+import { ParentAuthModule } from './parent-auth/parent-auth.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -87,6 +88,7 @@ import { HealthController } from './health.controller'
     ExamsModule,
     GradesModule,
     ParentContactModule,
+    ParentAuthModule,
     GeneratedModule,
     DutyRosterModule,
     SchoolModule,

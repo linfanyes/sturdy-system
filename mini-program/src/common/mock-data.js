@@ -274,6 +274,9 @@ const MOCK = {
     { imUserId: 'p_demo_li', studentId: 's2', studentName: '李小华', classId: 'c1', parentName: '李强', relation: '爸爸', phone: '13800001002', wechat: '' },
     { imUserId: 'p_demo_wang', studentId: 's3', studentName: '王小芳', classId: 'c1', parentName: '王磊', relation: '爸爸', phone: '13800001003', wechat: '' },
   ],
+  '/parent-auth/login': { token: 'mock-parent-token', parent: { imUserId: 'p_demo_zhang', studentId: 's1', studentName: '张小明', classId: 'c1', parentName: '张伟', phone: '13800001001' } },
+  '/parent-auth/me': { phone: '13800001001', parentName: '张伟', imUserId: 'p_demo_zhang', kids: [{ studentId: 's1', studentName: '张小明', classId: 'c1', parentName: '张伟' }] },
+  '/parent-auth/im-user-sig': { sdkAppId: '', userSig: 'demo-parent-sig' },
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 

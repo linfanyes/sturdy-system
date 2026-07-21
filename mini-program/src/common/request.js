@@ -1,5 +1,5 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
-import { getToken, logout, auth } from './store'
+import { getToken, logout, auth, parent } from './store'
 import { getMockData } from './mock-data'
 
 // —— 演示模式（Mock）开关 ——
@@ -49,11 +49,12 @@ async function batchRun(tasks) {
  * 统一请求封装：走微信云托管私有链路（wx.cloud.callContainer），不依赖公网域名。
  * 自动带 token，401 跳转登录。
  */
-export function request(path, method = 'GET', data = {}) {
+export function request(path, method = 'GET', data = {}, token) {
   // 演示模式：返回本地模拟数据，无需真实后端
   if (_mockMode) {
     return new Promise((resolve) => resolve(getMockData(path, method, data)))
   }
+  const useToken = token !== undefined ? token : getToken()
   return new Promise((resolve, reject) => {
     const cloud = typeof wx !== 'undefined' && wx.cloud
     if (!cloud || typeof cloud.callContainer !== 'function') {
@@ -68,7 +69,7 @@ export function request(path, method = 'GET', data = {}) {
         'content-type': 'application/json',
         // 服务名必须放在 header 的 X-WX-SERVICE（官方要求，不是 config.service）
         'X-WX-SERVICE': CLOUDRUN_SERVICE,
-        Authorization: 'Bearer ' + (getToken() || ''),
+        Authorization: 'Bearer ' + (useToken || ''),
       },
       success: (res) => {
         const status = res.statusCode || (res.data && res.data.statusCode)
@@ -94,6 +95,7 @@ export const api = {
   // 通用 CRUD 基类用 @Patch(':id')，保持发 PATCH
   patch: (p, d) => request(p, 'PATCH', d),
   del: (p) => request(p, 'DELETE'),
+
   /**
    * 列表加载帮手：自动管理 loading 提示 + 失败 toast + 空数组兜底。
    * 用于 onShow 的 load() 场景，避免每个页面重复 try/catch/showLoading 样板代码。
@@ -277,6 +279,15 @@ function ab2str(buf) {
 }
 
 export { batchRun }
+
+/** 家长端专用请求封装：使用家长令牌（parent.token），其余与 api 一致 */
+export const parentApi = {
+  get: (p) => request(p, 'GET', {}, parent.token),
+  post: (p, d) => request(p, 'POST', d || {}, parent.token),
+  put: (p, d) => request(p, 'PUT', d || {}, parent.token),
+  del: (p) => request(p, 'DELETE', {}, parent.token),
+}
+
 export default api
 
 

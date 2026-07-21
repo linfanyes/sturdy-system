@@ -5,6 +5,7 @@
     <view class="sub">微信一键登录，开启你的班级管家</view>
     <button class="btn" @click="wechatLogin">微信登录</button>
     <view class="tip">首次登录将自动创建教师账号</view>
+    <view class="parent-entry" @click="goParent">我是家长，去沟通 →</view>
 
     <!-- 首次设置弹框：补全学校 / 学期 / 任教学科 -->
     <view class="mask" v-if="showSetup" @click.stop>
@@ -34,6 +35,10 @@ import { ref, computed } from 'vue'
 import api from '../../common/request'
 import { setAuth, setUser, theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
+
+function goParent() {
+  uni.navigateTo({ url: '/pages/parent-login/parent-login' })
+}
 
 const showSetup = ref(false)
 const school = ref('')
@@ -121,6 +126,7 @@ async function saveSetup() {
   font-size: 32rpx;
 }
 .tip { color: var(--c-sub); font-size: 24rpx; margin-top: 30rpx; }
+.parent-entry { margin-top: 40rpx; font-size: 26rpx; color: #07c160; text-decoration: underline; }
 
 /* 首次设置弹框 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; z-index: 60; }

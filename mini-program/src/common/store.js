@@ -6,6 +6,8 @@ const THEME_KEY = 'g_theme'
 const SCHEME_KEY = 'g_scheme'
 const FONT_KEY = 'g_fontsize'
 const MOCK_KEY = 'g_mock_mode'
+const PARENT_TOKEN_KEY = 'g_parent_token'
+const PARENT_USER_KEY = 'g_parent_user'
 
 // 字体大小档位（对齐 web 三档）
 export const FONT_SIZES = [
@@ -42,6 +44,26 @@ export const theme = reactive({
 export const mockMode = reactive({
   enabled: uni.getStorageSync(MOCK_KEY) === 'true',
 })
+
+// 家长端登录态（与教师端隔离，各自独立存储）
+export const parent = reactive({
+  token: uni.getStorageSync(PARENT_TOKEN_KEY) || '',
+  user: uni.getStorageSync(PARENT_USER_KEY) || null,
+})
+
+export function setParent(token, user) {
+  parent.token = token
+  parent.user = user
+  uni.setStorageSync(PARENT_TOKEN_KEY, token)
+  uni.setStorageSync(PARENT_USER_KEY, user)
+}
+
+export function logoutParent() {
+  parent.token = ''
+  parent.user = null
+  uni.removeStorageSync(PARENT_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_USER_KEY)
+}
 
 export function setTheme(mode) {
   theme.mode = mode === 'dark' ? 'dark' : 'light'
