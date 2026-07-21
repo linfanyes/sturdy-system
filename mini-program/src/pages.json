@@ -21,6 +21,7 @@
     { "path": "pages/ai-knowledge/ai-knowledge", "style": { "navigationBarTitleText": "知识点生成" } },
     { "path": "pages/ai-paper/ai-paper", "style": { "navigationBarTitleText": "优选试卷生成", "enablePullDownRefresh": true } },
     { "path": "pages/ai-exam/ai-exam", "style": { "navigationBarTitleText": "考试分析", "enablePullDownRefresh": true } },
+    { "path": "pages/ai-interactive/ai-interactive", "style": { "navigationBarTitleText": "AI 互动讲义", "enablePullDownRefresh": true } },
     { "path": "pages/ai-lesson/ai-lesson", "style": { "navigationBarTitleText": "优质教案生成", "enablePullDownRefresh": true } },
     { "path": "pages/config/config", "style": { "navigationBarTitleText": "设置" } },
     { "path": "pages/games/index", "style": { "navigationBarTitleText": "小游戏合集" } },

@@ -265,7 +265,7 @@ const MOCK = {
   '/ai/gen-image': GEN_IMAGE_RESULT,
   '/ai/gen-video': GEN_VIDEO_RESULT,
   '/ai/parse-file': { text: '这是演示模式下从文件解析出的模拟文本内容。在实际环境中，系统会通过 AI 服务解析 PDF 或识别图片中的文字。' },
-  '/ai/chat-sync': { content: '（演示模式）这是润色后的公告示例：各位家长好，现将相关事项通知如下，请知悉并配合。' },
+  '/ai/chat-sync': { content: '（演示模式）【互动问答】\nQ：什么是小数？\nA：小数由整数部分、小数点和小数部分组成，用来表示不到 1 个整体或比 1 大的非整数。\n【课堂讨论题】\n1. 生活中哪些地方会用到小数？\n【随堂小测】\n1. 0.5 + 0.3 = （0.8）\n2. 比较大小：0.7 ○ 0.69（填 >）' },
   '/security/msg-check': { pass: true },
   '/security/img-check': { pass: true },
   '/im/user-sig': { sdkAppId: '', userSig: 'demo-user-sig' },

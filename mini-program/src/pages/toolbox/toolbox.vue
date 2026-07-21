@@ -93,6 +93,7 @@ const sections = ref([
       { label: '优选试卷生成', icon: '📃', path: '/pages/ai-paper/ai-paper' },
       { label: '考试一键分析', icon: '📊', path: '/pages/ai-exam/ai-exam' },
       { label: '图像创造', icon: '🎨', path: '/pages/image-creation/image-creation' },
+      { label: '互动讲义', icon: '🎯', path: '/pages/ai-interactive/ai-interactive' },
       { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
       { label: '试卷查询', icon: '🔍', crud: 'generated/queries' },
       { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
