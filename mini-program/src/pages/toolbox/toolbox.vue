@@ -83,6 +83,7 @@ const sections = ref([
       { label: '成绩管理', icon: '📈', path: '/pages/grades/grades' },
       { label: '成绩雷达图', icon: '📡', path: '/pages/radar/radar' },
       { label: '数据统计', icon: '📉', path: '/pages/analysis/analysis' },
+      { label: '数据看板', icon: '📊', path: '/pages/data-dashboard/data-dashboard' },
       { label: '课表', icon: '🗓️', path: '/pages/schedule/schedule' },
       { label: '考勤', icon: '✅', path: '/pages/attendance/attendance' },
       { label: '作业', icon: '📝', path: '/pages/homework/homework' },

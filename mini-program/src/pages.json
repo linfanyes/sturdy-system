@@ -4,6 +4,7 @@
     { "path": "pages/parent-login/parent-login", "style": { "navigationBarTitleText": "家长登录" } },
     { "path": "pages/parent/parent", "style": { "navigationBarTitleText": "家长中心" } },
     { "path": "pages/dashboard/dashboard", "style": { "navigationBarTitleText": "工作台", "enablePullDownRefresh": true } },
+    { "path": "pages/data-dashboard/data-dashboard", "style": { "navigationBarTitleText": "数据看板" } },
     { "path": "pages/classes/classes", "style": { "navigationBarTitleText": "班级管理", "enablePullDownRefresh": true } },
     { "path": "pages/students/students", "style": { "navigationBarTitleText": "学生管理", "enablePullDownRefresh": true } },
     { "path": "pages/exams/exams", "style": { "navigationBarTitleText": "考试管理", "enablePullDownRefresh": true } },

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
-import { Repository, DataSource } from 'typeorm'
+import { Repository, DataSource, Not } from 'typeorm'
 import { Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common'
 import {
   ScheduleItem,
@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
+import { Student } from '../students/student.entity'
 
 class ScheduleService extends CrudService<ScheduleItem> {
   constructor(@InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>) {
@@ -60,8 +61,25 @@ class NoticeService extends CrudService<Notice> {
 }
 @Controller('notices')
 class NoticeController extends CrudController<Notice> {
-  constructor(s: NoticeService) {
+  constructor(
+    s: NoticeService,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+  ) {
     super(s)
+  }
+
+  /** 推送通知微信订阅消息给已订阅的家长 */
+  @Post('push')
+  @UseGuards(JwtAuthGuard)
+  async push(@Body() b: { noticeId: string; classId: string; title: string; content: string }) {
+    const students = await this.studentRepo.find({
+      where: { classId: b.classId, parentOpenId: Not('') },
+    })
+    // TODO: 调用微信订阅消息 API，需要配置模板 ID。
+    // 参考格式：POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send
+    // { touser: openId, template_id: 'TEMPLATE_ID', page: 'pages/parent/parent',
+    //   data: { thing1: {value: title}, thing2: {value: content} } }
+    return { pushed: students.length, students: students.map((s) => ({ name: s.name, openId: s.parentOpenId })) }
   }
 }
 
@@ -299,7 +317,7 @@ class ScheduleImportController {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource]),
+    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student]),
     AiModule,
   ],
   providers: [

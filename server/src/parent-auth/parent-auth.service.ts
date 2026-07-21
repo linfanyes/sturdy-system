@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { ConfigService } from '@nestjs/config'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
 import { Notice, Homework } from '../school/school.entity'
@@ -25,6 +26,7 @@ export class ParentAuthService {
     @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
+    private readonly config: ConfigService,
   ) {}
 
   /** 学号登录 */
@@ -189,6 +191,30 @@ export class ParentAuthService {
       deadline: h.deadline,
       status: h.status,
     }))
+  }
+
+  /** 家长订阅微信通知：用前端 wx.login code 换取 openId，存入学生表 */
+  async subscribe(studentNo: string, code: string) {
+    if (!code) return { ok: false, msg: '缺少 code' }
+    const stu = await this.studentRepo.findOne({ where: { studentNo } })
+    if (!stu) throw new BadRequestException('学生不存在')
+    const appId = this.config.get('WX_APPID')
+    const secret = this.config.get('WX_APP_SECRET')
+    if (!appId || !secret) return { ok: false, msg: '未配置微信 AppId/AppSecret，演示模式不支持订阅' }
+    try {
+      const resp = await fetch(
+        `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${code}&grant_type=authorization_code`,
+      )
+      const data = (await resp.json()) as any
+      const openId = (data && data.openid) || ''
+      if (openId) {
+        stu.parentOpenId = openId
+        await this.studentRepo.save(stu)
+      }
+      return { ok: !!openId, openId }
+    } catch (e) {
+      return { ok: false, msg: '订阅请求失败' }
+    }
   }
 
   /** 签发家长 IM UserSig */

@@ -36,6 +36,8 @@
         <text class="exp-csv" @click="exportCsv">📋 导出 CSV</text>
         <text class="exp-rank" @click="exportRank">🏆 导出名次表</text>
         <text class="exp-share" @click="shareAll">📤 分享全部</text>
+        <text class="exp-csv" @click="aiAnalyze">🤖 AI 分析</text>
+        <text class="exp-rank" @click="aiDiagnose">🔍 学生诊断</text>
       </view>
       <view v-if="existing" class="oview">
         <view class="ov2"><text class="n">{{ analysis.avg }}</text><text class="l">平均分</text></view>
@@ -146,6 +148,14 @@
       </view>
     </view>
   </view>
+
+  <view class="aimask" v-if="aiResult" @click="aiResult=''">
+    <view class="aisheet" @click.stop>
+      <view class="ait">{{ aiTitle }}</view>
+      <scroll-view scroll-y class="aibody">{{ aiResult }}</scroll-view>
+      <view class="aiclose" @click="aiResult=''">关闭</view>
+    </view>
+  </view>
 </template>
 
 <script setup>
@@ -173,6 +183,8 @@ const subject = ref('')
 const date = ref('')
 const scores = reactive({})
 const existing = ref(null)
+const aiResult = ref('')
+const aiTitle = ref('')
 const doneCount = ref(0)
 
 const showImport = ref(false)
@@ -672,6 +684,38 @@ function shareAll() {
     fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
   })
 }
+
+async function aiAnalyze() {
+  const exam = exams.value[examIdx.value]
+  if (!exam || !exam.id) return uni.showToast({ title: '请先选择考试', icon: 'none' })
+  aiTitle.value = `AI 分析：${exam.name}`
+  aiResult.value = '分析中…'
+  try {
+    const r = await api.post('/ai/analyze-exam', { examId: exam.id })
+    aiResult.value = r.content || '未返回分析结果'
+  } catch (e) {
+    aiResult.value = '分析失败，请检查 AI 配置'
+  }
+}
+
+async function aiDiagnose() {
+  const names = students.value.map((s) => s.name)
+  if (!names.length) return uni.showToast({ title: '暂无学生', icon: 'none' })
+  uni.showActionSheet({
+    itemList: names,
+    success: async (r) => {
+      const s = students.value[r.tapIndex]
+      aiTitle.value = `学情诊断：${s.name}`
+      aiResult.value = '诊断中…'
+      try {
+        const res = await api.post('/ai/diagnose', { studentId: s.id })
+        aiResult.value = res.content || '未返回诊断结果'
+      } catch (e) {
+        aiResult.value = '诊断失败，请检查 AI 配置'
+      }
+    },
+  })
+}
 </script>
 
 <style scoped>
@@ -755,4 +799,9 @@ function shareAll() {
 .radar-legend { display: flex; flex-wrap: wrap; gap: 10rpx 18rpx; justify-content: center; margin-top: 6rpx; }
 .rl-item { display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; color: var(--c-sub); }
 .rl-c { width: 18rpx; height: 18rpx; border-radius: 4rpx; }
+.aimask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 99; }
+.aisheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx 28rpx calc(30rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.ait { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
+.aibody { max-height: 60vh; font-size: 28rpx; line-height: 1.7; color: var(--c-text); white-space: pre-wrap; }
+.aiclose { text-align: center; font-size: 28rpx; color: var(--c-accent); margin-top: 20rpx; padding: 14rpx 0; }
 </style>

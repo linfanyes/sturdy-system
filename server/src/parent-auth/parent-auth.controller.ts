@@ -41,6 +41,13 @@ export class ParentAuthController {
     return this.s.getHomework(p.classId)
   }
 
+  /** 家长订阅微信通知（wx.login code → openId 落库） */
+  @Post('subscribe')
+  @UseGuards(ParentAuthGuard)
+  subscribe(@Body() b: { code?: string }, @CurrentParent() p: any) {
+    return this.s.subscribe(p.studentNo, (b && b.code) || '')
+  }
+
   /** 当前家长的 IM UserSig（前端凭此登录 tim-wx-sdk） */
   @Get('im-user-sig')
   @UseGuards(ParentAuthGuard)

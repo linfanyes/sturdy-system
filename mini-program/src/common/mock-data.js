@@ -266,6 +266,8 @@ const MOCK = {
   '/ai/gen-video': GEN_VIDEO_RESULT,
   '/ai/parse-file': { text: '这是演示模式下从文件解析出的模拟文本内容。在实际环境中，系统会通过 AI 服务解析 PDF 或识别图片中的文字。' },
   '/ai/chat-sync': { content: '（演示模式）【互动问答】\nQ：什么是小数？\nA：小数由整数部分、小数点和小数部分组成，用来表示不到 1 个整体或比 1 大的非整数。\n【课堂讨论题】\n1. 生活中哪些地方会用到小数？\n【随堂小测】\n1. 0.5 + 0.3 = （0.8）\n2. 比较大小：0.7 ○ 0.69（填 >）' },
+  '/ai/analyze-exam': { content: '（演示模式）【考试成绩分析报告】\n\n一、总体评价\n本次考试整体表现良好，语文和英语成绩优异，数学略有薄弱。\n\n二、学科亮点与薄弱点\n· 英语：均分最高，学生整体掌握扎实\n· 语文：高分段明显，阅读写作能力强\n· 数学：部分学生在计算与解决问题上需加强，及格率偏低\n\n三、改进建议\n1. 数学可增加每日口算练习\n2. 语文继续保持阅读量' },
+  '/ai/diagnose': { content: '（演示模式）【学情诊断报告】\n\n一、学业趋势\n该生成绩整体呈上升趋势，最近一次考试较上次有明显进步。\n\n二、优势与薄弱\n· 优势学科：英语（持续高分，语言表达能力强）\n· 薄弱学科：数学（计算速度需提升）\n\n三、提升建议\n1. 每日安排 15 分钟口算练习\n2. 周末完成 2-3 道应用题训练\n3. 鼓励多阅读英语课外绘本' },
   '/security/msg-check': { pass: true },
   '/security/img-check': { pass: true },
   '/im/user-sig': { sdkAppId: '', userSig: 'demo-user-sig' },
@@ -311,6 +313,7 @@ const MOCK = {
   },
   '/parent-auth/homework': HOMEWORK.filter(h => h.classId === 'c1'),
   '/students/import': { success: 0, failed: 0, errors: [] },
+  '/notices/push': { pushed: 0, students: [] },
 }
 
 /** 根据路径返回模拟数据，支持 ?classId= 过滤 */

@@ -13,6 +13,7 @@ export class Student extends BaseEntity {
   @Column({ type: 'int', nullable: true }) seatCol: number
   @Column({ default: '' }) parentName: string
   @Column({ default: '' }) parentPhone: string
+  @Column({ default: '' }) parentOpenId: string
   @Column({ type: 'text', nullable: true }) note: string
   @Column('simple-json', { nullable: true }) tags: string[]
   @Column({ nullable: true }) duty: string

@@ -3,6 +3,7 @@
     <view class="hd">
       <view class="t">🏡 家长中心</view>
       <view class="status" :class="connected ? 'on' : ''">{{ statusText }}</view>
+      <view class="out" @click="subscribe">📬 订阅</view>
       <view class="out" @click="logout">退出</view>
     </view>
 
@@ -380,6 +381,19 @@ function previewImg(url) {
 function logout() {
   logoutParent()
   uni.reLaunch({ url: '/pages/login/login' })
+}
+
+async function subscribe() {
+  try {
+    const res = await uni.requestSubscribeMessage({
+      tmplIds: [/* 微信后台申请的模板ID，发布时替换 */],
+    })
+    uni.showToast({ title: '已订阅', icon: 'success' })
+    const { code } = await uni.login()
+    await parentApi.post('/parent-auth/subscribe', { code })
+  } catch (e) {
+    uni.showToast({ title: '订阅失败', icon: 'none' })
+  }
 }
 
 onShow(async () => {
