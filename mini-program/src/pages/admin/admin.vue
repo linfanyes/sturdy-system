@@ -11,7 +11,7 @@
     <template v-else>
       <view class="head">
         <text class="h">👑 超级管理员</text>
-        <text class="logout" @click="adminToken=''">退出</text>
+        <text class="logout" @click="logout">退出</text>
       </view>
       <view class="tabs">
         <text class="tab" :class="tab==='schools'&&'on'" @click="tab='schools'">🏫 学校管理</text>
@@ -95,11 +95,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { theme } from '../../common/store'
 
 const SERVER_URL = '/api'
-const adminToken = ref('')
+const ADMIN_TOKEN_KEY = 'admin_token'
+const adminToken = ref(uni.getStorageSync(ADMIN_TOKEN_KEY) || '')
 const username = ref('admin'), password = ref('admin'), logging = ref(false)
 const tab = ref('schools')
 const users = ref([]), schools = ref([]), schoolAdmins = ref([])
@@ -138,11 +139,15 @@ async function doLogin() {
   try {
     const resp = await apiCall('POST', '/admin/login', { username: username.value, password: password.value })
     adminToken.value = resp?.token || ''
-    if (adminToken.value) { await loadAll() }
+    if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAll() }
     else uni.showToast({ title: '登录失败', icon: 'none' })
   } catch (e) { uni.showToast({ title: '登录失败', icon: 'none' }) }
   finally { logging.value = false }
 }
+
+function logout() { adminToken.value=''; uni.removeStorageSync(ADMIN_TOKEN_KEY); uni.reLaunch({ url:'/pages/login/login' }) }
+
+onMounted(() => { if (adminToken.value) loadAll() })
 
 async function loadAll() {
   try { schools.value = await apiCall('GET', '/admin/schools') || [] } catch (e) {}

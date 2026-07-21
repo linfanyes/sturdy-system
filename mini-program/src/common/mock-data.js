@@ -323,6 +323,10 @@ const MOCK = {
   '/school-admin/stats': { teacherCount: 1, studentCount: 9, noticeCount: 2 },
   '/school-admin/parent-logins': [{ studentId: 's1', name: '张小明', studentNo: '2024001', classId: 'c1', parentName: '张伟', parentPhone: '13800001001', parentLoginEnabled: true }],
   '/auth/password-login': { token: 'mock-teacher-token', user: { id: 'u1', name: '珊珊老师', school: '阳光实验小学' } },
+  '/auth/unified-login': { role: 'teacher', token: 'mock-token', user: { id: 'u1', name: '珊珊老师' } },
+  '/auth/wechat-login': { needsBind: false, role: 'teacher', token: 'mock-token', user: { id: 'u1', name: '珊珊老师' } },
+  '/auth/bind-teacher': { role: 'teacher', token: 'mock-token', user: { id: 'u1', name: '珊珊老师' } },
+  '/auth/bind-parent': { role: 'parent', token: 'mock-token', parent: { imUserId:'p_demo', studentId:'s1', studentName:'张小明', classId:'c1', studentNo:'2024001' } },
   '/students/s1/toggle-parent-login': { studentId: 's1', parentLoginEnabled: true },
 }
 
@@ -337,9 +341,9 @@ export function getMockData(path, method = 'GET', body = {}) {
     })
   }
 
-  // POST / PATCH / DELETE → 模拟成功
+  // POST / PATCH / DELETE → 有预设 mock 则用预设，否则模拟成功
   if (method !== 'GET') {
-    if (MOCK[path] !== undefined) return { id: Date.now().toString(), ...body }
+    if (MOCK[clean] !== undefined) return { ...MOCK[clean], id: Date.now().toString() }
     return { id: Date.now().toString(), ...body }
   }
 
