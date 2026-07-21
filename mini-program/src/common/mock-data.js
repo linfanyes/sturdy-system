@@ -265,6 +265,7 @@ const MOCK = {
   '/ai/gen-image': GEN_IMAGE_RESULT,
   '/ai/gen-video': GEN_VIDEO_RESULT,
   '/ai/parse-file': { text: '这是演示模式下从文件解析出的模拟文本内容。在实际环境中，系统会通过 AI 服务解析 PDF 或识别图片中的文字。' },
+  '/ai/chat-sync': { content: '（演示模式）这是润色后的公告示例：各位家长好，现将相关事项通知如下，请知悉并配合。' },
   '/security/msg-check': { pass: true },
   '/security/img-check': { pass: true },
   '/im/user-sig': { sdkAppId: '', userSig: 'demo-user-sig' },

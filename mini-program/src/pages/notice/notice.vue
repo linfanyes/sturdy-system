@@ -38,6 +38,7 @@
       </picker>
       <input v-model="form.title" class="inp" placeholder="公告标题" />
       <textarea v-model="form.content" class="inp area" placeholder="公告内容" />
+      <view class="polish" @click="aiPolish">{{ polishing ? '润色中…' : '✨ AI 润色' }}</view>
       <label class="row"><checkbox :checked="form.pinned" @change="(e) => (form.pinned = e.detail.value)" color="#e6a23c" /> 置顶这条公告</label>
       <button class="ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editing ? '保存' : '发布') }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
@@ -95,6 +96,7 @@ const hideEnded = ref(true)
 const showAdd = ref(false)
 const editing = ref(null)
 const saving = ref(false)
+const polishing = ref(false)
 const form = ref({ classId: '全校', title: '', content: '', pinned: false })
 // 打印预览相关状态
 const showPrintPreview = ref(false)
@@ -170,6 +172,34 @@ function openEdit(n) {
   form.value = { ...n }
   showAdd.value = true
 }
+// AI 润色文案（大模型，免费替代短信的精致触达）
+async function aiPolish() {
+  if (!form.value.content.trim()) return uni.showToast({ title: '请先输入内容', icon: 'none' })
+  polishing.value = true
+  try {
+    const r = await api.post('/ai/chat-sync', {
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是学校公告润色助手。请把下面的通知润色得更正式、清晰、有条理，保留所有关键信息，不要编造，直接输出润色后的正文。',
+        },
+        { role: 'user', content: form.value.content },
+      ],
+    })
+    if (r && r.content) {
+      form.value.content = r.content.trim()
+      uni.showToast({ title: '已润色', icon: 'success' })
+    } else {
+      uni.showToast({ title: '润色失败', icon: 'none' })
+    }
+  } catch (e) {
+    uni.showToast({ title: '润色失败:' + (e.message || ''), icon: 'none' })
+  } finally {
+    polishing.value = false
+  }
+}
+
 async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填标题', icon: 'none' })
   if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填内容', icon: 'none' })
@@ -397,4 +427,5 @@ function useTemplate(t) {
 .tpl-name { display: block; font-size: 28rpx; font-weight: 600; color: var(--c-title); margin-bottom: 6rpx; }
 .tpl-prev { display: block; font-size: 22rpx; color: var(--c-sub); line-height: 1.5; }
 .tpl-empty { padding: 40rpx 0; text-align: center; color: var(--c-sub); font-size: 24rpx; }
+.polish { align-self: flex-start; font-size: 22rpx; padding: 10rpx 22rpx; border-radius: 24rpx; background: var(--c-card2); color: var(--c-accent); margin: 10rpx 0 4rpx; }
 </style>
