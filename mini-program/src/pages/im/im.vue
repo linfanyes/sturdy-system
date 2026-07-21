@@ -3,32 +3,50 @@
     <view class="hd">
       <view class="t">💬 家校沟通</view>
       <view class="status" :class="connected ? 'on' : ''">{{ statusText }}</view>
+      <view v-if="!demoMode" class="add" @click="newConv">＋</view>
     </view>
-    <view class="hint" v-if="!connected">
-      演示模式：未配置腾讯云 IM（体验版免费）。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可实时收发。下方为模拟会话。
+    <view class="hint" v-if="demoMode">
+      演示模式：未配置腾讯云 IM（体验版免费）。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可真实收发。下方为模拟会话。
     </view>
 
     <scroll-view scroll-x class="chats">
       <view
-        v-for="c in chats"
+        v-for="c in convList"
         :key="c.id"
         class="chat"
-        :class="activeId === c.id && 'on'"
-        @click="activeId = c.id"
+        :class="activeConvId === c.id && 'on'"
+        @click="openConv(c.id)"
       >
         <view class="ava">{{ c.avatar }}</view>
         <view class="nm">{{ c.name }}</view>
-        <view class="last" v-if="c.messages.length">{{ c.messages[c.messages.length - 1].text }}</view>
+        <view class="last" v-if="c.lastText">{{ c.lastText }}</view>
       </view>
     </scroll-view>
 
-    <scroll-view scroll-y class="msgs" :scroll-into-view="scrollTarget">
-      <view v-for="(m, i) in cur.messages" :key="i" :id="'m' + i" class="row" :class="m.me && 'me'">
-        <view class="bubble">{{ m.text }}</view>
+    <scroll-view scroll-y class="msgs" :scroll-into-view="scrollTarget" scroll-with-animation>
+      <view
+        v-for="m in activeConv.messages"
+        :key="m.id"
+        :id="m.id"
+        class="row"
+        :class="m.me && 'me'"
+      >
+        <view class="col">
+          <image
+            v-if="m.type === 'image' && m.imageUrl"
+            :src="m.imageUrl"
+            class="img"
+            mode="widthFix"
+            @click="previewImg(m.imageUrl)"
+          />
+          <view v-else class="bubble">{{ m.text }}</view>
+          <view v-if="m.me && m.isRead" class="read">已读</view>
+        </view>
       </view>
     </scroll-view>
 
     <view class="inputbar">
+      <view class="imgbtn" @click="sendImage">🖼</view>
       <input v-model="draft" class="inp" placeholder="输入消息…" confirm-type="send" @confirm="send" />
       <view class="send" @click="send">发送</view>
     </view>
@@ -36,72 +54,432 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme } from '../../common/store'
+import TIM from 'tim-wx-sdk'
+import TIMUploadPlugin from 'tim-upload-plugin'
+import { theme, auth } from '../../common/store'
 import api from '../../common/request'
 
 const dark = computed(() => theme.mode === 'dark')
 
-const connected = ref(false)
-const statusText = computed(() => (connected.value ? '已接入腾讯云 IM（体验版）' : '演示模式'))
-const activeId = ref('c1')
+// —— 状态 ——
+const demoMode = ref(true) // true=演示模式（未配置真实 IM）
+const connected = ref(false) // 已登录腾讯云 IM
+const loginUser = ref('') // 当前登录的 IM userID（教师）
+const convList = ref([]) // 会话列表（归一化）
+const activeConvId = ref('')
 const draft = ref('')
 const scrollTarget = ref('')
 
-const chats = ref([
+// 演示模式种子数据（与真实会话使用同一归一化结构）
+const demoSeed = [
   {
-    id: 'c1',
+    id: 'C2C_parent_zhang',
     name: '张三妈妈',
     avatar: '👩',
+    to: 'parent_zhang',
+    type: 'C2C',
+    lastText: '',
     messages: [
-      { me: false, text: '老师好，小明今天作业完成了吗？' },
-      { me: true, text: '完成的，课堂表现也很积极 👍' },
+      { id: 'd1', me: false, type: 'text', text: '老师好，小明今天作业完成了吗？', isRead: true },
+      { id: 'd2', me: true, type: 'text', text: '完成的，课堂表现也很积极 👍', isRead: false },
     ],
   },
   {
-    id: 'c2',
+    id: 'C2C_parent_li',
     name: '李四爸爸',
     avatar: '👨',
-    messages: [{ me: false, text: '明天家长会我能请假来参加吗？' }],
+    to: 'parent_li',
+    type: 'C2C',
+    lastText: '',
+    messages: [{ id: 'd3', me: false, type: 'text', text: '明天家长会我能请假来参加吗？', isRead: true }],
   },
   {
-    id: 'c3',
+    id: 'C2C_parent_wang',
     name: '王五奶奶',
     avatar: '👵',
-    messages: [{ me: false, text: '孩子最近在幼儿园吃饭乖吗？' }],
+    to: 'parent_wang',
+    type: 'C2C',
+    lastText: '',
+    messages: [{ id: 'd4', me: false, type: 'text', text: '孩子最近在幼儿园吃饭乖吗？', isRead: true }],
   },
-])
+]
 
-const cur = computed(() => chats.value.find((c) => c.id === activeId.value) || chats.value[0])
+const activeConv = computed(
+  () =>
+    convList.value.find((c) => c.id === activeConvId.value) ||
+    convList.value[0] || { id: '', name: '', avatar: '', to: '', type: '', lastText: '', messages: [] },
+)
 
-function send() {
-  const text = draft.value.trim()
-  if (!text) return
-  cur.value.messages.push({ me: true, text })
-  draft.value = ''
-  scrollTarget.value = 'm' + (cur.value.messages.length - 1)
-  // 演示模式：模拟家长自动回复；真实接入后由 IM 事件驱动
-  if (!connected.value) {
-    setTimeout(() => {
-      cur.value.messages.push({ me: false, text: '（演示自动回复）收到，谢谢老师！' })
-      scrollTarget.value = 'm' + (cur.value.messages.length - 1)
-    }, 800)
+const statusText = computed(() => {
+  if (demoMode.value) return '演示模式'
+  return connected.value ? '已接入腾讯云 IM（体验版）' : '连接中…'
+})
+
+// 模块级 TIM 单例（非响应式，避免重复创建）
+let tim = null
+let sdkReady = false
+
+// —— 归一化辅助 ——
+function preview(msg) {
+  if (!msg) return ''
+  const t = msg.type
+  if (t === TIM.TYPES.MSG_TEXT) return msg.payload.text
+  if (t === TIM.TYPES.MSG_IMAGE) return '[图片]'
+  if (t === TIM.TYPES.MSG_SOUND) return '[语音]'
+  if (t === TIM.TYPES.MSG_FILE) return '[文件]'
+  if (t === TIM.TYPES.MSG_CUSTOM) return '[自定义消息]'
+  return '[消息]'
+}
+
+function normConv(c) {
+  const type = c.type // 'C2C' | 'GROUP' | 'TIM'
+  const to = c.to
+  let name = to
+  let avatar = '👤'
+  if (type === 'GROUP') {
+    name = (c.groupProfile && c.groupProfile.name) || to
+    avatar = '👥'
+  } else if (type === 'C2C') {
+    name = (c.userProfile && (c.userProfile.nick || c.userProfile.userID)) || to
+    avatar = '👤'
+  } else {
+    name = '系统通知'
+    avatar = '🔔'
+  }
+  return { id: c.conversationID, name, avatar, to, type, lastText: preview(c.lastMessage), messages: [] }
+}
+
+function normMsg(m) {
+  const me = m.from === loginUser.value
+  let type = 'text'
+  let text = ''
+  let imageUrl = ''
+  if (m.type === TIM.TYPES.MSG_TEXT) {
+    type = 'text'
+    text = m.payload.text
+  } else if (m.type === TIM.TYPES.MSG_IMAGE) {
+    type = 'image'
+    const arr = m.payload.imageInfoArray || []
+    imageUrl = arr.length ? arr[arr.length - 1].url : ''
+  } else if (m.type === TIM.TYPES.MSG_FILE) {
+    type = 'text'
+    text = '[文件]'
+  } else if (m.type === TIM.TYPES.MSG_SOUND) {
+    type = 'text'
+    text = '[语音]'
+  } else if (m.type === TIM.TYPES.MSG_CUSTOM) {
+    type = 'text'
+    text = '[自定义消息]'
+  } else {
+    type = 'text'
+    text = '[暂不支持的消息]'
+  }
+  return { id: m.ID, me, type, text, imageUrl, isRead: !!m.isPeerRead, time: m.time }
+}
+
+// —— TIM 事件 ——
+function onSdkReady() {
+  sdkReady = true
+  connected.value = true
+  demoMode.value = false
+  tim.getConversationList()
+    .then((res) => applyConvList(res.data.conversationList))
+    .catch(() => {})
+}
+
+function applyConvList(list) {
+  const map = {}
+  convList.value.forEach((c) => (map[c.id] = c))
+  for (const c of list) {
+    const norm = normConv(c)
+    if (map[norm.id]) {
+      map[norm.id].lastText = norm.lastText
+      if (norm.name && norm.name !== norm.to) map[norm.id].name = norm.name
+    } else {
+      map[norm.id] = norm
+    }
+  }
+  convList.value = Object.values(map)
+  if (!activeConvId.value && convList.value.length) activeConvId.value = convList.value[0].id
+}
+
+function onMessageReceived(event) {
+  for (const m of event.data) {
+    const convId = m.conversationID
+    let conv = convList.value.find((c) => c.id === convId)
+    if (!conv) {
+      conv = {
+        id: convId,
+        name: m.from,
+        avatar: convId.indexOf('GROUP') === 0 ? '👥' : '👤',
+        to: m.from,
+        type: convId.indexOf('GROUP') === 0 ? 'GROUP' : 'C2C',
+        lastText: '',
+        messages: [],
+      }
+      convList.value.push(conv)
+    }
+    conv.messages.push(normMsg(m))
+    conv.lastText = preview(m)
+    if (convId === activeConvId.value) {
+      scrollToBottom()
+      tim.setMessageRead({ conversationID: convId }).catch(() => {})
+    }
   }
 }
 
-onShow(async () => {
+function onPeerRead(event) {
+  for (const m of event.data) {
+    const conv = convList.value.find((c) => c.id === m.conversationID)
+    if (conv) {
+      const mm = conv.messages.find((x) => x.id === m.ID)
+      if (mm) mm.isRead = true
+    }
+  }
+}
+
+// —— 初始化 ——
+async function initTim(sdkAppId, userSig) {
+  if (tim) {
+    // 已创建：仅确保已登录
+    if (sdkReady && !connected.value) {
+      try {
+        await tim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
+      } catch (e) {}
+    }
+    return
+  }
+  tim = TIM.create({ SDKAppID: Number(sdkAppId) })
+  tim.setLogLevel(1)
+  tim.registerPlugin({ 'tim-upload-plugin': TIMUploadPlugin })
+  tim.on(TIM.EVENT.SDK_READY, onSdkReady)
+  tim.on(TIM.EVENT.MESSAGE_RECEIVED, onMessageReceived)
+  tim.on(TIM.EVENT.MESSAGE_READ_BY_PEER, onPeerRead)
+  tim.on(TIM.EVENT.ERROR, (e) => console.error('[IM] error', e))
   try {
-    const r = await api.post('/im/user-sig', { userId: 'teacher' })
-    if (r && r.sdkAppId) {
-      connected.value = true
-      // 真实集成（需 npm i tim-wx-sdk）：
-      // import TIM from 'tim-wx-sdk'
-      // const tim = TIM.create({ SDKAppID: Number(r.sdkAppId) })
-      // tim.login({ userID: 'teacher', userSig: r.userSig })
+    await tim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
+  } catch (e) {
+    uni.showToast({ title: 'IM 登录失败，请检查密钥', icon: 'none' })
+  }
+}
+
+function seedDemo() {
+  convList.value = JSON.parse(JSON.stringify(demoSeed))
+  activeConvId.value = convList.value[0] ? convList.value[0].id : ''
+}
+
+async function openConv(id) {
+  activeConvId.value = id
+  if (demoMode.value) return
+  const conv = convList.value.find((c) => c.id === id)
+  if (!conv) return
+  try {
+    const res = await tim.getMessageList({ conversationID: id })
+    conv.messages = res.data.messageList.map(normMsg)
+  } catch (e) {}
+  try {
+    await tim.setMessageRead({ conversationID: id })
+  } catch (e) {}
+  scrollToBottom()
+}
+
+async function openByTo(to, name, type) {
+  const id = type + to
+  let conv = convList.value.find((c) => c.id === id)
+  if (!conv) {
+    conv = { id, name, avatar: type === 'GROUP' ? '👥' : '👤', to, type, lastText: '', messages: [] }
+    convList.value.push(conv)
+  }
+  activeConvId.value = id
+  if (!demoMode.value) {
+    try {
+      await tim.getConversationProfile({ conversationID: id })
+    } catch (e) {}
+    try {
+      const res = await tim.getMessageList({ conversationID: id })
+      conv.messages = res.data.messageList.map(normMsg)
+    } catch (e) {}
+    try {
+      await tim.setMessageRead({ conversationID: id })
+    } catch (e) {}
+  }
+  scrollToBottom()
+}
+
+function scrollToBottom() {
+  nextTick(() => {
+    const list = activeConv.value.messages
+    if (list && list.length) scrollTarget.value = list[list.length - 1].id
+  })
+}
+
+// —— 发送 ——
+async function send() {
+  const text = draft.value.trim()
+  if (!text) return
+  const conv = convList.value.find((c) => c.id === activeConvId.value)
+  if (!conv) return
+  draft.value = ''
+  if (demoMode.value) {
+    const id = 'l' + Date.now()
+    conv.messages.push({ id, me: true, type: 'text', text, isRead: false })
+    conv.lastText = text
+    scrollToBottom()
+    setTimeout(() => {
+      const rid = 'r' + Date.now()
+      conv.messages.push({ id: rid, me: false, type: 'text', text: '（演示自动回复）收到，谢谢老师！', isRead: true })
+      conv.lastText = '（演示自动回复）收到，谢谢老师！'
+      scrollToBottom()
+    }, 800)
+    return
+  }
+  try {
+    const msg = tim.createTextMessage({
+      to: conv.to,
+      conversationType: conv.type,
+      payload: { text },
+    })
+    await tim.sendMessage(msg)
+    conv.messages.push(normMsg(msg))
+    conv.lastText = text
+    scrollToBottom()
+  } catch (e) {
+    uni.showToast({ title: '发送失败', icon: 'none' })
+  }
+}
+
+async function sendImage() {
+  if (demoMode.value) {
+    uni.showToast({ title: '演示模式不支持图片', icon: 'none' })
+    return
+  }
+  const conv = convList.value.find((c) => c.id === activeConvId.value)
+  if (!conv) return
+  uni.chooseImage({
+    count: 1,
+    success: async (res) => {
+      try {
+        const msg = tim.createImageMessage({
+          to: conv.to,
+          conversationType: conv.type,
+          payload: { file: res },
+          onProgress: () => {},
+        })
+        await tim.sendMessage(msg)
+        conv.messages.push(normMsg(msg))
+        conv.lastText = '[图片]'
+        scrollToBottom()
+      } catch (e) {
+        uni.showToast({ title: '图片发送失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+function previewImg(url) {
+  if (!url) return
+  uni.previewImage({ urls: [url], current: url })
+}
+
+// —— 新建会话 ——
+function newConv() {
+  if (demoMode.value) {
+    uni.showToast({ title: '演示模式：仅模拟', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['发起单聊（输入对方账号）', '进入班级群（输入群号）', '创建班级群', '示例：张三妈妈'],
+    success: (r) => {
+      if (r.tapIndex === 0) promptC2C()
+      else if (r.tapIndex === 1) promptGroup()
+      else if (r.tapIndex === 2) createGroup()
+      else if (r.tapIndex === 3) openByTo('parent_zhang', '张三妈妈', 'C2C')
+    },
+  })
+}
+
+function promptC2C() {
+  uni.showModal({
+    title: '发起单聊',
+    editable: true,
+    placeholderText: '输入对方 IM 账号',
+    success: (r) => {
+      if (r.confirm && r.content && r.content.trim()) {
+        const id = r.content.trim()
+        openByTo(id, id, 'C2C')
+      }
+    },
+  })
+}
+
+function promptGroup() {
+  uni.showModal({
+    title: '进入班级群',
+    editable: true,
+    placeholderText: '输入群号 GROUP ID',
+    success: (r) => {
+      if (r.confirm && r.content && r.content.trim()) {
+        const id = r.content.trim()
+        openByTo(id, id, 'GROUP')
+      }
+    },
+  })
+}
+
+async function createGroup() {
+  uni.showModal({
+    title: '创建班级群',
+    editable: true,
+    placeholderText: '群名称，如：三年级2班',
+    success: (r) => {
+      if (!r.confirm || !r.content) return
+      uni.showModal({
+        title: '添加成员',
+        editable: true,
+        placeholderText: '成员 IM 账号，逗号分隔',
+        success: async (r2) => {
+          const members = (r2.content || '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .map((userID) => ({ userID }))
+          try {
+            const res = await tim.createGroup({
+              name: r.content.trim(),
+              type: TIM.TYPES.GRP_PUBLIC,
+              memberList: members,
+            })
+            const gid = res.data.group.groupID
+            uni.showToast({ title: '群已创建', icon: 'success' })
+            openByTo(gid, r.content.trim(), 'GROUP')
+          } catch (e) {
+            uni.showToast({ title: '创建失败', icon: 'none' })
+          }
+        },
+      })
+    },
+  })
+}
+
+onShow(async () => {
+  if (!auth.token) {
+    uni.reLaunch({ url: '/pages/login/login' })
+    return
+  }
+  if (demoMode.value && convList.value.length === 0) seedDemo()
+  try {
+    const userId = (auth.user && auth.user.id) || 'teacher'
+    const r = await api.post('/im/user-sig', { userId })
+    if (r && r.sdkAppId && r.userSig) {
+      loginUser.value = userId
+      await initTim(r.sdkAppId, r.userSig)
+    } else {
+      demoMode.value = true
     }
   } catch (e) {
-    /* 取不到签名则保持演示模式 */
+    demoMode.value = true
   }
 })
 </script>
@@ -112,6 +490,7 @@ onShow(async () => {
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
 .status { font-size: 22rpx; padding: 6rpx 18rpx; border-radius: 20rpx; background: #f3f3f3; color: #9aa0a6; }
 .status.on { background: #e8f9e8; color: #07c160; }
+.add { font-size: 40rpx; color: #07c160; width: 56rpx; text-align: center; }
 .hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .chats { white-space: nowrap; margin-bottom: 14rpx; }
 .chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }
@@ -122,11 +501,16 @@ onShow(async () => {
 .msgs { flex: 1; background: var(--c-card2); border-radius: 16rpx; padding: 18rpx; margin-bottom: 14rpx; }
 .row { display: flex; margin-bottom: 16rpx; }
 .row.me { justify-content: flex-end; }
-.bubble { max-width: 70%; background: #fff; color: #4a3f35; padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
+.col { display: flex; flex-direction: column; align-items: flex-start; max-width: 72%; }
+.row.me .col { align-items: flex-end; }
+.bubble { max-width: 100%; background: #fff; color: #4a3f35; padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
+.img { width: 280rpx; border-radius: 14rpx; }
 .row.me .bubble { background: #07c160; color: #fff; }
-.inputbar { display: flex; gap: 14rpx; }
+.read { font-size: 18rpx; color: #9aa0a6; margin-top: 4rpx; }
+.inputbar { display: flex; gap: 14rpx; align-items: center; }
+.imgbtn { font-size: 40rpx; padding: 0 6rpx; color: var(--c-sub); }
 .inp { flex: 1; background: var(--c-card); border: 1px solid var(--c-input-border); border-radius: 40rpx; padding: 18rpx 28rpx; font-size: 28rpx; color: var(--c-text); }
-.send { background: #07c160; color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; }
+.send { background: #07c160; color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; height: 72rpx; }
 .dark .t { color: var(--c-title); }
 .dark .page { background: var(--c-bg); }
 .dark .chat, .dark .msgs { background: var(--c-card); }
