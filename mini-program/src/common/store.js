@@ -136,6 +136,8 @@ export function setAuth(token, user) {
 
 export function setUser(user) {
   auth.user = user
+  // 自动从 user 对象提取管理员配置的功能权限
+  if (user && Array.isArray(user.features)) auth.features = user.features
   uni.setStorageSync(USER_KEY, user)
 }
 

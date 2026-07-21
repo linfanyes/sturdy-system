@@ -210,10 +210,66 @@ const sections = ref([
   },
 ])
 
+// 功能键 → 工具箱分区 & 具体工具的映射（管理员配置激活时生效）
+const secItemsFeatureMap = {
+  exams: new Set(['教学备课']),
+  grades: new Set(['教学备课']),
+  attendance: new Set(['教学备课']),
+  schedule: new Set(['教学备课']),
+  homework: new Set(['教学备课']),
+  notices: new Set(['教学备课']),
+  ai: new Set(['教学备课', '语文专项', '英语专项', '文字办公']),
+  tools: new Set(['课堂神器', '数学专项']),
+  games: new Set(['小游戏合集']),
+  finance: new Set(['班级事务']),
+  activities: new Set(['班级事务']),
+  rewards: new Set(['学生发展', '班级事务']),
+  parents: new Set(['学生发展']),
+  teachers: new Set(['教师行政']),
+}
+const itemFeatureMap = {
+  exams: new Set(['考试管理']),
+  grades: new Set(['成绩管理', '成绩雷达图', '数据统计']),
+  attendance: new Set(['考勤']),
+  schedule: new Set(['课表']),
+  homework: new Set(['作业']),
+  notices: new Set(['公告']),
+  ai: new Set(['AI 助手', '优质教案生成', '知识点生成', '优选试卷生成', '考试一键分析', '教案模板', '试卷查询', '古诗词助手', '汉字听写', '笔顺演示', '阅读理解生成', '小作文助手', '成语词典', '拼音标注', '作文素材', '翻译', '评语生成', '期末总结', '演讲稿', '教育论文', '黑板报', '文案模板库', '单词卡片', '句型练习', '英语听力', '语法练习', '情景对话', '单词拼写', '口语练习', '英语爽文']),
+  tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '口算生成', '竖式计算', '口算答题卡', '乘法口诀', '单位换算', '错题本']),
+  games: new Set(['小游戏合集', '笑口常开']),
+  finance: new Set(['班费']),
+  activities: new Set(['班级活动', '班级风采']),
+  rewards: new Set(['积分排行榜', '计分板', '奖励兑换', '加减分', '积分记录', '小组评分', '成长记录', '行为记录', '获奖记录', '奖项类别', '学生打卡', '课外阅读']),
+  parents: new Set(['家长联系', '通知模板']),
+  teachers: new Set(['教师通讯录']),
+}
+
 const viewSections = computed(() => {
   let secs = sections.value
   if (order.value && order.value.length) {
     secs = [...secs].sort((a, b) => order.value.indexOf(a.title) - order.value.indexOf(b.title))
+  }
+  // 管理员功能过滤：根据 auth.features 限制可见分区
+  const ftrs = auth.features
+  if (ftrs && ftrs.length) {
+    secs = secs.filter((sec) => {
+      // 常用+设置+教师行政始终可见
+      if (sec.title === '常用' || sec.title === '设置' || sec.title === '教师行政') return true
+      return ftrs.some((f) => secItemsFeatureMap[f] && secItemsFeatureMap[f].has(sec.title))
+    }).map((sec) => {
+      // 过滤分区内的具体工具
+      const filteredItems = sec.items.filter((it) => {
+        const label = it.label
+        // 如果这个工具标记了 subject/quicktool/crud，保留（它们不占用功能分区）
+        if (it.subject || it.quicktool) return true
+        for (const f of ftrs) {
+          if (itemFeatureMap[f] && itemFeatureMap[f].has(label)) return true
+        }
+        // 如果没有匹配到任何限制分类，默认显示（新工具未分类）
+        return !ftrs.length || ftrs.length === 0
+      })
+      return { ...sec, items: filteredItems }
+    })
   }
   return secs
     .map((sec) => {
