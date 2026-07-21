@@ -18,25 +18,105 @@
         <text class="logout" @click="logout">退出</text>
       </view>
 
-      <!-- 学校管理员管理 -->
-      <view class="stats">
-        <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
-        <text class="act" @click="openCreate">＋ 新增</text>
+      <!-- 顶部 Tab 切换 -->
+      <view class="tabs">
+        <text class="tab" :class="{ on: tab === 'school' }" @click="tab = 'school'">🏫 学校管理</text>
+        <text class="tab" :class="{ on: tab === 'admin' }" @click="tab = 'admin'">👤 学校管理员</text>
       </view>
-      <view class="list">
-        <view v-if="!schoolAdmins.length" class="empty">暂无学校管理员，点击右上角「新增」</view>
-        <view class="row" v-for="a in schoolAdmins" :key="a.id">
-          <view class="info" @click="openEdit(a)">
-            <view class="nm-line">
-              <text class="nm">{{ a.name }}</text>
-              <text class="badge" :class="a.enabled ? 'on' : 'off'">{{ a.enabled ? '开启' : '禁用' }}</text>
+
+      <!-- ===== 学校管理 ===== -->
+      <template v-if="tab === 'school'">
+        <view class="stats">
+          <text class="sc">共 {{ schools.length }} 所学校</text>
+          <text class="act" @click="openCreateSchool">＋ 新增学校</text>
+        </view>
+        <view class="list">
+          <view v-if="!schools.length" class="empty">暂无学校，点击右上角「新增学校」</view>
+          <view class="row" v-for="s in schools" :key="s.id">
+            <view class="info" @click="openEditSchool(s)">
+              <view class="nm-line">
+                <text class="nm">{{ s.name }}</text>
+                <text class="badge" :class="s.status === 'active' ? 'on' : 'off'">{{ s.status === 'active' ? '启用' : '停用' }}</text>
+              </view>
+              <text class="meta">编号：{{ s.code }}</text>
+              <text class="meta" v-if="s.address">地址：{{ s.address }}</text>
             </view>
-            <text class="meta">学校：{{ a.schoolName || '未关联' }} · 编号：{{ a.schoolCode || '-' }}</text>
-            <text class="meta">用户名：{{ a.username }}</text>
+            <view class="acts">
+              <text class="act" @click.stop="openEditSchool(s)">维护</text>
+              <text class="act del" @click.stop="delSchool(s)">删除</text>
+            </view>
           </view>
-          <view class="acts">
-            <text class="act" @click.stop="openReset(a)">重置密码</text>
-            <text class="act del" @click.stop="delAdmin(a)">删除</text>
+        </view>
+      </template>
+
+      <!-- ===== 学校管理员管理 ===== -->
+      <template v-else>
+        <view class="stats">
+          <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
+          <text class="act" @click="openCreate">＋ 新增</text>
+        </view>
+        <view class="list">
+          <view v-if="!schoolAdmins.length" class="empty">暂无学校管理员，点击右上角「新增」</view>
+          <view class="row" v-for="a in schoolAdmins" :key="a.id">
+            <view class="info" @click="openEdit(a)">
+              <view class="nm-line">
+                <text class="nm">{{ a.name }}</text>
+                <text class="badge" :class="a.enabled ? 'on' : 'off'">{{ a.enabled ? '开启' : '禁用' }}</text>
+              </view>
+              <text class="meta">学校：{{ a.schoolName || '未关联' }} · 编号：{{ a.schoolCode || '-' }}</text>
+              <text class="meta">用户名：{{ a.username }}</text>
+            </view>
+            <view class="acts">
+              <text class="act" @click.stop="openReset(a)">重置密码</text>
+              <text class="act del" @click.stop="delAdmin(a)">删除</text>
+            </view>
+          </view>
+        </view>
+      </template>
+
+      <!-- 新增/编辑学校（全屏） -->
+      <view v-if="showSchoolForm" class="full-mask">
+        <view class="full-page">
+          <view class="full-head">
+            <text class="full-back" @click="showSchoolForm = false">← 返回</text>
+            <text class="full-title">{{ editingSchoolId ? '维护学校' : '新增学校' }}</text>
+            <text class="full-placeholder"></text>
+          </view>
+          <scroll-view scroll-y class="full-body">
+            <view v-if="!editingSchoolId" class="hint-block">
+              学校编号 = 您输入的「编号前缀」＋ 6 位随机字符，由系统自动生成并保证唯一。
+            </view>
+            <view class="form-item">
+              <text class="label">学校名称 <text class="req">*</text></text>
+              <input v-model="schoolForm.name" class="inp" placeholder="如：阳光小学" />
+            </view>
+            <view class="form-item">
+              <text class="label">编号前缀 <text class="opt">（最多 6 位字母/数字，留空则无前缀）</text></text>
+              <input v-model="schoolForm.prefix" class="inp" placeholder="如：YG" maxlength="6" />
+            </view>
+            <view v-if="editingSchoolId" class="hint-tip">学校编号：{{ schoolForm.code }}（生成后不可修改）</view>
+            <view class="form-item">
+              <text class="label">地址</text>
+              <input v-model="schoolForm.address" class="inp" placeholder="学校地址（选填）" />
+            </view>
+            <view class="form-item">
+              <text class="label">联系人</text>
+              <input v-model="schoolForm.contact" class="inp" placeholder="联系人（选填）" />
+            </view>
+            <view class="form-item">
+              <text class="label">联系电话</text>
+              <input v-model="schoolForm.phone" class="inp" placeholder="联系电话（选填）" />
+            </view>
+            <view class="form-item switch-item">
+              <view class="label-line">
+                <text class="label">启用状态</text>
+                <text class="switch-val">{{ schoolForm.enabled ? '启用' : '停用' }}</text>
+              </view>
+              <switch :checked="schoolForm.enabled" color="#4CAF50" @change="onSchoolEnabledChange" />
+            </view>
+          </scroll-view>
+          <view class="full-foot">
+            <button class="save-btn" :disabled="saving" @click="saveSchool">{{ saving ? '保存中…' : (editingSchoolId ? '保存修改' : '确认创建') }}</button>
           </view>
         </view>
       </view>
@@ -45,17 +125,16 @@
       <view v-if="showForm" class="full-mask">
         <view class="full-page">
           <view class="full-head">
-            <text class="full-back" @click="showForm=false">← 返回</text>
+            <text class="full-back" @click="showForm = false">← 返回</text>
             <text class="full-title">{{ editingId ? '编辑学校管理员' : '新增学校管理员' }}</text>
             <text class="full-placeholder"></text>
           </view>
           <scroll-view scroll-y class="full-body">
-            <view v-if="!editingId" class="hint-block">
-              系统将自动创建学校并生成 6 位字母+数字学校编号，管理员账号绑定到该学校。
-            </view>
             <view class="form-item">
-              <text class="label">学校名称 <text class="req">*</text></text>
-              <input v-model="form.schoolName" class="inp" placeholder="如：阳光小学" />
+              <text class="label">所属学校 <text class="req">*</text></text>
+              <picker class="picker" mode="selector" :range="schoolOptions" range-key="label" @change="onSchoolPick">
+                <view class="picker-inp">{{ form.schoolId ? schoolLabel(form.schoolId) : '请选择学校' }}</view>
+              </picker>
             </view>
             <view class="form-item">
               <text class="label">管理员姓名 <text class="req">*</text></text>
@@ -80,8 +159,6 @@
               </view>
               <switch :checked="form.enabled" color="#4CAF50" @change="onEnabledChange" />
             </view>
-            <view v-if="editingId" class="hint-tip">学校编号：{{ form.schoolCode || '-' }}（不可修改）</view>
-            <view v-else class="hint-tip">学校编号将在创建后自动生成并显示在列表中</view>
           </scroll-view>
           <view class="full-foot">
             <button class="save-btn" :disabled="saving" @click="saveForm">{{ saving ? '保存中…' : (editingId ? '保存修改' : '确认创建') }}</button>
@@ -90,7 +167,7 @@
       </view>
 
       <!-- 重置密码 -->
-      <view v-if="resetTarget" class="mask" @click="resetTarget=null">
+      <view v-if="resetTarget" class="mask" @click="resetTarget = null">
         <view class="sheet" @click.stop>
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
           <input v-model="resetPwd" class="inp" placeholder="新密码（必填）" password />
@@ -102,26 +179,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { theme } from '../../common/store'
 
 const SERVER_URL = '/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
 const adminToken = ref(uni.getStorageSync(ADMIN_TOKEN_KEY) || '')
 const logging = ref(false)
-const schoolAdmins = ref([])
 const saving = ref(false)
+
+// 当前 Tab：school=学校管理 / admin=学校管理员
+const tab = ref('school')
+
+/* ===== 学校管理 ===== */
+const schools = ref([])
+const showSchoolForm = ref(false)
+const editingSchoolId = ref('')
+const schoolForm = reactive({ name: '', prefix: '', address: '', contact: '', phone: '', enabled: true, code: '' })
+
+/* ===== 学校管理员管理 ===== */
+const schoolAdmins = ref([])
 
 // 统一的表单状态（新增/编辑复用）
 const showForm = ref(false)
 const editingId = ref('')  // 空=新增，非空=编辑
-const form = ref({ schoolName: '', name: '', username: '', password: '', enabled: true, schoolCode: '' })
+const form = reactive({ schoolId: '', name: '', username: '', password: '', enabled: true })
 
 const resetTarget = ref(null)
 const resetPwd = ref('')
 
 const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53'
 const CLOUDRUN_SERVICE = 'tec-work'
+
+// 学校下拉选项（管理员表单用）
+const schoolOptions = computed(() =>
+  schools.value.map((s) => ({ id: s.id, label: s.name + '（' + s.code + '）' })),
+)
+function schoolLabel(id) {
+  const s = schools.value.find((x) => x.id === id)
+  return s ? s.name + '（' + s.code + '）' : '请选择学校'
+}
 
 async function apiCall(method, path, data) {
   const cloud = typeof wx !== 'undefined' && wx.cloud
@@ -170,52 +267,137 @@ async function autoLogin() {
   try {
     const resp = await apiCall('POST', '/admin/login', { username: 'admin', password: 'admin' })
     adminToken.value = resp?.token || ''
-    if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAdmins() }
+    if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAll() }
     else uni.showToast({ title: '登录失败', icon: 'none' })
   } catch (e) { uni.showToast({ title: '登录失败', icon: 'none' }) }
   finally { logging.value = false }
 }
 
-function logout() { adminToken.value=''; uni.removeStorageSync(ADMIN_TOKEN_KEY); uni.reLaunch({ url:'/pages/login/login' }) }
+function logout() { adminToken.value = ''; uni.removeStorageSync(ADMIN_TOKEN_KEY); uni.reLaunch({ url: '/pages/login/login' }) }
 
 onMounted(() => {
-  if (adminToken.value) {
-    loadAdmins()
-  }
+  if (adminToken.value) loadAll()
 })
+
+// 进入页面加载学校列表 + 管理员列表
+async function loadAll() {
+  await Promise.all([loadSchools(), loadAdmins()])
+}
+
+async function loadSchools() {
+  try { schools.value = await apiCall('GET', '/admin/schools') || [] }
+  catch (e) { schools.value = [] }
+}
 
 async function loadAdmins() {
   try { schoolAdmins.value = await apiCall('GET', '/admin/school-admins') || [] }
   catch (e) { schoolAdmins.value = [] }
 }
 
+/* ===== 学校表单 ===== */
+function openCreateSchool() {
+  editingSchoolId.value = ''
+  Object.assign(schoolForm, { name: '', prefix: '', address: '', contact: '', phone: '', enabled: true, code: '' })
+  showSchoolForm.value = true
+}
+
+function openEditSchool(s) {
+  editingSchoolId.value = s.id
+  Object.assign(schoolForm, {
+    name: s.name || '',
+    prefix: '',
+    address: s.address || '',
+    contact: s.contact || '',
+    phone: s.phone || '',
+    enabled: s.status === 'active',
+    code: s.code || '',
+  })
+  showSchoolForm.value = true
+}
+
+function onSchoolEnabledChange(e) {
+  schoolForm.enabled = e.detail.value
+}
+
+async function saveSchool() {
+  if (!schoolForm.name) return uni.showToast({ title: '学校名称必填', icon: 'none' })
+  saving.value = true
+  const payload = {
+    name: schoolForm.name,
+    prefix: schoolForm.prefix,
+    address: schoolForm.address,
+    contact: schoolForm.contact,
+    phone: schoolForm.phone,
+    status: schoolForm.enabled ? 'active' : 'inactive',
+  }
+  const p = editingSchoolId.value
+    ? apiCall('PATCH', '/admin/schools/' + editingSchoolId.value, payload)
+    : apiCall('POST', '/admin/schools', payload)
+  try {
+    await p
+    showSchoolForm.value = false
+    await loadSchools()
+    uni.showToast({ title: '已保存', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+  }
+  saving.value = false
+}
+
+async function delSchool(s) {
+  uni.showModal({
+    title: '删除学校',
+    content: `确定删除「${s.name}」？若该校仍有管理员将无法删除。`,
+    confirmColor: '#e64340',
+    success: async (m) => {
+      if (!m.confirm) return
+      try {
+        await apiCall('DELETE', '/admin/schools/' + s.id)
+        await loadSchools()
+        uni.showToast({ title: '已删除', icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: e.message || '删除失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+/* ===== 管理员表单 ===== */
 function openCreate() {
   editingId.value = ''
-  form.value = { schoolName: '', name: '', username: '', password: '', enabled: true, schoolCode: '' }
+  Object.assign(form, { schoolId: '', name: '', username: '', password: '', enabled: true })
   showForm.value = true
 }
 
 function openEdit(a) {
   editingId.value = a.id
-  form.value = {
-    schoolName: a.schoolName || '',
+  Object.assign(form, {
+    schoolId: a.schoolId || '',
     name: a.name || '',
     username: a.username || '',
     password: '',  // 编辑时密码留空，不修改
     enabled: a.enabled,
-    schoolCode: a.schoolCode || '',
-  }
+  })
   showForm.value = true
 }
 
+function onSchoolPick(e) {
+  const idx = e.detail.value
+  const opt = schoolOptions.value[idx]
+  form.schoolId = opt ? opt.id : ''
+}
+
 function onEnabledChange(e) {
-  form.value.enabled = e.detail.value
+  form.enabled = e.detail.value
 }
 
 async function saveForm() {
-  const f = form.value
-  if (!f.schoolName || !f.name || !f.username) {
-    return uni.showToast({ title: '学校名称/姓名/用户名必填', icon: 'none' })
+  const f = form
+  if (!f.schoolId) {
+    return uni.showToast({ title: '请先选择学校', icon: 'none' })
+  }
+  if (!f.name || !f.username) {
+    return uni.showToast({ title: '姓名/用户名必填', icon: 'none' })
   }
   if (!editingId.value && !f.password) {
     return uni.showToast({ title: '新增时密码必填', icon: 'none' })
@@ -224,7 +406,7 @@ async function saveForm() {
   try {
     if (editingId.value) {
       // 编辑：PATCH 更新基本信息
-      const payload = { schoolName: f.schoolName, name: f.name, username: f.username, enabled: f.enabled }
+      const payload = { schoolId: f.schoolId, name: f.name, username: f.username, enabled: f.enabled }
       await apiCall('PATCH', '/admin/school-admins/' + editingId.value, payload)
       // 如果填了新密码，额外调用重置密码接口
       if (f.password) {
@@ -234,9 +416,9 @@ async function saveForm() {
       await loadAdmins()
       uni.showToast({ title: '已保存', icon: 'success' })
     } else {
-      // 新增：POST 创建
+      // 新增：POST 创建（绑定所选学校）
       await apiCall('POST', '/admin/school-admins', {
-        schoolName: f.schoolName, name: f.name, username: f.username,
+        schoolId: f.schoolId, name: f.name, username: f.username,
         password: f.password, enabled: f.enabled,
       })
       showForm.value = false
@@ -275,7 +457,7 @@ async function delAdmin(a) {
       try {
         await apiCall('DELETE', '/admin/school-admins/' + a.id)
         // 先从本地列表移除，确保 UI 立即响应
-        schoolAdmins.value = schoolAdmins.value.filter(x => x.id !== a.id)
+        schoolAdmins.value = schoolAdmins.value.filter((x) => x.id !== a.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         // 延迟重新加载，确保后端数据已同步
         setTimeout(() => { loadAdmins() }, 500)
@@ -297,6 +479,10 @@ async function delAdmin(a) {
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .logout { font-size: 26rpx; color: var(--c-accent); }
+/* Tab 切换 */
+.tabs { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
+.tab { flex: 1; text-align: center; font-size: 28rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card); color: var(--c-sub); font-weight: 600; }
+.tab.on { background: var(--c-primary); color: #fff; }
 .stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); }
 .act { font-size: 24rpx; color: #409eff; }
@@ -334,6 +520,9 @@ async function delAdmin(a) {
 .switch-val { font-size: 24rpx; color: var(--c-sub); display: block; margin-top: 4rpx; }
 .hint-tip { font-size: 22rpx; color: var(--c-sub); text-align: center; margin: 8rpx 0 14rpx; }
 .save-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+/* 学校下拉选择器 */
+.picker { width: 100%; }
+.picker-inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 /* 全屏表单内的输入框：覆盖共享 .inp 的 margin，确保宽度撑满 */
 .full-body .inp { width: 100%; margin-bottom: 0; min-height: 72rpx; }
 </style>

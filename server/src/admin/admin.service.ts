@@ -26,27 +26,73 @@ export class AdminService {
     return { token: this.jwt.sign({ sub: 'super', role: 'super' }) }
   }
 
-  /** 生成 6 位字母+数字学校编号（保证至少含 1 字母和 1 数字，排除易混淆字符） */
-  private async genSchoolCode(): Promise<string> {
+  /** 生成学校编号：前缀(用户可输入，最多 6 位字母/数字) + 6 位随机字符(字母+数字，排除易混字符)，保证唯一 */
+  private async genSchoolCode(prefix: string): Promise<string> {
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
     const digits = '23456789'
     const all = letters + digits
-    for (let attempt = 0; attempt < 10; attempt++) {
+    const p = (prefix || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 6)
+    for (let attempt = 0; attempt < 12; attempt++) {
       const bytes = crypto.randomBytes(6)
-      let code = ''
-      for (let i = 0; i < 6; i++) code += all[bytes[i] % all.length]
-      // 必须同时包含字母和数字
-      if (!/[A-Z]/.test(code)) code = letters[bytes[0] % letters.length] + code.slice(1)
-      if (!/[2-9]/.test(code)) code = code.slice(0, 5) + digits[bytes[5] % digits.length]
+      let rand = ''
+      for (let i = 0; i < 6; i++) rand += all[bytes[i] % all.length]
+      const code = p + rand
       // 唯一性检查
       const dup = await this.schoolRepo.findOne({ where: { code } })
       if (!dup) return code
     }
-    // 兜底：用时间戳后 6 位
-    return crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6)
+    // 兜底：时间戳随机
+    return p + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6)
   }
 
-  /* ===== 学校管理员管理（同时创建对应学校） ===== */
+  /* ===== 学校管理（超管维护） ===== */
+
+  /** 学校列表 */
+  async listSchools() {
+    return this.schoolRepo.find({ order: { createdAt: 'DESC' } })
+  }
+
+  /** 新增学校：编号 = 前缀 + 6 位随机字符 */
+  async createSchool(dto: { name: string; prefix?: string; address?: string; contact?: string; phone?: string; status?: string }) {
+    if (!dto.name || !dto.name.trim()) throw new BadRequestException('学校名称必填')
+    const code = await this.genSchoolCode(dto.prefix || '')
+    const school = await this.schoolRepo.save(this.schoolRepo.create({
+      code,
+      name: dto.name.trim(),
+      address: dto.address || '',
+      contact: dto.contact || '',
+      phone: dto.phone || '',
+      status: dto.status || 'active',
+    }))
+    return school
+  }
+
+  /** 更新学校（编号不可改） */
+  async updateSchool(id: string, dto: { name?: string; address?: string; contact?: string; phone?: string; status?: string }) {
+    const s = await this.schoolRepo.findOne({ where: { id } })
+    if (!s) throw new BadRequestException('学校不存在')
+    if (dto.name && dto.name.trim()) s.name = dto.name.trim()
+    if (dto.address !== undefined) s.address = dto.address
+    if (dto.contact !== undefined) s.contact = dto.contact
+    if (dto.phone !== undefined) s.phone = dto.phone
+    if (dto.status) s.status = dto.status
+    await this.schoolRepo.save(s)
+    return s
+  }
+
+  /** 删除学校（若仍有学校管理员则拒绝，避免产生孤儿管理员） */
+  async deleteSchool(id: string) {
+    const admins = await this.saRepo.find({ where: { schoolId: id } })
+    if (admins.length) throw new BadRequestException('该校仍有学校管理员，请先删除或转移管理员后再删除学校')
+    const r = await this.schoolRepo.delete(id)
+    if (!r.affected) throw new BadRequestException('删除失败：学校不存在或已被删除')
+    return { ok: true }
+  }
+
+  /* ===== 学校管理员管理（绑定已存在的学校） ===== */
 
   /** 列表：关联学校信息（名称+编号） */
   async listAdmins() {
@@ -71,20 +117,16 @@ export class AdminService {
     })
   }
 
-  /** 新增学校管理员：自动创建学校（含 6 位编号）+ 管理员账号 + enabled 标志 */
-  async createAdmin(dto: { username: string; password: string; name: string; schoolName: string; enabled?: boolean }) {
-    if (!dto.username || !dto.password || !dto.name || !dto.schoolName) {
-      throw new BadRequestException('学校名称/用户名/密码/姓名必填')
+  /** 新增学校管理员：绑定已存在的学校（通过 schoolId 下拉选择） */
+  async createAdmin(dto: { username: string; password: string; name: string; schoolId: string; enabled?: boolean }) {
+    if (!dto.username || !dto.password || !dto.name || !dto.schoolId) {
+      throw new BadRequestException('学校/用户名/密码/姓名必填')
     }
+    const school = await this.schoolRepo.findOne({ where: { id: dto.schoolId } })
+    if (!school) throw new BadRequestException('所选学校不存在')
     // 用户名唯一性校验
     const exist = await this.saRepo.findOne({ where: { username: dto.username } })
     if (exist) throw new BadRequestException('用户名已存在')
-
-    // 创建学校（自动生成 6 位字母+数字编号）
-    const code = await this.genSchoolCode()
-    const school = await this.schoolRepo.save(this.schoolRepo.create({
-      code, name: dto.schoolName, status: 'active',
-    }))
 
     // 创建学校管理员
     const hash = crypto.createHash('sha256').update(dto.password).digest('hex')
@@ -113,14 +155,16 @@ export class AdminService {
     return { id, enabled: a.enabled }
   }
 
-  /** 更新管理员信息（学校名/姓名/用户名/enabled） */
-  async updateAdmin(id: string, dto: { schoolName?: string; name?: string; username?: string; enabled?: boolean }) {
+  /** 更新管理员信息（学校绑定/姓名/用户名/enabled） */
+  async updateAdmin(id: string, dto: { schoolId?: string; name?: string; username?: string; enabled?: boolean }) {
     const a = await this.saRepo.findOne({ where: { id } })
     if (!a) throw new BadRequestException('管理员不存在')
 
-    // 更新学校名称（同步到 schools 表）
-    if (dto.schoolName && dto.schoolName.trim()) {
-      await this.schoolRepo.update(a.schoolId, { name: dto.schoolName.trim() })
+    // 重新绑定学校（下拉选择）
+    if (dto.schoolId && dto.schoolId !== a.schoolId) {
+      const school = await this.schoolRepo.findOne({ where: { id: dto.schoolId } })
+      if (!school) throw new BadRequestException('所选学校不存在')
+      a.schoolId = dto.schoolId
     }
 
     // 用户名唯一性校验

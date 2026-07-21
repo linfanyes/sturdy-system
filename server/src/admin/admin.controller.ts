@@ -11,6 +11,23 @@ export class AdminController {
     return this.svc.login(b?.username || '', b?.password || '')
   }
 
+  /* ===== 学校管理（超管维护学校与主键编号） ===== */
+  @Get('schools')
+  @UseGuards(SuperAdminGuard)
+  listSchools() { return this.svc.listSchools() }
+
+  @Post('schools')
+  @UseGuards(SuperAdminGuard)
+  createSchool(@Body() b: any) { return this.svc.createSchool(b) }
+
+  @Patch('schools/:id')
+  @UseGuards(SuperAdminGuard)
+  updateSchool(@Param('id') id: string, @Body() b: any) { return this.svc.updateSchool(id, b) }
+
+  @Delete('schools/:id')
+  @UseGuards(SuperAdminGuard)
+  deleteSchool(@Param('id') id: string) { return this.svc.deleteSchool(id) }
+
   /* ===== 学校管理员管理（超管只管理学校管理员） ===== */
   @Get('school-admins')
   @UseGuards(SuperAdminGuard)
