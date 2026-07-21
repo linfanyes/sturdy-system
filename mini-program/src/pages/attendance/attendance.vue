@@ -50,6 +50,32 @@
     </view>
 
     <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存考勤' }}</button>
+
+    <view class="act-row">
+      <text class="act-btn" @click="exportCsv">📋 导出 CSV</text>
+      <text class="act-btn" @click="toggleCompare">📊 {{ showCompare ? '收起对比' : '跨班对比' }}</text>
+    </view>
+
+    <view v-if="showCompare" class="compare-sec">
+      <picker :range="cmpClassOpts" :value="cmpClassIdx" @change="onCmpClass">
+        <view class="picker cmp-pick">对比班级：{{ cmpClassOpts[cmpClassIdx] || '请选择' }}</view>
+      </picker>
+      <view class="cmp-stats" v-if="cmpStats">
+        <view class="cmp-side"><text class="cs-lab">{{ selName }}</text>
+          <text class="cs-num">出勤 {{ stats['出勤'] || 0 }}</text>
+          <text class="cs-num">迟到 {{ stats['迟到'] || 0 }}</text>
+          <text class="cs-num">请假 {{ stats['请假'] || 0 }}</text>
+          <text class="cs-num">旷课 {{ stats['旷课'] || 0 }}</text>
+        </view>
+        <view class="cmp-vs">vs</view>
+        <view class="cmp-side"><text class="cs-lab">{{ cmpClassName }}</text>
+          <text class="cs-num">出勤 {{ cmpStats.出勤 || 0 }}</text>
+          <text class="cs-num">迟到 {{ cmpStats.迟到 || 0 }}</text>
+          <text class="cs-num">请假 {{ cmpStats.请假 || 0 }}</text>
+          <text class="cs-num">旷课 {{ cmpStats.旷课 || 0 }}</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -267,6 +293,57 @@ async function save(silent = false) {
 onUnload(() => {
   if (dirty && classId.value && !saving.value) save(true)
 })
+
+// CSV 导出
+function exportCsv() {
+  if (!students.value.length) return uni.showToast({ title: '无数据可导出', icon: 'none' })
+  let csv = '\uFEFF学号,姓名,性别,座号,考勤状态\n'
+  for (const s of students.value) {
+    csv += [s.studentNo || '', s.name, s.gender || '', s.seatNo || '', map.value[s.id] || '出勤'].join(',') + '\n'
+  }
+  uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: 'CSV 已复制到剪贴板', icon: 'success' }) })
+}
+
+// 跨班对比
+const showCompare = ref(false)
+const cmpClassIdx = ref(0)
+const cmpStats = ref(null)
+const cmpClassName = ref('')
+
+const cmpClassOpts = computed(() => {
+  return classes.value.filter(c => c.id !== classId.value).map(c => c.name)
+})
+
+function toggleCompare() {
+  showCompare.value = !showCompare.value
+  if (showCompare.value && cmpClassOpts.value.length) {
+    cmpClassIdx.value = 0
+    loadCmpStats(cmpClassOpts.value[0])
+  }
+}
+
+function onCmpClass(e) {
+  cmpClassIdx.value = e.detail.value
+  loadCmpStats(cmpClassOpts.value[e.detail.value])
+}
+
+async function loadCmpStats(name) {
+  const c = classes.value.find(x => x.name === name)
+  if (!c) return
+  cmpClassName.value = name
+  try {
+    const atts = await api.get('/attendances')
+    const filtered = atts.filter(a => a.classId === c.id && (!date.value || a.date === date.value))
+    const o = { 出勤: 0, 迟到: 0, 请假: 0, 旷课: 0 }
+    for (const a of filtered) {
+      const recs = typeof a.records === 'string' ? JSON.parse(a.records) : (a.records || [])
+      for (const r of recs) {
+        if (o[r.status] !== undefined) o[r.status]++
+      }
+    }
+    cmpStats.value = o
+  } catch (e) { cmpStats.value = null }
+}
 </script>
 
 <style scoped>
@@ -295,6 +372,15 @@ onUnload(() => {
 .opts { display: flex; gap: 8rpx; }
 .opt { font-size: 20rpx; padding: 8rpx 12rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-sub); }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
+.act-row { display: flex; gap: 16rpx; margin-top: 16rpx; justify-content: center; }
+.act-btn { font-size: 24rpx; color: var(--c-accent); padding: 12rpx 24rpx; border-radius: 30rpx; background: var(--c-card); border: 1px solid var(--c-input-border); }
+.compare-sec { margin-top: 20rpx; }
+.cmp-pick { margin-bottom: 14rpx; }
+.cmp-stats { display: flex; align-items: stretch; gap: 14rpx; background: var(--c-card); border-radius: 16rpx; padding: 20rpx; }
+.cmp-side { flex: 1; }
+.cmp-vs { display: flex; align-items: center; font-size: 26rpx; color: var(--c-sub); font-weight: 700; }
+.cs-lab { display: block; font-size: 24rpx; font-weight: 700; color: var(--c-title); margin-bottom: 6rpx; }
+.cs-num { display: block; font-size: 22rpx; color: var(--c-sub); line-height: 1.7; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .picker, .dark .list { background: var(--c-card); }

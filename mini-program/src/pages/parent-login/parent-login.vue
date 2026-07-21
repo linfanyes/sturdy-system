@@ -4,8 +4,13 @@
     <view class="title">家长中心</view>
     <view class="sub">输入孩子学号，即可查看成绩、班级通知，并与老师沟通</view>
     <input v-model="studentNo" class="inp" type="number" maxlength="20" placeholder="请输入学生学号" />
-    <button class="btn" :disabled="loading" @click="login">{{ loading ? '登录中…' : '登录' }}</button>
-    <view class="tip" @click="back">我是老师，返回登录</view>
+    <button class="btn" :disabled="loading" @click="login">{{ loading ? '登录中…' : '用学号登录' }}</button>
+    <view class="or">— 或 —</view>
+    <button class="btn wechat-btn" @click="wxLogin">微信一键登录</button>
+    <view class="tip-row">
+      <text class="tip" @click="back">返回教师登录</text>
+      <text class="tip" @click="goUnified">统一登录</text>
+    </view>
   </view>
 </template>
 
@@ -38,6 +43,27 @@ async function login() {
 
 function back() {
   uni.navigateBack({ fail: () => uni.reLaunch({ url: '/pages/login/login' }) })
+}
+function goUnified() {
+  uni.reLaunch({ url: '/pages/login/login' })
+}
+async function wxLogin() {
+  loading.value = true
+  try {
+    const { code } = await uni.login()
+    const res = await parentApi.post('/auth/wechat-login', { code })
+    if (res.needsBind) {
+      uni.showToast({ title: '请先用学号登录后绑定微信', icon: 'none' })
+    } else if (res.role === 'parent') {
+      setParent(res.token, res.parent || res)
+      uni.redirectTo({ url: '/pages/parent/parent' })
+    } else {
+      uni.showToast({ title: '微信未绑定家长账号', icon: 'none' })
+    }
+  } catch (e) {
+    uni.showToast({ title: '微信登录失败', icon: 'none' })
+  }
+  loading.value = false
 }
 </script>
 
@@ -74,5 +100,8 @@ function back() {
   font-size: 32rpx;
 }
 .btn[disabled] { opacity: 0.6; }
-.tip { color: var(--c-sub); font-size: 24rpx; margin-top: 40rpx; text-decoration: underline; }
+.wechat-btn { background: #409eff; margin-bottom: 30rpx; }
+.or { color: var(--c-sub); font-size: 24rpx; margin: 14rpx 0; }
+.tip-row { display: flex; gap: 30rpx; margin-top: 40rpx; }
+.tip { color: var(--c-sub); font-size: 24rpx; text-decoration: underline; }
 </style>

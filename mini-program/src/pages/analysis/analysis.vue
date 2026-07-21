@@ -2,7 +2,13 @@
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="head">
       <text class="ht">数据统计</text>
-      <text class="refresh" @click="load">↻ 刷新</text>
+      <view class="hdr">
+        <picker v-if="semesterList.length" :range="semesterList" range-key="name" :value="semesterIdx" @change="onSemesterChange">
+          <text class="filter-btn">{{ semesterList[semesterIdx]?.name || '全部学期' }} ▾</text>
+        </picker>
+        <text class="export-btn" @click="doExport">📥 导出</text>
+        <text class="refresh" @click="load">↻ 刷新</text>
+      </view>
     </view>
 
     <view class="cards">
@@ -41,14 +47,21 @@
       </view>
       <view v-if="!classRows.length" class="empty">暂无班级数据</view>
     </view>
+
+    <view class="block" v-if="examTrend && examTrend.labels && examTrend.labels.length > 1">
+      <view class="bt">📈 考试均分趋势</view>
+      <canvas type="2d" canvas-id="examTrendCanvas" id="examTrendCanvas" class="chart-canvas"></canvas>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { exportXlsx } from '../../common/exporter'
+import uCharts from '@qiun/ucharts'
 
 const stat = ref({
   classes: 0,
@@ -61,6 +74,17 @@ const stat = ref({
   notices: 0,
 })
 const classRows = ref([])
+const semesterList = ref([])
+const semesterIdx = ref(0)
+const examTrend = ref(null)
+let trendChart = null
+
+// 学期筛选
+async function loadSemesters() {
+  try { semesterList.value = await api.get('/semesters') || []; semesterIdx.value = 0 }
+  catch { semesterList.value = [] }
+}
+function onSemesterChange(e) { semesterIdx.value = e.detail.value; load() }
 
 async function load() {
   uni.showLoading({ title: '统计中…', mask: false })
@@ -131,6 +155,7 @@ async function load() {
 
     const failed = res.filter((r) => r.status === 'rejected').length
     if (failed) uni.showToast({ title: `有 ${failed} 项数据获取失败`, icon: 'none' })
+    loadExamTrend() // 不阻塞主流程
   } catch (e) {
     uni.showToast({ title: '统计加载失败', icon: 'none' })
   } finally {
@@ -144,14 +169,83 @@ function safeParse(s) {
     return []
   }
 }
-onShow(load)
+onShow(() => { loadSemesters(); load() })
 onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
+
+// 考试均分趋势
+async function loadExamTrend() {
+  try {
+    const semester = semesterList.value.length ? semesterList.value[semesterIdx.value]?.name : ''
+    let exams = await api.getList('/exams', { silent: true }) || []
+    if (semester) exams = exams.filter(e => e.term === semester)
+    if (!exams.length) return
+    exams.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    const labels = [], data = []
+    for (const exam of exams.slice(-12)) { // 最近12次
+      const grades = await api.getList('/grades?examId=' + exam.id, { silent: true }) || []
+      const scs = []
+      grades.forEach(g => (g.scores || []).forEach(s => { if (s.score != null) scs.push(+s.score) }))
+      if (scs.length) {
+        labels.push((exam.name || '').slice(0, 6))
+        data.push(+(scs.reduce((a, b) => a + b, 0) / scs.length).toFixed(1))
+      }
+    }
+    if (labels.length > 1) {
+      examTrend.value = { labels, data }
+      nextTick(() => drawTrend(labels, data))
+    }
+  } catch {}
+}
+
+function drawTrend(labels, data) {
+  const query = uni.createSelectorQuery()
+  query.select('#examTrendCanvas').fields({ node: true, size: true }).exec(res => {
+    if (!res || !res[0] || !res[0].node) return
+    const canvas = res[0].node
+    const ctx = canvas.getContext('2d')
+    const dpr = uni.getSystemInfoSync().pixelRatio
+    canvas.width = res[0].width * dpr
+    canvas.height = res[0].height * dpr
+    ctx.scale(dpr, dpr)
+    if (trendChart) {
+      trendChart.updateData({ categories: labels, series: [{ name: '均分', data, color: '#e6a23c', index: 0 }] })
+    } else {
+      trendChart = new uCharts({
+        type: 'line', context: ctx, width: res[0].width, height: res[0].height,
+        categories: labels, series: [{ name: '均分', data, color: '#e6a23c', index: 0 }],
+        yAxis: { disabled: false }, xAxis: { disableGrid: true, fontSize: 10 },
+        extra: { line: { type: 'straight', width: 2 } }, colors: ['#e6a23c'],
+      })
+    }
+  })
+}
+
+// 导出
+async function doExport() {
+  const s = stat.value
+  const rows = [['指标', '数值']]
+  rows.push(['班级数', s.classes], ['学生数', s.students], ['平均出勤率', s.attRate + '%'],
+    ['作业完成率', s.hwDone + '%'], ['考试均分', s.avgScore], ['待办完成率', s.todoDone + '%'],
+    ['笔记数', s.notes], ['未结束公告', s.notices])
+  if (classRows.value.length) {
+    rows.push([])
+    rows.push(['班级', '学生数'])
+    classRows.value.forEach(r => rows.push([r.name, r.count + '']))
+  }
+  try {
+    await exportXlsx(['指标', '数值'], rows.slice(1), '数据统计导出')
+    uni.showToast({ title: '导出成功', icon: 'success' })
+  } catch { uni.showToast({ title: '导出失败', icon: 'none' }) }
+}
 </script>
 
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx; }
 .ht { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
+.hdr { display: flex; align-items: center; gap: 16rpx; }
+.filter-btn { font-size: 24rpx; color: var(--c-accent); padding: 10rpx 18rpx; background: var(--c-card2); border-radius: 20rpx; }
+.export-btn { font-size: 24rpx; color: #fff; background: var(--c-accent); padding: 8rpx 20rpx; border-radius: 20rpx; }
 .refresh { font-size: 26rpx; color: var(--c-accent); }
 .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20rpx; margin-bottom: 30rpx; }
 .card { border-radius: 20rpx; padding: 30rpx; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
@@ -168,6 +262,7 @@ onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 .fill { height: 100%; background: linear-gradient(135deg, #ffb347 0%, #ffcc66 100%); border-radius: 10rpx; }
 .rc { width: 60rpx; text-align: right; font-size: 26rpx; color: var(--c-accent); font-weight: 700; }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }
+.chart-canvas { width: 100%; height: 360rpx; margin-top: 16rpx; }
 .dark .ht, .dark .bt, .dark .rn { color: var(--c-title); }
 .dark .n { color: var(--c-title); }
 .dark .l { color: var(--c-sub); }

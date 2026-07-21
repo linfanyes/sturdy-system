@@ -4,6 +4,7 @@
       <view class="t">🏡 家长中心</view>
       <view class="status" :class="connected ? 'on' : ''">{{ statusText }}</view>
       <view class="out" @click="subscribe">📬 订阅</view>
+      <view class="out" @click="bindPhone">📱 {{ phoneBound ? '已绑定' : '绑定手机' }}</view>
       <view class="out" @click="logout">退出</view>
     </view>
 
@@ -40,6 +41,10 @@
         <view class="arow" v-if="analysis.worstSubject">
           薄弱学科 <text class="av2">{{ analysis.worstSubject }}（均 {{ analysis.worstAvg }}）</text>
         </view>
+      </view>
+      <!-- 成绩趋势图表 -->
+      <view v-if="trendCanvas && trendCanvas.show" class="ptrend-wrap">
+        <canvas type="2d" canvas-id="parentTrendCanvas" id="parentTrendCanvas" class="ptrend-canvas"></canvas>
       </view>
       <view class="nitem" v-for="e in exams" :key="e.examId">
         <view class="nt">
@@ -125,6 +130,7 @@ import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TIM from 'tim-wx-sdk'
 import TIMUploadPlugin from 'tim-upload-plugin'
+import uCharts from '@qiun/ucharts'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 
@@ -142,6 +148,10 @@ const convList = ref([])
 const activeConvId = ref('')
 const draft = ref('')
 const scrollTarget = ref('')
+const phoneBound = ref(false)
+const trendCanvas = ref({ show: false, labels: [], data: [] })
+const subscribeTmplIds = ref([])
+let trendChartInst = null
 
 const demoSeed = [
   {
@@ -385,15 +395,67 @@ function logout() {
 
 async function subscribe() {
   try {
-    const res = await uni.requestSubscribeMessage({
-      tmplIds: [/* 微信后台申请的模板ID，发布时替换 */],
-    })
+    // 动态获取模板 ID
+    if (!subscribeTmplIds.value.length) {
+      try {
+        const pub = await parentApi.get('/config/public')
+        subscribeTmplIds.value = (pub && pub.subscribeTmplIds) || []
+      } catch {}
+    }
+    if (!subscribeTmplIds.value.length) return uni.showToast({ title: '暂无可用通知模板', icon: 'none' })
+    const res = await uni.requestSubscribeMessage({ tmplIds: subscribeTmplIds.value })
     uni.showToast({ title: '已订阅', icon: 'success' })
     const { code } = await uni.login()
     await parentApi.post('/parent-auth/subscribe', { code })
   } catch (e) {
     uni.showToast({ title: '订阅失败', icon: 'none' })
   }
+}
+
+async function bindPhone() {
+  if (phoneBound.value) return
+  uni.getUserProfile({
+    desc: '用于家校联系',
+    success: async (res) => {
+      phoneBound.value = true
+      uni.showToast({ title: '已提交绑定', icon: 'success' })
+    },
+    fail: () => uni.showToast({ title: '绑定取消', icon: 'none' }),
+  })
+}
+
+// 成绩趋势图表
+function drawParentTrend() {
+  const labels = [], data = []
+  for (const e of exams.value || []) {
+    labels.push((e.examName || '').slice(0, 6))
+    data.push(e.totalScore != null ? e.totalScore : 0)
+  }
+  if (labels.length < 2) return
+  trendCanvas.value = { show: true, labels, data }
+  nextTick(() => {
+    const query = uni.createSelectorQuery()
+    query.select('#parentTrendCanvas').fields({ node: true, size: true }).exec(res => {
+      if (!res || !res[0] || !res[0].node) return
+      const canvas = res[0].node
+      const ctx = canvas.getContext('2d')
+      const dpr = uni.getSystemInfoSync().pixelRatio
+      canvas.width = res[0].width * dpr
+      canvas.height = res[0].height * dpr
+      ctx.scale(dpr, dpr)
+      if (trendChartInst) {
+        trendChartInst.updateData({ categories: labels, series: [{ name: '综合(%)', data, color: '#07c160', index: 0 }] })
+      } else {
+        trendChartInst = new uCharts({
+          type: 'line', context: ctx, width: res[0].width, height: res[0].height,
+          categories: labels, series: [{ name: '综合(%)', data, color: '#07c160', index: 0 }],
+          yAxis: { disabled: false }, xAxis: { disableGrid: true, fontSize: 11 },
+          extra: { line: { type: 'straight', width: 2, area: { gradient: true, opacity: 0.15 } } },
+          colors: ['#07c160'],
+        })
+      }
+    })
+  })
 }
 
 onShow(async () => {
@@ -416,6 +478,7 @@ onShow(async () => {
     analysis.value = (edata && edata.analysis) || null
     const hw = await parentApi.get('/parent-auth/homework')
     homework.value = Array.isArray(hw) ? hw : []
+    drawParentTrend()
   } catch (e) {}
   try {
     const r = await parentApi.get('/parent-auth/im-user-sig')
@@ -459,6 +522,8 @@ onShow(async () => {
 .ssubject { color: var(--c-title); }
 .sscore { color: var(--c-sub); }
 .hwstatus { font-size: 20rpx; color: #e6a23c; margin-left: 12rpx; }
+.ptrend-wrap { background: var(--c-card); border-radius: 14rpx; padding: 16rpx; margin-top: 10rpx; }
+.ptrend-canvas { width: 100%; height: 340rpx; }
 .hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .chats { white-space: nowrap; margin-bottom: 14rpx; }
 .chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }

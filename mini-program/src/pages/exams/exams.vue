@@ -7,7 +7,8 @@
       <picker :range="termOpts" @change="(e) => { const i = e.detail.value; filterTerm = i === 0 ? '' : termOpts[i] }">
         <view class="fpick">学期：{{ filterTerm || '全部' }}</view>
       </picker>
-      <text class="freset" @click="filterClass = ''; filterTerm = ''">重置</text>
+      <text class="freset" @click="filterClass = ''; filterTerm = ''; sortAsc = null">重置</text>
+      <text class="fsort" @click="toggleSort">{{ sortLabel }}</text>
     </view>
 
     <view class="list">
@@ -26,6 +27,8 @@
       </view>
       <EmptyState v-if="!filtered.length" icon="📝" text="暂无考试" hint="点击下方按钮创建第一场考试" />
     </view>
+
+    <view class="semester-hint" @click="goSemesters">📅 未找到学期？点此新建学期</view>
 
     <button class="add" :disabled="loading" @click="showForm = !showForm">{{ showForm ? '收起' : '＋ 新建考试' }}</button>
 
@@ -74,6 +77,18 @@ const form = ref({ name: '', classId: '', date: '', subjects: [] })
 const formFullScores = ref({})
 const filterClass = ref('')
 const filterTerm = ref('')
+const sortAsc = ref(null) // null=不排序, true=升序, false=降序
+
+const sortLabel = computed(() => {
+  if (sortAsc.value === null) return '↕ 排序'
+  return sortAsc.value ? '↑ 日期升序' : '↓ 日期降序'
+})
+
+function toggleSort() {
+  if (sortAsc.value === null) sortAsc.value = false // 首次默认降序(最新在前)
+  else if (sortAsc.value === false) sortAsc.value = true
+  else sortAsc.value = null
+}
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const classFilterOpts = computed(() => ['全部', ...classes.value.map((c) => c.name)])
@@ -83,13 +98,20 @@ const filterClassName = computed(() => {
   return c ? c.name : '全部'
 })
 const termOpts = computed(() => ['全部', ...Array.from(new Set(list.value.map((e) => e.term).filter(Boolean)))])
-const filtered = computed(() =>
-  list.value.filter((e) => {
+const filtered = computed(() => {
+  let arr = list.value.filter((e) => {
     if (filterClass.value && e.classId !== filterClass.value) return false
     if (filterTerm.value && e.term !== filterTerm.value) return false
     return true
-  }),
-)
+  })
+  if (sortAsc.value !== null) {
+    arr = [...arr].sort((a, b) => {
+      const da = a.date || '', db = b.date || ''
+      return sortAsc.value ? da.localeCompare(db) : db.localeCompare(da)
+    })
+  }
+  return arr
+})
 const selClassName = computed(() => {
   const c = classes.value.find((x) => x.id === form.value.classId)
   return c ? c.name : '请选择'
@@ -110,6 +132,10 @@ onPullDownRefresh(async () => {
 function toggle(s) {
   const arr = form.value.subjects
   form.value.subjects = arr.includes(s) ? arr.filter((x) => x !== s) : [...arr, s]
+}
+
+function goSemesters() {
+  uni.navigateTo({ url: '/pages/crud/crud?type=semesters' })
 }
 
 function analyze(e) {
@@ -184,6 +210,8 @@ function remove(e) {
 .filters { display: flex; align-items: center; gap: 14rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
 .fpick { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 12rpx 24rpx; font-size: 26rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
 .freset { font-size: 24rpx; color: #409eff; padding: 12rpx 8rpx; }
+.fsort { font-size: 24rpx; color: var(--c-accent); padding: 12rpx 14rpx; border-radius: 30rpx; background: var(--c-card); margin-left: auto; }
+.semester-hint { text-align: center; font-size: 24rpx; color: #409eff; padding: 12rpx 0; margin-top: 10rpx; }
 .subjects { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; }
 .schip { font-size: 22rpx; padding: 6rpx 16rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-sub); }
 .fs { color: #e6a23c; }

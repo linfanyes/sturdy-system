@@ -8,10 +8,15 @@
       <picker :range="catLabels" @change="(e) => (catFilter = e.detail.value === 0 ? 'all' : catLabels[e.detail.value])">
         <view class="picker sm">{{ catFilter === 'all' ? '全部分类' : catFilter }}</view>
       </picker>
+      <text class="sort-btn" @click="toggleSort">{{ sortLabel }}</text>
+      <text v-if="selectedIds.size" class="batch-del-btn" @click="batchDel">🗑 删除({{ selectedIds.size }})</text>
     </view>
 
     <view class="grid">
       <view class="card" v-for="r in shown" :key="r.id">
+        <view class="card-chk" @click.stop="toggleSel(r.id)">
+          <view class="chk-dot" :class="selectedIds.has(r.id) && 'on'"></view>
+        </view>
         <image v-if="r.image" :src="r.image" class="thumb" mode="aspectFill" lazy-load />
         <text class="tt">{{ r.title }}</text>
         <text class="desc" v-if="r.description">{{ r.description }}</text>
@@ -66,6 +71,42 @@ const catFilter = ref('all')
 const tagInput = ref('')
 const form = ref({ title: '', url: '', image: '', category: '教学素材', tags: [], description: '' })
 const saving = ref(false)
+const sortBy = ref('') // '' | 'time' | 'name'
+const selectedIds = ref(new Set())
+
+const sortLabel = computed(() => {
+  if (sortBy.value === 'time') return '🕐 按时间'
+  if (sortBy.value === 'name') return '🔤 按名称'
+  return '↕ 排序'
+})
+function toggleSort() {
+  if (!sortBy.value) sortBy.value = 'time'
+  else if (sortBy.value === 'time') sortBy.value = 'name'
+  else sortBy.value = ''
+}
+function toggleSel(id) {
+  const s = new Set(selectedIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  selectedIds.value = s
+}
+async function batchDel() {
+  if (!selectedIds.value.size) return
+  uni.showModal({
+    title: '批量删除', content: `确定删除 ${selectedIds.value.size} 个资源？`, confirmColor: '#e64340',
+    success: async (m) => {
+      if (!m.confirm) return
+      uni.showLoading({ title: '删除中…', mask: true })
+      const ids = [...selectedIds.value]
+      for (const id of ids) {
+        try { await api.del('/resources/' + id) } catch (e) {}
+      }
+      selectedIds.value = new Set()
+      uni.hideLoading()
+      load()
+      uni.showToast({ title: '已删除', icon: 'success' })
+    },
+  })
+}
 
 const catOpts = ['官方平台', '教学素材', '工具', '班级管理', '其他']
 const catLabels = computed(() => ['全部分类', ...catOpts, ...Array.from(new Set(list.value.map((r) => r.category).filter((c) => c && !catOpts.includes(c))))])
@@ -93,6 +134,8 @@ const shown = computed(() => {
         (r.tags || []).some((t) => t.toLowerCase().includes(k)),
     )
   }
+  if (sortBy.value === 'time') arr.sort((a, b) => ((b.createdAt || b.updatedAt || '')) > (a.createdAt || a.updatedAt || '') ? 1 : -1)
+  else if (sortBy.value === 'name') arr.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
   return arr
 })
 
@@ -172,10 +215,15 @@ async function del(r) {
 .bar { display: flex; align-items: center; gap: 12rpx; }
 .search { flex: 1; border: 1px solid #e5e5e5; border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 26rpx; background: #fff; }
 .add { font-size: 28rpx; color: #e6a23c; font-weight: 600; }
-.bar2 { margin: 14rpx 0; }
+.bar2 { margin: 14rpx 0; display: flex; align-items: center; gap: 14rpx; }
+.sort-btn { font-size: 22rpx; color: var(--c-accent); padding: 10rpx 16rpx; border-radius: 20rpx; background: var(--c-card); border: 1px solid var(--c-input-border); }
+.batch-del-btn { font-size: 22rpx; color: #e64340; padding: 10rpx 16rpx; border-radius: 20rpx; background: #fef0f0; border: 1px solid #fbc4c4; margin-left: auto; }
 .picker.sm { display: inline-block; border: 1px solid #e5e5e5; border-radius: 30rpx; padding: 10rpx 24rpx; font-size: 24rpx; background: #fff; }
 .grid { display: flex; flex-wrap: wrap; gap: 16rpx; margin-top: 8rpx; }
-.card { width: calc(50% - 8rpx); background: #fff; border-radius: 16rpx; padding: 18rpx; box-sizing: border-box; }
+.card { width: calc(50% - 8rpx); background: #fff; border-radius: 16rpx; padding: 18rpx; box-sizing: border-box; position: relative; }
+.card-chk { position: absolute; top: 12rpx; left: 12rpx; z-index: 2; }
+.chk-dot { width: 32rpx; height: 32rpx; border-radius: 50%; border: 3rpx solid #ccc; background: #fff; }
+.chk-dot.on { background: #07c160; border-color: #07c160; }
 .thumb { width: 100%; height: 160rpx; border-radius: 12rpx; background: #f3f3f3; margin-bottom: 10rpx; }
 .tt { display: block; font-size: 28rpx; font-weight: 700; color: #4a3f35; }
 .desc { display: block; font-size: 22rpx; color: #9aa0a6; margin-top: 6rpx; }

@@ -3,7 +3,12 @@
     <!-- 欢迎条 -->
     <view class="header">
       <view class="hi">{{ greeting }}，{{ auth.user?.name || '老师' }}</view>
-      <view class="school">{{ auth.user?.school || '未设置学校' }}<text v-if="semesterName" class="sem"> · {{ semesterName }}</text></view>
+      <view class="school">{{ auth.user?.school || '未设置学校' }}
+        <picker v-if="semesterList.length" :range="semesterList" range-key="name" :value="semesterIdx" @change="onSemesterChange">
+          <text class="sem">{{ semesterList[semesterIdx]?.name || semesterName }} ▾</text>
+        </picker>
+        <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
+      </view>
       <view class="moods">
         <text class="mood" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)">{{ moodEmojis[i] }} {{ m }}</text>
       </view>
@@ -30,6 +35,25 @@
         <view class="ov-ic" style="background:#e8f1fb">📊</view>
         <view class="ov-num">{{ gradeList.length }}</view>
         <view class="ov-lb">考试</view>
+      </view>
+    </view>
+
+    <!-- 今日教学实时指标 -->
+    <view class="ov-grid today-stats">
+      <view class="ov ts-card">
+        <view class="ov-ic" style="background:#e8f1fb">📋</view>
+        <view class="ov-num ts-num">{{ todayStats.attendanceRate }}%</view>
+        <view class="ov-lb">今日出勤率</view>
+      </view>
+      <view class="ov ts-card">
+        <view class="ov-ic" style="background:#fff3d6">📝</view>
+        <view class="ov-num ts-num" :class="todayStats.pendingHomework > 0 && 'warn'">{{ todayStats.pendingHomework }}</view>
+        <view class="ov-lb">待批改作业</view>
+      </view>
+      <view class="ov ts-card">
+        <view class="ov-ic" style="background:#e8f9e8">🔔</view>
+        <view class="ov-num ts-num">{{ todayStats.lessonCount }}</view>
+        <view class="ov-lb">今日课程节数</view>
       </view>
     </view>
 
@@ -232,15 +256,47 @@ const gradeList = ref([])
 const todoList = ref([])
 const todayLessons = ref([])
 const noticeList = ref([])
+const attendanceList = ref([])
+const homeworkList = ref([])
 const semesterName = ref('')
+const semesterList = ref([])
+const semesterIdx = ref(0)
 
 async function loadSemester() {
   try {
     const arr = await api.get('/semesters')
-    const cur = (arr || []).find((s) => s.current)
-    semesterName.value = cur ? cur.name : ''
+    if (arr && arr.length) {
+      semesterList.value = arr
+      const curIdx = arr.findIndex((s) => s.current)
+      semesterIdx.value = curIdx >= 0 ? curIdx : 0
+      semesterName.value = arr[semesterIdx.value]?.name || ''
+    }
   } catch (e) { semesterName.value = '' }
 }
+
+function onSemesterChange(e) {
+  semesterIdx.value = e.detail.value
+  semesterName.value = semesterList.value[e.detail.value]?.name || ''
+  uni.setStorageSync('active_semester', semesterName.value)
+  uni.showToast({ title: '已切换至 ' + semesterName.value, icon: 'none' })
+}
+
+// 今日教学实时指标
+const todayStats = computed(() => {
+  const attRecords = attendanceList.value || []
+  const todayAtt = attRecords.filter((a) => a.date === todayStr)
+  let attendanceRate = 100
+  if (todayAtt.length > 0) {
+    const present = todayAtt.reduce((sum, a) => {
+      const records = a.records || {}
+      return sum + Object.values(records).filter((s) => s === '出勤').length
+    }, 0)
+    const total = todayAtt.reduce((sum, a) => sum + Object.keys(a.records || {}).length, 0)
+    attendanceRate = total > 0 ? Math.round((present / total) * 100) : 100
+  }
+  const pendingHomework = (homeworkList.value || []).filter((h) => h.status !== '已批改' && h.status !== '已发还').length
+  return { attendanceRate, pendingHomework, lessonCount: todayLessons.value.length }
+})
 
 const recentNotes = computed(() =>
   [...noteList.value].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 4)
@@ -303,7 +359,7 @@ async function loadAll() {
   loading.value = true
   loadSemester()
   try {
-    const [classes, students, notes, grades, todos, schedules, notices] = await Promise.all([
+    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks] = await Promise.all([
       api.get('/classes').catch(() => []),
       api.get('/students').catch(() => []),
       api.get('/notes').catch(() => []),
@@ -311,6 +367,8 @@ async function loadAll() {
       api.get('/todos').catch(() => []),
       api.get('/schedules').catch(() => []),
       api.get('/notices').catch(() => []),
+      api.get('/attendances').catch(() => []),
+      api.get('/homework').catch(() => []),
     ])
     classList.value = classes || []
     studentList.value = students || []
@@ -322,6 +380,8 @@ async function loadAll() {
       .sort((a, b) => (a.period || 99) - (b.period || 99))
       .slice(0, 6)
     noticeList.value = notices || []
+    attendanceList.value = attendances || []
+    homeworkList.value = homeworks || []
   } catch (e) {
     uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })
   }
@@ -389,6 +449,11 @@ function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeU
 .mood { font-size: 22rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card); color: var(--c-sub); }
 .mood.on { background: var(--c-accent); color: #fff; }
 .ov-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; margin: 10rpx 0 20rpx; }
+.today-stats { grid-template-columns: repeat(3, 1fr); margin: 6rpx 0 14rpx; }
+.ts-card { flex-direction: column; align-items: center; text-align: center; padding: 20rpx 8rpx; gap: 8rpx; }
+.ts-card .ov-ic { width: 48rpx; height: 48rpx; line-height: 48rpx; font-size: 26rpx; }
+.ts-num { font-size: 36rpx !important; text-align: center !important; }
+.ts-num.warn { color: var(--c-danger) !important; }
 .ov { background: var(--c-card); border-radius: 22rpx; padding: 24rpx; display: flex; align-items: center; gap: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
 .ov-ic { width: 64rpx; height: 64rpx; border-radius: 18rpx; text-align: center; line-height: 64rpx; font-size: 32rpx; flex-shrink: 0; }
 .ov-num { font-size: 44rpx; font-weight: 800; color: var(--c-accent); flex: 1; text-align: right; }
