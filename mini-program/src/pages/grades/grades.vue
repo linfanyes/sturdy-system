@@ -726,7 +726,7 @@ async function aiDiagnose() {
 .picker, .sel input {
   border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
   font-size: 28rpx; color: var(--c-title); min-height: 80rpx; line-height: 44rpx;
-  box-sizing: border-box; background: var(--c-input);
+  box-sizing: border-box; background: var(--c-input); width: 100%;
 }
 .exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
 .clear { color: var(--c-danger); font-size: 24rpx; }

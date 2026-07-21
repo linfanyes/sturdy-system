@@ -209,7 +209,6 @@ const sections = ref([
     items: [
       { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/teacher/teacher' },
       { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
-      { label: '管理员面板', icon: '👑', path: '/pages/admin/admin' },
     ],
   },
 ])

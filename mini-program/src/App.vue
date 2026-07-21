@@ -73,4 +73,14 @@ text {
   word-break: break-word;
   white-space: normal;
 }
+
+/* 全局输入框/文本域/下拉防挤压：确保宽度撑满容器、border 计入宽度 */
+input, textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+/* picker 内的 view 也需要撑满，避免点击区域过小 */
+picker {
+  max-width: 100%;
+}
 </style>

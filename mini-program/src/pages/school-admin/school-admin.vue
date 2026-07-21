@@ -8,104 +8,72 @@
       <view class="out" @click="logout">退出</view>
     </view>
 
-    <view class="tabs">
-      <view class="tab" :class="tab==='teachers'&&'on'" @click="tab='teachers'">👥 教师管理</view>
-      <view class="tab" :class="tab==='features'&&'on'" @click="tab='features'">⚙️ 功能管理</view>
+    <view class="bar">
+      <text class="sc">共 {{ teachers.length }} 位教师</text>
+      <text class="act" @click="openCreate">＋ 新增教师</text>
+    </view>
+    <view class="list">
+      <view v-if="!teachers.length" class="empty">暂无教师，点击右上角「新增」</view>
+      <view class="row" v-for="u in teachers" :key="u.id">
+        <view class="info" @click="openEdit(u)">
+          <view class="nm-line">
+            <text class="nm">{{ u.name }}</text>
+            <text class="badge" :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? '启用' : '禁用' }}</text>
+          </view>
+          <view class="meta">用户名：{{ u.username || '微信登录' }}</view>
+          <view class="meta" v-if="u.phone">电话：{{ u.phone }}</view>
+        </view>
+        <view class="acts">
+          <text class="act" @click.stop="openFeatures(u)">功能配置</text>
+          <text class="act" @click.stop="resetPwd(u)">重置密码</text>
+          <text class="act del" @click.stop="delTeacher(u)">删除</text>
+        </view>
+      </view>
     </view>
 
-    <!-- 教师管理 -->
-    <template v-if="tab==='teachers'">
-      <view class="bar">
-        <text class="sc">共 {{ teachers.length }} 位教师</text>
-        <text class="act" @click="openCreate">＋ 新增教师</text>
-      </view>
-      <view class="list">
-        <view v-if="!teachers.length" class="empty">暂无教师，点击右上角「新增」</view>
-        <view class="row" v-for="u in teachers" :key="u.id">
-          <view class="info" @click="openEdit(u)">
-            <view class="nm-line">
-              <text class="nm">{{ u.name }}</text>
-              <text class="badge" :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? '启用' : '禁用' }}</text>
-            </view>
-            <view class="meta">用户名：{{ u.username || '微信登录' }}</view>
-            <view class="meta" v-if="u.phone">电话：{{ u.phone }}</view>
-            <view class="acts">
-              <text class="act" @click.stop="openFeatures(u)">功能配置</text>
-              <text class="act" @click.stop="resetPwd(u)">重置密码</text>
-              <text class="act del" @click.stop="delTeacher(u)">删除</text>
-            </view>
+    <!-- 新增/编辑教师（全屏） -->
+    <view v-if="showForm" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="showForm=false">← 返回</text>
+          <text class="full-title">{{ editingId ? '编辑教师' : '新增教师' }}</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <view class="form-item">
+            <text class="label">用户名 <text class="req">*</text></text>
+            <input v-model="form.username" class="inp" placeholder="登录用，如：zhangsan" />
+            <text class="tip">用户名不可重复，系统会自动校验</text>
           </view>
+          <view class="form-item">
+            <text class="label">姓名 <text class="req">*</text></text>
+            <input v-model="form.name" class="inp" placeholder="如：张老师" />
+          </view>
+          <view v-if="!editingId" class="form-item">
+            <text class="label">密码 <text class="req">*</text></text>
+            <input v-model="form.password" class="inp" placeholder="登录密码" password />
+          </view>
+          <view v-else class="form-item">
+            <text class="label">新密码 <text class="opt">（留空则不修改）</text></text>
+            <input v-model="form.password" class="inp" placeholder="输入新密码可重置" password />
+          </view>
+          <view class="form-item">
+            <text class="label">手机号</text>
+            <input v-model="form.phone" class="inp" placeholder="可选" />
+          </view>
+          <view class="form-item switch-item">
+            <view class="label-line">
+              <text class="label">启用标志</text>
+              <text class="switch-val">{{ form.enabled ? '启用' : '禁用' }}</text>
+            </view>
+            <switch :checked="form.enabled" color="#4CAF50" @change="onEnabledChange" />
+          </view>
+        </scroll-view>
+        <view class="full-foot">
+          <button class="btn" :disabled="saving" @click="saveForm">{{ saving ? '保存中…' : (editingId ? '保存修改' : '确认创建') }}</button>
         </view>
       </view>
-
-      <!-- 新增/编辑教师（全屏） -->
-      <view v-if="showForm" class="full-mask">
-        <view class="full-page">
-          <view class="full-head">
-            <text class="full-back" @click="showForm=false">← 返回</text>
-            <text class="full-title">{{ editingId ? '编辑教师' : '新增教师' }}</text>
-            <text class="full-placeholder"></text>
-          </view>
-          <scroll-view scroll-y class="full-body">
-            <view class="form-item">
-              <text class="label">用户名 <text class="req">*</text></text>
-              <input v-model="form.username" class="inp" placeholder="登录用，如：zhangsan" />
-              <text class="tip">用户名不可重复，系统会自动校验</text>
-            </view>
-            <view class="form-item">
-              <text class="label">姓名 <text class="req">*</text></text>
-              <input v-model="form.name" class="inp" placeholder="如：张老师" />
-            </view>
-            <view v-if="!editingId" class="form-item">
-              <text class="label">密码 <text class="req">*</text></text>
-              <input v-model="form.password" class="inp" placeholder="登录密码" password />
-            </view>
-            <view v-else class="form-item">
-              <text class="label">新密码 <text class="opt">（留空则不修改）</text></text>
-              <input v-model="form.password" class="inp" placeholder="输入新密码可重置" password />
-            </view>
-            <view class="form-item">
-              <text class="label">手机号</text>
-              <input v-model="form.phone" class="inp" placeholder="可选" />
-            </view>
-            <view class="form-item switch-item">
-              <view class="label-line">
-                <text class="label">启用标志</text>
-                <text class="switch-val">{{ form.enabled ? '启用' : '禁用' }}</text>
-              </view>
-              <switch :checked="form.enabled" color="#4CAF50" @change="onEnabledChange" />
-            </view>
-          </scroll-view>
-          <view class="full-foot">
-            <button class="btn" :disabled="saving" @click="saveForm">{{ saving ? '保存中…' : (editingId ? '保存修改' : '确认创建') }}</button>
-          </view>
-        </view>
-      </view>
-    </template>
-
-    <!-- 功能管理 -->
-    <template v-if="tab==='features'">
-      <view class="bar">
-        <text class="sc">共 {{ teachers.length }} 位教师</text>
-      </view>
-      <view class="hint-block">点击教师可配置其可用功能，未勾选的功能该教师将无法使用。</view>
-      <view class="list">
-        <view v-if="!teachers.length" class="empty">暂无教师</view>
-        <view class="row" v-for="u in teachers" :key="u.id">
-          <view class="info" @click="openFeatures(u)">
-            <view class="nm-line">
-              <text class="nm">{{ u.name }}</text>
-              <text class="badge" :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? '启用' : '禁用' }}</text>
-            </view>
-            <view class="meta">用户名：{{ u.username || '微信登录' }}</view>
-            <view class="feat-line">
-              <text class="feat-count">{{ getFeatCount(u) }}/{{ allFeatures.length }} 项</text>
-              <text class="act">配置 →</text>
-            </view>
-          </view>
-        </view>
-      </view>
-    </template>
+    </view>
 
     <!-- 功能配置（全屏） -->
     <view v-if="featUser" class="full-mask">
@@ -151,7 +119,6 @@ import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
-const tab = ref('teachers')
 const teachers = ref([])
 const saving = ref(false)
 
@@ -305,11 +272,6 @@ async function delTeacher(u) {
   })
 }
 
-function getFeatCount(u) {
-  if (!u.features || !u.features.length) return allFeatures.length
-  return u.features.length
-}
-
 function openFeatures(u) {
   featUser.value = u
   sel.value = u.features && u.features.length ? [...u.features] : allFeatures.map(f => f.key)
@@ -367,27 +329,21 @@ onShow(() => { loadTeachers() })
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
 .sub { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .out { font-size: 26rpx; color: var(--c-accent); }
-.tabs { display: flex; gap: 12rpx; margin-bottom: 18rpx; }
-.tab { font-size: 26rpx; padding: 14rpx 26rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); }
-.tab.on { background: var(--c-accent); color: #fff; font-weight: 700; }
 .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); }
 .act { font-size: 24rpx; color: #409eff; }
 .act.del { color: #e64340; }
-.hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-card2, #f5f5f5); padding: 14rpx 18rpx; border-radius: 12rpx; margin-bottom: 16rpx; line-height: 1.6; border-left: 4rpx solid var(--c-accent, #4CAF50); }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 6rpx 20rpx; }
 .empty { padding: 60rpx 0; text-align: center; font-size: 26rpx; color: var(--c-sub); }
-.row { padding: 16rpx 0; border-bottom: 1px solid var(--c-border); }
-.info { flex: 1; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 16rpx 0; border-bottom: 1px solid var(--c-border); }
+.info { flex: 1; min-width: 0; }
 .nm-line { display: flex; align-items: center; gap: 12rpx; margin-bottom: 6rpx; }
 .nm { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .badge { display: inline-block; font-size: 20rpx; font-weight: 600; padding: 2rpx 14rpx; border-radius: 16rpx; }
 .badge.on { background: rgba(76, 175, 80, .15); color: #4CAF50; }
 .badge.off { background: rgba(230, 67, 64, .15); color: #e64340; }
 .meta { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
-.acts { display: flex; gap: 24rpx; margin-top: 10rpx; }
-.feat-line { display: flex; align-items: center; justify-content: space-between; margin-top: 8rpx; }
-.feat-count { font-size: 24rpx; color: var(--c-sub); }
+.acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex-shrink: 0; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; box-sizing: border-box; }
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
@@ -396,21 +352,23 @@ onShow(() => { loadTeachers() })
 .btn[disabled] { opacity: .6; }
 /* 全屏表单 */
 .full-mask { position: fixed; inset: 0; z-index: 200; background: var(--c-bg); }
-.full-page { display: flex; flex-direction: column; height: 100vh; }
+.full-page { display: flex; flex-direction: column; height: 100vh; width: 100%; }
 .full-head { display: flex; align-items: center; justify-content: space-between; padding: 0 24rpx; height: 88rpx; background: var(--c-card); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
 .full-back { font-size: 28rpx; color: var(--c-accent); width: 120rpx; }
 .full-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); }
 .full-placeholder { width: 120rpx; }
-.full-body { flex: 1; padding: 24rpx 30rpx; box-sizing: border-box; }
+.full-body { flex: 1; width: 100%; padding: 24rpx 30rpx; box-sizing: border-box; }
 .full-foot { padding: 16rpx 30rpx 30rpx; background: var(--c-card); border-top: 1px solid var(--c-border); flex-shrink: 0; }
-.form-item { margin-bottom: 18rpx; }
+.form-item { margin-bottom: 18rpx; width: 100%; box-sizing: border-box; }
 .label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
 .req { color: #e64340; }
 .opt { color: var(--c-sub); font-weight: 400; font-size: 22rpx; }
 .tip { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; display: block; }
-.switch-item { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 0; }
+.switch-item { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 0; width: 100%; box-sizing: border-box; }
 .label-line { flex: 1; }
 .switch-val { font-size: 24rpx; color: var(--c-sub); display: block; margin-top: 4rpx; }
+/* 全屏表单内的输入框：覆盖共享 .inp 的 margin，确保宽度撑满 */
+.full-body .inp { width: 100%; margin-bottom: 0; min-height: 72rpx; }
 /* 功能配置 */
 .feat-toolbar { display: flex; align-items: center; gap: 24rpx; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); margin-bottom: 10rpx; }
 .flist { padding: 4rpx 0; }

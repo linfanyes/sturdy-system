@@ -386,7 +386,7 @@ function useTemplate(t) {
 .st { display: block; font-size: 24rpx; color: var(--c-sub); margin: 10rpx 0 6rpx; }
 .inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); }
 .area { height: 150rpx; }
-.picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; background: var(--c-card); }
+.picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; background: var(--c-card); box-sizing: border-box; }
 .row { display: flex; align-items: center; font-size: 26rpx; color: var(--c-sub); margin: 6rpx 0 14rpx; }
 .ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; }
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; margin-top: 14rpx; }

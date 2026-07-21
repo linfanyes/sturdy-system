@@ -3,8 +3,8 @@
     <view class="logo">🌻</view>
     <view class="title">园丁工作台</view>
 
-    <input v-model="username" class="inp2" placeholder="用户名 / 学号" />
-    <input v-model="password" class="inp2" placeholder="密码" password />
+    <input v-model="username" class="inp2" placeholder="用户名 / 学号" placeholder-style="color:#b5a890;" />
+    <input v-model="password" class="inp2" placeholder="密码" password placeholder-style="color:#b5a890;" />
     <button class="btn" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登 录' }}</button>
 
     <view class="or">— 或 —</view>
@@ -20,11 +20,11 @@
           <view class="r2" :class="bindRole==='parent'?'on':''" @click="bindRole='parent'">👨‍👩‍👧 我是家长</view>
         </view>
         <template v-if="bindRole==='teacher'">
-          <input v-model="bindUsername" class="inp" placeholder="教师用户名" />
-          <input v-model="bindPassword" class="inp" placeholder="教师密码" password />
+          <input v-model="bindUsername" class="inp" placeholder="教师用户名" placeholder-style="color:#b5a890;" />
+          <input v-model="bindPassword" class="inp" placeholder="教师密码" password placeholder-style="color:#b5a890;" />
         </template>
         <template v-if="bindRole==='parent'">
-          <input v-model="bindStudentNo" class="inp" type="number" placeholder="学生学号" />
+          <input v-model="bindStudentNo" class="inp" type="number" placeholder="学生学号" placeholder-style="color:#b5a890;" />
         </template>
         <button class="ok" :disabled="bindLoading" @click="doBind">{{ bindLoading ? '绑定中…' : '完成绑定' }}</button>
       </view>
@@ -115,20 +115,22 @@ async function doBind() {
 .login { background:var(--c-bg); color:var(--c-text); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60rpx; box-sizing:border-box; }
 .logo { font-size:140rpx; }
 .title { font-size:52rpx; font-weight:700; color:var(--c-title); margin-top:20rpx; margin-bottom:50rpx; }
-.inp2 { border:1px solid var(--c-input-border); border-radius:14rpx; padding:20rpx 24rpx; margin-bottom:16rpx; font-size:30rpx; width:80%; background:var(--c-input); color:var(--c-text); }
-.btn { width:80%; background:#07c160; color:#fff; border-radius:50rpx; font-size:34rpx; height:90rpx; line-height:90rpx; margin-top:10rpx; }
+.inp2 { border:1px solid var(--c-input-border); border-radius:14rpx; padding:24rpx; margin-bottom:20rpx; font-size:32rpx; width:100%; max-width:620rpx; min-height:96rpx; box-sizing:border-box; background:var(--c-input); color:var(--c-text); flex-shrink:0; }
+.btn { width:100%; max-width:620rpx; background:#07c160; color:#fff; border-radius:50rpx; font-size:34rpx; height:96rpx; line-height:96rpx; margin-top:10rpx; flex-shrink:0; }
 .btn[disabled] { opacity:.6; }
 .btn.wechat { background:#409eff; margin-top:14rpx; }
-.or { margin-top:44rpx; font-size:24rpx; color:var(--c-sub); margin-bottom:6rpx; }
+.or { margin-top:44rpx; font-size:26rpx; color:var(--c-sub); margin-bottom:6rpx; }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:60; }
 .sheet { width:100%; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); box-sizing:border-box; }
 .sh-t { font-size:34rpx; font-weight:700; color:var(--c-title); }
-.sh-sub { font-size:24rpx; color:var(--c-sub); margin:8rpx 0 20rpx; }
+.sh-sub { font-size:26rpx; color:var(--c-sub); margin:8rpx 0 20rpx; line-height:1.5; }
 .roles2 { display:flex; gap:14rpx; margin-bottom:18rpx; }
-.r2 { flex:1; text-align:center; font-size:28rpx; padding:16rpx 0; border-radius:14rpx; background:var(--c-card2); color:var(--c-sub); }
+.r2 { flex:1; text-align:center; font-size:28rpx; padding:18rpx 0; border-radius:14rpx; background:var(--c-card2); color:var(--c-sub); min-width:0; }
 .r2.on { background:var(--c-accent); color:#fff; font-weight:700; }
-.inp { border:1px solid var(--c-input-border); border-radius:12rpx; padding:18rpx 20rpx; margin-bottom:14rpx; font-size:28rpx; background:var(--c-input); color:var(--c-text); }
-.ok { width:100%; background:#07c160; color:#fff; border-radius:50rpx; font-size:32rpx; height:88rpx; line-height:88rpx; margin-top:10rpx; }
+.inp { border:1px solid var(--c-input-border); border-radius:12rpx; padding:22rpx 20rpx; margin-bottom:14rpx; font-size:30rpx; background:var(--c-input); color:var(--c-text); width:100%; box-sizing:border-box; min-height:88rpx; }
+.ok { width:100%; background:#07c160; color:#fff; border-radius:50rpx; font-size:32rpx; height:96rpx; line-height:96rpx; margin-top:10rpx; }
 .ok[disabled] { opacity:.6; }
 .ok::after { border:none; }
+.dark .inp2, .dark .inp { background:var(--c-input); }
+.dark .r2 { background:var(--c-card2); color:var(--c-sub); }
 </style>

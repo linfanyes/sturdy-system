@@ -20,7 +20,7 @@
       <view class="sheet" @click.stop>
         <view class="sh-h">编辑资料</view>
         <view class="fld"><text class="lab">老师称呼</text><input v-model="form.name" class="inp" /></view>
-        <view class="fld"><text class="lab">所在学校</text><input v-model="form.school" class="inp" maxlength="30" placeholder="如：阳光小学" /></view>
+        <view class="fld"><text class="lab">所在学校</text><input v-model="form.school" class="inp" maxlength="30" placeholder="由学校管理员分配" disabled="true" /></view>
         <view class="fld"><text class="lab">任教学期</text>
           <view class="row2">
             <picker :range="termOpts" @change="(e)=>form.term = termOpts[e.detail.value]">

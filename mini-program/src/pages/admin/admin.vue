@@ -33,11 +33,11 @@
             </view>
             <text class="meta">学校：{{ a.schoolName || '未关联' }} · 编号：{{ a.schoolCode || '-' }}</text>
             <text class="meta">用户名：{{ a.username }}</text>
-            <view class="acts">
-              <text class="act" @click.stop="openEdit(a)">编辑</text>
-              <text class="act" @click.stop="openReset(a)">重置密码</text>
-              <text class="act del" @click.stop="delAdmin(a)">删除</text>
-            </view>
+          </view>
+          <view class="acts">
+            <text class="act" @click.stop="openEdit(a)">编辑</text>
+            <text class="act" @click.stop="openReset(a)">重置密码</text>
+            <text class="act del" @click.stop="delAdmin(a)">删除</text>
           </view>
         </view>
       </view>
@@ -182,8 +182,6 @@ function logout() { adminToken.value=''; uni.removeStorageSync(ADMIN_TOKEN_KEY);
 onMounted(() => {
   if (adminToken.value) {
     loadAdmins()
-  } else {
-    autoLogin()
   }
 })
 
@@ -306,35 +304,37 @@ async function delAdmin(a) {
 .act.del { color: #e64340; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
 .empty { padding: 60rpx 0; text-align: center; font-size: 26rpx; color: var(--c-sub); }
-.row { padding: 18rpx 0; border-bottom: 1px solid var(--c-border); }
-.info { flex: 1; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 18rpx 0; border-bottom: 1px solid var(--c-border); }
+.info { flex: 1; min-width: 0; }
 .nm-line { display: flex; align-items: center; gap: 12rpx; margin-bottom: 6rpx; }
 .nm { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .badge { display: inline-block; font-size: 20rpx; font-weight: 600; padding: 2rpx 14rpx; border-radius: 16rpx; }
 .badge.on { background: rgba(76, 175, 80, .15); color: #4CAF50; }
 .badge.off { background: rgba(230, 67, 64, .15); color: #e64340; }
 .meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
-.acts { display: flex; gap: 24rpx; margin-top: 10rpx; }
+.acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex-shrink: 0; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 /* 全屏表单 */
 .full-mask { position: fixed; inset: 0; z-index: 200; background: var(--c-bg); }
-.full-page { display: flex; flex-direction: column; height: 100vh; }
+.full-page { display: flex; flex-direction: column; height: 100vh; width: 100%; }
 .full-head { display: flex; align-items: center; justify-content: space-between; padding: 0 24rpx; height: 88rpx; background: var(--c-card); border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
 .full-back { font-size: 28rpx; color: var(--c-accent); width: 120rpx; }
 .full-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); }
 .full-placeholder { width: 120rpx; }
-.full-body { flex: 1; padding: 24rpx 30rpx; box-sizing: border-box; }
+.full-body { flex: 1; width: 100%; padding: 24rpx 30rpx; box-sizing: border-box; }
 .full-foot { padding: 16rpx 30rpx 30rpx; background: var(--c-card); border-top: 1px solid var(--c-border); flex-shrink: 0; }
-.hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-card2, #f5f5f5); padding: 14rpx 18rpx; border-radius: 12rpx; margin-bottom: 20rpx; line-height: 1.6; border-left: 4rpx solid var(--c-accent, #4CAF50); }
-.form-item { margin-bottom: 18rpx; }
+.hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-card2, #f5f5f5); padding: 14rpx 18rpx; border-radius: 12rpx; margin-bottom: 20rpx; line-height: 1.6; border-left: 4rpx solid var(--c-accent, #4CAF50); width: auto; }
+.form-item { margin-bottom: 18rpx; width: 100%; box-sizing: border-box; }
 .label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
 .req { color: #e64340; }
 .opt { color: var(--c-sub); font-weight: 400; font-size: 22rpx; }
 .label-line { flex: 1; }
-.switch-item { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 0; }
+.switch-item { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 0; width: 100%; box-sizing: border-box; }
 .switch-val { font-size: 24rpx; color: var(--c-sub); display: block; margin-top: 4rpx; }
 .hint-tip { font-size: 22rpx; color: var(--c-sub); text-align: center; margin: 8rpx 0 14rpx; }
 .save-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+/* 全屏表单内的输入框：覆盖共享 .inp 的 margin，确保宽度撑满 */
+.full-body .inp { width: 100%; margin-bottom: 0; min-height: 72rpx; }
 </style>

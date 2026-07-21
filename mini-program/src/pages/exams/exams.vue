@@ -199,7 +199,7 @@ function remove(e) {
 .add { margin-top: 16rpx; background: var(--c-accent); color: #fff; border-radius: 50rpx; }
 .add[disabled] { opacity: 0.6; }
 .form { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
-.form input, .picker, .readonly { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; color: var(--c-text); background: var(--c-input); }
+.form input, .picker, .readonly { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; color: var(--c-text); background: var(--c-input); width: 100%; }
 .readonly { color: var(--c-sub); }
 .sub-label { color: var(--c-sub); font-size: 26rpx; margin: 10rpx 0; line-height: 1.6; }
 .chips { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 20rpx; }
@@ -208,7 +208,7 @@ function remove(e) {
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .save[disabled] { opacity: 0.6; }
 .filters { display: flex; align-items: center; gap: 14rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
-.fpick { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 12rpx 24rpx; font-size: 26rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
+.fpick { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 12rpx 24rpx; font-size: 26rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; box-sizing: border-box; }
 .freset { font-size: 24rpx; color: #409eff; padding: 12rpx 8rpx; }
 .fsort { font-size: 24rpx; color: var(--c-accent); padding: 12rpx 14rpx; border-radius: 30rpx; background: var(--c-card); margin-left: auto; }
 .semester-hint { text-align: center; font-size: 24rpx; color: #409eff; padding: 12rpx 0; margin-top: 10rpx; }
@@ -218,5 +218,5 @@ function remove(e) {
 .fs-rows { margin-bottom: 20rpx; }
 .fs-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
 .fs-name { font-size: 26rpx; color: var(--c-title); width: 140rpx; }
-.fs-inp { flex: 1; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 12rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); }
+.fs-inp { flex: 1; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 12rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-width: 0; }
 </style>

@@ -2,18 +2,26 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, ValueTransformer } from 'typeorm'
 import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+
+const jsonArrayTransformer: ValueTransformer = {
+  to: (value: string[]) => (value ? JSON.stringify(value) : null),
+  from: (value: string) => {
+    if (!value) return []
+    try { return JSON.parse(value) } catch { return [] }
+  },
+}
 
 @Entity('my_galleries')
 export class MyGallery extends BaseEntity {
   @Column() title: string
   @Column({ nullable: true }) date: string
   @Column({ type: 'text', nullable: true }) description: string
-  @Column('simple-json', { nullable: true }) photos: string[]
+  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }
 
 class Svc extends CrudService<MyGallery> { constructor(@InjectRepository(MyGallery) r: Repository<MyGallery>) { super(r) } }

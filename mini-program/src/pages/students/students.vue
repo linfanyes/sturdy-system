@@ -48,7 +48,7 @@
 
     <view class="actions">
       <button class="add" @click="toggleForm">{{ showForm ? '收起' : '＋ 添加学生' }}</button>
-      <button class="import" @click="showImport = !showImport">{{ showImport ? '收起' : '📥 批量导入' }}</button>
+      <button class="import" @click="toggleImport">{{ showImport ? '收起' : '📥 批量导入' }}</button>
     </view>
 
     <view v-if="showForm" class="form">
@@ -273,6 +273,10 @@ function toggleForm() {
   showForm.value = !showForm.value
 }
 
+function toggleImport() {
+  showImport.value = !showImport.value
+}
+
 function toggleSel(s) {
   const ns = new Set(selected.value)
   if (ns.has(s.id)) ns.delete(s.id)
@@ -328,19 +332,29 @@ async function save() {
     return uni.showToast({ title: '请选择性别', icon: 'none' })
   if (!isStudentNo(form.value.studentNo)) return uni.showToast({ title: '学号格式错误（仅字母数字，2-32位）', icon: 'none' })
   if (form.value.parentPhone && !isPhone(form.value.parentPhone)) return uni.showToast({ title: '家长电话格式错误（应为 11 位手机号）', icon: 'none' })
+  if (!classId.value) return uni.showToast({ title: '班级信息缺失，请重新进入', icon: 'none' })
   saving.value = true
   try {
-    await api.post('/students', {
-      ...form.value,
-      classId: classId.value,
+    // 显式构造 payload，只发送实体所需字段，空字符串转为 null 避免数据库约束问题
+    const payload = {
+      name: form.value.name.trim(),
+      gender: form.value.gender,
+      studentNo: form.value.studentNo.trim(),
+      parentName: form.value.parentName.trim(),
+      parentPhone: form.value.parentPhone.trim(),
+      duty: form.value.duty.trim() || null,
+      birthDate: form.value.birthDate || null,
+      note: form.value.note.trim() || null,
       tags: parseTags(form.value.tags),
-    })
+      classId: classId.value,
+    }
+    await api.post('/students', payload)
     uni.showToast({ title: '已保存', icon: 'success' })
     showForm.value = false
     form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' }
     load()
   } catch (e) {
-    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none', duration: 3000 })
   } finally {
     saving.value = false
   }
@@ -580,7 +594,7 @@ function drawRadar() {
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .bar { font-size: 34rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
 .toolbar { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
-.search { flex: 1; border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); }
+.search { flex: 1; border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-width: 0; }
 .mini-picker { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 24rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
 .toolbar2 { display: flex; align-items: center; gap: 20rpx; margin-bottom: 16rpx; }
 .tbtn { font-size: 26rpx; color: #409eff; padding: 10rpx 22rpx; border-radius: 30rpx; background: var(--c-card); border: 1px solid var(--c-border); }
@@ -607,7 +621,7 @@ function drawRadar() {
 .add { background: var(--c-accent); }
 .import { background: #409eff; }
 .form { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
-.form input, .picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); }
+.form input, .picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); width: 100%; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .import-box { background: var(--c-card2); }
 .imp-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }

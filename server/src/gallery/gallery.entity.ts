@@ -1,5 +1,14 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, ValueTransformer } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
+
+// JSON 数组 ↔ LONGTEXT 互转：simple-json 映射为 TEXT(64KB)，base64 照片远超此限
+const jsonArrayTransformer: ValueTransformer = {
+  to: (value: string[]) => (value ? JSON.stringify(value) : null),
+  from: (value: string) => {
+    if (!value) return []
+    try { return JSON.parse(value) } catch { return [] }
+  },
+}
 
 @Entity('class_galleries')
 export class ClassGallery extends BaseEntity {
@@ -7,6 +16,6 @@ export class ClassGallery extends BaseEntity {
   @Column() title: string
   @Column({ type: 'text', nullable: true }) description: string
   @Column({ default: '' }) date: string
-  // 图片以 base64 dataURL 数组直存（小程序云托管私有链路下无对象存储，直存 text 字段保证可靠显示）
-  @Column('simple-json', { nullable: true }) photos: string[]
+  // 图片以 base64 dataURL 数组直存，用 LONGTEXT(4GB) 容纳多张照片
+  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }

@@ -73,6 +73,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { compressImage } from '../../common/image'
 
 const classes = ref([])
 const classId = ref('')
@@ -155,16 +156,20 @@ async function doMove(album) {
 
 function pickImg() {
   uni.chooseMedia({
-    count: 9, mediaType: ['image'], success: (res) => {
-      res.tempFiles.forEach((f) => {
-        uni.getFileSystemManager().readFile({
-          filePath: f.tempFilePath, encoding: 'base64',
-          success: (r) => {
-            const ext = (f.tempFilePath.split('.').pop() || 'png').toLowerCase()
-            form.value.photos.push('data:image/' + ext + ';base64,' + r.data)
-          },
-        })
-      })
+    count: 9, mediaType: ['image'], success: async (res) => {
+      for (const f of res.tempFiles) {
+        try {
+          // 压缩到 1280px / 质量 70，控制 base64 体积避免数据库/请求超限
+          const cmp = await compressImage({ src: f.tempFilePath, maxWidth: 1280, maxHeight: 1280, quality: 70, fileType: 'jpg' })
+          const path = cmp?.tempFilePath || f.tempFilePath
+          const r = await new Promise((resolve, reject) => {
+            uni.getFileSystemManager().readFile({ filePath: path, encoding: 'base64', success: resolve, fail: reject })
+          })
+          form.value.photos.push('data:image/jpeg;base64,' + r.data)
+        } catch (e) {
+          uni.showToast({ title: '图片处理失败', icon: 'none' })
+        }
+      }
     },
   })
 }

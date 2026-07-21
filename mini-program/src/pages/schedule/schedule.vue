@@ -711,8 +711,8 @@ function copyAsText() {
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; z-index: 50; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; box-sizing: border-box; }
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
-.inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx; font-size: 28rpx; background: var(--c-input); }
-.picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 20rpx; font-size: 28rpx; background: var(--c-input); }
+.inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx; font-size: 28rpx; background: var(--c-input); width: 100%; box-sizing: border-box; }
+.picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 20rpx; font-size: 28rpx; background: var(--c-input); width: 100%; box-sizing: border-box; }
 .ro { font-size: 26rpx; color: var(--c-accent); background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 16rpx; display: flex; align-items: center; justify-content: space-between; }
 .exp-link { font-size: 22rpx; color: var(--c-primary); padding: 4rpx 12rpx; border-radius: 12rpx; background: rgba(7,193,96,.1); flex-shrink: 0; }
 .exp-link.xls { color: #409eff; background: rgba(64,158,255,.1); }

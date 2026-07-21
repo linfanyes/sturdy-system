@@ -8,7 +8,7 @@
       </view>
       <view class="field">
         <text class="label">学校</text>
-        <input v-model="profile.school" placeholder="如 阳光小学" />
+        <input v-model="profile.school" placeholder="由学校管理员分配" disabled="true" />
       </view>
     <button class="save" :disabled="savingProfile" @click="saveProfile">{{ savingProfile ? '保存中…' : '保存资料' }}</button>
   </view>
@@ -35,9 +35,20 @@
         </view>
       </view>
       <view v-if="showSem" class="sem-edit">
-        <input v-model="semForm.name" class="inp-sm" placeholder="学期名称" />
-        <input v-model="semForm.startDate" class="inp-sm" placeholder="起始日期 YYYY-MM-DD" />
-        <input v-model="semForm.endDate" class="inp-sm" placeholder="结束日期 YYYY-MM-DD" />
+        <view class="sem-field">
+          <text class="sem-label">学年</text>
+          <picker :range="yearOpts" :value="yearIdx" @change="onYearPick">
+            <view class="inp-sm pick-view">{{ yearOpts[yearIdx] }}年</view>
+          </picker>
+        </view>
+        <view class="sem-field">
+          <text class="sem-label">学期</text>
+          <view class="sem-seasons">
+            <text class="sem-season" :class="semForm.season === '春季' && 'on'" @click="onSeasonPick('春季')">春季</text>
+            <text class="sem-season" :class="semForm.season === '秋季' && 'on'" @click="onSeasonPick('秋季')">秋季</text>
+          </view>
+        </view>
+        <view class="sem-preview">学期名称：{{ semForm.name || '请选择' }}</view>
         <view class="sem-ebtn">
           <text class="sem-cancel" @click="showSem=false">取消</text>
           <text class="sem-ok" @click="saveSemester">{{ editingSem ? '更新' : '添加' }}</text>
@@ -300,9 +311,41 @@ const providerIdx = ref(0)
 const semesters = ref([])
 const showSem = ref(false)
 const editingSem = ref(null)
-const semForm = ref({ name: '', startDate: '', endDate: '' })
+const semForm = ref({ name: '', startDate: '', endDate: '', season: '春季', year: '' })
 const currentSemester = computed(() => semesters.value.find((s) => s.current) || null)
 const currentSemesterName = computed(() => currentSemester.value ? currentSemester.value.name : '')
+
+// 年份选项：近五年（当前年份前2年 ~ 后2年）
+const yearOpts = computed(() => {
+  const y = new Date().getFullYear()
+  return [y - 2, y - 1, y, y + 1, y + 2].map(String)
+})
+const yearIdx = ref(2) // 默认选中当前年份
+
+// 根据年份+季节生成学期名和日期
+function buildSemester(year, season) {
+  const name = year + '年' + season + '学期'
+  let startDate, endDate
+  if (season === '春季') {
+    startDate = year + '-02-17'
+    endDate = year + '-07-04'
+  } else {
+    startDate = year + '-09-01'
+    endDate = (Number(year) + 1) + '-01-15'
+  }
+  return { name, startDate, endDate }
+}
+function onYearPick(e) {
+  yearIdx.value = e.detail.value
+  const y = yearOpts.value[yearIdx.value]
+  const built = buildSemester(y, semForm.value.season)
+  semForm.value = { ...semForm.value, year: y, ...built }
+}
+function onSeasonPick(season) {
+  const y = yearOpts.value[yearIdx.value]
+  const built = buildSemester(y, season)
+  semForm.value = { ...semForm.value, season, year: y, ...built }
+}
 
 // 自动学期检测：上半年=春季，下半年=秋季
 function autoSemesterName() {
@@ -311,43 +354,38 @@ function autoSemesterName() {
   const m = now.getMonth() + 1
   return m <= 6 ? y + '年春季学期' : y + '年秋季学期'
 }
-function autoSemesterDates() {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth() + 1
-  if (m <= 6) {
-    return { startDate: y + '-02-17', endDate: y + '-07-04' }
-  } else {
-    return { startDate: y + '-09-01', endDate: (y + 1) + '-01-15' }
-  }
-}
 
 async function loadSemesters() {
   try { semesters.value = await api.get('/semesters') } catch (e) { semesters.value = [] }
   // 无当前学期时自动弹出添加对话框
   if (!currentSemester.value) {
-    const name = autoSemesterName()
-    const dates = autoSemesterDates()
-    semForm.value = { name, ...dates }
-    editingSem.value = null
+    initSemForm()
     showSem.value = true
   }
 }
-function autoAddSemester() {
-  const name = autoSemesterName()
-  const dates = autoSemesterDates()
-  semForm.value = { name, ...dates }
+function initSemForm() {
+  const now = new Date()
+  const y = String(now.getFullYear())
+  const m = now.getMonth() + 1
+  const season = m <= 6 ? '春季' : '秋季'
+  yearIdx.value = yearOpts.value.indexOf(y) >= 0 ? yearOpts.value.indexOf(y) : 2
+  const built = buildSemester(y, season)
+  semForm.value = { name: built.name, startDate: built.startDate, endDate: built.endDate, season, year: y }
   editingSem.value = null
+}
+function autoAddSemester() {
+  initSemForm()
   showSem.value = true
 }
 async function saveSemester() {
-  if (!semForm.value.name.trim()) return uni.showToast({ title: '请输入学期名称', icon: 'none' })
+  if (!semForm.value.name.trim()) return uni.showToast({ title: '请选择年份和学期', icon: 'none' })
   try {
+    const payload = { name: semForm.value.name, startDate: semForm.value.startDate, endDate: semForm.value.endDate }
     if (editingSem.value) {
-      await api.patch('/semesters/' + editingSem.value.id, semForm.value)
+      await api.patch('/semesters/' + editingSem.value.id, payload)
     } else {
       // 新建学期时如果不存在当前学期，自动设为当前
-      await api.post('/semesters', { ...semForm.value, current: !currentSemester.value })
+      await api.post('/semesters', { ...payload, current: !currentSemester.value })
     }
     showSem.value = false
     await loadSemesters()
@@ -529,7 +567,19 @@ async function saveAi() {
   if (savingAi.value) return
   savingAi.value = true
   try {
-    await api.put('/config/ai', ai.value)
+    // 显式构造纯对象，避免 Vue reactive proxy 序列化异常；temperature 转数字
+    const payload = {
+      baseUrl: ai.value.baseUrl || '',
+      apiKey: ai.value.apiKey || '',
+      textModel: ai.value.textModel || '',
+      visionModel: ai.value.visionModel || '',
+      imageModel: ai.value.imageModel || '',
+      videoModel: ai.value.videoModel || '',
+      temperature: Number(ai.value.temperature) || 0.7,
+      aiName: ai.value.aiName || '',
+      systemPrompt: ai.value.systemPrompt || '',
+    }
+    await api.put('/config/ai', payload)
     uni.showToast({ title: 'AI 配置已保存', icon: 'success' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
@@ -597,6 +647,13 @@ function doLogout() {
 .sem-act.del { color: var(--c-danger); }
 .sem-edit { margin-top: 14rpx; padding: 16rpx; background: var(--c-card2); border-radius: 14rpx; }
 .inp-sm { width: 100%; border: 1px solid var(--c-border); border-radius: 10rpx; padding: 12rpx 14rpx; margin-bottom: 10rpx; font-size: 26rpx; box-sizing: border-box; }
+.pick-view { color: var(--c-title); background: var(--c-card); min-height: 44rpx; }
+.sem-field { margin-bottom: 14rpx; }
+.sem-label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
+.sem-seasons { display: flex; gap: 16rpx; }
+.sem-season { flex: 1; text-align: center; font-size: 28rpx; padding: 16rpx 0; border-radius: 12rpx; border: 2rpx solid var(--c-border); color: var(--c-sub); background: var(--c-card); }
+.sem-season.on { border-color: var(--c-accent); color: #fff; background: var(--c-accent); font-weight: 700; }
+.sem-preview { font-size: 26rpx; color: var(--c-title); margin: 10rpx 0; padding: 10rpx 14rpx; background: var(--c-card); border-radius: 10rpx; }
 .sem-ebtn { display: flex; gap: 14rpx; justify-content: flex-end; }
 .sem-cancel { font-size: 26rpx; color: var(--c-sub); padding: 10rpx 20rpx; }
 .sem-ok { font-size: 26rpx; color: #fff; background: var(--c-primary); padding: 10rpx 28rpx; border-radius: 20rpx; }

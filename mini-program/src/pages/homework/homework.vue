@@ -373,7 +373,7 @@ function after(n) {
 .add { font-size: 26rpx; color: var(--c-accent); font-weight: 700; background: var(--c-card2); padding: 12rpx 22rpx; border-radius: 30rpx; }
 .filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10rpx; background: var(--c-card); border-radius: 16rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; }
 .chk { font-size: 24rpx; color: var(--c-title); display: flex; align-items: center; }
-.picker.sm { border: 1px solid var(--c-border); border-radius: 30rpx; padding: 10rpx 20rpx; font-size: 24rpx; background: var(--c-input); }
+.picker.sm { border: 1px solid var(--c-border); border-radius: 30rpx; padding: 10rpx 20rpx; font-size: 24rpx; background: var(--c-input); box-sizing: border-box; }
 .seg-btn { font-size: 24rpx; color: var(--c-accent); background: var(--c-card2); padding: 10rpx 22rpx; border-radius: 30rpx; }
 .seg-btn.on { background: var(--c-accent); color: #fff; }
 /* P1-5: 完成分析 */
