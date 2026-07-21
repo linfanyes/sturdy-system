@@ -8,6 +8,8 @@ export class NoteItem extends BaseEntity {
   @Column({ default: '其他' }) category: string
   @Column({ type: 'boolean', default: false }) pinned: boolean
   @Column({ type: 'boolean', default: false }) favorite: boolean
+  /** 直接插入的图片（base64 data URL 数组，与 award-record 一致） */
+  @Column({ type: 'simple-json', nullable: true }) images: string[]
 }
 
 @Entity('todos')

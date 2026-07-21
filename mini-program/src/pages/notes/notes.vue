@@ -28,6 +28,7 @@
         </view>
         <view class="title"><text class="md" v-if="isMd(n.content)">MD</text>{{ n.title }}</view>
         <view class="content">{{ n.content }}</view>
+        <image v-if="n.images && n.images.length" :src="n.images[0]" mode="aspectFill" class="cardimg" @click.stop="previewImg(n.images, 0)" />
         <view class="foot">{{ fmt(n.updatedAt) }}</view>
       </view>
     </view>
@@ -48,9 +49,23 @@
       <view class="toolbar" v-if="!previewing">
         <text class="tb-btn" @click="startVoice">🎤 语音输入</text>
         <text class="tb-btn" @click="pickOcr">📷 图片识文</text>
+        <text class="tb-btn" @click="pickTxt">📄 导入 TXT</text>
+        <text class="tb-btn" @click="pickPdf">📑 导入 PDF</text>
+        <text class="tb-btn" @click="pickImage">🖼 导入图片</text>
       </view>
       <textarea v-if="!previewing" v-model="form.content" class="inp area" :placeholder="voiceTip + '把今天想说的写下来吧...（支持 # 标题、**加粗**、- 列表、`代码`、> 引用）'"></textarea>
-      <scroll-view v-else scroll-y class="mdpreview"><rich-text :nodes="mdPreview"></rich-text></scroll-view>
+      <view class="imgs" v-if="!previewing && form.images.length">
+        <view class="imgwrap" v-for="(img, idx) in form.images" :key="idx">
+          <image :src="img" mode="aspectFill" class="imgthumb" @click="previewImg(form.images, idx)" />
+          <text class="imgdel" @click="removeImg(idx)">✕</text>
+        </view>
+      </view>
+      <scroll-view v-else scroll-y class="mdpreview">
+        <view v-if="form.images.length" class="previmgs">
+          <image v-for="(img, idx) in form.images" :key="idx" :src="img" mode="widthFix" class="previmg" @click="previewImg(form.images, idx)" />
+        </view>
+        <rich-text :nodes="mdPreview"></rich-text>
+      </scroll-view>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
         <view class="mb ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</view>
@@ -76,7 +91,7 @@ const kw = ref('')
 const active = ref('全部')
 const show = ref(false)
 const editing = ref(null)
-const form = ref({ title: '', category: '教学反思', content: '' })
+const form = ref({ title: '', category: '教学反思', content: '', images: [] })
 const previewing = ref(false)
 const saving = ref(false)
 const voiceTip = ref('')
@@ -115,6 +130,132 @@ function startVoice() {
   rm.start({ format: 'mp3', sampleRate: 16000, numberOfChannels: 1, encodeBitRate: 48000 })
   // 3分钟后自动停止
   setTimeout(() => { if (recording) { rm.stop(); uni.showToast({ title: '录音超时已自动结束', icon: 'none' }) } }, 180000)
+}
+
+// 导入 TXT 文件
+function pickTxt() {
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['txt', 'md', 'csv', 'json'],
+    success: async (res) => {
+      const file = res.tempFiles[0]
+      uni.showLoading({ title: '读取中…' })
+      try {
+        const fs = uni.getFileSystemManager()
+        // 对于小文件直接用 utf-8 读取
+        const text = fs.readFileSync(file.path, 'utf-8')
+        form.value.content += (form.value.content ? '\n' : '') + text
+        uni.showToast({ title: '已导入：' + file.name, icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '读取失败:' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+
+// 导入 PDF 文件
+function pickPdf() {
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['pdf'],
+    success: async (res) => {
+      const file = res.tempFiles[0]
+      uni.showLoading({ title: '解析 PDF…' })
+      try {
+        const fs = uni.getFileSystemManager()
+        const data = fs.readFileSync(file.path, 'base64')
+        const r = await api.post('/ai/parse-file', { fileName: file.name, fileData: data })
+        if (r.text && r.text !== '未识别到文字') {
+          form.value.content += (form.value.content ? '\n' : '') + r.text
+          uni.showToast({ title: '已导入：' + file.name, icon: 'success' })
+        } else {
+          uni.showToast({ title: 'PDF 未提取到文字', icon: 'none' })
+        }
+      } catch (e) {
+        uni.showToast({ title: '解析失败:' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+
+// 导入图片（OCR 识别文字后插入编辑器）
+// 导入图片：让用户选择「识别文字」或「作为图片插入」
+function pickImage() {
+  uni.showActionSheet({
+    itemList: ['识别文字（OCR 插入文本）', '作为图片插入'],
+    success: (res) => {
+      if (res.tapIndex === 0) pickImageOcr()
+      else if (res.tapIndex === 1) pickImageInsert()
+    },
+  })
+}
+
+// 识别图片中的文字并插入正文
+function pickImageOcr() {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    success: async (res) => {
+      const path = res.tempFilePaths[0]
+      uni.showLoading({ title: '识别中…' })
+      try {
+        const fs = uni.getFileSystemManager()
+        const data = fs.readFileSync(path, 'base64')
+        const r = await api.post('/ai/parse-file', { fileName: 'image.jpg', fileData: data })
+        if (r.text && r.text !== '未识别到文字') {
+          form.value.content += (form.value.content ? '\n' : '') + r.text
+          uni.showToast({ title: '文字已提取', icon: 'success' })
+        } else {
+          uni.showToast({ title: '未识别到文字', icon: 'none' })
+        }
+      } catch (e) {
+        uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+
+// 把图片作为附件直接插入笔记
+function pickImageInsert() {
+  uni.chooseImage({
+    count: 9,
+    sizeType: ['compressed'],
+    success: async (res) => {
+      const paths = res.tempFilePaths
+      uni.showLoading({ title: '插入图片…' })
+      try {
+        const fs = uni.getFileSystemManager()
+        for (const p of paths) {
+          const ext = p.split('.').pop() || 'jpeg'
+          const data = fs.readFileSync(p, 'base64')
+          form.value.images.push('data:image/' + ext + ';base64,' + data)
+        }
+        uni.showToast({ title: '已插入 ' + paths.length + ' 张图片', icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '插入失败:' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+
+// 删除已插入的图片
+function removeImg(idx) {
+  form.value.images.splice(idx, 1)
+}
+
+// 预览图片
+function previewImg(urls, idx) {
+  uni.previewImage({ urls, current: idx })
 }
 
 // 图片识文（OCR）
@@ -274,19 +415,25 @@ function fmt(ts) {
 }
 function openCreate() {
   editing.value = null
-  form.value = { title: '', category: '教学反思', content: '' }
+  form.value = { title: '', category: '教学反思', content: '', images: [] }
   previewing.value = false
   show.value = true
 }
 function openEdit(n) {
   editing.value = n
-  form.value = { title: n.title, category: n.category, content: n.content }
+  form.value = {
+    title: n.title,
+    category: n.category,
+    content: n.content,
+    images: Array.isArray(n.images) ? [...n.images] : [],
+  }
   previewing.value = false
   show.value = true
 }
 async function save() {
   if (!form.value.title.trim()) return uni.showToast({ title: '请填写标题', icon: 'none' })
-  if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填写内容', icon: 'none' })
+  if (!isNonEmpty(form.value.content) && !(form.value.images && form.value.images.length))
+    return uni.showToast({ title: '请填写内容或插入图片', icon: 'none' })
   const payload = { ...form.value }
   saving.value = true
   try {
@@ -358,8 +505,15 @@ function del(n) {
 .mdtab { font-size: 26rpx; padding: 10rpx 28rpx; border-radius: 30rpx; background: #f3f3f3; color: #999; }
 .mdtab.on { background: #4a3f35; color: #fff; }
 .mdhint { font-size: 22rpx; color: #bbb; margin-left: auto; }
-.toolbar { display: flex; gap: 12rpx; margin-bottom: 10rpx; }
-.tb-btn { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-accent); }
+.cardimg { width: 100%; height: 200rpx; border-radius: 12rpx; margin-top: 12rpx; background: #f3f3f3; }
+.imgs { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 12rpx; }
+.imgwrap { position: relative; width: 150rpx; height: 150rpx; }
+.imgthumb { width: 150rpx; height: 150rpx; border-radius: 12rpx; background: #f3f3f3; }
+.imgdel { position: absolute; top: -10rpx; right: -10rpx; width: 36rpx; height: 36rpx; line-height: 36rpx; text-align: center; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; font-size: 22rpx; }
+.previmgs { display: flex; flex-direction: column; gap: 12rpx; margin-bottom: 14rpx; }
+.previmg { width: 100%; border-radius: 12rpx; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10rpx; margin-bottom: 10rpx; }
+.tb-btn { font-size: 22rpx; padding: 8rpx 16rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-accent); white-space: nowrap; }
 .mdpreview { max-height: 420rpx; background: #fafafa; border: 1px solid #eee; border-radius: 12rpx; padding: 16rpx; font-size: 26rpx; }
 .content { font-size: 25rpx; color: #6a6058; margin-top: 8rpx; max-height: 120rpx; overflow: hidden; white-space: pre-wrap; }
 .foot { font-size: 22rpx; color: #bbb; margin-top: 12rpx; }

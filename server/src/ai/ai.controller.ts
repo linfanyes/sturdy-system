@@ -74,4 +74,16 @@ export class AiController {
   ocr(@Body() body: { image: string }, @CurrentTeacher() t: any) {
     return this.ai.ocr(t.sub, body)
   }
+
+  /**
+   * 文件解析：支持 TXT/PDF/图片 转文本。
+   * 前端通过 uni.chooseMessageFile/uni.chooseImage 选择文件后，读 base64 上传。
+   * @param body { fileName: string, fileData: string (base64) }
+   * @returns { text: string } 解析后的纯文本
+   */
+  @Post('parse-file')
+  @UseGuards(JwtAuthGuard)
+  parseFile(@Body() body: { fileName: string; fileData: string }, @CurrentTeacher() t: any) {
+    return this.ai.parseFile(t.sub, body)
+  }
 }

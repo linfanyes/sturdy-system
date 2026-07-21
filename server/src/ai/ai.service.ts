@@ -526,6 +526,63 @@ export class AiService {
     }
   }
 
+  /**
+   * 通用文件解析：根据文件后缀自动路由到 TXT/PDF/图片 OCR 解析。
+   * 前端传 { fileName, fileData(base64) }，返回解析后的纯文本。
+   */
+  async parseFile(
+    teacherId: string,
+    body: { fileName: string; fileData: string },
+  ): Promise<{ text: string }> {
+    if (!body.fileData) return { text: '' }
+    const buf = Buffer.from(body.fileData, 'base64')
+    const ext = (body.fileName.split('.').pop() || '').toLowerCase()
+
+    // TXT / Markdown / 纯文本类
+    if (['txt', 'md', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
+      return { text: buf.toString('utf-8') }
+    }
+
+    // PDF
+    if (ext === 'pdf') {
+      try {
+        const r = await pdfParse(buf)
+        let text = r.text
+        // 文本极少 → 疑似扫描件，尝试用多模态 OCR
+        if (text.trim().length < 30) {
+          const s = await this.buildSettings(teacherId)
+          if (s?.visionModel && s?.apiKey) {
+            try {
+              const ocrText = await this.ocrPdf(buf, s)
+              if (ocrText && ocrText !== '（OCR 未识别到文字）') {
+                text = ocrText
+              }
+            } catch {
+              /* OCR 失败则用原始提取结果 */
+            }
+          }
+        }
+        return { text }
+      } catch (e: any) {
+        throw new BadRequestException(`PDF 解析失败：${e?.message || e}`)
+      }
+    }
+
+    // 图片类：jpg / jpeg / png / gif / webp / bmp
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
+      const mimeMap: Record<string, string> = {
+        jpg: 'jpeg', jpeg: 'jpeg', png: 'png', gif: 'gif', webp: 'webp', bmp: 'bmp',
+      }
+      const mime = mimeMap[ext] || 'jpeg'
+      const dataUrl = `data:image/${mime};base64,${body.fileData}`
+      const s = await this.buildSettings(teacherId)
+      const text = await this.ocrImage(s, dataUrl)
+      return { text: text || '未识别到文字' }
+    }
+
+    throw new BadRequestException(`不支持的文件格式：${ext}`)
+  }
+
   /** 图片 OCR：用多模态模型识别图片中的文字 */
   async ocr(teacherId: string, body: { image: string }): Promise<{ text: string }> {
     if (!body.image) return { text: '' }

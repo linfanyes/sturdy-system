@@ -106,12 +106,14 @@ const TEACHERS = [
 ]
 
 /* ---------------- 其他数据 ---------------- */
+const IMG_DEMO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAAB+0lEQVR4nO3cIUtDURyG8XdzKC6Jcwbbmq7YTRr1A6z4CbVaBMOCGPQTWEQMgsgwqiBjFoPFe7er28WH59f+3HLg4dyz3XAa+yeTiKtZ9wI0XwaGMzCcgeEMDGdgOAPDGRjOwHCt4sfDwWKWoV85OP3xkTsYzsBwBoYrOYO/K3jRa/Gm/HnkDoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYzsBwBoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAzXIT2t4aDXD1mPEmrmb2tJEWjd7BVVlvg25dcP+XsLke9rK2k2SgaVVltgZ9f8zFOv5PRW0ZvSUpGVVPnGXzxkOOd3DxNNaqaOgMf9nJ+/3Xilo6qprbAm+0sL+XyMd12NlZLRlVW2xm8vZ6X9+x202qm30lSMqqa2gL7z2cx/NABZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYzsBwBoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYbobLSIeD+S1D8+IOhjMwnIHhSs5gr+3+79zBcAaGMzCcgeEMDGdgOAPDGRjuE1FLWNj97r9cAAAAAElFTkSuQmCC'
+
 const NOTES = [
   { id: 'n1', title: '《春晓》教学反思', content: '今天讲了孟浩然的《春晓》，大部分学生能当堂背诵。互动环节课堂气氛活跃。', category: '教学反思', updatedAt: todayStr, createdAt: todayStr },
   { id: 'n2', title: '下周家长会安排', content: '时间：周四下午 4:00\n地点：本班教室\n内容：期中成绩分析 + 暑假安全提醒', category: '班会记录', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n3', title: '英语公开课教案', content: 'Unit 3 My Friends — 通过角色扮演练习句型，目标：能用英语描述朋友的外貌和性格。', category: '学习资料', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n4', title: '低年级识字教学心得', content: '用字理识字+游戏化复习，学生记字更牢。每天课前 3 分钟“开火车”认读效果好。', category: '教学', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n5', title: '班级图书角管理计划', content: '设立图书管理员轮岗（每周 2 人），借阅登记本放图书角；每月评选“阅读之星”。', category: '班级', updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n3', title: '英语公开课教案', content: 'Unit 3 My Friends — 通过角色扮演练习句型，目标：能用英语描述朋友的外貌和性格。', category: '学习资料', updatedAt: todayStr, createdAt: todayStr, images: [IMG_DEMO] },
+  { id: 'n4', title: '低年级识字教学心得', content: '用字理识字+游戏化复习，学生记字更牢。每天课前 3 分钟"开火车"认读效果好。', category: '教学', updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n5', title: '班级图书角管理计划', content: '设立图书管理员轮岗（每周 2 人），借阅登记本放图书角；每月评选"阅读之星"。', category: '班级', updatedAt: todayStr, createdAt: todayStr },
 ]
 
 const TODOS = [
@@ -262,6 +264,7 @@ const MOCK = {
   '/my-galleries': MY_GALLERIES,
   '/ai/gen-image': GEN_IMAGE_RESULT,
   '/ai/gen-video': GEN_VIDEO_RESULT,
+  '/ai/parse-file': { text: '这是演示模式下从文件解析出的模拟文本内容。在实际环境中，系统会通过 AI 服务解析 PDF 或识别图片中的文字。' },
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 
