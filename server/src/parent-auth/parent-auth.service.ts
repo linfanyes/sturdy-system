@@ -1,9 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, In } from 'typeorm'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
+import { Notice } from '../school/school.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 
@@ -17,6 +18,7 @@ export class ParentAuthService {
   constructor(
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
   ) {}
@@ -80,6 +82,26 @@ export class ParentAuthService {
       imUserId: payload.sub,
       kids,
     }
+  }
+
+  /** 孩子所在班级的通知（按发布时间倒序，已结束的放在后面） */
+  async getNotices(kids: any[]) {
+    const classIds = [...new Set(kids.map((k) => k.classId).filter(Boolean))]
+    if (!classIds.length) return []
+    const notices = await this.noticeRepo.find({
+      where: { classId: In(classIds) },
+      order: { createdAt: 'DESC' },
+      take: 30,
+    })
+    return notices.map((n) => ({
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      classId: n.classId,
+      pinned: n.pinned,
+      ended: n.ended,
+      createdAt: n.createdAt,
+    }))
   }
 
   /** 签发家长 IM UserSig（复用教师端的签名逻辑） */

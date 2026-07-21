@@ -12,6 +12,15 @@
         <view class="kc">{{ k.parentName }} · 班级 {{ k.classId }}</view>
       </view>
     </view>
+
+    <view class="sec" v-if="notices.length">
+      <view class="st">📢 班级通知</view>
+      <view class="nitem" v-for="n in notices" :key="n.id">
+        <view class="nt">{{ n.title }}<text v-if="n.pinned" class="npin">置顶</text></view>
+        <view class="nc">{{ n.content }}</view>
+      </view>
+    </view>
+
     <view class="hint" v-if="demoMode">
       演示模式：未配置腾讯云 IM。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可与老师真实收发。
     </view>
@@ -77,6 +86,7 @@ const demoMode = ref(true)
 const connected = ref(false)
 const loginUser = ref('')
 const kids = ref([])
+const notices = ref([])
 const convList = ref([])
 const activeConvId = ref('')
 const draft = ref('')
@@ -335,6 +345,8 @@ onShow(async () => {
   try {
     const me = await parentApi.get('/parent-auth/me')
     kids.value = (me && me.kids) || []
+    const ns = await parentApi.get('/parent-auth/notices')
+    notices.value = Array.isArray(ns) ? ns : []
   } catch (e) {}
   try {
     const r = await parentApi.get('/parent-auth/im-user-sig')
@@ -360,6 +372,12 @@ onShow(async () => {
 .kid { background: var(--c-card); border-radius: 14rpx; padding: 14rpx 20rpx; }
 .kn { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .kc { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.sec { margin-bottom: 14rpx; }
+.st { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.nitem { background: var(--c-card); border-radius: 14rpx; padding: 16rpx 20rpx; margin-bottom: 12rpx; }
+.nt { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
+.npin { font-size: 20rpx; color: #e6a23c; background: #fef3e6; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 10rpx; }
+.nc { font-size: 24rpx; color: var(--c-sub); margin-top: 8rpx; line-height: 1.5; white-space: pre-wrap; }
 .hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .chats { white-space: nowrap; margin-bottom: 14rpx; }
 .chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }

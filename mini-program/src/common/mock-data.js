@@ -277,6 +277,10 @@ const MOCK = {
   '/parent-auth/login': { token: 'mock-parent-token', parent: { imUserId: 'p_demo_zhang', studentId: 's1', studentName: '张小明', classId: 'c1', parentName: '张伟', phone: '13800001001' } },
   '/parent-auth/me': { phone: '13800001001', parentName: '张伟', imUserId: 'p_demo_zhang', kids: [{ studentId: 's1', studentName: '张小明', classId: 'c1', parentName: '张伟' }] },
   '/parent-auth/im-user-sig': { sdkAppId: '', userSig: 'demo-parent-sig' },
+  '/parent-auth/notices': [
+    { id: 'n1', title: '下周期末考试安排', content: '请各位家长协助孩子做好复习准备，具体时间另行通知。', classId: 'c1', pinned: true, ended: false, createdAt: todayStr },
+    { id: 'n2', title: '暑假安全注意事项', content: '防溺水、防中暑、注意交通安全。', classId: 'c1', pinned: false, ended: false, createdAt: todayStr },
+  ],
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 

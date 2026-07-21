@@ -26,4 +26,13 @@ export class ParentAuthController {
   sig(@CurrentParent() p: any) {
     return this.s.getImUserSig(p)
   }
+
+  /** 孩子所在班级的通知 */
+  @Get('notices')
+  @UseGuards(ParentAuthGuard)
+  async notices(@CurrentParent() p: any) {
+    // 先取孩子列表，再查通知
+    const me = await this.s.getMe(p)
+    return this.s.getNotices(me.kids)
+  }
 }
