@@ -45,7 +45,11 @@
         <text class="mdtab" :class="previewing && 'on'" @click="previewing = true">预览</text>
         <text class="mdhint">支持 Markdown</text>
       </view>
-      <textarea v-if="!previewing" v-model="form.content" class="inp area" placeholder="把今天想说的写下来吧...（支持 # 标题、**加粗**、- 列表、`代码`、> 引用）"></textarea>
+      <view class="toolbar" v-if="!previewing">
+        <text class="tb-btn" @click="startVoice">🎤 语音输入</text>
+        <text class="tb-btn" @click="pickOcr">📷 图片识文</text>
+      </view>
+      <textarea v-if="!previewing" v-model="form.content" class="inp area" :placeholder="voiceTip + '把今天想说的写下来吧...（支持 # 标题、**加粗**、- 列表、`代码`、> 引用）'"></textarea>
       <scroll-view v-else scroll-y class="mdpreview"><rich-text :nodes="mdPreview"></rich-text></scroll-view>
       <view class="mbtns">
         <view class="mb cancel" @click="show = false">取消</view>
@@ -75,6 +79,70 @@ const editing = ref(null)
 const form = ref({ title: '', category: '教学反思', content: '' })
 const previewing = ref(false)
 const saving = ref(false)
+const voiceTip = ref('')
+
+// 语音输入
+const recorder = ref(null)
+let recording = false
+
+function startVoice() {
+  if (recording) { uni.showToast({ title: '正在录音中…', icon: 'none' }); return }
+  uni.showToast({ title: '录音中，点击发送按钮开始识别', icon: 'none' })
+  voiceTip.value = '🎤 录音中…'
+  const rm = uni.getRecorderManager()
+  recorder.value = rm
+  rm.onStart(() => { recording = true })
+  rm.onStop(async (res) => {
+    recording = false
+    voiceTip.value = '🎤 识别中…'
+    try {
+      const fs = uni.getFileSystemManager()
+      const data = fs.readFileSync(res.tempFilePath, 'base64')
+      const r = await api.post('/ai/asr', { audio: data, format: 'wav' })
+      if (r.text) {
+        form.value.content += (form.value.content ? '\n' : '') + r.text
+        voiceTip.value = ''
+        uni.showToast({ title: '语音已识别', icon: 'success' })
+      } else {
+        voiceTip.value = ''
+        uni.showToast({ title: '未能识别语音', icon: 'none' })
+      }
+    } catch (e) {
+      voiceTip.value = ''
+      uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
+    }
+  })
+  rm.start({ format: 'mp3', sampleRate: 16000, numberOfChannels: 1, encodeBitRate: 48000 })
+  // 3分钟后自动停止
+  setTimeout(() => { if (recording) { rm.stop(); uni.showToast({ title: '录音超时已自动结束', icon: 'none' }) } }, 180000)
+}
+
+// 图片识文（OCR）
+async function pickOcr() {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    success: async (res) => {
+      const path = res.tempFilePaths[0]
+      uni.showLoading({ title: '识别中…' })
+      try {
+        const fs = uni.getFileSystemManager()
+        const data = fs.readFileSync(path, 'base64')
+        const r = await api.post('/ai/ocr', { image: data })
+        if (r.text && r.text !== '未识别到文字') {
+          form.value.content += (form.value.content ? '\n' : '') + r.text
+          uni.showToast({ title: '文字已提取', icon: 'success' })
+        } else {
+          uni.showToast({ title: '未识别到文字', icon: 'none' })
+        }
+      } catch (e) {
+        uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
 
 const isMd = (c) => /^#{1,6}\s|^\s*[-*]\s|\*\*|\[.+\]\(|```|^\s*>\s/.test(c || '')
 const mdPreview = computed(() => md2html(form.value.content))
@@ -286,10 +354,12 @@ function del(n) {
 .pinbtn.on { color: #e06c75; }
 .title { font-size: 30rpx; font-weight: 700; color: #4a3f35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md { font-size: 18rpx; color: #fff; background: #409eff; padding: 2rpx 10rpx; border-radius: 8rpx; margin-right: 10rpx; vertical-align: middle; }
-.mdbar { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx; }
+.mdbar { display: flex; align-items: center; gap: 16rpx; margin-bottom: 8rpx; }
 .mdtab { font-size: 26rpx; padding: 10rpx 28rpx; border-radius: 30rpx; background: #f3f3f3; color: #999; }
 .mdtab.on { background: #4a3f35; color: #fff; }
 .mdhint { font-size: 22rpx; color: #bbb; margin-left: auto; }
+.toolbar { display: flex; gap: 12rpx; margin-bottom: 10rpx; }
+.tb-btn { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-accent); }
 .mdpreview { max-height: 420rpx; background: #fafafa; border: 1px solid #eee; border-radius: 12rpx; padding: 16rpx; font-size: 26rpx; }
 .content { font-size: 25rpx; color: #6a6058; margin-top: 8rpx; max-height: 120rpx; overflow: hidden; white-space: pre-wrap; }
 .foot { font-size: 22rpx; color: #bbb; margin-top: 12rpx; }

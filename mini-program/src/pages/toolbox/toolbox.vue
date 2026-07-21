@@ -179,6 +179,7 @@ const sections = ref([
       { label: '笔记', icon: '📓', path: '/pages/notes/notes' },
       { label: '抽签历史', icon: '🎰', path: '/pages/picker-history/picker-history' },
       { label: '个人中心', icon: '👤', path: '/pages/profile/profile' },
+      { label: '家访路线', icon: '🗺️', path: '/pages/home-visit-route/home-visit-route' },
     ],
   },
   {

@@ -498,4 +498,58 @@ export class AiService {
       return { url: '' }
     }
   }
+
+  /** 语音识别 ASR：用多模态模型处理音频数据 */
+  async asr(teacherId: string, body: { audio: string; format?: string }): Promise<{ text: string }> {
+    if (!body.audio) return { text: '' }
+    try {
+      const s = await this.buildSettings(teacherId)
+      const resp = await axios.post(
+        `${s.baseUrl}/chat/completions`,
+        {
+          model: s.visionModel || s.textModel,
+          messages: [
+            { role: 'user', content: [{ type: 'text', text: '请将这段音频内容转写为文字，只输出转写结果。' }, { type: 'audio_url', audio_url: { url: `data:audio/${body.format || 'wav'};base64,${body.audio}` } }] },
+          ],
+          stream: false,
+        },
+        {
+          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
+          httpsAgent: tlsAgent,
+          timeout: 60000,
+        },
+      )
+      const text = resp.data?.choices?.[0]?.message?.content || ''
+      return { text }
+    } catch {
+      return { text: '' }
+    }
+  }
+
+  /** 图片 OCR：用多模态模型识别图片中的文字 */
+  async ocr(teacherId: string, body: { image: string }): Promise<{ text: string }> {
+    if (!body.image) return { text: '' }
+    try {
+      const s = await this.buildSettings(teacherId)
+      const resp = await axios.post(
+        `${s.baseUrl}/chat/completions`,
+        {
+          model: s.visionModel || s.textModel,
+          messages: [
+            { role: 'user', content: [{ type: 'text', text: '请识别这张图片中的所有文字，按原文顺序输出，不要解释。如果图片中没有清晰文字，请返回「未识别到文字」。' }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${body.image}` } }] },
+          ],
+          stream: false,
+        },
+        {
+          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
+          httpsAgent: tlsAgent,
+          timeout: 60000,
+        },
+      )
+      const text = resp.data?.choices?.[0]?.message?.content || ''
+      return { text }
+    } catch {
+      return { text: '' }
+    }
+  }
 }

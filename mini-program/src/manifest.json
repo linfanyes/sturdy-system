@@ -7,6 +7,12 @@
   },
   "mp-weixin": {
     "appid": "wx1e6d151c7eb428cc",
+    "plugins": {
+      "maps": {
+        "version": "3.3.5",
+        "provider": "wx5bc2ac602a747594"
+      }
+    },
     "setting": {
       "urlCheck": false,
       "es6": true,

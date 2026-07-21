@@ -60,4 +60,18 @@ export class AiController {
   genVideo(@Body() body: any, @CurrentTeacher() t: any) {
     return this.ai.genVideo(t.sub, body)
   }
+
+  /** 语音识别 ASR：接收 base64 音频，调用配置的 AI 服务商多模态模型转文字 */
+  @Post('asr')
+  @UseGuards(JwtAuthGuard)
+  asr(@Body() body: { audio: string; format?: string }, @CurrentTeacher() t: any) {
+    return this.ai.asr(t.sub, body)
+  }
+
+  /** 图片 OCR：接收 base64 图片，调用多模态模型识别文字 */
+  @Post('ocr')
+  @UseGuards(JwtAuthGuard)
+  ocr(@Body() body: { image: string }, @CurrentTeacher() t: any) {
+    return this.ai.ocr(t.sub, body)
+  }
 }
