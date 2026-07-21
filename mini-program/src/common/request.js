@@ -48,7 +48,11 @@ async function batchRun(tasks) {
 /**
  * 统一请求封装：走微信云托管私有链路（wx.cloud.callContainer），不依赖公网域名。
  * 自动带 token，401 跳转登录。
+ * 额外加了「显式超时」：callContainer 在链路不通时会一直挂起不回调，
+ * 不设置超时会导致页面卡死直到微信框架内部超时（抛 Error: timeout）。
  */
+const REQUEST_TIMEOUT = 15000 // 15 秒，超时即视为后端/链路不可用
+
 export function request(path, method = 'GET', data = {}, token) {
   // 演示模式：返回本地模拟数据，无需真实后端
   if (_mockMode) {
@@ -60,6 +64,13 @@ export function request(path, method = 'GET', data = {}, token) {
     if (!cloud || typeof cloud.callContainer !== 'function') {
       return reject(new Error('当前环境不支持云托管私有链路，请用微信开发者工具/真机（基础库 ≥ 2.13）'))
     }
+    let settled = false
+    // 超时保护：链路无响应时主动失败，给出可读错误而不是无限挂起
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      reject(new Error('请求超时（15s）：后端服务或云托管链路可能未就绪'))
+    }, REQUEST_TIMEOUT)
     cloud.callContainer({
       config: { env: CLOUDRUN_ENV },
       path: API_PREFIX + path,
@@ -72,6 +83,9 @@ export function request(path, method = 'GET', data = {}, token) {
         Authorization: 'Bearer ' + (useToken || ''),
       },
       success: (res) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
         const status = res.statusCode || (res.data && res.data.statusCode)
         if (status === 401) {
           // 清除本地登录态，避免带着过期 token 反复触发 401 跳转
@@ -82,7 +96,12 @@ export function request(path, method = 'GET', data = {}, token) {
         if (status >= 200 && status < 300) resolve(res.data)
         else reject(toError(res.data, '请求失败(' + status + ')'))
       },
-      fail: (e) => reject(toError(e, '网络异常，请检查网络或稍后重试')),
+      fail: (e) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        reject(toError(e, '网络异常，请检查网络或后端服务是否运行'))
+      },
     })
   })
 }
@@ -160,6 +179,14 @@ export function streamChat(path, data, onDelta, opts = {}) {
     if (!cloud || typeof cloud.callContainer !== 'function') {
       return reject(new Error('当前环境不支持云托管私有链路，请用微信开发者工具/真机（基础库 ≥ 2.13）'))
     }
+    let settled = false
+    // 流式同样加超时保护（AI 首字较慢，放宽到 45s；若超时则按已收到部分兜底返回）
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      if (full) resolve(full) // 已经收到部分内容则兜底返回
+      else reject(new Error('AI 请求超时（45s）：后端服务或 AI 配置可能未就绪'))
+    }, 45000)
     let buf = ''
     let full = ''
     let finished = false
@@ -211,6 +238,9 @@ export function streamChat(path, data, onDelta, opts = {}) {
       },
       enableChunked: true,
       success: (res) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
         if (aborted) {
           // 用户已主动中断，按完成处理，保留已收到的部分内容
           resolve(full)
@@ -225,6 +255,9 @@ export function streamChat(path, data, onDelta, opts = {}) {
         else reject(new Error('AI 未返回内容'))
       },
       fail: (e) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
         if (aborted) resolve(full) // 中断导致的 fail 也视为完成
         else reject(toError(e, 'AI 流式请求失败'))
       },
