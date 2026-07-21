@@ -309,6 +309,7 @@ const MOCK = {
       examCount: 2,
     },
   },
+  '/parent-auth/homework': HOMEWORK.filter(h => h.classId === 'c1'),
   '/students/import': { success: 0, failed: 0, errors: [] },
 }
 

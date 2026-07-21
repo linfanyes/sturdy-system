@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
-import { Notice } from '../school/school.entity'
+import { Notice, Homework } from '../school/school.entity'
 import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { ImService } from '../im/im.module'
@@ -20,6 +20,7 @@ export class ParentAuthService {
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
+    @InjectRepository(Homework) private readonly homeworkRepo: Repository<Homework>,
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
     @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     private readonly jwt: JwtService,
@@ -169,6 +170,25 @@ export class ParentAuthService {
     }
 
     return { exams: examList, analysis }
+  }
+
+  /** 孩子所在班级的作业 */
+  async getHomework(classId: string) {
+    if (!classId) return []
+    const list = await this.homeworkRepo.find({
+      where: { classId },
+      order: { createdAt: 'DESC' },
+      take: 30,
+    })
+    return list.map((h) => ({
+      id: h.id,
+      subject: h.subject,
+      title: h.title,
+      content: h.content,
+      startDate: h.startDate,
+      deadline: h.deadline,
+      status: h.status,
+    }))
   }
 
   /** 签发家长 IM UserSig */

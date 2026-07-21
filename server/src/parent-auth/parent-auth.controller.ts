@@ -34,6 +34,13 @@ export class ParentAuthController {
     return this.s.getExams(p)
   }
 
+  /** 孩子所在班级的作业 */
+  @Get('homework')
+  @UseGuards(ParentAuthGuard)
+  homework(@CurrentParent() p: any) {
+    return this.s.getHomework(p.classId)
+  }
+
   /** 当前家长的 IM UserSig（前端凭此登录 tim-wx-sdk） */
   @Get('im-user-sig')
   @UseGuards(ParentAuthGuard)

@@ -57,6 +57,17 @@
       </view>
     </view>
 
+    <view class="sec" v-if="homework.length">
+      <view class="st">📝 班级作业</view>
+      <view class="nitem" v-for="h in homework" :key="h.id">
+        <view class="nt">{{ h.subject }} · {{ h.title }}
+          <text class="ndate">{{ h.deadline || h.startDate }}</text>
+          <text class="hwstatus">{{ h.status }}</text>
+        </view>
+        <view class="nc">{{ h.content }}</view>
+      </view>
+    </view>
+
     <view class="hint" v-if="demoMode">
       演示模式：未配置腾讯云 IM。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可与老师真实收发。
     </view>
@@ -125,6 +136,7 @@ const kids = ref([])
 const notices = ref([])
 const exams = ref([])
 const analysis = ref(null)
+const homework = ref([])
 const convList = ref([])
 const activeConvId = ref('')
 const draft = ref('')
@@ -388,6 +400,8 @@ onShow(async () => {
     const edata = await parentApi.get('/parent-auth/exams')
     exams.value = (edata && edata.exams) || []
     analysis.value = (edata && edata.analysis) || null
+    const hw = await parentApi.get('/parent-auth/homework')
+    homework.value = Array.isArray(hw) ? hw : []
   } catch (e) {}
   try {
     const r = await parentApi.get('/parent-auth/im-user-sig')
@@ -430,6 +444,7 @@ onShow(async () => {
 .srow { display: flex; justify-content: space-between; padding: 6rpx 0; }
 .ssubject { color: var(--c-title); }
 .sscore { color: var(--c-sub); }
+.hwstatus { font-size: 20rpx; color: #e6a23c; margin-left: 12rpx; }
 .hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .chats { white-space: nowrap; margin-bottom: 14rpx; }
 .chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }
