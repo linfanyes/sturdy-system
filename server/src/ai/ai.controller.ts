@@ -46,4 +46,18 @@ export class AiController {
   chatSync(@Body() body: any, @CurrentTeacher() t: any) {
     return this.ai.chatSync(t.sub, body).then((content) => ({ content }))
   }
+
+  /** AI 文生图（调用服务商图片生成模型） */
+  @Post('gen-image')
+  @UseGuards(JwtAuthGuard)
+  genImage(@Body() body: any, @CurrentTeacher() t: any) {
+    return this.ai.genImage(t.sub, body)
+  }
+
+  /** AI 文生视频（调用服务商视频生成模型） */
+  @Post('gen-video')
+  @UseGuards(JwtAuthGuard)
+  genVideo(@Body() body: any, @CurrentTeacher() t: any) {
+    return this.ai.genVideo(t.sub, body)
+  }
 }

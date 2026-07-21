@@ -324,6 +324,14 @@ function autoSemesterDates() {
 
 async function loadSemesters() {
   try { semesters.value = await api.get('/semesters') } catch (e) { semesters.value = [] }
+  // 无当前学期时自动弹出添加对话框
+  if (!currentSemester.value) {
+    const name = autoSemesterName()
+    const dates = autoSemesterDates()
+    semForm.value = { name, ...dates }
+    editingSem.value = null
+    showSem.value = true
+  }
 }
 function autoAddSemester() {
   const name = autoSemesterName()

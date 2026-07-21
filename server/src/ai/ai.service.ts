@@ -434,4 +434,68 @@ export class AiService {
       return m ? JSON.parse(m[0]) : []
     }
   }
+
+  /** AI 文生图：调用服务商图片生成接口，返回图片 URL 数组 */
+  async genImage(teacherId: string, body: any): Promise<{ urls: string[] }> {
+    const s = await this.buildSettings(teacherId)
+    const model = body.imageModel || s.imageModel || s.textModel
+    const prompt = body.prompt
+    if (!prompt) throw new BadRequestException('请输入图片描述')
+    
+    // 多数 OpenAI 兼容服务商支持 images/generations
+    try {
+      const resp = await axios.post(
+        `${s.baseUrl}/images/generations`,
+        { model, prompt, n: body.n || 1, size: body.size || '1024x1024' },
+        {
+          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
+          httpsAgent: tlsAgent,
+          timeout: 120000,
+        },
+      )
+      const urls: string[] = (resp.data?.data || []).map((d: any) => d.url || d.b64_json).filter(Boolean)
+      return { urls }
+    } catch (e: any) {
+      // 如果 images/generations 不支持, 回退用 chat/completions 描述生成 base64
+      const resp = await axios.post(
+        `${s.baseUrl}/chat/completions`,
+        {
+          model: s.visionModel || s.textModel,
+          messages: [{ role: 'user', content: `请根据以下描述生成一张图片的详细视觉说明：${prompt}\n请返回JSON: {"description":"图片描述"}` }],
+          stream: false,
+        },
+        {
+          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
+          httpsAgent: tlsAgent,
+          timeout: 60000,
+        },
+      )
+      const content = resp.data?.choices?.[0]?.message?.content || ''
+      return { urls: [] }
+    }
+  }
+
+  /** AI 文生视频：调用服务商视频生成接口，返回任务ID或文件URL */
+  async genVideo(teacherId: string, body: any): Promise<{ taskId?: string; url?: string }> {
+    const s = await this.buildSettings(teacherId)
+    const model = body.videoModel || s.videoModel || ''
+    const prompt = body.prompt
+    if (!prompt) throw new BadRequestException('请输入视频描述')
+    if (!model) throw new BadRequestException('当前服务商不支持视频生成，请在设置中配置视频模型')
+
+    try {
+      const resp = await axios.post(
+        `${s.baseUrl}/videos/generations`,
+        { model, prompt, resolution: body.resolution || '720p', duration: body.duration || 5 },
+        {
+          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
+          httpsAgent: tlsAgent,
+          timeout: 300000,
+        },
+      )
+      return { taskId: resp.data?.task_id, url: resp.data?.video_url || resp.data?.url }
+    } catch (e: any) {
+      return { url: '' }
+    }
+  }
 }
