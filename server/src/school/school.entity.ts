@@ -1,5 +1,39 @@
 import { Entity, Column } from 'typeorm'
+import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
+
+/* ===== 学校实体（超管管理）===== */
+@Entity('schools')
+export class School {
+  @PrimaryGeneratedColumn('uuid')
+  id: string
+
+  @Column({ unique: true, length: 12 })
+  code: string // 学校编号（S + 5位随机，超管分配时生成）
+
+  @Column()
+  name: string
+
+  @Column({ default: '' })
+  address: string
+
+  @Column({ default: '' })
+  contact: string
+
+  @Column({ default: '' })
+  phone: string
+
+  @Column({ default: 'active' })
+  status: string // active / inactive
+
+  @CreateDateColumn()
+  createdAt: Date
+
+  @UpdateDateColumn()
+  updatedAt: Date
+}
+
+/* ===== 班级/课表/考勤/作业/通知/资源 ===== */
 
 @Entity('schedules')
 export class ScheduleItem extends BaseEntity {

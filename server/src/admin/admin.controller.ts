@@ -1,77 +1,58 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Delete,
-  Patch,
-  Body,
-  Param,
-  Headers,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards } from '@nestjs/common'
 import { AdminService } from './admin.service'
+import { SuperAdminGuard } from './super-admin.guard'
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly svc: AdminService) {}
 
   @Post('login')
-  login(@Body() body: { username: string; password: string }) {
-    const token = this.svc.login(body.username || '', body.password || '')
-    return { token }
+  login(@Body() b: { username?: string; password?: string }) {
+    return this.svc.login(b?.username || '', b?.password || '')
   }
 
-  @Get('users')
-  listUsers(@Headers('authorization') auth: string) {
-    this.verify(auth)
-    return this.svc.listUsers()
-  }
+  /* ===== 学校 CRUD ===== */
+  @Get('schools')
+  @UseGuards(SuperAdminGuard)
+  listSchools() { return this.svc.listSchools() }
+
+  @Post('schools')
+  @UseGuards(SuperAdminGuard)
+  createSchool(@Body() b: any) { return this.svc.createSchool(b) }
+
+  @Patch('schools/:id')
+  @UseGuards(SuperAdminGuard)
+  updateSchool(@Param('id') id: string, @Body() b: any) { return this.svc.updateSchool(id, b) }
+
+  @Delete('schools/:id')
+  @UseGuards(SuperAdminGuard)
+  deleteSchool(@Param('id') id: string) { return this.svc.deleteSchool(id) }
+
+  /* ===== 学校管理员 CRUD ===== */
+  @Get('school-admins')
+  @UseGuards(SuperAdminGuard)
+  listAdmins(@Body() b?: { schoolId?: string }) { return this.svc.listAdmins(b?.schoolId) }
+
+  @Post('school-admins')
+  @UseGuards(SuperAdminGuard)
+  createAdmin(@Body() b: any) { return this.svc.createAdmin(b) }
+
+  @Delete('school-admins/:id')
+  @UseGuards(SuperAdminGuard)
+  deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
+
+  /* ===== 教师总览 ===== */
+  @Get('teachers')
+  @UseGuards(SuperAdminGuard)
+  listTeachers(@Body() b?: { schoolId?: string }) { return this.svc.listTeachers(b?.schoolId) }
 
   @Delete('users/:id')
-  deleteUser(@Headers('authorization') auth: string, @Param('id') id: string) {
-    this.verify(auth)
-    return this.svc.deleteUser(id)
-  }
+  @UseGuards(SuperAdminGuard)
+  deleteUser(@Param('id') id: string) { return this.svc.deleteUser(id) }
 
   @Patch('users/:id/features')
-  updateFeatures(
-    @Headers('authorization') auth: string,
-    @Param('id') id: string,
-    @Body() body: { features: string[] },
-  ) {
-    this.verify(auth)
-    return this.svc.updateUserFeatures(id, body.features || [])
-  }
-
-  // ===== 全局功能管理 =====
-
-  @Get('features')
-  getGlobalFeatures(@Headers('authorization') auth: string) {
-    this.verify(auth)
-    return { features: this.svc.getGlobalFeatures() }
-  }
-
-  @Put('features')
-  setGlobalFeatures(
-    @Headers('authorization') auth: string,
-    @Body() body: { features: string[] },
-  ) {
-    this.verify(auth)
-    this.svc.setGlobalFeatures(body.features || [])
-    return { ok: true }
-  }
-
-  // ===== 普通用户功能查询（供小程序前端用） =====
-
-  @Get('user-features/:userId')
-  getUserFeatures(@Param('userId') userId: string) {
-    return { features: this.svc.getUserEffectiveFeatures(userId) }
-  }
-
-  private verify(auth: string) {
-    const token = (auth || '').replace('Bearer ', '')
-    if (!this.svc.verifyAdminToken(token)) {
-      throw new UnauthorizedException('管理员身份验证失败')
-    }
+  @UseGuards(SuperAdminGuard)
+  updateFeatures(@Param('id') id: string, @Body() b: { features?: string[] }) {
+    return this.svc.updateUserFeatures(id, b?.features || [])
   }
 }

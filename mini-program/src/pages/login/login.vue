@@ -6,6 +6,10 @@
     <button class="btn" @click="wechatLogin">微信登录</button>
     <view class="tip">首次登录将自动创建教师账号</view>
     <view class="parent-entry" @click="goParent">我是家长，去沟通 →</view>
+    <view class="or">— 或 —</view>
+    <input v-model="pwdUser" class="inp2" placeholder="教师用户名" />
+    <input v-model="pwdPass" class="inp2" placeholder="密码" password />
+    <button class="btn2" @click="pwdLogin">账号登录</button>
 
     <!-- 首次设置弹框：补全学校 / 学期 / 任教学科 -->
     <view class="mask" v-if="showSetup" @click.stop>
@@ -38,6 +42,21 @@ const dark = computed(() => theme.mode === 'dark')
 
 function goParent() {
   uni.navigateTo({ url: '/pages/parent-login/parent-login' })
+}
+
+const pwdUser = ref(''), pwdPass = ref('')
+async function pwdLogin() {
+  if (!pwdUser.value.trim() || !pwdPass.value) return uni.showToast({ title: '请输入用户名和密码', icon: 'none' })
+  uni.showLoading({ title: '登录中' })
+  try {
+    const res = await api.post('/auth/password-login', { username: pwdUser.value.trim(), password: pwdPass.value })
+    setAuth(res.token, res.user)
+    uni.hideLoading()
+    uni.switchTab({ url: '/pages/dashboard/dashboard' })
+  } catch (e) {
+    uni.hideLoading()
+    uni.showToast({ title: (e?.message || '登录失败').slice(0, 40), icon: 'none' })
+  }
 }
 
 const showSetup = ref(false)
@@ -127,6 +146,9 @@ async function saveSetup() {
 }
 .tip { color: var(--c-sub); font-size: 24rpx; margin-top: 30rpx; }
 .parent-entry { margin-top: 40rpx; font-size: 26rpx; color: #07c160; text-decoration: underline; }
+.or { margin-top: 36rpx; font-size: 24rpx; color: var(--c-sub); }
+.inp2 { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 18rpx; margin-bottom: 12rpx; margin-top: 8rpx; font-size: 26rpx; width: 70%; background: var(--c-input); color: var(--c-text); }
+.btn2 { width: 70%; background: #409eff; color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 72rpx; line-height: 72rpx; margin-top: 6rpx; }
 
 /* 首次设置弹框 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; z-index: 60; }

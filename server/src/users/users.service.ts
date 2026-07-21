@@ -14,6 +14,10 @@ export class UsersService {
     return this.repo.findOne({ where: { openid } })
   }
 
+  findByUsername(username: string) {
+    return this.repo.findOne({ where: { username } })
+  }
+
   async findById(id: string): Promise<User> {
     const u = await this.repo.findOne({ where: { id } })
     if (!u) throw new NotFoundException('用户不存在')

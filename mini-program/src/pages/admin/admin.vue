@@ -1,61 +1,93 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <!-- 登录态 -->
     <view v-if="!adminToken" class="login-card">
-      <view class="login-title">🔐 管理员登录</view>
+      <view class="login-title">🔐 超级管理员登录</view>
       <input v-model="username" class="inp" placeholder="用户名" />
       <input v-model="password" class="inp" placeholder="密码" password />
       <button class="login-btn" :disabled="logging" @click="doLogin">{{ logging ? '登录中…' : '登 录' }}</button>
-      <view class="hint">默认账号 admin / admin，可登录后端云托管修改环境变量</view>
+      <view class="hint">默认 admin / admin（后端环境变量 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 可配）</view>
     </view>
 
-    <!-- 管理员面板 -->
     <template v-else>
       <view class="head">
-        <text class="h">👑 管理员面板</text>
+        <text class="h">👑 超级管理员</text>
         <text class="logout" @click="adminToken=''">退出</text>
       </view>
       <view class="tabs">
-        <text class="tab" :class="tab==='users'&&'on'" @click="tab='users'">👥 用户管理</text>
-        <text class="tab" :class="tab==='features'&&'on'" @click="tab='features'">⚙️ 全局功能</text>
+        <text class="tab" :class="tab==='schools'&&'on'" @click="tab='schools'">🏫 学校管理</text>
+        <text class="tab" :class="tab==='admins'&&'on'" @click="tab='admins'">👤 学校管理员</text>
+        <text class="tab" :class="tab==='users'&&'on'" @click="tab='users'">👥 教师管理</text>
       </view>
 
-      <!-- 用户管理 -->
-      <template v-if="tab==='users'">
-      <view class="stats"><text class="sc">共 {{ users.length }} 个用户</text></view>
-      <view class="list">
-        <view class="row" v-for="u in users" :key="u.id">
-          <view class="info"><text class="nm">{{ u.name }}</text><text class="meta">{{ u.school || '未设学校' }} · {{ u.openid }}</text></view>
-          <view class="acts"><text class="act" @click="toggleFeatures(u)">⚙️ 功能</text><text class="act del" @click="delUser(u)">删除</text></view>
+      <!-- 学校管理 -->
+      <template v-if="tab==='schools'">
+        <view class="stats"><text class="sc">共 {{ schools.length }} 所学校</text>
+          <text class="act" @click="showSchoolForm=true; schoolForm={name:'',address:'',contact:'',phone:''}">＋ 新增</text>
         </view>
-      </view>
-      </template>
-
-      <!-- 全局功能管理 -->
-      <template v-if="tab==='features'">
-        <view class="stats"><text class="sc">勾选=全校教师可用，未勾选=隐藏。保存后立即生效。</text></view>
         <view class="list">
-          <view class="all-row2">
-            <text class="all-btn" @click="toggleAllGlobal">{{ globalAllSelected ? '取消全选' : '全选' }}</text>
-            <text class="all-btn save-glob" @click="saveGlobalFeatures">💾 保存全局配置</text>
+          <view class="row" v-for="s in schools" :key="s.id">
+            <view class="info"><text class="nm">{{ s.name }}</text><text class="meta">编号 {{ s.code }} · {{ s.status }}</text></view>
+            <view class="acts"><text class="act del" @click="delSchool(s)">删除</text></view>
           </view>
-          <label class="feat-row" v-for="f in allFeatures" :key="f.key" @click="toggleGlobalFeat(f.key)">
-            <text class="ck" :class="globalSel.includes(f.key) && 'on'"></text><text>{{ f.label }}</text>
-          </label>
+        </view>
+        <view v-if="showSchoolForm" class="mask" @click="showSchoolForm=false">
+          <view class="sheet" @click.stop>
+            <view class="sh-t">新增学校</view>
+            <input v-model="schoolForm.name" class="inp" placeholder="学校名称（必填）" />
+            <input v-model="schoolForm.address" class="inp" placeholder="地址" />
+            <input v-model="schoolForm.contact" class="inp" placeholder="联系人" />
+            <input v-model="schoolForm.phone" class="inp" placeholder="电话" />
+            <button class="save-btn" :disabled="saving" @click="createSchool">{{ saving ? '创建中…' : '创建学校（自动生成编号）' }}</button>
+          </view>
         </view>
       </template>
 
-      <!-- 功能配置弹窗 -->
+      <!-- 学校管理员 -->
+      <template v-if="tab==='admins'">
+        <view class="stats"><text class="sc">共 {{ schoolAdmins.length }} 个管理员</text>
+          <text class="act" @click="showAdminForm=true; adminForm={username:'',password:'',name:'',schoolId:schools[0]?.id||''}">＋ 新增</text>
+        </view>
+        <view class="list">
+          <view class="row" v-for="a in schoolAdmins" :key="a.id">
+            <view class="info"><text class="nm">{{ a.name }}</text><text class="meta">{{ a.username }} · 学校 {{ a.schoolId }}</text></view>
+            <view class="acts"><text class="act del" @click="delAdmin(a)">删除</text></view>
+          </view>
+        </view>
+        <view v-if="showAdminForm" class="mask" @click="showAdminForm=false">
+          <view class="sheet" @click.stop>
+            <view class="sh-t">新增学校管理员</view>
+            <input v-model="adminForm.username" class="inp" placeholder="用户名（必填）" />
+            <input v-model="adminForm.password" class="inp" placeholder="密码（必填）" password />
+            <input v-model="adminForm.name" class="inp" placeholder="姓名（必填）" />
+            <picker :range="schoolNames" :value="schoolIdx" @change="onSchoolPick">
+              <view class="inp">{{ schoolNames[schoolIdx] || '选择学校' }}</view>
+            </picker>
+            <button class="save-btn" :disabled="saving" @click="createAdmin">{{ saving ? '创建中…' : '创建管理员' }}</button>
+          </view>
+        </view>
+      </template>
+
+      <!-- 教师管理 -->
+      <template v-if="tab==='users'">
+        <view class="stats"><text class="sc">共 {{ users.length }} 个教师</text></view>
+        <view class="list">
+          <view class="row" v-for="u in users" :key="u.id">
+            <view class="info"><text class="nm">{{ u.name }}</text><text class="meta">{{ u.school || '未设学校' }} · {{ u.username || '微信登录' }}</text></view>
+            <view class="acts"><text class="act" @click="toggleFeatures(u)">功能</text><text class="act del" @click="delUser(u)">删除</text></view>
+          </view>
+        </view>
+      </template>
+
+      <!-- 功能弹窗同前 -->
       <view v-if="featureUser" class="mask" @click="featureUser=null">
         <view class="sheet" @click.stop>
-          <view class="sh-t">{{ featureUser.name }} 的功能配置</view>
-          <view class="all-row"><text class="all-btn" @click="toggleAllFeatures">{{ allSelected ? '取消全选' : '全选' }}</text></view>
+          <view class="sh-t">{{ featureUser.name }} 功能配置</view>
           <scroll-view scroll-y class="feat-list">
-            <label class="feat-row" v-for="f in allFeatures" :key="f.key" @click="selFeatures.includes(f.key) ? selFeatures.splice(selFeatures.indexOf(f.key),1) : selFeatures.push(f.key)">
-              <text class="ck" :class="selFeatures.includes(f.key) && 'on'"></text><text>{{ f.label }}</text>
+            <label class="feat-row" v-for="f in allFeatures" :key="f.key" @click="selFeatures.includes(f.key)?selFeatures.splice(selFeatures.indexOf(f.key),1):selFeatures.push(f.key)">
+              <text class="ck" :class="selFeatures.includes(f.key)&&'on'"></text><text>{{ f.label }}</text>
             </label>
           </scroll-view>
-          <button class="save-btn" :disabled="savingFeat" @click="saveFeatures">{{ savingFeat ? '保存中…' : '保存功能配置' }}</button>
+          <button class="save-btn" :disabled="savingFeat" @click="saveFeatures">{{ savingFeat?'保存中…':'保存' }}</button>
         </view>
       </view>
     </template>
@@ -69,10 +101,16 @@ import { theme } from '../../common/store'
 const SERVER_URL = '/api'
 const adminToken = ref('')
 const username = ref('admin'), password = ref('admin'), logging = ref(false)
-const users = ref([]), tab = ref('users')
-const featureUser = ref(null), selFeatures = ref([]), savingFeat = ref(false)
-const globalSel = ref([])
+const tab = ref('schools')
+const users = ref([]), schools = ref([]), schoolAdmins = ref([])
+const saving = ref(false)
 
+const showSchoolForm = ref(false), schoolForm = ref({ name: '', address: '', contact: '', phone: '' })
+const showAdminForm = ref(false), adminForm = ref({ username: '', password: '', name: '', schoolId: '' })
+const schoolNames = computed(() => schools.value.map(s => s.name))
+const schoolIdx = ref(0)
+
+const featureUser = ref(null), selFeatures = ref([]), savingFeat = ref(false)
 const allFeatures = [
   { key: 'classes', label: '班级管理' },{ key: 'students', label: '学生管理' },{ key: 'exams', label: '考试管理' },
   { key: 'grades', label: '成绩管理' },{ key: 'attendance', label: '考勤' },{ key: 'schedule', label: '课表' },
@@ -81,9 +119,6 @@ const allFeatures = [
   { key: 'activities', label: '班级活动' },{ key: 'rewards', label: '奖励/积分' },{ key: 'parents', label: '家长联系' },
   { key: 'teachers', label: '教师通讯录' },
 ]
-const allFeatureKeys = allFeatures.map((f) => f.key)
-const allSelected = computed(() => selFeatures.value.length === allFeatureKeys.length)
-const globalAllSelected = computed(() => globalSel.value.length === allFeatureKeys.length)
 
 async function apiCall(method, path, data) {
   const cloud = typeof wx !== 'undefined' && wx.cloud
@@ -91,7 +126,7 @@ async function apiCall(method, path, data) {
     cloud.callContainer({
       config: { env: 'prod-d6g1zoq8c7be4ce53' },
       path: SERVER_URL + path, method, data,
-      header: { Authorization: adminToken.value, 'content-type': 'application/json' },
+      header: { Authorization: 'Bearer ' + adminToken.value, 'content-type': 'application/json' },
       success: (r) => resolve(r.data),
       fail: reject,
     })
@@ -103,33 +138,54 @@ async function doLogin() {
   try {
     const resp = await apiCall('POST', '/admin/login', { username: username.value, password: password.value })
     adminToken.value = resp?.token || ''
-    if (adminToken.value) { await loadUsers(); await loadGlobalFeatures() }
+    if (adminToken.value) { await loadAll() }
     else uni.showToast({ title: '登录失败', icon: 'none' })
   } catch (e) { uni.showToast({ title: '登录失败', icon: 'none' }) }
   finally { logging.value = false }
 }
 
-async function loadUsers() { try { users.value = await apiCall('GET', '/admin/users') || [] } catch (e) {} }
-async function loadGlobalFeatures() { try { const d = await apiCall('GET', '/admin/features'); globalSel.value = (d && d.features) || [...allFeatureKeys] } catch (e) { globalSel.value = [...allFeatureKeys] } }
-
-function toggleAllGlobal() { globalSel.value = globalAllSelected.value ? [] : [...allFeatureKeys] }
-function toggleGlobalFeat(k) { const i = globalSel.value.indexOf(k); i >= 0 ? globalSel.value.splice(i, 1) : globalSel.value.push(k) }
-async function saveGlobalFeatures() {
-  try { await apiCall('PUT', '/admin/features', { features: globalSel.value }); uni.showToast({ title: '全局配置已保存', icon: 'success' }) }
-  catch (e) { uni.showToast({ title: '保存失败', icon: 'none' }) }
+async function loadAll() {
+  try { schools.value = await apiCall('GET', '/admin/schools') || [] } catch (e) {}
+  try { schoolAdmins.value = await apiCall('GET', '/admin/school-admins') || [] } catch (e) {}
+  try { users.value = await apiCall('GET', '/admin/teachers') || [] } catch (e) {}
 }
 
-function toggleFeatures(u) { featureUser.value = u; selFeatures.value = u.features && u.features.length ? [...u.features] : [...allFeatureKeys] }
-function toggleAllFeatures() { selFeatures.value = allSelected.value ? [] : [...allFeatureKeys] }
+async function createSchool() {
+  if (!schoolForm.value.name) return uni.showToast({ title: '学校名称必填', icon: 'none' })
+  saving.value = true
+  try { await apiCall('POST', '/admin/schools', schoolForm.value); showSchoolForm.value = false; await loadAll(); uni.showToast({ title: '学校已创建', icon: 'success' }) }
+  catch (e) { uni.showToast({ title: '创建失败', icon: 'none' }) }
+  saving.value = false
+}
+async function delSchool(s) {
+  uni.showModal({ title: '删除学校', content: '确定删除「' + s.name + '」？', confirmColor: '#e64340',
+    success: async (m) => { if (!m.confirm) return; try { await apiCall('DELETE', '/admin/schools/' + s.id); await loadAll() } catch (e) {} }
+  })
+}
+function onSchoolPick(e) { schoolIdx.value = e.detail.value; adminForm.value.schoolId = schools.value[e.detail.value]?.id || '' }
+async function createAdmin() {
+  if (!adminForm.value.username || !adminForm.value.password || !adminForm.value.name || !adminForm.value.schoolId)
+    return uni.showToast({ title: '所有字段必填', icon: 'none' })
+  saving.value = true
+  try { await apiCall('POST', '/admin/school-admins', adminForm.value); showAdminForm.value = false; await loadAll(); uni.showToast({ title: '管理员已创建', icon: 'success' }) }
+  catch (e) { uni.showToast({ title: '创建失败', icon: 'none' }) }
+  saving.value = false
+}
+async function delAdmin(a) {
+  uni.showModal({ title: '删除管理员', content: '确定删除「' + a.name + '」？', confirmColor: '#e64340',
+    success: async (m) => { if (!m.confirm) return; try { await apiCall('DELETE', '/admin/school-admins/' + a.id); await loadAll() } catch (e) {} }
+  })
+}
+function toggleFeatures(u) { featureUser.value = u; selFeatures.value = u.features?.length ? [...u.features] : [...allFeatures.map(f=>f.key)] }
 async function saveFeatures() {
   if (savingFeat.value || !featureUser.value) return; savingFeat.value = true
-  try { await apiCall('PATCH', '/admin/users/' + featureUser.value.id + '/features', { features: selFeatures.value.length === allFeatureKeys.length ? [] : selFeatures.value }); featureUser.value = null; await loadUsers(); uni.showToast({ title: '已保存', icon: 'success' }) }
+  try { await apiCall('PATCH', '/admin/users/' + featureUser.value.id + '/features', { features: selFeatures.value }); featureUser.value = null; await loadAll(); uni.showToast({ title: '已保存', icon: 'success' }) }
   catch (e) { uni.showToast({ title: '保存失败', icon: 'none' }) }
-  finally { savingFeat.value = false }
+  savingFeat.value = false
 }
 function delUser(u) {
-  uni.showModal({ title: '删除用户', content: '确定删除「' + u.name + '」及其全部数据？', confirmColor: '#e64340',
-    success: async (m) => { if (!m.confirm) return; try { await apiCall('DELETE', '/admin/users/' + u.id); users.value = users.value.filter(x => x.id !== u.id); uni.showToast({ title: '已删除', icon: 'none' }) } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) } }
+  uni.showModal({ title: '删除教师', content: '确定删除「' + u.name + '」？', confirmColor: '#e64340',
+    success: async (m) => { if (!m.confirm) return; try { await apiCall('DELETE', '/admin/users/' + u.id); await loadAll() } catch (e) {} }
   })
 }
 </script>
@@ -138,32 +194,28 @@ function delUser(u) {
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; }
 .login-card { background: var(--c-card); border-radius: 24rpx; padding: 40rpx 30rpx; width: 560rpx; margin: 80rpx auto; }
 .login-title { font-size: 36rpx; font-weight: 800; color: var(--c-title); text-align: center; margin-bottom: 30rpx; }
-.inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; margin-bottom: 16rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); }
+.inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; margin-bottom: 16rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .login-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
-.hint { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; line-height: 1.6; }
+.hint { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .logout { font-size: 26rpx; color: var(--c-accent); }
-.tabs { display: flex; gap: 12rpx; margin-bottom: 20rpx; }
+.tabs { display: flex; gap: 12rpx; margin-bottom: 20rpx; flex-wrap: wrap; }
 .tab { font-size: 26rpx; padding: 14rpx 26rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); }
 .tab.on { background: var(--c-accent); color: #fff; font-weight: 700; }
-.stats { margin-bottom: 14rpx; }
+.stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); }
+.act { font-size: 24rpx; color: #409eff; }
+.act.del { color: #e64340; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
 .row { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; border-bottom: 1px solid var(--c-border); }
 .info { flex: 1; }
 .nm { display: block; font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .meta { font-size: 22rpx; color: var(--c-sub); }
 .acts { display: flex; gap: 18rpx; }
-.act { font-size: 24rpx; color: #409eff; }
-.act.del { color: var(--c-danger); }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
-.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; }
+.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
-.all-row { margin-bottom: 10rpx; }
-.all-row2 { display: flex; justify-content: space-between; margin-bottom: 14rpx; }
-.all-btn { font-size: 26rpx; color: var(--c-accent); }
-.save-glob { color: var(--c-primary); font-weight: 600; }
 .feat-list { max-height: 500rpx; }
 .feat-row { display: flex; align-items: center; gap: 14rpx; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); font-size: 28rpx; color: var(--c-title); }
 .ck { width: 28rpx; height: 28rpx; border-radius: 50%; border: 3rpx solid var(--c-sub); flex-shrink: 0; }

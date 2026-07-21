@@ -36,6 +36,7 @@ import { SemesterModule } from './semester/semester.module'
 import { SecurityModule } from './security/security.module'
 import { ImModule } from './im/im.module'
 import { ParentAuthModule } from './parent-auth/parent-auth.module'
+import { SchoolAdminModule } from './school-admin/school-admin.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -89,6 +90,7 @@ import { HealthController } from './health.controller'
     GradesModule,
     ParentContactModule,
     ParentAuthModule,
+    SchoolAdminModule,
     GeneratedModule,
     DutyRosterModule,
     SchoolModule,

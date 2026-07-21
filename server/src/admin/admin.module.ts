@@ -9,6 +9,8 @@ import { CrudController } from '../common/crud/base.controller'
 import { AdminController } from './admin.controller'
 import { AdminService } from './admin.service'
 import { User } from '../users/user.entity'
+import { School } from '../school/school.entity'
+import { SchoolAdmin } from '../school-admin/school-admin.entity'
 
 // ... 已有的 Obs/Log/Plan 控制器们 ...
 
@@ -31,7 +33,7 @@ class PlanService extends CrudService<LessonPlanTemplate> {
 class PlanController extends CrudController<LessonPlanTemplate> { constructor(s: PlanService) { super(s) } }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LessonObservation, WorkLog, LessonPlanTemplate, User])],
+  imports: [TypeOrmModule.forFeature([LessonObservation, WorkLog, LessonPlanTemplate, User, School, SchoolAdmin])],
   providers: [ObsService, LogService, PlanService, AdminService],
   controllers: [ObsController, LogController, PlanController, AdminController],
   exports: [AdminService],

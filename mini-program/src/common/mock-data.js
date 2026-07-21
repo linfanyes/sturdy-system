@@ -314,6 +314,14 @@ const MOCK = {
   '/parent-auth/homework': HOMEWORK.filter(h => h.classId === 'c1'),
   '/students/import': { success: 0, failed: 0, errors: [] },
   '/notices/push': { pushed: 0, students: [] },
+  '/admin/login': { token: 'mock-super-token' },
+  '/admin/schools': [{ id: 'sc1', name: '阳光实验小学', code: 'S3A7F2', status: 'active' }],
+  '/admin/school-admins': [{ id: 'sa1', username: 'school1', name: '李校长', schoolId: 'sc1' }],
+  '/admin/teachers': [],
+  '/school-admin/login': { token: 'mock-school-token', admin: { id: 'sa1', name: '李校长', schoolId: 'sc1' } },
+  '/school-admin/teachers': [{ id: 'u1', name: '珊珊老师', username: 'teacher1', subject: '语文', phone: '', school: '阳光实验小学' }],
+  '/school-admin/stats': { teacherCount: 1, studentCount: 9, noticeCount: 2 },
+  '/auth/password-login': { token: 'mock-teacher-token', user: { id: 'u1', name: '珊珊老师', school: '阳光实验小学' } },
 }
 
 /** 根据路径返回模拟数据，支持 ?classId= 过滤 */

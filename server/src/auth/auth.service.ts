@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { UsersService } from '../users/users.service'
 import { WechatService } from './wechat.service'
+import * as crypto from 'node:crypto'
 
 @Injectable()
 export class AuthService {
@@ -38,5 +39,16 @@ export class AuthService {
     }
     const token = this.jwt.sign({ sub: user.id, openid })
     return { token, user, isNew }
+  }
+
+  /** 用户名+密码登录（学校管理员为教师创建的账号） */
+  async passwordLogin(username: string, password: string) {
+    const user = await this.users.findByUsername(username)
+    if (!user) throw new UnauthorizedException('账号不存在')
+    if (!user.passwordHash) throw new UnauthorizedException('该账号未设置密码，请用微信登录')
+    const hash = crypto.createHash('sha256').update(password).digest('hex')
+    if (hash !== user.passwordHash) throw new UnauthorizedException('密码错误')
+    const token = this.jwt.sign({ sub: user.id })
+    return { token, user }
   }
 }

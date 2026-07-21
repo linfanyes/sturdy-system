@@ -10,4 +10,9 @@ export class AuthController {
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.auth.wechatLogin(dto.code)
   }
+
+  @Post('password-login')
+  passwordLogin(@Body() b: { username?: string; password?: string }) {
+    return this.auth.passwordLogin(b?.username || '', b?.password || '')
+  }
 }

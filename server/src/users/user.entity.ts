@@ -26,6 +26,15 @@ export class User {
   @Column({ default: '' })
   school: string
 
+  @Column({ nullable: true })
+  schoolId: string
+
+  @Column({ nullable: true, unique: true })
+  username: string
+
+  @Column({ nullable: true })
+  passwordHash: string
+
   @Column({ default: '' })
   phone: string
 
