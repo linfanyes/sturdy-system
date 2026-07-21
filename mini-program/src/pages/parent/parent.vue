@@ -21,6 +21,42 @@
       </view>
     </view>
 
+    <view class="sec" v-if="exams.length">
+      <view class="st">📊 考试成绩</view>
+      <view v-if="analysis" class="abox">
+        <view class="arow" v-if="analysis.overallAverage">
+          学期总平均分 <text class="av">{{ analysis.overallAverage }}</text>
+        </view>
+        <view class="arow" v-if="analysis.trend">
+          最近趋势
+          <text :class="analysis.trend.direction === 'up' ? 'up' : 'down'">
+            {{ analysis.trend.direction === 'up' ? '↑' : '↓' }} {{ analysis.trend.diff }}%
+          </text>
+        </view>
+        <view class="arow" v-if="analysis.bestSubject">
+          优势学科 <text class="av">{{ analysis.bestSubject }}（均 {{ analysis.bestAvg }}）</text>
+        </view>
+        <view class="arow" v-if="analysis.worstSubject">
+          薄弱学科 <text class="av2">{{ analysis.worstSubject }}（均 {{ analysis.worstAvg }}）</text>
+        </view>
+      </view>
+      <view class="nitem" v-for="e in exams" :key="e.examId">
+        <view class="nt">
+          {{ e.examName }}
+          <text class="ndate">{{ e.date }}</text>
+          <text v-if="e.totalScore !== null" class="etotal">综合 {{ e.totalScore }}%</text>
+        </view>
+        <view class="nc">
+          <view v-for="s in e.subjects" :key="s.subject" class="srow">
+            <text class="ssubject">{{ s.subject }}</text>
+            <text class="sscore">
+              {{ s.score !== null ? s.score + ' / ' + s.fullScore : '暂未录入' }}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="hint" v-if="demoMode">
       演示模式：未配置腾讯云 IM。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可与老师真实收发。
     </view>
@@ -87,6 +123,8 @@ const connected = ref(false)
 const loginUser = ref('')
 const kids = ref([])
 const notices = ref([])
+const exams = ref([])
+const analysis = ref(null)
 const convList = ref([])
 const activeConvId = ref('')
 const draft = ref('')
@@ -347,6 +385,9 @@ onShow(async () => {
     kids.value = (me && me.kids) || []
     const ns = await parentApi.get('/parent-auth/notices')
     notices.value = Array.isArray(ns) ? ns : []
+    const edata = await parentApi.get('/parent-auth/exams')
+    exams.value = (edata && edata.exams) || []
+    analysis.value = (edata && edata.analysis) || null
   } catch (e) {}
   try {
     const r = await parentApi.get('/parent-auth/im-user-sig')
@@ -378,6 +419,17 @@ onShow(async () => {
 .nt { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
 .npin { font-size: 20rpx; color: #e6a23c; background: #fef3e6; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 10rpx; }
 .nc { font-size: 24rpx; color: var(--c-sub); margin-top: 8rpx; line-height: 1.5; white-space: pre-wrap; }
+.abox { background: var(--c-input); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; }
+.arow { font-size: 24rpx; color: var(--c-sub); line-height: 1.8; }
+.av { color: #07c160; font-weight: 700; }
+.av2 { color: #e06c75; font-weight: 700; }
+.up { color: #07c160; }
+.down { color: #e06c75; }
+.ndate { font-size: 20rpx; color: var(--c-sub); margin-left: 12rpx; font-weight: 400; }
+.etotal { font-size: 22rpx; color: #07c160; margin-left: 12rpx; }
+.srow { display: flex; justify-content: space-between; padding: 6rpx 0; }
+.ssubject { color: var(--c-title); }
+.sscore { color: var(--c-sub); }
 .hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .chats { white-space: nowrap; margin-bottom: 14rpx; }
 .chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }

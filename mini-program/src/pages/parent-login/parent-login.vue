@@ -1,9 +1,9 @@
 <template>
   <view class="login" :class="{ dark }">
-    <view class="logo">🏡</view>
+    <view class="logo">🎒</view>
     <view class="title">家长中心</view>
-    <view class="sub">用孩子档案里登记的家长手机号登录，即可与老师实时沟通</view>
-    <input v-model="phone" class="inp" type="number" maxlength="20" placeholder="请输入家长手机号" />
+    <view class="sub">输入孩子学号，即可查看成绩、班级通知，并与老师沟通</view>
+    <input v-model="studentNo" class="inp" type="number" maxlength="20" placeholder="请输入学生学号" />
     <button class="btn" :disabled="loading" @click="login">{{ loading ? '登录中…' : '登录' }}</button>
     <view class="tip" @click="back">我是老师，返回登录</view>
   </view>
@@ -15,17 +15,17 @@ import { parentApi } from '../../common/request'
 import { setParent, theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
-const phone = ref('')
+const studentNo = ref('')
 const loading = ref(false)
 
 async function login() {
-  const p = phone.value.trim()
-  if (!/^\d{6,20}$/.test(p)) {
-    return uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+  const no = studentNo.value.trim()
+  if (!no || !/^\d+$/.test(no)) {
+    return uni.showToast({ title: '请输入正确的学号', icon: 'none' })
   }
   loading.value = true
   try {
-    const res = await parentApi.post('/parent-auth/login', { phone: p })
+    const res = await parentApi.post('/parent-auth/login', { studentNo: no })
     setParent(res.token, res.parent)
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => uni.redirectTo({ url: '/pages/parent/parent' }), 600)

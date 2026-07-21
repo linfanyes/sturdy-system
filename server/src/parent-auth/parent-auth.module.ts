@@ -3,12 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
 import { Notice } from '../school/school.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
 import { ImModule } from '../im/im.module'
 import { ParentAuthService } from './parent-auth.service'
 import { ParentAuthController } from './parent-auth.controller'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ParentContact, Student, Notice]), ImModule],
+  imports: [TypeOrmModule.forFeature([ParentContact, Student, Notice, Grade, Exam]), ImModule],
   providers: [ParentAuthService],
   controllers: [ParentAuthController],
   exports: [ParentAuthService],

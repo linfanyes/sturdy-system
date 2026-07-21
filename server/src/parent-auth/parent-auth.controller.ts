@@ -7,17 +7,31 @@ import { CurrentParent } from './current-parent.decorator'
 export class ParentAuthController {
   constructor(private readonly s: ParentAuthService) {}
 
-  /** 家长手机号登录：返回家长 JWT 与 IM 账号 */
+  /** 家长凭学生学号登录 */
   @Post('login')
-  login(@Body() b: { phone?: string }) {
-    return this.s.login((b && b.phone) || '')
+  login(@Body() b: { studentNo?: string }) {
+    return this.s.login((b && b.studentNo) || '')
   }
 
-  /** 当前家长信息 + 其孩子列表 */
+  /** 当前家长信息 + 孩子 */
   @Get('me')
   @UseGuards(ParentAuthGuard)
   me(@CurrentParent() p: any) {
     return this.s.getMe(p)
+  }
+
+  /** 孩子所在班级的通知 */
+  @Get('notices')
+  @UseGuards(ParentAuthGuard)
+  notices(@CurrentParent() p: any) {
+    return this.s.getNotices(p.classId)
+  }
+
+  /** 考试成绩明细 + 趋势分析 */
+  @Get('exams')
+  @UseGuards(ParentAuthGuard)
+  exams(@CurrentParent() p: any) {
+    return this.s.getExams(p)
   }
 
   /** 当前家长的 IM UserSig（前端凭此登录 tim-wx-sdk） */
@@ -25,14 +39,5 @@ export class ParentAuthController {
   @UseGuards(ParentAuthGuard)
   sig(@CurrentParent() p: any) {
     return this.s.getImUserSig(p)
-  }
-
-  /** 孩子所在班级的通知 */
-  @Get('notices')
-  @UseGuards(ParentAuthGuard)
-  async notices(@CurrentParent() p: any) {
-    // 先取孩子列表，再查通知
-    const me = await this.s.getMe(p)
-    return this.s.getNotices(me.kids)
   }
 }

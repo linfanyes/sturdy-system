@@ -1,17 +1,18 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, In } from 'typeorm'
+import { Repository } from 'typeorm'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
 import { Notice } from '../school/school.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 
 /**
- * 家长端登录：凭手机号（需出现在班级通讯录 / 学生表的家长电话中）换取家长 JWT。
- * 家长 IM 账号由（studentId + parentName）规范派生，与教师花名册里的账号一致，
- * 因此老师从花名册发起的会话，家长能在自己手机上原样收到。
+ * 家长端：凭学生学号登录 → 查看孩子考试成绩+趋势分析 + IM 与老师对话。
+ * 家长 IM 账号由（studentId + parentName）规范派生，与教师花名册一致。
  */
 @Injectable()
 export class ParentAuthService {
@@ -19,77 +20,54 @@ export class ParentAuthService {
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
+    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
+    @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
   ) {}
 
-  private async findByPhone(phone: string) {
-    const contact = await this.pcRepo.findOne({ where: { phone } })
-    if (contact) {
-      return {
-        studentId: contact.studentId,
-        studentName: contact.studentName,
-        classId: contact.classId,
-        parentName: contact.parentName,
-        phone: contact.phone,
-      }
-    }
-    const stu = await this.studentRepo.findOne({ where: { parentPhone: phone } })
-    if (stu) {
-      return {
-        studentId: stu.id,
-        studentName: stu.name,
-        classId: stu.classId,
-        parentName: stu.parentName,
-        phone: stu.parentPhone,
-      }
-    }
-    return null
-  }
-
-  async login(phone: string) {
-    if (!phone || !/^\d{6,20}$/.test(phone)) throw new BadRequestException('请输入正确的手机号')
-    const rec = await this.findByPhone(phone)
-    if (!rec) throw new BadRequestException('未找到该手机号对应的家长，请确认是否在班级通讯录中')
-    const imUserId = parentImUserId({ studentId: rec.studentId, relation: '家长', parentName: rec.parentName })
+  /** 学号登录 */
+  async login(studentNo: string) {
+    if (!studentNo || !/^\d+$/.test(studentNo.trim()))
+      throw new BadRequestException('请输入正确的学号')
+    const no = studentNo.trim()
+    const stu = await this.studentRepo.findOne({ where: { studentNo: no } })
+    if (!stu) throw new BadRequestException('未找到该学号对应的学生，请检查学号是否正确')
+    const parentName = stu.parentName || '家长'
+    const imUserId = parentImUserId({ studentId: stu.id, relation: '家长', parentName })
     const token = this.jwt.sign({
       sub: imUserId,
       type: 'parent',
-      phone: rec.phone,
-      parentName: rec.parentName,
-      studentName: rec.studentName,
-      classId: rec.classId,
+      studentId: stu.id,
+      studentName: stu.name,
+      classId: stu.classId,
+      studentNo: no,
     })
-    return { token, parent: { imUserId, ...rec } }
-  }
-
-  /** 当前家长信息 + 其所有孩子（同一手机号可能对应多个孩子） */
-  async getMe(payload: any) {
-    const kids: any[] = []
-    const contacts = await this.pcRepo.find({ where: { phone: payload.phone } })
-    for (const c of contacts) {
-      kids.push({ studentId: c.studentId, studentName: c.studentName, classId: c.classId, parentName: c.parentName })
-    }
-    if (!kids.length) {
-      const stus = await this.studentRepo.find({ where: { parentPhone: payload.phone } })
-      for (const s of stus) {
-        kids.push({ studentId: s.id, studentName: s.name, classId: s.classId, parentName: s.parentName })
-      }
-    }
     return {
-      phone: payload.phone,
-      parentName: payload.parentName,
-      imUserId: payload.sub,
-      kids,
+      token,
+      parent: { imUserId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: no },
     }
   }
 
-  /** 孩子所在班级的通知（按发布时间倒序，已结束的放在后面） */
-  async getNotices(kids: any[]) {
-    const classIds = [...new Set(kids.map((k) => k.classId).filter(Boolean))]
-    if (!classIds.length) return []
+  /** 当前家长信息 + 孩子 */
+  getMe(payload: any) {
+    return {
+      imUserId: payload.sub,
+      studentId: payload.studentId,
+      studentName: payload.studentName,
+      classId: payload.classId,
+      studentNo: payload.studentNo,
+      kids: [
+        { studentId: payload.studentId, studentName: payload.studentName, classId: payload.classId },
+      ],
+    }
+  }
+
+  /** 孩子所在班级的通知 */
+  async getNotices(classId: string) {
+    if (!classId) return []
     const notices = await this.noticeRepo.find({
-      where: { classId: In(classIds) },
+      where: { classId },
       order: { createdAt: 'DESC' },
       take: 30,
     })
@@ -104,7 +82,96 @@ export class ParentAuthService {
     }))
   }
 
-  /** 签发家长 IM UserSig（复用教师端的签名逻辑） */
+  /** 考试成绩明细 + 趋势分析 */
+  async getExams(payload: any) {
+    const { classId, studentId } = payload
+    if (!classId || !studentId) return { exams: [], analysis: null }
+    const [exams, grades] = await Promise.all([
+      this.examRepo.find({ where: { classId }, order: { date: 'ASC' } }),
+      this.gradeRepo.find({ where: { classId } }),
+    ])
+    const scoreMap: Record<string, Record<string, { score: number | null; fullScore: number }>> = {}
+    for (const g of grades) {
+      const entry = g.scores.find((s) => s.studentId === studentId)
+      if (!entry) continue
+      const examKey = g.examId || g.examName
+      if (!scoreMap[examKey]) scoreMap[examKey] = {}
+      scoreMap[examKey][g.subject] = {
+        score: entry.score,
+        fullScore: 100, // default, can be overridden by exam.subjectFullScores
+      }
+    }
+    const examList: any[] = []
+    let totalAccum = 0
+    let countAccum = 0
+    const subjectTotals: Record<string, { total: number; count: number }> = {}
+
+    for (const exam of exams) {
+      const subjects: any[] = []
+      let examTotal = 0
+      let examFull = 0
+      const key = exam.id || exam.name
+      const map = scoreMap[key] || {}
+      for (const subj of exam.subjects || []) {
+        const fs = (exam.subjectFullScores && exam.subjectFullScores[subj]) || 100
+        const entry = map[subj]
+        const score = entry ? entry.score : null
+        subjects.push({ subject: subj, score, fullScore: fs })
+        if (score !== null) {
+          examTotal += score
+          examFull += fs
+          if (!subjectTotals[subj]) subjectTotals[subj] = { total: 0, count: 0 }
+          subjectTotals[subj].total += score
+          subjectTotals[subj].count++
+        }
+      }
+      examList.push({
+        examId: exam.id,
+        examName: exam.name,
+        date: exam.date,
+        term: exam.term,
+        subjects,
+        totalScore: examFull ? (examTotal / examFull * 100).toFixed(1) : null,
+      })
+      if (examFull) { totalAccum += examTotal; countAccum += examFull }
+    }
+
+    // 趋势：最近考试总分 vs 上次
+    let trend: any = null
+    if (examList.length >= 2) {
+      const last = examList[examList.length - 1]
+      const prev = examList[examList.length - 2]
+      if (last.totalScore !== null && prev.totalScore !== null) {
+        const diff = (parseFloat(last.totalScore) - parseFloat(prev.totalScore)).toFixed(1)
+        trend = { diff, direction: parseFloat(diff) >= 0 ? 'up' : 'down' }
+      }
+    }
+
+    // 优势/薄弱学科
+    let bestSubject = ''
+    let worstSubject = ''
+    let bestAvg = -1
+    let worstAvg = Infinity
+    for (const [s, t] of Object.entries(subjectTotals)) {
+      const avg = t.total / t.count
+      if (avg > bestAvg) { bestAvg = avg; bestSubject = s }
+      if (avg < worstAvg) { worstAvg = avg; worstSubject = s }
+    }
+
+    const analysis = {
+      overallAverage: countAccum ? (totalAccum / countAccum * 100).toFixed(1) : null,
+      bestSubject: bestSubject || '',
+      bestAvg: bestAvg > 0 ? bestAvg.toFixed(1) : '',
+      worstSubject: worstSubject || '',
+      worstAvg: worstAvg < Infinity ? worstAvg.toFixed(1) : '',
+      trend,
+      examCount: examList.length,
+    }
+
+    return { exams: examList, analysis }
+  }
+
+  /** 签发家长 IM UserSig */
   getImUserSig(payload: any) {
     return this.im.getUserSig(payload.sub)
   }
