@@ -74,65 +74,27 @@
       </view>
     </view>
 
-    <button class="help-btn" @click="showHelp = true">📖 使用帮助</button>
-
-    <button class="logout" @click="doLogout">退出登录</button>
-
-    <!-- 使用帮助弹层 -->
-    <view v-if="showHelp" class="mask" @click="showHelp = false">
-      <view class="help-modal" @click.stop>
-        <view class="hm-title">📖 使用帮助</view>
-        <scroll-view scroll-y class="hm-body">
-          <view class="hm-sec">
-            <view class="hm-h">🎓 应用简介</view>
-            <view class="hm-p">园丁工作台是面向中小学教师的一站式班务管理工具，覆盖班级、学生、考试、成绩、作业、公告、考勤、座位表、班费、活动、AI 教案/试卷/知识点生成等场景。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">🚀 快速上手</view>
-            <view class="hm-p">1. 在「班级管理」创建班级，在「学生管理」批量录入学生（支持 Excel/图片 AI 识别）。</view>
-            <view class="hm-p">2. 在「考试管理」创建考试，在「成绩管理」按班级/考试/科目录入或导入成绩。</view>
-            <view class="hm-p">3. 在「作业管理」布置作业，状态自动同步到「班级公告」。</view>
-            <view class="hm-p">4. 在「工具箱」使用随机点名、计时器、计分板、奖励兑换、笔顺演示等课堂神器。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">🤖 AI 配置说明</view>
-            <view class="hm-p">· 通过「服务商」下拉可一键切换阿里百炼（通义千问）/ DeepSeek，接口地址与默认模型自动填充。</view>
-            <view class="hm-p">· 阿里百炼：文本模型 qwen3.7-plus/qwen3-max/qwen3-turbo，多模态 qwen3-vl-plus/qwen3-vl-max。</view>
-            <view class="hm-p">· DeepSeek：文本模型 deepseek-v4-flash/deepseek-v4-pro，v4 为原生多模态模型，文本与视觉可使用同一模型。</view>
-            <view class="hm-p">· 选「自定义」可手动输入任意兼容 OpenAI 接口的模型名（如 claude-3.5-sonnet、moonshot-v1 等）。</view>
-            <view class="hm-p">· AI 接口地址和密钥仅保存在后端，前端不存储。</view>
-            <view class="hm-p">· 温度越高回答越发散，越低越确定。教学场景建议 0.5-0.7。</view>
-            <view class="hm-p">· 系统提示词决定 AI 角色和回答风格，可按学科/学段自定义。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">📊 数据导入</view>
-            <view class="hm-p">· 学生：支持 .xlsx/.xls/.txt/.csv 格式，每行：姓名,性别,学号,家长姓名,家长电话。</view>
-            <view class="hm-p">· 成绩：先选好「班级/考试/科目/日期」，再导入 Excel/TXT，列：学号或姓名,分数。</view>
-            <view class="hm-p">· 图片识别：可拍照学生名单图片，AI 自动识别后导入。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">🎨 个性化</view>
-            <view class="hm-p">· 深色模式：夜间护眼。</view>
-            <view class="hm-p">· 字体大小：小/标准/大。</view>
-            <view class="hm-p">· 主题色：橙/绿/蓝等多种选择。</view>
-            <view class="hm-p">· 工具箱「管理」模式：可隐藏不常用工具、调整分区顺序。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">🔒 隐私说明</view>
-            <view class="hm-p">· 数据通过微信云托管私有链路传输，仅本人账号可见。</view>
-            <view class="hm-p">· 学生生日、家长电话等敏感信息不会对外公开。</view>
-            <view class="hm-p">· 退出登录后本地缓存自动清理。</view>
-          </view>
-          <view class="hm-sec">
-            <view class="hm-h">❓ 常见问题</view>
-            <view class="hm-p">Q: AI 没反应？A: 请检查 AI 接口地址、密钥是否正确，模型是否支持。</view>
-            <view class="hm-p">Q: 数据加载慢？A: 请检查网络，下拉刷新或重启小程序。</view>
-            <view class="hm-p">Q: 成绩导入失败？A: 请确认 Excel 列顺序、分数范围（0-100）、学生姓名/学号匹配。</view>
-          </view>
-        </scroll-view>
-        <button class="hm-close" @click="showHelp = false">关闭</button>
+    <view class="card">
+      <view class="card-title">外观</view>
+      <view class="row">
+        <view class="row-text">
+          <text class="row-name">深色模式</text>
+          <text class="row-sub">切换后全应用深色配色</text>
+        </view>
+        <switch :checked="theme.mode === 'dark'" color="#07c160" @change="onTheme" />
+      </view>
+      <view class="row" @click="cycle">
+        <view class="row-text">
+          <text class="row-name">主题色</text>
+          <text class="row-sub">{{ curScheme.label }}</text>
+        </view>
+        <view class="scheme-group">
+          <text v-for="s in SCHEMES" :key="s.value" class="scheme-i" :class="{ on: theme.colorScheme === s.value }" :style="{ background: s.color }" @click="cycle">{{ s.label }}</text>
+        </view>
       </view>
     </view>
+
+    <button class="logout" @click="doLogout">退出登录</button>
   </view>
 </template>
 
@@ -140,7 +102,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, setUser, logout, theme } from '../../common/store'
+import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES } from '../../common/store'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
@@ -191,8 +153,11 @@ function detectProvider(baseUrl) {
 const ai = ref({})
 const app = ref([])
 const savingAi = ref(false)
-const showHelp = ref(false)
 const providerIdx = ref(0)
+
+const curScheme = computed(() => SCHEMES.find((s) => s.value === theme.colorScheme) || SCHEMES[0])
+function onTheme(e) { setTheme(e.detail.value ? 'dark' : 'light') }
+function cycle() { const next = cycleColorScheme(); uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' }) }
 
 // 当前服务商的模型列表（computed）
 const currentTextModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].textModels)

@@ -16,7 +16,7 @@
     </view>
 
     <!-- 编辑资料弹层 -->
-    <view class="mask" v-if="editing" @click="editing = false">
+    <view class="mask editing" v-if="editing" @click="editing = false">
       <view class="sheet" @click.stop>
         <view class="sh-h">编辑资料</view>
         <view class="fld"><text class="lab">老师称呼</text><input v-model="form.name" class="inp" /></view>
@@ -42,22 +42,6 @@
         <view class="sh-acts">
           <button class="btn-c" @click="editing = false">取消</button>
           <button class="btn-s" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</button>
-        </view>
-      </view>
-    </view>
-
-    <!-- 外观设置 -->
-    <view class="card">
-      <view class="card-h">外观设置</view>
-      <view class="row" @click="onTheme">
-        <text class="lab">{{ theme.mode === 'dark' ? '🌙 暗色模式' : '☀️ 明亮模式' }}</text>
-        <switch :checked="theme.mode === 'dark'" @change="onTheme" color="#3fd07f" />
-      </view>
-      <view class="row" @click="cycle">
-        <text class="lab">🎨 主题色（{{ curScheme.label }}）</text>
-        <view class="scheme-row">
-          <view class="dot" v-for="s in SCHEMES" :key="s.value" :style="{ background: s.color }" :class="theme.colorScheme === s.value && 'on'"></view>
-          <text class="chev">切换 ›</text>
         </view>
       </view>
     </view>
@@ -101,7 +85,29 @@
       <view class="bk-empty" v-else>加载中…</view>
     </view>
 
+    <button class="help-btn" @click="showHelp = true">📖 使用帮助</button>
+
     <button class="logout" @click="logout">退出登录</button>
+
+    <view v-if="showHelp" class="mask" @click="showHelp = false">
+      <view class="help-modal" @click.stop>
+        <view class="hm-title">📖 使用帮助</view>
+        <scroll-view scroll-y class="hm-body">
+          <view class="hm-sec">
+            <view class="hm-h">🎓 应用简介</view>
+            <view class="hm-p">园丁工作台是面向中小学教师的一站式班务管理工具，覆盖班级、学生、考试、成绩、作业、公告、考勤、座位表、班费、活动、AI 教案/试卷/知识点生成等场景。</view>
+          </view>
+          <view class="hm-sec">
+            <view class="hm-h">🚀 快速上手</view>
+            <view class="hm-p">1. 在「班级管理」创建班级，在「学生管理」批量录入学生（支持 Excel/图片 AI 识别）。</view>
+            <view class="hm-p">2. 在「考试管理」创建考试，在「成绩管理」按班级/考试/科目录入或导入成绩。</view>
+            <view class="hm-p">3. 在「作业管理」布置作业，状态自动同步到「班级公告」。</view>
+            <view class="hm-p">4. 在「工具箱」使用随机点名、计时器、计分板、奖励兑换、笔顺演示等课堂神器。</view>
+          </view>
+        </scroll-view>
+        <button class="hm-close" @click="showHelp = false">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -110,13 +116,14 @@ import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { isPhone, isEmail } from '../../common/validators'
-import { theme, auth, setTheme, setUser, setColorScheme, cycleColorScheme, logout as doLogout, SCHEMES } from '../../common/store'
+import { theme, auth, setUser, setColorScheme, logout as doLogout } from '../../common/store'
 
 const me = reactive({})
 const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '', phone: '', email: '' })
 const editing = ref(false)
 const saving = ref(false)
 const phoneError = ref('')
+const showHelp = ref(false)
 
 // 备份历史与自动备份相关状态
 const backups = ref([])
@@ -129,8 +136,6 @@ const lastAutoText = computed(() => lastAutoAt.value ? fmtTime(lastAutoAt.value)
 const subjectOpts = ['语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育', '综合实践', '信息技术']
 const avatarOpts = ['🍎', '👩‍🏫', '🧑‍🏫', '🧑', '👩', '👨‍🏫', '🌟', '🌈', '📚', '☕']
 const termOpts = ['2026春季学期', '2026秋季学期', '2027春季学期', '2027秋季学期']
-
-const curScheme = computed(() => SCHEMES.find((s) => s.value === theme.colorScheme) || SCHEMES[0])
 
 async function load() {
   try {
@@ -171,22 +176,6 @@ function toggleSub(s) {
   if (i >= 0) form.subjects.splice(i, 1)
   else form.subjects.push(s)
 }
-function onTheme(e) {
-  setTheme(e.detail.value ? 'dark' : 'light')
-}
-async function cycle() {
-  const next = cycleColorScheme()
-  uni.showLoading({ title: '切换中…', mask: true })
-  try {
-    await api.put('/users/me', { colorScheme: next })
-    uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' })
-  } catch (e) {
-    uni.showToast({ title: '切换失败：' + (e.message||''), icon: 'none' })
-  } finally {
-    uni.hideLoading()
-  }
-}
-
 function checkPhone() {
   if (form.phone && !isPhone(form.phone)) {
     phoneError.value = '手机号格式错误，应为 11 位数字'
@@ -523,7 +512,9 @@ async function maybeAutoBackup(force = false) {
 .dm-t { font-size: 28rpx; color: var(--c-title); font-weight: 600; display: block; }
 .dm-s { font-size: 22rpx; color: var(--c-sub); display: block; }
 /* 弹窗 */
-.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; z-index: 99; }
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; z-index: 99; }
+.mask.editing { align-items: flex-end; }
+.mask:not(.editing) { align-items: center; justify-content: center; }
 .sheet { background: var(--c-card); width: 100%; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 88vh; overflow-y: auto; }
 .sh-h { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 .lab { font-size: 24rpx; color: #5a5048; display: block; margin: 12rpx 0 8rpx; }
@@ -541,6 +532,15 @@ async function maybeAutoBackup(force = false) {
 .btn-c { flex: 1; background: var(--c-card2); color: #5a5048; border-radius: 50rpx; }
 .btn-s { flex: 1; background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 .logout { background: var(--c-card2); color: var(--c-danger); border-radius: 50rpx; margin-top: 10rpx; }
+.help-btn { background: var(--c-card); color: var(--c-accent); border: 1px solid var(--c-accent); border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+/* 使用帮助弹层 */
+.help-modal { width: 640rpx; max-height: 84vh; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; display: flex; flex-direction: column; box-sizing: border-box; }
+.hm-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 16rpx; }
+.hm-body { flex: 1; max-height: 60vh; }
+.hm-sec { margin-bottom: 20rpx; }
+.hm-h { font-size: 28rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 8rpx; }
+.hm-p { display: block; font-size: 24rpx; color: var(--c-title); line-height: 1.7; margin-bottom: 6rpx; }
+.hm-close { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 16rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 /* 备份与恢复 */
 .bk-time { font-size: 24rpx; color: var(--c-sub); }
 .bk-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin: 16rpx 0; font-size: 28rpx; }
