@@ -158,13 +158,7 @@ function onExamChange(e) {
 }
 
 function bindPhone() {
-  uni.getUserProfile({
-    desc: '用于家校联系',
-    success: () => {
-      uni.showToast({ title: '已提交绑定', icon: 'success' })
-    },
-    fail: () => uni.showToast({ title: '绑定取消', icon: 'none' }),
-  })
+  uni.showToast({ title: '请在微信设置中绑定手机号后重试', icon: 'none' })
 }
 
 function logout() {

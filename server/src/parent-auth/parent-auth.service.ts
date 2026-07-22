@@ -86,93 +86,83 @@ export class ParentAuthService {
     }))
   }
 
-  /** 考试成绩明细 + 趋势分析 */
+  /** 考试成绩明细 + 排名 + 分布 */
   async getExams(payload: any) {
     const { classId, studentId } = payload
-    if (!classId || !studentId) return { exams: [], analysis: null }
-    const [exams, grades] = await Promise.all([
+    if (!classId || !studentId) return { exams: [] }
+    const [exams, grades, students] = await Promise.all([
       this.examRepo.find({ where: { classId }, order: { date: 'ASC' } }),
       this.gradeRepo.find({ where: { classId } }),
+      this.studentRepo.find({ where: { classId } }),
     ])
-    const scoreMap: Record<string, Record<string, { score: number | null; fullScore: number }>> = {}
-    for (const g of grades) {
-      const entry = g.scores.find((s) => s.studentId === studentId)
-      if (!entry) continue
-      const examKey = g.examId || g.examName
-      if (!scoreMap[examKey]) scoreMap[examKey] = {}
-      scoreMap[examKey][g.subject] = {
-        score: entry.score,
-        fullScore: 100, // default, can be overridden by exam.subjectFullScores
-      }
-    }
-    const examList: any[] = []
-    let totalAccum = 0
-    let countAccum = 0
-    const subjectTotals: Record<string, { total: number; count: number }> = {}
 
+    const examList = []
     for (const exam of exams) {
-      const subjects: any[] = []
-      let examTotal = 0
-      let examFull = 0
       const key = exam.id || exam.name
-      const map = scoreMap[key] || {}
-      for (const subj of exam.subjects || []) {
-        const fs = (exam.subjectFullScores && exam.subjectFullScores[subj]) || 100
-        const entry = map[subj]
-        const score = entry ? entry.score : null
-        subjects.push({ subject: subj, score, fullScore: fs })
-        if (score !== null) {
-          examTotal += score
-          examFull += fs
-          if (!subjectTotals[subj]) subjectTotals[subj] = { total: 0, count: 0 }
-          subjectTotals[subj].total += score
-          subjectTotals[subj].count++
+      // 收集所有在该考试有成绩的学生ID
+      const studentScoreMap = new Map<string, { total: number; full: number; subjects: any[] }>()
+      
+      for (const g of grades) {
+        if ((g.examId || g.examName) !== key) continue
+        for (const s of g.scores || []) {
+          const fs = (exam.subjectFullScores && exam.subjectFullScores[g.subject]) || 100
+          if (!studentScoreMap.has(s.studentId)) studentScoreMap.set(s.studentId, { total: 0, full: 0, subjects: [] })
+          const entry = studentScoreMap.get(s.studentId)!
+          entry.subjects.push({ subject: g.subject, score: s.score, fullScore: fs })
+          if (s.score != null) { entry.total += Number(s.score); entry.full += fs }
         }
       }
+      
+      // 构建各科排名字典
+      const subjectRanks = new Map<string, Array<{ studentId: string; score: number }>>()
+      for (const [sid, data] of studentScoreMap) {
+        for (const sub of data.subjects) {
+          if (sub.score == null) continue
+          if (!subjectRanks.has(sub.subject)) subjectRanks.set(sub.subject, [])
+          subjectRanks.get(sub.subject)!.push({ studentId: sid, score: Number(sub.score) })
+        }
+      }
+      for (const [subj, arr] of subjectRanks) arr.sort((a, b) => b.score - a.score)
+      
+      // 该生数据
+      const myData = studentScoreMap.get(studentId)
+      const subjects = myData ? myData.subjects : []
+      const totalScore = myData ? myData.total : null
+      const totalFullScore = myData ? myData.full : null
+      
+      // 每科排名
+      subjects.forEach((sub) => {
+        const arr = subjectRanks.get(sub.subject) || []
+        sub.classRank = sub.score != null ? arr.findIndex(r => r.studentId === studentId) + 1 : null
+      })
+      
+      // 总分排名
+      const totalRanks = Array.from(studentScoreMap.entries())
+        .map(([sid, d]) => ({ studentId: sid, total: d.total }))
+        .filter(x => x.total > 0)
+        .sort((a, b) => b.total - a.total)
+      const classRank = totalRanks.findIndex(r => r.studentId === studentId) + 1
+      
+      // 分布柱状图数据（10分一段，基于总分实际值）
+      const distribution = buildDistribution([
+        ...totalRanks.map(r => r.total),
+      ], studentId, totalScore)
+      
       examList.push({
         examId: exam.id,
         examName: exam.name,
         date: exam.date,
         term: exam.term,
         subjects,
-        totalScore: examFull ? (examTotal / examFull * 100).toFixed(1) : null,
+        totalScore,
+        totalFullScore,
+        classRank: classRank > 0 ? classRank : null,
+        gradeRank: null,  // 同年级排名暂不支持
+        distribution,
       })
-      if (examFull) { totalAccum += examTotal; countAccum += examFull }
     }
-
-    // 趋势：最近考试总分 vs 上次
-    let trend: any = null
-    if (examList.length >= 2) {
-      const last = examList[examList.length - 1]
-      const prev = examList[examList.length - 2]
-      if (last.totalScore !== null && prev.totalScore !== null) {
-        const diff = (parseFloat(last.totalScore) - parseFloat(prev.totalScore)).toFixed(1)
-        trend = { diff, direction: parseFloat(diff) >= 0 ? 'up' : 'down' }
-      }
-    }
-
-    // 优势/薄弱学科
-    let bestSubject = ''
-    let worstSubject = ''
-    let bestAvg = -1
-    let worstAvg = Infinity
-    for (const [s, t] of Object.entries(subjectTotals)) {
-      const avg = t.total / t.count
-      if (avg > bestAvg) { bestAvg = avg; bestSubject = s }
-      if (avg < worstAvg) { worstAvg = avg; worstSubject = s }
-    }
-
-    const analysis = {
-      overallAverage: countAccum ? (totalAccum / countAccum * 100).toFixed(1) : null,
-      bestSubject: bestSubject || '',
-      bestAvg: bestAvg > 0 ? bestAvg.toFixed(1) : '',
-      worstSubject: worstSubject || '',
-      worstAvg: worstAvg < Infinity ? worstAvg.toFixed(1) : '',
-      trend,
-      examCount: examList.length,
-    }
-
-    return { exams: examList, analysis }
+    
+    return { exams: examList }
   }
 
   /** 孩子所在班级的作业 */
@@ -222,4 +212,28 @@ export class ParentAuthService {
   getImUserSig(payload: any) {
     return this.im.getUserSig(payload.sub)
   }
+}
+
+/** 构建总分分布柱状图数据（10分一段） */
+function buildDistribution(allScores: number[], studentId: string, studentTotal: number | null) {
+  if (!allScores.length) return []
+  const max = Math.max(...allScores)
+  const bucketSize = 10
+  const buckets: Record<string, number> = {}
+  for (const s of allScores) {
+    const lower = Math.floor(s / bucketSize) * bucketSize
+    const key = `${lower}-${lower + bucketSize - 1}`
+    buckets[key] = (buckets[key] || 0) + 1
+  }
+  const maxCount = Math.max(...Object.values(buckets), 1)
+  return Object.entries(buckets).sort(([a], [b]) => {
+    const aLo = parseInt(a.split('-')[0])
+    const bLo = parseInt(b.split('-')[0])
+    return aLo - bLo
+  }).map(([label, count]) => ({
+    label, count, pct: Math.round(count / maxCount * 100),
+    isStudent: studentTotal != null && (
+      parseInt(label.split('-')[0]) <= studentTotal && studentTotal <= parseInt(label.split('-')[1])
+    ),
+  }))
 }
