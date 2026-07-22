@@ -214,10 +214,9 @@ export class AdminService {
       'parent_contacts', 'seats', 'gallery_items',
     ]
     await this.entityManager.transaction(async (em) => {
-      // 删除所有学校管理员
-      await this.saRepo.delete({})
-      // 删除所有教师用户
-      await this.userRepo.delete({})
+      // 删除所有学校管理员和教师（raw query 避免 TypeORM delete({}) 空条件限制）
+      await em.query('DELETE FROM school_admins')
+      await em.query('DELETE FROM users')
       // 删除所有业务数据表
       for (const t of tables) {
         try { await em.query(`DELETE FROM \`${t}\``) } catch (e) { /* 表不存在则跳过 */ }
