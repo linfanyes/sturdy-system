@@ -64,6 +64,11 @@ import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
 
+const presetResources = [
+  { title: '国家中小学智慧教育平台', url: 'https://basic.smartedu.cn/', description: '教育部官方中小学智慧教育平台，汇聚优质教学资源', category: '官方平台', tags: ['教学资源'] },
+  { title: '学科网', url: 'https://www.zxxk.com/', description: '中小学校教学资源网站，提供教案、课件、试题等资源', category: '官方平台', tags: ['教学资源'] },
+  { title: '一师一优课', url: 'https://1s1k.eduyun.cn/', description: '国家教育资源公共服务平台，汇集部级优课资源', category: '官方平台', tags: ['教学资源'] },
+]
 const list = ref([])
 const showAdd = ref(false)
 const kw = ref('')
@@ -141,7 +146,8 @@ const shown = computed(() => {
 })
 
 async function load() {
-  list.value = await api.getList('/resources', { loading: true, loadingText: '加载资源' })
+  const apiList = await api.getList('/resources', { loading: true, loadingText: '加载资源' })
+  list.value = [...presetResources, ...apiList]
 }
 onShow(load)
 onPullDownRefresh(async () => {

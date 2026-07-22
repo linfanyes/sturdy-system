@@ -10,6 +10,9 @@ export function setMockMode(enabled) {
   if (enabled) {
     auth.token = 'mock-token'
     auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
+  } else {
+    auth.token = ''
+    auth.user = null
   }
 }
 export function getMockMode() { return _mockMode }
@@ -88,10 +91,11 @@ export function request(path, method = 'GET', data = {}, token) {
         clearTimeout(timer)
         const status = res.statusCode || (res.data && res.data.statusCode)
         if (status === 401) {
-          // 清除本地登录态，避免带着过期 token 反复触发 401 跳转
+          // 提取后端实际错误信息（密码错误/账号禁用等），而非固定显示"登录已过期"
+          const msg = res.data && (res.data.message || res.data.error)
           try { logout() } catch (e) {}
           uni.reLaunch({ url: '/pages/login/login' })
-          return reject(new Error('登录已过期'))
+          return reject(new Error(msg || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(res.data)
         else reject(toError(res.data, '请求失败(' + status + ')'))

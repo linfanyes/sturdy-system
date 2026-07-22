@@ -438,7 +438,12 @@ function go(f) {
   else uni.navigateTo({ url: f.path })
 }
 function goPage(url) { uni.navigateTo({ url }) }
-function goCrud(type) { uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(type) }) }
+function goCrud(type) {
+  const MAP = { classes: '/pages/classes/classes', students: '/pages/students/students' }
+  const url = MAP[type]
+  if (url) uni.switchTab({ url })  // 班级和学生是 tabBar 页面，用 switchTab
+  else uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(type) })
+}
 </script>
 
 <style scoped>

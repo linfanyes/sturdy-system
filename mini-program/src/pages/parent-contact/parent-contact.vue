@@ -281,7 +281,7 @@ async function del(p) {
 .a { font-size: 26rpx; color: #409eff; }
 .a.del { color: var(--c-danger); }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }
-.sheet { margin-top: 16rpx; background: var(--c-card); border-radius: 16rpx; padding: 24rpx; }
+.sheet { margin-top: 16rpx; background: var(--c-card); border-radius: 16rpx; padding: 24rpx; width: 100%; box-sizing: border-box; }
 .row { display: flex; gap: 14rpx; margin-bottom: 14rpx; }
 .half { flex: 1; }
 .inp { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-card); }

@@ -340,7 +340,7 @@ function remove(t) {
 <style scoped>
 .page { padding: 24rpx; }
 .bar { display: flex; gap: 14rpx; align-items: center; margin-bottom: 14rpx; }
-.search { flex: 1; background: var(--c-card); border-radius: 16rpx; padding: 20rpx 24rpx; font-size: 28rpx; }
+.search { flex: 1; background: var(--c-card); border-radius: 16rpx; padding: 20rpx 24rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
 .add { width: 72rpx; height: 72rpx; border-radius: 16rpx; background: var(--c-primary); color: #fff; text-align: center; line-height: 72rpx; font-size: 44rpx; flex: 0 0 auto; }
 .filters { white-space: nowrap; margin-bottom: 14rpx; }
 .f { display: inline-block; font-size: 24rpx; padding: 10rpx 22rpx; border-radius: 30rpx; background: #fff; color: #9aa0a6; margin-right: 12rpx; }

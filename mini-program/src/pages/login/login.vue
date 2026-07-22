@@ -11,9 +11,12 @@
     <button class="btn wechat" @click="doWechatLogin">微信登录</button>
 
     <!-- 微信绑定弹窗 -->
-    <view class="mask" v-if="bindOpenid" @click.stop>
-      <view class="sheet">
-        <view class="sh-t">绑定账号</view>
+    <view class="mask" v-if="bindOpenid" @click="bindOpenid = ''">
+      <view class="sheet" @click.stop>
+        <view class="sh-bar">
+          <view class="sh-t">绑定账号</view>
+          <text class="sh-close" @click="bindOpenid = ''">✕</text>
+        </view>
         <view class="sh-sub">请输入你的教师编号或学生学号完成绑定</view>
         <input v-model="bindNumber" class="inp" confirm-type="done" placeholder="教师请输入教师编号或家长请输入学生学号" placeholder-style="color:#b5a890;" @confirm="doBind" />
         <button class="ok" :disabled="bindLoading" @click="doBind">{{ bindLoading ? '绑定中…' : '完成绑定' }}</button>
@@ -25,6 +28,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import api from '../../common/request'
+import { setMockMode } from '../../common/request'
 import { setAuth, setUser, setParent, theme } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -43,6 +47,7 @@ async function doLogin() {
 }
 
 function handleLoginResult(r) {
+  setMockMode(false)  // 正常登录始终退出演示模式
   switch (r.role) {
     case 'super':
       uni.setStorageSync('admin_token', r.token)
@@ -115,6 +120,8 @@ async function doBind() {
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:60; }
 .sheet { width:100%; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); box-sizing:border-box; }
 .sh-t { font-size:34rpx; font-weight:700; color:var(--c-title); }
+.sh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; }
+.sh-close { font-size: 36rpx; color: var(--c-sub); padding: 0 8rpx; }
 .sh-sub { font-size:26rpx; color:var(--c-sub); margin:8rpx 0 20rpx; line-height:1.5; }
 .roles2 { display:flex; gap:14rpx; margin-bottom:18rpx; }
 .r2 { flex:1; text-align:center; font-size:28rpx; padding:18rpx 0; border-radius:14rpx; background:var(--c-card2); color:var(--c-sub); min-width:0; }

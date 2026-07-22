@@ -205,8 +205,11 @@ const analysis = computed(() => {
   const mid = sorted.length % 2
     ? sorted[(sorted.length - 1) / 2]
     : ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2).toFixed(1)
-  const pass = sc.filter((s) => s >= 60).length
-  const excellent = sc.filter((s) => s >= 90).length
+  const fs1 = existing.value.fullScore || 100
+  const passLine1 = fs1 * 0.6
+  const excLine1 = fs1 * 0.85
+  const pass = sc.filter((s) => s >= passLine1).length
+  const excellent = sc.filter((s) => s >= excLine1).length
   const passRate = Math.round((pass / sc.length) * 100)
   const excellentRate = Math.round((excellent / sc.length) * 100)
   // 5 段汇总分布（兼容旧 UI：综合分析弹层下方的水平分布条）
@@ -264,8 +267,11 @@ const radarData = computed(() => {
   list.forEach((g) => {
     const sc = (g.scores || []).map((x) => Number(x.score)).filter((n) => !isNaN(n))
     if (!sc.length) return
-    const pass = sc.filter((s) => s >= 60).length
-    const excellent = sc.filter((s) => s >= 90).length
+    const fs2 = g.fullScore || 100
+    const passLine2 = fs2 * 0.6
+    const excLine2 = fs2 * 0.85
+    const pass = sc.filter((s) => s >= passLine2).length
+    const excellent = sc.filter((s) => s >= excLine2).length
     result.subjects.push({
       name: g.subject || '—',
       avg: +(sc.reduce((a, b) => a + b, 0) / sc.length).toFixed(1),

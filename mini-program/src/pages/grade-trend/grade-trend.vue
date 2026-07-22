@@ -99,7 +99,7 @@ function avgScore(g) {
   const sum = g.scores.reduce((s, x) => s + (Number(x.score) || 0), 0)
   return Math.round((sum / g.scores.length) * 10) / 10
 }
-function calcStat(scores) {
+function calcStat(scores, fullScore) {
   const arr = scores.map((x) => Number(x.score) || 0).filter((v) => v > 0)
   if (!arr.length) return { avg: 0, max: 0, min: 0, median: 0, passRate: 0, excellentRate: 0 }
   arr.sort((a, b) => a - b)
@@ -108,8 +108,11 @@ function calcStat(scores) {
   const max = arr[arr.length - 1]
   const min = arr[0]
   const mid = arr.length % 2 ? arr[(arr.length - 1) / 2] : Math.round((arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2)
-  const pass = arr.filter((v) => v >= 60).length
-  const exc = arr.filter((v) => v >= 85).length
+  const fs = fullScore || 100
+  const passLine = fs * 0.6
+  const excLine = fs * 0.85
+  const pass = arr.filter((v) => v >= passLine).length
+  const exc = arr.filter((v) => v >= excLine).length
   return {
     avg, max, min, median: mid,
     passRate: Math.round((pass / arr.length) * 100),
@@ -122,7 +125,7 @@ const trendData = computed(() => {
   return grades.value
     .filter((g) => g.classId === classId.value && g.subject === selSubject.value)
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-    .map((g) => ({ examName: g.examName || g.date, ...calcStat(g.scores) }))
+    .map((g) => ({ examName: g.examName || g.date, ...calcStat(g.scores, g.fullScore) }))
 })
 
 const lineStats = computed(() => {
@@ -147,7 +150,7 @@ const compareData = computed(() => {
     const list = grades.value.filter((g) => g.classId === c.id && g.subject === selSubject.value)
     if (!list.length) return null
     const latest = list.sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]
-    const st = calcStat(latest.scores)
+    const st = calcStat(latest.scores, latest.fullScore)
     return { classId: c.id, className: c.name, avg: st.avg, passRate: st.passRate, excellentRate: st.excellentRate, count: (latest.scores || []).length, latestExam: latest.examName, color: palette[i % palette.length] }
   }).filter(Boolean)
 })

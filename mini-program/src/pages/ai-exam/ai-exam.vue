@@ -144,8 +144,11 @@ const stats = computed(() => {
     const avg = (sum / n).toFixed(1)
     const max = Math.max(...arr)
     const min = Math.min(...arr)
-    const excellent = arr.filter((x) => x >= 90).length
-    const pass = arr.filter((x) => x >= 60).length
+    const fs3 = g.fullScore || (exam.subjectFullScores && exam.subjectFullScores[g.subject]) || 100
+    const passLine3 = fs3 * 0.6
+    const excLine3 = fs3 * 0.85
+    const excellent = arr.filter((x) => x >= excLine3).length
+    const pass = arr.filter((x) => x >= passLine3).length
     const segs = [
       { k: '<60', v: arr.filter((x) => x < 60).length },
       { k: '60-69', v: arr.filter((x) => x >= 60 && x < 70).length },

@@ -68,12 +68,12 @@ const sections = ref([
   {
     title: '常用',
     items: [
-      { label: '工作台', icon: '🏠', tab: '/pages/dashboard/dashboard' },
-      { label: '班级管理', icon: '🏫', tab: '/pages/classes/classes' },
-      { label: '学生管理', icon: '👧', tab: '/pages/students/students' },
       { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
-      { label: '工具箱', icon: '🧰', tab: '/pages/toolbox/toolbox' },
-      { label: '设置', icon: '⚙️', tab: '/pages/config/config' },
+      { label: '待办', icon: '✅', path: '/pages/todos/todos' },
+      { label: '笔记', icon: '📓', path: '/pages/notes/notes' },
+      { label: '课表', icon: '🗓️', path: '/pages/schedule/schedule' },
+      { label: '个人中心', icon: '👤', path: '/pages/profile/profile' },
+      { label: '公告', icon: '📢', path: '/pages/notice/notice' },
     ],
   },
   {

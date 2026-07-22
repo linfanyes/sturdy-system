@@ -186,10 +186,10 @@
       </view>
 
       <!-- 重置密码 -->
-      <view v-if="resetTarget" class="mask" @click="resetTarget = null">
-        <view class="sheet" @click.stop>
+      <view v-if="resetTarget" class="mask mask-center" @click="resetTarget = null">
+        <view class="dialog" @click.stop>
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
-          <view class="inp-wrap"><input v-model="resetPwd" class="inp" placeholder="新密码（必填）" password /></view>
+          <input v-model="resetPwd" class="inp-dialog" placeholder="新密码（必填）" password />
           <button class="save-btn" :disabled="saving" @click="confirmReset">{{ saving ? '保存中…' : '确认重置' }}</button>
         </view>
       </view>
@@ -266,9 +266,10 @@ async function apiCall(method, path, data) {
       success: (r) => {
         const status = r.statusCode || (r.data && r.data.statusCode) || 200
         if (status === 401) {
+          const msg = r.data && (r.data.message || r.data.error)
           adminToken.value = ''
           uni.removeStorageSync(ADMIN_TOKEN_KEY)
-          return reject(new Error('登录已过期'))
+          return reject(new Error(msg || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(r.data)
         else {
@@ -608,6 +609,9 @@ function confirmResetAll() {
 .meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex-shrink: 0; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
+.mask.mask-center { align-items: center; justify-content: center; }
+.dialog { width: 86%; max-width: 600rpx; background: var(--c-card); border-radius: 24rpx; padding: 40rpx 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+.inp-dialog { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx 20rpx; margin: 20rpx 0; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 /* 全屏表单 */

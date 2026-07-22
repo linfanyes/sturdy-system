@@ -122,16 +122,15 @@
       </view>
     </view>
 
-    <!-- 演示模式切换 -->
+    <!-- 演示模式：以教师身份进入教师系统 -->
     <view class="demo-section">
       <view class="demo-row">
         <view class="demo-text">
-          <text class="demo-name">🛝 演示模式</text>
-          <text class="demo-sub">开启后使用预置演示数据，展示全部功能</text>
+          <text class="demo-name">🛝 教师系统演示</text>
+          <text class="demo-sub">以教师身份预览所有功能，体验教师端完整流程</text>
         </view>
-        <switch :checked="mockMode.enabled" color="#e6a23c" @change="onMockMode" />
       </view>
-      <text v-if="mockMode.enabled" class="demo-hint">⚡ 已开启演示模式，数据为预置示例</text>
+      <button class="demo-btn" @click="enterDemoMode">进入教师系统演示</button>
     </view>
   </view>
 </template>
@@ -139,7 +138,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme, mockMode } from '../../common/store'
+import { theme } from '../../common/store'
+import { setMockMode } from '../../common/request'
+import { auth, setAuth } from '../../common/store'
 import { isPhone } from '../../common/validators'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -206,10 +207,11 @@ async function apiCall(method, path, data) {
       success: (r) => {
         const status = r.statusCode || (r.data && r.data.statusCode) || 200
         if (status === 401) {
+          const msg = r.data && (r.data.message || r.data.error)
           uni.removeStorageSync('sa_token')
           uni.removeStorageSync('sa_user')
           uni.reLaunch({ url: '/pages/login/login' })
-          return reject(new Error('登录已过期'))
+          return reject(new Error(msg || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(r.data)
         else {
@@ -381,37 +383,32 @@ async function doResetPwd() {
 }
 
 function logout() {
+  setMockMode(false)
   uni.removeStorageSync('sa_token')
   uni.removeStorageSync('sa_user')
   uni.reLaunch({ url: '/pages/login/login' })
 }
 
-// ===== 演示模式 =====
-function onMockMode(e) {
-  const enabled = e.detail.value
-  mockMode.enabled = enabled
-  uni.setStorageSync('g_mock_mode', String(enabled))
-  if (enabled) {
-    teachers.value = MOCK_TEACHERS
-    uni.showToast({ title: '演示模式已开启，数据为预置示例', icon: 'none' })
-  } else {
-    loadTeachers()
+// ===== 演示模式：以教师身份进入教师系统 =====
+async function enterDemoMode() {
+  uni.showLoading({ title: '进入演示…' })
+  try {
+    setMockMode(true)
+    // 设置教师模拟身份
+    const demoUser = {
+      name: '珊珊老师', school: '阳光实验小学（演示版）',
+      schoolId: 'demo-school', features: [],
+    }
+    setAuth('mock-teacher-token', demoUser)
+    uni.hideLoading()
+    uni.switchTab({ url: '/pages/dashboard/dashboard' })
+  } catch (e) {
+    uni.hideLoading()
   }
 }
 
-const MOCK_TEACHERS = [
-  { id: 'demo-t1', name: '李老师', username: 'lilaoshi', phone: '13800001001', subject: '', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','attendance','schedule','homework','notices','ai','tools','games','finance','activities','rewards','parents','teachers'], enabled: true, createdAt: '2026-01-01' },
-  { id: 'demo-t2', name: '王老师', username: 'wanglaoshi', phone: '13800001002', subject: '语文', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','ai','parents','teachers'], enabled: true, createdAt: '2026-01-02' },
-  { id: 'demo-t3', name: '张老师', username: 'zhanglaoshi', phone: '13800001003', subject: '数学', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','attendance','schedule','homework'], enabled: true, createdAt: '2026-01-03' },
-  { id: 'demo-t4', name: '赵老师', username: 'zhaolaoshi', phone: '13800001004', subject: '英语', school: '阳光实验小学（演示版）', features: ['students','exams','grades','parents'], enabled: false, createdAt: '2026-01-04' },
-]
-
 onShow(async () => {
-  if (mockMode.enabled) {
-    teachers.value = MOCK_TEACHERS
-  } else {
-    await Promise.all([loadTeachers(), loadDashboard()])
-  }
+  await Promise.all([loadTeachers(), loadDashboard()])
 })
 </script>
 
@@ -483,5 +480,5 @@ onShow(async () => {
 .demo-text { flex: 1; padding-right: 20rpx; }
 .demo-name { display: block; font-size: 28rpx; color: var(--c-title); font-weight: 600; }
 .demo-sub { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
-.demo-hint { display: block; font-size: 22rpx; color: #e6a23c; margin-top: 10rpx; }
+.demo-btn { width: 100%; margin-top: 14rpx; background: linear-gradient(135deg, #409eff, #3a8ee6); color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
 </style>

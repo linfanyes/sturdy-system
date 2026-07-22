@@ -253,7 +253,7 @@ const MOCK = {
   '/behavior-records': BEHAVIOR_RECORDS,
   '/config/public': { defaultSubjects: ['语文', '数学', '英语', '科学', '道德与法治', '体育', '音乐', '美术', '信息科技'] },
   '/users/me': { id: 'u1', name: '珊珊老师', school: '阳光实验小学', subjects: ['语文', '品德'] },
-  '/config/ai': { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen-plus', visionModel: 'qwen-vl-plus', imageModel: '', videoModel: '', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。' /* 切换智谱GLM：服务商选智谱GLM → baseUrl=https://open.bigmodel.cn/api/paas/v4 模型 GLM-4.7-Flash，文生图 GLM-4.6V-Flash，文生视频 CogVideoX-Flash */ },
+  '/config/ai': { provider: '阿里云 DashScope', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', apiKey: '', textModel: 'qwen3.7-plus', visionModel: 'qwen3-vl-plus', imageModel: 'qwen3.7-plus', videoModel: '', temperature: 0.7, maxTokens: 2048, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。', enabledModels: { text: true, vision: true, image: true, video: false } /* 演示模式下 AI 密钥留空；如需演示 AI 功能请在上方设置页填入真实 apiKey */ },
   '/config/app': [{ key: '版本', value: '1.0.0 (demo)' }, { key: '环境', value: '演示模式' }],
   '/duty-rosters': DUTY_ROSTERS,
   '/class-activities': CLASS_ACTIVITIES,

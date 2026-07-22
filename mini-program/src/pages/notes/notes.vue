@@ -36,7 +36,7 @@
     <view class="mask" v-if="show" @click="show = false"></view>
     <view class="modal" v-if="show">
       <view class="mt">{{ editing ? '编辑笔记' : '新建笔记' }}</view>
-      <input v-model="form.title" class="inp" placeholder="给笔记起个名字" maxlength="60" />
+      <input v-model="form.title" class="inp" placeholder="给笔记起个名字" maxlength="60" style="width:100%;box-sizing:border-box" />
       <view class="lab2">分类</view>
       <view class="chips">
         <text v-for="c in cats" :key="c" class="chip" :class="form.category === c && 'on'" @click="form.category = c">{{ c }}</text>

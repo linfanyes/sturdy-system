@@ -152,7 +152,7 @@
           <view class="hm-sec">
             <view class="hm-h">🤖 AI 配置说明</view>
             <view class="hm-p">· 通过「服务商」下拉可一键切换阿里百炼（通义千问）/ DeepSeek，接口地址与默认模型自动填充。</view>
-            <view class="hm-p">· 阿里百炼：文本模型 qwen-plus/qwen-max/qwen-turbo-latest，多模态 qwen-vl-plus/qwen-vl-max。</view>
+            <view class="hm-p">· 阿里百炼：文本模型 qwen3.7-plus/qwen3-max/qwen3-turbo，多模态 qwen3-vl-plus/qwen3-vl-max。</view>
             <view class="hm-p">· DeepSeek：文本模型 deepseek-v4-flash/deepseek-v4-pro，v4 为原生多模态模型，文本与视觉可使用同一模型。</view>
             <view class="hm-p">· 选「自定义」可手动输入任意兼容 OpenAI 接口的模型名（如 claude-3.5-sonnet、moonshot-v1 等）。</view>
             <view class="hm-p">· AI 接口地址和密钥仅保存在后端，前端不存储。</view>
@@ -201,8 +201,8 @@ import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FO
 const PROVIDER_PRESETS = {
   '阿里百炼（通义千问）': {
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    textModels: ['qwen-plus', 'qwen-max', 'qwen-turbo-latest'],
-    visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
+    textModels: ['qwen3.7-plus', 'qwen3-max', 'qwen3-turbo'],
+    visionModels: ['qwen3-vl-plus', 'qwen3-vl-max'],
     imageModels: [],
     videoModels: [],
   },
