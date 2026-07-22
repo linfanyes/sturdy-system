@@ -99,7 +99,7 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onReady } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 
@@ -198,6 +198,11 @@ onShow(async () => {
     uni.reLaunch({ url: '/pages/parent-login/parent-login' })
     return
   }
+})
+
+// 首次加载在 onReady，避免首帧渲染冲突
+onReady(async () => {
+  if (!parent.token) return
 
   if (parent.user && !parent.user.wechatOpenid) {
     try {
