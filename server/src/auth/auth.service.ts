@@ -95,6 +95,7 @@ export class AuthService {
     // 查教师绑定
     let user = await this.users.findByOpenid(openid)
     if (user) {
+      if (user.enabled === false) throw new UnauthorizedException('账号已被学校管理员禁用，请联系学校')
       await this.users.update(user.id, { sessionKey: session_key })
       return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid }), user, needsBind: false }
     }

@@ -74,7 +74,7 @@ export class AdminService {
     return school
   }
 
-  /** 更新学校（编号不可改） */
+  /** 更新学校（编号不可改）；停用学校时级联禁用其管理员和所有教师 */
   async updateSchool(id: string, dto: { name?: string; address?: string; contact?: string; phone?: string; status?: string }) {
     const s = await this.schoolRepo.findOne({ where: { id } })
     if (!s) throw new BadRequestException('学校不存在')
@@ -84,6 +84,11 @@ export class AdminService {
     if (dto.phone !== undefined) s.phone = dto.phone
     if (dto.status !== undefined) s.status = dto.status
     await this.schoolRepo.save(s)
+    // 级联禁用：学校停用 → 该学校的所有管理员和教师同步禁用
+    if (dto.status === 'inactive') {
+      await this.saRepo.update({ schoolId: id }, { enabled: false })
+      await this.userRepo.update({ schoolId: id }, { enabled: false })
+    }
     return s
   }
 
