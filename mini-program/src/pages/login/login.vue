@@ -3,8 +3,8 @@
     <view class="logo">🌻</view>
     <view class="title">园丁工作台</view>
 
-    <input v-model="username" class="inp2" placeholder="用户名 / 学号" placeholder-style="color:#b5a890;" />
-    <input v-model="password" class="inp2" placeholder="密码" password placeholder-style="color:#b5a890;" />
+    <input v-model="username" class="inp2" placeholder="用户名 / 学号" placeholder-style="color:#b5a890;" confirm-type="next" @confirm="focusPwd = true" />
+    <input v-model="password" class="inp2" :focus="focusPwd" confirm-type="done" placeholder="密码" password placeholder-style="color:#b5a890;" @confirm="doLogin" />
     <button class="btn" :disabled="loading" @click="doLogin">{{ loading ? '登录中…' : '登 录' }}</button>
 
     <view class="or">— 或 —</view>
@@ -20,11 +20,11 @@
           <view class="r2" :class="bindRole==='parent'?'on':''" @click="bindRole='parent'">👨‍👩‍👧 我是家长</view>
         </view>
         <template v-if="bindRole==='teacher'">
-          <input v-model="bindUsername" class="inp" placeholder="教师用户名" placeholder-style="color:#b5a890;" />
-          <input v-model="bindPassword" class="inp" placeholder="教师密码" password placeholder-style="color:#b5a890;" />
+          <input v-model="bindUsername" class="inp" placeholder="教师用户名" placeholder-style="color:#b5a890;" confirm-type="next" @confirm="bindFocusPwd = true" />
+          <input v-model="bindPassword" class="inp" :focus="bindFocusPwd" confirm-type="done" placeholder="教师密码" password placeholder-style="color:#b5a890;" @confirm="doBind" />
         </template>
         <template v-if="bindRole==='parent'">
-          <input v-model="bindStudentNo" class="inp" type="number" placeholder="学生学号" placeholder-style="color:#b5a890;" />
+          <input v-model="bindStudentNo" class="inp" type="number" confirm-type="done" placeholder="学生学号" placeholder-style="color:#b5a890;" @confirm="doBind" />
         </template>
         <button class="ok" :disabled="bindLoading" @click="doBind">{{ bindLoading ? '绑定中…' : '完成绑定' }}</button>
       </view>
@@ -39,6 +39,7 @@ import { setAuth, setUser, setParent, theme } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
+const focusPwd = ref(false)  // 用户名框回车后聚焦密码框
 
 /* -------- 统一登录 -------- */
 async function doLogin() {
@@ -76,6 +77,7 @@ function handleLoginResult(r) {
 /* -------- 微信登录 -------- */
 const bindOpenid = ref(''), bindSessionKey = ref('')
 const bindRole = ref('teacher'), bindUsername = ref(''), bindPassword = ref(''), bindStudentNo = ref(''), bindLoading = ref(false)
+const bindFocusPwd = ref(false)  // 绑定弹窗：用户名框回车后聚焦密码框
 
 async function doWechatLogin() {
   uni.showLoading({ title:'登录中' })
