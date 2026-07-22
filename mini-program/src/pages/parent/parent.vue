@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
