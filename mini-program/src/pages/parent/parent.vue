@@ -77,6 +77,10 @@
             </view>
           </scroll-view>
         </view>
+        <view class="exam-analysis">
+          <text class="ea-label">📝 本次考试分析：</text>
+          <text class="ea-text">{{ selectedExam.analysisNote || '继续加油努力！' }}</text>
+        </view>
       </view>
     </view>
 
@@ -282,6 +286,9 @@ onShow(async () => {
 .bar.highlight { background: #07c160; }
 .bar-label { font-size: 18rpx; color: #9aa0a6; margin-top: 6rpx; }
 .bar-count { font-size: 18rpx; color: var(--c-sub); margin-top: 2rpx; }
+.exam-analysis { margin-top: 14rpx; padding: 14rpx; background: var(--c-input); border-radius: 10rpx; }
+.ea-label { font-size: 22rpx; font-weight: 600; color: var(--c-title); display: block; margin-bottom: 6rpx; }
+.ea-text { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; }
 
 /* Dark Mode */
 .dark .t { color: var(--c-title); }

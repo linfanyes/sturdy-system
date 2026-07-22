@@ -185,6 +185,7 @@ export class ParentAuthService {
         classRank: classRank > 0 ? classRank : null,
         gradeRank: null,  // 同年级排名暂不支持
         distribution,
+        analysisNote: exam.analysisNote || null,
       })
     }
     
