@@ -13,6 +13,13 @@ export class ParentAuthController {
     return this.s.login((b && b.studentNo) || '')
   }
 
+  /** 家长绑定微信（自动或手动） */
+  @Post('bind-wechat')
+  @UseGuards(ParentAuthGuard)
+  bindWechat(@Body() b: { code?: string; nickName?: string }, @CurrentParent() p: any) {
+    return this.s.bindWechat((b && b.code) || '', p, (b && b.nickName) || '')
+  }
+
   /** 当前家长信息 + 孩子 */
   @Get('me')
   @UseGuards(ParentAuthGuard)

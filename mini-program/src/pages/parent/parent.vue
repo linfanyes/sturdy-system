@@ -9,7 +9,7 @@
     <view class="kids" v-if="kids.length">
       <view class="kid" v-for="k in kids" :key="k.studentId">
         <view class="kn">{{ k.studentName }}<text v-if="k.studentNo" class="sno"> · {{ k.studentNo }}</text></view>
-        <view class="kc">{{ k.parentName ? k.parentName + ' · ' : '' }}{{ k.className || '班级 ' + k.classId }}</view>
+        <view class="kc">{{ k.parentName ? k.parentName + ' · ' : '' }}{{ k.className || '班级 ' + k.classId }}<text v-if="k.nickName" class="wechat-badge">已微信绑 {{ k.nickName }}</text></view>
       </view>
     </view>
 
@@ -158,7 +158,30 @@ function onExamChange(e) {
 }
 
 function bindPhone() {
-  uni.showToast({ title: '请在微信设置中绑定手机号后重试', icon: 'none' })
+  // 尝试获取微信昵称并绑定
+  uni.showLoading({ title: '绑定微信…', mask: true })
+  uni.getUserProfile({
+    desc: '用于家校联系',
+    success: async (res) => {
+      const nickName = res.userInfo?.nickName || ''
+      try {
+        const { code } = await uni.login()
+        await parentApi.post('/parent-auth/bind-wechat', { code, nickName })
+        uni.hideLoading()
+        uni.showToast({ title: '微信绑定成功' + (nickName ? '：' + nickName : ''), icon: 'success' })
+        // 重新加载页面数据使nickName显示
+        const me = await parentApi.get('/parent-auth/me')
+        kids.value = (me && me.kids) || []
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '绑定失败', icon: 'none' })
+      }
+    },
+    fail: () => {
+      uni.hideLoading()
+      uni.showToast({ title: '取消绑定', icon: 'none' })
+    },
+  })
 }
 
 function logout() {
@@ -175,9 +198,15 @@ onShow(async () => {
   if (parent.user && !parent.user.wechatOpenid) {
     try {
       const { code } = await uni.login()
-      await parentApi.post('/parent-auth/bind-wechat', { code })
+      // 尝试获取用户昵称
+      let nickName = ''
+      try {
+        const up = await uni.getUserProfile({ desc: '用于家校联系' })
+        nickName = up?.userInfo?.nickName || ''
+      } catch {}
+      await parentApi.post('/parent-auth/bind-wechat', { code, nickName })
     } catch (e) {
-      // 静默处理，不阻塞页面加载
+      // 静默处理
     }
   }
 
@@ -203,6 +232,7 @@ onShow(async () => {
 .kid { background: var(--c-card); border-radius: 14rpx; padding: 14rpx 20rpx; }
 .kn { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .sno { font-size: 22rpx; font-weight: 400; color: var(--c-sub); }
+.wechat-badge { font-size: 20rpx; color: #07c160; background: #e8f5e9; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; }
 .kc { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .sec { margin-bottom: 14rpx; }
 .st { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }

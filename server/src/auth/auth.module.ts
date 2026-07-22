@@ -12,6 +12,6 @@ import { School } from '../school/school.entity'
   imports: [UsersModule, TypeOrmModule.forFeature([SchoolAdmin, Student, School])],
   providers: [AuthService, WechatService],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, WechatService],
 })
 export class AuthModule {}

@@ -11,6 +11,7 @@ import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
+import { WechatService } from '../auth/wechat.service'
 
 /**
  * 家长端：凭学生学号登录 → 查看孩子考试成绩+趋势分析 + IM 与老师对话。
@@ -29,6 +30,7 @@ export class ParentAuthService {
     private readonly jwt: JwtService,
     private readonly im: ImService,
     private readonly config: ConfigService,
+    private readonly wechat: WechatService,
   ) {}
 
   /** 学号登录 */
@@ -58,9 +60,12 @@ export class ParentAuthService {
   /** 当前家长信息 + 孩子 */
   async getMe(payload: any) {
     let className = ''
+    let nickName = ''
     try {
       const cls = await this.classRepo.findOne({ where: { id: payload.classId } })
       if (cls) className = cls.name
+      const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
+      if (stu && stu.parentNickName) nickName = stu.parentNickName
     } catch {}
     return {
       imUserId: payload.sub,
@@ -69,8 +74,9 @@ export class ParentAuthService {
       classId: payload.classId,
       className,
       studentNo: payload.studentNo,
+      nickName,
       kids: [
-        { studentId: payload.studentId, studentName: payload.studentName, studentNo: payload.studentNo, classId: payload.classId, className },
+        { studentId: payload.studentId, studentName: payload.studentName, studentNo: payload.studentNo, classId: payload.classId, className, nickName },
       ],
     }
   }
@@ -92,6 +98,18 @@ export class ParentAuthService {
       ended: n.ended,
       createdAt: n.createdAt,
     }))
+  }
+
+  /** 绑定微信 openid 到学生记录 */
+  async bindWechat(code: string, payload: any, nickName: string) {
+    if (!code) throw new BadRequestException('缺少 code')
+    const { openid } = await this.wechat.code2Session(code)
+    const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
+    if (!stu) throw new BadRequestException('学生不存在')
+    stu.parentOpenId = openid
+    if (nickName) stu.parentNickName = nickName
+    await this.studentRepo.save(stu)
+    return { ok: true, nickName }
   }
 
   /** 考试成绩明细 + 排名 + 分布 */
