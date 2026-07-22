@@ -10,7 +10,7 @@
     <view class="summary" v-if="classId">
       <view v-for="s in summary" :key="s.label" class="sc"><text class="sn">{{ s.count }}</text><text class="sl">{{ s.label }}</text></view>
     </view>
-    <view v-if="!filtered.length" class="empty">还没有打卡记录，点击「+ 打卡」开始</view>
+    <EmptyState v-if="!filtered.length" icon="✅" text="还没有打卡记录" hint="点击「+ 打卡」开始" />
     <view class="list" v-else>
       <view class="row" v-for="c in filtered" :key="c.id">
         <view class="ic" :style="{background:cType(c.type).bg}">{{ cType(c.type).icon }}</view>
@@ -39,6 +39,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const list = ref([]), show = ref(false), saving = ref(false), selType = ref('')
 const cTypes = [{k:'阅读',icon:'📖',label:'阅读',bg:'#e8f9e8'},{k:'运动',icon:'🏃',label:'运动',bg:'#e8f1fb'},{k:'练字',icon:'✍️',label:'练字',bg:'#fff3e0'},{k:'家务',icon:'🧹',label:'家务',bg:'#fdeef0'},{k:'行为',icon:'⭐',label:'行为',bg:'#fff8e1'}]

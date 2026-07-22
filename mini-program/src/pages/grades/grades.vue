@@ -2,7 +2,7 @@
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="sel">
       <view class="field">
-        <text class="label">班级</text>
+        <text class="label">班级 <text v-if="isHomeroom" class="role-tag homeroom">班主任</text><text v-if="sharedClass" class="role-tag shared">共享</text></text>
         <picker :range="classOpts" :value="classIdx" @change="onClass">
           <view class="picker">{{ classOpts[classIdx] || '请选择班级' }}</view>
         </picker>
@@ -25,7 +25,7 @@
       </view>
     </view>
 
-    <view v-if="!classId" class="empty">请先选择班级</view>
+    <EmptyState v-if="!classId" icon="📊" text="请先选择班级" hint="选择一个班级后即可查看和录入成绩" />
 
     <block v-else>
       <view v-if="existing" class="exist">
@@ -60,7 +60,7 @@
           />
           <text v-if="existing && scores[s.id] != null && scores[s.id] !== ''" class="share-stu" @click.stop="shareStudent(s)">📤</text>
         </view>
-        <view v-if="!students.length" class="empty">该班级还没有学生，请先在「学生管理」添加</view>
+        <EmptyState v-if="!students.length" icon="📊" text="该班级还没有学生" hint="请先在「学生管理」添加" />
       </view>
 
       <button class="save" :disabled="saving" @click="saveManual">{{ saving ? '保存中…' : '💾 保存成绩' }}</button>
@@ -184,7 +184,8 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { theme } from '../../common/store'
+import { auth, theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isScore } from '../../common/validators'
 import { copyText } from '../../common/print'
 import { exportXlsx, exportDocx } from '../../common/exporter'
@@ -407,6 +408,8 @@ watch(showAnalysis, (v) => {
 const classOpts = ref([])
 const examOpts = ref([])
 const subjectOpts = ref([])
+const isHomeroom = ref(false)
+const sharedClass = ref(false)
 
 async function load() {
   const [cs, es, pub, gs] = await Promise.all([
@@ -445,6 +448,9 @@ async function onClass(e) {
   subjectIdx.value = -1
   subject.value = ''
   existing.value = null
+  // 判断是否班主任 / 共享班级
+  isHomeroom.value = c.headTeacher === (auth.user?.name || '')
+  sharedClass.value = !isHomeroom.value && (c.teachers || []).some(t => t.name === (auth.user?.name || '') || t === (auth.user?.name || ''))
   rebuildExamOpts()
   await loadStudents()
   await checkExisting()
@@ -456,7 +462,15 @@ async function onExam(e) {
   const chosen = list[examIdx.value]
   examId.value = chosen.id
   examName.value = chosen.name
-  subjectOpts.value = chosen.subjects && chosen.subjects.length ? chosen.subjects : pubSubjects.value
+  let availableSubjects = chosen.subjects && chosen.subjects.length ? chosen.subjects : pubSubjects.value
+  // 科任老师只能看到自己教的科目
+  if (!isHomeroom.value) {
+    const mySubjects = auth.user?.subjects || []
+    if (mySubjects.length) {
+      availableSubjects = availableSubjects.filter(s => mySubjects.includes(s))
+    }
+  }
+  subjectOpts.value = availableSubjects
   subjectIdx.value = subjectOpts.value.length ? 0 : -1
   subject.value = subjectOpts.value[0] || ''
   date.value = chosen.date || date.value
@@ -794,6 +808,9 @@ async function aiDiagnose() {
 .sel { background: var(--c-card); border-radius: 20rpx; padding: 24rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .field { margin-bottom: 16rpx; }
 .label { display: block; font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; }
+.role-tag { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; }
+.homeroom { background: rgba(7, 193, 96, 0.15); color: #07c160; }
+.shared { background: rgba(230, 162, 60, 0.15); color: #e6a23c; }
 .picker, .sel input {
   border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
   font-size: 28rpx; color: var(--c-title); min-height: 80rpx; line-height: 44rpx;

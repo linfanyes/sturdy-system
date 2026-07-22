@@ -91,6 +91,7 @@ async function wxLogin() {
   font-size: 30rpx;
   color: var(--c-text);
   margin-bottom: 30rpx;
+  box-sizing: border-box;
 }
 .btn {
   width: 80%;

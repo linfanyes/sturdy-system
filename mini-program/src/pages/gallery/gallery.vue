@@ -29,7 +29,7 @@
         <view v-if="manage" class="move" @click="startMove(p)">移动</view>
       </view>
     </view>
-    <view class="empty" v-else>{{ classId ? '还没有班级风采照片' : '请先在上方选择班级' }}</view>
+    <EmptyState v-if="!photoItems.length" icon="🖼️" :text="classId ? '还没有班级风采照片' : '请先在上方选择班级'" hint="拍照或选择图片上传" />
 
     <view v-if="movePhoto" class="mask" @click="movePhoto = null">
       <view class="sheet2" @click.stop>
@@ -73,6 +73,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { compressImage } from '../../common/image'
 
 const classes = ref([])

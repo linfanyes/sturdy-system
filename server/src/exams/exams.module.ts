@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Controller } from '@nestjs/common'
+import { Controller, NotFoundException } from '@nestjs/common'
 import { Exam } from './exam.entity'
 import { Grade } from '../grades/grade.entity'
 import { CrudService } from '../common/crud/base.service'
@@ -14,6 +14,19 @@ class ExamsService extends CrudService<Exam> {
     @InjectRepository(Grade) private gradeRepo: Repository<Grade>,
   ) {
     super(repo)
+  }
+
+  /** 同班老师共享考试：按 classId（非 teacherId）过滤 */
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (classId) where.classId = classId
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' } as any,
+      skip,
+      take,
+    })
+    return { items, total }
   }
 
   /** 创建考试计划时，为每个科目自动建一条空成绩记录 */
@@ -35,9 +48,12 @@ class ExamsService extends CrudService<Exam> {
     return exam
   }
 
-  /** 删除考试计划时级联删除对应成绩 */
+  /** 删除考试：仅创建者可操作 */
   async remove(id: string, teacherId: string) {
-    await this.gradeRepo.delete({ examId: id, teacherId } as any)
+    const exam = await this.repo.findOne({ where: { id } as any })
+    if (!exam) throw new NotFoundException('考试不存在')
+    if (exam.teacherId !== teacherId) throw new NotFoundException('只有创建者可以删除考试')
+    await this.gradeRepo.delete({ examId: id } as any)
     return super.remove(id, teacherId)
   }
 }

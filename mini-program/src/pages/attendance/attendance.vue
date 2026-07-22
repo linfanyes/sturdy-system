@@ -29,7 +29,7 @@
       </view>
     </view>
 
-    <view class="list">
+    <view class="list" v-if="students.length">
       <view class="stu" v-for="st in students" :key="st.id">
         <text class="av">{{ st.gender === '女' ? '👧' : '👦' }}</text>
         <view class="info">
@@ -48,6 +48,7 @@
         </view>
       </view>
     </view>
+    <EmptyState v-if="!students.length" icon="📋" text="暂无学生" :hint="classId ? '该班级还没有学生，请先在学生管理中添加' : '请先在上方选择班级'" />
 
     <button class="save" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存考勤' }}</button>
 
@@ -84,6 +85,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const statusList = ['出勤', '迟到', '请假', '旷课']
 const statusMap = {

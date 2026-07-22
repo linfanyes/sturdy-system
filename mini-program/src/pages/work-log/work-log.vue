@@ -14,7 +14,7 @@
       <view class="st"><text class="n">{{ totalHomework }}</text><text class="l">份作业</text></view>
     </view>
 
-    <view class="empty" v-if="!list.length">还没有工作日志，记录每天的教学工作</view>
+    <EmptyState v-if="!list.length" icon="📓" text="还没有工作日志" hint="记录每天的教学工作" />
 
     <view class="list" v-else>
       <view class="c" v-for="l in list" :key="l.id">
@@ -66,6 +66,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const list = ref([])
 const show = ref(false)

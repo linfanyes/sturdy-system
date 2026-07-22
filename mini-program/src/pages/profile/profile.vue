@@ -520,7 +520,7 @@ async function maybeAutoBackup(force = false) {
 .lab { font-size: 24rpx; color: #5a5048; display: block; margin: 12rpx 0 8rpx; }
 .fld { margin-bottom: 6rpx; }
 .field-err { display:block; font-size:22rpx; color:#e64340; margin-top:4rpx; }
-.inp { background: #f6f7fb; border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; }
+.inp { background: #f6f7fb; border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
 .pick { color: var(--c-title); }
 .subs { display: flex; flex-wrap: wrap; gap: 10rpx; }
 .sb { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 20rpx; background: #f6f7fb; color: var(--c-sub); }

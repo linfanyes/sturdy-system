@@ -17,7 +17,7 @@
         </view>
         <text class="del" @click="del(it)">删除</text>
       </view>
-      <view class="empty" v-if="!list.length">{{ classId ? '暂无班级活动' : '请先在上方选择班级' }}</view>
+      <EmptyState v-if="!list.length" icon="🎉" :text="classId ? '暂无班级活动' : '请先在上方选择班级'" hint="记录丰富多彩的班级活动" />
     </view>
 
     <view class="sheet" v-if="showAdd">
@@ -41,6 +41,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { pickAndCompressImage } from '../../common/image'
 
 const classes = ref([])

@@ -26,6 +26,19 @@ class GradesService extends CrudService<Grade> {
     super(repo)
   }
 
+  /** 同班老师共享成绩：按 classId（非 teacherId）过滤 */
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (classId) where.classId = classId
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' } as any,
+      skip,
+      take,
+    })
+    return { items, total }
+  }
+
   /** 幂等导入：按 班级+考试名+科目 存在则更新分数，否则新建 */
   async mergeGrade(teacherId: string, dto: any) {
     const existing = await this.repo.findOne({

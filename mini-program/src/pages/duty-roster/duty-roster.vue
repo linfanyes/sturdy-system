@@ -8,7 +8,7 @@
       <view class="new" @click="openCreate">＋ 新建轮值表</view>
     </view>
 
-    <view v-if="!rosters.length" class="empty">{{ classId ? '还没有轮值表，点击右上角创建' : '请先在上方选择班级' }}</view>
+    <EmptyState v-if="!rosters.length" icon="📋" :text="classId ? '还没有轮值表' : '请先在上方选择班级'" hint="点击右上角创建" />
 
     <view class="roster" v-for="r in rosters" :key="r.id">
       <view class="r-h">
@@ -83,6 +83,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isNonEmpty } from '../../common/validators'
 
 const classes = ref([])
@@ -242,7 +243,7 @@ function remove(r) {
 .row2 { display: flex; gap: 18rpx; }
 .fld { flex: 1; }
 .lab { font-size: 24rpx; color: #5a5048; display: block; margin-bottom: 8rpx; }
-.inp { background: #f6f7fb; border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; }
+.inp { background: #f6f7fb; border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
 .types { display: flex; gap: 12rpx; }
 .ty { font-size: 24rpx; padding: 14rpx 24rpx; border-radius: 12rpx; background: var(--c-card2); color: var(--c-sub); }
 .ty.on { background: #f7d9a8; color: #a07b3b; }

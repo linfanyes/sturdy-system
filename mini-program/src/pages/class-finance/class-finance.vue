@@ -21,7 +21,7 @@
         <view class="ct" v-if="it.description">{{ it.description }}</view>
         <text class="del" @click="del(it)">删除</text>
       </view>
-      <view class="empty" v-if="!sorted.length">{{ classId ? '暂无记录' : '请先在上方选择班级' }}</view>
+      <EmptyState v-if="!sorted.length" icon="💰" :text="classId ? '暂无记录' : '请先在上方选择班级'" hint="记录每一笔收支" />
     </view>
 
     <view class="sheet" v-if="showAdd">
@@ -48,6 +48,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isAmount } from '../../common/validators'
 
 const cats = ['班费', '活动', '资料', '奖品', '午餐', '交通', '其他']

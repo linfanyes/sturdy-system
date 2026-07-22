@@ -10,7 +10,7 @@
       <text class="tab" v-for="t in types" :key="t" :class="filterType===t && 'on'" @click="filterType=t">{{ t }}</text>
     </scroll-view>
 
-    <view v-if="!filtered.length" class="empty">还没有阅读记录，点击「+ 记录」添加</view>
+    <EmptyState v-if="!filtered.length" icon="📚" text="还没有阅读记录" hint="点击「+ 记录」添加" />
 
     <view class="list" v-else>
       <view class="row" v-for="r in filtered" :key="r.id">
@@ -52,6 +52,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const list = ref([])
 const show = ref(false)

@@ -24,7 +24,7 @@
         <view v-if="manage" class="move" @click="movePhoto(p)">移动</view>
       </view>
     </view>
-    <view v-else class="empty">还没有照片，上传你的第一张照片吧</view>
+    <EmptyState v-if="!photoItems.length" icon="📷" text="还没有照片" hint="上传你的第一张照片吧" />
 
     <!-- 相册列表 -->
     <view class="albums" v-if="list.length">
@@ -76,6 +76,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { pickAndCompressImage } from '../../common/image'
 
 const list = ref([])

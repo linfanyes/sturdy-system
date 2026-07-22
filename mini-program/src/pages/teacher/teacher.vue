@@ -372,7 +372,7 @@ function remove(t) {
 .lab { font-size: 24rpx; color: #5a5048; display: block; margin: 14rpx 0 8rpx; }
 .row2 { display: flex; gap: 18rpx; }
 .fld { flex: 1; }
-.inp { background: var(--c-input); border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; }
+.inp { background: var(--c-input); border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; }
 .pick { color: var(--c-title); }
 .avatars { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 6rpx; }
 .avopt { width: 64rpx; height: 64rpx; border-radius: 16rpx; background: var(--c-input); text-align: center; line-height: 64rpx; font-size: 36rpx; }

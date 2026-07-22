@@ -68,6 +68,25 @@
       </view>
 
       <view class="field">
+        <text class="label">本学期课程 <text class="must">*至少选一门</text></text>
+        <view class="chips">
+          <view
+            v-for="s in pubSubjects"
+            :key="s"
+            :class="['chip', form.subjects.includes(s) ? 'on' : '']"
+            @click="toggleSubject(s)"
+          >{{ s }}</view>
+          <view v-if="!pubSubjects.length" class="no-subj">暂无科目预设，请先在系统配置中设置</view>
+        </view>
+      </view>
+
+      <view v-for="s in form.subjects" :key="s" class="field">
+        <text class="label">{{ s }} 任课老师</text>
+        <input :value="form.subjectTeachers[s] || form.headTeacher" :placeholder="form.headTeacher || '任课老师姓名'" @input="(e) => form.subjectTeachers = { ...form.subjectTeachers, [s]: e.detail.value }" />
+        <text v-if="form.subjectTeachers[s] === form.headTeacher || (!form.subjectTeachers[s])" class="hint">默认班主任</text>
+      </view>
+
+      <view class="field">
         <text class="label">班级口号</text>
         <input v-model="form.slogan" placeholder="如 团结拼搏，永不言弃" />
       </view>
@@ -122,7 +141,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
-import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
+import { auth, theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
@@ -147,6 +166,8 @@ const form = ref({
   slogan: '',
   color: '#07c160',
   customNo: '',
+  subjects: [],
+  subjectTeachers: {},
 })
 
 const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.value.classIdx])
@@ -155,7 +176,14 @@ const autoTermName = computed(() => years[form.value.yearIdx] + '年' + quarters
 
 async function load() {
   list.value = await api.getList('/classes', { loading: true, loadingText: '加载班级' })
+  try {
+    const pub = await api.get('/config/public')
+    pubSubjects.value = (pub && pub.defaultSubjects) || []
+  } catch (e) {
+    pubSubjects.value = []
+  }
 }
+const pubSubjects = ref([])
 onShow(load)
 onShow(() => flushTabBarStyle())
 onPullDownRefresh(async () => {
@@ -174,6 +202,24 @@ function toggleForm() {
     return
   }
   showForm.value = !showForm.value
+  if (showForm.value) {
+    form.value.headTeacher = auth.user?.name || ''
+  }
+}
+
+function toggleSubject(s) {
+  const arr = form.value.subjects
+  if (arr.includes(s)) {
+    form.value.subjects = arr.filter(x => x !== s)
+    const teachers = { ...form.value.subjectTeachers }
+    delete teachers[s]
+    form.value.subjectTeachers = teachers
+  } else {
+    form.value.subjects = [...arr, s]
+    // 默认班主任
+    const defaultTeacher = form.value.headTeacher || auth.user?.name || ''
+    form.value.subjectTeachers = { ...form.value.subjectTeachers, [s]: defaultTeacher }
+  }
 }
 
 function edit(c) {
@@ -189,6 +235,8 @@ function edit(c) {
     slogan: c.slogan || '',
     color: c.color || '#07c160',
     customNo: '',
+    subjects: c.subjects ? [...c.subjects] : [],
+    subjectTeachers: c.subjectTeachers ? { ...c.subjectTeachers } : {},
   }
   showForm.value = true
 }
@@ -196,7 +244,7 @@ function edit(c) {
 function cancelEdit() {
   editingId.value = ''
   showForm.value = false
-  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '', slogan: '', color: '#07c160', customNo: '' }
+  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '', slogan: '', color: '#07c160', customNo: '', subjects: [], subjectTeachers: {} }
 }
 
 async function save() {
@@ -204,7 +252,15 @@ async function save() {
   if (!form.value.headTeacher.trim()) {
     return uni.showToast({ title: '请填写班主任姓名', icon: 'none' })
   }
+  if (!form.value.subjects.length) {
+    return uni.showToast({ title: '请至少选择一门课程', icon: 'none' })
+  }
   const classNo = form.value.customNo.trim() || classOpts[form.value.classIdx]
+  // 默认未设置的任课老师为班主任
+  const subjectTeachers = { ...form.value.subjectTeachers }
+  form.value.subjects.forEach(s => {
+    if (!subjectTeachers[s]) subjectTeachers[s] = form.value.headTeacher
+  })
   const payload = {
     name: grades[form.value.gradeIdx] + classNo,
     grade: grades[form.value.gradeIdx],
@@ -213,7 +269,8 @@ async function save() {
     headTeacher: form.value.headTeacher,
     slogan: form.value.slogan.trim(),
     color: form.value.color || '#07c160',
-    subjects: [],
+    subjects: form.value.subjects,
+    subjectTeachers,
   }
   saving.value = true
   try {
@@ -391,4 +448,10 @@ async function syncTerm() {
 }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.must { color: #e64340; font-size: 22rpx; font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 10rpx; }
+.chip { padding: 12rpx 24rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); font-size: 26rpx; }
+.chip.on { background: var(--c-accent); color: #fff; }
+.no-subj { font-size: 24rpx; color: var(--c-sub); padding: 12rpx 0; }
+.hint { font-size: 22rpx; color: #07c160; margin-top: 6rpx; display: block; }
 </style>

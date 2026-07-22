@@ -17,7 +17,7 @@
       <text v-for="s in stats" :key="s.type" class="sc" :class="'b-' + s.key">{{ s.type }}：{{ s.count }}</text>
     </view>
 
-    <view class="empty" v-if="!filtered.length">{{ emptyText }}</view>
+    <EmptyState v-if="!filtered.length" icon="👀" text="还没有行为记录" :hint="classId ? '记录课堂上的积极发言、走神等' : '请先在上方选择班级'" />
 
     <view class="list" v-else>
       <view class="c" v-for="b in filtered" :key="b.id">
@@ -67,6 +67,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const types = ['积极发言', '认真听讲', '走神', '帮助同学', '违纪', '其他']
 const keyMap = { 积极发言: 'speak', 认真听讲: 'listen', 走神: 'away', 帮助同学: 'help', 违纪: 'bad', 其他: 'etc' }

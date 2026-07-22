@@ -8,7 +8,7 @@
       <view class="clear" v-if="list.length" @click="clearAll">清空</view>
     </view>
 
-    <view class="empty" v-if="!list.length">还没有抽签记录</view>
+    <EmptyState v-if="!list.length" icon="🎰" text="还没有抽签记录" hint="使用随机点名功能时会记录抽签历史" />
 
     <view class="group" v-for="g in groups" :key="g.classId">
       <view class="gname">{{ g.name }}（{{ g.items.length }}）</view>
@@ -24,6 +24,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const list = ref([])
 const classMap = ref({})
