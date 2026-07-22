@@ -5,6 +5,7 @@ import { Repository } from 'typeorm'
 import { ConfigService } from '@nestjs/config'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
+import { ClassItem } from '../classes/class.entity'
 import { Notice, Homework } from '../school/school.entity'
 import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
@@ -24,6 +25,7 @@ export class ParentAuthService {
     @InjectRepository(Homework) private readonly homeworkRepo: Repository<Homework>,
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
     @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
     private readonly config: ConfigService,
@@ -54,15 +56,21 @@ export class ParentAuthService {
   }
 
   /** 当前家长信息 + 孩子 */
-  getMe(payload: any) {
+  async getMe(payload: any) {
+    let className = ''
+    try {
+      const cls = await this.classRepo.findOne({ where: { id: payload.classId } })
+      if (cls) className = cls.name
+    } catch {}
     return {
       imUserId: payload.sub,
       studentId: payload.studentId,
       studentName: payload.studentName,
       classId: payload.classId,
+      className,
       studentNo: payload.studentNo,
       kids: [
-        { studentId: payload.studentId, studentName: payload.studentName, classId: payload.classId },
+        { studentId: payload.studentId, studentName: payload.studentName, studentNo: payload.studentNo, classId: payload.classId, className },
       ],
     }
   }

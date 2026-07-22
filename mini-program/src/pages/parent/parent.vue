@@ -8,7 +8,7 @@
 
     <view class="kids" v-if="kids.length">
       <view class="kid" v-for="k in kids" :key="k.studentId">
-        <view class="kn">{{ k.studentName }}</view>
+        <view class="kn">{{ k.studentName }}<text v-if="k.studentNo" class="sno"> · {{ k.studentNo }}</text></view>
         <view class="kc">{{ k.parentName ? k.parentName + ' · ' : '' }}{{ k.className || '班级 ' + k.classId }}</view>
       </view>
     </view>
@@ -202,6 +202,7 @@ onShow(async () => {
 .kids { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .kid { background: var(--c-card); border-radius: 14rpx; padding: 14rpx 20rpx; }
 .kn { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
+.sno { font-size: 22rpx; font-weight: 400; color: var(--c-sub); }
 .kc { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
 .sec { margin-bottom: 14rpx; }
 .st { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }

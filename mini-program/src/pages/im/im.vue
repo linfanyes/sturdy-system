@@ -260,9 +260,15 @@ async function initTim(sdkAppId, userSig) {
     }
     return
   }
-  // 动态导入 tim-wx-sdk（避免在未打开 IM 页面时加载 SDK 抛 addListener 错误）
-  const TIM = (await import('tim-wx-sdk')).default || (await import('tim-wx-sdk'))
-  const TIMUploadPlugin = (await import('tim-upload-plugin')).default || (await import('tim-upload-plugin'))
+  // 动态导入 tim-wx-sdk（可能已从 package.json 移除，graceful fallback）
+  let TIM, TIMUploadPlugin
+  try {
+    TIM = (await import('tim-wx-sdk')).default || (await import('tim-wx-sdk'))
+    TIMUploadPlugin = (await import('tim-upload-plugin')).default || (await import('tim-upload-plugin'))
+  } catch (e) {
+    uni.showToast({ title: 'IM 模块未安装，家校沟通不可用', icon: 'none' })
+    return
+  }
   tim = TIM.create({ SDKAppID: Number(sdkAppId) })
   tim.setLogLevel(1)
   tim.registerPlugin({ 'tim-upload-plugin': TIMUploadPlugin })
