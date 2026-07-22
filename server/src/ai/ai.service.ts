@@ -394,6 +394,7 @@ export class AiService {
     )
     return (
       resp.data?.choices?.[0]?.message?.content || fallback
+    )
     } catch (e) {
       return fallback
     }
