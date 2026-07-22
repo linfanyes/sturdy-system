@@ -629,9 +629,12 @@ function confirmResetAll() {
 .filter-bar { margin-bottom: 12rpx; }
 .filter-inp { width: 100%; border: 1px solid var(--c-border); border-radius: 14rpx; padding: 16rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; }
 /* 一键重置 */
-.reset-section { margin-top: 30rpx; background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
+.reset-section { margin-top: 30rpx; background: linear-gradient(135deg, #ff6b6b, #e64340); border-radius: 16rpx; padding: 10rpx 24rpx; }
 .reset-row { display: flex; align-items: center; gap: 16rpx; padding: 20rpx 0; }
 .reset-icon { font-size: 36rpx; flex-shrink: 0; }
+.reset-text { flex: 1; display: flex; flex-direction: column; }
+.reset-name { font-size: 28rpx; font-weight: 700; color: #fff; }
+.reset-sub { font-size: 22rpx; color: rgba(255,255,255,.85); margin-top: 4rpx; }
 .form-item { margin-bottom: 18rpx; width: 100%; box-sizing: border-box; }
 .label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
 .req { color: #e64340; }
