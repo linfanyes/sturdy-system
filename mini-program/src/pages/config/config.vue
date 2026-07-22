@@ -59,6 +59,14 @@
         <text class="label">系统提示词</text>
         <textarea v-model="ai.systemPrompt" class="ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
       </view>
+      <view v-if="showResourceModels" class="field">
+        <text class="label">场景模型覆盖（可选，留空则用默认）</text>
+        <view class="rm-row" v-for="(name, key) in RESOURCE_MAP" :key="key">
+          <text class="rm-key">{{ name }}</text>
+          <input v-model="ai.resourceModels[key]" class="inp rm-inp" :placeholder="defaultModelName(key)" />
+        </view>
+        <view class="hint" style="margin-top:4rpx">每个场景可单独指定模型名，不填则使用上方默认文本模型</view>
+      </view>
       <view class="hint">当前服务商：{{ PROVIDER_NAMES[providerIdx] || '自定义' }}。切换服务商将自动更新接口地址与默认模型。{{ providerIdx === 1 ? 'DeepSeek v4 为原生多模态模型，文本与视觉使用同一模型名。' : '' }}</view>
       <view class="reset-row">
         <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
@@ -141,6 +149,15 @@ const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_AI_NAME = '小林子'
 const DEFAULT_SYSTEM_PROMPT =
   '你是一位亲切、专业的教师助理，名字叫「小林子」。回答要简洁、清晰、有条理。涉及数据时尽量用列表或表格，方便老师快速理解。'
+
+// 场景名映射
+const RESOURCE_MAP = {
+  'exam-analysis': '考试分析',
+  'student-diagnose': '学生诊断',
+  'parse': 'AI解析',
+}
+
+const showResourceModels = ref(false)
 
 // 根据 baseUrl 反查当前服务商索引
 function detectProvider(baseUrl) {
@@ -266,11 +283,13 @@ async function load() {
         : DEFAULT_TEMPERATURE,
     aiName: a.aiName ?? DEFAULT_AI_NAME,
     systemPrompt: a.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+    resourceModels: a.resourceModels || {},
   }
   // 根据已保存的接口地址反查服务商
   providerIdx.value = detectProvider(ai.value.baseUrl)
   app.value = await api.get('/config/app')
 }
+const defaultModelName = (key) => ai.value.textModel || 'qwen3.7-plus'
 onShow(load)
 onShow(() => flushTabBarStyle())
 
@@ -289,6 +308,7 @@ async function saveAi() {
       temperature: Number(ai.value.temperature) || 0.7,
       aiName: ai.value.aiName || '',
       systemPrompt: ai.value.systemPrompt || '',
+      resourceModels: ai.value.resourceModels || {},
     }
     await api.put('/config/ai', payload)
     uni.showToast({ title: 'AI 配置已保存', icon: 'success' })
@@ -338,6 +358,9 @@ function doLogout() {
 .ta { width: 100%; min-height: 220rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-text); background: var(--c-input); box-sizing: border-box; line-height: 1.6; }
 .ghost-btn { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .reset-row { margin-top: 16rpx; margin-bottom: 16rpx; }
+.rm-row { display: flex; align-items: center; gap: 10rpx; margin-bottom: 10rpx; }
+.rm-key { width: 120rpx; font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
+.rm-inp { flex: 1; min-height: 60rpx; padding: 8rpx 16rpx; border: 1px solid var(--c-input-border); border-radius: 8rpx; font-size: 24rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; }
 .font-group { display: flex; gap: 8rpx; }
 .font-i { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 24rpx; background: var(--c-card2); color: var(--c-sub); }
 .font-i.on { background: var(--c-primary); color: #fff; }

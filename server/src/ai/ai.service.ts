@@ -60,13 +60,19 @@ export class AiService {
   }
 
   /**
-   * 按场景自动选择模型：
-   * 1) 前端显式指定 modelType='vision' → 多模态模型；
-   * 2) 否则检测消息体是否含图片（OpenAI 视觉格式 content[].type==='image_url'）→ 含则用多模态模型；
-   * 3) 其余一律文本模型。
-   * 这样前端无需关心模型名，系统根据内容自动切换。
+   * 按场景 + 资源自动选择模型：
+   * 1) body.resource 指定资源名 → 优先用 s.resourceModels 覆盖；
+   * 2) 前端显式指定 modelType='vision' → 多模态模型；
+   * 3) 检测消息体是否含图片 → 含则用多模态模型；
+   * 4) 其余一律文本模型。
    */
   private resolveModel(body: any, s: any): string {
+    // 0) 按资源名覆盖（配置了特定场景的模型优先）
+    if (body?.resource === 'image-gen') return s.imageModel || s.textModel
+    if (body?.resource === 'video-gen') return s.videoModel || s.textModel
+    if (body?.resource && s.resourceModels?.[body.resource]) {
+      return s.resourceModels[body.resource]
+    }
     if (body?.modelType === 'vision') return s.visionModel
     const msgs: any[] = body?.messages || []
     const hasImage = msgs.some(

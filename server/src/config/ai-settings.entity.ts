@@ -32,4 +32,8 @@ export class AiSettings extends BaseEntity {
 
   @Column({ type: 'text', nullable: true })
   systemPrompt: string
+
+  /** 按资源（场景）覆盖默认模型，如 { "exam-analysis": "qwen3-max", "chat": "qwen3.7-plus" } */
+  @Column('simple-json', { nullable: true })
+  resourceModels: Record<string, string>
 }
