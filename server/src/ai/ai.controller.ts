@@ -35,9 +35,8 @@ export class AiController {
         res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
-      res.write(
-        `data: ${JSON.stringify({ error: e?.message || 'AI 调用失败' })}\n\n`,
-      )
+      const msg = e?.message || '未连接到远端大模型，请在设置中检查AI配置后重试。'
+      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`)
       res.write('data: [DONE]\n\n')
       res.end()
       return

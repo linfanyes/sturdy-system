@@ -373,7 +373,9 @@ export class AiService {
     const s = await this.buildSettings(teacherId)
     const model = this.resolveModel(body, s)
     const messages = await this.buildMessages(body, s, teacherId)
-    const resp = await axios.post(
+    const fallback = '未连接到远端大模型，请在设置中检查AI配置后重试。'
+    try {
+      const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
         model,
@@ -390,7 +392,11 @@ export class AiService {
         timeout: 120000,
       },
     )
-    return resp.data?.choices?.[0]?.message?.content || ''
+    return (
+      resp.data?.choices?.[0]?.message?.content || fallback
+    } catch (e) {
+      return fallback
+    }
   }
 
   /** 非流式结构化解析：把非结构化文本交给 AI 解析为 JSON 数组 */

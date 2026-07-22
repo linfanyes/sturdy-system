@@ -197,7 +197,7 @@ export function streamChat(path, data, onDelta, opts = {}) {
       if (settled) return
       settled = true
       if (full) resolve(full) // 已经收到部分内容则兜底返回
-      else reject(new Error('AI 请求超时（45s）：后端服务或 AI 配置可能未就绪'))
+      else reject(new Error('AI 请求超时：未连接到远端大模型，请在设置中检查AI配置后重试。'))
     }, 45000)
     let buf = ''
     let full = ''
