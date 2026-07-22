@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
@@ -193,39 +193,23 @@ function logout() {
   uni.reLaunch({ url: '/pages/login/login' })
 }
 
-const loaded = ref(false)
-
 onShow(async () => {
   if (!parent.token) {
     uni.reLaunch({ url: '/pages/parent-login/parent-login' })
     return
   }
-
-  // 避免首帧渲染冲突：延迟一帧再加载数据
-  if (!loaded.value) {
-    loaded.value = true
-    await nextTick()
-  }
-
-  if (parent.user && !parent.user.wechatOpenid) {
-    try {
-      const { code } = await uni.login()
-      await parentApi.post('/parent-auth/bind-wechat', { code })
-    } catch (e) {
-      // 静默处理
-    }
-  }
-
   try {
+    const edata = await parentApi.get('/parent-auth/exams')
+    exams.value = (edata && edata.exams) || []
     const me = await parentApi.get('/parent-auth/me')
     kids.value = (me && me.kids) || []
     const ns = await parentApi.get('/parent-auth/notices')
     notices.value = Array.isArray(ns) ? ns : []
-    const edata = await parentApi.get('/parent-auth/exams')
-    exams.value = (edata && edata.exams) || []
     const hw = await parentApi.get('/parent-auth/homework')
     homework.value = Array.isArray(hw) ? hw : []
-  } catch (e) {}
+  } catch (e) {
+    console.error('[parent] load error:', e)
+  }
 })
 </script>
 
