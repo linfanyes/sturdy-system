@@ -268,8 +268,10 @@ async function autoLogin() {
     const resp = await apiCall('POST', '/admin/login', { username: 'admin', password: 'admin' })
     adminToken.value = resp?.token || ''
     if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAll() }
-    else uni.showToast({ title: '登录失败', icon: 'none' })
-  } catch (e) { uni.showToast({ title: '登录失败', icon: 'none' }) }
+    else uni.showToast({ title: '登录失败：未返回 token', icon: 'none' })
+  } catch (e) {
+    uni.showToast({ title: String(e?.message || '登录失败').slice(0, 40), icon: 'none' })
+  }
   finally { logging.value = false }
 }
 
@@ -279,19 +281,21 @@ onMounted(() => {
   if (adminToken.value) loadAll()
 })
 
-// 进入页面加载学校列表 + 管理员列表
+// 进入页面加载学校列表 + 管理员列表（错误显式暴露，便于排查后端/链路问题）
 async function loadAll() {
-  await Promise.all([loadSchools(), loadAdmins()])
+  try {
+    await Promise.all([loadSchools(), loadAdmins()])
+  } catch (e) {
+    uni.showToast({ title: String(e?.message || '加载失败').slice(0, 40), icon: 'none' })
+  }
 }
 
 async function loadSchools() {
-  try { schools.value = await apiCall('GET', '/admin/schools') || [] }
-  catch (e) { schools.value = [] }
+  schools.value = (await apiCall('GET', '/admin/schools')) || []
 }
 
 async function loadAdmins() {
-  try { schoolAdmins.value = await apiCall('GET', '/admin/school-admins') || [] }
-  catch (e) { schoolAdmins.value = [] }
+  schoolAdmins.value = (await apiCall('GET', '/admin/school-admins')) || []
 }
 
 /* ===== 学校表单 ===== */
