@@ -59,9 +59,9 @@
         <text class="label">系统提示词</text>
         <textarea v-model="ai.systemPrompt" class="ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
       </view>
-      <view v-if="showResourceModels" class="field">
-        <text class="label">场景模型覆盖（可选，留空则用默认）</text>
-        <view class="rm-row" v-for="(name, key) in RESOURCE_MAP" :key="key">
+      <view class="field">
+        <text class="label toggle" @click="showResourceModels = !showResourceModels">{{ showResourceModels ? '▼' : '▶' }} 场景模型覆盖</text>
+        <view v-if="showResourceModels" class="rm-box">
           <text class="rm-key">{{ name }}</text>
           <input v-model="ai.resourceModels[key]" class="inp rm-inp" :placeholder="defaultModelName(key)" />
         </view>
@@ -358,6 +358,8 @@ function doLogout() {
 .ta { width: 100%; min-height: 220rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-text); background: var(--c-input); box-sizing: border-box; line-height: 1.6; }
 .ghost-btn { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .reset-row { margin-top: 16rpx; margin-bottom: 16rpx; }
+.toggle { color: var(--c-primary); cursor: pointer; user-select: none; }
+.rm-box { background: var(--c-input); border-radius: 12rpx; padding: 16rpx; margin-top: 8rpx; }
 .rm-row { display: flex; align-items: center; gap: 10rpx; margin-bottom: 10rpx; }
 .rm-key { width: 120rpx; font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
 .rm-inp { flex: 1; min-height: 60rpx; padding: 8rpx 16rpx; border: 1px solid var(--c-input-border); border-radius: 8rpx; font-size: 24rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; }
