@@ -115,12 +115,17 @@ export class ParentAuthService {
   /** 考试成绩明细 + 排名 + 分布 */
   async getExams(payload: any) {
     const { classId, studentId } = payload
-    if (!classId || !studentId) return { exams: [] }
+    if (!classId || !studentId) {
+      console.warn('[getExams] 缺少 classId 或 studentId', { classId, studentId })
+      return { exams: [] }
+    }
     const [exams, grades, students] = await Promise.all([
       this.examRepo.find({ where: { classId }, order: { date: 'ASC' } }),
       this.gradeRepo.find({ where: { classId } }),
       this.studentRepo.find({ where: { classId } }),
     ])
+    console.log('[getExams] classId=%s studentId=%s exams=%d grades=%d', 
+      classId, studentId, exams.length, grades.length)
 
     const examList = []
     for (const exam of exams) {
