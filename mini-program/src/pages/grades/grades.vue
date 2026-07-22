@@ -50,12 +50,12 @@
 
       <view class="list">
         <view v-for="s in students" :key="s.id" class="item">
-          <text class="name">{{ s.name }}</text>
+          <text class="name" @click="showScoreCard(s)">{{ s.name }}<text class="sno"> · {{ s.studentNo || '' }}</text></text>
           <input
             class="score"
             type="digit"
             :value="scores[s.id] || ''"
-            :placeholder="s.studentNo ? s.studentNo : '分数'"
+            placeholder="请录入分数"
             @input="(e) => (scores[s.id] = e.detail.value)"
           />
           <text v-if="existing && scores[s.id] != null && scores[s.id] !== ''" class="share-stu" @click.stop="shareStudent(s)">📤</text>
@@ -147,6 +147,28 @@
         <button class="m-close" @click="showAnalysis = false">关闭</button>
       </view>
     </view>
+
+    <!-- 学生成绩单 -->
+    <view class="mask" v-if="scoreCard" @click="scoreCard = null">
+      <view class="card" @click.stop>
+        <view class="card-h">{{ scoreCard.className }} · {{ scoreCard.examName }}</view>
+        <view class="card-stu">学生：{{ scoreCard.studentName }}<text v-if="scoreCard.rank" class="card-rank"> · 总分排名第 {{ scoreCard.rank }} 名</text></view>
+        <view v-for="(row, i) in scoreCard.subjects" :key="i" class="card-row">
+          <text class="c-subject">{{ row.subject }}</text>
+          <text class="c-score">{{ row.score }}<text class="c-unit">分</text></text>
+          <text class="c-full">满分 {{ row.fullScore }}</text>
+          <text class="c-rank">第{{ row.rank }}/{{ row.totalCount }}名</text>
+          <text class="c-avg">均分 {{ row.avg }}</text>
+        </view>
+        <view class="card-total" v-if="scoreCard.totalScore != null">
+          总分：<text class="c-total-val">{{ scoreCard.totalScore }}</text> / {{ scoreCard.totalFull }}
+        </view>
+        <view class="card-btns">
+          <button class="card-copy" @click="copyScoreCard">📋 复制成绩单</button>
+          <button class="card-close" @click="scoreCard = null">关闭</button>
+        </view>
+      </view>
+    </view>
   </view>
 
   <view class="aimask" v-if="aiResult" @click="aiResult=''">
@@ -186,6 +208,7 @@ const existing = ref(null)
 const aiResult = ref('')
 const aiTitle = ref('')
 const doneCount = ref(0)
+const scoreCard = ref(null)  // 学生成绩单弹窗
 
 const showImport = ref(false)
 const preview = ref(null)
@@ -478,13 +501,16 @@ async function saveManual() {
   if (!classId.value || !examName.value || !subject.value)
     return uni.showToast({ title: '请先选择班级/考试/科目', icon: 'none' })
   if (!date.value) return uni.showToast({ title: '请填写日期', icon: 'none' })
+  // 获取本次考试该科目的满分
+  const exam = exams.value.find((e) => e.id === examId.value)
+  const fullScore = (exam && (exam.subjectFullScores || {})[subject.value]) || (exam && exam.fullScore) || 100
   const sc = []
   students.value.forEach((s) => {
     const v = (scores[s.id] || '').trim()
     if (v !== '') {
       const n = Number(v)
       if (isNaN(n)) return uni.showToast({ title: `${s.name} 分数不是数字`, icon: 'none' })
-      if (!isScore(n, 100)) return uni.showToast({ title: `${s.name} 分数应为 0-100`, icon: 'none' })
+      if (!isScore(n, fullScore)) return uni.showToast({ title: `${s.name} 分数应为 0-${fullScore}`, icon: 'none' })
       sc.push({ studentId: s.id, score: n })
     }
   })
@@ -498,6 +524,7 @@ async function saveManual() {
       examId: examId.value,
       subject: subject.value,
       date: date.value,
+      fullScore,
       scores: sc,
     })
     uni.showToast({ title: r.created ? '成绩已创建' : '成绩已更新', icon: 'success' })
@@ -639,6 +666,44 @@ async function commit() {
   }
 }
 
+// 学生成绩单弹窗
+function showScoreCard(s) {
+  const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
+  const allSubjects = grades.value.filter((g) => g.examName === examName.value && g.classId === classId.value)
+  let totalScore = 0; let totalFull = 0; let totalCount = 0
+  const exam = exams.value.find((e) => e.id === examId.value)
+  const subjects = allSubjects.map((g) => {
+    const sc = (g.scores || []).find((x) => x.studentId === s.id)
+    const score = sc && sc.score != null ? Number(sc.score) : null
+    const fullScore = g.fullScore || (exam && (exam.subjectFullScores || {})[g.subject]) || (exam && exam.fullScore) || 100
+    if (score != null) { totalScore += score; totalFull += fullScore; totalCount++ }
+    const allSc = (g.scores || []).filter((x) => x.score != null).map((x) => Number(x.score))
+    const avg = allSc.length ? (allSc.reduce((a, b) => a + b, 0) / allSc.length).toFixed(1) : '—'
+    // 该科目排名
+    const ranked = allSc.slice().sort((a, b) => b - a)
+    const rank = score != null ? ranked.indexOf(score) + 1 : '—'
+    return { subject: g.subject, score: score != null ? Math.round(score * 10) / 10 : '—', fullScore, avg, rank, totalCount: allSc.length }
+  })
+  // 总分排名
+  const allStudents = students.value.map((stu) => {
+    let total = 0
+    allSubjects.forEach((g) => {
+      const sc = (g.scores || []).find((x) => x.studentId === stu.id)
+      if (sc && sc.score != null) total += Number(sc.score)
+    })
+    return { id: stu.id, total: Math.round(total * 10) / 10 }
+  }).sort((a, b) => b.total - a.total)
+  const rank = allStudents.findIndex((x) => x.id === s.id) + 1
+  scoreCard.value = { className, examName: examName.value, studentName: s.name, subjects, totalScore: Math.round(totalScore * 10) / 10, totalFull, rank, studentId: s.id }
+}
+function copyScoreCard() {
+  const c = scoreCard.value
+  if (!c) return
+  const lines = c.subjects.map((r) => `  ${r.subject}：${r.score} 分（满分 ${r.fullScore}，${r.avg} 均分，第 ${r.rank}/${r.totalCount} 名）`)
+  const text = `📚 ${c.className} · ${c.examName}\n学生：${c.studentName}${c.rank ? ' · 第' + c.rank + '名' : ''}\n${lines.join('\n')}\n总分：${c.totalScore} / ${c.totalFull}`
+  uni.setClipboardData({ data: text, success: () => uni.showToast({ title: '成绩单已复制', icon: 'success' }), fail: () => uni.showToast({ title: '复制失败', icon: 'none' }) })
+}
+
 // 分享单个学生全部科目成绩到微信
 function shareStudent(s) {
   const className = (classes.value.find((c) => c.id === classId.value) || {}).name || ''
@@ -759,6 +824,24 @@ async function aiDiagnose() {
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 .ana { background: var(--c-accent); color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+/* 成绩单 */
+.card { width: 86%; max-width: 640rpx; max-height: 80vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+.card-h { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 6rpx; }
+.card-stu { font-size: 24rpx; color: var(--c-sub); margin-bottom: 20rpx; }
+.card-rank { color: var(--c-accent); font-weight: 600; }
+.card-row { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); font-size: 26rpx; }
+.c-subject { width: 100rpx; font-weight: 600; color: var(--c-title); }
+.c-score { width: 80rpx; text-align: right; color: var(--c-primary); font-weight: 700; }
+.c-unit { font-size: 20rpx; font-weight: 400; color: var(--c-sub); }
+.c-full { width: 90rpx; text-align: center; color: var(--c-sub); }
+.c-rank { width: 100rpx; text-align: center; color: var(--c-accent); font-weight: 600; }
+.c-avg { width: 80rpx; text-align: right; color: var(--c-sub); }
+.sno { font-size: 22rpx; color: var(--c-sub); font-weight: 400; }
+.card-total { margin-top: 16rpx; font-size: 28rpx; font-weight: 700; color: var(--c-title); }
+.c-total-val { color: var(--c-primary); font-weight: 700; }
+.card-btns { display: flex; gap: 16rpx; margin-top: 24rpx; }
+.card-copy { flex: 1; background: var(--c-accent); color: #fff; border-radius: 50rpx; height: 72rpx; line-height: 72rpx; font-size: 26rpx; }
+.card-close { flex: 1; background: #f0f0f0; color: #666; border-radius: 50rpx; height: 72rpx; line-height: 72rpx; font-size: 26rpx; }
 .oview { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10rpx; margin-bottom: 16rpx; }
 .ov2 { background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 4rpx; text-align: center; }
 .ov2 .n { display: block; font-size: 30rpx; font-weight: 800; color: var(--c-accent); }

@@ -112,10 +112,10 @@
       </view>
     </view>
 
-    <!-- 学生档案（雷达图） -->
+    <!-- 学生档案（雷达图）：顶部固定雷达，底部固定按钮，中间可滚动评语 -->
     <view v-if="showProfile" class="mask" @click="showProfile = false">
       <view class="dialog dialog-profile" @click.stop>
-        <view class="dp-scroll">
+        <view class="dp-top">
           <view class="d-title">{{ profile.name }} 的档案</view>
           <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
           <view class="pf-line" v-if="profile.birthDate">🎂 生日：{{ profile.birthDate }}</view>
@@ -136,6 +136,8 @@
             <view class="pf-st"><text class="pf-n">{{ radar.behScore }}</text><text class="pf-l">行为活跃</text></view>
           </view>
           <view class="pf-tip">雷达基于成绩 / 考勤 / 行为观察数据自动生成（0–100）。</view>
+        </view>
+        <scroll-view scroll-y class="dp-scroll">
           <view class="pf-comment" v-if="profile.comment">
             <text class="pf-cm-h">📝 评语</text>
             <text class="pf-cm-t">{{ profile.comment }}</text>
@@ -144,7 +146,7 @@
             <text class="pf-cm-h">📝 评语</text>
             <text class="pf-cm-t pf-cm-empty">暂无评语</text>
           </view>
-        </view>
+        </scroll-view>
         <view class="pf-acts">
           <button class="btn-gen" :disabled="genCommentLoading" @click="genComment(profile)">{{ genCommentLoading ? '生成中…' : '🤖 AI 生成本学期评语' }}</button>
           <button class="d-close" @click="showProfile = false">关闭</button>
@@ -744,9 +746,10 @@ function drawRadar() {
 .confirm[disabled] { opacity: 0.5; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .dialog { width: 86%; max-width: 640rpx; max-height: 80vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
-/* 学生档案弹窗：内容滚动，底部按钮固定 */
+/* 学生档案弹窗：顶部雷达固定，中间评语滚动，底部按钮固定 */
 .dialog-profile { display: flex; flex-direction: column; padding: 0; max-height: 82vh; overflow: hidden; }
-.dp-scroll { padding: 36rpx 36rpx 0; overflow-y: auto; flex: 1; }
+.dp-top { padding: 36rpx 36rpx 0; flex-shrink: 0; overflow: visible; }
+.dp-scroll { padding: 0 36rpx; overflow-y: auto; flex: 1; min-height: 0; }
 .d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
 .d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }

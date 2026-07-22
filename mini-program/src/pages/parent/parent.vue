@@ -2,16 +2,14 @@
   <view class="page" :class="{ dark }">
     <view class="hd">
       <view class="t">🏡 家长中心</view>
-      <view class="status" :class="connected ? 'on' : ''">{{ statusText }}</view>
-      <view class="out" @click="subscribe">📬 订阅</view>
-      <view class="out" @click="bindPhone">📱 {{ phoneBound ? '已绑定' : '绑定手机' }}</view>
+      <view class="out" @click="bindPhone">📱 绑定手机</view>
       <view class="out" @click="logout">退出</view>
     </view>
 
     <view class="kids" v-if="kids.length">
       <view class="kid" v-for="k in kids" :key="k.studentId">
         <view class="kn">{{ k.studentName }}</view>
-        <view class="kc">{{ k.parentName }} · 班级 {{ k.classId }}</view>
+        <view class="kc">{{ k.parentName ? k.parentName + ' · ' : '' }}{{ k.className || '班级 ' + k.classId }}</view>
       </view>
     </view>
 
@@ -25,40 +23,59 @@
 
     <view class="sec" v-if="exams.length">
       <view class="st">📊 考试成绩</view>
-      <view v-if="analysis" class="abox">
-        <view class="arow" v-if="analysis.overallAverage">
-          学期总平均分 <text class="av">{{ analysis.overallAverage }}</text>
-        </view>
-        <view class="arow" v-if="analysis.trend">
-          最近趋势
-          <text :class="analysis.trend.direction === 'up' ? 'up' : 'down'">
-            {{ analysis.trend.direction === 'up' ? '↑' : '↓' }} {{ analysis.trend.diff }}%
-          </text>
-        </view>
-        <view class="arow" v-if="analysis.bestSubject">
-          优势学科 <text class="av">{{ analysis.bestSubject }}（均 {{ analysis.bestAvg }}）</text>
-        </view>
-        <view class="arow" v-if="analysis.worstSubject">
-          薄弱学科 <text class="av2">{{ analysis.worstSubject }}（均 {{ analysis.worstAvg }}）</text>
-        </view>
+
+      <view class="exam-selector">
+        <picker :value="selectedExamIndex" :range="examOptions" @change="onExamChange">
+          <view class="picker">{{ examOptions[selectedExamIndex] || '— 请选择考试 —' }}</view>
+        </picker>
       </view>
-      <!-- 成绩趋势图表 -->
-      <view v-if="trendCanvas && trendCanvas.show" class="ptrend-wrap">
-        <canvas type="2d" canvas-id="parentTrendCanvas" id="parentTrendCanvas" class="ptrend-canvas"></canvas>
-      </view>
-      <view class="nitem" v-for="e in exams" :key="e.examId">
-        <view class="nt">
-          {{ e.examName }}
-          <text class="ndate">{{ e.date }}</text>
-          <text v-if="e.totalScore !== null" class="etotal">综合 {{ e.totalScore }}%</text>
+
+      <view v-if="selectedExam" class="exam-detail">
+        <view class="exam-header">
+          <text class="exam-name">{{ selectedExam.examName }}</text>
+          <text class="exam-date">{{ selectedExam.date }}</text>
         </view>
-        <view class="nc">
-          <view v-for="s in e.subjects" :key="s.subject" class="srow">
-            <text class="ssubject">{{ s.subject }}</text>
-            <text class="sscore">
-              {{ s.score !== null ? s.score + ' / ' + s.fullScore : '暂未录入' }}
-            </text>
+
+        <view class="exam-total">
+          总分
+          <text class="tv">{{ selectedExam.totalScore ?? '--' }}</text>
+          /
+          <text class="tv">{{ selectedExam.totalFullScore ?? '--' }}</text>
+          分
+          <text v-if="selectedExam.classRank != null" class="tr">（班级第 {{ selectedExam.classRank }} 名</text>
+          <text v-if="selectedExam.gradeRank != null"> / 年级第 {{ selectedExam.gradeRank }} 名）</text>
+        </view>
+
+        <view v-if="strengths.length || weaknesses.length" class="sw-section">
+          <view v-if="strengths.length" class="sw-row">
+            <text class="sw-label sw-strong">优势学科</text>
+            <text class="sw-list">{{ strengths.join('、') }}</text>
           </view>
+          <view v-if="weaknesses.length" class="sw-row">
+            <text class="sw-label sw-weak">薄弱学科</text>
+            <text class="sw-list">{{ weaknesses.join('、') }}</text>
+          </view>
+        </view>
+
+        <view class="subject-list">
+          <view v-for="s in selectedExam.subjects || []" :key="s.subject" class="srow">
+            <text class="ssubject">{{ s.subject }}</text>
+            <text class="sscore">{{ s.score != null ? s.score + ' / ' + s.fullScore : '暂未录入' }}</text>
+            <text class="srank">班级第{{ s.classRank ?? '--' }}名</text>
+          </view>
+        </view>
+
+        <view v-if="histogram.length" class="chart-section">
+          <view class="chart-title">总分分布（{{ histogram.length > 1 ? histogram[0].label + ' ~ ' + histogram[histogram.length - 1].label : '' }}）</view>
+          <scroll-view scroll-x class="chart-scroll">
+            <view class="chart">
+              <view v-for="seg in histogram" :key="seg.label" class="bar-col">
+                <view class="bar" :style="{ height: seg.pct + '%' }" :class="seg.isStudent && 'highlight'"></view>
+                <text class="bar-label">{{ seg.label }}</text>
+                <text class="bar-count">{{ seg.count }}人</text>
+              </view>
+            </view>
+          </scroll-view>
         </view>
       </view>
     </view>
@@ -73,320 +90,81 @@
         <view class="nc">{{ h.content }}</view>
       </view>
     </view>
-
-    <view class="hint" v-if="demoMode">
-      演示模式：未配置腾讯云 IM。在后端配置 IM_SDK_APP_ID / IM_SECRET_KEY 后即可与老师真实收发。
-    </view>
-
-    <scroll-view scroll-x class="chats" v-if="convList.length">
-      <view
-        v-for="c in convList"
-        :key="c.id"
-        class="chat"
-        :class="activeConvId === c.id && 'on'"
-        @click="openConv(c.id)"
-      >
-        <view class="ava">{{ c.avatar }}</view>
-        <view class="nm">{{ c.name }}</view>
-        <view class="last" v-if="c.lastText">{{ c.lastText }}</view>
-      </view>
-    </scroll-view>
-
-    <view class="convhead" v-if="activeConv.id">
-      <view class="cn">{{ activeConv.name }}</view>
-    </view>
-
-    <scroll-view scroll-y class="msgs" :scroll-into-view="scrollTarget" scroll-with-animation>
-      <view
-        v-for="m in activeConv.messages"
-        :key="m.id"
-        :id="m.id"
-        class="row"
-        :class="m.me && 'me'"
-      >
-        <view class="col">
-          <image
-            v-if="m.type === 'image' && m.imageUrl"
-            :src="m.imageUrl"
-            class="img"
-            mode="widthFix"
-            @click="previewImg(m.imageUrl)"
-          />
-          <view v-else class="bubble">{{ m.text }}</view>
-        </view>
-      </view>
-    </scroll-view>
-
-    <view class="inputbar">
-      <view class="imgbtn" @click="sendImage">🖼</view>
-      <input v-model="draft" class="inp" placeholder="输入消息…" confirm-type="send" @confirm="send" />
-      <view class="send" @click="send">发送</view>
-    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import TIM from 'tim-wx-sdk'
-import TIMUploadPlugin from 'tim-upload-plugin'
-import uCharts from '@qiun/ucharts'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
-import { pickAndCompressImage } from '../../common/image'
 
 const dark = computed(() => theme.mode === 'dark')
 
-const demoMode = ref(true)
-const connected = ref(false)
-const loginUser = ref('')
 const kids = ref([])
 const notices = ref([])
 const exams = ref([])
-const analysis = ref(null)
 const homework = ref([])
-const convList = ref([])
-const activeConvId = ref('')
-const draft = ref('')
-const scrollTarget = ref('')
-const phoneBound = ref(false)
-const trendCanvas = ref({ show: false, labels: [], data: [] })
-const subscribeTmplIds = ref([])
-let trendChartInst = null
+const selectedExamIndex = ref(0)
 
-const demoSeed = [
-  {
-    id: 'C2Cteacher',
-    name: '老师',
-    avatar: '🧑‍🏫',
-    to: 'teacher',
-    type: 'C2C',
-    lastText: '',
-    sub: '',
-    messages: [
-      { id: 'd1', me: false, type: 'text', text: '家长您好，小明今天课堂表现很积极，作业也完成了 👍', isRead: true },
-    ],
-  },
-]
+const examOptions = computed(() => exams.value.map((e, i) => e.examName || ('考试' + (i + 1))))
 
-const activeConv = computed(
-  () =>
-    convList.value.find((c) => c.id === activeConvId.value) ||
-    convList.value[0] || { id: '', name: '', avatar: '', to: '', type: '', lastText: '', sub: '', messages: [] },
-)
+const selectedExam = computed(() => exams.value[selectedExamIndex.value] || null)
 
-const statusText = computed(() => {
-  if (demoMode.value) return '演示模式'
-  return connected.value ? '已接入腾讯云 IM' : '连接中…'
+const rankedSubjects = computed(() => {
+  const subs = selectedExam.value?.subjects || []
+  return subs
+    .filter(s => s.score != null && s.fullScore)
+    .map(s => ({ subject: s.subject, score: s.score, fullScore: s.fullScore, pct: s.score / s.fullScore, raw: s }))
+    .sort((a, b) => b.pct - a.pct)
 })
 
-let ptim = null
-let sdkReady = false
+const strengths = computed(() => {
+  const arr = rankedSubjects.value
+  if (!arr.length) return []
+  const topPct = arr[0].pct
+  return arr.filter(s => s.pct === topPct || (s.pct >= topPct - 0.05 && strengths.value.length < 3)).slice(0, 3).map(s => s.subject)
+})
 
-function preview(msg) {
-  if (!msg) return ''
-  const t = msg.type
-  if (t === TIM.TYPES.MSG_TEXT) return msg.payload.text
-  if (t === TIM.TYPES.MSG_IMAGE) return '[图片]'
-  if (t === TIM.TYPES.MSG_SOUND) return '[语音]'
-  if (t === TIM.TYPES.MSG_FILE) return '[文件]'
-  if (t === TIM.TYPES.MSG_CUSTOM) return '[自定义消息]'
-  return '[消息]'
-}
+const weaknesses = computed(() => {
+  const arr = rankedSubjects.value
+  if (!arr.length) return []
+  const bot = arr[arr.length - 1]
+  return arr.filter(s => s.pct === bot.pct || s.pct <= bot.pct + 0.05).slice(-3).reverse().map(s => s.subject)
+})
 
-function normConv(c) {
-  const type = c.type
-  const to = c.to
-  let name = to
-  let avatar = '👤'
-  if (type === 'GROUP') {
-    name = (c.groupProfile && c.groupProfile.name) || to
-    avatar = '👥'
-  } else if (type === 'C2C') {
-    name = (c.userProfile && (c.userProfile.nick || c.userProfile.userID)) || to
-    avatar = to === 'teacher' || to.indexOf('teacher') === 0 ? '🧑‍🏫' : '👤'
-  }
-  return { id: c.conversationID, name, avatar, to, type, lastText: preview(c.lastMessage), sub: '', messages: [] }
-}
-
-function normMsg(m) {
-  const me = m.from === loginUser.value
-  let type = 'text'
-  let text = ''
-  let imageUrl = ''
-  if (m.type === TIM.TYPES.MSG_TEXT) {
-    type = 'text'
-    text = m.payload.text
-  } else if (m.type === TIM.TYPES.MSG_IMAGE) {
-    type = 'image'
-    const arr = m.payload.imageInfoArray || []
-    imageUrl = arr.length ? arr[arr.length - 1].url : ''
-  } else if (m.type === TIM.TYPES.MSG_FILE) {
-    type = 'text'
-    text = '[文件]'
-  } else if (m.type === TIM.TYPES.MSG_SOUND) {
-    type = 'text'
-    text = '[语音]'
-  } else if (m.type === TIM.TYPES.MSG_CUSTOM) {
-    type = 'text'
-    text = '[自定义消息]'
-  } else {
-    type = 'text'
-    text = '[暂不支持的消息]'
-  }
-  return { id: m.ID, me, type, text, imageUrl, isRead: !!m.isPeerRead, time: m.time }
-}
-
-function onSdkReady() {
-  sdkReady = true
-  connected.value = true
-  demoMode.value = false
-  ptim.getConversationList().then((res) => applyConvList(res.data.conversationList)).catch(() => {})
-}
-
-function applyConvList(list) {
-  const map = {}
-  convList.value.forEach((c) => (map[c.id] = c))
-  for (const c of list) {
-    const norm = normConv(c)
-    if (map[norm.id]) map[norm.id].lastText = norm.lastText
-    else map[norm.id] = norm
-  }
-  convList.value = Object.values(map)
-  if (!activeConvId.value && convList.value.length) activeConvId.value = convList.value[0].id
-}
-
-function onMessageReceived(event) {
-  for (const m of event.data) {
-    const convId = m.conversationID
-    let conv = convList.value.find((c) => c.id === convId)
-    if (!conv) {
-      conv = {
-        id: convId,
-        name: m.from,
-        avatar: convId.indexOf('GROUP') === 0 ? '👥' : '👤',
-        to: m.from,
-        type: convId.indexOf('GROUP') === 0 ? 'GROUP' : 'C2C',
-        lastText: '',
-        sub: '',
-        messages: [],
-      }
-      convList.value.push(conv)
+const histogram = computed(() => {
+  const exam = selectedExam.value
+  if (!exam?.distribution?.length) return []
+  const maxCount = Math.max(...exam.distribution.map(d => d.count), 1)
+  const studentTotal = exam.totalScore ?? 0
+  return exam.distribution.map(d => {
+    const label = d.label || d.scoreRange || ''
+    const parts = label.split('-')
+    const lo = parseInt(parts[0])
+    const hi = parseInt(parts[1])
+    const isStudent = !isNaN(lo) && !isNaN(hi) && lo <= studentTotal && studentTotal <= hi
+    return {
+      label,
+      count: d.count,
+      pct: (d.count / maxCount) * 100,
+      isStudent
     }
-    conv.messages.push(normMsg(m))
-    conv.lastText = preview(m)
-    if (convId === activeConvId.value) {
-      scrollToBottom()
-      ptim.setMessageRead({ conversationID: convId }).catch(() => {})
-    }
-  }
-}
-
-async function initTim(sdkAppId, userSig) {
-  if (ptim) {
-    if (sdkReady && !connected.value) {
-      try {
-        await ptim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
-      } catch (e) {}
-    }
-    return
-  }
-  ptim = TIM.create({ SDKAppID: Number(sdkAppId) })
-  ptim.setLogLevel(1)
-  ptim.registerPlugin({ 'tim-upload-plugin': TIMUploadPlugin })
-  ptim.on(TIM.EVENT.SDK_READY, onSdkReady)
-  ptim.on(TIM.EVENT.MESSAGE_RECEIVED, onMessageReceived)
-  ptim.on(TIM.EVENT.ERROR, (e) => console.error('[ParentIM] error', e))
-  try {
-    await ptim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
-  } catch (e) {
-    uni.showToast({ title: 'IM 登录失败，请检查密钥', icon: 'none' })
-  }
-}
-
-function scrollToBottom() {
-  nextTick(() => {
-    const list = activeConv.value.messages
-    if (list && list.length) scrollTarget.value = list[list.length - 1].id
   })
+})
+
+function onExamChange(e) {
+  selectedExamIndex.value = e.detail.value
 }
 
-async function openConv(id) {
-  activeConvId.value = id
-  if (demoMode.value) return
-  const conv = convList.value.find((c) => c.id === id)
-  if (!conv) return
-  try {
-    const res = await ptim.getMessageList({ conversationID: id })
-    conv.messages = res.data.messageList.map(normMsg)
-  } catch (e) {}
-  try {
-    await ptim.setMessageRead({ conversationID: id })
-  } catch (e) {}
-  scrollToBottom()
-}
-
-async function send() {
-  const text = draft.value.trim()
-  if (!text) return
-  const conv = convList.value.find((c) => c.id === activeConvId.value)
-  if (!conv) return
-  draft.value = ''
-  if (demoMode.value) {
-    const id = 'l' + Date.now()
-    conv.messages.push({ id, me: true, type: 'text', text, isRead: false })
-    conv.lastText = text
-    scrollToBottom()
-    setTimeout(() => {
-      const rid = 'r' + Date.now()
-      conv.messages.push({ id: rid, me: false, type: 'text', text: '（老师演示回复）收到，谢谢家长配合！', isRead: true })
-      conv.lastText = '（老师演示回复）收到，谢谢家长配合！'
-      scrollToBottom()
-    }, 800)
-    return
-  }
-  try {
-    const msg = ptim.createTextMessage({ to: conv.to, conversationType: conv.type, payload: { text } })
-    await ptim.sendMessage(msg)
-    conv.messages.push(normMsg(msg))
-    conv.lastText = text
-    scrollToBottom()
-  } catch (e) {
-    uni.showToast({ title: '发送失败', icon: 'none' })
-  }
-}
-
-async function sendImage() {
-  if (demoMode.value) {
-    uni.showToast({ title: '演示模式不支持图片', icon: 'none' })
-    return
-  }
-  const conv = convList.value.find((c) => c.id === activeConvId.value)
-  if (!conv) return
-  try {
-    const pickRes = await pickAndCompressImage({ count: 1 })
-    const fileRes = {
-      tempFilePaths: pickRes.tempFiles.map((f) => f.tempFilePath),
-      tempFiles: pickRes.tempFiles,
-    }
-    const msg = ptim.createImageMessage({
-      to: conv.to,
-      conversationType: conv.type,
-      payload: { file: fileRes },
-      onProgress: () => {},
-    })
-    await ptim.sendMessage(msg)
-    conv.messages.push(normMsg(msg))
-    conv.lastText = '[图片]'
-    scrollToBottom()
-  } catch (e) {
-    uni.showToast({ title: '图片发送失败', icon: 'none' })
-  }
-}
-
-function previewImg(url) {
-  if (!url) return
-  uni.previewImage({ urls: [url], current: url })
+function bindPhone() {
+  uni.getUserProfile({
+    desc: '用于家校联系',
+    success: () => {
+      uni.showToast({ title: '已提交绑定', icon: 'success' })
+    },
+    fail: () => uni.showToast({ title: '绑定取消', icon: 'none' }),
+  })
 }
 
 function logout() {
@@ -394,81 +172,21 @@ function logout() {
   uni.reLaunch({ url: '/pages/login/login' })
 }
 
-async function subscribe() {
-  try {
-    // 动态获取模板 ID
-    if (!subscribeTmplIds.value.length) {
-      try {
-        const pub = await parentApi.get('/config/public')
-        subscribeTmplIds.value = (pub && pub.subscribeTmplIds) || []
-      } catch {}
-    }
-    if (!subscribeTmplIds.value.length) return uni.showToast({ title: '暂无可用通知模板', icon: 'none' })
-    const res = await uni.requestSubscribeMessage({ tmplIds: subscribeTmplIds.value })
-    uni.showToast({ title: '已订阅', icon: 'success' })
-    const { code } = await uni.login()
-    await parentApi.post('/parent-auth/subscribe', { code })
-  } catch (e) {
-    uni.showToast({ title: '订阅失败', icon: 'none' })
-  }
-}
-
-async function bindPhone() {
-  if (phoneBound.value) return
-  uni.getUserProfile({
-    desc: '用于家校联系',
-    success: async (res) => {
-      phoneBound.value = true
-      uni.showToast({ title: '已提交绑定', icon: 'success' })
-    },
-    fail: () => uni.showToast({ title: '绑定取消', icon: 'none' }),
-  })
-}
-
-// 成绩趋势图表
-function drawParentTrend() {
-  const labels = [], data = []
-  for (const e of exams.value || []) {
-    labels.push((e.examName || '').slice(0, 6))
-    data.push(e.totalScore != null ? e.totalScore : 0)
-  }
-  if (labels.length < 2) return
-  trendCanvas.value = { show: true, labels, data }
-  nextTick(() => {
-    const query = uni.createSelectorQuery()
-    query.select('#parentTrendCanvas').fields({ node: true, size: true }).exec(res => {
-      if (!res || !res[0] || !res[0].node) return
-      const canvas = res[0].node
-      const ctx = canvas.getContext('2d')
-      const dpr = uni.getSystemInfoSync().pixelRatio
-      canvas.width = res[0].width * dpr
-      canvas.height = res[0].height * dpr
-      ctx.scale(dpr, dpr)
-      if (trendChartInst) {
-        trendChartInst.updateData({ categories: labels, series: [{ name: '综合(%)', data, color: '#07c160', index: 0 }] })
-      } else {
-        trendChartInst = new uCharts({
-          type: 'line', context: ctx, width: res[0].width, height: res[0].height,
-          categories: labels, series: [{ name: '综合(%)', data, color: '#07c160', index: 0 }],
-          yAxis: { disabled: false }, xAxis: { disableGrid: true, fontSize: 11 },
-          extra: { line: { type: 'straight', width: 2, area: { gradient: true, opacity: 0.15 } } },
-          colors: ['#07c160'],
-        })
-      }
-    })
-  })
-}
-
 onShow(async () => {
   if (!parent.token) {
     uni.reLaunch({ url: '/pages/parent-login/parent-login' })
     return
   }
-  loginUser.value = (parent.user && parent.user.imUserId) || ''
-  if (demoMode.value && convList.value.length === 0) {
-    convList.value = JSON.parse(JSON.stringify(demoSeed))
-    activeConvId.value = convList.value[0] ? convList.value[0].id : ''
+
+  if (parent.user && !parent.user.wechatOpenid) {
+    try {
+      const { code } = await uni.login()
+      await parentApi.post('/parent-auth/bind-wechat', { code })
+    } catch (e) {
+      // 静默处理，不阻塞页面加载
+    }
   }
+
   try {
     const me = await parentApi.get('/parent-auth/me')
     kids.value = (me && me.kids) || []
@@ -476,21 +194,9 @@ onShow(async () => {
     notices.value = Array.isArray(ns) ? ns : []
     const edata = await parentApi.get('/parent-auth/exams')
     exams.value = (edata && edata.exams) || []
-    analysis.value = (edata && edata.analysis) || null
     const hw = await parentApi.get('/parent-auth/homework')
     homework.value = Array.isArray(hw) ? hw : []
-    drawParentTrend()
   } catch (e) {}
-  try {
-    const r = await parentApi.get('/parent-auth/im-user-sig')
-    if (r && r.sdkAppId && r.userSig) {
-      await initTim(r.sdkAppId, r.userSig)
-    } else {
-      demoMode.value = true
-    }
-  } catch (e) {
-    demoMode.value = true
-  }
 })
 </script>
 
@@ -498,8 +204,6 @@ onShow(async () => {
 .page { display: flex; flex-direction: column; height: 100vh; padding: 24rpx; box-sizing: border-box; }
 .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10rpx; }
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
-.status { font-size: 22rpx; padding: 6rpx 18rpx; border-radius: 20rpx; background: #f3f3f3; color: #9aa0a6; }
-.status.on { background: #e8f9e8; color: #07c160; }
 .out { font-size: 24rpx; color: #9aa0a6; }
 .kids { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .kid { background: var(--c-card); border-radius: 14rpx; padding: 14rpx 20rpx; }
@@ -511,43 +215,52 @@ onShow(async () => {
 .nt { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
 .npin { font-size: 20rpx; color: #e6a23c; background: #fef3e6; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 10rpx; }
 .nc { font-size: 24rpx; color: var(--c-sub); margin-top: 8rpx; line-height: 1.5; white-space: pre-wrap; }
-.abox { background: var(--c-input); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; }
-.arow { font-size: 24rpx; color: var(--c-sub); line-height: 1.8; }
-.av { color: #07c160; font-weight: 700; }
-.av2 { color: #e06c75; font-weight: 700; }
-.up { color: #07c160; }
-.down { color: #e06c75; }
 .ndate { font-size: 20rpx; color: var(--c-sub); margin-left: 12rpx; font-weight: 400; }
-.etotal { font-size: 22rpx; color: #07c160; margin-left: 12rpx; }
-.srow { display: flex; justify-content: space-between; padding: 6rpx 0; }
-.ssubject { color: var(--c-title); }
-.sscore { color: var(--c-sub); }
 .hwstatus { font-size: 20rpx; color: #e6a23c; margin-left: 12rpx; }
-.ptrend-wrap { background: var(--c-card); border-radius: 14rpx; padding: 16rpx; margin-top: 10rpx; }
-.ptrend-canvas { width: 100%; height: 340rpx; }
-.hint { font-size: 22rpx; color: #bbb; background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
-.chats { white-space: nowrap; margin-bottom: 14rpx; }
-.chat { display: inline-block; width: 200rpx; background: var(--c-card); border-radius: 16rpx; padding: 16rpx; margin-right: 14rpx; vertical-align: top; }
-.chat.on { outline: 2rpx solid var(--c-accent); }
-.ava { font-size: 48rpx; text-align: center; }
-.nm { font-size: 24rpx; text-align: center; color: var(--c-title); font-weight: 700; margin-top: 6rpx; }
-.last { font-size: 20rpx; color: var(--c-sub); margin-top: 6rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.convhead { display: flex; align-items: baseline; gap: 14rpx; padding: 4rpx 6rpx 12rpx; }
-.convhead .cn { font-size: 30rpx; font-weight: 800; color: var(--c-title); }
-.msgs { flex: 1; background: var(--c-card2); border-radius: 16rpx; padding: 18rpx; margin-bottom: 14rpx; }
-.row { display: flex; margin-bottom: 16rpx; }
-.row.me { justify-content: flex-end; }
-.col { display: flex; flex-direction: column; align-items: flex-start; max-width: 72%; }
-.row.me .col { align-items: flex-end; }
-.bubble { max-width: 100%; background: #fff; color: #4a3f35; padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
-.img { width: 280rpx; border-radius: 14rpx; }
-.row.me .bubble { background: #07c160; color: #fff; }
-.inputbar { display: flex; gap: 14rpx; align-items: center; }
-.imgbtn { font-size: 40rpx; padding: 0 6rpx; color: var(--c-sub); }
-.inp { flex: 1; background: var(--c-card); border: 1px solid var(--c-input-border); border-radius: 40rpx; padding: 18rpx 28rpx; font-size: 28rpx; color: var(--c-text); }
-.send { background: #07c160; color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; height: 72rpx; }
+
+/* Exam Selector */
+.exam-selector { margin-bottom: 14rpx; }
+.picker { background: var(--c-card); border-radius: 12rpx; padding: 16rpx 24rpx; font-size: 26rpx; color: var(--c-title); font-weight: 600; text-align: center; }
+
+/* Exam Detail */
+.exam-detail { background: var(--c-card); border-radius: 14rpx; padding: 20rpx; margin-bottom: 14rpx; }
+.exam-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12rpx; margin-bottom: 10rpx; }
+.exam-name { font-size: 30rpx; font-weight: 800; color: var(--c-title); }
+.exam-date { font-size: 22rpx; color: var(--c-sub); }
+.exam-total { font-size: 26rpx; color: var(--c-sub); margin-bottom: 12rpx; line-height: 1.6; }
+.tv { color: #07c160; font-weight: 700; font-size: 28rpx; }
+.tr { margin-left: 4rpx; }
+
+/* Strengths & Weaknesses */
+.sw-section { background: var(--c-input); border-radius: 10rpx; padding: 14rpx 16rpx; margin-bottom: 14rpx; }
+.sw-row { display: flex; align-items: baseline; gap: 10rpx; line-height: 1.8; }
+.sw-label { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 8rpx; font-weight: 600; flex-shrink: 0; }
+.sw-strong { background: #e8f9e8; color: #07c160; }
+.sw-weak { background: #fde8e8; color: #e06c75; }
+.sw-list { font-size: 24rpx; color: var(--c-title); }
+
+/* Subject Rows */
+.subject-list { margin-bottom: 14rpx; }
+.srow { display: flex; align-items: center; padding: 8rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
+.srow:last-child { border-bottom: none; }
+.ssubject { width: 100rpx; font-size: 24rpx; color: var(--c-title); font-weight: 600; flex-shrink: 0; }
+.sscore { flex: 1; font-size: 24rpx; color: var(--c-sub); text-align: center; }
+.srank { width: 130rpx; font-size: 22rpx; color: #9aa0a6; text-align: right; flex-shrink: 0; }
+
+/* Histogram Chart */
+.chart-section { margin-top: 6rpx; }
+.chart-title { font-size: 22rpx; color: var(--c-sub); margin-bottom: 10rpx; }
+.chart-scroll { overflow-x: auto; white-space: nowrap; }
+.chart { display: flex; align-items: flex-end; gap: 6rpx; padding: 0 10rpx 0 0; min-height: 240rpx; }
+.bar-col { display: flex; flex-direction: column; align-items: center; width: 52rpx; flex-shrink: 0; }
+.bar { width: 36rpx; min-height: 4rpx; border-radius: 6rpx 6rpx 0 0; background: #c8e6c9; transition: height 0.3s; }
+.bar.highlight { background: #07c160; }
+.bar-label { font-size: 18rpx; color: #9aa0a6; margin-top: 6rpx; }
+.bar-count { font-size: 18rpx; color: var(--c-sub); margin-top: 2rpx; }
+
+/* Dark Mode */
 .dark .t { color: var(--c-title); }
 .dark .page { background: var(--c-bg); }
-.dark .chat, .dark .msgs, .dark .kid { background: var(--c-card); }
-.dark .bubble { background: var(--c-input); color: var(--c-text); }
+.dark .kid, .dark .exam-detail, .dark .nitem { background: var(--c-card); }
+.dark .picker, .dark .sw-section { background: var(--c-input); }
 </style>
