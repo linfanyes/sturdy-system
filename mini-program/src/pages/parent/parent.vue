@@ -126,15 +126,18 @@ const rankedSubjects = computed(() => {
 const strengths = computed(() => {
   const arr = rankedSubjects.value
   if (!arr.length) return []
-  const topPct = arr[0].pct
-  return arr.filter(s => s.pct === topPct || (s.pct >= topPct - 0.05 && strengths.value.length < 3)).slice(0, 3).map(s => s.subject)
+  const top = arr[0]
+  if (!top) return []
+  return arr.filter(s => s.pct >= top.pct - 0.05).slice(0, 3).map(s => s.subject)
 })
 
 const weaknesses = computed(() => {
   const arr = rankedSubjects.value
   if (!arr.length) return []
-  const bot = arr[arr.length - 1]
-  return arr.filter(s => s.pct === bot.pct || s.pct <= bot.pct + 0.05).slice(-3).reverse().map(s => s.subject)
+  const len = arr.length
+  const bot = arr[len - 1]
+  if (!bot) return []
+  return arr.filter(s => s.pct <= bot.pct + 0.05).slice(-3).reverse().map(s => s.subject)
 })
 
 const histogram = computed(() => {
@@ -199,17 +202,20 @@ onShow(async () => {
     return
   }
   try {
-    const edata = await parentApi.get('/parent-auth/exams')
-    exams.value = (edata && edata.exams) || []
+    // 先加载基础信息（学生名/班级）确保页面有内容
     const me = await parentApi.get('/parent-auth/me')
     kids.value = (me && me.kids) || []
+  } catch (e) { console.error('[parent] me error:', e) }
+  try {
+    const edata = await parentApi.get('/parent-auth/exams')
+    exams.value = (edata && edata.exams) || []
+  } catch (e) { console.error('[parent] exams error:', e) }
+  try {
     const ns = await parentApi.get('/parent-auth/notices')
     notices.value = Array.isArray(ns) ? ns : []
     const hw = await parentApi.get('/parent-auth/homework')
     homework.value = Array.isArray(hw) ? hw : []
-  } catch (e) {
-    console.error('[parent] load error:', e)
-  }
+  } catch (e) { console.error('[parent] notices/hw error:', e) }
 })
 </script>
 
