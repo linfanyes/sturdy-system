@@ -99,7 +99,7 @@
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { onShow, onReady } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 
@@ -193,27 +193,24 @@ function logout() {
   uni.reLaunch({ url: '/pages/login/login' })
 }
 
+const loaded = ref(false)
+
 onShow(async () => {
   if (!parent.token) {
     uni.reLaunch({ url: '/pages/parent-login/parent-login' })
     return
   }
-})
 
-// 首次加载在 onReady，避免首帧渲染冲突
-onReady(async () => {
-  if (!parent.token) return
+  // 避免首帧渲染冲突：延迟一帧再加载数据
+  if (!loaded.value) {
+    loaded.value = true
+    await nextTick()
+  }
 
   if (parent.user && !parent.user.wechatOpenid) {
     try {
       const { code } = await uni.login()
-      // 尝试获取用户昵称
-      let nickName = ''
-      try {
-        const up = await uni.getUserProfile({ desc: '用于家校联系' })
-        nickName = up?.userInfo?.nickName || ''
-      } catch {}
-      await parentApi.post('/parent-auth/bind-wechat', { code, nickName })
+      await parentApi.post('/parent-auth/bind-wechat', { code })
     } catch (e) {
       // 静默处理
     }
