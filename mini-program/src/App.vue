@@ -2,9 +2,15 @@
 import { onLaunch } from '@dcloudio/uni-app'
 import { auth, mockMode, initTheme } from './common/store'
 import { setMockMode } from './common/request'
+import { CLOUDRUN_ENV } from './common/config'
 
 export default {
   onLaunch() {
+    // 初始化微信云托管私有链路：必须先 wx.cloud.init 才能调用 wx.cloud.callContainer，
+    // 否则请求会一直挂起无回调（表现为登录超时 / Error: timeout）。
+    if (typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.init === 'function') {
+      wx.cloud.init({ env: CLOUDRUN_ENV, traceUser: true })
+    }
     // 演示模式：启动时自动恢复
     if (uni.getStorageSync('g_mock_mode') === 'true') {
       mockMode.enabled = true

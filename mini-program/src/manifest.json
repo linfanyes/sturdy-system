@@ -11,11 +11,6 @@
       "urlCheck": false,
       "es6": true,
       "minified": true
-    },
-    "permission": {
-      "scope.userInfo": {
-        "desc": "用于识别登录的教师身份"
-      }
     }
   }
 }
