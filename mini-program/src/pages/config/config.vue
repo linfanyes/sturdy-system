@@ -1,19 +1,6 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="card">
-      <view class="card-title">个人资料</view>
-      <view class="field">
-        <text class="label">称呼</text>
-        <input v-model="profile.name" placeholder="如 王老师" />
-      </view>
-      <view class="field">
-        <text class="label">学校</text>
-        <input v-model="profile.school" placeholder="由学校管理员分配" disabled="true" />
-      </view>
-    <button class="save" :disabled="savingProfile" @click="saveProfile">{{ savingProfile ? '保存中…' : '保存资料' }}</button>
-  </view>
-
-    <view class="card">
       <view class="card-title">AI 配置（密钥仅存后端）</view>
       <view class="field">
         <text class="label">服务商</text>
@@ -77,48 +64,6 @@
         <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
       </view>
       <button class="save" :disabled="savingAi" @click="saveAi">{{ savingAi ? '保存中…' : '保存 AI 配置' }}</button>
-    </view>
-
-    <view class="card">
-      <view class="card-title">外观</view>
-      <view class="row">
-        <view class="row-text">
-          <text class="row-name">深色模式</text>
-          <text class="row-sub">切换后全应用深色配色（含导航栏与底栏）</text>
-        </view>
-        <switch :checked="theme.mode === 'dark'" color="#07c160" @change="onTheme" />
-      </view>
-      <view class="row">
-        <view class="row-text">
-          <text class="row-name">字体大小</text>
-          <text class="row-sub">小 / 标准 / 大，影响主要文字</text>
-        </view>
-        <view class="font-group">
-          <text
-            v-for="f in FONT_SIZES"
-            :key="f.value"
-            class="font-i"
-            :class="{ on: theme.fontSize === f.value }"
-            @click="onFont(f.value)"
-          >{{ f.label }}</text>
-        </view>
-      </view>
-      <view class="row">
-        <view class="row-text">
-          <text class="row-name">主题色</text>
-          <text class="row-sub">影响 tabBar 选中色与默认强调色</text>
-        </view>
-        <view class="scheme-group">
-          <text
-            v-for="s in SCHEMES"
-            :key="s.value"
-            class="scheme-i"
-            :class="{ on: theme.colorScheme === s.value }"
-            :style="{ background: s.color }"
-            @click="onScheme(s.value)"
-          >{{ s.label }}</text>
-        </view>
-      </view>
     </view>
 
     <view class="card">
@@ -195,7 +140,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FONT_SIZES, SCHEMES, flushTabBarStyle } from '../../common/store'
+import { auth, setUser, logout, theme } from '../../common/store'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
@@ -243,10 +188,8 @@ function detectProvider(baseUrl) {
   return 3
 }
 
-const profile = ref({ name: '', school: '', subjects: [] })
 const ai = ref({})
 const app = ref([])
-const savingProfile = ref(false)
 const savingAi = ref(false)
 const showHelp = ref(false)
 const providerIdx = ref(0)
@@ -342,7 +285,6 @@ function resetAiDefaults() {
 
 async function load() {
   const me = await api.get('/users/me')
-  profile.value = { name: me.name, school: me.school, subjects: me.subjects || [] }
   const a = await api.get('/config/ai')
   // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
   const firstProvider = PROVIDER_PRESETS[PROVIDER_NAMES[0]]
@@ -367,30 +309,6 @@ async function load() {
 onShow(load)
 onShow(() => flushTabBarStyle())
 
-function onTheme(e) {
-  setTheme(e.detail.value ? 'dark' : 'light')
-}
-function onFont(v) {
-  setFontSize(v)
-  uni.showToast({ title: '已切换字体', icon: 'none' })
-}
-function onScheme(v) {
-  setColorScheme(v)
-  uni.showToast({ title: '已切换主题色', icon: 'none' })
-}
-async function saveProfile() {
-  if (savingProfile.value) return
-  savingProfile.value = true
-  try {
-    await api.put('/users/me', { name: profile.value.name, school: profile.value.school })
-    setUser({ ...auth.user, name: profile.value.name, school: profile.value.school })
-    uni.showToast({ title: '资料已保存', icon: 'success' })
-  } catch (e) {
-    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
-  } finally {
-    savingProfile.value = false
-  }
-}
 async function saveAi() {
   if (savingAi.value) return
   savingAi.value = true
