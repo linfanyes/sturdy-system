@@ -13,6 +13,8 @@
     </view>
     <view class="toolbar2">
       <text class="tbtn" :class="batchMode && 'on'" @click="batchMode = !batchMode">{{ batchMode ? '取消批量' : '批量管理' }}</text>
+      <text v-if="batchMode && selected.size !== shown.length" class="tbtn" @click="selectAll">全选</text>
+      <text v-if="batchMode && selected.size === shown.length && shown.length" class="tbtn" @click="deselectAll">取消全选</text>
       <text class="tbtn" @click="exportCsv">导出 CSV</text>
       <text class="tcount">共 {{ shown.length }} 人</text>
     </view>
@@ -23,6 +25,7 @@
         <view class="top">
           <text class="name">{{ s.name }}</text>
           <text class="no">学号 {{ s.studentNo || '—' }}</text>
+          <text class="auth-badge" :class="s.parentLoginEnabled && 'on'">{{ s.parentLoginEnabled ? '家长已授权' : '未授权' }}</text>
         </view>
         <view class="meta">
           <text>{{ s.gender }}</text>
@@ -43,6 +46,8 @@
 
     <view v-if="batchMode && selected.size" class="batchbar">
       <text class="bsel">已选 {{ selected.size }} 人</text>
+      <text class="bauth" @click="batchAuthParent(true)">📱 授权家长</text>
+      <text class="bauth" @click="batchAuthParent(false)">取消授权</text>
       <text class="bdel" @click="batchDelete">删除所选</text>
     </view>
 
@@ -109,34 +114,36 @@
 
     <!-- 学生档案（雷达图） -->
     <view v-if="showProfile" class="mask" @click="showProfile = false">
-      <view class="dialog" @click.stop>
-        <view class="d-title">{{ profile.name }} 的档案</view>
-        <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
-        <view class="pf-line" v-if="profile.birthDate">🎂 生日：{{ profile.birthDate }}</view>
-        <view class="pf-line" v-if="profile.seatRow">座位：座号 {{ profile.seatNo || '—' }}（第{{ profile.seatRow }}行第{{ profile.seatCol }}列）</view>
-        <view class="pf-composite" :class="levelClass">
-          <text class="pf-c-n">{{ radar.composite }}</text>
-          <text class="pf-c-l">综合能力评分 · {{ radar.level }}</text>
-        </view>
-        <view class="pf-tags" v-if="profile.tags && profile.tags.length">
-          <text v-for="t in profile.tags" :key="t" class="pf-tag">{{ t }}</text>
-        </view>
-        <view class="pf-line" v-if="profile.parentName">家长：{{ profile.parentName }} <text v-if="profile.parentPhone" class="pf-dial" @click="dial(profile.parentPhone)">📞 拨号</text></view>
-        <view class="pf-note" v-if="profile.note">备注：{{ profile.note }}</view>
-        <canvas type="2d" id="radarCanvas" class="radar"></canvas>
-        <view class="pf-stats">
-          <view class="pf-st"><text class="pf-n">{{ radar.avg }}</text><text class="pf-l">成绩均分</text></view>
-          <view class="pf-st"><text class="pf-n">{{ radar.attRate }}%</text><text class="pf-l">出勤率</text></view>
-          <view class="pf-st"><text class="pf-n">{{ radar.behScore }}</text><text class="pf-l">行为活跃</text></view>
-        </view>
-        <view class="pf-tip">雷达基于成绩 / 考勤 / 行为观察数据自动生成（0–100）。</view>
-        <view class="pf-comment" v-if="profile.comment">
-          <text class="pf-cm-h">📝 评语</text>
-          <text class="pf-cm-t">{{ profile.comment }}</text>
-        </view>
-        <view class="pf-comment" v-else-if="profile.id">
-          <text class="pf-cm-h">📝 评语</text>
-          <text class="pf-cm-t pf-cm-empty">暂无评语</text>
+      <view class="dialog dialog-profile" @click.stop>
+        <view class="dp-scroll">
+          <view class="d-title">{{ profile.name }} 的档案</view>
+          <view class="pf-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}<text v-if="profile.duty"> · {{ profile.duty }}</text></view>
+          <view class="pf-line" v-if="profile.birthDate">🎂 生日：{{ profile.birthDate }}</view>
+          <view class="pf-line" v-if="profile.seatRow">座位：座号 {{ profile.seatNo || '—' }}（第{{ profile.seatRow }}行第{{ profile.seatCol }}列）</view>
+          <view class="pf-composite" :class="levelClass">
+            <text class="pf-c-n">{{ radar.composite }}</text>
+            <text class="pf-c-l">综合能力评分 · {{ radar.level }}</text>
+          </view>
+          <view class="pf-tags" v-if="profile.tags && profile.tags.length">
+            <text v-for="t in profile.tags" :key="t" class="pf-tag">{{ t }}</text>
+          </view>
+          <view class="pf-line" v-if="profile.parentName">家长：{{ profile.parentName }} <text v-if="profile.parentPhone" class="pf-dial" @click="dial(profile.parentPhone)">📞 拨号</text></view>
+          <view class="pf-note" v-if="profile.note">备注：{{ profile.note }}</view>
+          <canvas type="2d" id="radarCanvas" class="radar"></canvas>
+          <view class="pf-stats">
+            <view class="pf-st"><text class="pf-n">{{ radar.avg }}</text><text class="pf-l">成绩均分</text></view>
+            <view class="pf-st"><text class="pf-n">{{ radar.attRate }}%</text><text class="pf-l">出勤率</text></view>
+            <view class="pf-st"><text class="pf-n">{{ radar.behScore }}</text><text class="pf-l">行为活跃</text></view>
+          </view>
+          <view class="pf-tip">雷达基于成绩 / 考勤 / 行为观察数据自动生成（0–100）。</view>
+          <view class="pf-comment" v-if="profile.comment">
+            <text class="pf-cm-h">📝 评语</text>
+            <text class="pf-cm-t">{{ profile.comment }}</text>
+          </view>
+          <view class="pf-comment" v-else-if="profile.id">
+            <text class="pf-cm-h">📝 评语</text>
+            <text class="pf-cm-t pf-cm-empty">暂无评语</text>
+          </view>
         </view>
         <view class="pf-acts">
           <button class="btn-gen" :disabled="genCommentLoading" @click="genComment(profile)">{{ genCommentLoading ? '生成中…' : '🤖 AI 生成本学期评语' }}</button>
@@ -313,6 +320,24 @@ function toggleForm() {
 
 function toggleImport() {
   showImport.value = !showImport.value
+}
+
+// 批量操作：全选 / 取消全选
+function selectAll() { selected.value = new Set(shown.value.map((s) => s.id)) }
+function deselectAll() { selected.value = new Set() }
+
+// 批量授权/取消授权家长
+async function batchAuthParent(enabled) {
+  const ids = [...selected.value]
+  if (!ids.length) return uni.showToast({ title: '请先选择学生', icon: 'none' })
+  uni.showLoading({ title: enabled ? '授权中…' : '取消授权中…', mask: true })
+  try {
+    const { success, failed } = await batchRun(ids.map((id) => api.patch('/students/' + id, { parentLoginEnabled: enabled })))
+    uni.hideLoading()
+    uni.showToast({ title: `操作完成：成功 ${success} 条${failed ? '，失败 ' + failed + ' 条' : ''}`, icon: 'none' })
+    selected.value = new Set()
+    load()
+  } catch (e) { uni.hideLoading(); uni.showToast({ title: '操作失败', icon: 'none' }) }
 }
 
 function toggleSel(s) {
@@ -684,6 +709,8 @@ function drawRadar() {
 .top { display: flex; justify-content: space-between; align-items: center; }
 .name { font-size: 32rpx; font-weight: 600; color: var(--c-text); }
 .no { color: var(--c-sub); font-size: 24rpx; }
+.auth-badge { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 8rpx; background: #f0f0f0; color: var(--c-sub); flex-shrink: 0; }
+.auth-badge.on { background: #e8f5e9; color: #43a047; }
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .duty { color: #409eff; }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
@@ -717,6 +744,9 @@ function drawRadar() {
 .confirm[disabled] { opacity: 0.5; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .dialog { width: 86%; max-width: 640rpx; max-height: 80vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+/* 学生档案弹窗：内容滚动，底部按钮固定 */
+.dialog-profile { display: flex; flex-direction: column; padding: 0; max-height: 82vh; overflow: hidden; }
+.dp-scroll { padding: 36rpx 36rpx 0; overflow-y: auto; flex: 1; }
 .d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
 .d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }

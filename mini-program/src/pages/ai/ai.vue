@@ -628,6 +628,9 @@ onUnload(() => saveSessions())
 
 /* 顶部导航 */
 .nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;

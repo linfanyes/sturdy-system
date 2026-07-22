@@ -28,7 +28,7 @@
           "WECHAT_SECRET": "your_wechat_secret",
           "DEFAULT_SUBJECTS": "语文,数学,英语,科学,品德,音乐,美术,体育,综合实践,信息技术",
           "LOGIN_CODE": "1314520",
-          "AI_BASE_URL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "AI_BASE_URL": "https://llm-vd2v208bfoq2g7cm.cn-beijing.maas.aliyuncs.com/api/v1",
           "AI_API_KEY": "CHANGE_TO_YOUR_AI_KEY_OR_LEAVE_EMPTY",
           "AI_TEXT_MODEL": "qwen3.7-plus",
           "AI_VISION_MODEL": "qwen3-vl-plus",

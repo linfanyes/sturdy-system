@@ -200,7 +200,7 @@ import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FO
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
   '阿里百炼（通义千问）': {
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    baseUrl: 'https://llm-vd2v208bfoq2g7cm.cn-beijing.maas.aliyuncs.com/api/v1',
     textModels: ['qwen3.7-plus', 'qwen3-max', 'qwen3-turbo'],
     visionModels: ['qwen3-vl-plus', 'qwen3-vl-max'],
     imageModels: [],
@@ -237,7 +237,7 @@ const DEFAULT_SYSTEM_PROMPT =
 
 // 根据 baseUrl 反查当前服务商索引
 function detectProvider(baseUrl) {
-  if (baseUrl && baseUrl.includes('dashscope.aliyuncs.com')) return 0
+  if (baseUrl && (baseUrl.includes('dashscope.aliyuncs.com') || baseUrl.includes('maas.aliyuncs.com'))) return 0
   if (baseUrl && baseUrl.includes('api.deepseek.com')) return 1
   if (baseUrl && baseUrl.includes('open.bigmodel.cn')) return 2
   return 3
