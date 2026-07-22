@@ -81,6 +81,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
+import { pickAndCompressImage } from '../../common/image'
 
 const cats = ['教学反思', '班会记录', '学习资料', '其他']
 const catMap = { 教学反思: 'reflection', 班会记录: 'meeting', 学习资料: 'material', 其他: 'etc' }
@@ -284,55 +285,53 @@ function pickImage() {
 }
 
 // 识别图片中的文字并插入正文
-function pickImageOcr() {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    success: async (res) => {
-      const path = res.tempFilePaths[0]
-      uni.showLoading({ title: '识别中…' })
-      try {
-        const fs = uni.getFileSystemManager()
-        const data = fs.readFileSync(path, 'base64')
-        const r = await api.post('/ai/parse-file', { fileName: 'image.jpg', fileData: data })
-        if (r.text && r.text !== '未识别到文字') {
-          form.value.content += (form.value.content ? '\n' : '') + r.text
-          uni.showToast({ title: '文字已提取', icon: 'success' })
-        } else {
-          uni.showToast({ title: '未识别到文字', icon: 'none' })
-        }
-      } catch (e) {
-        uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
-      } finally {
-        uni.hideLoading()
+async function pickImageOcr() {
+  try {
+    const res = await pickAndCompressImage({ count: 1 })
+    const path = res.tempFiles[0].tempFilePath
+    uni.showLoading({ title: '识别中…' })
+    try {
+      const fs = uni.getFileSystemManager()
+      const data = fs.readFileSync(path, 'base64')
+      const r = await api.post('/ai/parse-file', { fileName: 'image.jpg', fileData: data })
+      if (r.text && r.text !== '未识别到文字') {
+        form.value.content += (form.value.content ? '\n' : '') + r.text
+        uni.showToast({ title: '文字已提取', icon: 'success' })
+      } else {
+        uni.showToast({ title: '未识别到文字', icon: 'none' })
       }
-    },
-  })
+    } catch (e) {
+      uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
+    } finally {
+      uni.hideLoading()
+    }
+  } catch (e) {
+    // 取消选择
+  }
 }
 
 // 把图片作为附件直接插入笔记
-function pickImageInsert() {
-  uni.chooseImage({
-    count: 9,
-    sizeType: ['compressed'],
-    success: async (res) => {
-      const paths = res.tempFilePaths
-      uni.showLoading({ title: '插入图片…' })
-      try {
-        const fs = uni.getFileSystemManager()
-        for (const p of paths) {
-          const ext = p.split('.').pop() || 'jpeg'
-          const data = fs.readFileSync(p, 'base64')
-          form.value.images.push('data:image/' + ext + ';base64,' + data)
-        }
-        uni.showToast({ title: '已插入 ' + paths.length + ' 张图片', icon: 'success' })
-      } catch (e) {
-        uni.showToast({ title: '插入失败:' + (e.message || ''), icon: 'none' })
-      } finally {
-        uni.hideLoading()
+async function pickImageInsert() {
+  try {
+    const res = await pickAndCompressImage({ count: 9 })
+    const paths = res.tempFiles.map((f) => f.tempFilePath)
+    uni.showLoading({ title: '插入图片…' })
+    try {
+      const fs = uni.getFileSystemManager()
+      for (const p of paths) {
+        const ext = p.split('.').pop() || 'jpeg'
+        const data = fs.readFileSync(p, 'base64')
+        form.value.images.push('data:image/' + ext + ';base64,' + data)
       }
-    },
-  })
+      uni.showToast({ title: '已插入 ' + paths.length + ' 张图片', icon: 'success' })
+    } catch (e) {
+      uni.showToast({ title: '插入失败:' + (e.message || ''), icon: 'none' })
+    } finally {
+      uni.hideLoading()
+    }
+  } catch (e) {
+    // 取消选择
+  }
 }
 
 // 删除已插入的图片
@@ -347,29 +346,28 @@ function previewImg(urls, idx) {
 
 // 图片识文（OCR）
 async function pickOcr() {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    success: async (res) => {
-      const path = res.tempFilePaths[0]
-      uni.showLoading({ title: '识别中…' })
-      try {
-        const fs = uni.getFileSystemManager()
-        const data = fs.readFileSync(path, 'base64')
-        const r = await api.post('/ai/ocr', { image: data })
-        if (r.text && r.text !== '未识别到文字') {
-          form.value.content += (form.value.content ? '\n' : '') + r.text
-          uni.showToast({ title: '文字已提取', icon: 'success' })
-        } else {
-          uni.showToast({ title: '未识别到文字', icon: 'none' })
-        }
-      } catch (e) {
-        uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
-      } finally {
-        uni.hideLoading()
+  try {
+    const res = await pickAndCompressImage({ count: 1 })
+    const path = res.tempFiles[0].tempFilePath
+    uni.showLoading({ title: '识别中…' })
+    try {
+      const fs = uni.getFileSystemManager()
+      const data = fs.readFileSync(path, 'base64')
+      const r = await api.post('/ai/ocr', { image: data })
+      if (r.text && r.text !== '未识别到文字') {
+        form.value.content += (form.value.content ? '\n' : '') + r.text
+        uni.showToast({ title: '文字已提取', icon: 'success' })
+      } else {
+        uni.showToast({ title: '未识别到文字', icon: 'none' })
       }
-    },
-  })
+    } catch (e) {
+      uni.showToast({ title: '识别失败:' + (e.message || ''), icon: 'none' })
+    } finally {
+      uni.hideLoading()
+    }
+  } catch (e) {
+    // 取消选择
+  }
 }
 
 const isMd = (c) => /^#{1,6}\s|^\s*[-*]\s|\*\*|\[.+\]\(|```|^\s*>\s/.test(c || '')

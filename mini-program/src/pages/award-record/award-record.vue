@@ -71,6 +71,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
+import { pickAndCompressImage } from '../../common/image'
 
 const levels = ['国家级', '省级', '市级', '区级', '校级', '其他']
 const list = ref([])
@@ -115,21 +116,20 @@ function step(n) {
   if (v > 100) v = 100
   form.value.ratingScore = v
 }
-function upload() {
-  uni.chooseMedia({
-    count: 1,
-    mediaType: ['image'],
-    success: (res) => {
-      const p = res.tempFiles[0].tempFilePath
-      const ext = p.split('.').pop() || 'jpeg'
-      uni.getFileSystemManager().readFile({
-        filePath: p,
-        encoding: 'base64',
-        success: (r) => { form.value.image = 'data:image/' + ext + ';base64,' + r.data },
-        fail: () => uni.showToast({ title: '读取失败', icon: 'none' }),
-      })
-    },
-  })
+async function upload() {
+  try {
+    const res = await pickAndCompressImage({ count: 1 })
+    const p = res.tempFiles[0].tempFilePath
+    const ext = p.split('.').pop() || 'jpeg'
+    uni.getFileSystemManager().readFile({
+      filePath: p,
+      encoding: 'base64',
+      success: (r) => { form.value.image = 'data:image/' + ext + ';base64,' + r.data },
+      fail: () => uni.showToast({ title: '读取失败', icon: 'none' }),
+    })
+  } catch (e) {
+    uni.showToast({ title: '取消选择', icon: 'none' })
+  }
 }
 function preview(src) {
   if (src) uni.previewImage({ urls: [src] })

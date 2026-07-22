@@ -21,7 +21,7 @@ export class WechatService {
     }
     const url =
       `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}` +
-      `&secret=${secret}&js_code=${code}&grant_type=authorization_code`
+      `&secret=${secret}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`
     const { data } = await axios.get(url, { httpsAgent: tlsAgent })
     if (data.errcode) {
       throw new BadRequestException(`微信登录失败: ${data.errmsg}`)

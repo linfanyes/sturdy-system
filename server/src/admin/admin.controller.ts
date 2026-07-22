@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query } from '@nestjs/common'
 import { AdminService } from './admin.service'
 import { SuperAdminGuard } from './super-admin.guard'
 
@@ -14,7 +14,9 @@ export class AdminController {
   /* ===== 学校管理（超管维护学校与主键编号） ===== */
   @Get('schools')
   @UseGuards(SuperAdminGuard)
-  listSchools() { return this.svc.listSchools() }
+  listSchools(@Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listSchools(Number(skip) || 0, Number(take) || 100)
+  }
 
   @Post('schools')
   @UseGuards(SuperAdminGuard)
@@ -31,7 +33,9 @@ export class AdminController {
   /* ===== 学校管理员管理（超管只管理学校管理员） ===== */
   @Get('school-admins')
   @UseGuards(SuperAdminGuard)
-  listAdmins() { return this.svc.listAdmins() }
+  listAdmins(@Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listAdmins(Number(skip) || 0, Number(take) || 100)
+  }
 
   @Post('school-admins')
   @UseGuards(SuperAdminGuard)
@@ -56,4 +60,8 @@ export class AdminController {
   @Delete('school-admins/:id')
   @UseGuards(SuperAdminGuard)
   deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
+
+  @Post('reset-all')
+  @UseGuards(SuperAdminGuard)
+  resetAll() { return this.svc.resetAll() }
 }

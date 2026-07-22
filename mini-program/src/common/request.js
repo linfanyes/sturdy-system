@@ -107,7 +107,14 @@ export function request(path, method = 'GET', data = {}, token) {
 }
 
 export const api = {
-  get: (p) => request(p),
+  get: async (p) => {
+    const data = await request(p)
+    // 兼容 { items, total } 格式：自动解包为数组（所有旧代码不感知）
+    if (data && typeof data === 'object' && !Array.isArray(data) && Array.isArray(data.items)) {
+      return data.items
+    }
+    return data
+  },
   post: (p, d) => request(p, 'POST', d),
   // 后端个人资料/AI配置等更新接口用 @Put，必须发 PUT（不要改发 PATCH，否则 404/405）
   put: (p, d) => request(p, 'PUT', d),
@@ -129,7 +136,8 @@ export const api = {
     }
     try {
       const data = await request(p)
-      return Array.isArray(data) ? data : (data && data.list) || []
+      // 兼容纯数组 / { list: [] } / { items: [], total: N } 三种格式
+      return Array.isArray(data) ? data : (data && (data.items || data.list)) || []
     } catch (e) {
       if (!silent) uni.showToast({ title: e.message || '加载失败', icon: 'none' })
       return []

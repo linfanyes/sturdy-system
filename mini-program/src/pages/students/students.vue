@@ -52,13 +52,16 @@
     </view>
 
     <view v-if="showForm" class="form">
+      <picker :range="classOptions" :value="classIdx" @change="onClassPick">
+        <view class="picker">所属班级：{{ classOptions[classIdx] || '请选择班级' }}</view>
+      </picker>
       <input v-model="form.name" placeholder="姓名" />
       <picker :range="['男', '女']" :value="['男','女'].indexOf(form.gender)" @change="(e) => (form.gender = ['男', '女'][e.detail.value])">
         <view class="picker">性别：{{ form.gender }}</view>
       </picker>
       <input v-model="form.studentNo" placeholder="学号" />
       <input v-model="form.parentName" placeholder="家长姓名" />
-      <input v-model="form.parentPhone" placeholder="家长电话" />
+      <input v-model="form.parentPhone" placeholder="家长电话" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text>
       <input v-model="form.duty" placeholder="班级职务（如 班长/课代表）" />
       <picker mode="date" :value="form.birthDate" @change="(e) => (form.birthDate = e.detail.value)">
         <view class="picker">🎂 生日：{{ form.birthDate || '请选择日期（可选）' }}</view>
@@ -70,6 +73,7 @@
 
     <view v-if="showImport" class="form import-box">
       <view class="imp-title">批量导入学生</view>
+      <view class="imp-target">导入到：<text class="imp-class">{{ className || '请先选择班级' }}</text></view>
       <view class="imp-tip">支持 Excel(.xlsx/.xls) 或 TXT/CSV，每行：姓名,性别,学号,家长姓名,家长电话</view>
       <button class="tpl" @click="showTpl = true">📄 下载/查看模板</button>
       <button class="pick" @click="pickFile">📂 选择文件</button>
@@ -148,7 +152,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onLoad, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { isPhone, isStudentNo } from '../../common/validators'
-import { theme, flushTabBarStyle } from '../../common/store'
+import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
 import { compressImage } from '../../common/image'
 
@@ -156,6 +160,24 @@ const classId = ref('')
 const className = ref('')
 const list = ref([])
 const kw = ref('')
+// 班级下拉列表
+const classList = ref([])
+const classIdx = ref(0)
+const classOptions = computed(() => classList.value.map(c => c.name))
+const saving = ref(false)
+const phoneError = ref('')
+
+const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' })
+
+onLoad(() => {
+  // 从 switchTabParams 读取班级参数（由 classes.vue 通过 switchTab 跳转时设置）
+  const p = switchTabParams.students
+  if (p && p.classId) {
+    classId.value = p.classId
+    className.value = p.name || '学生管理'
+    delete switchTabParams.students
+  }
+})
 // P2-2: 搜索关键词防抖（200ms），避免每次输入立即触发 computed 重新过滤
 const kwDebounced = ref('')
 let kwTimer = null
@@ -243,18 +265,33 @@ const levelClass = computed(() => {
   const c = radar.value.composite
   return c >= 85 ? 'lv-excellent' : c >= 70 ? 'lv-good' : c >= 60 ? 'lv-mid' : 'lv-low'
 })
-const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' })
-const saving = ref(false)
-
-onLoad((q) => {
-  classId.value = q.classId
-  className.value = q.name || '学生管理'
-})
 
 async function load() {
-  // 服务端按 classId 过滤，避免拉全量再前端 filter
-  list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: true, loadingText: '加载学生' })
+  // 首次加载时若没有 classId，从 switchTabParams 读取或取第一个班级
+  if (!classId.value) {
+    const p = switchTabParams.students
+    if (p && p.classId) {
+      classId.value = p.classId
+      className.value = p.name || '学生管理'
+      delete switchTabParams.students
+    } else {
+      // 直接点 Tab 进入的，自动加载班级列表并用第一个
+      await loadClasses()
+      if (classList.value.length) {
+        classId.value = classList.value[0].id
+        className.value = classList.value[0].name
+      }
+    }
+  }
+  // 服务端按 classId 过滤
+  if (classId.value) {
+    list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: true, loadingText: '加载学生' })
+  }
   resetPage()
+}
+
+async function loadClasses() {
+  try { classList.value = await api.get('/classes') || [] } catch (e) { classList.value = [] }
 }
 onShow(load)
 onShow(() => flushTabBarStyle())
@@ -326,14 +363,32 @@ function exportCsv() {
   copyText('\uFEFF' + head + '\n' + body)
 }
 
+function checkPhone() {
+  if (form.value.parentPhone && !isPhone(form.value.parentPhone)) {
+    phoneError.value = '家长电话格式错误，应为 11 位手机号'
+  } else {
+    phoneError.value = ''
+  }
+}
+
+function onClassPick(e) {
+  classIdx.value = e.detail.value
+  const c = classList.value[classIdx.value]
+  if (c) {
+    classId.value = c.id
+    className.value = c.name
+  }
+}
+
 async function save() {
+  if (phoneError.value) return uni.showToast({ title: phoneError.value, icon: 'none' })
   if (saving.value) return
   if (!form.value.name.trim()) return uni.showToast({ title: '请填写姓名', icon: 'none' })
   if (form.value.gender !== '男' && form.value.gender !== '女')
     return uni.showToast({ title: '请选择性别', icon: 'none' })
   if (!isStudentNo(form.value.studentNo)) return uni.showToast({ title: '学号格式错误（仅字母数字，2-32位）', icon: 'none' })
   if (form.value.parentPhone && !isPhone(form.value.parentPhone)) return uni.showToast({ title: '家长电话格式错误（应为 11 位手机号）', icon: 'none' })
-  if (!classId.value) return uni.showToast({ title: '班级信息缺失，请重新进入', icon: 'none' })
+  if (!classId.value) return uni.showToast({ title: '请先选择所属班级', icon: 'none' })
   saving.value = true
   try {
     // 显式构造 payload，只发送实体所需字段，空字符串转为 null 避免数据库约束问题
@@ -465,6 +520,22 @@ function readAsBase64(path) {
 async function commit() {
   const items = preview.value.rows.filter((r) => r.valid)
   if (!items.length) return
+  // 校验班级选择：若 classId 为空则尝试第一个班级
+  if (!classId.value) {
+    if (classList.value.length) {
+      classId.value = classList.value[0].id
+      className.value = classList.value[0].name
+    } else {
+      await loadClasses()
+      if (classList.value.length) {
+        classId.value = classList.value[0].id
+        className.value = classList.value[0].name
+      } else {
+        uni.showToast({ title: '请先创建班级再导入学生', icon: 'none' })
+        return
+      }
+    }
+  }
   uni.showLoading({ title: '导入中…' })
   try {
     const r = await api.post('/students/import-commit', { classId: classId.value, items })
@@ -624,8 +695,11 @@ function drawRadar() {
 .form { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .form input, .picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); width: 100%; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.field-err { display:block; font-size:22rpx; color:#e64340; margin-top:4rpx; }
 .import-box { background: var(--c-card2); }
 .imp-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.imp-target { font-size: 24rpx; color: var(--c-sub); margin-bottom: 12rpx; }
+.imp-class { color: var(--c-accent); font-weight: 600; }
 .imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .tpl, .pick { background: var(--c-card); color: #2a6fbb; border: 1px solid var(--c-border); border-radius: 50rpx; font-size: 28rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; }
 .pick { background: #409eff; color: #fff; border: none; }
@@ -642,7 +716,7 @@ function drawRadar() {
 .confirm { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .confirm[disabled] { opacity: 0.5; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.dialog { width: 620rpx; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+.dialog { width: 86%; max-width: 640rpx; max-height: 80vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
 .d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
 .d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
 .d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }

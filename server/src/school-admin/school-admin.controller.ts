@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query } from '@nestjs/common'
 import { SchoolAdminService } from './school-admin.service'
 import { SchoolAdminGuard } from './school-admin.guard'
 import { CurrentSchoolAdmin } from './current-school-admin.decorator'
@@ -12,9 +12,15 @@ export class SchoolAdminController {
     return this.svc.login(b?.username || '', b?.password || '')
   }
 
+  @Get('dashboard')
+  @UseGuards(SchoolAdminGuard)
+  dashboard(@CurrentSchoolAdmin() a: any) { return this.svc.dashboard(a.schoolId) }
+
   @Get('teachers')
   @UseGuards(SchoolAdminGuard)
-  listTeachers(@CurrentSchoolAdmin() a: any) { return this.svc.listTeachers(a.schoolId) }
+  listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200)
+  }
 
   @Post('teachers')
   @UseGuards(SchoolAdminGuard)

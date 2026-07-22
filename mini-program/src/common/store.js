@@ -89,6 +89,9 @@ export const mockMode = reactive({
   enabled: uni.getStorageSync(MOCK_KEY) === 'true',
 })
 
+// tabBar 页面之间传递参数（uni.switchTab 不支持 URL 参数，通过此桥接）
+export const switchTabParams = reactive({})
+
 // 家长端登录态（与教师端隔离，各自独立存储）
 export const parent = reactive({
   token: uni.getStorageSync(PARENT_TOKEN_KEY) || '',

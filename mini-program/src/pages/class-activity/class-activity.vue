@@ -41,6 +41,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
+import { pickAndCompressImage } from '../../common/image'
 
 const classes = ref([])
 const classId = ref('')
@@ -75,20 +76,21 @@ onPullDownRefresh(async () => {
 })
 function pickClass(ev) { classId.value = classes.value[ev.detail.value].id; loadList() }
 
-function pickImg() {
-  uni.chooseMedia({
-    count: 9, mediaType: ['image'], success: (res) => {
-      res.tempFiles.forEach((f) => {
-        uni.getFileSystemManager().readFile({
-          filePath: f.tempFilePath, encoding: 'base64',
-          success: (r) => {
-            const ext = f.tempFilePath.split('.').pop() || 'png'
-            form.value.photos.push('data:image/' + ext + ';base64,' + r.data)
-          },
-        })
+async function pickImg() {
+  try {
+    const res = await pickAndCompressImage({ count: 9 })
+    res.tempFiles.forEach((f) => {
+      uni.getFileSystemManager().readFile({
+        filePath: f.tempFilePath, encoding: 'base64',
+        success: (r) => {
+          const ext = f.tempFilePath.split('.').pop() || 'png'
+          form.value.photos.push('data:image/' + ext + ';base64,' + r.data)
+        },
       })
-    },
-  })
+    })
+  } catch (e) {
+    // 取消选择
+  }
 }
 async function add() {
   if (saving.value) return

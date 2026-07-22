@@ -35,7 +35,8 @@
       </view>
       <input v-model="form.parentName" class="inp" placeholder="家长姓名" />
       <input v-model="form.relation" class="inp" placeholder="关系（父/母/其他）" />
-      <input v-model="form.phone" class="inp" placeholder="电话" />
+      <input v-model="form.phone" class="inp" placeholder="电话" @blur="checkPhone" />
+      <text v-if="phoneError" class="field-err">{{ phoneError }}</text>
       <input v-model="form.wechat" class="inp" placeholder="微信" />
       <textarea v-model="form.content" class="inp area" placeholder="沟通内容" />
       <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存' }}</button>
@@ -136,6 +137,15 @@ const classIdx = ref(0)
 // 新增表单中选中的班级下标（-1 未选）
 const formClassIdx = ref(-1)
 const form = ref({ studentName: '', parentName: '', relation: '', phone: '', wechat: '', content: '' })
+const phoneError = ref('')
+
+function checkPhone() {
+  if (form.value.phone && !isPhone(form.value.phone)) {
+    phoneError.value = '手机号格式错误（11 位）'
+  } else {
+    phoneError.value = ''
+  }
+}
 
 const classOptions = computed(() => [
   { label: '全部', value: '' },
@@ -193,8 +203,12 @@ async function add() {
   if (formClassIdx.value < 0 || !classList.value[formClassIdx.value]) {
     return uni.showToast({ title: '请选择班级', icon: 'none' })
   }
+  if (form.value.phone && !isPhone(form.value.phone)) {
+    phoneError.value = '手机号格式错误（11 位）'
+    return uni.showToast({ title: phoneError.value, icon: 'none' })
+  }
+  phoneError.value = ''
   const cls = classList.value[formClassIdx.value]
-  if (form.value.phone && !isPhone(form.value.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
   saving.value = true
   try {
     const r = await api.post('/parent-contacts', {
@@ -274,6 +288,7 @@ async function del(p) {
 .inp.picker { color: var(--c-title); line-height: 44rpx; }
 .area { height: 110rpx; }
 .ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
+.field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .picker-val, .dark .list, .dark .sheet { background: var(--c-card); color: var(--c-title); border-color: var(--c-border); }

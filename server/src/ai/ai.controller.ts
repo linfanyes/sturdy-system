@@ -38,6 +38,9 @@ export class AiController {
       res.write(
         `data: ${JSON.stringify({ error: e?.message || 'AI 调用失败' })}\n\n`,
       )
+      res.write('data: [DONE]\n\n')
+      res.end()
+      return
     }
     res.write('data: [DONE]\n\n')
     res.end()

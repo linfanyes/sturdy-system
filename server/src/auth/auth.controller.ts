@@ -30,6 +30,12 @@ export class AuthController {
     return this.auth.bindWechatParent(b?.code || '', b?.studentNo || '')
   }
 
+  /** 微信统一绑定：输入教师编号或学生学号，自动判别身份 */
+  @Post('bind-by-number')
+  bindByNumber(@Body() b: { code?: string; number?: string; nickName?: string }) {
+    return this.auth.bindByNumber(b?.code || '', b?.number || '', b?.nickName || '')
+  }
+
   /** 教师密码登录（已由学校管理员绑定学校） */
   @Post('password-login')
   passwordLogin(@Body() b: { username?: string; password?: string }) {

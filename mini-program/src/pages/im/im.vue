@@ -65,6 +65,7 @@ import TIM from 'tim-wx-sdk'
 import TIMUploadPlugin from 'tim-upload-plugin'
 import { theme, auth } from '../../common/store'
 import api from '../../common/request'
+import { pickAndCompressImage } from '../../common/image'
 
 const dark = computed(() => theme.mode === 'dark')
 
@@ -367,25 +368,25 @@ async function sendImage() {
   }
   const conv = convList.value.find((c) => c.id === activeConvId.value)
   if (!conv) return
-  uni.chooseImage({
-    count: 1,
-    success: async (res) => {
-      try {
-        const msg = tim.createImageMessage({
-          to: conv.to,
-          conversationType: conv.type,
-          payload: { file: res },
-          onProgress: () => {},
-        })
-        await tim.sendMessage(msg)
-        conv.messages.push(normMsg(msg))
-        conv.lastText = '[图片]'
-        scrollToBottom()
-      } catch (e) {
-        uni.showToast({ title: '图片发送失败', icon: 'none' })
-      }
-    },
-  })
+  try {
+    const pickRes = await pickAndCompressImage({ count: 1 })
+    const fileRes = {
+      tempFilePaths: pickRes.tempFiles.map((f) => f.tempFilePath),
+      tempFiles: pickRes.tempFiles,
+    }
+    const msg = tim.createImageMessage({
+      to: conv.to,
+      conversationType: conv.type,
+      payload: { file: fileRes },
+      onProgress: () => {},
+    })
+    await tim.sendMessage(msg)
+    conv.messages.push(normMsg(msg))
+    conv.lastText = '[图片]'
+    scrollToBottom()
+  } catch (e) {
+    uni.showToast({ title: '图片发送失败', icon: 'none' })
+  }
 }
 
 function previewImg(url) {

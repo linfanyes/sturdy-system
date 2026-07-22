@@ -14,49 +14,6 @@
   </view>
 
     <view class="card">
-      <view class="card-title">📆 学期管理</view>
-      <view class="row">
-        <view class="row-text">
-          <text class="row-name">当前学期：{{ currentSemesterName || '未设置' }}</text>
-          <text class="row-sub">{{ currentSemesterName ? currentSemester.startDate + ' ~ ' + currentSemester.endDate : '点击右侧按钮自动生成当前日期的学期' }}</text>
-        </view>
-        <text class="sem-add" @click="autoAddSemester">＋ 添加当前学期</text>
-      </view>
-      <view class="sem-list" v-if="semesters.length">
-        <view class="sem-row" v-for="s in semesters" :key="s.id">
-          <view class="sem-info">
-            <text class="sem-name" :class="{ cur: s.current }">{{ s.name }}{{ s.current ? ' ✓' : '' }}</text>
-            <text class="sem-date">{{ s.startDate }} ~ {{ s.endDate }}</text>
-          </view>
-          <view class="sem-acts">
-            <text v-if="!s.current" class="sem-act" @click="setCurrent(s)">设为当前</text>
-            <text class="sem-act del" @click="delSemester(s)">删除</text>
-          </view>
-        </view>
-      </view>
-      <view v-if="showSem" class="sem-edit">
-        <view class="sem-field">
-          <text class="sem-label">学年</text>
-          <picker :range="yearOpts" :value="yearIdx" @change="onYearPick">
-            <view class="inp-sm pick-view">{{ yearOpts[yearIdx] }}年</view>
-          </picker>
-        </view>
-        <view class="sem-field">
-          <text class="sem-label">学期</text>
-          <view class="sem-seasons">
-            <text class="sem-season" :class="semForm.season === '春季' && 'on'" @click="onSeasonPick('春季')">春季</text>
-            <text class="sem-season" :class="semForm.season === '秋季' && 'on'" @click="onSeasonPick('秋季')">秋季</text>
-          </view>
-        </view>
-        <view class="sem-preview">学期名称：{{ semForm.name || '请选择' }}</view>
-        <view class="sem-ebtn">
-          <text class="sem-cancel" @click="showSem=false">取消</text>
-          <text class="sem-ok" @click="saveSemester">{{ editingSem ? '更新' : '添加' }}</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="card">
       <view class="card-title">AI 配置（密钥仅存后端）</view>
       <view class="field">
         <text class="label">服务商</text>
@@ -164,19 +121,6 @@
       </view>
     </view>
 
-    <!-- 演示模式 -->
-    <view class="card">
-      <view class="card-title">🛝 演示模式</view>
-      <view class="row">
-        <view class="row-text">
-          <text class="row-name">启用演示模式</text>
-          <text class="row-sub">开启后所有数据使用本地模拟内容，无需后端即可预览全部功能。适合展示、试用场景。</text>
-        </view>
-        <switch :checked="mockMode.enabled" color="#e6a23c" @change="onMockMode" />
-      </view>
-      <view v-if="mockMode.enabled" class="hint" style="color:#e6a23c;">⚡ 演示模式已开启，数据不会影响真实后端。关闭后需重新登录。</view>
-    </view>
-
     <view class="card">
       <view class="card-title">平台配置（来自后端）</view>
       <view v-for="c in app" :key="c.key" class="kv">
@@ -250,8 +194,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api, { setMockMode } from '../../common/request'
-import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, mockMode, FONT_SIZES, SCHEMES, flushTabBarStyle } from '../../common/store'
+import api from '../../common/request'
+import { auth, setUser, logout, theme, setTheme, setFontSize, setColorScheme, FONT_SIZES, SCHEMES, flushTabBarStyle } from '../../common/store'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
@@ -306,109 +250,6 @@ const savingProfile = ref(false)
 const savingAi = ref(false)
 const showHelp = ref(false)
 const providerIdx = ref(0)
-
-// 学期管理
-const semesters = ref([])
-const showSem = ref(false)
-const editingSem = ref(null)
-const semForm = ref({ name: '', startDate: '', endDate: '', season: '春季', year: '' })
-const currentSemester = computed(() => semesters.value.find((s) => s.current) || null)
-const currentSemesterName = computed(() => currentSemester.value ? currentSemester.value.name : '')
-
-// 年份选项：近五年（当前年份前2年 ~ 后2年）
-const yearOpts = computed(() => {
-  const y = new Date().getFullYear()
-  return [y - 2, y - 1, y, y + 1, y + 2].map(String)
-})
-const yearIdx = ref(2) // 默认选中当前年份
-
-// 根据年份+季节生成学期名和日期
-function buildSemester(year, season) {
-  const name = year + '年' + season + '学期'
-  let startDate, endDate
-  if (season === '春季') {
-    startDate = year + '-02-17'
-    endDate = year + '-07-04'
-  } else {
-    startDate = year + '-09-01'
-    endDate = (Number(year) + 1) + '-01-15'
-  }
-  return { name, startDate, endDate }
-}
-function onYearPick(e) {
-  yearIdx.value = e.detail.value
-  const y = yearOpts.value[yearIdx.value]
-  const built = buildSemester(y, semForm.value.season)
-  semForm.value = { ...semForm.value, year: y, ...built }
-}
-function onSeasonPick(season) {
-  const y = yearOpts.value[yearIdx.value]
-  const built = buildSemester(y, season)
-  semForm.value = { ...semForm.value, season, year: y, ...built }
-}
-
-// 自动学期检测：上半年=春季，下半年=秋季
-function autoSemesterName() {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth() + 1
-  return m <= 6 ? y + '年春季学期' : y + '年秋季学期'
-}
-
-async function loadSemesters() {
-  try { semesters.value = await api.get('/semesters') } catch (e) { semesters.value = [] }
-  // 无当前学期时自动弹出添加对话框
-  if (!currentSemester.value) {
-    initSemForm()
-    showSem.value = true
-  }
-}
-function initSemForm() {
-  const now = new Date()
-  const y = String(now.getFullYear())
-  const m = now.getMonth() + 1
-  const season = m <= 6 ? '春季' : '秋季'
-  yearIdx.value = yearOpts.value.indexOf(y) >= 0 ? yearOpts.value.indexOf(y) : 2
-  const built = buildSemester(y, season)
-  semForm.value = { name: built.name, startDate: built.startDate, endDate: built.endDate, season, year: y }
-  editingSem.value = null
-}
-function autoAddSemester() {
-  initSemForm()
-  showSem.value = true
-}
-async function saveSemester() {
-  if (!semForm.value.name.trim()) return uni.showToast({ title: '请选择年份和学期', icon: 'none' })
-  try {
-    const payload = { name: semForm.value.name, startDate: semForm.value.startDate, endDate: semForm.value.endDate }
-    if (editingSem.value) {
-      await api.patch('/semesters/' + editingSem.value.id, payload)
-    } else {
-      // 新建学期时如果不存在当前学期，自动设为当前
-      await api.post('/semesters', { ...payload, current: !currentSemester.value })
-    }
-    showSem.value = false
-    await loadSemesters()
-    uni.showToast({ title: '已保存', icon: 'none' })
-  } catch (e) { uni.showToast({ title: '失败:' + (e.message || ''), icon: 'none' }) }
-}
-async function setCurrent(s) {
-  try {
-    // 清除所有 current
-    for (const sem of semesters.value) {
-      if (sem.current) await api.patch('/semesters/' + sem.id, { current: false })
-    }
-    await api.patch('/semesters/' + s.id, { current: true })
-    await loadSemesters()
-  } catch (e) { uni.showToast({ title: '失败', icon: 'none' }) }
-}
-async function delSemester(s) {
-  uni.showModal({ title: '删除学期', content: s.name, success: async (m) => {
-    if (!m.confirm) return
-    try { await api.del('/semesters/' + s.id); await loadSemesters() }
-    catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
-  }})
-}
 
 // 当前服务商的模型列表（computed）
 const currentTextModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].textModels)
@@ -502,7 +343,6 @@ function resetAiDefaults() {
 async function load() {
   const me = await api.get('/users/me')
   profile.value = { name: me.name, school: me.school, subjects: me.subjects || [] }
-  loadSemesters()
   const a = await api.get('/config/ai')
   // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
   const firstProvider = PROVIDER_PRESETS[PROVIDER_NAMES[0]]
@@ -537,19 +377,6 @@ function onFont(v) {
 function onScheme(v) {
   setColorScheme(v)
   uni.showToast({ title: '已切换主题色', icon: 'none' })
-}
-function onMockMode(e) {
-  const enabled = e.detail.value
-  mockMode.enabled = enabled
-  uni.setStorageSync('g_mock_mode', String(enabled))
-  setMockMode(enabled)
-  if (enabled) {
-    uni.showToast({ title: '演示模式已开启，请下拉刷新', icon: 'none' })
-  } else {
-    // 关闭演示模式 → 清除模拟 token → 跳登录
-    logout()
-    uni.reLaunch({ url: '/pages/login/login' })
-  }
 }
 async function saveProfile() {
   if (savingProfile.value) return
@@ -635,29 +462,6 @@ function doLogout() {
 .scheme-i { font-size: 22rpx; padding: 8rpx 16rpx; border-radius: 24rpx; color: #fff; opacity: 0.55; }
 .scheme-i.on { opacity: 1; box-shadow: 0 0 0 4rpx rgba(255,255,255,0.6); }
 .logout { background: var(--c-danger); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
-/* 学期管理 */
-.sem-add { font-size: 24rpx; color: #fff; background: var(--c-accent); padding: 8rpx 18rpx; border-radius: 20rpx; flex-shrink: 0; }
-.sem-list { margin-top: 14rpx; }
-.sem-row { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-top: 1px solid var(--c-border); }
-.sem-info { display: flex; flex-direction: column; }
-.sem-name { font-size: 28rpx; color: var(--c-title); }
-.sem-name.cur { color: var(--c-accent); font-weight: 700; }
-.sem-date { font-size: 22rpx; color: var(--c-sub); }
-.sem-acts { display: flex; gap: 18rpx; }
-.sem-act { font-size: 24rpx; color: var(--c-primary); }
-.sem-act.del { color: var(--c-danger); }
-.sem-edit { margin-top: 14rpx; padding: 16rpx; background: var(--c-card2); border-radius: 14rpx; }
-.inp-sm { width: 100%; border: 1px solid var(--c-border); border-radius: 10rpx; padding: 12rpx 14rpx; margin-bottom: 10rpx; font-size: 26rpx; box-sizing: border-box; }
-.pick-view { color: var(--c-title); background: var(--c-card); min-height: 44rpx; }
-.sem-field { margin-bottom: 14rpx; }
-.sem-label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
-.sem-seasons { display: flex; gap: 16rpx; }
-.sem-season { flex: 1; text-align: center; font-size: 28rpx; padding: 16rpx 0; border-radius: 12rpx; border: 2rpx solid var(--c-border); color: var(--c-sub); background: var(--c-card); }
-.sem-season.on { border-color: var(--c-accent); color: #fff; background: var(--c-accent); font-weight: 700; }
-.sem-preview { font-size: 26rpx; color: var(--c-title); margin: 10rpx 0; padding: 10rpx 14rpx; background: var(--c-card); border-radius: 10rpx; }
-.sem-ebtn { display: flex; gap: 14rpx; justify-content: flex-end; }
-.sem-cancel { font-size: 26rpx; color: var(--c-sub); padding: 10rpx 20rpx; }
-.sem-ok { font-size: 26rpx; color: #fff; background: var(--c-primary); padding: 10rpx 28rpx; border-radius: 20rpx; }
 .help-btn { background: var(--c-card); color: var(--c-accent); border: 1px solid var(--c-accent); border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 /* P2-1: 使用帮助弹层 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }

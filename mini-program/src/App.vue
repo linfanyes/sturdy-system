@@ -6,6 +6,22 @@ import { CLOUDRUN_ENV } from './common/config'
 
 export default {
   onLaunch() {
+    // 屏蔽 uni-app 运行框架内置的 DCloud CDN 阴影图预加载（wx.preloadAssets）。
+    // 该预加载仅作性能优化，非页面实际渲染图；在无法访问 cdn1.dcloud.net.cn 的环境会
+    // 持续刷「渲染层网络层错误 / ERR_TIMED_OUT」且无任何功能影响。仅拦截此 CDN 的预加载，
+    // 其余 wx.preloadAssets 调用正常放行。
+    if (typeof wx !== 'undefined' && typeof wx.preloadAssets === 'function') {
+      const _preloadAssets = wx.preloadAssets
+      wx.preloadAssets = function (opts) {
+        if (
+          opts && Array.isArray(opts.data) &&
+          opts.data.some(d => d && typeof d.src === 'string' && d.src.indexOf('cdn1.dcloud.net.cn') > -1)
+        ) {
+          return
+        }
+        return _preloadAssets.call(wx, opts)
+      }
+    }
     // 初始化微信云托管私有链路：必须先 wx.cloud.init 才能调用 wx.cloud.callContainer，
     // 否则请求会一直挂起无回调（表现为登录超时 / Error: timeout）。
     if (typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.init === 'function') {
@@ -88,5 +104,56 @@ input, textarea {
 /* picker 内的 view 也需要撑满，避免点击区域过小 */
 picker {
   max-width: 100%;
+}
+
+/* ===================== 跨设备适配（安卓 / iOS / 华为 / 全面屏） ===================== */
+/* 1) 全局盒模型：避免 padding 把宽度撑破导致窄屏（华为小屏 / 大字号）横向溢出 */
+view, text, input, textarea, picker, image, scroll-view,
+button, navigator, swiper, swiper-item {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+/* 2) 页面级防横向滚动；关闭 iOS 横竖屏切换时的字体自动放大 */
+page {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* 3) 图片自适应：防止大图把页面撑宽 */
+image {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 4) 安全区工具类（刘海 / 挖孔屏 / 底部 Home 指示条 / 全面屏手势）
+   覆盖 iOS、华为（灵动岛 / 挖孔 / 药丸）、安卓全面屏；
+   无安全区机型 env() 返回 0，不影响布局。需避让安全区的容器自行添加 class。 */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-all {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 5) 全站通用底部组件统一避让安全区（无需逐页修改）。
+   这些组件均为各页 scoped 样式，普通全局选择器会被页面 scoped 覆盖，
+   故用 !important 保证全站一致生效。 */
+/* 底部抽屉 .modal（left/right 5%、bottom:0）：底部加安全区留白 */
+.modal {
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom)) !important;
+}
+/* 底部固定操作栏（如学生批量操作条 .batchbar） */
+.batchbar {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}
+/* 右下悬浮按钮 .fab：底部基准上移安全区高度 */
+.fab {
+  bottom: calc(60rpx + env(safe-area-inset-bottom)) !important;
+}
+
+/* 6) 字体缩放变量（与「设置-字体大小」小/标准/大 对齐）。
+   各页面根 view 可绑定 .fz-sm/.fz-md/.fz-lg 生效；此处给出全局默认值。 */
+page {
+  --fz-scale: 1;
 }
 </style>

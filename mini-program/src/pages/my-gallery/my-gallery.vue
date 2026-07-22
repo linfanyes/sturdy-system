@@ -76,6 +76,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import { pickAndCompressImage } from '../../common/image'
 
 const list = ref([])
 const showAdd = ref(false)
@@ -110,17 +111,16 @@ async function load() {
 onShow(load)
 onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 
-function pickImg() {
-  uni.chooseImage({
-    count: 9,
-    sizeType: ['compressed'],
-    success: (res) => {
-      res.tempFilePaths.forEach((p) => {
-        try { uni.getFileSystemManager().readFile({ filePath: p, encoding: 'base64', success: (r) => { form.value.photos.push('data:image/jpeg;base64,' + r.data) } }) }
-        catch (_) { form.value.photos.push(p) }
-      })
-    },
-  })
+async function pickImg() {
+  try {
+    const res = await pickAndCompressImage({ count: 9 })
+    res.tempFiles.forEach((p) => {
+      try { uni.getFileSystemManager().readFile({ filePath: p.tempFilePath, encoding: 'base64', success: (r) => { form.value.photos.push('data:image/jpeg;base64,' + r.data) } }) }
+      catch (_) { form.value.photos.push(p.tempFilePath) }
+    })
+  } catch (e) {
+    // 取消选择
+  }
 }
 
 async function saveAlbum() {

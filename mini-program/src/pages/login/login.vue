@@ -14,18 +14,8 @@
     <view class="mask" v-if="bindOpenid" @click.stop>
       <view class="sheet">
         <view class="sh-t">绑定账号</view>
-        <view class="sh-sub">请选择你的身份并填写对应信息完成绑定</view>
-        <view class="roles2">
-          <view class="r2" :class="bindRole==='teacher'?'on':''" @click="bindRole='teacher'">🧑‍🏫 我是老师</view>
-          <view class="r2" :class="bindRole==='parent'?'on':''" @click="bindRole='parent'">👨‍👩‍👧 我是家长</view>
-        </view>
-        <template v-if="bindRole==='teacher'">
-          <input v-model="bindUsername" class="inp" placeholder="教师用户名" placeholder-style="color:#b5a890;" confirm-type="next" @confirm="bindFocusPwd = true" />
-          <input v-model="bindPassword" class="inp" :focus="bindFocusPwd" confirm-type="done" placeholder="教师密码" password placeholder-style="color:#b5a890;" @confirm="doBind" />
-        </template>
-        <template v-if="bindRole==='parent'">
-          <input v-model="bindStudentNo" class="inp" type="number" confirm-type="done" placeholder="学生学号" placeholder-style="color:#b5a890;" @confirm="doBind" />
-        </template>
+        <view class="sh-sub">请输入你的教师编号或学生学号完成绑定</view>
+        <input v-model="bindNumber" class="inp" confirm-type="done" placeholder="教师请输入教师编号或家长请输入学生学号" placeholder-style="color:#b5a890;" @confirm="doBind" />
         <button class="ok" :disabled="bindLoading" @click="doBind">{{ bindLoading ? '绑定中…' : '完成绑定' }}</button>
       </view>
     </view>
@@ -76,19 +66,24 @@ function handleLoginResult(r) {
 
 /* -------- 微信登录 -------- */
 const bindOpenid = ref(''), bindSessionKey = ref('')
-const bindRole = ref('teacher'), bindUsername = ref(''), bindPassword = ref(''), bindStudentNo = ref(''), bindLoading = ref(false)
-const bindFocusPwd = ref(false)  // 绑定弹窗：用户名框回车后聚焦密码框
+const bindNumber = ref(''), bindLoading = ref(false)
+let wechatNickName = ''  // 微信昵称（绑定教师时作默认称呼）
 
 async function doWechatLogin() {
   uni.showLoading({ title:'登录中' })
   try {
     const { code } = await uni.login()
+    // 获取微信用户信息（昵称）
+    try {
+      const uinfo = await uni.getUserProfile({ desc: '用于显示用户昵称' })
+      wechatNickName = uinfo?.userInfo?.nickName || ''
+    } catch (e) { wechatNickName = '' }  // 用户拒绝或环境不支持
     const r = await api.post('/auth/wechat-login', { code })
     uni.hideLoading()
     if (r.needsBind) {
       bindOpenid.value = r.openid || code
       bindSessionKey.value = r.sessionKey || ''
-      bindUsername.value = ''; bindPassword.value = ''; bindStudentNo.value = ''
+      bindNumber.value = ''
     } else {
       handleLoginResult(r)
     }
@@ -96,18 +91,13 @@ async function doWechatLogin() {
 }
 
 async function doBind() {
+  if (!bindNumber.value.trim()) { return uni.showToast({ title:'请输入教师编号或学生学号', icon:'none' }) }
   bindLoading.value = true
   try {
     const { code } = await uni.login()
-    if (bindRole.value === 'teacher') {
-      if (!bindUsername.value || !bindPassword.value) { bindLoading.value = false; return uni.showToast({ title:'请填用户名和密码', icon:'none' }) }
-      const r = await api.post('/auth/bind-teacher', { code, username:bindUsername.value.trim(), password:bindPassword.value })
-      bindOpenid.value = ''; handleLoginResult(r)
-    } else {
-      if (!bindStudentNo.value.trim()) { bindLoading.value = false; return uni.showToast({ title:'请输入学号', icon:'none' }) }
-      const r = await api.post('/auth/bind-parent', { code, studentNo:bindStudentNo.value.trim() })
-      bindOpenid.value = ''; handleLoginResult(r)
-    }
+    const r = await api.post('/auth/bind-by-number', { code, number: bindNumber.value.trim(), nickName: wechatNickName })
+    bindOpenid.value = ''
+    handleLoginResult(r)
   } catch (e) { uni.showToast({ title: String(e?.message||'绑定失败').slice(0,40), icon:'none' }) }
   bindLoading.value = false
 }

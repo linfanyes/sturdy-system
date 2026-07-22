@@ -62,6 +62,7 @@ import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
+import { pickAndCompressImage } from '../../common/image'
 
 const list = ref([])
 const showAdd = ref(false)
@@ -148,23 +149,22 @@ onPullDownRefresh(async () => {
   uni.stopPullDownRefresh()
 })
 
-function pickImg() {
-  uni.chooseMedia({
-    count: 1,
-    mediaType: ['image'],
-    success: (res) => {
-      const p = res.tempFiles[0].tempFilePath
-      uni.getFileSystemManager().readFile({
-        filePath: p,
-        encoding: 'base64',
-        success: (r) => {
-          const ext = p.split('.').pop() || 'png'
-          form.value.image = 'data:image/' + ext + ';base64,' + r.data
-        },
-        fail: () => uni.showToast({ title: '读取失败', icon: 'none' }),
-      })
-    },
-  })
+async function pickImg() {
+  try {
+    const res = await pickAndCompressImage({ count: 1 })
+    const p = res.tempFiles[0].tempFilePath
+    uni.getFileSystemManager().readFile({
+      filePath: p,
+      encoding: 'base64',
+      success: (r) => {
+        const ext = p.split('.').pop() || 'png'
+        form.value.image = 'data:image/' + ext + ';base64,' + r.data
+      },
+      fail: () => uni.showToast({ title: '读取失败', icon: 'none' }),
+    })
+  } catch (e) {
+    // 取消选择
+  }
 }
 function addTag() {
   const t = tagInput.value.trim()

@@ -50,6 +50,12 @@ export class User {
   @Column({ nullable: true })
   sessionKey: string
 
+  @Column({ nullable: true, comment: '教师编号（JS+学校代码+5位序号，用于微信绑定）' })
+  teacherNo: string
+
+  @Column({ nullable: true, comment: '微信昵称（绑定时的微信用户昵称）' })
+  wechatName: string
+
   @Column({ default: 'light' })
   theme: string
 

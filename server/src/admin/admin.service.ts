@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
+import { Repository, EntityManager } from 'typeorm'
 import * as crypto from 'node:crypto'
 import { User } from '../users/user.entity'
 import { School } from '../school/school.entity'
@@ -16,6 +16,7 @@ export class AdminService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
+    @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
 
   /** 超管登录 → JWT */
@@ -26,7 +27,7 @@ export class AdminService {
     return { token: this.jwt.sign({ sub: 'super', role: 'super' }) }
   }
 
-  /** 生成学校编号：前缀(用户可输入，最多 6 位字母/数字) + 6 位随机字符(字母+数字，排除易混字符)，保证唯一 */
+  /** 生成学校编号：前缀(最多 6 位) + 中横线(-) + 6 位随机字符，保证唯一；无前缀则仅 6 位随机字符 */
   private async genSchoolCode(prefix: string): Promise<string> {
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
     const digits = '23456789'
@@ -35,27 +36,30 @@ export class AdminService {
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
       .slice(0, 6)
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 20; attempt++) {
       const bytes = crypto.randomBytes(6)
       let rand = ''
       for (let i = 0; i < 6; i++) rand += all[bytes[i] % all.length]
-      const code = p + rand
-      // 唯一性检查
+      const code = p ? `${p}-${rand}` : rand
       const dup = await this.schoolRepo.findOne({ where: { code } })
       if (!dup) return code
     }
     // 兜底：时间戳随机
-    return p + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6)
+    const tail = crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 7)
+    return p ? `${p}-${tail}` : tail
   }
 
   /* ===== 学校管理（超管维护） ===== */
 
   /** 学校列表 */
-  async listSchools() {
-    return this.schoolRepo.find({ order: { createdAt: 'DESC' } })
+  async listSchools(skip = 0, take = 100) {
+    const [items, total] = await this.schoolRepo.findAndCount({
+      order: { createdAt: 'DESC' }, skip, take,
+    })
+    return { items, total }
   }
 
-  /** 新增学校：编号 = 前缀 + 6 位随机字符 */
+  /** 新增学校：编号 = 前缀 + 中横线 + 6 位随机字符（无前缀则仅 6 位随机字符） */
   async createSchool(dto: { name: string; prefix?: string; address?: string; contact?: string; phone?: string; status?: string }) {
     if (!dto.name || !dto.name.trim()) throw new BadRequestException('学校名称必填')
     const code = await this.genSchoolCode(dto.prefix || '')
@@ -74,11 +78,11 @@ export class AdminService {
   async updateSchool(id: string, dto: { name?: string; address?: string; contact?: string; phone?: string; status?: string }) {
     const s = await this.schoolRepo.findOne({ where: { id } })
     if (!s) throw new BadRequestException('学校不存在')
-    if (dto.name && dto.name.trim()) s.name = dto.name.trim()
+    if (dto.name !== undefined && dto.name.trim()) s.name = dto.name.trim()
     if (dto.address !== undefined) s.address = dto.address
     if (dto.contact !== undefined) s.contact = dto.contact
     if (dto.phone !== undefined) s.phone = dto.phone
-    if (dto.status) s.status = dto.status
+    if (dto.status !== undefined) s.status = dto.status
     await this.schoolRepo.save(s)
     return s
   }
@@ -95,13 +99,15 @@ export class AdminService {
   /* ===== 学校管理员管理（绑定已存在的学校） ===== */
 
   /** 列表：关联学校信息（名称+编号） */
-  async listAdmins() {
-    const admins = await this.saRepo.find({ order: { createdAt: 'DESC' } })
-    if (!admins.length) return []
+  async listAdmins(skip = 0, take = 100) {
+    const [admins, total] = await this.saRepo.findAndCount({
+      order: { createdAt: 'DESC' }, skip, take,
+    })
+    if (!admins.length) return { items: [], total }
     const schoolIds = [...new Set(admins.map(a => a.schoolId).filter(Boolean))]
     const schools = schoolIds.length ? await this.schoolRepo.find({ where: schoolIds.map(id => ({ id })) }) : []
     const schoolMap = new Map(schools.map(s => [s.id, s]))
-    return admins.map(a => {
+    const items = admins.map(a => {
       const s = schoolMap.get(a.schoolId)
       return {
         id: a.id,
@@ -115,6 +121,7 @@ export class AdminService {
         createdAt: a.createdAt,
       }
     })
+    return { items, total }
   }
 
   /** 新增学校管理员：绑定已存在的学校（通过 schoolId 下拉选择） */
@@ -196,5 +203,26 @@ export class AdminService {
     const result = await this.saRepo.delete(id)
     if (!result.affected) throw new BadRequestException('删除失败：管理员不存在或已被删除')
     return { ok: true }
+  }
+
+  /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号 */
+  async resetAll() {
+    const tables = [
+      'students', 'classes', 'exams', 'grades', 'notes', 'todos', 'picker_history',
+      'backups', 'ai_settings', 'app_config', 'awards', 'generated',
+      'class_ops', 'duty_rosters', 'engagements', 'growth_records',
+      'parent_contacts', 'seats', 'gallery_items',
+    ]
+    await this.entityManager.transaction(async (em) => {
+      // 删除所有学校管理员
+      await this.saRepo.delete({})
+      // 删除所有教师用户
+      await this.userRepo.delete({})
+      // 删除所有业务数据表
+      for (const t of tables) {
+        try { await em.query(`DELETE FROM \`${t}\``) } catch (e) { /* 表不存在则跳过 */ }
+      }
+    })
+    return { ok: true, message: '已清除所有管理员、教师、家长及业务数据，学校结构和超管账号保留' }
   }
 }

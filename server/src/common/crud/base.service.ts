@@ -8,14 +8,16 @@ import { NotFoundException } from '@nestjs/common'
 export class CrudService<T extends { id: string; teacherId: string }> {
   constructor(protected readonly repo: Repository<T>) {}
 
-  findAll(teacherId: string, classId?: string): Promise<T[]> {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500): Promise<{ items: T[]; total: number }> {
     const where: FindOptionsWhere<T> = { teacherId } as FindOptionsWhere<T>
-    // 服务端按 classId 过滤：实体有 classId 字段时自动生效，避免前端拉全量再 filter
     if (classId) (where as any).classId = classId
-    return this.repo.find({
+    const [items, total] = await this.repo.findAndCount({
       where,
       order: { createdAt: 'DESC' } as any,
+      skip,
+      take,
     })
+    return { items, total }
   }
 
   async findOne(id: string, teacherId: string): Promise<T> {

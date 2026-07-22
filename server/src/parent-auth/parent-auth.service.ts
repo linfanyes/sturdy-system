@@ -204,7 +204,7 @@ export class ParentAuthService {
     if (!appId || !secret) return { ok: false, msg: '未配置微信 AppId/AppSecret，演示模式不支持订阅' }
     try {
       const resp = await fetch(
-        `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${code}&grant_type=authorization_code`,
+        `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`,
       )
       const data = (await resp.json()) as any
       const openId = (data && data.openid) || ''

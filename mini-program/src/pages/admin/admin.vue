@@ -42,8 +42,18 @@
               <text class="meta" v-if="s.address">地址：{{ s.address }}</text>
             </view>
             <view class="acts">
-              <text class="act" @click.stop="openEditSchool(s)">维护</text>
+              <text class="act" :class="s.status === 'active' ? 'stop' : 'start'" @click.stop="toggleSchoolStatus(s)">{{ s.status === 'active' ? '停用' : '启用' }}</text>
               <text class="act del" @click.stop="delSchool(s)">删除</text>
+            </view>
+          </view>
+        </view>
+        <!-- 一键重置 -->
+        <view class="reset-section">
+          <view class="reset-row" @click="confirmResetAll">
+            <text class="reset-icon">⚠️</text>
+            <view class="reset-text">
+              <text class="reset-name">一键重置</text>
+              <text class="reset-sub">清除所有管理员/教师/家长数据，保留学校结构和超管账号</text>
             </view>
           </view>
         </view>
@@ -55,9 +65,12 @@
           <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
           <text class="act" @click="openCreate">＋ 新增</text>
         </view>
+        <view class="filter-bar">
+          <input v-model="adminFilterSchoolCode" class="filter-inp" placeholder="按学校编号筛选" @confirm="adminFilterSchoolCode = $event.detail.value" />
+        </view>
         <view class="list">
-          <view v-if="!schoolAdmins.length" class="empty">暂无学校管理员，点击右上角「新增」</view>
-          <view class="row" v-for="a in schoolAdmins" :key="a.id">
+          <view v-if="!filteredSchoolAdmins.length" class="empty">暂无匹配的学校管理员</view>
+          <view class="row" v-for="a in filteredSchoolAdmins" :key="a.id">
             <view class="info" @click="openEdit(a)">
               <view class="nm-line">
                 <text class="nm">{{ a.name }}</text>
@@ -84,17 +97,22 @@
           </view>
           <scroll-view scroll-y class="full-body">
             <view v-if="!editingSchoolId" class="hint-block">
-              学校编号 = 您输入的「编号前缀」＋ 6 位随机字符，由系统自动生成并保证唯一。
+              学校编号 = 您输入的「编号前缀」+ 中横线(-) + 6 位随机字符，由系统自动生成并保证唯一（不填前缀则只有 6 位随机字符）。
             </view>
             <view class="form-item">
               <text class="label">学校名称 <text class="req">*</text></text>
               <input v-model="schoolForm.name" class="inp" placeholder="如：阳光小学" />
             </view>
-            <view class="form-item">
+            <!-- 新增时：显示编号前缀输入框 -->
+            <view v-if="!editingSchoolId" class="form-item">
               <text class="label">编号前缀 <text class="opt">（最多 6 位字母/数字，留空则无前缀）</text></text>
               <input v-model="schoolForm.prefix" class="inp" placeholder="如：YG" maxlength="6" />
             </view>
-            <view v-if="editingSchoolId" class="hint-tip">学校编号：{{ schoolForm.code }}（生成后不可修改）</view>
+            <!-- 编辑时：直接显示学校编号（只读） -->
+            <view v-else class="form-item">
+              <text class="label">学校编号</text>
+              <view class="code-display">{{ schoolForm.code }}</view>
+            </view>
             <view class="form-item">
               <text class="label">地址</text>
               <input v-model="schoolForm.address" class="inp" placeholder="学校地址（选填）" />
@@ -105,7 +123,8 @@
             </view>
             <view class="form-item">
               <text class="label">联系电话</text>
-              <input v-model="schoolForm.phone" class="inp" placeholder="联系电话（选填）" />
+              <input v-model="schoolForm.phone" class="inp" placeholder="联系电话（选填）" @blur="checkSchoolPhone" />
+              <text v-if="schoolPhoneError" class="field-err">{{ schoolPhoneError }}</text>
             </view>
             <view class="form-item switch-item">
               <view class="label-line">
@@ -170,7 +189,7 @@
       <view v-if="resetTarget" class="mask" @click="resetTarget = null">
         <view class="sheet" @click.stop>
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
-          <input v-model="resetPwd" class="inp" placeholder="新密码（必填）" password />
+          <view class="inp-wrap"><input v-model="resetPwd" class="inp" placeholder="新密码（必填）" password /></view>
           <button class="save-btn" :disabled="saving" @click="confirmReset">{{ saving ? '保存中…' : '确认重置' }}</button>
         </view>
       </view>
@@ -179,8 +198,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { theme } from '../../common/store'
+import { isPhone } from '../../common/validators'
 
 const SERVER_URL = '/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
@@ -196,9 +216,17 @@ const schools = ref([])
 const showSchoolForm = ref(false)
 const editingSchoolId = ref('')
 const schoolForm = reactive({ name: '', prefix: '', address: '', contact: '', phone: '', enabled: true, code: '' })
+const schoolPhoneError = ref('')
 
 /* ===== 学校管理员管理 ===== */
 const schoolAdmins = ref([])
+// 学校编号筛选
+const adminFilterSchoolCode = ref('')
+const filteredSchoolAdmins = computed(() => {
+  if (!adminFilterSchoolCode.value) return schoolAdmins.value
+  const q = adminFilterSchoolCode.value.trim().toLowerCase()
+  return schoolAdmins.value.filter(a => (a.schoolCode || '').toLowerCase().includes(q))
+})
 
 // 统一的表单状态（新增/编辑复用）
 const showForm = ref(false)
@@ -291,22 +319,29 @@ async function loadAll() {
 }
 
 async function loadSchools() {
-  schools.value = (await apiCall('GET', '/admin/schools')) || []
+  const r = await apiCall('GET', '/admin/schools') || { items: [], total: 0 }
+  schools.value = Array.isArray(r) ? r : (r.items || [])
 }
 
 async function loadAdmins() {
-  schoolAdmins.value = (await apiCall('GET', '/admin/school-admins')) || []
+  const r = await apiCall('GET', '/admin/school-admins') || { items: [], total: 0 }
+  schoolAdmins.value = Array.isArray(r) ? r : (r.items || [])
 }
+
+// Tab 切换时自动刷新数据
+watch(tab, () => { loadAll() })
 
 /* ===== 学校表单 ===== */
 function openCreateSchool() {
   editingSchoolId.value = ''
+  schoolPhoneError.value = ''
   Object.assign(schoolForm, { name: '', prefix: '', address: '', contact: '', phone: '', enabled: true, code: '' })
   showSchoolForm.value = true
 }
 
 function openEditSchool(s) {
   editingSchoolId.value = s.id
+  schoolPhoneError.value = ''
   Object.assign(schoolForm, {
     name: s.name || '',
     prefix: '',
@@ -323,8 +358,21 @@ function onSchoolEnabledChange(e) {
   schoolForm.enabled = e.detail.value
 }
 
+function checkSchoolPhone() {
+  if (schoolForm.phone && !isPhone(schoolForm.phone)) {
+    schoolPhoneError.value = '手机号格式错误，应为 11 位手机号'
+  } else {
+    schoolPhoneError.value = ''
+  }
+}
+
 async function saveSchool() {
   if (!schoolForm.name) return uni.showToast({ title: '学校名称必填', icon: 'none' })
+  if (schoolForm.phone && !isPhone(schoolForm.phone)) {
+    schoolPhoneError.value = '手机号格式错误，请修正后再提交'
+    return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  }
+  schoolPhoneError.value = ''
   saving.value = true
   const payload = {
     name: schoolForm.name,
@@ -361,6 +409,28 @@ async function delSchool(s) {
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) {
         uni.showToast({ title: e.message || '删除失败', icon: 'none' })
+      }
+    },
+  })
+}
+
+// 列表内快速「停用 / 启用」切换：仅更新 status（后端 updateSchool 支持部分更新）
+async function toggleSchoolStatus(s) {
+  const next = s.status === 'active' ? 'inactive' : 'active'
+  const label = next === 'active' ? '启用' : '停用'
+  uni.showModal({
+    title: label + '学校',
+    content: `确定将「${s.name}」${label}吗？`,
+    confirmColor: next === 'active' ? '#4CAF50' : '#e6a23c',
+    success: async (m) => {
+      if (!m.confirm) return
+      try {
+        await apiCall('PATCH', '/admin/schools/' + s.id, { status: next })
+        // 直接更新本地条目，徽章与按钮文字即时响应
+        s.status = next
+        uni.showToast({ title: '已' + label, icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
       }
     },
   })
@@ -471,6 +541,39 @@ async function delAdmin(a) {
     },
   })
 }
+
+// 一键重置：清除所有管理员/教师/家长数据
+function confirmResetAll() {
+  uni.showModal({
+    title: '⚠️ 一键重置',
+    content: '确定要清除所有学校管理员、教师、家长及全部业务数据吗？\n\n此操作不可撤销！\n\n保留：学校结构 + 超管账号。',
+    confirmText: '确认重置',
+    confirmColor: '#e64340',
+    success: async (m) => {
+      if (!m.confirm) return
+      uni.showLoading({ title: '重置中…', mask: true })
+      try {
+        await apiCall('POST', '/admin/reset-all')
+        uni.hideLoading()
+        uni.showModal({
+          title: '重置成功',
+          content: '所有数据已清除，建议重新登录以确保状态刷新。',
+          confirmText: '重新登录',
+          success: (r) => {
+            if (r.confirm) {
+              adminToken.value = ''
+              uni.removeStorageSync('admin_token')
+              uni.reLaunch({ url: '/pages/login/login' })
+            }
+          },
+        })
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: e.message || '重置失败', icon: 'none' })
+      }
+    },
+  })
+}
 </script>
 
 <style scoped>
@@ -491,6 +594,8 @@ async function delAdmin(a) {
 .sc { font-size: 26rpx; color: var(--c-sub); }
 .act { font-size: 24rpx; color: #409eff; }
 .act.del { color: #e64340; }
+.act.stop { color: #e6a23c; }
+.act.start { color: #4CAF50; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
 .empty { padding: 60rpx 0; text-align: center; font-size: 26rpx; color: var(--c-sub); }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 18rpx 0; border-bottom: 1px solid var(--c-border); }
@@ -515,6 +620,18 @@ async function delAdmin(a) {
 .full-body { flex: 1; width: 100%; padding: 24rpx 30rpx; box-sizing: border-box; }
 .full-foot { padding: 16rpx 30rpx 30rpx; background: var(--c-card); border-top: 1px solid var(--c-border); flex-shrink: 0; }
 .hint-block { font-size: 24rpx; color: var(--c-sub); background: var(--c-card2, #f5f5f5); padding: 14rpx 18rpx; border-radius: 12rpx; margin-bottom: 20rpx; line-height: 1.6; border-left: 4rpx solid var(--c-accent, #4CAF50); width: auto; }
+/* 编辑学校时显示只读编号 */
+.code-display { font-size: 28rpx; padding: 18rpx; background: var(--c-card2); border-radius: 14rpx; color: var(--c-title); font-weight: 600; }
+.field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
+/* 重置密码弹窗输入框包裹（解决 flex 下 input 被挤压） */
+.inp-wrap { width: 100%; margin-bottom: 6rpx; }
+/* 学校管理员列表学校编号筛选 */
+.filter-bar { margin-bottom: 12rpx; }
+.filter-inp { width: 100%; border: 1px solid var(--c-border); border-radius: 14rpx; padding: 16rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; }
+/* 一键重置 */
+.reset-section { margin-top: 30rpx; background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
+.reset-row { display: flex; align-items: center; gap: 16rpx; padding: 20rpx 0; }
+.reset-icon { font-size: 36rpx; flex-shrink: 0; }
 .form-item { margin-bottom: 18rpx; width: 100%; box-sizing: border-box; }
 .label { display: block; font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 8rpx; }
 .req { color: #e64340; }

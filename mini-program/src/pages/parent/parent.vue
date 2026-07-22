@@ -133,6 +133,7 @@ import TIMUploadPlugin from 'tim-upload-plugin'
 import uCharts from '@qiun/ucharts'
 import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
+import { pickAndCompressImage } from '../../common/image'
 
 const dark = computed(() => theme.mode === 'dark')
 
@@ -362,25 +363,25 @@ async function sendImage() {
   }
   const conv = convList.value.find((c) => c.id === activeConvId.value)
   if (!conv) return
-  uni.chooseImage({
-    count: 1,
-    success: async (res) => {
-      try {
-        const msg = ptim.createImageMessage({
-          to: conv.to,
-          conversationType: conv.type,
-          payload: { file: res },
-          onProgress: () => {},
-        })
-        await ptim.sendMessage(msg)
-        conv.messages.push(normMsg(msg))
-        conv.lastText = '[图片]'
-        scrollToBottom()
-      } catch (e) {
-        uni.showToast({ title: '图片发送失败', icon: 'none' })
-      }
-    },
-  })
+  try {
+    const pickRes = await pickAndCompressImage({ count: 1 })
+    const fileRes = {
+      tempFilePaths: pickRes.tempFiles.map((f) => f.tempFilePath),
+      tempFiles: pickRes.tempFiles,
+    }
+    const msg = ptim.createImageMessage({
+      to: conv.to,
+      conversationType: conv.type,
+      payload: { file: fileRes },
+      onProgress: () => {},
+    })
+    await ptim.sendMessage(msg)
+    conv.messages.push(normMsg(msg))
+    conv.lastText = '[图片]'
+    scrollToBottom()
+  } catch (e) {
+    uni.showToast({ title: '图片发送失败', icon: 'none' })
+  }
 }
 
 function previewImg(url) {

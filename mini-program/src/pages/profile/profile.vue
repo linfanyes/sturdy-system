@@ -33,7 +33,7 @@
           <text v-for="s in subjectOpts" :key="s" class="sb" :class="form.subjects.includes(s) && 'on'" @click="toggleSub(s)">{{ form.subjects.includes(s) ? '✓ ' : '' }}{{ s }}</text>
         </view>
         <view class="fld"><text class="lab">教育格言</text><input v-model="form.motto" class="inp" maxlength="50" /></view>
-        <view class="fld"><text class="lab">手机号</text><input v-model="form.phone" class="inp" placeholder="选填，便于联系" /></view>
+        <view class="fld"><text class="lab">手机号</text><input v-model="form.phone" class="inp" placeholder="选填，便于联系" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text></view>
         <view class="fld"><text class="lab">邮箱</text><input v-model="form.email" class="inp" placeholder="选填，便于联系" /></view>
         <text class="lab">头像</text>
         <view class="avatars">
@@ -116,6 +116,7 @@ const me = reactive({})
 const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '', phone: '', email: '' })
 const editing = ref(false)
 const saving = ref(false)
+const phoneError = ref('')
 
 // 备份历史与自动备份相关状态
 const backups = ref([])
@@ -186,7 +187,16 @@ async function cycle() {
   }
 }
 
+function checkPhone() {
+  if (form.phone && !isPhone(form.phone)) {
+    phoneError.value = '手机号格式错误，应为 11 位数字'
+  } else {
+    phoneError.value = ''
+  }
+}
+
 async function save() {
+  if (phoneError.value) return uni.showToast({ title: phoneError.value, icon: 'none' })
   if (form.phone && !isPhone(form.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
   if (form.email && !isEmail(form.email)) return uni.showToast({ title: '邮箱格式错误', icon: 'none' })
   saving.value = true
@@ -518,6 +528,7 @@ async function maybeAutoBackup(force = false) {
 .sh-h { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 .lab { font-size: 24rpx; color: #5a5048; display: block; margin: 12rpx 0 8rpx; }
 .fld { margin-bottom: 6rpx; }
+.field-err { display:block; font-size:22rpx; color:#e64340; margin-top:4rpx; }
 .inp { background: #f6f7fb; border-radius: 12rpx; padding: 16rpx 18rpx; font-size: 28rpx; }
 .pick { color: var(--c-title); }
 .subs { display: flex; flex-wrap: wrap; gap: 10rpx; }

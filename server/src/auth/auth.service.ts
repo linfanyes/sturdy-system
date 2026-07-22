@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
+import { Repository, EntityManager } from 'typeorm'
 import { UsersService } from '../users/users.service'
 import { WechatService } from './wechat.service'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
@@ -23,6 +23,7 @@ export class AuthService {
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
+    @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
 
   /** 统一登录：遍历超管→学校管理员→教师→家长，命中即返回 */
@@ -60,7 +61,14 @@ export class AuthService {
       if (!teacher.passwordHash) throw new UnauthorizedException('该账号未设置密码，请用微信登录')
       const h = crypto.createHash('sha256').update(p).digest('hex')
       if (h !== teacher.passwordHash) throw new UnauthorizedException('密码错误')
-      return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id }), user: teacher }
+      // 仅返回安全的字段，避免泄露 passwordHash/sessionKey
+      const safeUser = {
+        id: teacher.id, name: teacher.name, username: teacher.username,
+        school: teacher.school, schoolId: teacher.schoolId, phone: teacher.phone,
+        features: teacher.features, enabled: teacher.enabled,
+        avatar: teacher.avatar, teacherNo: teacher.teacherNo,
+      }
+      return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id }), user: safeUser }
     }
 
     // 4) 家长（用户名=学号，默认密码 123456）
@@ -118,6 +126,11 @@ export class AuthService {
   async bindWechatParent(code: string, studentNo: string) {
     if (!code || !studentNo) throw new BadRequestException('参数不全')
     const { openid } = await this.wechat.code2Session(code)
+    // 检查该 openid 是否已被其他学生绑定
+    const existing = await this.studentRepo.findOne({ where: { parentOpenId: openid } })
+    if (existing && existing.studentNo !== studentNo) {
+      throw new BadRequestException('该微信已被其他学生家长绑定')
+    }
     const stu = await this.studentRepo.findOne({ where: { studentNo } })
     if (!stu) throw new BadRequestException('学号不存在')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
@@ -126,6 +139,55 @@ export class AuthService {
     const pn = stu.parentName || '家长'
     const pim = parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn })
     return { role: 'parent', token: this.jwt.sign({ sub: pim, type: 'parent', studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo }), needsBind: false }
+  }
+
+  /** 微信统一绑定：输入教师编号或学生学号，自动判别身份（事务保护） */
+  async bindByNumber(code: string, number: string, nickName?: string) {
+    if (!code || !number) throw new BadRequestException('参数不全')
+    const { openid } = await this.wechat.code2Session(code)
+    // 尝试按教师编号查找
+    const user = await this.users.findByTeacherNo(number)
+    if (user) {
+      return await this.entityManager.transaction(async (em) => {
+        const userRepo = em.getRepository(User)
+        // 悲观锁锁定该行，防止并发重复绑定
+        const lockedUser = await userRepo
+          .createQueryBuilder('u')
+          .where('u.id = :id', { id: user.id })
+          .setLock('pessimistic_write')
+          .getOne()
+        if (!lockedUser) throw new BadRequestException('教师账号不存在')
+        if (lockedUser.openid && lockedUser.openid !== openid) {
+          throw new BadRequestException('该教师编号已被其他微信绑定')
+        }
+        const DEFAULT_PWD = '1314520'
+        const pwdHash = crypto.createHash('sha256').update(DEFAULT_PWD).digest('hex')
+        const displayName = nickName || ('老师' + number.slice(-4))
+        Object.assign(lockedUser, { openid, passwordHash: pwdHash, sessionKey: '', name: displayName, wechatName: nickName || '' })
+        await userRepo.save(lockedUser)
+        const safeUser = {
+          id: lockedUser.id, name: lockedUser.name, username: lockedUser.username,
+          school: lockedUser.school, teacherNo: lockedUser.teacherNo,
+        }
+        return { role: 'teacher', token: this.jwt.sign({ sub: lockedUser.id, openid }), user: safeUser, needsBind: false }
+      })
+    }
+    // 尝试按学号查找（家长绑定）
+    const stu = await this.studentRepo.findOne({ where: { studentNo: number } })
+    if (stu) {
+      // 检查 openid 是否已被其他学生绑定
+      const existing = await this.studentRepo.findOne({ where: { parentOpenId: openid } })
+      if (existing && existing.studentNo !== number) {
+        throw new BadRequestException('该微信已被其他学生家长绑定')
+      }
+      if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
+      stu.parentOpenId = openid
+      await this.studentRepo.save(stu)
+      const pn = stu.parentName || '家长'
+      const pim = parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn })
+      return { role: 'parent', token: this.jwt.sign({ sub: pim, type: 'parent', studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: number }), needsBind: false }
+    }
+    throw new BadRequestException('未找到对应的教师或学生信息，请确认编号是否正确')
   }
 
   /** 教师密码登录（学校管理员已绑定学校，无需学校编号） */

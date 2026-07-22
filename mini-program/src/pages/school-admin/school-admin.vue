@@ -8,12 +8,20 @@
       <view class="out" @click="logout">退出</view>
     </view>
 
+    <!-- 看板统计 -->
+    <view class="dashboard">
+      <view class="dash-card"><text class="dash-n">{{ dash.totalTeachers }}</text><text class="dash-l">教师</text></view>
+      <view class="dash-card"><text class="dash-n">{{ dash.activeTeachers }}</text><text class="dash-l">启用</text></view>
+      <view class="dash-card"><text class="dash-n">{{ dash.totalClasses }}</text><text class="dash-l">班级</text></view>
+      <view class="dash-card"><text class="dash-n">{{ dash.totalStudents }}</text><text class="dash-l">学生</text></view>
+    </view>
+
     <view class="bar">
       <text class="sc">共 {{ teachers.length }} 位教师</text>
       <text class="act" @click="openCreate">＋ 新增教师</text>
     </view>
     <view class="list">
-      <view v-if="!teachers.length" class="empty">暂无教师，点击右上角「新增」</view>
+      <EmptyState v-if="!teachers.length" icon="👩‍🏫" text="暂无教师" hint="点击右上角「新增」创建第一位教师" />
       <view class="row" v-for="u in teachers" :key="u.id">
         <view class="info" @click="openEdit(u)">
           <view class="nm-line">
@@ -21,6 +29,7 @@
             <text class="badge" :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? '启用' : '禁用' }}</text>
           </view>
           <view class="meta">用户名：{{ u.username || '微信登录' }}</view>
+          <view class="meta" v-if="u.teacherNo">编号：{{ u.teacherNo }}</view>
           <view class="meta" v-if="u.phone">电话：{{ u.phone }}</view>
         </view>
         <view class="acts">
@@ -29,6 +38,7 @@
           <text class="act del" @click.stop="delTeacher(u)">删除</text>
         </view>
       </view>
+      <view v-if="teachers.length < teacherTotal" class="load-more" @click="loadMoreTeachers">加载更多（共 {{ teacherTotal }} 位）</view>
     </view>
 
     <!-- 新增/编辑教师（全屏） -->
@@ -59,7 +69,8 @@
           </view>
           <view class="form-item">
             <text class="label">手机号</text>
-            <input v-model="form.phone" class="inp" placeholder="可选" />
+            <input v-model="form.phone" class="inp" placeholder="可选" @blur="checkPhone" />
+            <text v-if="phoneError" class="field-err">{{ phoneError }}</text>
           </view>
           <view class="form-item switch-item">
             <view class="label-line">
@@ -106,9 +117,21 @@
     <view v-if="pwdUser" class="mask" @click="pwdUser=null">
       <view class="sheet" @click.stop>
         <view class="sh-t">重置「{{ pwdUser.name }}」密码</view>
-        <input v-model="newPwd" class="inp" placeholder="新密码" password />
+        <view class="inp-wrap"><input v-model="newPwd" class="inp" placeholder="新密码" password /></view>
         <button class="btn" :disabled="saving" @click="doResetPwd">确认重置</button>
       </view>
+    </view>
+
+    <!-- 演示模式切换 -->
+    <view class="demo-section">
+      <view class="demo-row">
+        <view class="demo-text">
+          <text class="demo-name">🛝 演示模式</text>
+          <text class="demo-sub">开启后使用预置演示数据，展示全部功能</text>
+        </view>
+        <switch :checked="mockMode.enabled" color="#e6a23c" @change="onMockMode" />
+      </view>
+      <text v-if="mockMode.enabled" class="demo-hint">⚡ 已开启演示模式，数据为预置示例</text>
     </view>
   </view>
 </template>
@@ -116,11 +139,22 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme } from '../../common/store'
+import { theme, mockMode } from '../../common/store'
+import { isPhone } from '../../common/validators'
 
 const dark = computed(() => theme.mode === 'dark')
 const teachers = ref([])
 const saving = ref(false)
+// 分页
+const teacherPage = ref(0)
+const teacherTotal = ref(0)
+const TEACHER_PAGE_SIZE = 50
+
+// 看板数据
+const dash = ref({ totalTeachers: 0, activeTeachers: 0, inactiveTeachers: 0, totalClasses: 0, totalStudents: 0 })
+async function loadDashboard() {
+  try { dash.value = await apiCall('GET', '/school-admin/dashboard') || dash.value } catch (e) {}
+}
 
 // 从本地存储读取学校管理员信息（登录时保存）
 const saUser = (() => {
@@ -133,6 +167,7 @@ const schoolCode = ref(saUser.schoolCode || '')
 const showForm = ref(false)
 const editingId = ref('')
 const form = ref({ username: '', password: '', name: '', phone: '', enabled: true })
+const phoneError = ref('')
 
 const featUser = ref(null), sel = ref([])
 const pwdUser = ref(null), newPwd = ref('')
@@ -195,18 +230,36 @@ async function apiCall(method, path, data) {
 }
 
 async function loadTeachers() {
-  try { teachers.value = await apiCall('GET', '/school-admin/teachers') || [] }
-  catch (e) { teachers.value = []; console.error('loadTeachers', e) }
+  try {
+    const r = await apiCall('GET', '/school-admin/teachers?skip=0&take=' + TEACHER_PAGE_SIZE) || { items: [], total: 0 }
+    teachers.value = r.items || r
+    teacherTotal.value = r.total || teachers.value.length
+    teacherPage.value = 1
+  } catch (e) { teachers.value = []; console.error('loadTeachers', e) }
+}
+
+async function loadMoreTeachers() {
+  const skip = teacherPage.value * TEACHER_PAGE_SIZE
+  try {
+    const r = await apiCall('GET', `/school-admin/teachers?skip=${skip}&take=${TEACHER_PAGE_SIZE}`) || { items: [], total: 0 }
+    const more = r.items || r
+    if (more.length) {
+      teachers.value = [...teachers.value, ...more]
+      teacherPage.value++
+    }
+  } catch (e) { console.error('loadMoreTeachers', e) }
 }
 
 function openCreate() {
   editingId.value = ''
+  phoneError.value = ''
   form.value = { username: '', password: '', name: '', phone: '', enabled: true }
   showForm.value = true
 }
 
 function openEdit(u) {
   editingId.value = u.id
+  phoneError.value = ''
   form.value = {
     username: u.username || '',
     password: '',
@@ -221,10 +274,23 @@ function onEnabledChange(e) {
   form.value.enabled = e.detail.value
 }
 
+function checkPhone() {
+  if (form.value.phone && !isPhone(form.value.phone)) {
+    phoneError.value = '手机号格式错误，应为 11 位手机号'
+  } else {
+    phoneError.value = ''
+  }
+}
+
 async function saveForm() {
   const f = form.value
   if (!f.username || !f.name) return uni.showToast({ title: '用户名/姓名必填', icon: 'none' })
   if (!editingId.value && !f.password) return uni.showToast({ title: '新增时密码必填', icon: 'none' })
+  if (f.phone && !isPhone(f.phone)) {
+    phoneError.value = '手机号格式错误，请修正后再提交'
+    return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+  }
+  phoneError.value = ''
   saving.value = true
   try {
     if (editingId.value) {
@@ -250,6 +316,7 @@ async function saveForm() {
     uni.showToast({ title: e.message || '操作失败', icon: 'none', duration: 3000 })
   }
   saving.value = false
+  phoneError.value = ''
 }
 
 async function delTeacher(u) {
@@ -319,16 +386,48 @@ function logout() {
   uni.reLaunch({ url: '/pages/login/login' })
 }
 
-onShow(() => { loadTeachers() })
+// ===== 演示模式 =====
+function onMockMode(e) {
+  const enabled = e.detail.value
+  mockMode.enabled = enabled
+  uni.setStorageSync('g_mock_mode', String(enabled))
+  if (enabled) {
+    teachers.value = MOCK_TEACHERS
+    uni.showToast({ title: '演示模式已开启，数据为预置示例', icon: 'none' })
+  } else {
+    loadTeachers()
+  }
+}
+
+const MOCK_TEACHERS = [
+  { id: 'demo-t1', name: '李老师', username: 'lilaoshi', phone: '13800001001', subject: '', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','attendance','schedule','homework','notices','ai','tools','games','finance','activities','rewards','parents','teachers'], enabled: true, createdAt: '2026-01-01' },
+  { id: 'demo-t2', name: '王老师', username: 'wanglaoshi', phone: '13800001002', subject: '语文', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','ai','parents','teachers'], enabled: true, createdAt: '2026-01-02' },
+  { id: 'demo-t3', name: '张老师', username: 'zhanglaoshi', phone: '13800001003', subject: '数学', school: '阳光实验小学（演示版）', features: ['classes','students','exams','grades','attendance','schedule','homework'], enabled: true, createdAt: '2026-01-03' },
+  { id: 'demo-t4', name: '赵老师', username: 'zhaolaoshi', phone: '13800001004', subject: '英语', school: '阳光实验小学（演示版）', features: ['students','exams','grades','parents'], enabled: false, createdAt: '2026-01-04' },
+]
+
+onShow(async () => {
+  if (mockMode.enabled) {
+    teachers.value = MOCK_TEACHERS
+  } else {
+    await Promise.all([loadTeachers(), loadDashboard()])
+  }
+})
 </script>
 
 <style scoped>
-.page { padding: 24rpx; background: var(--c-bg); min-height: 100vh; }
+.page { padding: 24rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); background: var(--c-bg); min-height: 100vh; }
 .hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18rpx; }
 .hd-left { flex: 1; }
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
 .sub { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .out { font-size: 26rpx; color: var(--c-accent); }
+.load-more { text-align: center; padding: 20rpx 0; font-size: 24rpx; color: var(--c-accent); }
+/* 看板统计 */
+.dashboard { display: flex; gap: 14rpx; margin-bottom: 18rpx; }
+.dash-card { flex: 1; background: var(--c-card); border-radius: 16rpx; padding: 18rpx 0; text-align: center; box-shadow: 0 2rpx 8rpx var(--c-shadow); }
+.dash-n { display: block; font-size: 38rpx; font-weight: 800; color: var(--c-accent); }
+.dash-l { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); }
 .act { font-size: 24rpx; color: #409eff; }
@@ -347,6 +446,8 @@ onShow(() => { loadTeachers() })
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; box-sizing: border-box; }
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
+.inp-wrap { width: 100%; margin-bottom: 6rpx; }
+.field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
 .inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 6rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); width: 100%; box-sizing: border-box; }
 .btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
 .btn[disabled] { opacity: .6; }
@@ -376,4 +477,11 @@ onShow(() => { loadTeachers() })
 .frow-label { flex: 1; }
 .ck { width: 28rpx; height: 28rpx; border-radius: 50%; border: 3rpx solid var(--c-sub); flex-shrink: 0; }
 .ck.on { background: var(--c-primary); border-color: var(--c-primary); }
+/* 演示模式 */
+.demo-section { margin-top: 40rpx; padding: 26rpx; background: var(--c-card); border-radius: 20rpx; }
+.demo-row { display: flex; align-items: center; justify-content: space-between; }
+.demo-text { flex: 1; padding-right: 20rpx; }
+.demo-name { display: block; font-size: 28rpx; color: var(--c-title); font-weight: 600; }
+.demo-sub { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
+.demo-hint { display: block; font-size: 22rpx; color: #e6a23c; margin-top: 10rpx; }
 </style>

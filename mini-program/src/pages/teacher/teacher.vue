@@ -114,7 +114,8 @@
         <view class="row2">
           <view class="fld">
             <text class="lab">电话</text>
-            <input v-model="draft.phone" class="inp" />
+            <input v-model="draft.phone" class="inp" @blur="checkPhone" />
+            <text v-if="phoneError" class="field-err">{{ phoneError }}</text>
           </view>
           <view class="fld">
             <text class="lab">邮箱</text>
@@ -270,6 +271,15 @@ function copy(t) {
 const editOpen = ref(false)
 const editId = ref(null)
 const draft = ref({ name: '', position: '教师', phone: '', email: '', avatar: '🧑', isStarred: false, teachings: [] })
+const phoneError = ref('')
+
+function checkPhone() {
+  if (draft.value.phone && !isPhone(draft.value.phone)) {
+    phoneError.value = '手机号格式错误（11 位）'
+  } else {
+    phoneError.value = ''
+  }
+}
 
 function openCreate() {
   editId.value = null
@@ -291,8 +301,12 @@ function toggleTeach(classId, subject) {
 }
 async function save() {
   if (!draft.value.name.trim()) return uni.showToast({ title: '请填写姓名', icon: 'none' })
-  if (draft.value.phone && !isPhone(draft.value.phone)) return uni.showToast({ title: '手机号格式错误（11 位）', icon: 'none' })
+  if (draft.value.phone && !isPhone(draft.value.phone)) {
+    phoneError.value = '手机号格式错误（11 位）'
+    return uni.showToast({ title: phoneError.value, icon: 'none' })
+  }
   if (draft.value.email && !isEmail(draft.value.email)) return uni.showToast({ title: '邮箱格式错误', icon: 'none' })
+  phoneError.value = ''
   saving.value = true
   try {
     if (editId.value) {
@@ -403,4 +417,5 @@ function remove(t) {
 .d-code { background: #f5f5f5; border-radius: 12rpx; padding: 16rpx; font-size: 22rpx; color: #333; white-space: pre-wrap; line-height: 1.7; margin-bottom: 14rpx; }
 .d-copy { background: var(--c-primary); color: #fff; border-radius: 30rpx; padding: 16rpx; text-align: center; font-size: 26rpx; margin-bottom: 10rpx; }
 .d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 30rpx; padding: 16rpx; text-align: center; font-size: 26rpx; }
+.field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
 </style>

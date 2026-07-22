@@ -58,10 +58,8 @@
       </view>
 
       <view class="field">
-        <text class="label">学期</text>
-        <picker :range="semesterOpts" :value="semesterIdx" @change="onSemesterPick">
-          <view class="picker">{{ semesterOpts[semesterIdx] || '请选择学期（学期管理中添加）' }}</view>
-        </picker>
+        <text class="label">学期（自动生成）</text>
+        <view class="readonly">{{ autoTermName }}</view>
       </view>
 
       <view class="field">
@@ -124,13 +122,12 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
-import { theme, flushTabBarStyle } from '../../common/store'
+import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 
 const list = ref([])
 const showForm = ref(false)
 const editingId = ref('')
 const saving = ref(false)
-const semesterList = ref([])
 
 const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const classOpts = ['一班', '二班', '三班', '四班', '五班', '六班', '七班', '八班', '九班', '十班']
@@ -139,14 +136,13 @@ const quarters = ['春季', '秋季']
 const colorOpts = ['#07c160', '#409eff', '#e6a23c', '#e06c75', '#9b59b6', '#1abc9c', '#34495e', '#f39c12']
 
 const thisYear = new Date().getFullYear()
-const years = Array.from({ length: 6 }, (_, i) => String(thisYear - 5 + i)) // 当前年前5年 + 当年
+const years = Array.from({ length: 6 }, (_, i) => String(thisYear - 5 + i))
 
 const form = ref({
   gradeIdx: 0,
   classIdx: 0,
   yearIdx: years.length - 1,
   quarterIdx: 0,
-  semesterId: '',
   headTeacher: '',
   slogan: '',
   color: '#07c160',
@@ -154,22 +150,11 @@ const form = ref({
 })
 
 const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.value.classIdx])
-const semesterOpts = computed(() => semesterList.value.map((s) => s.name + ' (' + s.startDate + '~' + s.endDate + ')'))
-const semesterIdx = computed(() => {
-  const i = semesterList.value.findIndex((s) => s.id === form.value.semesterId)
-  return i >= 0 ? i : 0
-})
-function onSemesterPick(e) {
-  const s = semesterList.value[e.detail.value]
-  if (s) form.value.semesterId = s.id
-}
-async function loadSemesters() {
-  try { semesterList.value = await api.get('/semesters') || [] } catch (e) { semesterList.value = [] }
-}
+// 学期由年度+季度自动生成，格式：年度+季度+学期（如 "2026年春季学期"）
+const autoTermName = computed(() => years[form.value.yearIdx] + '年' + quarters[form.value.quarterIdx] + '学期')
 
 async function load() {
   list.value = await api.getList('/classes', { loading: true, loadingText: '加载班级' })
-  loadSemesters()
 }
 onShow(load)
 onShow(() => flushTabBarStyle())
@@ -179,7 +164,8 @@ onPullDownRefresh(async () => {
 })
 
 function open(c) {
-  uni.navigateTo({ url: `/pages/students/students?classId=${c.id}&name=${encodeURIComponent(c.name)}` })
+  switchTabParams.students = { classId: c.id, name: c.name }
+  uni.switchTab({ url: '/pages/students/students' })
 }
 
 function toggleForm() {
@@ -199,7 +185,6 @@ function edit(c) {
     classIdx: cIdx >= 0 ? cIdx : 0,
     yearIdx: years.length - 1,
     quarterIdx: 0,
-    semesterId: c.semesterId || '',
     headTeacher: c.headTeacher || '',
     slogan: c.slogan || '',
     color: c.color || '#07c160',
@@ -211,7 +196,7 @@ function edit(c) {
 function cancelEdit() {
   editingId.value = ''
   showForm.value = false
-  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, semesterId: '', headTeacher: '', slogan: '', color: '#07c160', customNo: '' }
+  form.value = { gradeIdx: 0, classIdx: 0, yearIdx: years.length - 1, quarterIdx: 0, headTeacher: '', slogan: '', color: '#07c160', customNo: '' }
 }
 
 async function save() {
@@ -219,17 +204,12 @@ async function save() {
   if (!form.value.headTeacher.trim()) {
     return uni.showToast({ title: '请填写班主任姓名', icon: 'none' })
   }
-  if (!form.value.semesterId) {
-    return uni.showToast({ title: '请选择学期（可在设置→学期管理中添加）', icon: 'none' })
-  }
-  const sem = semesterList.value.find((s) => s.id === form.value.semesterId)
   const classNo = form.value.customNo.trim() || classOpts[form.value.classIdx]
   const payload = {
     name: grades[form.value.gradeIdx] + classNo,
     grade: grades[form.value.gradeIdx],
     classNo,
-    term: sem ? sem.name : '',
-    semesterId: form.value.semesterId,
+    term: autoTermName.value,
     headTeacher: form.value.headTeacher,
     slogan: form.value.slogan.trim(),
     color: form.value.color || '#07c160',
@@ -287,7 +267,8 @@ async function showDetailOf(c) {
 }
 function goStudents(c) {
   showDetail.value = false
-  uni.navigateTo({ url: `/pages/students/students?classId=${c.id}&name=${encodeURIComponent(c.name)}` })
+  switchTabParams.students = { classId: c.id, name: c.name }
+  uni.switchTab({ url: '/pages/students/students' })
 }
 function goSeats(c) {
   showDetail.value = false
