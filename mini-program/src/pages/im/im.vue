@@ -61,8 +61,6 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import TIM from 'tim-wx-sdk'
-import TIMUploadPlugin from 'tim-upload-plugin'
 import { theme, auth } from '../../common/store'
 import api from '../../common/request'
 import { pickAndCompressImage } from '../../common/image'
@@ -262,6 +260,9 @@ async function initTim(sdkAppId, userSig) {
     }
     return
   }
+  // 动态导入 tim-wx-sdk（避免在未打开 IM 页面时加载 SDK 抛 addListener 错误）
+  const TIM = (await import('tim-wx-sdk')).default || (await import('tim-wx-sdk'))
+  const TIMUploadPlugin = (await import('tim-upload-plugin')).default || (await import('tim-upload-plugin'))
   tim = TIM.create({ SDKAppID: Number(sdkAppId) })
   tim.setLogLevel(1)
   tim.registerPlugin({ 'tim-upload-plugin': TIMUploadPlugin })
