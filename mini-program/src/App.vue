@@ -36,6 +36,11 @@ export default {
     if (!auth.token) {
       uni.reLaunch({ url: '/pages/login/login' })
     }
+    // 全局捕获未处理 Promise 拒绝（超时/链路不稳定），默认只 log 不弹窗
+    const _onUnhandledRejection = typeof uni !== 'undefined' && uni.onUnhandledRejection
+    if (typeof _onUnhandledRejection === 'function') {
+      _onUnhandledRejection(() => { /* 静默吞掉，避免显示 Error: timeout */ })
+    }
   },
 }
 </script>

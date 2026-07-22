@@ -54,7 +54,7 @@ async function batchRun(tasks) {
  * 额外加了「显式超时」：callContainer 在链路不通时会一直挂起不回调，
  * 不设置超时会导致页面卡死直到微信框架内部超时（抛 Error: timeout）。
  */
-const REQUEST_TIMEOUT = 15000 // 15 秒，超时即视为后端/链路不可用
+const REQUEST_TIMEOUT = 30000 // 30 秒（含冷启动），超时即视为后端/链路不可用
 
 export function request(path, method = 'GET', data = {}, token) {
   // 演示模式：返回本地模拟数据，无需真实后端
