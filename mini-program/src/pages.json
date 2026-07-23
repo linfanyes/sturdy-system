@@ -134,12 +134,6 @@
       }
     },
     {
-      "path": "pages/ai/ai",
-      "style": {
-        "navigationBarTitleText": "AI 助手"
-      }
-    },
-    {
       "path": "pages/config/config",
       "style": {
         "navigationBarTitleText": "设置"
@@ -514,6 +508,10 @@
       "root": "pages/ai",
       "name": "ai-features",
       "pages": [
+        {
+          "path": "ai",
+          "style": { "navigationBarTitleText": "AI 助手" }
+        },
         {
           "path": "ai-knowledge"
         },
