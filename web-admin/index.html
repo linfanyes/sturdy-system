@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>园丁工作台 · 管理端</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#07c160;--primary2:#06ad56;--danger:#e64340;--warn:#e6a23c;--bg:#f5f5f5;--card:#fff;--text:#333;--sub:#888;--border:#eee;--shadow:0 2px 8px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--primary);text-decoration:none}
+input,select,textarea{font-size:14px;border:1px solid #ddd;border-radius:8px;padding:10px 14px;outline:0;width:100%;transition:border .2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+textarea{resize:vertical;min-height:80px}
+button{cursor:pointer;border:none;border-radius:8px;font-size:14px;padding:10px 24px;font-weight:600;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary2)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;border:1px solid #ddd;color:var(--text)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:4px}
+
+/* Layout */
+.app{max-width:1200px;margin:0 auto;padding:16px}
+
+/* Login */
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{width:100%;max-width:400px;background:var(--card);border-radius:16px;padding:40px 32px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.login-title{font-size:24px;font-weight:700;text-align:center;margin-bottom:8px}
+.login-sub{font-size:13px;color:var(--sub);text-align:center;margin-bottom:28px}
+.login-tabs{display:flex;gap:0;margin-bottom:20px;border-radius:8px;overflow:hidden;border:1px solid #ddd}
+.login-tab{flex:1;text-align:center;padding:10px;font-size:14px;cursor:pointer;background:#f9f9f9;font-weight:600;transition:all .2s}
+.login-tab.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sub)}
+.login-btn{width:100%;padding:12px;font-size:16px;margin-top:6px}
+.login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;min-height:20px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-title{font-size:18px;font-weight:700}
+.header-role{font-size:12px;color:#fff;background:var(--primary);padding:2px 10px;border-radius:10px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-user{font-size:13px;color:var(--sub)}
+.header-logout{font-size:13px;color:var(--danger);cursor:pointer}
+
+/* Nav Tabs */
+.nav{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.nav-item{white-space:nowrap;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;background:#f0f0f0;font-weight:500;transition:all .2s}
+.nav-item.on{background:var(--primary);color:#fff}
+.nav-item:hover:not(.on){background:#e0e0e0}
+
+/* Cards */
+.card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-h h3{font-size:16px;font-weight:600}
+.card-body{}
+
+/* Stats Grid */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--card);border-radius:12px;padding:16px;text-align:center;box-shadow:var(--shadow)}
+.stat-num{font-size:32px;font-weight:800;color:var(--primary);display:block}
+.stat-num.warn{color:var(--warn)}
+.stat-lb{font-size:13px;color:var(--sub);margin-top:2px}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{font-weight:600;color:var(--sub);font-size:12px;background:#fafafa;white-space:nowrap}
+tr:hover td{background:#fafbfc}
+td.acts{white-space:nowrap;text-align:right}
+
+/* List Items */
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.list-item:last-child{border-bottom:none}
+.list-info{flex:1}
+.list-title{font-size:14px;font-weight:600}
+.list-meta{font-size:12px;color:var(--sub);margin-top:2px}
+.list-acts{display:flex;gap:6px;flex-shrink:0}
+
+/* Modal */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.modal-h h3{font-size:16px;font-weight:600}
+.modal-close{font-size:22px;color:var(--sub);cursor:pointer;line-height:1}
+.modal-body{}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* Form */
+.form-row{display:flex;gap:10px;margin-bottom:10px}
+.form-row>*{flex:1}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:var(--sub)}
+.form-group .hint{font-size:11px;color:var(--sub);margin-top:3px}
+
+/* Bar */
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.bar-sc{font-size:14px;font-weight:600}
+.bar-acts{display:flex;gap:8px;align-items:center}
+.search-input{max-width:200px;padding:6px 12px;font-size:13px}
+
+/* Badge */
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#f0f0f0;color:var(--sub)}
+.badge.on{background:rgba(7,193,96,.12);color:var(--primary)}
+.badge.danger{background:rgba(230,67,64,.12);color:var(--danger)}
+
+/* Batch Import */
+.batch-area{min-height:180px;font-size:13px;line-height:1.6}
+.batch-result{margin-top:12px;font-size:13px}
+.batch-item{padding:4px 0}
+.batch-item.ok{color:var(--primary)}
+.batch-item.fail{color:var(--danger)}
+
+/* Notice */
+.empty{text-align:center;padding:40px 0;color:var(--sub);font-size:14px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;animation:toastIn .3s}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Badge count */
+.badge-count{display:inline-block;font-size:11px;color:#fff;background:var(--danger);border-radius:10px;padding:0 6px;margin-left:4px;line-height:18px}
+
+/* Dark mode support */
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1a1a1a;--card:#2a2a2a;--text:#e0e0e0;--sub:#999;--border:#333;--shadow:0 2px 8px rgba(0,0,0,.2)}
+  th{background:#333}
+  tr:hover td{background:#303030}
+  .login-tab{background:#333}
+}
+
+/* Responsive */
+@media(max-width:600px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .form-row{flex-direction:column;gap:0}
+  .header-title{font-size:15px}
+  .modal{padding:16px;max-height:90vh}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ======================== 状态管理 ========================
+const state = {
+  view: 'login',           // login | admin | school
+  role: null,              // 'super' | 'school'
+  token: null,
+  user: null,
+  schoolId: null,           // for school admin
+  tab: 'dashboard',        // current nav tab
+  loading: false,
+  toast: '',
+
+  // Data cache
+  schools: [],
+  schoolAdmins: [],
+  teachers: [],
+  classes: [],
+  students: [],
+  notices: [],
+  semesters: [],
+  dashboard: {},
+  configs: [],
+  auditLogs: [],
+  searchQuery: '',
+
+  // Modal
+  modal: null,
+  modalData: {},
+  saving: false,
+}
+
+// ======================== API 封装 ========================
+const API = {
+  BASE: '', // 同域，nginx 代理到后端
+
+  async request(method, path, data) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    }
+    if (state.token) opts.headers['Authorization'] = `Bearer ${state.token}`
+    if (data) opts.body = JSON.stringify(data)
+    const res = await fetch(state.BASE + '/api' + path, opts)
+    if (res.status === 401) { state.view = 'login'; state.token = null; throw new Error('登录过期') }
+    // Handle CSV download
+    const ct = res.headers.get('content-type') || ''
+    if (ct.includes('text/csv')) return res.blob()
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.message || json.error || `请求失败(${res.status})`)
+    return json
+  },
+
+  get(path) { return this.request('GET', path) },
+  post(path, d) { return this.request('POST', path, d) },
+  patch(path, d) { return this.request('PATCH', path, d) },
+  del(path) { return this.request('DELETE', path) },
+}
+
+// ======================== 工具函数 ========================
+function toast(msg) { state.toast = msg; setTimeout(() => state.toast = '', 2500); render() }
+function htmlEscape(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function toCsv(rows) { return rows.map(r => r.map(c => {
+  const s = String(c).replace(/"/g,'""')
+  return s.includes(',')||s.includes('"')?`"${s}"`:s
+}).join(',')).join('\n') }
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = name; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ======================== 页面渲染 ========================
+function render() {
+  const app = document.getElementById('app')
+  if (state.toast) {
+    app.innerHTML = `<div class="toast">${htmlEscape(state.toast)}</div>` + app.innerHTML
+  }
+  if (state.view === 'login') return renderLogin(app)
+  if (state.view === 'admin') return renderAdmin(app)
+  if (state.view === 'school') return renderSchool(app)
+}
+render()
+
+// ======================== Login ========================
+let loginTab = 'super'
+function renderLogin(container) {
+  container.innerHTML = `
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-title">园丁工作台</div>
+      <div class="login-sub">管理端 · Web 控制台</div>
+      <div class="login-tabs">
+        <div class="login-tab ${loginTab==='super'?'on':''}" onclick="switchLogin('super')">超管登录</div>
+        <div class="login-tab ${loginTab==='school'?'on':''}" onclick="switchLogin('school')">校管登录</div>
+      </div>
+      <div class="login-field"><label>用户名</label><input id="loginUser" placeholder="请输入用户名" /></div>
+      <div class="login-field"><label>密码</label><input id="loginPass" type="password" placeholder="请输入密码" /></div>
+      <button class="btn-primary login-btn" onclick="doLogin()">登 录</button>
+      <div class="login-error" id="loginErr"></div>
+    </div>
+  </div>`
+}
+function switchLogin(t) { loginTab = t; render() }
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim()
+  const password = document.getElementById('loginPass').value.trim()
+  if (!username || !password) { document.getElementById('loginErr').textContent = '请输入用户名和密码'; return }
+  try {
+    state.loading = true; render()
+    const path = loginTab === 'super' ? '/admin/login' : '/school-admin/login'
+    const r = await API.post(path, { username, password })
+    state.token = r.token
+    state.user = r
+    state.role = loginTab === 'super' ? 'super' : 'school'
+    if (loginTab === 'school') state.schoolId = r.schoolId
+    state.view = loginTab === 'super' ? 'admin' : 'school'
+    state.tab = 'dashboard'
+    render()
+    loadData()
+  } catch(e) {
+    document.getElementById('loginErr').textContent = e.message || '登录失败'
+  } finally { state.loading = false }
+}
+
+// ======================== 超管端 ========================
+function renderAdmin(container) {
+  const tabs = [
+    { id:'school', label:'🏫 学校' },
+    { id:'admins', label:'👤 管理员' },
+    { id:'config', label:'⚙️ 配置' },
+    { id:'audit', label:'📋 审计日志' },
+  ]
+  container.innerHTML = `
+  <div class="app">
+    <div class="header">
+      <div class="header-left">
+        <span class="header-title">园丁工作台</span>
+        <span class="header-role">超管</span>
+      </div>
+      <div class="header-right">
+        <span class="header-user">${htmlEscape(state.user?.name || '')}</span>
+        <span class="header-logout" onclick="logout()">退出</span>
+      </div>
+    </div>
+    <div class="nav">${tabs.map(t => `<div class="nav-item ${state.tab===t.id?'on':''}" onclick="switchAdminTab('${t.id}')">${t.label}</div>`).join('')}</div>
+    <div id="adminContent"></div>
+  </div>`
+  renderAdminContent()
+}
+function switchAdminTab(t) { state.tab = t; renderAdminContent() }
+
+function renderAdminContent() {
+  const el = document.getElementById('adminContent')
+  if (!el) return
+  if (state.tab === 'school') renderSchools(el)
+  else if (state.tab === 'admins') renderSchoolAdmins(el)
+  else if (state.tab === 'config') renderConfigs(el)
+  else if (state.tab === 'audit') renderAuditLogs(el)
+}
+
+// Schools
+function renderSchools(el) {
+  el.innerHTML = `
+  <div class="bar">
+    <span class="bar-sc">学校管理（${state.schools.length}）</span>
+    <div class="bar-acts">
+      <span class="btn-primary btn-sm" onclick="showSchoolModal()">＋ 新增</span>
+    </div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>学校</th><th>地址</th><th>管理员数</th><th></th></tr>
+      ${state.schools.map(s => `<tr>
+        <td><strong>${htmlEscape(s.name)}</strong></td>
+        <td>${htmlEscape(s.address||'')}</td>
+        <td><span class="badge on">${s.adminCount||0}</span></td>
+        <td class="acts">
+          <button class="btn-outline btn-xs" onclick="showSchoolModal('${s.id}')">编辑</button>
+          <button class="btn-danger btn-xs" onclick="showSchoolModal('${s.id}','delete')">删除</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="4"><div class="empty">暂无学校</div></td></tr>'}
+    </table>
+  </div>`
+}
+
+function showSchoolModal(id, action) {
+  const school = id ? state.schools.find(s => s.id === id) : null
+  if (action === 'delete') {
+    if (!confirm(`确定删除「${school?.name}」？`)) return
+    API.del('/admin/schools/' + id).then(() => { toast('已删除'); loadSchools(); render() }).catch(e => toast(e.message))
+    return
+  }
+  showModal(
+    id ? '编辑学校' : '新增学校',
+    `
+    <div class="form-group"><label>学校名称</label><input id="fSchName" value="${htmlEscape(school?.name||'')}" /></div>
+    <div class="form-group"><label>地址</label><input id="fSchAddr" value="${htmlEscape(school?.address||'')}" /></div>
+    `,
+    async () => {
+      const d = { name: document.getElementById('fSchName').value.trim() }
+      if (!d.name) { toast('名称必填'); return }
+      d.address = document.getElementById('fSchAddr').value.trim()
+      if (id) { await API.patch('/admin/schools/' + id, d); toast('已更新') }
+      else { await API.post('/admin/schools', d); toast('已创建') }
+      closeModal(); loadSchools(); render()
+    }
+  )
+}
+
+// School Admins
+function renderSchoolAdmins(el) {
+  el.innerHTML = `
+  <div class="bar">
+    <span class="bar-sc">学校管理员（${state.schoolAdmins.length}）</span>
+    <div class="bar-acts">
+      <select class="search-input" id="saSchoolFilter" onchange="loadSchoolAdmins()">
+        <option value="">全部学校</option>
+        ${state.schools.map(s => `<option value="${s.id}">${htmlEscape(s.name)}</option>`).join('')}
+      </select>
+      <span class="btn-primary btn-sm" onclick="showSAModal()">＋ 新增</span>
+    </div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>姓名</th><th>用户名</th><th>所属学校</th><th>状态</th><th></th></tr>
+      ${state.schoolAdmins.map(sa => `<tr>
+        <td><strong>${htmlEscape(sa.name)}</strong></td>
+        <td>${htmlEscape(sa.username||'')}</td>
+        <td>${htmlEscape(sa.schoolName||sa.school||'')}</td>
+        <td><span class="badge ${sa.enabled===false?'danger':'on'}">${sa.enabled===false?'禁用':'启用'}</span></td>
+        <td class="acts">
+          <button class="btn-outline btn-xs" onclick="showSAModal('${sa.id}')">编辑</button>
+          <button class="btn-danger btn-xs" onclick="delSA('${sa.id}')">删除</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无管理员</div></td></tr>'}
+    </table>
+  </div>`
+}
+
+function showSAModal(id) {
+  const sa = id ? state.schoolAdmins.find(s => s.id === id) : null
+  showModal(
+    id ? '编辑管理员' : '新增管理员',
+    `
+    <div class="form-group"><label>姓名</label><input id="fSaName" value="${htmlEscape(sa?.name||'')}" /></div>
+    <div class="form-group"><label>用户名</label><input id="fSaUser" value="${htmlEscape(sa?.username||'')}" ${id?'readonly':''} /></div>
+    <div class="form-group"><label>密码${id?'（留空不修改）':''}</label><input id="fSaPass" type="password" ${id?'placeholder="留空不修改"':''} /></div>
+    <div class="form-group"><label>所属学校</label>
+      <select id="fSaSchool">
+        ${state.schools.map(s => `<option value="${s.id}" ${sa?.schoolId===s.id||sa?.schoolId===s.id?'selected':''}>${htmlEscape(s.name)}</option>`).join('')}
+      </select>
+    </div>
+    `,
+    async () => {
+      const d = { name: document.getElementById('fSaName').value.trim(), username: document.getElementById('fSaUser').value.trim(), schoolId: document.getElementById('fSaSchool').value }
+      if (!d.name) { toast('姓名必填'); return }
+      if (!id) { d.password = document.getElementById('fSaPass').value; if(!d.password){toast('密码必填');return} }
+      const pass = document.getElementById('fSaPass').value
+      if (pass) d.password = pass
+      if (id) { await API.patch('/admin/school-admins/' + id, d); toast('已更新') }
+      else { await API.post('/admin/school-admins', d); toast('已创建') }
+      closeModal(); loadSchoolAdmins(); render()
+    }
+  )
+}
+function delSA(id) {
+  if (!confirm('确定删除此管理员？')) return
+  API.del('/admin/school-admins/' + id).then(() => { toast('已删除'); loadSchoolAdmins(); render() }).catch(e => toast(e.message))
+}
+
+// Config
+function renderConfigs(el) {
+  el.innerHTML = `
+  <div class="bar"><span class="bar-sc">系统配置</span></div>
+  <div class="card">
+    ${state.configs.map(c => `
+    <div class="list-item">
+      <div class="list-info">
+        <div class="list-title">${c.label||c.key}</div>
+        <div class="list-meta">${c.key}${c.value?': 已设置':'<span style="color:var(--warn)"> 未设置</span>'}</div>
+      </div>
+      <div class="list-acts">
+        <button class="btn-outline btn-sm" onclick="editConfig('${c.key}','${htmlEscape(c.value||'')}','${htmlEscape(c.label||c.key)}')">编辑</button>
+      </div>
+    </div>`).join('') || '<div class="empty">暂无配置项</div>'}
+  </div>`
+}
+function editConfig(key, value, label) {
+  showModal('编辑配置：' + label, `
+    <div class="form-group"><label>值</label>
+      <input id="fCfgVal" value="${htmlEscape(value)}" ${key.includes('secret')||key.includes('Secret')?'type="password"':''} />
+      <div class="hint">${key.includes('secret')||key.includes('Secret')?'敏感字段，请谨慎填写':''}</div>
+    </div>
+  `, async () => {
+    const val = document.getElementById('fCfgVal').value.trim()
+    await API.post('/admin/config', { key, value: val })
+    toast('已更新'); closeModal(); loadConfigs(); render()
+  })
+}
+
+// Audit Logs
+function renderAuditLogs(el) {
+  el.innerHTML = `
+  <div class="bar"><span class="bar-sc">操作日志（最近 100 条）</span></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <tr><th>时间</th><th>操作</th><th>操作者</th><th>目标</th><th>详情</th></tr>
+        ${state.auditLogs.map(a => `<tr>
+          <td style="white-space:nowrap">${(a.createdAt||'').slice(0,16)}</td>
+          <td><span class="badge">${a.action}</span></td>
+          <td>${htmlEscape(a.operator||'')}</td>
+          <td>${htmlEscape(a.target||'')}</td>
+          <td>${htmlEscape(a.detail||'')}</td>
+        </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无日志</div></td></tr>'}
+      </table>
+    </div>
+  </div>`
+}
+
+// ======================== 校管端 ========================
+function renderSchool(container) {
+  const tabs = [
+    { id:'dashboard', label:'📊 看板' },
+    { id:'teachers', label:'👩‍🏫 教师' },
+    { id:'classes', label:'🏫 班级' },
+    { id:'students', label:'🧑‍🎓 学生' },
+    { id:'notices', label:'📢 公告' },
+    { id:'semesters', label:'🗓️ 学期' },
+  ]
+  container.innerHTML = `
+  <div class="app">
+    <div class="header">
+      <div class="header-left">
+        <span class="header-title">园丁工作台</span>
+        <span class="header-role">校管</span>
+      </div>
+      <div class="header-right">
+        <span class="header-user">${htmlEscape(state.user?.name||'')} · ${htmlEscape(state.user?.school||'')}</span>
+        <span class="header-logout" onclick="logout()">退出</span>
+      </div>
+    </div>
+    <div class="nav">${tabs.map(t => `<div class="nav-item ${state.tab===t.id?'on':''}" onclick="switchSchoolTab('${t.id}')">${t.label}</div>`).join('')}</div>
+    <div id="schoolContent"></div>
+  </div>`
+  renderSchoolContent()
+}
+function switchSchoolTab(t) { state.tab = t; renderSchoolContent() }
+
+function renderSchoolContent() {
+  const el = document.getElementById('schoolContent')
+  if (!el) return
+  if (state.tab === 'dashboard') renderDashboard(el)
+  else if (state.tab === 'teachers') renderTeachers(el)
+  else if (state.tab === 'classes') renderClasses(el)
+  else if (state.tab === 'students') renderStudents(el)
+  else if (state.tab === 'notices') renderNotices(el)
+  else if (state.tab === 'semesters') renderSemesters(el)
+}
+
+// Dashboard
+function renderDashboard(el) {
+  const d = state.dashboard
+  el.innerHTML = `
+  <div class="stats">
+    <div class="stat-card"><span class="stat-num">${d.totalTeachers||0}</span><span class="stat-lb">教师</span></div>
+    <div class="stat-card"><span class="stat-num">${d.activeTeachers||0}</span><span class="stat-lb">启用</span></div>
+    <div class="stat-card"><span class="stat-num">${d.totalClasses||0}</span><span class="stat-lb">班级</span></div>
+    <div class="stat-card"><span class="stat-num">${d.totalStudents||0}</span><span class="stat-lb">学生</span></div>
+    <div class="stat-card"><span class="stat-num ${d.attendanceRate!=null&&d.attendanceRate<80?'warn':''}">${d.attendanceRate!=null?d.attendanceRate+'%':'-'}</span><span class="stat-lb">今日出勤</span></div>
+    <div class="stat-card"><span class="stat-num ${d.pendingHomework>0?'warn':''}">${d.pendingHomework||0}</span><span class="stat-lb">待批改</span></div>
+  </div>
+  <div class="card"><div class="card-h"><h3>🔍 搜索</h3></div>
+    <div style="display:flex;gap:8px">
+      <input id="schSearch" placeholder="输入关键词搜索学生/教师/班级…" onkeyup="if(event.key==='Enter')doSearch()" />
+      <button class="btn-primary" onclick="doSearch()">搜索</button>
+    </div>
+    <div id="schResult" style="margin-top:10px"></div>
+  </div>`
+}
+
+async function doSearch() {
+  const q = document.getElementById('schSearch')?.value.trim()
+  if (!q) return
+  try {
+    const r = await API.get('/school-admin/search?q=' + encodeURIComponent(q))
+    const el = document.getElementById('schResult')
+    let html = ''
+    if (r.students?.length) html += `<div style="margin-top:8px"><strong>学生</strong>` + r.students.map(s => `<div style="padding:4px 0">${htmlEscape(s.name)} · ${s.studentNo||''} · ${s.className||''}</div>`).join('') + '</div>'
+    if (r.teachers?.length) html += `<div style="margin-top:8px"><strong>教师</strong>` + r.teachers.map(t => `<div style="padding:4px 0">${htmlEscape(t.name)} · ${t.username||''} · ${t.subject||''}</div>`).join('') + '</div>'
+    if (r.classes?.length) html += `<div style="margin-top:8px"><strong>班级</strong>` + r.classes.map(c => `<div style="padding:4px 0">${htmlEscape(c.name)} · ${c.grade||''}</div>`).join('') + '</div>'
+    if (!html) html = '<div style="padding:12px 0;color:var(--sub)">没有匹配结果</div>'
+    el.innerHTML = html
+  } catch(e) { toast(e.message) }
+}
+
+// Teachers
+function renderTeachers(el) {
+  const filterId = 'teacherFilter'
+  const q = document.getElementById(filterId)?.value?.toLowerCase() || ''
+  const list = state.teachers.filter(t => !q || t.name?.toLowerCase().includes(q) || t.username?.toLowerCase().includes(q))
+  el.innerHTML = `
+  <div class="bar">
+    <span class="bar-sc">教师管理（${state.teachers.length}）</span>
+    <div class="bar-acts">
+      <input id="${filterId}" class="search-input" placeholder="搜索姓名…" oninput="renderTeachersContent()" value="${htmlEscape(q)}"/>
+      <span class="btn-primary btn-sm" onclick="showTeacherModal()">＋ 新增</span>
+      <span class="btn-outline btn-sm" onclick="showBatchImport()">📋 批量</span>
+      <span class="btn-outline btn-sm" onclick="downloadTeachers()">📥 导出</span>
+    </div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>姓名</th><th>用户名</th><th>学科</th><th>手机</th><th>编号</th><th>状态</th><th></th></tr>
+      ${list.map(t => `<tr>
+        <td><strong>${htmlEscape(t.name)}</strong></td>
+        <td>${htmlEscape(t.username||'')}</td>
+        <td>${htmlEscape(t.subject||'')}</td>
+        <td>${htmlEscape(t.phone||'')}</td>
+        <td>${htmlEscape(t.teacherNo||'')}</td>
+        <td><span class="badge ${t.enabled===false?'danger':'on'}">${t.enabled===false?'禁用':'启用'}</span></td>
+        <td class="acts">
+          <button class="btn-outline btn-xs" onclick="showTeacherModal('${t.id}')">编辑</button>
+          <button class="btn-danger btn-xs" onclick="delTeacher('${t.id}')">删除</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7"><div class="empty">暂无教师</div></td></tr>'}
+    </table>
+  </div>`
+}
+
+function renderTeachersContent() { renderTeachers(document.getElementById('schoolContent')) }
+
+function showTeacherModal(id) {
+  const t = id ? state.teachers.find(x => x.id === id) : null
+  showModal(
+    id ? '编辑教师' : '新增教师',
+    `
+    <div class="form-row"><div class="form-group"><label>姓名</label><input id="fTName" value="${htmlEscape(t?.name||'')}" /></div>
+    <div class="form-group"><label>用户名</label><input id="fTUser" value="${htmlEscape(t?.username||'')}" ${id?'readonly':''} /></div></div>
+    <div class="form-row"><div class="form-group"><label>密码${id?'（留空不修改）':''}</label><input id="fTPass" type="password" ${id?'placeholder="留空"':''} /></div>
+    <div class="form-group"><label>学科</label><input id="fTSubj" value="${htmlEscape(t?.subject||'')}" /></div></div>
+    <div class="form-row"><div class="form-group"><label>手机</label><input id="fTPhone" value="${htmlEscape(t?.phone||'')}" /></div></div>
+    `,
+    async () => {
+      const d = { name: document.getElementById('fTName').value.trim(), username: document.getElementById('fTUser').value.trim() }
+      if (!d.name) { toast('姓名必填'); return }
+      const pass = document.getElementById('fTPass').value
+      if (pass) d.password = pass
+      if (!id && !pass) { toast('密码必填'); return }
+      d.subject = document.getElementById('fTSubj').value.trim()
+      d.phone = document.getElementById('fTPhone').value.trim()
+      if (id) { await API.patch('/school-admin/teachers/' + id, d); toast('已更新') }
+      else { await API.post('/school-admin/teachers', d); toast('已创建') }
+      closeModal(); loadTeachers(); renderSchoolContent()
+    }
+  )
+}
+
+function delTeacher(id) {
+  if (!confirm('确定删除此教师？（关联数据将被清除）')) return
+  API.del('/school-admin/teachers/' + id).then(() => { toast('已删除'); loadTeachers(); renderSchoolContent() }).catch(e => toast(e.message))
+}
+
+function showBatchImport() {
+  showModal('批量导入教师', `
+    <div style="font-size:13px;color:var(--sub);margin-bottom:8px">每行一条：姓名,用户名,密码（英文逗号分隔）</div>
+    <textarea id="fBatch" class="batch-area" placeholder="张三,zhangsan,123456&#10;李四,lisi,123456"></textarea>
+    <div id="batchResult" class="batch-result"></div>
+  `, async () => {
+    const text = document.getElementById('fBatch').value.trim()
+    const lines = text.split('\n').filter(Boolean)
+    const teachers = lines.map(l => { const p = l.split(',').map(s=>s.trim()); return {name:p[0]||'',username:p[1]||'',password:p[2]||''} }).filter(t=>t.name&&t.username&&t.password)
+    if (!teachers.length) { toast('格式错误'); return }
+    try {
+      const r = await API.post('/school-admin/teachers/batch', { teachers })
+      document.getElementById('batchResult').innerHTML = `<div style="margin-bottom:8px;font-weight:600">成功 ${r.success}/${r.total}</div>`
+        + (r.results||[]).map(rr => `<div class="batch-item ${rr.status==='成功'?'ok':'fail'}">${htmlEscape(rr.name)}(${rr.username})：${rr.status}${rr.error?' - '+htmlEscape(rr.error):''}</div>`).join('')
+      loadTeachers()
+    } catch(e) { toast(e.message) }
+  }, false)
+}
+
+async function downloadTeachers() {
+  try {
+    const r = await API.get('/school-admin/export/teachers')
+    downloadBlob(r, 'teachers.csv'); toast('已下载')
+  } catch(e) { toast(e.message) }
+}
+
+// Classes
+function renderClasses(el) {
+  el.innerHTML = `
+  <div class="bar"><span class="bar-sc">班级管理（${state.classes.length}）</span>
+    <div class="bar-acts"><span class="btn-primary btn-sm" onclick="showClassModal()">＋ 新增</span></div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>班级</th><th>年级</th><th>班主任</th><th>学期</th><th></th></tr>
+      ${state.classes.map(c => `<tr>
+        <td><strong>${htmlEscape(c.name)}</strong></td>
+        <td>${htmlEscape(c.grade||'')}</td>
+        <td>${htmlEscape(c.headTeacher||'')}</td>
+        <td>${htmlEscape(c.term||'')}</td>
+        <td class="acts"><button class="btn-danger btn-xs" onclick="delClass('${c.id}','${htmlEscape(c.name)}')">删除</button></td>
+      </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无班级</div></td></tr>'}
+    </table>
+  </div>`
+}
+
+function showClassModal() {
+  showModal('新增班级', `
+    <div class="form-row">
+      <div class="form-group"><label>班级名称</label><input id="fClsName" placeholder="如：一年级1班" /></div>
+      <div class="form-group"><label>年级</label><input id="fClsGrade" placeholder="如：一年级" /></div>
+    </div>
+    <div class="form-group"><label>班主任</label>
+      <select id="fClsTeacher">${state.teachers.map(t => `<option value="${t.id}">${htmlEscape(t.name)}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label>学期</label><input id="fClsTerm" placeholder="如：2026春季学期" /></div>
+  `, async () => {
+    const htId = document.getElementById('fClsTeacher').value
+    const ht = state.teachers.find(t => t.id === htId)
+    await API.post('/school-admin/classes', {
+      name: document.getElementById('fClsName').value.trim(),
+      grade: document.getElementById('fClsGrade').value.trim(),
+      headTeacher: ht?.name || '',
+      headTeacherId: htId,
+      term: document.getElementById('fClsTerm').value.trim(),
+    })
+    toast('已创建'); closeModal(); loadClasses(); renderSchoolContent()
+  })
+}
+
+function delClass(id, name) {
+  if (!confirm(`确定删除「${name}」？`)) return
+  API.del('/school-admin/classes/' + id).then(() => { toast('已删除'); loadClasses(); renderSchoolContent() }).catch(e => toast(e.message))
+}
+
+// Students
+function renderStudents(el) {
+  const filter = document.getElementById('stuFilter')?.value?.toLowerCase() || ''
+  const list = state.students.filter(s => !filter || s.name?.toLowerCase().includes(filter) || s.studentNo?.toLowerCase().includes(filter))
+  el.innerHTML = `
+  <div class="bar">
+    <span class="bar-sc">学生管理（${state.students.length}）</span>
+    <div class="bar-acts">
+      <input id="stuFilter" class="search-input" placeholder="搜索姓名…" oninput="renderStudents(document.getElementById('schoolContent'))" value="${htmlEscape(filter)}" />
+      <span class="btn-outline btn-sm" onclick="downloadStudents()">📥 导出</span>
+    </div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <tr><th>姓名</th><th>学号</th><th>性别</th><th>班级</th><th>家长</th><th></th></tr>
+      ${list.map(s => `<tr>
+        <td><strong>${htmlEscape(s.name)}</strong></td>
+        <td>${htmlEscape(s.studentNo||'')}</td>
+        <td>${htmlEscape(s.gender||'')}</td>
+        <td>${htmlEscape(s.className||'')}</td>
+        <td>${s.parentLoginEnabled?'<span class="badge on">已开通</span>':'<span class="badge">未开通</span>'}</td>
+        <td class="acts"><button class="btn-outline btn-xs" onclick="showStudentEditModal('${s.id}')">编辑</button></td>
+      </tr>`).join('') || '<tr><td colspan="6"><div class="empty">暂无学生</div></td></tr>'}
+    </table>
+  </div>`
+}
+
+function showStudentEditModal(id) {
+  const s = state.students.find(x => x.id === id)
+  if (!s) return
+  showModal('编辑学生', `
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input id="fStuName" value="${htmlEscape(s.name)}" /></div>
+      <div class="form-group"><label>性别</label>
+        <select id="fStuGender"><option value="">请选择</option><option value="男" ${s.gender==='男'?'selected':''}>男</option><option value="女" ${s.gender==='女'?'selected':''}>女</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>家长姓名</label><input id="fStuParentName" value="${htmlEscape(s.parentName||'')}" /></div>
+      <div class="form-group"><label>家长电话</label><input id="fStuParentPhone" value="${htmlEscape(s.parentPhone||'')}" /></div>
+    </div>
+  `, async () => {
+    await API.patch('/school-admin/students/' + id, {
+      name: document.getElementById('fStuName').value.trim(),
+      gender: document.getElementById('fStuGender').value,
+      parentName: document.getElementById('fStuParentName').value.trim(),
+      parentPhone: document.getElementById('fStuParentPhone').value.trim(),
+    })
+    toast('已保存'); closeModal(); loadStudents(); renderSchoolContent()
+  })
+}
+
+async function downloadStudents() {
+  const r = await API.get('/school-admin/export/students')
+  downloadBlob(r, 'students.csv'); toast('已下载')
+}
+
+// Notices
+function renderNotices(el) {
+  el.innerHTML = `
+  <div class="bar"><span class="bar-sc">学校公告（${state.notices.length}）</span>
+    <div class="bar-acts"><span class="btn-primary btn-sm" onclick="showNoticeModal()">＋ 发布</span></div>
+  </div>
+  <div class="card">
+    ${state.notices.map(n => `
+    <div class="list-item">
+      <div class="list-info">
+        <div class="list-title">${htmlEscape(n.title)}</div>
+        <div class="list-meta">${(n.createdAt||'').slice(0,10)} ${n.pinned?'· 置顶':''}</div>
+      </div>
+      <div class="list-acts">
+        <button class="btn-danger btn-xs" onclick="delNotice('${n.id}')">删除</button>
+      </div>
+    </div>`).join('') || '<div class="empty">暂无公告</div>'}
+  </div>`
+}
+
+function showNoticeModal() {
+  showModal('发布学校公告', `
+    <div class="form-group"><label>标题</label><input id="fNotTitle" /></div>
+    <div class="form-group"><label>内容</label><textarea id="fNotContent"></textarea></div>
+  `, async () => {
+    await API.post('/school-admin/notices', {
+      title: document.getElementById('fNotTitle').value.trim(),
+      content: document.getElementById('fNotContent').value.trim(),
+      scope: 'school',
+    })
+    toast('已发布'); closeModal(); loadNotices(); renderSchoolContent()
+  })
+}
+function delNotice(id) {
+  if (!confirm('确定删除？')) return
+  API.del('/school-admin/notices/' + id).then(() => { toast('已删除'); loadNotices(); renderSchoolContent() }).catch(e => toast(e.message))
+}
+
+// Semesters
+function renderSemesters(el) {
+  el.innerHTML = `
+  <div class="bar"><span class="bar-sc">学期管理（${state.semesters.length}）</span>
+    <div class="bar-acts"><span class="btn-primary btn-sm" onclick="showSemesterModal()">＋ 新增</span></div>
+  </div>
+  <div class="card">
+    ${state.semesters.map(s => `
+    <div class="list-item">
+      <div class="list-info">
+        <div class="list-title">${htmlEscape(s.name)} ${s.current?'<span class="badge on">当前</span>':''}</div>
+        <div class="list-meta">${s.startDate||''} ~ ${s.endDate||''}</div>
+      </div>
+    </div>`).join('') || '<div class="empty">暂无学期</div>'}
+  </div>`
+}
+
+function showSemesterModal() {
+  showModal('新增学期', `
+    <div class="form-group"><label>学期名称</label><input id="fSemName" placeholder="如：2026春季学期" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>开始日期</label><input id="fSemStart" placeholder="2026-02-17" /></div>
+      <div class="form-group"><label>结束日期</label><input id="fSemEnd" placeholder="2026-07-04" /></div>
+    </div>
+  `, async () => {
+    await API.post('/semesters', {
+      name: document.getElementById('fSemName').value.trim(),
+      startDate: document.getElementById('fSemStart').value.trim(),
+      endDate: document.getElementById('fSemEnd').value.trim(),
+    })
+    toast('已创建'); closeModal(); loadSemesters(); renderSchoolContent()
+  })
+}
+
+// ======================== Modal 组件 ========================
+function showModal(title, body, onOk, showOk = true) {
+  state.modal = { title, body, onOk, showOk }
+  render()
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal()
+  })
+}
+function closeModal() { state.modal = null; render() }
+
+// Override render to inject modal
+const _origRender = render
+function renderWithModal() {
+  _origRender()
+  if (state.modal) {
+    const app = document.getElementById('app')
+    const m = state.modal
+    const div = document.createElement('div')
+    div.id = 'modalOverlay'
+    div.className = 'modal-mask'
+    div.innerHTML = `
+    <div class="modal">
+      <div class="modal-h"><h3>${m.title}</h3><span class="modal-close" onclick="closeModal()">×</span></div>
+      <div class="modal-body">${m.body}</div>
+      ${m.showOk !== false ? `<div class="modal-foot"><button class="btn-outline" onclick="closeModal()">取消</button><button class="btn-primary" id="modalOkBtn" onclick="handleModalOk()">确定</button></div>` : ''}
+    </div>`
+    app.appendChild(div)
+  }
+}
+render = renderWithModal
+
+async function handleModalOk() {
+  if (state.modal?.onOk) {
+    const btn = document.getElementById('modalOkBtn')
+    if (btn) { btn.disabled = true; btn.textContent = '处理中…' }
+    await state.modal.onOk()
+  }
+}
+
+// ======================== 数据加载 ========================
+async function loadData() {
+  if (state.role === 'super') {
+    await Promise.all([loadSchools(), loadSchoolAdmins(), loadConfigs()])
+    render()
+  } else if (state.role === 'school') {
+    await Promise.all([loadDashboard(), loadTeachers(), loadClasses(), loadStudents(), loadNotices(), loadSemesters()])
+    render()
+  }
+}
+
+async function loadSchools() {
+  try { const r = await API.get('/admin/schools'); state.schools = Array.isArray(r) ? r : (r.items || r || []) } catch(e) {}
+}
+async function loadSchoolAdmins() {
+  try {
+    const filter = document.getElementById('saSchoolFilter')
+    const schoolId = filter?.value || ''
+    const r = await API.get('/admin/school-admins' + (schoolId ? '?schoolId='+schoolId : ''))
+    state.schoolAdmins = Array.isArray(r) ? r : (r.items || [])
+  } catch(e) {}
+}
+async function loadConfigs() {
+  try {
+    const r = await API.get('/admin/config')
+    state.configs = Array.isArray(r) ? r : (r.items || [])
+  } catch(e) {}
+}
+async function loadDashboard() {
+  try { const r = await API.get('/school-admin/dashboard'); state.dashboard = r || {} } catch(e) {}
+}
+async function loadTeachers() {
+  try { const r = await API.get('/school-admin/teachers'); state.teachers = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+}
+async function loadClasses() {
+  try { const r = await API.get('/school-admin/classes'); state.classes = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+}
+async function loadStudents() {
+  try { const r = await API.get('/school-admin/students'); const items = Array.isArray(r) ? r : (r.items || []); state.students = items } catch(e) {}
+}
+async function loadNotices() {
+  try { const r = await API.get('/school-admin/notices'); state.notices = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+}
+async function loadSemesters() {
+  try { const r = await API.get('/semesters'); state.semesters = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+}
+
+async function loadAuditLogs() {
+  try { const r = await API.get('/admin/audit-logs'); state.auditLogs = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+}
+// Override admin tab to load audits
+const _origSwitchAdminTab = switchAdminTab
+function switchAdminTabWithAudit(t) {
+  state.tab = t
+  if (t === 'audit') loadAuditLogs().then(() => render())
+  renderAdminContent()
+}
+switchAdminTab = switchAdminTabWithAudit
+
+function logout() {
+  state.token = null; state.user = null; state.view = 'login'
+  state.schools = []; state.teachers = []; state.classes = []; state.students = []
+  render()
+}
+
+// Initial load
+render()
+</script>
+</body>
+</html>

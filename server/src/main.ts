@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { json, urlencoded } from 'express'
+import * as express from 'express'
+import { join } from 'path'
 import { AppModule } from './app.module'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
 
@@ -27,6 +29,10 @@ async function bootstrap() {
   )
   app.useGlobalFilters(new TypeOrmExceptionFilter())
   const port = config.get<number>('PORT') || 3000
+
+  // 托管 web-admin 静态页面（浏览器管理端）
+  const webAdminPath = join(__dirname, '..', '..', 'web-admin')
+  app.use(express.static(webAdminPath))
 
   // —— 安全启动自检 ——
   const jwtSecret = config.get<string>('JWT_SECRET')
