@@ -239,9 +239,6 @@ function renderLogin(container) {
         <div class="login-tab ${loginTab==='super'?'on':''}" onclick="switchLogin('super')">超管登录</div>
         <div class="login-tab ${loginTab==='school'?'on':''}" onclick="switchLogin('school')">校管登录</div>
       </div>
-      <div style="text-align:center;margin-bottom:14px">
-        <span style="font-size:13px;color:var(--primary);cursor:pointer;text-decoration:underline" onclick="demoLogin()">🎮 演示模式（免登录）</span>
-      </div>
       <div class="login-field"><label>用户名</label><input id="loginUser" placeholder="请输入用户名" /></div>
       <div class="login-field"><label>密码</label><input id="loginPass" type="password" placeholder="请输入密码" /></div>
       <button class="btn-primary login-btn" onclick="doLogin()">登 录</button>
@@ -269,26 +266,6 @@ async function doLogin() {
   } catch(e) {
     document.getElementById('loginErr').textContent = e.message || '登录失败'
   } finally { state.loading = false }
-}
-
-// 演示模式：免登录进入
-async function demoLogin() {
-  try {
-    state.loading = true; render()
-    const r = await API.post('/admin/login', { username: 'admin', password: 'admin' })
-    state.token = r.token; state.user = r; state.role = 'super'; state.view = 'admin'; state.tab = 'dashboard'
-    render(); loadData()
-  } catch(e) {
-    // fallback: 尝试校管演示
-    try {
-      const r = await API.post('/school-admin/login', { username: 'sa1', password: '123456' })
-      state.token = r.token; state.user = r; state.role = 'school'; state.schoolId = r.schoolId; state.view = 'school'; state.tab = 'dashboard'
-      render(); loadData()
-    } catch(e2) {
-      document.getElementById('loginErr').textContent = '演示模式初始化失败，请检查后端是否运行'
-      state.loading = false; render()
-    }
-  }
 }
 
 // ======================== 超管端 ========================

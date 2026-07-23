@@ -10,9 +10,6 @@
     <view class="or">— 或 —</view>
     <button class="btn wechat" @click="doWechatLogin">微信登录</button>
 
-    <view class="demo-hint">无需账号？</view>
-    <button class="btn demo" @click="enterDemoMode">👉 演示模式（免登录）</button>
-
     <!-- 微信绑定弹窗 -->
     <view class="mask" v-if="bindOpenid" @click="bindOpenid = ''">
       <view class="sheet" @click.stop>
@@ -37,17 +34,6 @@ import { setAuth, setUser, setParent, theme, auth } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
 const focusPwd = ref(false)  // 用户名框回车后聚焦密码框
-
-/* -------- 演示模式入口 -------- */
-function enterDemoMode() {
-  setMockMode(true)
-  // 写入共享状态，让 App.vue 冷启动时也能恢复
-  uni.setStorageSync('g_token', 'mock-token')
-  uni.setStorageSync('g_user', JSON.stringify({ name: '珊珊老师', school: '阳光实验小学（演示版）' }))
-  auth.token = 'mock-token'
-  auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
-  uni.switchTab({ url: '/pages/dashboard/dashboard' })
-}
 
 /* -------- 统一登录 -------- */
 async function doLogin() {
