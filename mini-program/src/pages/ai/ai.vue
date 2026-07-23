@@ -183,6 +183,15 @@ marked.use({
       const c = theme.mode === 'dark' ? DARK : LIGHT
       return `<text style="color:${c.link};">${t.text}</text>`
     },
+    // 防御：明文 HTML 标签（非 markdown 语法）逃逸到 rich-text，转义为纯文本
+    html(t) {
+      return esc(t.text || '')
+    },
+    // 图片：仅允许 http/https 协议，防止 javascript: 等协议注入
+    image(t) {
+      if (!t.href || !/^https?:\/\//i.test(t.href)) return esc(t.text || '图片')
+      return `<image src="${esc(t.href)}" style="max-width:100%;border-radius:8rpx;margin:8rpx 0;" mode="widthFix"></image>`
+    },
   },
 })
 function md(text) {

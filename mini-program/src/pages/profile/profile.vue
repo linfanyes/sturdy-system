@@ -19,7 +19,7 @@
     <view class="mask editing" v-if="editing" @click="editing = false">
       <view class="sheet" @click.stop>
         <view class="sh-h">编辑资料</view>
-        <view class="fld"><text class="lab">老师称呼</text><input v-model="form.name" class="inp" /></view>
+        <view class="fld"><text class="lab">老师称呼</text><input v-model="form.name" class="inp" maxlength="50" placeholder="如：王老师" /></view>
         <view class="fld"><text class="lab">所在学校</text><input v-model="form.school" class="inp" maxlength="30" placeholder="由学校管理员分配" disabled="true" /></view>
         <view class="fld"><text class="lab">任教学期</text>
           <view class="row2">
@@ -33,8 +33,8 @@
           <text v-for="s in subjectOpts" :key="s" class="sb" :class="form.subjects.includes(s) && 'on'" @click="toggleSub(s)">{{ form.subjects.includes(s) ? '✓ ' : '' }}{{ s }}</text>
         </view>
         <view class="fld"><text class="lab">教育格言</text><input v-model="form.motto" class="inp" maxlength="50" /></view>
-        <view class="fld"><text class="lab">手机号</text><input v-model="form.phone" class="inp" placeholder="选填，便于联系" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text></view>
-        <view class="fld"><text class="lab">邮箱</text><input v-model="form.email" class="inp" placeholder="选填，便于联系" /></view>
+        <view class="fld"><text class="lab">手机号</text><input v-model="form.phone" class="inp" maxlength="11" placeholder="选填，11位手机号" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text></view>
+        <view class="fld"><text class="lab">邮箱</text><input v-model="form.email" class="inp" maxlength="100" placeholder="选填，邮箱地址" @blur="checkEmail" /><text v-if="emailError" class="field-err">{{ emailError }}</text></view>
         <text class="lab">头像</text>
         <view class="avatars">
           <text v-for="a in avatarOpts" :key="a" class="avopt" :class="form.avatar === a && 'on'" @click="form.avatar = a">{{ a }}</text>
@@ -123,6 +123,7 @@ const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [
 const editing = ref(false)
 const saving = ref(false)
 const phoneError = ref('')
+const emailError = ref('')
 const showHelp = ref(false)
 
 // 备份历史与自动备份相关状态
@@ -184,8 +185,17 @@ function checkPhone() {
   }
 }
 
+function checkEmail() {
+  if (form.email && !isEmail(form.email)) {
+    emailError.value = '邮箱格式错误'
+  } else {
+    emailError.value = ''
+  }
+}
+
 async function save() {
   if (phoneError.value) return uni.showToast({ title: phoneError.value, icon: 'none' })
+  if (emailError.value) return uni.showToast({ title: emailError.value, icon: 'none' })
   if (form.phone && !isPhone(form.phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
   if (form.email && !isEmail(form.email)) return uni.showToast({ title: '邮箱格式错误', icon: 'none' })
   saving.value = true

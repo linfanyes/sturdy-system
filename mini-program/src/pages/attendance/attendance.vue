@@ -148,7 +148,9 @@ async function loadAtt() {
     attId.value = rec.id
     try {
       const arr = typeof rec.records === 'string' ? JSON.parse(rec.records) : rec.records || []
-      for (const r of arr) map.value[r.studentId] = r.status
+      // 归一化后端可能返回的英文状态→前端中文枚举
+      const STATUS_NORMALIZE = { present: '出勤', late: '迟到', absent: '旷课', leave: '请假' }
+      for (const r of arr) map.value[r.studentId] = STATUS_NORMALIZE[r.status] || r.status
     } catch (e) {}
   }
   for (const s of students.value) if (!map.value[s.id]) map.value[s.id] = '出勤'

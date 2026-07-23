@@ -7,6 +7,8 @@ let _mockMode = false
 /** 开���后所有 API 返回本地模拟数据，无需后端即可全功能预览 */
 export function setMockMode(enabled) {
   _mockMode = enabled
+  // 持久化演示模式开关，使小程序重启后仍能恢复（App.vue 启动时读取 g_mock_mode）
+  uni.setStorageSync('g_mock_mode', enabled ? 'true' : 'false')
   if (enabled) {
     auth.token = 'mock-token'
     auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
@@ -72,7 +74,7 @@ export function request(path, method = 'GET', data = {}, token) {
     const timer = setTimeout(() => {
       if (settled) return
       settled = true
-      reject(new Error('请求超时（15s）：后端服务或云托管链路可能未就绪'))
+      reject(new Error('请求超时（30s）：后端服务或云托管链路可能未就绪'))
     }, REQUEST_TIMEOUT)
     cloud.callContainer({
       config: { env: CLOUDRUN_ENV },

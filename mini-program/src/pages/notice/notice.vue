@@ -40,6 +40,7 @@
       <textarea v-model="form.content" class="inp area" placeholder="公告内容" />
       <view class="polish" @click="aiPolish">{{ polishing ? '润色中…' : '✨ AI 润色' }}</view>
       <label class="row"><checkbox :checked="form.pinned" @change="(e) => (form.pinned = e.detail.value)" color="#e6a23c" /> 置顶这条公告</label>
+      <label class="row" v-if="!editing"><checkbox :checked="pushToParent" @change="pushToParent = $event.detail.value" color="#07c160" /> 📲 推送给家长（微信订阅消息）</label>
       <button class="ok" :disabled="saving" @click="save">{{ saving ? '保存中…' : (editing ? '保存' : '发布') }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>
     </view>
@@ -98,6 +99,7 @@ const editing = ref(null)
 const saving = ref(false)
 const polishing = ref(false)
 const form = ref({ classId: '全校', title: '', content: '', pinned: false })
+const pushToParent = ref(false)
 // 打印预览相关状态
 const showPrintPreview = ref(false)
 const printTmpPath = ref('')
@@ -217,8 +219,21 @@ async function save() {
       await api.patch('/notices/' + editing.value.id, { ...form.value })
       uni.showToast({ title: '已更新', icon: 'none' })
     } else {
-      await api.post('/notices', { ...form.value, ended: false })
+      const notice = await api.post('/notices', { ...form.value, ended: false })
       uni.showToast({ title: '已发布', icon: 'none' })
+      // 推送通知给家长
+      if (pushToParent.value && form.value.classId) {
+        try {
+          await api.post('/notices/push', {
+            classId: form.value.classId,
+            title: form.value.title,
+            content: form.value.content,
+          })
+          uni.showToast({ title: '已发布并推送', icon: 'success' })
+        } catch (e) {
+          // 推送失败不影响发布
+        }
+      }
     }
     showAdd.value = false
     load()

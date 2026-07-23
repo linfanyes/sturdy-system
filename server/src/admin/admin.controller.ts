@@ -1,13 +1,23 @@
 import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query } from '@nestjs/common'
 import { AdminService } from './admin.service'
 import { SuperAdminGuard } from './super-admin.guard'
+import { AuditService } from '../audit/audit.service'
+import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
+import { AdminLoginDto } from '../auth/dto/unified-login.dto'
+
+// 超管登录：每分钟最多 6 次
+const AdminLoginRateLimit = createRateLimitGuard(60_000, 6)
 
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly svc: AdminService) {}
+  constructor(
+    private readonly svc: AdminService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Post('login')
-  login(@Body() b: { username?: string; password?: string }) {
+  @UseGuards(AdminLoginRateLimit)
+  login(@Body() b: AdminLoginDto) {
     return this.svc.login(b?.username || '', b?.password || '')
   }
 
@@ -63,5 +73,11 @@ export class AdminController {
 
   @Post('reset-all')
   @UseGuards(SuperAdminGuard)
-  resetAll() { return this.svc.resetAll() }
+  resetAll(@Body() b: { confirm?: boolean }) { return this.svc.resetAll(b?.confirm === true) }
+
+  @Get('audit-logs')
+  @UseGuards(SuperAdminGuard)
+  auditLogs(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.audit.list(schoolId, Number(skip) || 0, Number(take) || 100)
+  }
 }

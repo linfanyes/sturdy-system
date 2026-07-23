@@ -4,11 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { AiService } from './ai.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { Student } from '../students/student.entity'
 
+@Roles('teacher')
 @Controller('ai')
 export class AiController {
   constructor(
@@ -104,7 +106,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   async analyzeExam(@Body() b: { examId: string }, @CurrentTeacher() t: any) {
     const exam = await this.examRepo.findOne({ where: { id: b.examId } })
-    if (!exam) return { content: '考试不存在' }
+    if (!exam || exam.teacherId !== t.sub) return { content: '考试不存在或无权限' }
     const grades = await this.gradeRepo.find({ where: { classId: exam.classId } })
     const byExam = grades.filter(g => g.examId === exam.id || g.examName === exam.name)
     const lines: string[] = [
@@ -138,7 +140,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   async diagnose(@Body() b: { studentId: string }, @CurrentTeacher() t: any) {
     const stu = await this.studentRepo.findOne({ where: { id: b.studentId } })
-    if (!stu) return { content: '学生不存在' }
+    if (!stu || stu.teacherId !== t.sub) return { content: '学生不存在或无权限' }
     const grades = await this.gradeRepo.find({ where: { classId: stu.classId } })
     const lines: string[] = [`学生：${stu.name}（${stu.gender}）`, `班级：${stu.classId}`]
     for (const g of grades) {

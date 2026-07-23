@@ -1,6 +1,7 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('class_expenses')
 export class ClassExpense extends BaseEntity {
   @Column() classId: string
@@ -12,6 +13,7 @@ export class ClassExpense extends BaseEntity {
   @Column({ default: '' }) handler: string
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('class_activities')
 export class ClassActivity extends BaseEntity {
   @Column() classId: string
@@ -21,6 +23,7 @@ export class ClassActivity extends BaseEntity {
   @Column('simple-json', { nullable: true }) photos: string[]
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('class_duty_configs')
 export class ClassDutyConfig extends BaseEntity {
   @Column() classId: string

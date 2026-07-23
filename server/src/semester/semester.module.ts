@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('semesters')
 export class Semester extends BaseEntity {
   @Column() name: string        // 如：2025年春季学期

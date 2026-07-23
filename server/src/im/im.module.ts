@@ -12,6 +12,7 @@ import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm'
 import { Repository, In, Not } from 'typeorm'
 import crypto from 'node:crypto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { NotFoundException, BadRequestException } from '@nestjs/common'
 import { AppConfig } from '../config/app-config.entity'
@@ -165,6 +166,7 @@ export class ImController {
   constructor(private readonly im: ImService) {}
 
   /** 获取 UserSig：userId 缺省使用当前教师 ID */
+  @Roles('teacher')
   @Post('user-sig')
   @UseGuards(JwtAuthGuard)
   userSig(@Body() b: { userId?: string }, @CurrentTeacher() t: any) {
@@ -173,6 +175,7 @@ export class ImController {
   }
 
   /** 家长花名册（按 classId 过滤，仅当前教师可见） */
+  @Roles('teacher')
   @Get('parents')
   @UseGuards(JwtAuthGuard)
   parents(@Query('classId') classId: string, @CurrentTeacher() t: any) {
@@ -180,6 +183,7 @@ export class ImController {
   }
 
   /** 班级群号落库 */
+  @Roles('teacher')
   @Post('class-group')
   @UseGuards(JwtAuthGuard)
   classGroup(@Body() b: { classId?: string; groupId?: string }, @CurrentTeacher() t: any) {

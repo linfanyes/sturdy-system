@@ -11,6 +11,10 @@ dist-electron-new/
 *.pid
 app.log
 app.pid
+.env
+seed-runner.js
+tester.js
+test-results.json
 
 # WorkBuddy 项目数据（非源码）
 .workbuddy/

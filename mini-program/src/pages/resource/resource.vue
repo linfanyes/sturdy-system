@@ -33,8 +33,8 @@
     </view>
 
     <view class="sheet" v-if="showAdd">
-      <input v-model="form.title" class="inp" placeholder="资源名称 *" />
-      <input v-model="form.url" class="inp" placeholder="外部链接（与图片二选一）" />
+      <input v-model="form.title" class="inp" maxlength="100" placeholder="资源名称 *" />
+      <input v-model="form.url" class="inp" maxlength="500" placeholder="外部链接（与图片二选一，需 http/https 开头）" />
       <view class="up" @click="pickImg">
         <image v-if="form.image" :src="form.image" class="prev" mode="aspectFill" />
         <text v-else>📷 点击选择图片/文件</text>
@@ -61,7 +61,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import api from '../../common/request'
 import { theme } from '../../common/store'
-import { isNonEmpty } from '../../common/validators'
+import { isNonEmpty, isUrl, clip, MAX_LEN } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
 
 const presetResources = [
@@ -183,6 +183,10 @@ function copy(u) {
 async function save() {
   if (!isNonEmpty(form.value.title)) return uni.showToast({ title: '请填名称', icon: 'none' })
   if (!isNonEmpty(form.value.url) && !form.value.image) return uni.showToast({ title: '请填链接或选图片', icon: 'none' })
+  if (form.value.url && !isUrl(form.value.url)) return uni.showToast({ title: '链接格式错误，需以 http:// 或 https:// 开头', icon: 'none' })
+  // 截断超长字段防止数据库截断
+  form.value.title = clip(form.value.title, MAX_LEN.TITLE)
+  form.value.url = clip(form.value.url, MAX_LEN.URL)
   saving.value = true
   try {
     await api.post('/resources', { ...form.value })

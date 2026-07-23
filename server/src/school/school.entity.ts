@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
@@ -35,6 +35,7 @@ export class School {
 
 /* ===== 班级/课表/考勤/作业/通知/资源 ===== */
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('schedules')
 export class ScheduleItem extends BaseEntity {
   @Column() classId: string
@@ -49,6 +50,7 @@ export class ScheduleItem extends BaseEntity {
   @Column({ type: 'text', nullable: true }) note: string
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('attendances')
 export class Attendance extends BaseEntity {
   @Column() classId: string
@@ -56,6 +58,7 @@ export class Attendance extends BaseEntity {
   @Column('simple-json') records: { studentId: string; status: string }[]
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('homework')
 export class Homework extends BaseEntity {
   @Column() classId: string
@@ -67,6 +70,7 @@ export class Homework extends BaseEntity {
   @Column({ default: '待批改' }) status: string
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('notices')
 export class Notice extends BaseEntity {
   @Column({ default: '全校' }) classId: string
@@ -75,8 +79,10 @@ export class Notice extends BaseEntity {
   @Column({ type: 'boolean', default: false }) pinned: boolean
   @Column({ type: 'boolean', default: false }) ended: boolean
   @Column({ nullable: true }) endedAt: string
+  @Column({ default: 'class' }) scope: string  // 'class'=班级公告 'school'=学校公告
 }
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('resources')
 export class Resource extends BaseEntity {
   @Column() title: string

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource, Not } from 'typeorm'
-import { Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common'
+import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException } from '@nestjs/common'
 import {
   ScheduleItem,
   Attendance,
@@ -16,7 +16,9 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
+import { SecurityModule, SecurityService } from '../security/security.module'
 import { Student } from '../students/student.entity'
+import { ClassItem } from '../classes/class.entity'
 
 class ScheduleService extends CrudService<ScheduleItem> {
   constructor(@InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>) {
@@ -64,6 +66,9 @@ class NoticeController extends CrudController<Notice> {
   constructor(
     s: NoticeService,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
+    private readonly sec: SecurityService,
   ) {
     super(s)
   }
@@ -71,15 +76,33 @@ class NoticeController extends CrudController<Notice> {
   /** 推送通知微信订阅消息给已订阅的家长 */
   @Post('push')
   @UseGuards(JwtAuthGuard)
-  async push(@Body() b: { noticeId: string; classId: string; title: string; content: string }) {
+  async push(@CurrentTeacher() t: any, @Body() b: { noticeId: string; classId: string; title: string; content: string }) {
+    // 仅允许向当前教师本人任教的班级推送，防止越权读取其他教师班级的学生 PII
+    const owned = await this.classRepo.findOne({ where: { id: b.classId, teacherId: t.sub } } as any)
+    if (!owned) return { pushed: 0, error: '班级不存在或无权访问' }
     const students = await this.studentRepo.find({
       where: { classId: b.classId, parentOpenId: Not('') },
     })
-    // TODO: 调用微信订阅消息 API，需要配置模板 ID。
-    // 参考格式：POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send
-    // { touser: openId, template_id: 'TEMPLATE_ID', page: 'pages/parent/parent',
-    //   data: { thing1: {value: title}, thing2: {value: content} } }
-    return { pushed: students.length, students: students.map((s) => ({ name: s.name, openId: s.parentOpenId })) }
+    const openIds = students.map(s => s.parentOpenId).filter(Boolean)
+    const result = await this.sec.pushNotice({ title: b.title, content: b.content }, openIds)
+    return { pushed: result.sent, total: result.total }
+  }
+
+  /** 支持 scope=school 过滤学校公告 */
+  @Get()
+  async findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string,
+    @Query('scope') scope?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
+    if (scope === 'school') {
+      // 学校级公告：用教师所在的 schoolId 过滤（不限制 teacherId 归属）
+      // 返回所有 scope='school' 的公告
+      const [items, total] = await this.noticeRepo.findAndCount({
+        where: { scope: 'school' },
+        order: { createdAt: 'DESC' } as any,
+        skip: Number(skip) || 0, take: Math.min(Number(take) || 500, 500),
+      })
+      return { items, total }
+    }
+    return this.service.findAll(t.sub, classId, Number(skip) || 0, Math.min(Number(take) || 500, 500))
   }
 }
 
@@ -317,8 +340,9 @@ class ScheduleImportController {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student]),
+    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem]),
     AiModule,
+    SecurityModule,
   ],
   providers: [
     ScheduleService,

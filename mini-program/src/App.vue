@@ -33,8 +33,20 @@ export default {
       setMockMode(true)
     }
     initTheme()
-    if (!auth.token) {
+    // 多角色会话恢复：任一角色令牌存在即视为已登录，并跳转对应首页，
+    // 避免超管 / 校管 / 家长登录态在冷启动时被判为未登录而被强制退回登录页。
+    const hasTeacher = !!uni.getStorageSync('g_token')
+    const hasAdmin = !!uni.getStorageSync('admin_token')
+    const hasSa = !!uni.getStorageSync('sa_token')
+    const hasParent = !!uni.getStorageSync('g_parent_token')
+    if (!hasTeacher && !hasAdmin && !hasSa && !hasParent) {
       uni.reLaunch({ url: '/pages/login/login' })
+    } else if (hasAdmin) {
+      uni.reLaunch({ url: '/pages/admin/admin' })
+    } else if (hasSa) {
+      uni.reLaunch({ url: '/pages/school-admin/school-admin' })
+    } else if (hasParent) {
+      uni.reLaunch({ url: '/pages/parent/parent' })
     }
   },
 }

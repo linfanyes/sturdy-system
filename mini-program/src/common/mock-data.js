@@ -109,34 +109,34 @@ const TEACHERS = [
 const IMG_DEMO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAB4CAIAAAD6wG44AAAB+0lEQVR4nO3cIUtDURyG8XdzKC6Jcwbbmq7YTRr1A6z4CbVaBMOCGPQTWEQMgsgwqiBjFoPFe7er28WH59f+3HLg4dyz3XAa+yeTiKtZ9wI0XwaGMzCcgeEMDGdgOAPDGRjOwHCt4sfDwWKWoV85OP3xkTsYzsBwBoYrOYO/K3jRa/Gm/HnkDoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYzsBwBoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAzXIT2t4aDXD1mPEmrmb2tJEWjd7BVVlvg25dcP+XsLke9rK2k2SgaVVltgZ9f8zFOv5PRW0ZvSUpGVVPnGXzxkOOd3DxNNaqaOgMf9nJ+/3Xilo6qprbAm+0sL+XyMd12NlZLRlVW2xm8vZ6X9+x202qm30lSMqqa2gL7z2cx/NABZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYzsBwBoYzMJyB4QwMZ2A4A8MZGM7AcAaGMzCcgeEMDGdgOAPDGRjOwHAGhjMwnIHhDAxnYDgDwxkYbobLSIeD+S1D8+IOhjMwnIHhSs5gr+3+79zBcAaGMzCcgeEMDGdgOAPDGRjuE1FLWNj97r9cAAAAAElFTkSuQmCC'
 
 const NOTES = [
-  { id: 'n1', title: '《春晓》教学反思', content: '今天讲了孟浩然的《春晓》，大部分学生能当堂背诵。互动环节课堂气氛活跃。', category: '教学反思', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n2', title: '下周家长会安排', content: '时间：周四下午 4:00\n地点：本班教室\n内容：期中成绩分析 + 暑假安全提醒', category: '班会记录', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n3', title: '英语公开课教案', content: 'Unit 3 My Friends — 通过角色扮演练习句型，目标：能用英语描述朋友的外貌和性格。', category: '学习资料', updatedAt: todayStr, createdAt: todayStr, images: [IMG_DEMO] },
-  { id: 'n4', title: '低年级识字教学心得', content: '用字理识字+游戏化复习，学生记字更牢。每天课前 3 分钟"开火车"认读效果好。', category: '教学', updatedAt: todayStr, createdAt: todayStr },
-  { id: 'n5', title: '班级图书角管理计划', content: '设立图书管理员轮岗（每周 2 人），借阅登记本放图书角；每月评选"阅读之星"。', category: '班级', updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n1', title: '《春晓》教学反思', content: '今天讲了孟浩然的《春晓》，大部分学生能当堂背诵。互动环节课堂气氛活跃。', category: '教学反思', favorite: true, pinned: false, images: [], updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n2', title: '下周家长会安排', content: '时间：周四下午 4:00\n地点：本班教室\n内容：期中成绩分析 + 暑假安全提醒', category: '班会记录', favorite: false, pinned: true, images: [], updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n3', title: '英语公开课教案', content: 'Unit 3 My Friends — 通过角色扮演练习句型，目标：能用英语描述朋友的外貌和性格。', category: '学习资料', favorite: true, pinned: false, images: [IMG_DEMO], updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n4', title: '低年级识字教学心得', content: '用字理识字+游戏化复习，学生记字更牢。每天课前 3 分钟"开火车"认读效果好。', category: '教学', favorite: false, pinned: false, images: [], updatedAt: todayStr, createdAt: todayStr },
+  { id: 'n5', title: '班级图书角管理计划', content: '设立图书管理员轮岗（每周 2 人），借阅登记本放图书角；每月评选"阅读之星"。', category: '班级', favorite: false, pinned: false, images: [], updatedAt: todayStr, createdAt: todayStr },
 ]
 
 const TODOS = [
-  { id: 't1', title: '批改周末作业', done: false, date: todayStr },
-  { id: 't2', title: '准备下周教案', done: false, date: todayStr },
-  { id: 't3', title: '填写教学日志', done: true, date: todayStr },
-  { id: 't4', title: '通知家长开会时间', done: false, date: todayStr },
-  { id: 't5', title: '整理学生成长档案', done: false, date: todayStr },
-  { id: 't6', title: '回复家长群消息', done: true, date: todayStr },
+  { id: 't1', title: '批改周末作业', note: '一年级一班语文周末作业', done: false, date: todayStr },
+  { id: 't2', title: '准备下周教案', note: '《荷叶圆圆》第一课时', done: false, date: todayStr },
+  { id: 't3', title: '填写教学日志', note: '记录今日课堂与作业情况', done: true, date: todayStr },
+  { id: 't4', title: '通知家长开会时间', note: '周五下午4点家长会', done: false, date: todayStr },
+  { id: 't5', title: '整理学生成长档案', note: '更新3名学生成长记录', done: false, date: todayStr },
+  { id: 't6', title: '回复家长群消息', note: '回复6位家长疑问', done: true, date: todayStr },
 ]
 
 const SCHEDULES = [
-  { id: 'sch1', subject: '语文', period: 1, dayOfWeek: todayDow, teacher: '珊珊老师', classId: 'c1', section: '早读' },
-  { id: 'sch2', subject: '数学', period: 2, dayOfWeek: todayDow, teacher: '张老师', classId: 'c1' },
-  { id: 'sch3', subject: '英语', period: 3, dayOfWeek: todayDow, teacher: '李老师', classId: 'c1' },
-  { id: 'sch4', subject: '体育', period: 4, dayOfWeek: todayDow, teacher: '刘老师', classId: 'c1' },
-  { id: 'sch5', subject: '音乐', period: 5, dayOfWeek: todayDow, teacher: '陈老师', classId: 'c1' },
-  { id: 'sch6', subject: '班会', period: 6, dayOfWeek: todayDow, teacher: '珊珊老师', classId: 'c1' },
+  { id: 'sch1', subject: '语文', period: 1, dayOfWeek: todayDow, teacher: '珊珊老师', classId: 'c1', section: '早读', weekType: 'all', note: '' },
+  { id: 'sch2', subject: '数学', period: 2, dayOfWeek: todayDow, teacher: '张老师', classId: 'c1', section: null, weekType: 'all', note: '' },
+  { id: 'sch3', subject: '英语', period: 3, dayOfWeek: todayDow, teacher: '李老师', classId: 'c1', section: null, weekType: 'all', note: '' },
+  { id: 'sch4', subject: '体育', period: 4, dayOfWeek: todayDow, teacher: '刘老师', classId: 'c1', section: null, weekType: 'all', note: '' },
+  { id: 'sch5', subject: '音乐', period: 5, dayOfWeek: todayDow, teacher: '陈老师', classId: 'c1', section: null, weekType: 'all', note: '' },
+  { id: 'sch6', subject: '班会', period: 6, dayOfWeek: todayDow, teacher: '珊珊老师', classId: 'c1', section: null, weekType: 'all', note: '' },
 ]
 
 const NOTICES = [
-  { id: 'nc1', title: '下周期末考试安排', content: '请各位家长协助孩子做好复习准备，具体时间另行通知。', pinned: true, ended: false },
-  { id: 'nc2', title: '暑假安全注意事项', content: '防溺水、防中暑、注意交通安全。', pinned: false, ended: false },
+  { id: 'nc1', classId: 'c1', title: '下周期末考试安排', content: '请各位家长协助孩子做好复习准备，具体时间另行通知。', pinned: true, ended: false, endedAt: null },
+  { id: 'nc2', classId: 'c1', title: '暑假安全注意事项', content: '防溺水、防中暑、注意交通安全。', pinned: false, ended: false, endedAt: null },
 ]
 
 const BEHAVIOR_RECORDS = [
@@ -167,14 +167,14 @@ const HOMEWORK = [
 
 /* ---------------- 获奖记录 ---------------- */
 const AWARD_RECORDS = [
-  { id: 'aw1', name: '校级三好学生', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['综合', '荣誉'], note: '学习成绩优异，品德表现突出', ratingScore: 95 },
-  { id: 'aw2', name: '绘画比赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', tags: ['美术', '竞赛'], note: '《春天的校园》获区级少儿绘画一等奖', ratingScore: 92 },
-  { id: 'aw3', name: '优秀班干部', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['班务', '管理'], note: '担任班长期间班级纪律显著提升', ratingScore: 90 },
-  { id: 'aw4', name: '书法比赛二等奖', issuer: '市书法协会', date: todayStr, level: '市级', tags: ['书法', '竞赛'], note: '作品获市少儿书法大赛二等奖', ratingScore: 88 },
-  { id: 'aw5', name: '数学竞赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', tags: ['数学', '竞赛'], note: '区小学生数学思维竞赛个人一等奖', ratingScore: 96 },
-  { id: 'aw6', name: '科技创新奖', issuer: '市科协', date: todayStr, level: '市级', tags: ['科技', '创新'], note: '航模制作项目获市青少年科技创新大赛优秀奖', ratingScore: 90 },
-  { id: 'aw7', name: '阅读之星', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['阅读', '习惯'], note: '本学期课外阅读量全校第一', ratingScore: 88 },
-  { id: 'aw8', name: '文明礼仪标兵', issuer: '阳光实验小学', date: todayStr, level: '校级', tags: ['品德'], note: '日常行为规范表现突出', ratingScore: 85 },
+  { id: 'aw1', name: '校级三好学生', issuer: '阳光实验小学', date: todayStr, level: '校级', image: '', tags: ['综合', '荣誉'], note: '学习成绩优异，品德表现突出', ratingScore: 95 },
+  { id: 'aw2', name: '绘画比赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', image: '', tags: ['美术', '竞赛'], note: '《春天的校园》获区级少儿绘画一等奖', ratingScore: 92 },
+  { id: 'aw3', name: '优秀班干部', issuer: '阳光实验小学', date: todayStr, level: '校级', image: '', tags: ['班务', '管理'], note: '担任班长期间班级纪律显著提升', ratingScore: 90 },
+  { id: 'aw4', name: '书法比赛二等奖', issuer: '市书法协会', date: todayStr, level: '市级', image: '', tags: ['书法', '竞赛'], note: '作品获市少儿书法大赛二等奖', ratingScore: 88 },
+  { id: 'aw5', name: '数学竞赛一等奖', issuer: '区教育局', date: todayStr, level: '区级', image: '', tags: ['数学', '竞赛'], note: '区小学生数学思维竞赛个人一等奖', ratingScore: 96 },
+  { id: 'aw6', name: '科技创新奖', issuer: '市科协', date: todayStr, level: '市级', image: '', tags: ['科技', '创新'], note: '航模制作项目获市青少年科技创新大赛优秀奖', ratingScore: 90 },
+  { id: 'aw7', name: '阅读之星', issuer: '阳光实验小学', date: todayStr, level: '校级', image: '', tags: ['阅读', '习惯'], note: '本学期课外阅读量全校第一', ratingScore: 88 },
+  { id: 'aw8', name: '文明礼仪标兵', issuer: '阳光实验小学', date: todayStr, level: '校级', image: '', tags: ['品德'], note: '日常行为规范表现突出', ratingScore: 85 },
 ]
 
 /* ---------------- 班级活动 ---------------- */
@@ -189,17 +189,17 @@ const CLASS_ACTIVITIES = [
 
 /* ---------------- 轮值表 ---------------- */
 const DUTY_ROSTERS = [
-  { id: 'dr1', classId: 'c1', name: '第20周值日表', type: '按组', assignments: [
+  { id: 'dr1', classId: 'c1', name: '第20周值日表', type: '值日', assignments: [
     { date: todayStr, persons: ['张小明', '李小华', '王小芳'] },
     { date: todayStr, persons: ['赵小刚', '刘思琪', '孙浩然'] },
     { date: todayStr, persons: ['周雅婷', '吴梓涵', '郑欣然'] },
   ] },
-  { id: 'dr2', classId: 'c2', name: '第20周值日表', type: '按人', assignments: [
+  { id: 'dr2', classId: 'c2', name: '第20周值日表', type: '值日', assignments: [
     { date: todayStr, persons: ['陈子轩', '杨一诺'] },
     { date: todayStr, persons: ['郑凯', '冯雪'] },
     { date: todayStr, persons: ['黄子涵', '陈子轩'] },
   ] },
-  { id: 'dr3', classId: 'c3', name: '第20周值日表', type: '按组', assignments: [
+  { id: 'dr3', classId: 'c3', name: '第20周值日表', type: '值日', assignments: [
     { date: todayStr, persons: ['何苗', '许乐'] },
     { date: todayStr, persons: ['邓欣', '曹宇轩'] },
   ] },
@@ -253,7 +253,7 @@ const MOCK = {
   '/behavior-records': BEHAVIOR_RECORDS,
   '/config/public': { defaultSubjects: ['语文', '数学', '英语', '科学', '道德与法治', '体育', '音乐', '美术', '信息科技'] },
   '/users/me': { id: 'u1', name: '珊珊老师', school: '阳光实验小学', subjects: ['语文', '品德'] },
-  '/config/ai': { provider: '阿里云 DashScope', baseUrl: 'https://llm-vd2v208bfoq2g7cm.cn-beijing.maas.aliyuncs.com/api/v1', apiKey: '', textModel: 'qwen3.7-plus', visionModel: 'qwen3-vl-plus', imageModel: 'qwen3.7-plus', videoModel: '', temperature: 0.7, maxTokens: 2048, aiName: '小林子', systemPrompt: '你是一位亲切、专业的教师助理。回答简洁明了。', enabledModels: { text: true, vision: true, image: true, video: false } /* 演示模式下 AI 密钥留空；如需演示 AI 功能请在上方设置页填入真实 apiKey */ },
+  '/config/ai': { id: 'ai_demo', teacherId: 'u1', baseUrl: 'https://api.openai.com/v1', apiKey: '', textModel: 'gpt-4o-mini', visionModel: 'gpt-4o', imageModel: 'dall-e-3', videoModel: 'none', temperature: 0.7, aiName: '小林子', systemPrompt: '你是一位耐心、专业的小学教师助手。', resourceModels: { chat: 'gpt-4o-mini', 'exam-analysis': 'gpt-4o' } },
   '/config/app': [{ key: '版本', value: '1.0.0 (demo)' }, { key: '环境', value: '演示模式' }],
   '/duty-rosters': DUTY_ROSTERS,
   '/class-activities': CLASS_ACTIVITIES,
@@ -265,6 +265,8 @@ const MOCK = {
   '/ai/gen-image': GEN_IMAGE_RESULT,
   '/ai/gen-video': GEN_VIDEO_RESULT,
   '/ai/parse-file': { text: '这是演示模式下从文件解析出的模拟文本内容。在实际环境中，系统会通过 AI 服务解析 PDF 或识别图片中的文字。' },
+  '/ai/asr': { text: '（演示模式）语音识别结果——在实际环境中会调用 AI 语音识别服务返回文字。' },
+  '/ai/ocr': { text: '（演示模式）图片文字识别结果——在实际环境中会调用 AI OCR 服务识别图片中的文字内容。' },
   '/ai/chat-sync': { content: '（演示模式）【互动问答】\nQ：什么是小数？\nA：小数由整数部分、小数点和小数部分组成，用来表示不到 1 个整体或比 1 大的非整数。\n【课堂讨论题】\n1. 生活中哪些地方会用到小数？\n【随堂小测】\n1. 0.5 + 0.3 = （0.8）\n2. 比较大小：0.7 ○ 0.69（填 >）' },
   '/ai/analyze-exam': { content: '（演示模式）【考试成绩分析报告】\n\n一、总体评价\n本次考试整体表现良好，语文和英语成绩优异，数学略有薄弱。\n\n二、学科亮点与薄弱点\n· 英语：均分最高，学生整体掌握扎实\n· 语文：高分段明显，阅读写作能力强\n· 数学：部分学生在计算与解决问题上需加强，及格率偏低\n\n三、改进建议\n1. 数学可增加每日口算练习\n2. 语文继续保持阅读量' },
   '/ai/diagnose': { content: '（演示模式）【学情诊断报告】\n\n一、学业趋势\n该生成绩整体呈上升趋势，最近一次考试较上次有明显进步。\n\n二、优势与薄弱\n· 优势学科：英语（持续高分，语言表达能力强）\n· 薄弱学科：数学（计算速度需提升）\n\n三、提升建议\n1. 每日安排 15 分钟口算练习\n2. 周末完成 2-3 道应用题训练\n3. 鼓励多阅读英语课外绘本' },
@@ -314,6 +316,12 @@ const MOCK = {
   '/parent-auth/homework': HOMEWORK.filter(h => h.classId === 'c1'),
   '/students/import': { success: 0, failed: 0, errors: [] },
   '/notices/push': { pushed: 0, students: [] },
+  '/notice-templates': [
+    { id: 'nt1', title: '家长会通知', category: '家长会', content: '各位家长好，我校定于[日期]召开家长会，地点为本班教室，请准时参加。' },
+    { id: 'nt2', title: '作业提醒', category: '班级通知', content: '请提醒孩子今日完成[科目]作业，并于明日上交。' },
+    { id: 'nt3', title: '假期安全提醒', category: '学校通知', content: '假期期间请注意防溺水、交通、消防等安全，合理安排作息。' },
+    { id: 'nt4', title: '考试安排', category: '班级通知', content: '下周[日期]进行[科目]单元测试，请协助孩子做好复习。' },
+  ],
   '/admin/login': { token: 'mock-super-token' },
   '/admin/schools': [{ id: 'sc1', name: '阳光实验小学', code: 'S3A7F2', status: 'active' }],
   '/admin/school-admins': [{ id: 'sa1', username: 'school1', name: '李校长', schoolId: 'sc1' }],
@@ -328,9 +336,182 @@ const MOCK = {
   '/auth/bind-teacher': { role: 'teacher', token: 'mock-token', user: { id: 'u1', name: '珊珊老师' } },
   '/auth/bind-parent': { role: 'parent', token: 'mock-token', parent: { imUserId:'p_demo', studentId:'s1', studentName:'张小明', classId:'c1', studentNo:'2024001' } },
   '/students/s1/toggle-parent-login': { studentId: 's1', parentLoginEnabled: true },
+
+  /* ========== 新增：缺失的业务实体 ========== */
+
+  // 备份（字段与 backup_snapshots 实体一致：label/payload/type；真实路由 /backups）
+  '/backups': [
+    { id: 'bk1', teacherId: 'u1', label: '手动备份 2026-07-18', type: 'manual', payload: { note: '备份前数据正常' }, createdAt: '2026-07-18T10:30:00' },
+    { id: 'bk2', teacherId: 'u1', label: '自动备份 2026-07-22', type: 'auto', payload: { note: '每日自动备份' }, createdAt: '2026-07-22T14:00:00' },
+    { id: 'bk3', teacherId: 'u1', label: '期末数据备份', type: 'manual', payload: { note: '期末全量备份' }, createdAt: '2026-07-23T08:00:00' },
+  ],
+
+  // 教学资源（字段与 resources 实体一致：description/image/tags/url；真实路由 /resources）
+  '/resources': [
+    { id: 'r1', title: '一年级语文课件-春天的发现', category: '课件', tags: ['语文', '春天'], url: '', image: IMG_DEMO, description: '包含春天的古诗、生字与课堂活动设计', createdAt: '2026-07-15' },
+    { id: 'r2', title: '数学口算题卡100题', category: '习题', tags: ['数学', '口算'], url: '', image: '', description: '100道100以内加减法口算题，附答案', createdAt: '2026-07-16' },
+    { id: 'r3', title: '英语单词卡片（Unit 3）', category: '课件', tags: ['英语', '单词'], url: '', image: IMG_DEMO, description: 'Unit 3 核心词汇闪卡，含音标与例句', createdAt: '2026-07-17' },
+    { id: 'r4', title: '小学科学实验指导手册', category: '资料', tags: ['科学', '实验'], url: '', image: '', description: '适合小学段的家庭小实验指导', createdAt: '2026-07-10' },
+    { id: 'r5', title: '三年级阅读练习精选', category: '习题', tags: ['语文', '阅读'], url: '', image: '', description: '三年级课内外阅读理解专项训练', createdAt: '2026-07-12' },
+  ],
+
+  // 成长记录
+  '/growth-entries': [
+    { id: 'grow1', studentId: 's1', studentName: '张小明', type: '学习', title: '本周课堂表现', date: '2026-07-18', content: '本周上课积极发言，语文课主动回答问题，数学需要加强计算练习。' },
+    { id: 'grow2', studentId: 's5', studentName: '刘思琪', type: '品德', title: '帮助同学', date: '2026-07-19', content: '帮助同桌完成数学作业，耐心讲解难题，体现了互助精神。' },
+    { id: 'grow3', studentId: 's2', studentName: '李小华', type: '特长', title: '书法获奖', date: '2026-07-20', content: '在校书法比赛中获得一等奖，作品将在学校展板展示。' },
+    { id: 'grow4', studentId: 's1', studentName: '张小明', type: '荣誉', title: '担任升旗手', date: '2026-07-22', content: '因表现优异，被选为本周升旗仪式旗手。' },
+    { id: 'grow5', studentId: 's9', studentName: '周雅婷', type: '学习', title: '英语进步明显', date: '2026-07-21', content: '英语期中考试比上次提高15分，口语表达更加自信。' },
+  ],
+
+  // 课堂积分（字段与 score_records 实体一致：delta；真实路由 /score-records）
+  '/score-records': [
+    { id: 'sr1', classId: 'c1', studentId: 's5', studentName: '刘思琪', delta: 5, reason: '课堂回答问题正确', date: todayStr },
+    { id: 'sr2', classId: 'c1', studentId: 's1', studentName: '张小明', delta: 3, reason: '帮助同学', date: todayStr },
+    { id: 'sr3', classId: 'c1', studentId: 's8', studentName: '孙浩然', delta: 2, reason: '作业书写认真', date: todayStr },
+    { id: 'sr4', classId: 'c1', studentId: 's4', studentName: '赵小刚', delta: 1, reason: '上课遵守纪律', date: todayStr },
+    { id: 'sr5', classId: 'c1', studentId: 's2', studentName: '李小华', delta: 4, reason: '英语口语展示', date: todayStr },
+  ],
+
+  // 小组积分（字段与 group_scores 实体一致：color/name/points；真实路由 /group-scores）
+  '/group-scores': [
+    { id: 'gs1', classId: 'c1', name: '第一组（阳光组）', color: '#07c160', points: 85, date: todayStr },
+    { id: 'gs2', classId: 'c1', name: '第二组（星光组）', color: '#409eff', points: 92, date: todayStr },
+    { id: 'gs3', classId: 'c1', name: '第三组（月亮组）', color: '#e6a23c', points: 78, date: todayStr },
+    { id: 'gs4', classId: 'c2', name: 'A组', color: '#07c160', points: 88, date: todayStr },
+    { id: 'gs5', classId: 'c2', name: 'B组', color: '#e06c75', points: 76, date: todayStr },
+  ],
+
+  // 奖励记录（字段与 reward_records 实体一致：type/points/reason；真实路由 /reward-records）
+  '/reward-records': [
+    { id: 'rw1', classId: 'c1', studentId: 's5', studentName: '刘思琪', type: '免作业卡', points: 50, reason: '课堂表现优异兑换', date: todayStr },
+    { id: 'rw2', classId: 'c1', studentId: 's2', studentName: '李小华', type: '选座特权', points: 30, reason: '英语口语展示兑换', date: todayStr },
+    { id: 'rw3', classId: 'c1', studentId: 's8', studentName: '孙浩然', type: '游戏管理员', points: 20, reason: '作业书写认真兑换', date: todayStr },
+  ],
+
+  // 学生打卡
+  // 学生打卡（字段与 checkins 实体一致：studentId/studentName/type/date/count/note；真实路由 /checkins）
+  '/checkins': [
+    { id: 'ck1', classId: 'c1', studentId: 's1', studentName: '张小明', type: 'reading', date: todayStr, count: 1, note: '完成《西游记》15页' },
+    { id: 'ck2', classId: 'c1', studentId: 's2', studentName: '李小华', type: 'reading', date: todayStr, count: 1, note: '完成《三字经》诵读' },
+    { id: 'ck3', classId: 'c1', studentId: 's3', studentName: '王小芳', type: 'reading', date: todayStr, count: 1, note: '' },
+    { id: 'ck4', classId: 'c1', studentId: 's4', studentName: '赵小刚', type: 'sport', date: todayStr, count: 1, note: '跳绳200个' },
+    { id: 'ck5', classId: 'c1', studentId: 's5', studentName: '刘思琪', type: 'reading', date: todayStr, count: 1, note: '完成《小王子》25页' },
+    { id: 'ck6', classId: 'c1', studentId: 's8', studentName: '孙浩然', type: 'homework', date: todayStr, count: 1, note: '口算全对' },
+  ],
+
+  // 课外阅读（字段与 reading_logs 实体一致：bookTitle/author/minutes/note；真实路由 /reading-logs）
+  '/reading-logs': [
+    { id: 'rl1', classId: 'c1', studentId: 's5', studentName: '刘思琪', bookTitle: '《小王子》', author: '圣埃克苏佩里', pages: 25, minutes: 30, note: '喜欢玫瑰花的情节', date: todayStr },
+    { id: 'rl2', classId: 'c1', studentId: 's1', studentName: '张小明', bookTitle: '《西游记（少儿版）》', author: '吴承恩', pages: 15, minutes: 20, note: '孙悟空最厉害', date: todayStr },
+    { id: 'rl3', classId: 'c1', studentId: 's9', studentName: '周雅婷', bookTitle: '《安徒生童话》', author: '安徒生', pages: 30, minutes: 40, note: '卖火柴的小女孩很感人', date: todayStr },
+    { id: 'rl4', classId: 'c1', studentId: 's2', studentName: '李小华', bookTitle: '《三字经》', author: '佚名', pages: 10, minutes: 15, note: '会背第一段', date: todayStr },
+    { id: 'rl5', classId: 'c2', studentId: 's6', studentName: '陈子轩', bookTitle: '《十万个为什么》', author: '少儿编辑部', pages: 20, minutes: 25, note: '恐龙专题很有趣', date: todayStr },
+  ],
+
+  // 家访记录（字段与 home_visits 实体一致：address/followUp/photos/status；真实路由 /home-visits）
+  '/home-visits': [
+    { id: 'hv1', classId: 'c1', studentId: 's4', studentName: '赵小刚', address: '幸福小区3栋', content: '了解课堂注意力不集中问题，家长表示孩子在家做作业不够专注。', date: '2026-07-15', followUp: '建议减少屏幕时间，增加户外活动', photos: [], status: '已完成' },
+    { id: 'hv2', classId: 'c1', studentId: 's5', studentName: '刘思琪', address: '阳光花园5栋', content: '表扬近期突出表现，学生在校表现优异。', date: '2026-07-18', followUp: '建议家长持续鼓励，适当拓展课外阅读', photos: [], status: '已完成' },
+  ],
+
+  // 学期管理（字段与 semesters 实体一致：current；真实路由 /semesters）
+  '/semesters': [
+    { id: 'sem1', name: '2025-2026学年第一学期', startDate: '2025-09-01', endDate: '2026-01-15', current: false },
+    { id: 'sem2', name: '2025-2026学年第二学期', startDate: '2026-02-15', endDate: '2026-07-05', current: true },
+  ],
+
+  // 家长联系记录（字段与 parent_contacts 实体一致：method/parentName/phone/relation/wechat/followUp；真实路由 /parent-contacts）
+  '/parent-contacts': [
+    { id: 'pc1', classId: 'c1', studentId: 's1', studentName: '张小明', method: '电话', parentName: '张伟', phone: '13800001001', relation: '父亲', wechat: '', content: '告知孩子最近上课表现良好', date: '2026-07-10', followUp: '' },
+    { id: 'pc2', classId: 'c1', studentId: 's4', studentName: '赵小刚', method: '微信', parentName: '赵建军', phone: '13800001004', relation: '父亲', wechat: 'zhao_jj', content: '沟通孩子注意力问题，建议家长配合', date: '2026-07-12', followUp: '下周回访' },
+    { id: 'pc3', classId: 'c1', studentId: 's5', studentName: '刘思琪', method: '面谈', parentName: '刘洋', phone: '13800001005', relation: '母亲', wechat: '', content: '表扬孩子进步，鼓励继续保持', date: '2026-07-15', followUp: '' },
+  ],
+
+  // 生成的试卷（字段与 generated_papers 实体一致：title/grade/subject/prompt/content；真实路由 /generated/papers）
+  '/generated/papers': [
+    { id: 'gp1', title: '一年级语文期末模拟卷', grade: '一年级', subject: '语文', prompt: '生成一份一年级语文期末模拟卷，含基础、阅读、写话。', content: '# 一年级语文期末模拟卷\n一、看拼音写词语\n二、阅读理解\n三、看图写话', createdAt: '2026-07-20' },
+    { id: 'gp2', title: '一年级数学计算专项', grade: '一年级', subject: '数学', prompt: '出20道100以内加减法计算题。', content: '# 一年级数学计算专项\n1. 23+45=  2. 67-28=  3. 50+39=', createdAt: '2026-07-21' },
+  ],
+
+  // 生成的教案（字段与 generated_lesson_plans 实体一致；真实路由 /generated/lesson-plans）
+  '/generated/lesson-plans': [
+    { id: 'gl1', title: '一年级语文《荷叶圆圆》教案', topic: '荷叶圆圆', subject: '语文', grade: '一年级', prompt: '写一份《荷叶圆圆》第一课时教案。', content: '# 《荷叶圆圆》教案\n目标：认识生字，朗读课文。\n过程：导入→初读→精读→拓展', createdAt: '2026-07-19' },
+    { id: 'gl2', title: '一年级数学《分类与整理》教案', topic: '分类与整理', subject: '数学', grade: '一年级', prompt: '设计分类与整理的教学活动。', content: '# 《分类与整理》教案\n目标：体验分类过程。\n过程：情境→操作→汇报', createdAt: '2026-07-20' },
+  ],
+
+  // 生成的知识点（字段与 generated_knowledges 实体一致；真实路由 /generated/knowledges）
+  '/generated/knowledges': [
+    { id: 'gk1', title: '拼音声调规则', grade: '一年级', subject: '语文', textbook: '部编版', term: '上', prompt: '总结拼音四声的标调规则。', content: '# 拼音标调规则\n有a不放过，没a找o e；i u并列标在后。', createdAt: '2026-07-18' },
+    { id: 'gk2', title: '20以内进位加法', grade: '一年级', subject: '数学', textbook: '人教版', term: '上', prompt: '讲清“凑十法”。', content: '# 凑十法\n9+5=9+1+4=14', createdAt: '2026-07-19' },
+  ],
+
+  // 卷宗检索（字段与 paper_queries 实体一致：keyword/title/source/year/abstract/content；真实路由 /generated/queries）
+  '/generated/queries': [
+    { id: 'pq1', keyword: '识字教学', title: '低年级识字教学方法汇编', source: '小学语文教学', year: '2024', abstract: '归类识字、字理识字、游戏识字等策略。', content: '一、归类识字；二、字理识字；三、生活识字', createdAt: '2026-07-17' },
+    { id: 'pq2', keyword: '计算能力', title: '低年级计算能力培养', source: '小学数学教育', year: '2025', abstract: '算理理解+口算训练+错题订正。', content: '一、理解算理；二、每日口算；三、错题本', createdAt: '2026-07-18' },
+  ],
+
+  // 教案模板（字段与 lesson_plan_templates 实体一致：grade；真实路由 /lesson-plan-templates）
+  '/lesson-plan-templates': [
+    { id: 'lp1', title: '新授课教案模板', subject: '通用', grade: '通用', lessonType: '新授课', content: '教学目标→教学重点→教学难点→教学过程→板书设计→作业布置', isFavorite: true },
+    { id: 'lp2', title: '复习课教案模板', subject: '通用', grade: '通用', lessonType: '复习课', content: '知识梳理→典型例题→巩固练习→小结提升', isFavorite: false },
+    { id: 'lp3', title: '语文阅读课教学设计', subject: '语文', grade: '三年级', lessonType: '新授课', content: '导入→初读感知→精读赏析→拓展延伸→总结', isFavorite: true },
+  ],
+
+  // 座位表（字段与 seat_layouts 实体一致：seats 为二维数组(单元格存 studentId 或 null)、active、aisleCols；真实路由 /seat-layouts）
+  '/seat-layouts': [
+    { id: 'sl1', classId: 'c1', name: '默认座位', rows: 3, cols: 3, active: true, aisleCols: [1],
+      seats: [
+        ['s1', 's2', 's3'],
+        ['s4', 's5', 's8'],
+        ['s9', 's10', 's16'],
+      ] },
+  ],
+
+  // 荣誉分类
+  '/award-categories': [
+    { id: 'ac1', name: '学习之星', color: '#e6a23c' },
+    { id: 'ac2', name: '文明之星', color: '#07c160' },
+    { id: 'ac3', name: '体育之星', color: '#409eff' },
+    { id: 'ac4', name: '进步之星', color: '#e06c75' },
+  ],
+
+  // 听课记录
+  '/lesson-observations': [
+    { id: 'lo1', teacherName: '王老师', classId: 'c2', className: '二年级二班', subject: '数学', topic: '认识分数', date: '2026-07-15', strengths: '教学思路清晰，课堂互动好', suggestions: '可增加更多动手操作环节', overallRating: '优秀' },
+    { id: 'lo2', teacherName: '陈老师', classId: 'c1', className: '一年级一班', subject: '音乐', topic: '学唱《春天在哪里》', date: '2026-07-18', strengths: '氛围活跃，学生参与度高', suggestions: '节奏练习可增加乐器辅助', overallRating: '良好' },
+  ],
+
+  // 工作日志（字段与 work_logs 实体一致：note；真实路由 /work-logs）
+  '/work-logs': [
+    { id: 'wl1', date: '2026-07-18', content: '批改作文，完成单元测试分析，与家长沟通3人次', classCount: 1, homeworkCount: 2, note: '今日事务较多，注意劳逸结合' },
+    { id: 'wl2', date: '2026-07-19', content: '准备公开课教案，参加教研组会议', classCount: 1, homeworkCount: 1, note: '' },
+    { id: 'wl3', date: '2026-07-22', content: '期末复习安排，整理学生成长档案', classCount: 1, homeworkCount: 3, note: '档案整理进度过半' },
+  ],
+
+  // 自习/签到
+  '/picker-history': [
+    { id: 'ph1', classId: 'c1', type: 'random', result: { name: '张小明' }, date: todayStr },
+    { id: 'ph2', classId: 'c1', type: 'random', result: { name: '刘思琪' }, date: todayStr },
+    { id: 'ph3', classId: 'c1', type: 'quiz', result: { name: '周雅婷' }, date: todayStr },
+  ],
+
+  // 值日排班配置（字段与 class_duty_configs 实体一致；真实路由 /class-duty-configs）
+  '/class-duty-configs': [
+    { id: 'dc1', classId: 'c1', duties: ['擦黑板', '扫地', '倒垃圾', '摆桌椅', '关灯'], assignments: { '擦黑板': ['s1', 's5'], '扫地': ['s2', 's8'], '倒垃圾': ['s4'], '摆桌椅': ['s9', 's10'], '关灯': ['s16'] } },
+    { id: 'dc2', classId: 'c2', duties: ['擦黑板', '扫地', '倒垃圾', '浇花'], assignments: { '擦黑板': ['s6'], '扫地': ['s7', 's11'], '倒垃圾': ['s12'], '浇花': ['s17'] } },
+  ],
+
+  // 消息中心
+  '/messages': [
+    { id: 'msg1', title: '系统通知', content: '您的班级备份已完成', type: 'system', read: false, createdAt: todayStr },
+    { id: 'msg2', title: '家长留言', content: '张小明家长：老师您好，孩子明天请假一天', type: 'parent', read: false, createdAt: todayStr },
+    { id: 'msg3', title: '系统通知', content: '期末成绩提交截止时间为7月30日', type: 'system', read: true, createdAt: '2026-07-20' },
+  ],
 }
 
-/** 根据路径返回模拟数据，支持 ?classId= 过滤 */
+/** 根据路径返回模拟数据，支持 ?classId= / ?skip=&take= 过滤 */
 export function getMockData(path, method = 'GET', body = {}) {
   const clean = path.split('?')[0]
   const params = {}
@@ -341,34 +522,51 @@ export function getMockData(path, method = 'GET', body = {}) {
     })
   }
 
-  // POST / PATCH / DELETE → 有预设 mock 则用预设，否则模拟成功
+  // POST / PATCH / DELETE → 有预设 mock 则用预设，否则模拟成功返回
   if (method !== 'GET') {
-    if (MOCK[clean] !== undefined) return { ...MOCK[clean], id: Date.now().toString() }
-    return { id: Date.now().toString(), ...body }
+    if (MOCK[clean] !== undefined) {
+      const mock = MOCK[clean]
+      // 如果是数组，追加并返回新条目；否则原样返回
+      if (Array.isArray(mock)) {
+        return { ...body, id: body?.id || Date.now().toString(), createdAt: new Date().toISOString() }
+      }
+      return { ...mock, id: Date.now().toString() }
+    }
+    return { id: Date.now().toString(), ...body, createdAt: new Date().toISOString() }
   }
 
   // 精确匹配
   if (MOCK[clean] !== undefined) {
     let data = JSON.parse(JSON.stringify(MOCK[clean]))
-    // 按 classId 过滤
+    // 按 classId 过滤（仅数组数据）
     if (params.classId && Array.isArray(data)) {
       data = data.filter((item) => item.classId === params.classId)
+    }
+    // 按 studentId 过滤
+    if (params.studentId && Array.isArray(data)) {
+      data = data.filter((item) => item.studentId === params.studentId)
+    }
+    // 自动换装：部分页面期望 {items, total} 格式（与 real API 一致）
+    // 当传了 skip/take 参数时，或路由是以 CRUD 风格访问时
+    const expectsWrapped = params.skip !== undefined || params.take !== undefined
+    if (expectsWrapped && Array.isArray(data)) {
+      return { items: data, total: data.length }
     }
     return data
   }
 
-  // 通配：/todos/xxx → 返回单个 todo（模拟）
+  // 通配：/todos/xxx → 返回单个 todo（从集合中查找）
   const parts = clean.split('/') // ['', 'todos', 'xxx']
   if (parts.length === 3 && parts[1]) {
     const collection = '/' + parts[1]
-    if (MOCK[collection]) {
+    if (MOCK[collection] && Array.isArray(MOCK[collection])) {
       const match = MOCK[collection].find((item) => item.id === parts[2])
-      return match || {}
+      return match || { id: parts[2], name: parts[2], message: '模拟数据（按ID查找）' }
     }
   }
 
   // 兜底
-  return []
+  return Array.isArray(body) ? body : (body?.items || [])
 }
 
 /** 支持 mock 的路由列表（用于判断是否完全 mock） */

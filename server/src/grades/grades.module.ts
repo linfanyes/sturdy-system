@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common'
 import { Grade, GradeScore } from './grade.entity'
 import { Student } from '../students/student.entity'
+import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
@@ -21,15 +22,26 @@ class GradesService extends CrudService<Grade> {
   constructor(
     @InjectRepository(Grade) repo: Repository<Grade>,
     @InjectRepository(Student) private stuRepo: Repository<Student>,
+    @InjectRepository(ClassItem) private classRepo: Repository<ClassItem>,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {
     super(repo)
   }
 
-  /** 同班老师共享成绩：按 classId（非 teacherId）过滤 */
+  /**
+   * 成绩按班级共享：同班教师可互看。
+   * 安全约束：传入 classId 时必须先校验该班级归属当前教师，否则返回空，
+   * 杜绝用任意 classId 越权读取其他教师班级成绩；不传 classId 时按 teacherId 过滤。
+   */
   async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
     const where: any = {}
-    if (classId) where.classId = classId
+    if (classId) {
+      const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
+      if (!owned) return { items: [], total: 0 }
+      where.classId = classId
+    } else {
+      where.teacherId = teacherId
+    }
     const [items, total] = await this.repo.findAndCount({
       where,
       order: { createdAt: 'DESC' } as any,
@@ -207,7 +219,7 @@ class GradesController extends CrudController<Grade> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Grade, Student])],
+  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem])],
   providers: [GradesService],
   controllers: [GradesController],
 })

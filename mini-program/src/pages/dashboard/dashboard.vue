@@ -9,8 +9,108 @@
         </picker>
         <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
       </view>
+      <view class="bell" @click="openNotifications">
+        <text class="bell-icon">🔔</text>
+        <text v-if="unreadCount > 0" class="bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
+      </view>
       <view class="moods">
         <text class="mood" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)">{{ moodEmojis[i] }} {{ m }}</text>
+      </view>
+    </view>
+
+    <!-- 通知面板 -->
+    <view v-if="showNotifications" class="notif-panel">
+      <view class="notif-hd">
+        <text class="notif-title">🔔 通知</text>
+        <text class="notif-act" @click="markAllRead">全部已读</text>
+        <text class="notif-act" @click="showNotifications = false">✕</text>
+      </view>
+      <scroll-view scroll-y class="notif-list">
+        <view v-if="!notificationsList.length" class="notif-empty">暂无通知</view>
+        <view v-for="n in notificationsList" :key="n.id" class="notif-item" :class="!n.read && 'unread'" @click="markAllRead">
+          <view class="notif-icon">{{ n.type === 'notice' ? '📢' : n.type === 'homework' ? '📝' : n.type === 'grade' ? '📊' : 'ℹ️' }}</view>
+          <view class="notif-body">
+            <text class="notif-title-text">{{ n.title }}</text>
+            <text class="notif-content" v-if="n.content">{{ n.content }}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 班级切换（任教多个班时） -->
+    <view class="class-switcher" v-if="classList.length > 1">
+      <picker mode="selector" :range="classList" range-key="name" @change="onClassChange">
+        <view class="cs-picker">
+          <text class="cs-label">🏫 {{ currentClass?.name || '选择班级' }}</text>
+          <text class="cs-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input v-model="searchQuery" class="search-inp" placeholder="🔍 搜索学生、教师、班级…" confirm-type="search" @confirm="doSearch" />
+      <text v-if="searchQuery" class="search-clear" @click="searchQuery=''; searchResults=null">×</text>
+    </view>
+    <view v-if="searchResults" class="search-results">
+      <view v-if="searchResults.students?.length" class="search-section">
+        <text class="search-section-title">学生（{{ searchResults.students.length }}）</text>
+        <view class="search-item" v-for="s in searchResults.students" :key="s.id" @click="goStudent(s)">
+          <text class="search-name">{{ s.name }}</text>
+          <text class="search-meta">{{ s.studentNo }} · {{ s.className || '' }}</text>
+        </view>
+      </view>
+      <view v-if="searchResults.teachers?.length" class="search-section">
+        <text class="search-section-title">教师（{{ searchResults.teachers.length }}）</text>
+        <view class="search-item" v-for="t in searchResults.teachers" :key="t.id">
+          <text class="search-name">{{ t.name }}</text>
+          <text class="search-meta">{{ t.username }} · {{ t.subject || '' }}</text>
+        </view>
+      </view>
+      <view v-if="searchResults.classes?.length" class="search-section">
+        <text class="search-section-title">班级（{{ searchResults.classes.length }}）</text>
+        <view class="search-item" v-for="c in searchResults.classes" :key="c.id" @click="goCrud('students')">
+          <text class="search-name">{{ c.name }}</text>
+          <text class="search-meta">{{ c.grade || '' }}</text>
+        </view>
+      </view>
+      <view v-if="!searchResults.students?.length && !searchResults.teachers?.length && !searchResults.classes?.length" class="search-empty">
+        没有找到匹配结果
+      </view>
+    </view>
+
+    <!-- 快捷操作工具栏 -->
+    <view class="quick-actions">
+      <view class="qa-item" @click="goPage('/pages/attendance/attendance')">
+        <text class="qa-ic" style="background:#e8f9e8">✅</text>
+        <text class="qa-lb">记考勤</text>
+      </view>
+      <view class="qa-item" @click="goPage('/pages/homework/homework')">
+        <text class="qa-ic" style="background:#fff3d6">📝</text>
+        <text class="qa-lb">布置作业</text>
+      </view>
+      <view class="qa-item" @click="goPage('/pages/notice/notice')">
+        <text class="qa-ic" style="background:#e8f1fb">📢</text>
+        <text class="qa-lb">发通知</text>
+      </view>
+      <view class="qa-item" @click="goPage('/pages/todos/todos')">
+        <text class="qa-ic" style="background:#fde8ea">✅</text>
+        <text class="qa-lb">待办</text>
+      </view>
+      <view class="qa-item" @click="goPage('/pages/behavior-record/behavior-record')">
+        <text class="qa-ic" style="background:#f3e8ff">👀</text>
+        <text class="qa-lb">行为记录</text>
+      </view>
+    </view>
+
+    <!-- 学校公告 -->
+    <view class="card" v-if="schoolNotices.length">
+      <view class="card-h">
+        <text class="ch-t">🏫 学校公告 <text class="unread-badge">{{ schoolNotices.length }}</text></text>
+      </view>
+      <view v-for="n in schoolNotices" :key="n.id" class="li col bord">
+        <text class="li-t">{{ n.title }}</text>
+        <text class="li-s clamp">{{ n.content }}</text>
       </view>
     </view>
 
@@ -57,6 +157,77 @@
       </view>
     </view>
 
+    <!-- 班级工作台 -->
+    <view class="card">
+      <view class="card-h">
+        <text class="ch-t">🏫 班级工作台</text>
+        <text class="ch-m" @click="goCrud('students')">学生管理 ›</text>
+      </view>
+      <view class="ww-grid">
+        <view class="ww-item" @click="goCrud('attendances')">
+          <text class="ww-num">{{ weekAttRate }}%</text>
+          <text class="ww-lb">本周出勤</text>
+        </view>
+        <view class="ww-item" @click="goCrud('homework')">
+          <text class="ww-num warn">{{ pendingBySubject.length }}</text>
+          <text class="ww-lb">待批科目</text>
+        </view>
+        <view class="ww-item" @click="goCrud('behavior')">
+          <text class="ww-num">{{ weekBehaviorCount }}</text>
+          <text class="ww-lb">行为记录</text>
+        </view>
+        <view class="ww-item" @click="goCrud('grades')">
+          <text class="ww-num">{{ gradeList.length }}</text>
+          <text class="ww-lb">考试次数</text>
+        </view>
+      </view>
+      <view class="ww-detail" v-if="pendingBySubject.length">
+        <text class="ww-detail-title">待批改作业：</text>
+        <text class="ww-detail-text">{{ pendingBySubject.slice(0, 4).join('、') }}</text>
+      </view>
+    </view>
+
+    <!-- 数据趋势：近7日出勤率 -->
+    <view class="card" v-if="weekTrend.some(d => d.rate != null)">
+      <view class="card-h">
+        <text class="ch-t">📈 出勤趋势（近7日）</text>
+      </view>
+      <view class="trend-chart">
+        <view class="trend-bar-col" v-for="(d, i) in weekTrend" :key="i">
+          <view class="trend-bar-wrap">
+            <view class="trend-bar" :style="{ height: (d.rate ?? 0) + '%' }" :class="i === 6 && 'today'"></view>
+          </view>
+          <text class="trend-label">{{ d.label }}</text>
+          <text class="trend-rate">{{ d.rate != null ? d.rate + '%' : '-' }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 🤖 AI 教务助手 -->
+    <view class="card">
+      <view class="card-h">
+        <text class="ch-t">🤖 AI 教务助手</text>
+        <text class="ch-m" @click="showAiHelper = !showAiHelper">{{ showAiHelper ? '收起' : '展开' }}</text>
+      </view>
+      <view v-if="showAiHelper">
+        <view class="ai-msgs" v-if="aiHistory.length">
+          <view v-for="(msg, i) in aiHistory" :key="i" class="ai-msg" :class="msg.role">
+            <text class="ai-role">{{ msg.role === 'user' ? '🧑‍🏫 我' : '🤖 助手' }}</text>
+            <text class="ai-text">{{ msg.text }}</text>
+          </view>
+        </view>
+        <view class="ai-input-row">
+          <input v-model="aiQuery" class="ai-inp" placeholder="如：分析本班最近一次考试情况" @confirm="askAi" />
+          <text class="ai-send" @click="askAi">发送</text>
+        </view>
+        <view class="ai-hints">
+          <text class="ai-hint" @click="quickAsk('分析本班近7日出勤率变化')">📊 出勤分析</text>
+          <text class="ai-hint" @click="quickAsk('列出待批改作业最多的3个科目')">📝 作业情况</text>
+          <text class="ai-hint" @click="quickAsk('对本次考试成绩做简要分析')">📈 成绩分析</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 今日课程 -->
     <view class="card">
       <view class="card-h" @click="goCrud('schedules')">
@@ -76,7 +247,7 @@
     <view class="card">
       <view class="card-h">
         <text class="ch-t">✅ 今日待办</text>
-        <text class="ch-m">{{ doneCount }}/{{ todayTodos.length }} 完成</text>
+        <text class="ch-m">{{ doneCount }}/{{ todayTodos.length }} 完成<text v-if="schoolNotices.length" class="unread-badge-dash">{{ schoolNotices.length }}条公告</text></text>
       </view>
       <view class="todo-add">
         <input v-model="newTodo" class="ta-inp" placeholder="添加待办，回车保存" @confirm="addTodo" />
@@ -250,12 +421,80 @@ const greeting = computed(() => {
 
 const loading = ref(false)
 const classList = ref([])
+const currentClassIdx = ref(0)
+const currentClass = computed(() => classList.value[currentClassIdx.value] || null)
+function onClassChange(e) { currentClassIdx.value = e.detail.value }
 const studentList = ref([])
 const noteList = ref([])
 const gradeList = ref([])
 const todoList = ref([])
 const todayLessons = ref([])
 const noticeList = ref([])
+const schoolNotices = ref([])
+const searchQuery = ref('')
+const searchResults = ref(null)
+let searchTimer = null
+
+async function doSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) { searchResults.value = null; return }
+  try {
+    const r = await api.get('/school-admin/search?q=' + encodeURIComponent(q))
+    searchResults.value = r || { students: [], teachers: [], classes: [] }
+  } catch { searchResults.value = { students: [], teachers: [], classes: [] } }
+}
+function goStudent(s) { goPage('/pages/students/students?classId=' + s.classId) }
+
+// AI 教务助手
+const showAiHelper = ref(false)
+const aiQuery = ref('')
+const aiHistory = ref([])
+const aiLoading = ref(false)
+async function askAi() {
+  const q = aiQuery.value.trim()
+  if (!q || aiLoading.value) return
+  aiHistory.value.push({ role: 'user', text: q })
+  aiQuery.value = ''
+  aiLoading.value = true
+  try {
+    const r = await api.post('/ai/chat-sync', {
+      messages: [{ role: 'user', content: '你是小学班主任的AI助手，请用中文简要回答：' + q }],
+    })
+    aiHistory.value.push({ role: 'assistant', text: r.content || '抱歉，我暂时无法回答这个问题。' })
+  } catch {
+    aiHistory.value.push({ role: 'assistant', text: 'AI 服务暂时不可用，请稍后再试。' })
+  }
+  aiLoading.value = false
+}
+function quickAsk(q) { aiQuery.value = q; askAi() }
+
+// 通知中心
+const showNotifications = ref(false)
+const unreadCount = ref(0)
+const notificationsList = ref([])
+async function loadNotifications() {
+  try {
+    const r = await api.get('/notifications/unread-count')
+    unreadCount.value = r?.count || 0
+  } catch {}
+}
+async function openNotifications() {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    try {
+      const r = await api.get('/notifications')
+      notificationsList.value = r?.items || []
+    } catch { notificationsList.value = [] }
+  }
+}
+async function markAllRead() {
+  try {
+    await api.post('/notifications/mark-all-read')
+    unreadCount.value = 0
+    notificationsList.value.forEach(n => n.read = true)
+    uni.showToast({ title: '全部已读', icon: 'success' })
+  } catch {}
+}
 const attendanceList = ref([])
 const homeworkList = ref([])
 const semesterName = ref('')
@@ -355,11 +594,49 @@ function pickMood(m) {
   uni.showToast({ title: '已记录：' + m, icon: 'none' })
 }
 
+// 班级工作台计算属性
+const weekAttRate = computed(() => {
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 10)
+  const weekAtts = attendanceList.value.filter(a => a.date >= weekAgo)
+  if (!weekAtts.length) return 100
+  const present = weekAtts.filter(a => a.records?.some(r => r.status === 'present' || r.status === '出勤')).length
+  return Math.round((present / weekAtts.length) * 100)
+})
+const pendingBySubject = computed(() => {
+  const hws = homeworkList.value.filter(h => h.status === '待批改')
+  const subjects = [...new Set(hws.map(h => h.subject).filter(Boolean))]
+  return subjects
+})
+const weekBehaviorCount = computed(() => {
+  // 使用已有 behaviorList 或返回 0
+  return 0
+}
+
+// 数据趋势：近7日出勤
+const weekTrend = computed(() => {
+  const days = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000)
+    const dateStr = d.toISOString().slice(0, 10)
+    const dayAtts = attendanceList.value.filter(a => a.date === dateStr)
+    const present = dayAtts.filter(a => a.records?.some(r => r.status === 'present' || r.status === '出勤')).length
+    const total = dayAtts.length
+    days.push({
+      label: ['日','一','二','三','四','五','六'][d.getDay()],
+      date: dateStr,
+      rate: total > 0 ? Math.round((present / total) * 100) : null,
+      total,
+    })
+  }
+  return days
+}))
+
 async function loadAll() {
   loading.value = true
   loadSemester()
   try {
-    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks] = await Promise.all([
+    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks, schoolNoticesR] = await Promise.all([
       api.get('/classes').catch(() => []),
       api.get('/students').catch(() => []),
       api.get('/notes').catch(() => []),
@@ -369,6 +646,7 @@ async function loadAll() {
       api.get('/notices').catch(() => []),
       api.get('/attendances').catch(() => []),
       api.get('/homework').catch(() => []),
+      api.get('/notices?scope=school').catch(() => ({ items: [] })),
     ])
     classList.value = classes || []
     studentList.value = students || []
@@ -382,6 +660,8 @@ async function loadAll() {
     noticeList.value = notices || []
     attendanceList.value = attendances || []
     homeworkList.value = homeworks || []
+    schoolNotices.value = (schoolNoticesR && (schoolNoticesR.items || schoolNoticesR)) || []
+    loadNotifications()
   } catch (e) {
     uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })
   }
@@ -507,6 +787,74 @@ function goCrud(type) {
 .cb.on { background: var(--c-primary); border-color: var(--c-primary); }
 .li-del { font-size: 26rpx; color: var(--c-danger); flex-shrink: 0; margin-left: 10rpx; }
 .empty { text-align: center; color: var(--c-sub); padding: 30rpx 0; font-size: 24rpx; }
+/* 班级切换 */
+.class-switcher { margin-bottom: 12rpx; }
+.cs-picker { display: flex; align-items: center; justify-content: space-between; background: var(--c-card); border-radius: 12rpx; padding: 14rpx 20rpx; }
+.cs-label { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
+.cs-arrow { font-size: 24rpx; color: var(--c-sub); }
+/* 快捷操作 */
+/* 搜索栏 */
+.search-bar { position: relative; margin-bottom: 12rpx; }
+.search-inp { width: 100%; border: 1px solid var(--c-border); border-radius: 40rpx; padding: 16rpx 60rpx 16rpx 30rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; }
+.search-clear { position: absolute; right: 20rpx; top: 50%; transform: translateY(-50%); font-size: 32rpx; color: var(--c-sub); }
+.search-results { background: var(--c-card); border-radius: 14rpx; padding: 14rpx 20rpx; margin-bottom: 14rpx; }
+.search-section { margin-bottom: 10rpx; }
+.search-section-title { font-size: 22rpx; font-weight: 600; color: var(--c-sub); margin-bottom: 6rpx; display: block; }
+.search-item { display: flex; align-items: center; gap: 12rpx; padding: 10rpx 0; border-bottom: 1rpx solid var(--c-border); }
+.search-item:last-child { border-bottom: none; }
+.search-name { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
+.search-meta { font-size: 22rpx; color: var(--c-sub); }
+.search-empty { text-align: center; padding: 20rpx 0; font-size: 24rpx; color: var(--c-sub); }
+/* 趋势图 */
+.trend-chart { display: flex; align-items: flex-end; gap: 8rpx; padding: 10rpx 0; height: 200rpx; }
+.trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.trend-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.trend-bar { width: 36rpx; border-radius: 6rpx 6rpx 0 0; background: #c8e6c9; min-height: 4rpx; transition: height 0.3s; }
+.trend-bar.today { background: var(--c-accent, #07c160); }
+.trend-label { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.trend-rate { font-size: 18rpx; color: var(--c-sub2); }
+/* AI 助手 */
+.ai-msgs { max-height: 400rpx; overflow-y: auto; margin-bottom: 12rpx; }
+.ai-msg { padding: 10rpx 0; border-bottom: 1rpx solid var(--c-border); }
+.ai-role { font-size: 22rpx; font-weight: 600; color: var(--c-title); display: block; margin-bottom: 4rpx; }
+.ai-text { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; white-space: pre-wrap; }
+.ai-input-row { display: flex; gap: 10rpx; margin-bottom: 8rpx; }
+.ai-inp { flex: 1; border: 1px solid var(--c-border); border-radius: 30rpx; padding: 14rpx 20rpx; font-size: 24rpx; background: var(--c-input); color: var(--c-text); }
+.ai-send { flex-shrink: 0; background: var(--c-primary); color: #fff; border-radius: 30rpx; padding: 0 24rpx; font-size: 24rpx; display: flex; align-items: center; }
+.ai-hints { display: flex; gap: 8rpx; flex-wrap: wrap; }
+.ai-hint { font-size: 20rpx; color: #409eff; background: rgba(64,158,255,.1); padding: 6rpx 14rpx; border-radius: 20rpx; }
+/* 通知中心 */
+.bell { position: relative; margin-left: auto; padding: 0 10rpx; }
+.bell-icon { font-size: 36rpx; }
+.bell-badge { position: absolute; top: -4rpx; right: 0; background: #e64340; color: #fff; font-size: 18rpx; min-width: 28rpx; height: 28rpx; line-height: 28rpx; text-align: center; border-radius: 14rpx; padding: 0 4rpx; }
+.notif-panel { position: fixed; top: 0; right: 0; width: 100%; height: 100vh; z-index: 999; background: var(--c-bg); display: flex; flex-direction: column; }
+.notif-hd { display: flex; align-items: center; gap: 16rpx; padding: 20rpx 24rpx; background: var(--c-card); border-bottom: 1rpx solid var(--c-border); }
+.notif-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); flex: 1; }
+.notif-act { font-size: 24rpx; color: #409eff; }
+.notif-list { flex: 1; overflow-y: auto; padding: 14rpx 24rpx; }
+.notif-empty { text-align: center; padding: 60rpx 0; font-size: 26rpx; color: var(--c-sub); }
+.notif-item { display: flex; gap: 14rpx; padding: 16rpx 0; border-bottom: 1rpx solid var(--c-border); }
+.notif-item.unread { background: rgba(64,158,255,.04); margin: 0 -24rpx; padding: 16rpx 24rpx; }
+.notif-icon { font-size: 28rpx; flex-shrink: 0; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-title-text { font-size: 26rpx; font-weight: 600; color: var(--c-title); display: block; }
+.notif-content { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; display: block; }
+.quick-actions { display: flex; gap: 12rpx; overflow-x: auto; padding: 0 0 14rpx; }
+.qa-item { display: flex; flex-direction: column; align-items: center; gap: 6rpx; flex-shrink: 0; width: 100rpx; }
+.qa-ic { width: 60rpx; height: 60rpx; border-radius: 30rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
+.qa-lb { font-size: 20rpx; color: var(--c-sub); text-align: center; }
+/* 未读徽标 */
+.unread-badge { display: inline-block; font-size: 18rpx; color: #fff; background: #e64340; border-radius: 20rpx; padding: 0 12rpx; margin-left: 6rpx; font-weight: 400; vertical-align: middle; line-height: 28rpx; }
+.unread-badge-dash { font-size: 20rpx; color: #e64340; background: rgba(230,67,64,.1); border-radius: 12rpx; padding: 0 12rpx; margin-left: 8rpx; vertical-align: middle; }
+/* 班级工作台 */
+.ww-grid { display: flex; gap: 12rpx; margin-bottom: 10rpx; }
+.ww-item { flex: 1; text-align: center; padding: 14rpx 0; background: var(--c-input); border-radius: 12rpx; }
+.ww-num { display: block; font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
+.ww-num.warn { color: #e6a23c; }
+.ww-lb { display: block; font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.ww-detail { padding: 8rpx 0 0; border-top: 1rpx solid var(--c-border); }
+.ww-detail-title { font-size: 22rpx; color: var(--c-sub); }
+.ww-detail-text { font-size: 22rpx; color: var(--c-title); }
 .sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin: 30rpx 6rpx 18rpx; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16rpx; }
 .wgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14rpx; }

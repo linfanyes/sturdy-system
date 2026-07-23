@@ -43,11 +43,11 @@
       <view class="row">
         <view class="col">
           <text class="lab2">上课节数</text>
-          <input v-model="form.classCount" type="number" class="inp" />
+          <input v-model="form.classCount" type="number" class="inp" min="0" max="20" />
         </view>
         <view class="col">
           <text class="lab2">批改作业数</text>
-          <input v-model="form.homeworkCount" type="number" class="inp" />
+          <input v-model="form.homeworkCount" type="number" class="inp" min="0" max="500" />
         </view>
       </view>
       <textarea v-model="form.content" class="inp area" placeholder="今天的主要工作内容..."></textarea>

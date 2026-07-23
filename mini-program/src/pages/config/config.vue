@@ -48,7 +48,7 @@
       </view>
       <view class="field">
         <text class="label">温度（{{ ai.temperature }}）</text>
-        <input type="digit" v-model="ai.temperature" placeholder="0 - 2" />
+        <input type="digit" v-model="ai.temperature" maxlength="5" placeholder="0 - 2" />
         <slider :value="ai.temperature" :min="0" :max="2" :step="0.1" @change="e => ai.temperature = e.detail.value" activeColor="#07c160" />
       </view>
       <view class="field">
@@ -111,6 +111,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES } from '../../common/store'
+import { inRange, isUrl, clip, MAX_LEN } from '../../common/validators'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
@@ -295,6 +296,9 @@ onShow(() => flushTabBarStyle())
 
 async function saveAi() {
   if (savingAi.value) return
+  // 校验
+  if (ai.value.baseUrl && !isUrl(ai.value.baseUrl)) return uni.showToast({ title: '接口地址格式错误，需 http/https 开头', icon: 'none' })
+  if (ai.value.temperature && !inRange(ai.value.temperature, 0, 2)) return uni.showToast({ title: '温度值应在 0-2 之间', icon: 'none' })
   savingAi.value = true
   try {
     // 显式构造纯对象，避免 Vue reactive proxy 序列化异常；temperature 转数字

@@ -1,4 +1,4 @@
-import { Entity, Column, ValueTransformer } from 'typeorm'
+import { Entity, Column, ValueTransformer, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
 // JSON 数组 ↔ LONGTEXT 互转：simple-json 映射为 TEXT(64KB)，base64 照片远超此限
@@ -10,6 +10,7 @@ const jsonArrayTransformer: ValueTransformer = {
   },
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('class_galleries')
 export class ClassGallery extends BaseEntity {
   @Column() classId: string

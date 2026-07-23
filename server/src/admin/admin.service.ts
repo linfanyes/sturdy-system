@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, BadRequestException, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
@@ -7,17 +7,96 @@ import * as crypto from 'node:crypto'
 import { User } from '../users/user.entity'
 import { School } from '../school/school.entity'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
+import { ClassItem } from '../classes/class.entity'
+import { Student } from '../students/student.entity'
 
 @Injectable()
-export class AdminService {
+export class AdminService implements OnModuleInit {
   constructor(
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
+
+  /** 启动时自动检测种子数据，核心账号不存在时自动重建 */
+  async onModuleInit() {
+    try {
+      const adminCount = await this.userRepo.count({ where: { username: 'admin' } } as any)
+      // 仅检测 admin 用户；不存在则创建默认学校/校管/教师
+      // 超管账号来自环境变量，无需重建
+      if (adminCount === 0) {
+        console.log('[Seed] 未检测到管理员账号，自动重建种子数据…')
+        // 学校
+        let schools = await this.schoolRepo.find()
+        if (schools.length === 0) {
+          const s1 = this.schoolRepo.create({ code: 'SCH001', name: '阳光实验小学', address: '默认地址' })
+          const s2 = this.schoolRepo.create({ code: 'SCH002', name: '明德小学' })
+          schools = await this.schoolRepo.save([s1, s2])
+          console.log('[Seed] 已创建 2 所默认学校')
+        }
+        // 学校管理员
+        const saCount = await this.saRepo.count()
+        if (saCount === 0 && schools.length >= 1) {
+          const pwd = crypto.createHash('sha256').update('123456').digest('hex')
+          const sa1 = this.saRepo.create({ username: 'sa1', passwordHash: pwd, name: '赵主任', schoolId: schools[0].id, enabled: true })
+          const sa2 = this.saRepo.create({ username: 'sa2', passwordHash: pwd, name: '钱主任', schoolId: schools[schools.length - 1]?.id || schools[0].id, enabled: true })
+          await this.saRepo.save([sa1, sa2])
+          console.log('[Seed] 已创建 2 名默认学校管理员 (sa1/sa2)')
+        }
+        // 教师用户
+        const userCount = await this.userRepo.count()
+        if (userCount === 0 && schools.length >= 1) {
+          const pwd = crypto.createHash('sha256').update('123456').digest('hex')
+          const teachers = [
+            { name: '王老师', username: 'teacher1', subject: '语文', enabled: true },
+            { name: '李老师', username: 'teacher2', subject: '数学', enabled: true },
+            { name: '张老师', username: 'teacher3', subject: '英语', enabled: true },
+            { name: '陈老师', username: 'teacher4', subject: '音乐', enabled: true },
+          ]
+          for (const t of teachers) {
+            const u = this.userRepo.create({
+              ...t, schoolId: schools[0].id, school: schools[0].name,
+              passwordHash: pwd, phone: '', teacherNo: '',
+            } as any)
+            await this.userRepo.save(u)
+          }
+          console.log('[Seed] 已创建 4 名默认教师 (teacher1~teacher4)')
+        }
+        // 班级
+        const classCount = await this.classRepo.count()
+        if (classCount === 0) {
+          const [wang, li] = await this.userRepo.find({ where: { username: 'teacher1' } } as any)
+          const c1 = this.classRepo.create({ teacherId: wang.id, name: '一年级一班', grade: '一年级', classNo: '1', headTeacher: wang.name, term: '2026春季学期', subjects: ['语文','数学','英语'], color: 'butter' })
+          const c2 = this.classRepo.create({ teacherId: li?.id || wang.id, name: '二年级二班', grade: '二年级', classNo: '2', headTeacher: li?.name || wang.name, term: '2026春季学期', subjects: ['语文','数学','英语','科学'], color: 'rose' })
+          const classes = await this.classRepo.save([c1, c2])
+          console.log('[Seed] 已创建 2 个默认班级')
+          // 学生
+          const stuCount = await this.studentRepo.count()
+          if (stuCount === 0) {
+            const stus = [
+              // c1 一年级一班 6人
+              { classId: classes[0].id, teacherId: wang.id, name: '张小明', gender: '男', studentNo: '2024001', parentName: '张伟', parentPhone: '13800001001' },
+              { classId: classes[0].id, teacherId: wang.id, name: '李小华', gender: '女', studentNo: '2024002', parentName: '李强', parentPhone: '13800001002' },
+              { classId: classes[0].id, teacherId: wang.id, name: '王小芳', gender: '女', studentNo: '2024003' },
+              { classId: classes[0].id, teacherId: wang.id, name: '赵小刚', gender: '男', studentNo: '2024004' },
+              { classId: classes[0].id, teacherId: wang.id, name: '刘思琪', gender: '女', studentNo: '2024005' },
+              { classId: classes[0].id, teacherId: wang.id, name: '孙浩然', gender: '男', studentNo: '2024006' },
+            ]
+            await this.studentRepo.save(stus.map(s => this.studentRepo.create(s)))
+            console.log('[Seed] 已创建 6 名默认学生（一年级一班）')
+          }
+        }
+        console.log('[Seed] 种子数据自动重建完成')
+      }
+    } catch (e) {
+      console.warn('[Seed] 自动重建失败（首次启动时表可能尚未就绪，可忽略）:', (e as Error).message)
+    }
+  }
 
   /** 超管登录 → JWT */
   login(username: string, password: string) {
@@ -216,7 +295,8 @@ export class AdminService {
   }
 
   /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号 */
-  async resetAll() {
+  async resetAll(confirmed: boolean) {
+    if (!confirmed) throw new BadRequestException('请确认重置操作（confirm: true）')
     const tables = [
       'students', 'classes', 'exams', 'grades', 'notes', 'todos', 'picker_history',
       'backups', 'ai_settings', 'app_config', 'awards', 'generated',

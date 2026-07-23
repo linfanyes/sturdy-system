@@ -33,8 +33,8 @@
       <input v-model="form.bookTitle" class="inp" placeholder="书名" />
       <input v-model="form.author" class="inp" placeholder="作者（可选）" />
       <input v-model="form.studentName" class="inp" placeholder="学生姓名" />
-      <input v-model="form.pages" type="number" class="inp" placeholder="阅读页数" />
-      <input v-model="form.minutes" type="number" class="inp" placeholder="阅读时长（分钟）" />
+      <input v-model="form.pages" type="number" class="inp" min="1" max="9999" placeholder="阅读页数" />
+      <input v-model="form.minutes" type="number" class="inp" min="1" max="999" placeholder="阅读时长（分钟）" />
       <picker mode="date" :value="form.date" @change="e=>form.date=e.detail.value">
         <view class="picker">日期：{{ form.date }}</view>
       </picker>

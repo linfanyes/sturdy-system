@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Entity, Column, ValueTransformer } from 'typeorm'
+import { Entity, Column, ValueTransformer, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
@@ -16,6 +16,7 @@ const jsonArrayTransformer: ValueTransformer = {
   },
 }
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('my_galleries')
 export class MyGallery extends BaseEntity {
   @Column() title: string

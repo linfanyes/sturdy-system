@@ -20,8 +20,10 @@
 
       <!-- 顶部 Tab 切换 -->
       <view class="tabs">
-        <text class="tab" :class="{ on: tab === 'school' }" @click="tab = 'school'">🏫 学校管理</text>
-        <text class="tab" :class="{ on: tab === 'admin' }" @click="tab = 'admin'">👤 学校管理员</text>
+        <text class="tab" :class="{ on: tab === 'school' }" @click="switchTab('school')">🏫 学校</text>
+        <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 管理员</text>
+        <text class="tab" :class="{ on: tab === 'config' }" @click="switchTab('config')">⚙️ 配置</text>
+        <text class="tab" :class="{ on: tab === 'audit' }" @click="switchTab('audit')">📋 日志</text>
       </view>
 
       <!-- ===== 学校管理 ===== -->
@@ -39,7 +41,10 @@
                 <text class="badge" :class="s.status === 'active' ? 'on' : 'off'">{{ s.status === 'active' ? '启用' : '停用' }}</text>
               </view>
               <text class="meta">编号：{{ s.code }}</text>
-              <text class="meta" v-if="s.address">地址：{{ s.address }}</text>
+              <view class="meta-line">
+                <text class="meta" v-if="s.address">地址：{{ s.address }}</text>
+                <text class="meta admin-count">{{ adminCountBySchool(s.id) }}位管理员</text>
+              </view>
             </view>
             <view class="acts">
               <text class="act" :class="s.status === 'active' ? 'stop' : 'start'" @click.stop="toggleSchoolStatus(s)">{{ s.status === 'active' ? '停用' : '启用' }}</text>
@@ -85,6 +90,47 @@
             </view>
           </view>
         </view>
+      </template>
+
+      <!-- ===== 平台配置 ===== -->
+      <template v-if="tab === 'config'">
+        <view class="stats"><text class="sc">平台全局配置（修改后即时生效）</text></view>
+        <scroll-view scroll-y class="config-scroll">
+          <view class="config-group" v-for="(group, gidx) in configGroups" :key="gidx">
+            <view class="config-group-title">{{ group.label }}</view>
+            <view class="config-row" v-for="cfg in group.items" :key="cfg.key">
+              <view class="config-info">
+                <text class="config-label">{{ cfg.label }}</text>
+                <text class="config-desc">{{ cfg.desc }}</text>
+              </view>
+              <view class="config-input-row">
+                <input v-if="!cfg.secret" v-model="cfg.value" class="inp config-inp" :placeholder="cfg.placeholder" />
+                <input v-else v-model="cfg.value" class="inp config-inp" :placeholder="cfg.placeholder" password />
+                <text class="config-save" @click="saveConfig(cfg)">保存</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+      </template>
+
+      <!-- ===== 审计日志 ===== -->
+      <template v-if="tab === 'audit'">
+        <view class="stats"><text class="sc">操作日志（最近 100 条）</text></view>
+        <scroll-view scroll-y class="config-scroll">
+          <view class="list">
+            <EmptyState v-if="!auditLogs.length" icon="📋" text="暂无操作日志" />
+            <view class="row" v-for="a in auditLogs" :key="a.id">
+              <view class="info">
+                <view class="nm-line">
+                  <text class="nm audit-action">{{ a.action }}</text>
+                  <text class="ndate">{{ a.createdAt?.slice(0,10) }}</text>
+                </view>
+                <view class="meta">{{ a.operator }} → {{ a.target }}</view>
+                <view class="meta" v-if="a.detail">{{ a.detail }}</view>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
       </template>
 
       <!-- 新增/编辑学校（全屏） -->
@@ -247,6 +293,10 @@ function schoolLabel(id) {
   const s = schools.value.find((x) => x.id === id)
   return s ? s.name + '（' + s.code + '）' : '请选择学校'
 }
+// 每所学校的管理员数
+function adminCountBySchool(schoolId) {
+  return schoolAdmins.value.filter(a => a.schoolId === schoolId).length
+}
 
 async function apiCall(method, path, data) {
   const cloud = typeof wx !== 'undefined' && wx.cloud
@@ -329,8 +379,65 @@ async function loadAdmins() {
   schoolAdmins.value = Array.isArray(r) ? r : (r.items || [])
 }
 
-// Tab 切换时自动刷新数据
-watch(tab, () => { loadAll() })
+// Tab 切换
+function switchTab(t) { tab.value = t; loadAll(); if (t === 'config') loadConfigs(); if (t === 'audit') loadAuditLogs() }
+
+// ===== 审计日志 =====
+const auditLogs = ref([])
+async function loadAuditLogs() {
+  try {
+    const r = await apiCall('GET', '/admin/audit-logs') || { items: [], total: 0 }
+    auditLogs.value = Array.isArray(r) ? r : (r.items || [])
+  } catch (e) { auditLogs.value = [] }
+}
+
+// ===== 平台配置 =====
+const configGroups = ref([])
+
+const CONFIG_SCHEMA = [
+  { key: 'defaultSubjects', label: '默认学科', desc: '逗号分隔，教师端注册时可选', placeholder: '语文,数学,英语', secret: false },
+  { key: 'loginCode', label: '小程序登录码', desc: '教师首次进入小程序的验证码', placeholder: '自定义4-8位', secret: false },
+  { key: 'aiTextModel', label: 'AI 文本模型', desc: '对话/备课/出题等文本生成', placeholder: 'qwen3.7-plus', secret: false },
+  { key: 'aiVisionModel', label: 'AI 视觉模型', desc: '图片识别/OCR等视觉任务', placeholder: 'qwen3-vl-plus', secret: false },
+  { key: 'aiTemperature', label: 'AI 温度', desc: '输出随机性(0-2)，越低越严谨', placeholder: '0.7', secret: false },
+  { key: 'aiName', label: 'AI 助手名称', desc: '教师端AI助手的显示名称', placeholder: '小林子', secret: false },
+  { key: 'aiBaseUrl', label: 'AI 接口地址', desc: '兼容 OpenAI 格式的 API 地址', placeholder: 'https://api.openai.com/v1', secret: false },
+  { key: 'aiApiKey', label: 'AI API Key', desc: '密钥，保存后不会明文显示', placeholder: 'sk-xxxx', secret: true },
+  { key: 'wxAppId', label: '微信 AppID', desc: '小程序 AppID', placeholder: 'wx...', secret: false },
+  { key: 'wxAppSecret', label: '微信 AppSecret', desc: '小程序 AppSecret', placeholder: '...', secret: true },
+  { key: 'imSdkAppId', label: 'IM SDK AppID', desc: '腾讯云即时通信 ID', placeholder: '1400...', secret: false },
+  { key: 'imSecretKey', label: 'IM 密钥', desc: '腾讯云即时通信 SecretKey', placeholder: '...', secret: true },
+]
+
+async function loadConfigs() {
+  try {
+    const r = await apiCall('GET', '/config/app') || []
+    const rows = Array.isArray(r) ? r : []
+    // 用后端数据填充 schema
+    const filled = CONFIG_SCHEMA.map(s => {
+      const found = rows.find(x => x.key === s.key)
+      return { ...s, value: found ? found.value : '' }
+    })
+    // 分组
+    configGroups.value = [
+      { label: '📚 学科与登录', items: filled.filter(x => ['defaultSubjects', 'loginCode'].includes(x.key)) },
+      { label: '🤖 AI 模型配置', items: filled.filter(x => x.key.startsWith('ai')) },
+      { label: '🔐 微信与 IM 配置', items: filled.filter(x => ['wxAppId', 'wxAppSecret', 'imSdkAppId', 'imSecretKey'].includes(x.key)) },
+    ].filter(g => g.items.length > 0)
+  } catch (e) { configGroups.value = []; console.error('loadConfigs', e) }
+}
+
+async function saveConfig(cfg) {
+  uni.showLoading({ title: '保存中…', mask: true })
+  try {
+    await apiCall('PUT', '/config/app/' + cfg.key, { value: cfg.value })
+    uni.hideLoading()
+    uni.showToast({ title: cfg.label + ' 已保存', icon: 'success' })
+  } catch (e) {
+    uni.hideLoading()
+    uni.showToast({ title: e.message || '保存失败', icon: 'none' })
+  }
+}
 
 /* ===== 学校表单 ===== */
 function openCreateSchool() {
@@ -554,7 +661,7 @@ function confirmResetAll() {
       if (!m.confirm) return
       uni.showLoading({ title: '重置中…', mask: true })
       try {
-        await apiCall('POST', '/admin/reset-all')
+        await apiCall('POST', '/admin/reset-all', { confirm: true })
         uni.hideLoading()
         uni.showModal({
           title: '重置成功',
@@ -607,6 +714,8 @@ function confirmResetAll() {
 .badge.on { background: rgba(76, 175, 80, .15); color: #4CAF50; }
 .badge.off { background: rgba(230, 67, 64, .15); color: #e64340; }
 .meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
+.meta-line { display: flex; gap: 16rpx; align-items: center; margin-top: 4rpx; }
+.admin-count { font-size: 20rpx; color: #409eff; background: rgba(64,158,255,.1); padding: 1rpx 10rpx; border-radius: 8rpx; }
 .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex-shrink: 0; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .mask.mask-center { align-items: center; justify-content: center; }
@@ -653,4 +762,20 @@ function confirmResetAll() {
 .picker-inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 /* 全屏表单内的输入框：覆盖共享 .inp 的 margin，确保宽度撑满 */
 .full-body .inp { width: 100%; margin-bottom: 0; min-height: 72rpx; }
+/* 平台配置 */
+.config-scroll { height: calc(100vh - 200rpx); padding: 0 0 40rpx; }
+.config-group { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 16rpx; }
+.config-group-title { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 12rpx; }
+.config-row { padding: 16rpx 0; border-bottom: 1px solid var(--c-border); }
+.config-row:last-child { border-bottom: none; }
+.config-info { margin-bottom: 8rpx; }
+.config-label { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
+.config-desc { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 2rpx; }
+.config-input-row { display: flex; gap: 10rpx; align-items: center; }
+.config-inp { flex: 1; border: 1px solid var(--c-border); border-radius: 10rpx; padding: 14rpx 16rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-height: 64rpx; }
+.config-save { flex-shrink: 0; font-size: 24rpx; color: #409eff; font-weight: 600; padding: 8rpx 16rpx; background: rgba(64,158,255,.1); border-radius: 8rpx; }
+/* 审计日志 */
+.audit-action { font-size: 24rpx; color: var(--c-sub); }
+.ndate { font-size: 20rpx; color: var(--c-sub2); margin-left: 10rpx; font-weight: 400; }
+
 </style>

@@ -210,6 +210,13 @@ export function setUser(user) {
 export function logout() {
   auth.token = ''
   auth.user = null
+  // 清除全部角色的登录态，确保 401 等场景下各身份都能正确登出（而非仅清教师令牌）
   uni.removeStorageSync(TOKEN_KEY)
   uni.removeStorageSync(USER_KEY)
+  uni.removeStorageSync(PARENT_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_USER_KEY)
+  uni.removeStorageSync('admin_token')
+  uni.removeStorageSync('sa_token')
+  // 清除演示模式标记，防止登出后冷启动时 App.vue 误读恢复演示数据
+  uni.removeStorageSync(MOCK_KEY)
 }

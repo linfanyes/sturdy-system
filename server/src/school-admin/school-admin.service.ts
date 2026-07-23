@@ -8,6 +8,10 @@ import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { ClassItem } from '../classes/class.entity'
+import { Notice } from '../school/school.entity'
+import { Attendance } from '../school/school.entity'
+import { Homework } from '../school/school.entity'
+import { AuditService } from '../audit/audit.service'
 
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
@@ -26,6 +30,10 @@ export class SchoolAdminService {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
+    @InjectRepository(Attendance) private readonly attRepo: Repository<Attendance>,
+    @InjectRepository(Homework) private readonly hwRepo: Repository<Homework>,
+    private readonly audit: AuditService,
     @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
 
@@ -58,7 +66,28 @@ export class SchoolAdminService {
     const totalStudents = classIds.length
       ? await this.studentRepo.count({ where: classIds.map(id => ({ classId: id })) })
       : 0
-    return { totalTeachers, activeTeachers, inactiveTeachers, totalClasses, totalStudents, schoolId }
+    // 今日考勤率
+    const today = new Date().toISOString().slice(0, 10)
+    const todayAtts = classIds.length
+      ? await this.attRepo.find({ where: classIds.flatMap(id => ({ classId: id, date: today })) })
+      : []
+    const attPresent = todayAtts.filter(a => a.records?.some(r => r.status === '出勤' || r.status === 'present')).length
+    const attendanceRate = todayAtts.length > 0 ? Math.round((attPresent / todayAtts.length) * 100) : null
+    // 待批改作业
+    const pendingHomework = classIds.length
+      ? await this.hwRepo.count({ where: classIds.flatMap(id => ({ classId: id, status: '待批改' })) })
+      : 0
+    // 已开通家长登录的学生数
+    const parentEnabled = classIds.length
+      ? await this.studentRepo.count({ where: classIds.flatMap(id => ({ classId: id, parentLoginEnabled: true })) })
+      : 0
+    return {
+      totalTeachers, activeTeachers, inactiveTeachers,
+      totalClasses, totalStudents,
+      attendanceRate, pendingHomework, parentEnabled,
+      todayDate: today,
+      schoolId,
+    }
   }
 
   /** 本校教师列表 */
@@ -112,8 +141,24 @@ export class SchoolAdminService {
         enabled: dto.enabled !== false, teacherNo,
       })
       const saved = await userRepo.save(user)
+      this.audit.log(schoolId, 'create_teacher', '系统', saved.name + '(' + saved.username + ')', '创建教师').catch(() => {})
       return { id: saved.id, name: saved.name, username: saved.username, teacherNo, ok: true }
     })
+  }
+
+  /** 批量创建教师（逐条创建，返回成功/失败明细） */
+  async batchCreateTeachers(schoolId: string, teachers: { username: string; password: string; name: string; phone?: string }[]) {
+    if (!teachers?.length) throw new BadRequestException('请提供至少一位教师信息')
+    const results: { name: string; username: string; status: string; error?: string }[] = []
+    for (const t of teachers) {
+      try {
+        await this.createTeacher(schoolId, { username: t.username, password: t.password, name: t.name, phone: t.phone })
+        results.push({ name: t.name, username: t.username, status: '成功' })
+      } catch (e: any) {
+        results.push({ name: t.name, username: t.username, status: '失败', error: e.message })
+      }
+    }
+    return { total: teachers.length, success: results.filter(r => r.status === '成功').length, failed: results.filter(r => r.status === '失败').length, results }
   }
 
   /** 更新教师基本信息（用户名唯一性校验） */
@@ -151,6 +196,7 @@ export class SchoolAdminService {
       }
       await em.getRepository(User).remove(user)
     })
+    this.audit.log(schoolId, 'delete_teacher', '系统', user.name + '(' + user.username + ')', '删除教师').catch(() => {})
     return { ok: true }
   }
 
@@ -181,5 +227,187 @@ export class SchoolAdminService {
       parentName: s.parentName, parentPhone: s.parentPhone, parentLoginEnabled: s.parentLoginEnabled,
     }))
     return { items, total: items.length }
+  }
+
+  // ===== 班级管理 =====
+
+  /** 本校班级列表（通过教师所属学校查询） */
+  async listClasses(schoolId: string) {
+    const allTeachers = await this.userRepo.find({ where: { schoolId } })
+    const ids = allTeachers.map(t => t.id)
+    if (!ids.length) return { items: [], total: 0 }
+    const [items, total] = await this.classRepo.findAndCount({
+      where: ids.map(id => ({ teacherId: id })),
+      order: { createdAt: 'DESC' },
+    })
+    return { items, total }
+  }
+
+  /** 创建班级（班主任必须是本校教师） */
+  async createClass(schoolId: string, dto: { name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string; term?: string }) {
+    if (!dto.name || !dto.grade || !dto.headTeacherId) throw new BadRequestException('班级名称/年级/班主任必填')
+    const teacher = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('指定的班主任不在本校')
+    const c = this.classRepo.create({
+      teacherId: teacher.id, name: dto.name, grade: dto.grade, classNo: dto.classNo || '1',
+      headTeacher: dto.headTeacher || teacher.name, term: dto.term || '',
+    })
+    return this.classRepo.save(c)
+  }
+
+  /** 更新班级信息 */
+  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string }>) {
+    const cls = await this.classRepo.findOne({ where: { id } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    // 验证班级属于本校
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权操作此班级')
+    Object.assign(cls, dto)
+    return this.classRepo.save(cls)
+  }
+
+  /** 删除班级 */
+  async deleteClass(schoolId: string, id: string) {
+    const cls = await this.classRepo.findOne({ where: { id } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权操作此班级')
+    await this.classRepo.remove(cls)
+    this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级').catch(() => {})
+  }
+
+  // ===== 学校公告 =====
+
+  /** 学校级公告列表 */
+  async listSchoolNotices(schoolId: string) {
+    const allTeachers = await this.userRepo.find({ where: { schoolId } })
+    const ids = allTeachers.map(t => t.id)
+    if (!ids.length) return { items: [], total: 0 }
+    const [items, total] = await this.noticeRepo.findAndCount({
+      where: ids.map(id => ({ teacherId: id, scope: 'school' })),
+      order: { createdAt: 'DESC' },
+    })
+    return { items, total }
+  }
+
+  /** 创建学校公告（用学校管理员自己的 userId 作为占位 teacherId） */
+  async createSchoolNotice(schoolId: string, adminId: string, dto: { title: string; content?: string }) {
+    if (!dto.title) throw new BadRequestException('公告标题必填')
+    const n = this.noticeRepo.create({
+      teacherId: adminId, classId: '__school__', title: dto.title,
+      content: dto.content || '', pinned: true, scope: 'school',
+    })
+    return this.noticeRepo.save(n)
+  }
+
+  /** 删除学校公告 */
+  async deleteSchoolNotice(schoolId: string, id: string) {
+    const notice = await this.noticeRepo.findOne({ where: { id, scope: 'school' } })
+    if (!notice) throw new BadRequestException('公告不存在')
+    return this.noticeRepo.remove(notice)
+  }
+
+  // ===== 学生管理 =====
+
+  /** 全校学生列表 */
+  async listSchoolStudents(schoolId: string) {
+    const allTeachers = await this.userRepo.find({ where: { schoolId } })
+    const ids = allTeachers.map(t => t.id)
+    if (!ids.length) return { items: [], total: 0 }
+    const classes = await this.classRepo.find({ where: ids.map(id => ({ teacherId: id })) })
+    const classIds = classes.map(c => c.id)
+    if (!classIds.length) return { items: [], total: 0 }
+    // 构建班级名映射
+    const classMap: Record<string, string> = {}
+    for (const c of classes) classMap[c.id] = c.name
+    const [items, total] = await this.studentRepo.findAndCount({
+      where: classIds.map(id => ({ classId: id })),
+      order: { name: 'ASC' },
+    })
+    return {
+      items: items.map(s => ({
+        ...s, className: classMap[s.classId] || '',
+      })),
+      total,
+    }
+  }
+
+  // ===== 学生管理 =====
+
+  /** 编辑学生基本信息 */
+  async updateStudent(schoolId: string, id: string, dto: { name?: string; gender?: string; parentName?: string; parentPhone?: string }) {
+    const student = await this.studentRepo.findOne({ where: { id } })
+    if (!student) throw new BadRequestException('学生不存在')
+    const cls = await this.classRepo.findOne({ where: { id: student.classId } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权操作此学生')
+    Object.assign(student, dto)
+    return this.studentRepo.save(student)
+  }
+
+  /** 全局搜索：按关键词搜索本校学生/教师/班级 */
+  async search(schoolId: string, q: string, skip = 0, take = 20) {
+    if (!q || q.length < 1) return { students: [], teachers: [], classes: [] }
+    const keyword = `%${q}%`
+    const allTeachers = await this.userRepo.find({ where: { schoolId } })
+    const teacherIds = allTeachers.map(t => t.id)
+
+    // 搜索教师
+    const teachers = allTeachers.filter(t =>
+      t.name?.includes(q) || t.username?.includes(q) || t.teacherNo?.includes(q)
+    ).slice(skip, skip + take).map(t => ({
+      id: t.id, name: t.name, username: t.username, teacherNo: t.teacherNo, subject: t.subject,
+    }))
+
+    // 搜索班级
+    const classes = teacherIds.length
+      ? (await this.classRepo.find({ where: teacherIds.map(id => ({ teacherId: id })) }))
+        .filter(c => c.name?.includes(q) || c.grade?.includes(q))
+        .slice(skip, skip + take)
+      : []
+
+    // 搜索学生
+    const classIds = classes.length ? classes.map(c => c.id) : (teacherIds.length
+      ? (await this.classRepo.find({ where: teacherIds.map(id => ({ teacherId: id })) })).map(c => c.id)
+      : [])
+    const students = classIds.length
+      ? (await this.studentRepo.find({ where: classIds.map(id => ({ classId: id })), order: { name: 'ASC' } }))
+        .filter(s => s.name?.includes(q) || s.studentNo?.includes(q))
+        .slice(skip, skip + take)
+      : []
+
+    const classMap: Record<string, string> = {}
+    for (const c of classes) classMap[c.id] = c.name
+    for (const s of students) { s['className'] = classMap[s.classId] || '' }
+
+    return { students, teachers, classes }
+  }
+
+  // ===== 数据导出 =====
+
+  toCsv(rows: string[][]): string {
+    return rows.map(r => r.map(c => {
+      const s = String(c).replace(/"/g, '""')
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
+    }).join(',')).join('\n')
+  }
+
+  async exportTeachers(schoolId: string): Promise<string> {
+    const r = await this.listTeachers(schoolId)
+    const rows = [['姓名', '用户名', '学科', '手机号', '教师编号', '状态']]
+    for (const t of r.items) {
+      rows.push([t.name, t.username || '', t.subject || '', t.phone || '', t.teacherNo || '', t.enabled ? '启用' : '禁用'])
+    }
+    return this.toCsv(rows)
+  }
+
+  async exportStudents(schoolId: string): Promise<string> {
+    const r = await this.listSchoolStudents(schoolId)
+    const rows = [['姓名', '学号', '性别', '班级', '家长', '家长电话', '家长开通']]
+    for (const s of r.items) {
+      rows.push([s.name, s.studentNo || '', s.gender || '', s.className || '', s.parentName || '', s.parentPhone || '', s.parentLoginEnabled ? '是' : '否'])
+    }
+    return this.toCsv(rows)
   }
 }

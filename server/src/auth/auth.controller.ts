@@ -1,6 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common'
+import { Controller, Post, Body, UseGuards } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { WechatLoginDto } from './dto/wechat-login.dto'
+import { UnifiedLoginDto, AdminLoginDto } from './dto/unified-login.dto'
+import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
+
+// 密码登录类接口：每分钟最多 10 次（按 IP + 用户名 防暴力破解）
+const LoginRateLimit = createRateLimitGuard(60_000, 10)
 
 @Controller('auth')
 export class AuthController {
@@ -8,7 +13,8 @@ export class AuthController {
 
   /** 统一登录：user + pass → 自动识别超管/学校管理员/教师/家长 */
   @Post('unified-login')
-  unifiedLogin(@Body() b: { username?: string; password?: string }) {
+  @UseGuards(LoginRateLimit)
+  unifiedLogin(@Body() b: UnifiedLoginDto) {
     return this.auth.unifiedLogin(b?.username || '', b?.password || '')
   }
 
@@ -38,6 +44,7 @@ export class AuthController {
 
   /** 教师密码登录（已由学校管理员绑定学校） */
   @Post('password-login')
+  @UseGuards(LoginRateLimit)
   passwordLogin(@Body() b: { username?: string; password?: string }) {
     return this.auth.passwordLogin(b?.username || '', b?.password || '')
   }

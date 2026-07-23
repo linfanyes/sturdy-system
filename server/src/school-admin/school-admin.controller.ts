@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query } from '@nestjs/common'
+import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query, Res } from '@nestjs/common'
 import { SchoolAdminService } from './school-admin.service'
 import { SchoolAdminGuard } from './school-admin.guard'
 import { CurrentSchoolAdmin } from './current-school-admin.decorator'
@@ -26,6 +26,12 @@ export class SchoolAdminController {
   @UseGuards(SchoolAdminGuard)
   createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createTeacher(a.schoolId, b) }
 
+  @Post('teachers/batch')
+  @UseGuards(SchoolAdminGuard)
+  batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { teachers: { username: string; password: string; name: string; phone?: string }[] }) {
+    return this.svc.batchCreateTeachers(a.schoolId, b.teachers || [])
+  }
+
   @Patch('teachers/:id')
   @UseGuards(SchoolAdminGuard)
   updateTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
@@ -51,4 +57,75 @@ export class SchoolAdminController {
   @Get('parent-logins')
   @UseGuards(SchoolAdminGuard)
   parentLogins(@CurrentSchoolAdmin() a: any) { return this.svc.listParentLogins(a.schoolId) }
+
+  // ===== 班级管理 =====
+
+  @Get('classes')
+  @UseGuards(SchoolAdminGuard)
+  listClasses(@CurrentSchoolAdmin() a: any) { return this.svc.listClasses(a.schoolId) }
+
+  @Post('classes')
+  @UseGuards(SchoolAdminGuard)
+  createClass(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createClass(a.schoolId, b) }
+
+  @Patch('classes/:id')
+  @UseGuards(SchoolAdminGuard)
+  updateClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.updateClass(a.schoolId, id, b)
+  }
+
+  @Delete('classes/:id')
+  @UseGuards(SchoolAdminGuard)
+  deleteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteClass(a.schoolId, id) }
+
+  // ===== 学校公告 =====
+
+  @Get('notices')
+  @UseGuards(SchoolAdminGuard)
+  listNotices(@CurrentSchoolAdmin() a: any) { return this.svc.listSchoolNotices(a.schoolId) }
+
+  @Post('notices')
+  @UseGuards(SchoolAdminGuard)
+  createNotice(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createSchoolNotice(a.schoolId, a.sub, b) }
+
+  @Delete('notices/:id')
+  @UseGuards(SchoolAdminGuard)
+  deleteNotice(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteSchoolNotice(a.schoolId, id) }
+
+  // ===== 学生管理 =====
+  @Get('students')
+  @UseGuards(SchoolAdminGuard)
+  listStudents(@CurrentSchoolAdmin() a: any) { return this.svc.listSchoolStudents(a.schoolId) }
+
+  @Patch('students/:id')
+  @UseGuards(SchoolAdminGuard)
+  updateStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.updateStudent(a.schoolId, id, b)
+  }
+
+  // ===== 数据导出 =====
+  @Get('export/teachers')
+  @UseGuards(SchoolAdminGuard)
+  async exportTeachers(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+    const data = await this.svc.exportTeachers(a.schoolId)
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename=teachers.csv')
+    res.send('\uFEFF' + data)
+  }
+
+  @Get('export/students')
+  @UseGuards(SchoolAdminGuard)
+  async exportStudents(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+    const data = await this.svc.exportStudents(a.schoolId)
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename=students.csv')
+    res.send('\uFEFF' + data)
+  }
+
+  // ===== 全局搜索 =====
+  @Get('search')
+  @UseGuards(SchoolAdminGuard)
+  search(@CurrentSchoolAdmin() a: any, @Query('q') q?: string) {
+    return this.svc.search(a.schoolId, q || '')
+  }
 }

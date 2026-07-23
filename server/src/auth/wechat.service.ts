@@ -3,10 +3,10 @@ import { ConfigService } from '@nestjs/config'
 import axios from 'axios'
 import https from 'node:https'
 
-// 部分云托管 VPC 内存在 TLS 拦截代理(MITM)，会向 api.weixin.qq.com 等公网 HTTPS
-// 出示自签证书；Node 默认拒绝自签证书，导致微信登录报 "self-signed certificate"。
-// 这里仅为微信接口单独放宽证书校验（仅限本 Agent，不影响全局 TLS 策略）。
-const tlsAgent = new https.Agent({ rejectUnauthorized: false })
+// 默认严格校验微信服务器证书（防 MITM 窃取 openid / session_key）。
+// 仅当显式设置环境变量 WECHAT_TLS_INSECURE=true（如已知 VPC 内存在 TLS 拦截代理）时才放宽校验。
+const wechatTlsInsecure = process.env.WECHAT_TLS_INSECURE === 'true'
+const tlsAgent = new https.Agent({ rejectUnauthorized: !wechatTlsInsecure })
 
 @Injectable()
 export class WechatService {

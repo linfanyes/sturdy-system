@@ -4,6 +4,7 @@ import { Repository } from 'typeorm'
 import axios from 'axios'
 import https from 'node:https'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AppConfig } from '../config/app-config.entity'
 
@@ -11,8 +12,8 @@ import { AppConfig } from '../config/app-config.entity'
 const tlsAgent = new https.Agent({ rejectUnauthorized: false })
 
 /**
- * 微信内容安全：文本/图片违规检测。
- * 微信内容安全为免费额度能力（小程序合规必需），未配置 AppSecret 时放行，不阻塞业务。
+ * 微信内容安全：文本/图片违规检测 + 订阅消息推送。
+ * 微信内容安全/订阅消息均为免费额度能力（小程序合规必需），未配置 AppSecret 时静默放行。
  */
 @Injectable()
 export class SecurityService {
@@ -95,24 +96,91 @@ export class SecurityService {
       return { pass: true }
     }
   }
+
+  /**
+   * 发送微信订阅消息（免费）
+   * 未配置 credentials 时静默跳过，不阻塞业务。
+   */
+  async sendSubscribe(openIds: string[], templateId: string, page: string, data: Record<string, { value: string }>): Promise<{ sent: number; total: number }> {
+    const token = await this.getAccessToken()
+    if (!token) return { sent: 0, total: openIds.length }
+    let sent = 0
+    for (const openId of openIds) {
+      try {
+        await axios.post(
+          `https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${token}`,
+          { touser: openId, template_id: templateId, page, data },
+          { httpsAgent: tlsAgent, timeout: 8000 },
+        )
+        sent++
+      } catch {
+        // 单个发送失败不中断
+      }
+    }
+    return { sent, total: openIds.length }
+  }
+
+  /** 推送通知给已订阅的家长 */
+  async pushNotice(notice: { title: string; content?: string }, parentOpenIds: string[]) {
+    return this.sendSubscribe(
+      parentOpenIds,
+      'NOTICE_TEMPLATE_ID', // 替换为微信公众平台申请的真实模板 ID
+      'pages/parent/parent',
+      {
+        thing1: { value: notice.title?.slice(0, 20) || '班级通知' },
+        thing2: { value: (notice.content || '').slice(0, 40) || '查看详情' },
+      },
+    )
+  }
+
+  /** 推送作业提醒给已订阅的家长 */
+  async pushHomework(hw: { subject: string; title: string; content?: string }, parentOpenIds: string[]) {
+    return this.sendSubscribe(
+      parentOpenIds,
+      'HOMEWORK_TEMPLATE_ID', // 替换为真实模板 ID
+      'pages/parent/parent',
+      {
+        thing1: { value: (hw.subject || '') + ' · ' + (hw.title || '').slice(0, 10) },
+        thing2: { value: (hw.content || '').slice(0, 40) || '请查看作业详情' },
+      },
+    )
+  }
 }
 
 @Controller('security')
 export class SecurityController {
   constructor(private readonly sec: SecurityService) {}
 
-  /** 文本安全审核 */
+  /** 文本安全审核（教师+家长共用） */
+  @Roles('teacher', 'parent')
   @Post('msg-check')
   @UseGuards(JwtAuthGuard)
   msgCheck(@Body() b: { content?: string }, @CurrentTeacher() t: any) {
     return this.sec.msgSecCheck(b?.content || '')
   }
 
-  /** 图片安全审核（image 为 base64，不含 data: 前缀） */
+  /** 图片安全审核（教师+家长共用） */
+  @Roles('teacher', 'parent')
   @Post('img-check')
   @UseGuards(JwtAuthGuard)
   imgCheck(@Body() b: { image?: string }, @CurrentTeacher() t: any) {
     return this.sec.imgSecCheck(b?.image || '')
+  }
+
+  /** 手动触发通知推送 */
+  @Roles('teacher')
+  @Post('push-notice')
+  @UseGuards(JwtAuthGuard)
+  async pushNotice(@Body() b: { openIds: string[]; title: string; content?: string }) {
+    return this.sec.pushNotice({ title: b.title, content: b.content }, b.openIds || [])
+  }
+
+  /** 手动触发作业推送 */
+  @Roles('teacher')
+  @Post('push-homework')
+  @UseGuards(JwtAuthGuard)
+  async pushHomework(@Body() b: { openIds: string[]; subject: string; title: string; content?: string }) {
+    return this.sec.pushHomework({ subject: b.subject, title: b.title, content: b.content }, b.openIds || [])
   }
 }
 

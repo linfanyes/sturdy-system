@@ -1,6 +1,8 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
+@Index('idx_teacher_class_stu', ['teacherId', 'classId', 'studentId'])
+@Index('idx_reward_records_cov', ['teacherId', 'createdAt'])
 @Entity('reward_records')
 export class RewardRecord extends BaseEntity {
   @Column() classId: string
@@ -11,6 +13,8 @@ export class RewardRecord extends BaseEntity {
   @Column() date: string
 }
 
+@Index('idx_teacher_class_stu', ['teacherId', 'classId', 'studentId'])
+@Index('idx_score_records_cov', ['teacherId', 'createdAt'])
 @Entity('score_records')
 export class ScoreRecord extends BaseEntity {
   @Column() classId: string
@@ -20,6 +24,7 @@ export class ScoreRecord extends BaseEntity {
   @Column({ type: 'text', nullable: true }) reason: string
 }
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('group_scores')
 export class GroupScore extends BaseEntity {
   @Column() classId: string

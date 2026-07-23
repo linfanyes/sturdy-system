@@ -37,6 +37,8 @@ import { SecurityModule } from './security/security.module'
 import { ImModule } from './im/im.module'
 import { ParentAuthModule } from './parent-auth/parent-auth.module'
 import { SchoolAdminModule } from './school-admin/school-admin.module'
+import { AuditModule } from './audit/audit.module'
+import { NotificationModule } from './notification/notification.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -91,6 +93,8 @@ import { HealthController } from './health.controller'
     ParentContactModule,
     ParentAuthModule,
     SchoolAdminModule,
+    AuditModule,
+    NotificationModule,
     GeneratedModule,
     DutyRosterModule,
     SchoolModule,

@@ -5,11 +5,13 @@ import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { ClassItem } from '../classes/class.entity'
+import { Notice, Attendance, Homework } from '../school/school.entity'
 import { SchoolAdminService } from './school-admin.service'
 import { SchoolAdminController } from './school-admin.controller'
+import { AuditModule } from '../audit/audit.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SchoolAdmin, User, Student, School, ClassItem])],
+  imports: [TypeOrmModule.forFeature([SchoolAdmin, User, Student, School, ClassItem, Notice, Attendance, Homework]), AuditModule],
   providers: [SchoolAdminService],
   controllers: [SchoolAdminController],
   exports: [SchoolAdminService],

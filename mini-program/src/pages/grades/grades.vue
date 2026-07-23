@@ -23,6 +23,12 @@
         <text class="label">日期</text>
         <input v-model="date" placeholder="如 2026-05-12" />
       </view>
+      <view class="field" v-if="semesterList.length">
+        <text class="label">学期</text>
+        <picker :range="semesterList" range-key="name" :value="semesterIdx" @change="onSemester">
+          <view class="picker">{{ semesterList[semesterIdx]?.name || '全部' }}</view>
+        </picker>
+      </view>
     </view>
 
     <EmptyState v-if="!classId" icon="📊" text="请先选择班级" hint="选择一个班级后即可查看和录入成绩" />
@@ -204,6 +210,9 @@ const examId = ref('')
 const examName = ref('')
 const subject = ref('')
 const date = ref('')
+const semesterList = ref([])
+const semesterIdx = ref(0)
+function onSemester(e) { semesterIdx.value = e.detail.value; load() }
 const scores = reactive({})
 const existing = ref(null)
 const aiResult = ref('')
@@ -412,16 +421,18 @@ const isHomeroom = ref(false)
 const sharedClass = ref(false)
 
 async function load() {
-  const [cs, es, pub, gs] = await Promise.all([
+  const [cs, es, pub, gs, semesters] = await Promise.all([
     api.getList('/classes', { silent: true }),
     api.getList('/exams', { silent: true }),
     api.get('/config/public'),
     api.getList('/grades', { loading: true, loadingText: '加载成绩' }),
+    api.get('/semesters').catch(() => []),
   ])
   classes.value = cs
   exams.value = es
   pubSubjects.value = (pub && pub.defaultSubjects) || []
   grades.value = gs
+  semesterList.value = Array.isArray(semesters) ? semesters : (semesters?.items || [])
   classOpts.value = cs.map((c) => c.name)
   rebuildExamOpts()
 }

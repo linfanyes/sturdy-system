@@ -14,6 +14,7 @@ import { TypeOrmModule, InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { BackupSnapshot } from './backup.entity'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 
 // 备份依赖的所有实体（用于导出快照）
 import { User } from '../users/user.entity'
@@ -115,6 +116,7 @@ export class BackupService {
   }
 }
 
+@Roles('teacher')
 @UseGuards(JwtAuthGuard)
 @Controller('backups')
 export class BackupController {
@@ -122,33 +124,33 @@ export class BackupController {
 
   @Get()
   list(@Req() req: any) {
-    return this.svc.list(req.user.teacherId || req.user.id)
+    // JwtAuthGuard 把 { sub, openid } 挂到 req.user；必须使用 sub 作为 teacherId，
+    // 否则传入 undefined 会导致 TypeORM 丢弃 WHERE teacherId 条件，越权读取/删除全部租户的备份。
+    return this.svc.list(req.user.sub)
   }
 
   @Get(':id')
   async get(@Req() req: any, @Param('id') id: string) {
-    const r = await this.svc.get(req.user.teacherId || req.user.id, id)
+    const r = await this.svc.get(req.user.sub, id)
     if (!r) return { error: 'not found' }
     return r
   }
 
   @Post()
   async create(@Req() req: any, @Body() body: any) {
-    const tid = req.user.teacherId || req.user.id
-    return this.svc.create(tid, 'manual', body?.label || '手动备份')
+    return this.svc.create(req.user.sub, 'manual', body?.label || '手动备份')
   }
 
   @Delete(':id')
   async remove(@Req() req: any, @Param('id') id: string) {
-    await this.svc.remove(req.user.teacherId || req.user.id, id)
+    await this.svc.remove(req.user.sub, id)
     return { ok: true }
   }
 
   /** 触发自动备份（前端可定期调用） */
   @Post('auto')
   async auto(@Req() req: any) {
-    const tid = req.user.teacherId || req.user.id
-    await this.svc.autoBackup(tid)
+    await this.svc.autoBackup(req.user.sub)
     return { ok: true }
   }
 }

@@ -10,6 +10,9 @@
     <view class="or">— 或 —</view>
     <button class="btn wechat" @click="doWechatLogin">微信登录</button>
 
+    <view class="demo-hint">无需账号？</view>
+    <button class="btn demo" @click="enterDemoMode">👉 演示模式（免登录）</button>
+
     <!-- 微信绑定弹窗 -->
     <view class="mask" v-if="bindOpenid" @click="bindOpenid = ''">
       <view class="sheet" @click.stop>
@@ -29,11 +32,22 @@
 import { ref, computed } from 'vue'
 import api from '../../common/request'
 import { setMockMode } from '../../common/request'
-import { setAuth, setUser, setParent, theme } from '../../common/store'
+import { setAuth, setUser, setParent, theme, auth } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
 const focusPwd = ref(false)  // 用户名框回车后聚焦密码框
+
+/* -------- 演示模式入口 -------- */
+function enterDemoMode() {
+  setMockMode(true)
+  // 写入共享状态，让 App.vue 冷启动时也能恢复
+  uni.setStorageSync('g_token', 'mock-token')
+  uni.setStorageSync('g_user', JSON.stringify({ name: '珊珊老师', school: '阳光实验小学（演示版）' }))
+  auth.token = 'mock-token'
+  auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
+  uni.switchTab({ url: '/pages/dashboard/dashboard' })
+}
 
 /* -------- 统一登录 -------- */
 async function doLogin() {
@@ -51,11 +65,16 @@ function handleLoginResult(r) {
   switch (r.role) {
     case 'super':
       uni.setStorageSync('admin_token', r.token)
+      // 同时写入共享 token，使通用 API 层（request.js 的 api）在管理员页面也能携带 Bearer
+      uni.setStorageSync('g_token', r.token)
+      auth.token = r.token
       uni.redirectTo({ url:'/pages/admin/admin' })
       break
     case 'school_admin':
       uni.setStorageSync('sa_token', r.token)
       uni.setStorageSync('sa_user', JSON.stringify(r.user))
+      uni.setStorageSync('g_token', r.token)
+      auth.token = r.token
       uni.redirectTo({ url:'/pages/school-admin/school-admin' })
       break
     case 'teacher':
@@ -117,6 +136,8 @@ async function doBind() {
 .btn[disabled] { opacity:.6; }
 .btn.wechat { background:#409eff; margin-top:14rpx; }
 .or { margin-top:44rpx; font-size:26rpx; color:var(--c-sub); margin-bottom:6rpx; }
+.demo-hint { margin-top:60rpx; font-size:26rpx; color:var(--c-sub); opacity:.7; }
+.btn.demo { background: var(--c-accent, #e6a23c); margin-top:14rpx; font-size:30rpx; opacity:.85; }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:60; }
 .sheet { width:100%; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); box-sizing:border-box; }
 .sh-t { font-size:34rpx; font-weight:700; color:var(--c-title); }

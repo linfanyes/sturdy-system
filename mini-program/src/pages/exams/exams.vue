@@ -35,7 +35,7 @@
 
     <view v-if="showForm" class="form">
       <view class="form-title">{{ editingId ? '编辑考试' : '新建考试' }}</view>
-      <input v-model="form.name" placeholder="考试名称，如 期中考试" />
+      <input v-model="form.name" maxlength="100" placeholder="考试名称，如 期中考试" />
       <picker :range="classOpts" @change="(ev) => { const c = classes[ev.detail.value]; form.classId = c.id; form.term = c.term || '' }">
         <view class="picker">班级：{{ selClassName }}</view>
       </picker>

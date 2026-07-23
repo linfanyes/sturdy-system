@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 
+@Index('idx_teacher_student', ['teacherId', 'studentId'])
+@Index('idx_checkins_cov', ['teacherId', 'createdAt'])
 @Entity('checkins')
 export class Checkin extends BaseEntity {
   @Column() studentId: string

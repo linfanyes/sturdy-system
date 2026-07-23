@@ -2,8 +2,10 @@ import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { UpdateProfileDto } from './dto/update-profile.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
+@Roles('teacher')
 @Controller('users')
 export class UsersController {
   constructor(private readonly users: UsersService) {}

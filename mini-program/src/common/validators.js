@@ -55,3 +55,44 @@ export function isAmount(num) {
   if (Number.isNaN(n) || n <= 0) return false
   return /^\d+(\.\d{1,2})?$/.test(String(num).trim())
 }
+
+/* ========== 新增校验 ========== */
+
+/** URL 格式校验：http/https 开头，含域名。空值视为合法（可选字段）。 */
+export function isUrl(s) {
+  if (s == null || s === '') return true
+  try {
+    const u = new URL(String(s).trim())
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** 日期字符串校验：YYYY-MM-DD 格式。可选字段传入空串也合法。 */
+export function isDateStr(s) {
+  if (s == null || s === '') return true
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(s).trim())
+}
+
+/** 长度截断：确保字符串不超过 max 字节/字符。用于处理 `confirm` / `blur` 时裁剪过长输入。 */
+export function clip(s, max) {
+  if (s == null) return ''
+  const v = String(s)
+  return v.length > max ? v.slice(0, max) : v
+}
+
+/** 常见字段最大长度参考（与后端 entity 定义对齐） */
+export const MAX_LEN = {
+  NAME: 50,         // 姓名/称呼
+  TITLE: 100,       // 标题
+  PHONE: 11,        // 手机号
+  STUDENT_NO: 32,   // 学号
+  EMAIL: 100,       // 邮箱
+  URL: 500,         // 外部链接
+  TAG: 20,          // 单个标签
+  REMARK: 200,      // 备注
+  SCHOOL: 60,       // 学校名称
+  SUBJECT: 30,      // 科目
+  PASSWORD: 64,     // 密码
+}

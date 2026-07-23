@@ -1,6 +1,8 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
+@Index('idx_teacher_class_stu', ['teacherId', 'classId', 'studentId'])
+@Index('idx_parent_contacts_cov', ['teacherId', 'createdAt'])
 @Entity('parent_contacts')
 export class ParentContact extends BaseEntity {
   @Column() studentId: string
@@ -17,6 +19,7 @@ export class ParentContact extends BaseEntity {
   @Column({ type: 'text', nullable: true }) followUp: string
 }
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('notice_templates')
 export class NoticeTemplate extends BaseEntity {
   @Column() title: string

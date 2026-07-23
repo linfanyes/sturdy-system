@@ -1,6 +1,7 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
+@Index('idx_teacher_class', ['teacherId', 'classId'])
 @Entity('lesson_observations')
 export class LessonObservation extends BaseEntity {
   @Column() teacherName: string
@@ -14,6 +15,7 @@ export class LessonObservation extends BaseEntity {
   @Column({ default: '良好' }) overallRating: string
 }
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('work_logs')
 export class WorkLog extends BaseEntity {
   @Column() date: string
@@ -23,6 +25,7 @@ export class WorkLog extends BaseEntity {
   @Column({ type: 'text', nullable: true }) note: string
 }
 
+@Index('idx_teacher', ['teacherId'])
 @Entity('lesson_plan_templates')
 export class LessonPlanTemplate extends BaseEntity {
   @Column() title: string

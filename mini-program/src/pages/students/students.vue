@@ -60,14 +60,14 @@
       <picker :range="classOptions" :value="classIdx" @change="onClassPick">
         <view class="picker">所属班级：{{ classOptions[classIdx] || '请选择班级' }}</view>
       </picker>
-      <input v-model="form.name" placeholder="姓名" />
+      <input v-model="form.name" maxlength="50" placeholder="姓名" />
       <picker :range="['男', '女']" :value="['男','女'].indexOf(form.gender)" @change="(e) => (form.gender = ['男', '女'][e.detail.value])">
         <view class="picker">性别：{{ form.gender }}</view>
       </picker>
-      <input v-model="form.studentNo" placeholder="学号" />
-      <input v-model="form.parentName" placeholder="家长姓名" />
-      <input v-model="form.parentPhone" placeholder="家长电话" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text>
-      <input v-model="form.duty" placeholder="班级职务（如 班长/课代表）" />
+      <input v-model="form.studentNo" maxlength="32" placeholder="学号" />
+      <input v-model="form.parentName" maxlength="50" placeholder="家长姓名" />
+      <input v-model="form.parentPhone" maxlength="11" placeholder="家长电话" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text>
+      <input v-model="form.duty" maxlength="30" placeholder="班级职务（如 班长/课代表）" />
       <picker mode="date" :value="form.birthDate" @change="(e) => (form.birthDate = e.detail.value)">
         <view class="picker">🎂 生日：{{ form.birthDate || '请选择日期（可选）' }}</view>
       </picker>
