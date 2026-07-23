@@ -40,7 +40,13 @@ export default {
     const hasSa = !!uni.getStorageSync('sa_token')
     const hasParent = !!uni.getStorageSync('g_parent_token')
     if (!hasTeacher && !hasAdmin && !hasSa && !hasParent) {
-      uni.reLaunch({ url: '/pages/login/login' })
+      // 演示模式：无登录态时自动进入，完全跳过登录页
+      uni.setStorageSync('g_mock_mode', 'true')
+      setMockMode(true)
+      mockMode.enabled = true
+      auth.token = 'mock-token'
+      auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
+      uni.switchTab({ url: '/pages/dashboard/dashboard' })
     } else if (hasAdmin) {
       uni.reLaunch({ url: '/pages/admin/admin' })
     } else if (hasSa) {
