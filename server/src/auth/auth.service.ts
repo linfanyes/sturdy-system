@@ -69,7 +69,7 @@ export class AuthService {
         features: teacher.features, enabled: teacher.enabled,
         avatar: teacher.avatar, teacherNo: teacher.teacherNo,
       }
-      return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id, role: 'teacher' }), user: safeUser }
+      return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }), user: safeUser }
     }
 
     // 4) 家长（用户名=学号，默认密码 123456）
@@ -97,7 +97,7 @@ export class AuthService {
     if (user) {
       if (user.enabled === false) throw new UnauthorizedException('账号已被学校管理员禁用，请联系学校')
       await this.users.update(user.id, { sessionKey: session_key })
-      return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher' }), user, needsBind: false }
+      return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user, needsBind: false }
     }
     // 查家长绑定
     const stu = await this.studentRepo.findOne({ where: { parentOpenId: openid } })
@@ -121,7 +121,7 @@ export class AuthService {
     const exist = await this.users.findByOpenid(openid)
     if (exist && exist.id !== user.id) throw new BadRequestException('该微信已绑定其他账号')
     await this.users.update(user.id, { openid })
-    return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher' }), user }
+    return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user }
   }
 
   /** 微信绑家长：用学号绑定 openid */
@@ -171,7 +171,7 @@ export class AuthService {
           id: lockedUser.id, name: lockedUser.name, username: lockedUser.username,
           school: lockedUser.school, teacherNo: lockedUser.teacherNo,
         }
-        return { role: 'teacher', token: this.jwt.sign({ sub: lockedUser.id, openid, role: 'teacher' }), user: safeUser, needsBind: false }
+        return { role: 'teacher', token: this.jwt.sign({ sub: lockedUser.id, openid, role: 'teacher', schoolId: lockedUser.schoolId || '' }), user: safeUser, needsBind: false }
       })
     }
     // 尝试按学号查找（家长绑定）
@@ -198,6 +198,6 @@ export class AuthService {
     if (!user || !user.passwordHash) throw new UnauthorizedException('账号不存在或未设密码')
     const h = crypto.createHash('sha256').update(password).digest('hex')
     if (h !== user.passwordHash) throw new UnauthorizedException('密码错误')
-    return { token: this.jwt.sign({ sub: user.id, role: 'teacher' }), user }
+    return { token: this.jwt.sign({ sub: user.id, role: 'teacher', schoolId: user.schoolId || '' }), user }
   }
 }

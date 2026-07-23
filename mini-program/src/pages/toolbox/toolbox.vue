@@ -66,54 +66,100 @@ function persist() {
 
 const sections = ref([
   {
-    title: '常用',
+    title: '我的工作台',
     items: [
       { label: '待办', icon: '✅', path: '/pages/todos/todos' },
       { label: '笔记', icon: '📓', path: '/pages/notes/notes' },
       { label: '课表', icon: '🗓️', path: '/pages/schedule/schedule' },
       { label: '公告', icon: '📢', path: '/pages/notice/notice' },
-      { label: '家长联系', icon: '📞', path: '/pages/parent-contact/parent-contact' },
       { label: '个人中心', icon: '👤', path: '/pages/profile/profile' },
     ],
   },
   {
-    title: 'AI 工具',
+    title: 'AI 备课',
     items: [
       { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
-      { label: '考试一键分析', icon: '📊', path: '/pages/ai-exam/ai-exam' },
       { label: '优质教案生成', icon: '📄', path: '/pages/ai-lesson/ai-lesson' },
       { label: '知识点生成', icon: '💡', path: '/pages/ai-knowledge/ai-knowledge' },
       { label: '优选试卷生成', icon: '📃', path: '/pages/ai-paper/ai-paper' },
       { label: '互动讲义', icon: '🎯', path: '/pages/ai-interactive/ai-interactive' },
       { label: '图像创造', icon: '🎨', path: '/pages/image-creation/image-creation' },
-      { label: '评语生成', icon: '✍️', quicktool: 'comment' },
-      { label: '期末总结', icon: '📑', quicktool: 'summary' },
-      { label: '演讲稿', icon: '🎤', quicktool: 'speech' },
+      { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
+      { label: '资源', icon: '📚', path: '/pages/resource/resource' },
     ],
   },
   {
-    title: '教学备课',
+    title: '学情与考试',
     items: [
       { label: '考试管理', icon: '📊', path: '/pages/exams/exams' },
+      { label: '考试一键分析', icon: '📊', path: '/pages/ai-exam/ai-exam' },
       { label: '成绩管理', icon: '📈', path: '/pages/grades/grades' },
       { label: '成绩雷达图', icon: '📡', path: '/pages/radar/radar' },
       { label: '数据统计', icon: '📉', path: '/pages/analysis/analysis' },
       { label: '数据看板', icon: '📊', path: '/pages/data-dashboard/data-dashboard' },
-      { label: '考勤', icon: '✅', path: '/pages/attendance/attendance' },
-      { label: '作业', icon: '📝', path: '/pages/homework/homework' },
-      { label: '资源', icon: '📚', path: '/pages/resource/resource' },
-      { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
       { label: '试卷查询', icon: '🔍', crud: 'generated/queries' },
-      { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
-      { label: '教学日历', icon: '📅', path: '/pages/teaching-calendar/teaching-calendar' },
+      { label: '作业', icon: '📝', path: '/pages/homework/homework' },
+      { label: '考勤', icon: '✅', path: '/pages/attendance/attendance' },
     ],
   },
   {
-    title: '语文专项',
+    title: '课堂互动',
+    items: [
+      { label: '随机点名', icon: '🎯', path: '/pages/tools/picker' },
+      { label: '随机分组', icon: '🎲', path: '/pages/group/group' },
+      { label: '随机决定器', icon: '🎲', path: '/pages/tools/decider' },
+      { label: '倒计时', icon: '⏱️', path: '/pages/tools/timer' },
+      { label: '课堂计算器', icon: '🧮', path: '/pages/tools/calc' },
+      { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
+      { label: '计分板', icon: '🎯', path: '/pages/tools/score-panel/score-panel' },
+      { label: '抽签历史', icon: '🎰', path: '/pages/picker-history/picker-history' },
+      { label: '小游戏合集', icon: '🎮', path: '/pages/games/index' },
+      { label: '笑口常开', icon: '🌸', path: '/pages/tools/flower' },
+    ],
+  },
+  {
+    title: '学生评价与积分',
+    items: [
+      { label: '成长记录', icon: '🌱', path: '/pages/growth/growth' },
+      { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
+      { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
+      { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
+      { label: '课外阅读', icon: '📖', path: '/pages/reading-log/reading-log' },
+      { label: '学生打卡', icon: '✅', path: '/pages/checkin/checkin' },
+      { label: '评语生成', icon: '✍️', quicktool: 'comment' },
+      { label: '期末总结', icon: '📑', quicktool: 'summary' },
+      { label: '加减分', icon: '➕', crud: 'reward-records' },
+      { label: '积分记录', icon: '💯', crud: 'score-records' },
+      { label: '积分排行榜', icon: '🏆', path: '/pages/leaderboard/leaderboard' },
+      { label: '小组评分', icon: '👥', crud: 'group-scores' },
+      { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
+    ],
+  },
+  {
+    title: '班级管理',
+    items: [
+      { label: '轮值表', icon: '📋', path: '/pages/duty-roster/duty-roster' },
+      { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
+      { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
+      { label: '班级活动', icon: '🎉', path: '/pages/class-activity/class-activity' },
+      { label: '班级风采', icon: '🖼️', path: '/pages/gallery/gallery' },
+      { label: '我的相册', icon: '📷', path: '/pages/my-gallery/my-gallery' },
+    ],
+  },
+  {
+    title: '家校沟通',
+    items: [
+      { label: '家长联系', icon: '📞', path: '/pages/parent-contact/parent-contact' },
+      { label: '家校沟通', icon: '💬', path: '/pages/im/im' },
+      { label: '通知模板', icon: '✉️', crud: 'notice-templates' },
+    ],
+  },
+  {
+    title: '学科专项 - 语文',
     items: [
       { label: '古诗词助手', icon: '📜', subject: 'poetry' },
       { label: '汉字听写', icon: '🎧', subject: 'dictation' },
-      { label: '笔顺演示', icon: '✏️', path: '/pages/tools/stroke/stroke' },
+      { label: '笔顺演示', icon: '✏️', subject: 'stroke' },
       { label: '阅读理解生成', icon: '📖', subject: 'reading' },
       { label: '小作文助手', icon: '✍️', subject: 'essay' },
       { label: '成语词典', icon: '🔤', subject: 'idiom' },
@@ -122,7 +168,7 @@ const sections = ref([
     ],
   },
   {
-    title: '数学专项',
+    title: '学科专项 - 数学',
     items: [
       { label: '口算生成', icon: '➕', path: '/pages/tools/math' },
       { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
@@ -133,7 +179,7 @@ const sections = ref([
     ],
   },
   {
-    title: '英语专项',
+    title: '学科专项 - 英语',
     items: [
       { label: '单词卡片', icon: '🃏', subject: 'word-card' },
       { label: '句型练习', icon: '✨', subject: 'sentence-practice' },
@@ -146,83 +192,37 @@ const sections = ref([
     ],
   },
   {
-    title: '课堂神器',
+    title: '教师办公',
     items: [
-      { label: '随机点名', icon: '🎯', path: '/pages/tools/picker' },
-      { label: '随机分组', icon: '🎲', path: '/pages/group/group' },
-      { label: '随机决定器', icon: '🎲', path: '/pages/tools/decider' },
-      { label: '倒计时', icon: '⏱️', path: '/pages/tools/timer' },
-      { label: '课堂计算器', icon: '🧮', path: '/pages/tools/calc' },
-      { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
-      { label: '小游戏合集', icon: '🎮', path: '/pages/games/index' },
-      { label: '笑口常开', icon: '🌸', path: '/pages/tools/flower' },
-    ],
-  },
-  {
-    title: '班级事务',
-    items: [
-      { label: '轮值表', icon: '📋', path: '/pages/duty-roster/duty-roster' },
-      { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
-      { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
-      { label: '班级活动', icon: '🎉', path: '/pages/class-activity/class-activity' },
-      { label: '班级风采', icon: '🖼️', path: '/pages/gallery/gallery' },
-      { label: '我的相册', icon: '📷', path: '/pages/my-gallery/my-gallery' },
-      { label: '抽签历史', icon: '🎰', path: '/pages/picker-history/picker-history' },
-      { label: '家校沟通', icon: '💬', path: '/pages/im/im' },
-      { label: '通知模板', icon: '✉️', crud: 'notice-templates' },
-    ],
-  },
-  {
-    title: '学生发展',
-    items: [
-      { label: '成长记录', icon: '🌱', path: '/pages/growth/growth' },
-      { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
-      { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
-      { label: '课外阅读', icon: '📖', path: '/pages/reading-log/reading-log' },
-      { label: '学生打卡', icon: '✅', path: '/pages/checkin/checkin' },
-      { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
-      { label: '计分板', icon: '🎯', path: '/pages/tools/score-panel/score-panel' },
-      { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
-      { label: '加减分', icon: '➕', crud: 'reward-records' },
-      { label: '积分记录', icon: '💯', crud: 'score-records' },
-      { label: '积分排行榜', icon: '🏆', path: '/pages/leaderboard/leaderboard' },
-      { label: '小组评分', icon: '👥', crud: 'group-scores' },
-    ],
-  },
-  {
-    title: '文字办公',
-    items: [
+      { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
+      { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
+      { label: '教学日历', icon: '📅', path: '/pages/teaching-calendar/teaching-calendar' },
+      { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/teacher/teacher' },
       { label: '翻译', icon: '🌐', quicktool: 'translate' },
       { label: '教育论文', icon: '📝', quicktool: 'paper' },
       { label: '黑板报', icon: '🟢', quicktool: 'blackboard' },
+      { label: '演讲稿', icon: '🎤', quicktool: 'speech' },
       { label: '文案模板库', icon: '📚', path: '/pages/tools/templates' },
-    ],
-  },
-  {
-    title: '教师行政',
-    items: [
-      { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/teacher/teacher' },
-      { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
     ],
   },
 ])
 
 // 功能键 → 工具箱分区 & 具体工具的映射（管理员配置激活时生效）
 const secItemsFeatureMap = {
-  exams: new Set(['教学备课']),
-  grades: new Set(['教学备课']),
-  attendance: new Set(['教学备课']),
-  schedule: new Set(['常用', '课堂神器']),
-  homework: new Set(['教学备课']),
-  notices: new Set(['常用']),
-  ai: new Set(['AI 工具', '语文专项', '英语专项', '文字办公']),
-  tools: new Set(['课堂神器', '数学专项']),
-  games: new Set(['课堂神器']),
-  finance: new Set(['班级事务']),
-  activities: new Set(['班级事务']),
-  rewards: new Set(['学生发展']),
-  parents: new Set(['常用', '学生发展']),
-  teachers: new Set(['教师行政']),
+  exams: new Set(['学情与考试']),
+  grades: new Set(['学情与考试']),
+  attendance: new Set(['学情与考试']),
+  schedule: new Set(['我的工作台']),
+  homework: new Set(['学情与考试']),
+  notices: new Set(['我的工作台', '家校沟通']),
+  ai: new Set(['AI 备课', '学科专项 - 语文', '学科专项 - 英语', '教师办公']),
+  tools: new Set(['课堂互动', '学科专项 - 数学']),
+  games: new Set(['课堂互动']),
+  finance: new Set(['班级管理']),
+  activities: new Set(['班级管理']),
+  rewards: new Set(['学生评价与积分']),
+  parents: new Set(['家校沟通']),
+  teachers: new Set(['教师办公']),
 }
 const itemFeatureMap = {
   exams: new Set(['考试管理']),
@@ -230,15 +230,15 @@ const itemFeatureMap = {
   attendance: new Set(['考勤']),
   schedule: new Set(['课表']),
   homework: new Set(['作业']),
-  notices: new Set(['公告']),
-  ai: new Set(['AI 助手', '考试一键分析', '优质教案生成', '知识点生成', '优选试卷生成', '互动讲义', '图像创造', '评语生成', '期末总结', '演讲稿', '教案模板', '试卷查询', '古诗词助手', '汉字听写', '笔顺演示', '阅读理解生成', '小作文助手', '成语词典', '拼音标注', '作文素材', '翻译', '教育论文', '黑板报', '文案模板库', '单词卡片', '句型练习', '英语听力', '语法练习', '情景对话', '单词拼写', '口语练习', '英语爽文']),
-  tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '口算生成', '竖式计算', '口算答题卡', '乘法口诀', '单位换算', '错题本']),
+  notices: new Set(['公告', '通知模板']),
+  ai: new Set(['AI 助手', '优质教案生成', '知识点生成', '优选试卷生成', '互动讲义', '图像创造', '教案模板', '资源', '评语生成', '期末总结', '古诗词助手', '汉字听写', '笔顺演示', '阅读理解生成', '小作文助手', '成语词典', '拼音标注', '作文素材', '翻译', '教育论文', '黑板报', '文案模板库', '单词卡片', '句型练习', '英语听力', '语法练习', '情景对话', '单词拼写', '口语练习', '英语爽文']),
+  tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '计分板', '口算生成', '竖式计算', '口算答题卡', '乘法口诀', '单位换算', '错题本']),
   games: new Set(['小游戏合集', '笑口常开']),
   finance: new Set(['班费']),
   activities: new Set(['班级活动', '班级风采', '我的相册']),
-  rewards: new Set(['积分排行榜', '计分板', '奖励兑换', '加减分', '积分记录', '小组评分', '成长记录', '行为记录', '获奖记录', '奖项类别', '学生打卡', '课外阅读']),
-  parents: new Set(['家长联系', '通知模板']),
-  teachers: new Set(['教师通讯录']),
+  rewards: new Set(['成长记录', '行为记录', '获奖记录', '奖项类别', '课外阅读', '学生打卡', '加减分', '积分记录', '积分排行榜', '小组评分', '奖励兑换']),
+  parents: new Set(['家长联系', '家校沟通']),
+  teachers: new Set(['工作日志', '听课记录', '教学日历', '教师通讯录', '演讲稿']),
 }
 
 const viewSections = computed(() => {
@@ -250,20 +250,20 @@ const viewSections = computed(() => {
   const ftrs = auth.features
   if (ftrs && ftrs.length) {
     secs = secs.filter((sec) => {
-      // 常用+设置+教师行政始终可见
-      if (sec.title === '常用' || sec.title === '设置' || sec.title === '教师行政') return true
+      // 我的工作台+教师办公始终可见
+      if (sec.title === '我的工作台' || sec.title === '教师办公') return true
       return ftrs.some((f) => secItemsFeatureMap[f] && secItemsFeatureMap[f].has(sec.title))
     }).map((sec) => {
       // 过滤分区内的具体工具
       const filteredItems = sec.items.filter((it) => {
         const label = it.label
-        // 如果这个工具标记了 subject/quicktool/crud，保留（它们不占用功能分区）
+        // 如果这个工具标记了 subject/quicktool，保留（它们不占用功能分区）
         if (it.subject || it.quicktool) return true
         for (const f of ftrs) {
           if (itemFeatureMap[f] && itemFeatureMap[f].has(label)) return true
         }
-        // 如果没有匹配到任何限制分类，默认显示（新工具未分类）
-        return !ftrs.length || ftrs.length === 0
+        // 未分类的新工具默认显示
+        return true
       })
       return { ...sec, items: filteredItems }
     })

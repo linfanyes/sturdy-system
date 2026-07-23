@@ -7,8 +7,16 @@
     <template v-else-if="!adminToken">
       <view class="login-card">
         <view class="login-title">🔐 超级管理员</view>
-        <button class="login-btn" :disabled="logging" @click="autoLogin">点击进入超管后台</button>
-        <view class="hint">默认以 admin / admin 登录（可在后端环境变量配置）</view>
+        <view class="login-field">
+          <text class="login-label">用户名</text>
+          <input v-model="adminUser" class="login-input" placeholder="超管用户名" />
+        </view>
+        <view class="login-field">
+          <text class="login-label">密码</text>
+          <input v-model="adminPwd" class="login-input" placeholder="超管密码" password />
+        </view>
+        <button class="login-btn" :disabled="logging" @click="doLogin">{{ logging ? '登录中…' : '登录' }}</button>
+        <view class="hint">用户名/密码由后端环境变量配置（SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD）</view>
       </view>
     </template>
 
@@ -252,6 +260,8 @@ const SERVER_URL = '/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
 const adminToken = ref(uni.getStorageSync(ADMIN_TOKEN_KEY) || '')
 const logging = ref(false)
+const adminUser = ref('')
+const adminPwd = ref('')
 const saving = ref(false)
 
 // 当前 Tab：school=学校管理 / admin=学校管理员
@@ -340,11 +350,12 @@ async function apiCall(method, path, data) {
   })
 }
 
-async function autoLogin() {
+async function doLogin() {
   if (logging.value) return
+  if (!adminUser.value.trim() || !adminPwd.value) return uni.showToast({ title: '请输入用户名和密码', icon: 'none' })
   logging.value = true
   try {
-    const resp = await apiCall('POST', '/admin/login', { username: 'admin', password: 'admin' })
+    const resp = await apiCall('POST', '/admin/login', { username: adminUser.value.trim(), password: adminPwd.value })
     adminToken.value = resp?.token || ''
     if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAll() }
     else uni.showToast({ title: '登录失败：未返回 token', icon: 'none' })
@@ -686,10 +697,13 @@ function confirmResetAll() {
 
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; }
-.login-card { background: var(--c-card); border-radius: 24rpx; padding: 40rpx 30rpx; width: 560rpx; margin: 80rpx auto; }
+.login-card { background: var(--c-card); border-radius: 24rpx; padding: 40rpx 30rpx; width: 560rpx; max-width: 90vw; margin: 80rpx auto; box-sizing: border-box; }
 .login-title { font-size: 36rpx; font-weight: 800; color: var(--c-title); text-align: center; margin-bottom: 30rpx; }
+.login-field { margin-bottom: 20rpx; }
+.login-label { display: block; font-size: 26rpx; color: var(--c-sub); margin-bottom: 8rpx; }
+.login-input { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 20rpx; font-size: 30rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; margin-bottom: 4rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
-.login-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; }
+.login-btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 84rpx; line-height: 84rpx; margin-top: 10rpx; }
 .hint { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }

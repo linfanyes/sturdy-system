@@ -7,10 +7,10 @@ import { CurrentParent } from './current-parent.decorator'
 export class ParentAuthController {
   constructor(private readonly s: ParentAuthService) {}
 
-  /** 家长凭学生学号登录 */
+  /** 家长凭学生学号 + 密码登录 */
   @Post('login')
-  login(@Body() b: { studentNo?: string }) {
-    return this.s.login((b && b.studentNo) || '')
+  login(@Body() b: { studentNo?: string; password?: string }) {
+    return this.s.login((b && b.studentNo) || '', (b && b.password) || '')
   }
 
   /** 家长绑定微信（自动或手动） */

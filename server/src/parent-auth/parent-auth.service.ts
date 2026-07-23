@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -12,6 +12,9 @@ import { Exam } from '../exams/exam.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 import { WechatService } from '../auth/wechat.service'
+
+/** 家长默认密码（与 auth.service.ts 保持一致） */
+const PARENT_DEFAULT_PASSWORD = '123456'
 
 /**
  * 家长端：凭学生学号登录 → 查看孩子考试成绩+趋势分析 + IM 与老师对话。
@@ -33,14 +36,16 @@ export class ParentAuthService {
     private readonly wechat: WechatService,
   ) {}
 
-  /** 学号登录 */
-  async login(studentNo: string) {
+  /** 学号 + 密码登录 */
+  async login(studentNo: string, password: string) {
     if (!studentNo || !/^\d+$/.test(studentNo.trim()))
       throw new BadRequestException('请输入正确的学号')
+    if (!password) throw new BadRequestException('请输入密码')
     const no = studentNo.trim()
     const stu = await this.studentRepo.findOne({ where: { studentNo: no } })
     if (!stu) throw new BadRequestException('未找到该学号对应的学生，请检查学号是否正确')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权，请联系老师开启')
+    if (password !== PARENT_DEFAULT_PASSWORD) throw new UnauthorizedException('密码错误')
     const parentName = stu.parentName || '家长'
     const imUserId = parentImUserId({ studentId: stu.id, relation: '家长', parentName })
     const token = this.jwt.sign({

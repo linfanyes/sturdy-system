@@ -19,6 +19,11 @@ const TEACHER_ID_TABLES = [
   'backups', 'ai_settings', 'app_config', 'awards', 'generated',
   'class_ops', 'duty_rosters', 'engagements', 'growth_records',
   'parent_contacts', 'seats', 'gallery_items',
+  'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
+  'reading_logs', 'checkins', 'behavior_records', 'award_records',
+  'score_records', 'reward_records', 'group_scores', 'class_duty_configs',
+  'notice_templates', 'home_visits', 'teaching_calendars',
+  'class_activities', 'class_finance',
 ]
 
 @Injectable()
@@ -278,13 +283,13 @@ export class SchoolAdminService {
 
   // ===== 学校公告 =====
 
-  /** 学校级公告列表 */
+  /** 学校级公告列表（公告 teacherId 是校管 id，需查本校校管） */
   async listSchoolNotices(schoolId: string) {
-    const allTeachers = await this.userRepo.find({ where: { schoolId } })
-    const ids = allTeachers.map(t => t.id)
-    if (!ids.length) return { items: [], total: 0 }
+    const admins = await this.saRepo.find({ where: { schoolId }, select: ['id'] })
+    const adminIds = admins.map(a => a.id)
+    if (!adminIds.length) return { items: [], total: 0 }
     const [items, total] = await this.noticeRepo.findAndCount({
-      where: ids.map(id => ({ teacherId: id, scope: 'school' })),
+      where: adminIds.map(id => ({ teacherId: id, scope: 'school' })),
       order: { createdAt: 'DESC' },
     })
     return { items, total }
@@ -300,10 +305,13 @@ export class SchoolAdminService {
     return this.noticeRepo.save(n)
   }
 
-  /** 删除学校公告 */
+  /** 删除学校公告（校验 schoolId 防止跨校删除） */
   async deleteSchoolNotice(schoolId: string, id: string) {
     const notice = await this.noticeRepo.findOne({ where: { id, scope: 'school' } })
     if (!notice) throw new BadRequestException('公告不存在')
+    // 校验公告属于本校（teacherId 是本校校管 id）
+    const admin = await this.saRepo.findOne({ where: { id: notice.teacherId, schoolId } })
+    if (!admin) throw new BadRequestException('无权操作此公告')
     return this.noticeRepo.remove(notice)
   }
 
