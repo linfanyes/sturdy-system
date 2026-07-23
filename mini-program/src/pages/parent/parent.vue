@@ -48,6 +48,14 @@
           </text>
         </view>
 
+        <view class="subject-list">
+          <view v-for="s in orderedSubjects" :key="s.subject" class="srow">
+            <text class="ssubject">{{ s.subject }}</text>
+            <text class="sscore">{{ s.score != null ? s.score + ' / ' + s.fullScore : '暂未录入' }}</text>
+            <text class="srank">班级第{{ s.classRank ?? '--' }}名</text>
+          </view>
+        </view>
+
         <view v-if="strengths.length || weaknesses.length" class="sw-section">
           <view v-if="strengths.length" class="sw-row">
             <text class="sw-label sw-strong">优势学科</text>
@@ -56,14 +64,6 @@
           <view v-if="weaknesses.length" class="sw-row">
             <text class="sw-label sw-weak">薄弱学科</text>
             <text class="sw-list">{{ weaknesses.join('、') }}</text>
-          </view>
-        </view>
-
-        <view class="subject-list">
-          <view v-for="s in selectedExam.subjects || []" :key="s.subject" class="srow">
-            <text class="ssubject">{{ s.subject }}</text>
-            <text class="sscore">{{ s.score != null ? s.score + ' / ' + s.fullScore : '暂未录入' }}</text>
-            <text class="srank">班级第{{ s.classRank ?? '--' }}名</text>
           </view>
         </view>
 
@@ -117,6 +117,23 @@ const examOptions = computed(() => exams.value.map((e, i) => e.examName || ('考
 
 const selectedExam = computed(() => exams.value[selectedExamIndex.value] || null)
 
+// 科目显示顺序
+const SUBJECT_ORDER = ['语文', '数学', '英语', '科学', '品德']
+const orderedSubjects = computed(() => {
+  const subs = (selectedExam.value?.subjects || []).slice()
+  subs.sort((a, b) => {
+    const ai = SUBJECT_ORDER.indexOf(a.subject)
+    const bi = SUBJECT_ORDER.indexOf(b.subject)
+    if (ai >= 0 && bi >= 0) return ai - bi
+    if (ai >= 0) return -1
+    if (bi >= 0) return 1
+    return (a.subject || '').localeCompare(b.subject || '')
+  })
+  return subs
+})
+
+const EXCELLENT_RATIO = 0.8 // 优秀分线：满分 80%
+
 const rankedSubjects = computed(() => {
   const subs = selectedExam.value?.subjects || []
   return subs
@@ -128,18 +145,16 @@ const rankedSubjects = computed(() => {
 const strengths = computed(() => {
   const arr = rankedSubjects.value
   if (!arr.length) return []
-  const top = arr[0]
-  if (!top) return []
-  return arr.filter(s => s.pct >= top.pct - 0.05).slice(0, 3).map(s => s.subject)
+  // 高于优秀线(80%)的科目
+  return arr.filter(s => s.pct >= EXCELLENT_RATIO).map(s => s.subject)
 })
 
 const weaknesses = computed(() => {
   const arr = rankedSubjects.value
   if (!arr.length) return []
-  const len = arr.length
-  const bot = arr[len - 1]
-  if (!bot) return []
-  return arr.filter(s => s.pct <= bot.pct + 0.05).slice(-3).reverse().map(s => s.subject)
+  // 低于优秀线(80%)按得分率升序取后3个
+  const below = arr.filter(s => s.pct < EXCELLENT_RATIO).sort((a, b) => a.pct - b.pct)
+  return below.slice(0, 3).map(s => s.subject)
 })
 
 const histogram = computed(() => {
