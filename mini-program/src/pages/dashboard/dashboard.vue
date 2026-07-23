@@ -611,7 +611,7 @@ const pendingBySubject = computed(() => {
 const weekBehaviorCount = computed(() => {
   // 使用已有 behaviorList 或返回 0
   return 0
-}
+})
 
 // 数据趋势：近7日出勤
 const weekTrend = computed(() => {
@@ -630,7 +630,7 @@ const weekTrend = computed(() => {
     })
   }
   return days
-}))
+})
 
 async function loadAll() {
   loading.value = true

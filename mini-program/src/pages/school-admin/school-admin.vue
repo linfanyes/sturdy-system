@@ -675,7 +675,7 @@ async function exportStudents() {
   const blob = await apiCall('GET', '/school-admin/export/students')
   downloadBlob(blob, 'students.csv')
 }
-function downloadBlob(data: any, name: string) {
+function downloadBlob(data, name) {
   // 小程序环境下无法下载文件，走复制链接/提示
   uni.showToast({ title: '导出功能需在 Web 端使用', icon: 'none' })
 }
