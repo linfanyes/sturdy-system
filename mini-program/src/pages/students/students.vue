@@ -20,7 +20,8 @@
     </view>
 
     <view class="list">
-      <view v-for="s in shown" :key="s.id" class="item" :class="batchMode && 'selectable'" @click="batchMode ? toggleSel(s) : openProfile(s)">
+      <Skeleton v-if="loading" :rows="4" />
+      <view v-else v-for="s in shown" :key="s.id" class="item" :class="batchMode && 'selectable'" @click="batchMode ? toggleSel(s) : openProfile(s)">
         <view v-if="batchMode" class="check" :class="selected.has(s.id) && 'on'">✓</view>
         <view class="top">
           <text class="name">{{ s.name }}</text>
@@ -40,8 +41,8 @@
           <text class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
         </view>
       </view>
-      <EmptyState v-if="!shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
-      <view v-if="hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
+      <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
+      <view v-if="!loading && hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
     </view>
 
     <view v-if="batchMode && selected.size" class="batchbar">
@@ -164,10 +165,13 @@ import { isPhone, isStudentNo } from '../../common/validators'
 import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
 import { compressImage } from '../../common/image'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
+import Skeleton from '../../components/Skeleton/Skeleton.vue'
 
 const classId = ref('')
 const className = ref('')
 const list = ref([])
+const loading = ref(false)
 const kw = ref('')
 // 班级下拉列表
 const classList = ref([])
@@ -276,26 +280,27 @@ const levelClass = computed(() => {
 })
 
 async function load() {
-  // 首次加载时若没有 classId，从 switchTabParams 读取或取第一个班级
-  if (!classId.value) {
-    const p = switchTabParams.students
-    if (p && p.classId) {
-      classId.value = p.classId
-      className.value = p.name || '学生管理'
-      delete switchTabParams.students
-    } else {
-      // 直接点 Tab 进入的，自动加载班级列表并用第一个
-      await loadClasses()
-      if (classList.value.length) {
-        classId.value = classList.value[0].id
-        className.value = classList.value[0].name
+  loading.value = true
+  try {
+    // 首次加载时若没有 classId，从 switchTabParams 读取或取第一个班级
+    if (!classId.value) {
+      const p = switchTabParams.students
+      if (p && p.classId) {
+        classId.value = p.classId
+        className.value = p.name || '学生管理'
+        delete switchTabParams.students
+      } else {
+        await loadClasses()
+        if (classList.value.length) {
+          classId.value = classList.value[0].id
+          className.value = classList.value[0].name
+        }
       }
     }
-  }
-  // 服务端按 classId 过滤
-  if (classId.value) {
-    list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: true, loadingText: '加载学生' })
-  }
+    if (classId.value) {
+      list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: false })
+    }
+  } finally { loading.value = false }
   resetPage()
 }
 

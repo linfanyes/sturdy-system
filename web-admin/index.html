@@ -138,6 +138,23 @@ td.acts{white-space:nowrap;text-align:right}
   .header-title{font-size:15px}
   .modal{padding:16px;max-height:90vh}
 }
+
+/* Charts */
+.charts-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.chart-card{padding:16px}
+.chart-container{display:flex;align-items:center;justify-content:center;padding:10px 0}
+.donut-chart{width:120px;height:120px}
+.bar-chart{display:flex;gap:16px;align-items:flex-end;justify-content:center;height:140px;padding:0 10px}
+.bar-item{display:flex;flex-direction:column;align-items:center;flex:1;max-width:60px}
+.bar-wrap{width:30px;height:100px;background:#f0f0f0;border-radius:4px;display:flex;align-items:flex-end;overflow:hidden}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .3s}
+.bar-label{font-size:11px;color:var(--sub);margin-top:4px;text-align:center}
+.bar-value{font-size:13px;font-weight:700;color:var(--text)}
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 0}
+.ov-item{display:flex;flex-direction:column;align-items:center;padding:10px}
+.ov-num{font-size:28px;font-weight:800;color:var(--primary)}
+.ov-num.warn{color:var(--warn)}
+.ov-lb{font-size:12px;color:var(--sub);margin-top:2px}
 </style>
 </head>
 <body>
@@ -306,6 +323,7 @@ function renderAdminContent() {
 
 // Schools
 function renderSchools(el) {
+  const totalAdmins = state.schools.reduce((sum, s) => sum + (s.adminCount || 0), 0)
   el.innerHTML = `
   <div class="bar">
     <span class="bar-sc">学校管理（${state.schools.length}）</span>
@@ -313,6 +331,20 @@ function renderSchools(el) {
       <span class="btn-primary btn-sm" onclick="showSchoolModal()">＋ 新增</span>
     </div>
   </div>
+  ${state.schools.length ? `
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-h"><h3>📊 管理员分布</h3></div>
+    <div class="bar-chart" style="height:120px;gap:20px">
+      ${state.schools.map(s => `
+        <div class="bar-item">
+          <div class="bar-wrap"><div class="bar-fill" style="height:${Math.min(100, (s.adminCount||0) * 25)}%;background:#07c160"></div></div>
+          <div class="bar-label" style="max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${htmlEscape(s.name)}</div>
+          <div class="bar-value">${s.adminCount||0}</div>
+        </div>
+      `).join('')}
+      ${state.schools.length === 0 ? '<div class="empty" style="width:100%">暂无数据</div>' : ''}
+    </div>
+  </div>` : ''}
   <div class="card table-wrap">
     <table>
       <tr><th>学校</th><th>地址</th><th>管理员数</th><th></th></tr>
@@ -507,6 +539,10 @@ function renderSchoolContent() {
 // Dashboard
 function renderDashboard(el) {
   const d = state.dashboard
+  const attendanceRate = d.attendanceRate ?? 0
+  const attendanceColor = attendanceRate < 80 ? 'var(--warn)' : 'var(--primary)'
+  // 计算圆环角度
+  const angle = Math.round((attendanceRate / 100) * 360)
   el.innerHTML = `
   <div class="stats">
     <div class="stat-card"><span class="stat-num">${d.totalTeachers||0}</span><span class="stat-lb">教师</span></div>
@@ -515,6 +551,50 @@ function renderDashboard(el) {
     <div class="stat-card"><span class="stat-num">${d.totalStudents||0}</span><span class="stat-lb">学生</span></div>
     <div class="stat-card"><span class="stat-num ${d.attendanceRate!=null&&d.attendanceRate<80?'warn':''}">${d.attendanceRate!=null?d.attendanceRate+'%':'-'}</span><span class="stat-lb">今日出勤</span></div>
     <div class="stat-card"><span class="stat-num ${d.pendingHomework>0?'warn':''}">${d.pendingHomework||0}</span><span class="stat-lb">待批改</span></div>
+  </div>
+  <div class="charts-row">
+    <div class="card chart-card">
+      <div class="card-h"><h3>📊 出勤率</h3></div>
+      <div class="chart-container">
+        <svg viewBox="0 0 120 120" class="donut-chart">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#eee" stroke-width="12"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="${attendanceColor}" stroke-width="12" stroke-dasharray="${(attendanceRate/100)*314} 314" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+          <text x="60" y="55" text-anchor="middle" font-size="20" font-weight="800" fill="${attendanceColor}">${attendanceRate}%</text>
+          <text x="60" y="72" text-anchor="middle" font-size="10" fill="#888">今日出勤</text>
+        </svg>
+      </div>
+    </div>
+    <div class="card chart-card">
+      <div class="card-h"><h3>📈 师生比</h3></div>
+      <div class="bar-chart">
+        <div class="bar-item">
+          <div class="bar-wrap"><div class="bar-fill" style="height:${Math.min(100, (d.totalStudents / Math.max(d.totalTeachers,1)) * 10)}%;background:#07c160"></div></div>
+          <div class="bar-label">学生/师</div>
+          <div class="bar-value">${(d.totalStudents / Math.max(d.totalTeachers,1)).toFixed(1)}</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-wrap"><div class="bar-fill" style="height:${Math.min(100, (d.totalStudents / Math.max(d.totalClasses,1)) * 5)}%;background:#e6a23c"></div></div>
+          <div class="bar-label">学生/班</div>
+          <div class="bar-value">${(d.totalStudents / Math.max(d.totalClasses,1)).toFixed(1)}</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-wrap"><div class="bar-fill" style="height:${d.totalClasses?80:0};background:#409eff"></div></div>
+          <div class="bar-label">班级数</div>
+          <div class="bar-value">${d.totalClasses||0}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card chart-card">
+      <div class="card-h"><h3>📋 概览</h3></div>
+      <div class="chart-container">
+        <div class="overview-grid">
+          <div class="ov-item"><span class="ov-num">${d.totalTeachers||0}</span><span class="ov-lb">👨‍🏫 教师</span></div>
+          <div class="ov-item"><span class="ov-num">${d.totalStudents||0}</span><span class="ov-lb">🧑‍🎓 学生</span></div>
+          <div class="ov-item"><span class="ov-num">${d.totalClasses||0}</span><span class="ov-lb">🏫 班级</span></div>
+          <div class="ov-item"><span class="ov-num warn">${d.pendingHomework||0}</span><span class="ov-lb">📝 待批改</span></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="card"><div class="card-h"><h3>🔍 搜索</h3></div>
     <div style="display:flex;gap:8px">

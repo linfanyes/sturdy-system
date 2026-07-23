@@ -327,6 +327,13 @@
       }
     },
     {
+      "path": "pages/notifications/notifications",
+      "style": {
+        "navigationBarTitleText": "通知中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/analysis/analysis",
       "style": {
         "navigationBarTitleText": "数据统计",

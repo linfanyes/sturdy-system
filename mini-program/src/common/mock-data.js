@@ -508,7 +508,38 @@ const MOCK = {
     { id: 'msg1', title: '系统通知', content: '您的班级备份已完成', type: 'system', read: false, createdAt: todayStr },
     { id: 'msg2', title: '家长留言', content: '张小明家长：老师您好，孩子明天请假一天', type: 'parent', read: false, createdAt: todayStr },
     { id: 'msg3', title: '系统通知', content: '期末成绩提交截止时间为7月30日', type: 'system', read: true, createdAt: '2026-07-20' },
+    { id: 'msg4', title: '📢 学校公告', content: '下周期末考试安排：请各位家长协助孩子做好复习准备', type: 'notice', read: false, createdAt: todayStr },
+    { id: 'msg5', title: '📢 学校公告', content: '暑假安全注意事项：防溺水、防中暑、注意交通安全', type: 'notice', read: true, createdAt: '2026-07-22' },
   ],
+
+  // 通知（教师端通知系统，与 notification 实体对应）
+  '/notifications': [
+    { id: 'nf1', teacherId: 'u1', title: '新公告发布', content: '学校发布了新公告：下周期末考试安排', type: 'notice', read: false, link: '/pages/notice/notice', createdAt: todayStr },
+    { id: 'nf2', teacherId: 'u1', title: '家长留言', content: '张小明家长发送了一条消息，请注意查看', type: 'parent', read: false, link: '/pages/im/im', createdAt: todayStr },
+    { id: 'nf3', teacherId: 'u1', title: '作业批改提醒', content: '您有 5 份语文作业待批改', type: 'homework', read: true, link: '/pages/homework/homework', createdAt: '2026-07-22' },
+    { id: 'nf4', teacherId: 'u1', title: '考勤异常', content: '今日赵小刚迟到，请关注', type: 'attendance', read: false, link: '/pages/attendance/attendance', createdAt: todayStr },
+    { id: 'nf5', teacherId: 'u1', title: '成绩录入提醒', content: '期末模拟成绩还未录入完成', type: 'grade', read: true, link: '/pages/grades/grades', createdAt: '2026-07-21' },
+  ],
+
+  // 教学日历（与 teaching_calendar 实体一致；真实路由 /teaching-calendar）
+  '/teaching-calendar': (params) => {
+    const now = new Date()
+    const y = params?.year || now.getFullYear()
+    const m = params?.month || now.getMonth() + 1
+    const mStr = String(m).padStart(2, '0')
+    const daysInMonth = new Date(y, m, 0).getDate()
+    const items = [
+      { id: 'tc1', title: '语文单元备课', date: `${y}-${mStr}-05`, grade: '一年级', subject: '语文', color: '#e8f1fb', type: 'normal', note: '备课第一单元' },
+      { id: 'tc2', title: '期中考试', date: `${y}-${mStr}-10`, grade: '一年级', subject: '语文', color: '#fde8ea', type: 'exam', note: '期中考试安排' },
+      { id: 'tc3', title: '教研组会议', date: `${y}-${mStr}-12`, grade: '', subject: '', color: '#fff3e0', type: 'meeting', note: '讨论下学期教学计划' },
+      { id: 'tc4', title: '数学公开课', date: `${y}-${mStr}-15`, grade: '一年级', subject: '数学', color: '#e8f9e8', type: 'normal', note: '公开课展示' },
+      { id: 'tc5', title: '家长会', date: `${y}-${mStr}-18`, grade: '', subject: '', color: '#fff8e1', type: 'other', note: '一年级家长会' },
+      { id: 'tc6', title: '语文单元备课', date: `${y}-${mStr}-22`, grade: '一年级', subject: '语文', color: '#e8f1fb', type: 'normal', note: '备课第二单元' },
+      { id: 'tc7', title: '期末复习', date: `${y}-${mStr}-25`, grade: '一年级', subject: '语文', color: '#fde8ea', type: 'normal', note: '期末复习计划' },
+      { id: 'tc8', title: '期末考试', date: `${y}-${mStr}-${Math.min(28, daysInMonth)}`, grade: '一年级', subject: '语文', color: '#fde8ea', type: 'exam', note: '期末考试' },
+    ]
+    return { items, total: items.length }
+  },
 }
 
 /** 根据路径返回模拟数据，支持 ?classId= / ?skip=&take= 过滤 */
@@ -537,7 +568,12 @@ export function getMockData(path, method = 'GET', body = {}) {
 
   // 精确匹配
   if (MOCK[clean] !== undefined) {
-    let data = JSON.parse(JSON.stringify(MOCK[clean]))
+    let data = MOCK[clean]
+    // 支持动态函数（如 teaching-calendar 根据参数返回不同月份数据）
+    if (typeof data === 'function') {
+      return data(params)
+    }
+    data = JSON.parse(JSON.stringify(data))
     // 按 classId 过滤（仅数组数据）
     if (params.classId && Array.isArray(data)) {
       data = data.filter((item) => item.classId === params.classId)
