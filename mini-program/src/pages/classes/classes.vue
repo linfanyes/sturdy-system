@@ -333,7 +333,7 @@ function goSeats(c) {
 }
 function goSchedule() {
   showDetail.value = false
-  uni.switchTab({ url: '/pages/schedule/schedule' })
+  uni.navigateTo({ url: '/pages/schedule/schedule' })
 }
 function goNotice(c) {
   showDetail.value = false

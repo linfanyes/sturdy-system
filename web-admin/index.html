@@ -16,6 +16,7 @@ button{cursor:pointer;border:none;border-radius:8px;font-size:14px;padding:10px 
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{background:var(--primary2)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-loading{opacity:.6;pointer-events:none}
 .btn-danger{background:var(--danger);color:#fff}
 .btn-outline{background:transparent;border:1px solid #ddd;color:var(--text)}
 .btn-sm{padding:5px 12px;font-size:12px}
@@ -83,12 +84,12 @@ td.acts{white-space:nowrap;text-align:right}
 
 /* Modal */
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--card);border-radius:14px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
-.modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:560px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.15);overflow:hidden}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .modal-h h3{font-size:16px;font-weight:600}
 .modal-close{font-size:22px;color:var(--sub);cursor:pointer;line-height:1}
-.modal-body{}
-.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.modal-body{padding:0 24px;overflow-y:auto;flex:1;min-height:0}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:12px 24px 20px;border-top:1px solid var(--border);flex-shrink:0}
 
 /* Form */
 .form-row{display:flex;gap:10px;margin-bottom:10px}
@@ -136,7 +137,7 @@ td.acts{white-space:nowrap;text-align:right}
   .stats{grid-template-columns:repeat(2,1fr)}
   .form-row{flex-direction:column;gap:0}
   .header-title{font-size:15px}
-  .modal{padding:16px;max-height:90vh}
+  .modal{max-height:90vh}
 }
 
 /* Charts */
@@ -203,7 +204,7 @@ const API = {
     if (state.token) opts.headers['Authorization'] = `Bearer ${state.token}`
     if (data) opts.body = JSON.stringify(data)
     const res = await fetch(state.BASE + '/api' + path, opts)
-    if (res.status === 401) { state.view = 'login'; state.token = null; throw new Error('登录过期') }
+    if (res.status === 401) { state.view = 'login'; state.token = null; render(); throw new Error('登录过期') }
     // Handle CSV download
     const ct = res.headers.get('content-type') || ''
     if (ct.includes('text/csv')) return res.blob()
@@ -258,7 +259,7 @@ function renderLogin(container) {
       </div>
       <div class="login-field"><label>用户名</label><input id="loginUser" placeholder="请输入用户名" /></div>
       <div class="login-field"><label>密码</label><input id="loginPass" type="password" placeholder="请输入密码" /></div>
-      <button class="btn-primary login-btn" onclick="doLogin()">登 录</button>
+      <button class="btn-primary login-btn ${state.loading?'btn-loading':''}" onclick="doLogin()" ${state.loading?'disabled':''}>${state.loading?'登录中…':'登 录'}</button>
       <div class="login-error" id="loginErr"></div>
     </div>
   </div>`
@@ -425,7 +426,7 @@ function showSAModal(id) {
     <div class="form-group"><label>密码${id?'（留空不修改）':''}</label><input id="fSaPass" type="password" ${id?'placeholder="留空不修改"':''} /></div>
     <div class="form-group"><label>所属学校</label>
       <select id="fSaSchool">
-        ${state.schools.map(s => `<option value="${s.id}" ${sa?.schoolId===s.id||sa?.schoolId===s.id?'selected':''}>${htmlEscape(s.name)}</option>`).join('')}
+        ${state.schools.map(s => `<option value="${s.id}" ${sa?.schoolId===s.id?'selected':''}>${htmlEscape(s.name)}</option>`).join('')}
       </select>
     </div>
     `,
@@ -454,11 +455,11 @@ function renderConfigs(el) {
     ${state.configs.map(c => `
     <div class="list-item">
       <div class="list-info">
-        <div class="list-title">${c.label||c.key}</div>
-        <div class="list-meta">${c.key}${c.value?': 已设置':'<span style="color:var(--warn)"> 未设置</span>'}</div>
+        <div class="list-title">${htmlEscape(c.label||c.key)}</div>
+        <div class="list-meta">${htmlEscape(c.key)}${c.value?': 已设置':'<span style="color:var(--warn)"> 未设置</span>'}</div>
       </div>
       <div class="list-acts">
-        <button class="btn-outline btn-sm" onclick="editConfig('${c.key}','${htmlEscape(c.value||'')}','${htmlEscape(c.label||c.key)}')">编辑</button>
+        <button class="btn-outline btn-sm" data-cfg-key="${htmlEscape(c.key)}" data-cfg-val="${htmlEscape(c.value||'')}" data-cfg-label="${htmlEscape(c.label||c.key)}" onclick="editConfig(this.dataset.cfgKey,this.dataset.cfgVal,this.dataset.cfgLabel)">编辑</button>
       </div>
     </div>`).join('') || '<div class="empty">暂无配置项</div>'}
   </div>`
@@ -727,33 +728,39 @@ function renderClasses(el) {
         <td>${htmlEscape(c.grade||'')}</td>
         <td>${htmlEscape(c.headTeacher||'')}</td>
         <td>${htmlEscape(c.term||'')}</td>
-        <td class="acts"><button class="btn-danger btn-xs" onclick="delClass('${c.id}','${htmlEscape(c.name)}')">删除</button></td>
+        <td class="acts">
+          <button class="btn-outline btn-xs" data-id="${c.id}" onclick="showClassModal(this.dataset.id)">编辑</button>
+          <button class="btn-danger btn-xs" data-id="${c.id}" data-name="${htmlEscape(c.name)}" onclick="delClass(this.dataset.id,this.dataset.name)">删除</button>
+        </td>
       </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无班级</div></td></tr>'}
     </table>
   </div>`
 }
 
-function showClassModal() {
-  showModal('新增班级', `
+function showClassModal(id) {
+  const c = id ? state.classes.find(x => x.id === id) : null
+  showModal(id ? '编辑班级' : '新增班级', `
     <div class="form-row">
-      <div class="form-group"><label>班级名称</label><input id="fClsName" placeholder="如：一年级1班" /></div>
-      <div class="form-group"><label>年级</label><input id="fClsGrade" placeholder="如：一年级" /></div>
+      <div class="form-group"><label>班级名称</label><input id="fClsName" value="${htmlEscape(c?.name||'')}" placeholder="如：一年级1班" /></div>
+      <div class="form-group"><label>年级</label><input id="fClsGrade" value="${htmlEscape(c?.grade||'')}" placeholder="如：一年级" /></div>
     </div>
     <div class="form-group"><label>班主任</label>
-      <select id="fClsTeacher">${state.teachers.map(t => `<option value="${t.id}">${htmlEscape(t.name)}</option>`).join('')}</select>
+      <select id="fClsTeacher"><option value="">请选择</option>${state.teachers.map(t => `<option value="${t.id}" ${c?.headTeacherId===t.id||c?.headTeacher===t.name?'selected':''}>${htmlEscape(t.name)}</option>`).join('')}</select>
     </div>
-    <div class="form-group"><label>学期</label><input id="fClsTerm" placeholder="如：2026春季学期" /></div>
+    <div class="form-group"><label>学期</label><input id="fClsTerm" value="${htmlEscape(c?.term||'')}" placeholder="如：2026春季学期" /></div>
   `, async () => {
     const htId = document.getElementById('fClsTeacher').value
     const ht = state.teachers.find(t => t.id === htId)
-    await API.post('/school-admin/classes', {
+    const data = {
       name: document.getElementById('fClsName').value.trim(),
       grade: document.getElementById('fClsGrade').value.trim(),
       headTeacher: ht?.name || '',
       headTeacherId: htId,
       term: document.getElementById('fClsTerm').value.trim(),
-    })
-    toast('已创建'); closeModal(); loadClasses(); renderSchoolContent()
+    }
+    if (id) { await API.patch('/school-admin/classes/' + id, data); toast('已更新') }
+    else { await API.post('/school-admin/classes', data); toast('已创建') }
+    closeModal(); loadClasses(); renderSchoolContent()
   })
 }
 
@@ -833,23 +840,27 @@ function renderNotices(el) {
         <div class="list-meta">${(n.createdAt||'').slice(0,10)} ${n.pinned?'· 置顶':''}</div>
       </div>
       <div class="list-acts">
-        <button class="btn-danger btn-xs" onclick="delNotice('${n.id}')">删除</button>
+        <button class="btn-outline btn-xs" data-id="${n.id}" onclick="showNoticeModal(this.dataset.id)">编辑</button>
+        <button class="btn-danger btn-xs" data-id="${n.id}" onclick="delNotice(this.dataset.id)">删除</button>
       </div>
     </div>`).join('') || '<div class="empty">暂无公告</div>'}
   </div>`
 }
 
-function showNoticeModal() {
-  showModal('发布学校公告', `
-    <div class="form-group"><label>标题</label><input id="fNotTitle" /></div>
-    <div class="form-group"><label>内容</label><textarea id="fNotContent"></textarea></div>
+function showNoticeModal(id) {
+  const n = id ? state.notices.find(x => x.id === id) : null
+  showModal(id ? '编辑公告' : '发布学校公告', `
+    <div class="form-group"><label>标题</label><input id="fNotTitle" value="${htmlEscape(n?.title||'')}" /></div>
+    <div class="form-group"><label>内容</label><textarea id="fNotContent">${htmlEscape(n?.content||'')}</textarea></div>
   `, async () => {
-    await API.post('/school-admin/notices', {
+    const data = {
       title: document.getElementById('fNotTitle').value.trim(),
       content: document.getElementById('fNotContent').value.trim(),
       scope: 'school',
-    })
-    toast('已发布'); closeModal(); loadNotices(); renderSchoolContent()
+    }
+    if (id) { await API.patch('/school-admin/notices/' + id, data); toast('已更新') }
+    else { await API.post('/school-admin/notices', data); toast('已发布') }
+    closeModal(); loadNotices(); renderSchoolContent()
   })
 }
 function delNotice(id) {
@@ -870,25 +881,36 @@ function renderSemesters(el) {
         <div class="list-title">${htmlEscape(s.name)} ${s.current?'<span class="badge on">当前</span>':''}</div>
         <div class="list-meta">${s.startDate||''} ~ ${s.endDate||''}</div>
       </div>
+      <div class="list-acts">
+        <button class="btn-outline btn-xs" data-id="${s.id}" onclick="showSemesterModal(this.dataset.id)">编辑</button>
+        <button class="btn-danger btn-xs" data-id="${s.id}" data-name="${htmlEscape(s.name)}" onclick="delSemester(this.dataset.id,this.dataset.name)">删除</button>
+      </div>
     </div>`).join('') || '<div class="empty">暂无学期</div>'}
   </div>`
 }
 
-function showSemesterModal() {
-  showModal('新增学期', `
-    <div class="form-group"><label>学期名称</label><input id="fSemName" placeholder="如：2026春季学期" /></div>
+function showSemesterModal(id) {
+  const s = id ? state.semesters.find(x => x.id === id) : null
+  showModal(id ? '编辑学期' : '新增学期', `
+    <div class="form-group"><label>学期名称</label><input id="fSemName" value="${htmlEscape(s?.name||'')}" placeholder="如：2026春季学期" /></div>
     <div class="form-row">
-      <div class="form-group"><label>开始日期</label><input id="fSemStart" placeholder="2026-02-17" /></div>
-      <div class="form-group"><label>结束日期</label><input id="fSemEnd" placeholder="2026-07-04" /></div>
+      <div class="form-group"><label>开始日期</label><input id="fSemStart" value="${s?.startDate||''}" placeholder="2026-02-17" /></div>
+      <div class="form-group"><label>结束日期</label><input id="fSemEnd" value="${s?.endDate||''}" placeholder="2026-07-04" /></div>
     </div>
   `, async () => {
-    await API.post('/semesters', {
+    const data = {
       name: document.getElementById('fSemName').value.trim(),
       startDate: document.getElementById('fSemStart').value.trim(),
       endDate: document.getElementById('fSemEnd').value.trim(),
-    })
-    toast('已创建'); closeModal(); loadSemesters(); renderSchoolContent()
+    }
+    if (id) { await API.patch('/semesters/' + id, data); toast('已更新') }
+    else { await API.post('/semesters', data); toast('已创建') }
+    closeModal(); loadSemesters(); renderSchoolContent()
   })
+}
+function delSemester(id, name) {
+  if (!confirm(`确定删除学期「${name}」？`)) return
+  API.del('/semesters/' + id).then(() => { toast('已删除'); loadSemesters(); renderSchoolContent() }).catch(e => toast(e.message))
 }
 
 // ======================== Modal 组件 ========================
@@ -926,7 +948,12 @@ async function handleModalOk() {
   if (state.modal?.onOk) {
     const btn = document.getElementById('modalOkBtn')
     if (btn) { btn.disabled = true; btn.textContent = '处理中…' }
-    await state.modal.onOk()
+    try {
+      await state.modal.onOk()
+    } catch(e) {
+      toast(e.message || '操作失败')
+      if (btn) { btn.disabled = false; btn.textContent = '确定' }
+    }
   }
 }
 
@@ -942,7 +969,7 @@ async function loadData() {
 }
 
 async function loadSchools() {
-  try { const r = await API.get('/admin/schools'); state.schools = Array.isArray(r) ? r : (r.items || r || []) } catch(e) {}
+  try { const r = await API.get('/admin/schools'); state.schools = Array.isArray(r) ? r : (r.items || r || []) } catch(e) { console.warn('加载学校失败:', e.message) }
 }
 async function loadSchoolAdmins() {
   try {
@@ -950,35 +977,35 @@ async function loadSchoolAdmins() {
     const schoolId = filter?.value || ''
     const r = await API.get('/admin/school-admins' + (schoolId ? '?schoolId='+schoolId : ''))
     state.schoolAdmins = Array.isArray(r) ? r : (r.items || [])
-  } catch(e) {}
+  } catch(e) { console.warn('加载管理员失败:', e.message) }
 }
 async function loadConfigs() {
   try {
     const r = await API.get('/admin/config')
     state.configs = Array.isArray(r) ? r : (r.items || [])
-  } catch(e) {}
+  } catch(e) { console.warn('加载配置失败:', e.message) }
 }
 async function loadDashboard() {
-  try { const r = await API.get('/school-admin/dashboard'); state.dashboard = r || {} } catch(e) {}
+  try { const r = await API.get('/school-admin/dashboard'); state.dashboard = r || {} } catch(e) { console.warn('加载看板失败:', e.message) }
 }
 async function loadTeachers() {
-  try { const r = await API.get('/school-admin/teachers'); state.teachers = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+  try { const r = await API.get('/school-admin/teachers'); state.teachers = Array.isArray(r) ? r : (r.items || []) } catch(e) { console.warn('加载教师失败:', e.message) }
 }
 async function loadClasses() {
-  try { const r = await API.get('/school-admin/classes'); state.classes = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+  try { const r = await API.get('/school-admin/classes'); state.classes = Array.isArray(r) ? r : (r.items || []) } catch(e) { console.warn('加载班级失败:', e.message) }
 }
 async function loadStudents() {
-  try { const r = await API.get('/school-admin/students'); const items = Array.isArray(r) ? r : (r.items || []); state.students = items } catch(e) {}
+  try { const r = await API.get('/school-admin/students'); const items = Array.isArray(r) ? r : (r.items || []); state.students = items } catch(e) { console.warn('加载学生失败:', e.message) }
 }
 async function loadNotices() {
-  try { const r = await API.get('/school-admin/notices'); state.notices = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+  try { const r = await API.get('/school-admin/notices'); state.notices = Array.isArray(r) ? r : (r.items || []) } catch(e) { console.warn('加载公告失败:', e.message) }
 }
 async function loadSemesters() {
-  try { const r = await API.get('/semesters'); state.semesters = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+  try { const r = await API.get('/semesters'); state.semesters = Array.isArray(r) ? r : (r.items || []) } catch(e) { console.warn('加载学期失败:', e.message) }
 }
 
 async function loadAuditLogs() {
-  try { const r = await API.get('/admin/audit-logs'); state.auditLogs = Array.isArray(r) ? r : (r.items || []) } catch(e) {}
+  try { const r = await API.get('/admin/audit-logs'); state.auditLogs = Array.isArray(r) ? r : (r.items || []) } catch(e) { console.warn('加载日志失败:', e.message) }
 }
 // Override admin tab to load audits
 const _origSwitchAdminTab = switchAdminTab

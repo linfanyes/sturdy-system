@@ -47,12 +47,12 @@ export class ConfigService implements OnModuleInit {
       },
       {
         key: 'aiTextModel',
-        value: this.env.get('AI_TEXT_MODEL') || 'qwen3.7-plus',
+        value: this.env.get('AI_TEXT_MODEL') || 'qwen-plus',
         description: '文本模型',
       },
       {
         key: 'aiVisionModel',
-        value: this.env.get('AI_VISION_MODEL') || 'qwen3-vl-plus',
+        value: this.env.get('AI_VISION_MODEL') || 'qwen-vl-plus',
         description: '多模态模型',
       },
       {
@@ -100,38 +100,20 @@ export class ConfigService implements OnModuleInit {
   }
 
   /**
-   * 一次性迁移：把已部署实例里仍存的旧模型默认值（qwen-plus / qwen-vl-plus）
-   * 升级为新的默认模型，使设置页无需手动改就能显示新默认值。
-   * 仅对这两个已知旧值生效，不会动教师手动改过的其它配置。
+   * 确保 AI 模型默认值与 .env 配置一致。
+   * 不再自动升级模型名称，由用户自行在设置页面修改。
    */
   private async migrateModelDefaults() {
-    const OLD = new Set(['qwen-plus', 'qwen-vl-plus'])
-    const NEW_TEXT = 'qwen3.7-plus'
-    const NEW_VISION = 'qwen3-vl-plus'
-
-    for (const [key, newVal] of [
-      ['aiTextModel', NEW_TEXT],
-      ['aiVisionModel', NEW_VISION],
-    ]) {
+    // 确保平台配置中模型字段不为空，缺失时用 .env 值回填
+    for (const [key, envKey, fallback] of [
+      ['aiTextModel', 'AI_TEXT_MODEL', 'qwen-plus'],
+      ['aiVisionModel', 'AI_VISION_MODEL', 'qwen-vl-plus'],
+    ] as const) {
       const c = await this.appRepo.findOne({ where: { key } })
-      if (c && OLD.has(c.value)) {
-        c.value = newVal
+      if (c && !c.value) {
+        c.value = this.env.get(envKey) || fallback
         await this.appRepo.save(c)
       }
-    }
-
-    const rows = await this.aiRepo.find()
-    for (const s of rows) {
-      let changed = false
-      if (OLD.has(s.textModel)) {
-        s.textModel = NEW_TEXT
-        changed = true
-      }
-      if (OLD.has(s.visionModel)) {
-        s.visionModel = NEW_VISION
-        changed = true
-      }
-      if (changed) await this.aiRepo.save(s)
     }
   }
 
@@ -168,9 +150,9 @@ export class ConfigService implements OnModuleInit {
         teacherId,
         baseUrl: (await this.getAppConfigValue('aiBaseUrl')) || '',
         apiKey: (await this.getAppConfigValue('aiApiKey')) || '',
-        textModel: (await this.getAppConfigValue('aiTextModel')) || 'qwen3.7-plus',
+        textModel: (await this.getAppConfigValue('aiTextModel')) || 'qwen-plus',
         visionModel:
-          (await this.getAppConfigValue('aiVisionModel')) || 'qwen3-vl-plus',
+          (await this.getAppConfigValue('aiVisionModel')) || 'qwen-vl-plus',
         temperature: parseFloat(
           (await this.getAppConfigValue('aiTemperature')) || '0.7',
         ),

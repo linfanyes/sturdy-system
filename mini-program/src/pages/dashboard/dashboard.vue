@@ -608,9 +608,10 @@ const pendingBySubject = computed(() => {
   const subjects = [...new Set(hws.map(h => h.subject).filter(Boolean))]
   return subjects
 })
+const behaviorList = ref([])
 const weekBehaviorCount = computed(() => {
-  // 使用已有 behaviorList 或返回 0
-  return 0
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+  return behaviorList.value.filter(b => (b.createdAt || b.date || '') >= weekAgo).length
 })
 
 // 数据趋势：近7日出勤
@@ -636,7 +637,7 @@ async function loadAll() {
   loading.value = true
   loadSemester()
   try {
-    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks, schoolNoticesR] = await Promise.all([
+    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks, schoolNoticesR, behaviors] = await Promise.all([
       api.get('/classes').catch(() => []),
       api.get('/students').catch(() => []),
       api.get('/notes').catch(() => []),
@@ -647,6 +648,7 @@ async function loadAll() {
       api.get('/attendances').catch(() => []),
       api.get('/homework').catch(() => []),
       api.get('/notices?scope=school').catch(() => ({ items: [] })),
+      api.get('/behavior-records').catch(() => []),
     ])
     classList.value = classes || []
     studentList.value = students || []
@@ -661,6 +663,7 @@ async function loadAll() {
     attendanceList.value = attendances || []
     homeworkList.value = homeworks || []
     schoolNotices.value = (schoolNoticesR && (schoolNoticesR.items || schoolNoticesR)) || []
+    behaviorList.value = behaviors || []
     loadNotifications()
   } catch (e) {
     uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })

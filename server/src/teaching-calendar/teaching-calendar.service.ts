@@ -13,7 +13,7 @@ export class TeachingCalendarService extends CrudService<TeachingCalendarItem> {
   }
 
   /** 按教师ID查找，按日期排序 */
-  async findAll(teacherId: string, skip = 0, take = 500) {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
     const [items, total] = await this.repo.findAndCount({
       where: { teacherId } as any,
       order: { date: 'ASC' } as any,

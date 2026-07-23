@@ -54,7 +54,7 @@
     </view>
 
     <!-- 模板弹窗 -->
-    <view v-if="showTpl" class="mask" @click="showTpl = false; showTpl = false">
+    <view v-if="showTpl" class="mask" @click="showTpl = false">
       <view class="dialog" @click.stop>
         <view class="d-title">导入模板格式</view>
         <view class="d-sub">第一行可写表头，数据从下一行开始：</view>
