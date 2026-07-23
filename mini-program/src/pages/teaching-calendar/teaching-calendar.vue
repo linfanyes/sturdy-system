@@ -1,6 +1,9 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view class="head"><view class="h">📅 学期教学日历</view><view class="add" @click="openAdd">+ 添加计划</view></view>
+    <view class="head">
+      <view class="h">📅 学期教学日历</view>
+      <view class="add" @click="openAdd">+ 添加计划</view>
+    </view>
 
     <view class="month-nav">
       <text class="mn-btn" @click="changeMonth(-1)">◀</text>
@@ -42,6 +45,10 @@
       <picker mode="date" :value="form.date" @change="e=>form.date=e.detail.value"><view class="picker">日期：{{ form.date }}</view></picker>
       <input v-model="form.grade" class="inp" placeholder="年级（可选）" />
       <input v-model="form.subject" class="inp" placeholder="科目（可选）" />
+      <view class="type-row">
+        <text class="type-label">类型：</text>
+        <text v-for="t in typeOpts" :key="t.v" class="type-chip" :class="form.type===t.v&&'on'" @click="form.type=t.v">{{ t.label }}</text>
+      </view>
       <textarea v-model="form.note" class="inp area" placeholder="备注" />
       <view class="colors"><text v-for="c in colors" :key="c" class="cc" :class="form.color===c&&'on'" :style="{background:c}" @click="form.color=c"></text></view>
       <view class="mbtns"><view class="mb cancel" @click="show=false">取消</view><view class="mb ok" :class="{disabled:saving}" @click="save">{{saving?'保存中…':'保存'}}</view></view>
@@ -58,7 +65,13 @@ import { theme } from '../../common/store'
 const items = ref([])
 const show = ref(false), editing = ref(null), saving = ref(false)
 const colors = ['#e8f1fb','#e8f9e8','#fff3e0','#fde8ea','#fff8e1','#f3eefb']
-const form = ref({ title:'', date:new Date().toISOString().slice(0,10), grade:'', subject:'', color:'#e8f1fb', note:'' })
+const typeOpts = [
+  { v: 'normal', label: '普通' },
+  { v: 'exam', label: '考试' },
+  { v: 'meeting', label: '教研' },
+  { v: 'other', label: '其他' },
+]
+const form = ref({ title:'', date:new Date().toISOString().slice(0,10), grade:'', subject:'', color:'#e8f1fb', note:'', type:'normal' })
 
 const now = new Date()
 const year = ref(now.getFullYear()), month = ref(now.getMonth()+1)
@@ -81,26 +94,58 @@ function changeMonth(dir) {
   let m=month.value+dir; let y=year.value
   if(m<1){m=12;y--}else if(m>12){m=1;y++}
   month.value=m; year.value=y
+  load()
 }
 
-async function load() { items.value = await api.getList('/todos',{loading:true,loadingText:'加载日历'}) }
+async function load() {
+  try {
+    const res = await api.get('/teaching-calendar', { year: year.value, month: month.value })
+    items.value = res.items || []
+  } catch (e) {
+    // 接口不存在时静默失败
+    items.value = []
+  }
+}
 onShow(load)
 onPullDownRefresh(async()=>{await load();uni.stopPullDownRefresh()})
-function openAdd() { form.value={title:'',date:year.value+'-'+String(month.value).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0'),grade:'',subject:'',color:'#e8f1fb',note:''}; show.value=true }
-function openEdit(it) { editing.value=it; form.value={title:it.title,date:it.date,grade:it.grade||'',subject:it.subject||'',color:it.color||'#e8f1fb',note:it.note||''}; show.value=true }
+
+function openAdd() {
+  form.value={title:'',date:year.value+'-'+String(month.value).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0'),grade:'',subject:'',color:'#e8f1fb',note:'',type:'normal'}
+  show.value=true
+}
+function openEdit(it) {
+  editing.value=it
+  form.value={title:it.title,date:it.date,grade:it.grade||'',subject:it.subject||'',color:it.color||'#e8f1fb',note:it.note||'',type:it.type||'normal'}
+  show.value=true
+}
 async function save() {
   if (saving.value) return
   if (!form.value.title.trim()) return uni.showToast({title:'请填写标题',icon:'none'})
   saving.value=true
   try {
     const payload = {...form.value}
-    if (editing.value) { const r=await api.patch('/todos/'+editing.value.id,payload); Object.assign(editing.value,r) }
-    else { const r=await api.post('/todos',payload); items.value.unshift(r) }
-    show.value=false; uni.showToast({title:'已保存',icon:'none'})
-  } catch(e) { uni.showToast({title:'失败:'+(e.message||''),icon:'none'}) }
-  finally { saving.value=false }
+    if (editing.value) {
+      const r = await api.patch('/teaching-calendar/'+editing.value.id, payload)
+      Object.assign(editing.value, r)
+    } else {
+      const r = await api.post('/teaching-calendar', payload)
+      items.value.push(r)
+    }
+    show.value=false
+    uni.showToast({title:'已保存',icon:'none'})
+  } catch(e) {
+    uni.showToast({title:'失败:'+(e.message||''),icon:'none'})
+  } finally { saving.value=false }
 }
-function del(it) { uni.showModal({title:'删除',content:it.title,success:async(m)=>{if(!m.confirm)return;try{await api.del('/todos/'+it.id);items.value=items.value.filter(x=>x.id!==it.id)}catch(e){uni.showToast({title:'失败',icon:'none'})}}}) }
+function del(it) {
+  uni.showModal({title:'删除',content:it.title,success:async(m)=>{
+    if(!m.confirm)return
+    try {
+      await api.del('/teaching-calendar/'+it.id)
+      items.value = items.value.filter(x=>x.id!==it.id)
+    } catch(e) { uni.showToast({title:'失败',icon:'none'}) }
+  }})
+}
 </script>
 
 <style scoped>
@@ -138,6 +183,10 @@ function del(it) { uni.showModal({title:'删除',content:it.title,success:async(
 .inp { border:1px solid var(--c-border); border-radius:12rpx; padding:16rpx; margin-bottom:14rpx; font-size:28rpx; width:100%; box-sizing:border-box; }
 .area { height:100rpx; }
 .picker { background:var(--c-card2); border-radius:12rpx; padding:18rpx; margin-bottom:14rpx; font-size:28rpx; }
+.type-row { display:flex; align-items:center; gap:12rpx; margin-bottom:14rpx; flex-wrap:wrap; }
+.type-label { font-size:26rpx; color:var(--c-sub); }
+.type-chip { font-size:24rpx; padding:8rpx 20rpx; border-radius:30rpx; background:var(--c-card2); color:var(--c-sub); }
+.type-chip.on { background:var(--c-primary); color:#fff; }
 .colors { display:flex; gap:12rpx; margin-bottom:14rpx; }
 .cc { width:40rpx; height:40rpx; border-radius:50%; }
 .cc.on { outline:3rpx solid var(--c-accent); outline-offset:2rpx; }

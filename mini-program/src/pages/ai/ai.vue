@@ -121,7 +121,15 @@
         </view>
         <view class="skill" @click="goSkill('/pages/ai-paper/ai-paper')">
           <text class="sk-ico">📝</text>
-          <view class="sk-body"><text class="sk-t">优选试卷</text><text class="sk-sub">生成组卷建议</text></view>
+          <view class="sk-body"><text class="sk-t">优选试卷</text><text class="sk-sub">智能组卷</text></view>
+        </view>
+        <view class="skill" @click="goSkill('/pages/ai-lesson/ai-lesson')">
+          <text class="sk-ico">📒</text>
+          <view class="sk-body"><text class="sk-t">智能教案</text><text class="sk-sub">生成教案框架</text></view>
+        </view>
+        <view class="skill" @click="goSkill('/pages/ai-interactive/ai-interactive')">
+          <text class="sk-ico">🎯</text>
+          <view class="sk-body"><text class="sk-t">互动答疑</text><text class="sk-sub">学生提问辅助回答</text></view>
         </view>
       </view>
     </view>
