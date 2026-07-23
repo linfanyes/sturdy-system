@@ -1,6 +1,6 @@
 <script>
 import { onLaunch } from '@dcloudio/uni-app'
-import { auth, mockMode, initTheme } from './common/store'
+import { mockMode, initTheme } from './common/store'
 import { setMockMode } from './common/request'
 import { CLOUDRUN_ENV } from './common/config'
 
@@ -34,25 +34,20 @@ export default {
     }
     initTheme()
     // 多角色会话恢复：任一角色令牌存在即视为已登录，并跳转对应首页，
-    // 避免超管 / 校管 / 家长登录态在冷启动时被判为未登录而被强制退回登录页。
+    // 避免超管 / 校管 / 家长 / 教师登录态在冷启动时被判为未登录而被强制退回登录页。
+    // 无任何登录态时，停留在登录页（pages/login/login 为首页），不再自动进入演示模式。
     const hasTeacher = !!uni.getStorageSync('g_token')
     const hasAdmin = !!uni.getStorageSync('admin_token')
     const hasSa = !!uni.getStorageSync('sa_token')
     const hasParent = !!uni.getStorageSync('g_parent_token')
-    if (!hasTeacher && !hasAdmin && !hasSa && !hasParent) {
-      // 演示模式：无登录态时自动进入，完全跳过登录页
-      uni.setStorageSync('g_mock_mode', 'true')
-      setMockMode(true)
-      mockMode.enabled = true
-      auth.token = 'mock-token'
-      auth.user = { name: '珊珊老师', school: '阳光实验小学（演示版）' }
-      uni.switchTab({ url: '/pages/dashboard/dashboard' })
-    } else if (hasAdmin) {
+    if (hasAdmin) {
       uni.reLaunch({ url: '/pages/admin/admin' })
     } else if (hasSa) {
       uni.reLaunch({ url: '/pages/school-admin/school-admin' })
     } else if (hasParent) {
       uni.reLaunch({ url: '/pages/parent/parent' })
+    } else if (hasTeacher) {
+      uni.switchTab({ url: '/pages/dashboard/dashboard' })
     }
   },
 }

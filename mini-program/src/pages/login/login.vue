@@ -122,8 +122,6 @@ async function doBind() {
 .btn[disabled] { opacity:.6; }
 .btn.wechat { background:#409eff; margin-top:14rpx; }
 .or { margin-top:44rpx; font-size:26rpx; color:var(--c-sub); margin-bottom:6rpx; }
-.demo-hint { margin-top:60rpx; font-size:26rpx; color:var(--c-sub); opacity:.7; }
-.btn.demo { background: var(--c-accent, #e6a23c); margin-top:14rpx; font-size:30rpx; opacity:.85; }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:60; }
 .sheet { width:100%; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); box-sizing:border-box; }
 .sh-t { font-size:34rpx; font-weight:700; color:var(--c-title); }
