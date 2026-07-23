@@ -40,6 +40,7 @@
       </view>
       <view class="result-acts">
         <text class="act-btn" @click="copyResult">📋 复制</text>
+        <text class="act-btn" @click="saveToNotes">📒 存笔记</text>
         <text class="act-btn primary" @click="reAsk">🔄 换个问法</text>
       </view>
     </view>
@@ -97,6 +98,16 @@ function copyResult() {
     data: result.value,
     success: () => uni.showToast({ title: '已复制', icon: 'none' })
   })
+}
+
+function saveToNotes() {
+  if (!result.value) return
+  const notes = uni.getStorageSync('ai_notes') || '[]'
+  let arr = []
+  try { arr = JSON.parse(notes) } catch(e) { arr = [] }
+  arr.unshift({ title: '答疑：' + (form.value.question || '').slice(0, 30), content: result.value, time: new Date().toISOString().slice(0,16) })
+  uni.setStorageSync('ai_notes', JSON.stringify(arr))
+  uni.showToast({ title: '已存笔记', icon: 'none' })
 }
 </script>
 

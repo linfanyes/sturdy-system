@@ -7,6 +7,15 @@
       <view class="picker">日期：{{ date || '今天' }}</view>
     </picker>
 
+    <view v-if="loading" class="loading">
+      <Skeleton :rows="3" />
+    </view>
+
+    <view v-else-if="!classId" class="empty">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">请先选择班级</text>
+    </view>
+
     <!-- 4 色统计卡（对齐 web 图标卡） -->
     <view class="stats">
       <view class="st" v-for="s in statusList" :key="s" :style="{ background: statusMap[s].bg }">
@@ -86,6 +95,7 @@ import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
+import Skeleton from '../../components/Skeleton/Skeleton.vue'
 
 const statusList = ['出勤', '迟到', '请假', '旷课']
 const statusMap = {
@@ -98,6 +108,7 @@ const statusMap = {
 const classes = ref([])
 const classId = ref('')
 const students = ref([])
+const loading = ref(false)
 const date = ref('')
 const map = ref({}) // studentId -> status
 const attId = ref('')
@@ -116,13 +127,19 @@ const stats = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
-  if (classId.value) await loadStudents()
+  loading.value = true
+  try {
+    classes.value = await api.getList('/classes', { silent: true })
+    if (classId.value) await loadStudents()
+  } finally { loading.value = false }
 }
 async function loadStudents() {
-  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
-  await loadAtt()
-  loadTrend()
+  loading.value = true
+  try {
+    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+    await loadAtt()
+    loadTrend()
+  } finally { loading.value = false }
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -352,6 +369,10 @@ async function loadCmpStats(name) {
 
 <style scoped>
 .page { padding: 24rpx; }
+.loading { display:flex; justify-content:center; padding:30rpx 0; }
+.empty { text-align:center; padding:40rpx 0; color:var(--c-sub); }
+.empty-icon { font-size:48rpx; display:block; margin-bottom:10rpx; }
+.empty-text { font-size:28rpx; color:var(--c-title); }
 .picker { background: var(--c-card); border-radius: 16rpx; padding: 22rpx 24rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .stats { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
 .st { flex: 1; border-radius: 14rpx; padding: 16rpx 0; text-align: center; }

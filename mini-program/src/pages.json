@@ -520,19 +520,24 @@
           "style": { "navigationBarTitleText": "AI 助手" }
         },
         {
-          "path": "ai-knowledge"
+          "path": "ai-knowledge",
+          "style": { "navigationBarTitleText": "知识点生成" }
         },
         {
-          "path": "ai-paper"
+          "path": "ai-paper",
+          "style": { "navigationBarTitleText": "智能组卷" }
         },
         {
-          "path": "ai-exam"
+          "path": "ai-exam",
+          "style": { "navigationBarTitleText": "考试分析" }
         },
         {
-          "path": "ai-interactive"
+          "path": "ai-interactive",
+          "style": { "navigationBarTitleText": "互动答疑" }
         },
         {
-          "path": "ai-lesson"
+          "path": "ai-lesson",
+          "style": { "navigationBarTitleText": "智能教案" }
         }
       ]
     }

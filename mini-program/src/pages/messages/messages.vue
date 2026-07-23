@@ -9,13 +9,10 @@
     </view>
 
     <view v-if="loading" class="loading">
-      <text class="loading-text">加载中…</text>
+      <Skeleton :rows="3" />
     </view>
 
-    <view v-else-if="!shown.length" class="empty">
-      <text class="empty-icon">📭</text>
-      <text class="empty-text">这里还没有消息</text>
-    </view>
+    <EmptyState v-else-if="!shown.length" icon="📭" text="这里还没有消息" hint="公告、通知、消息都会显示在这里" />
 
     <view v-else>
       <view v-for="(it, i) in shown" :key="i" class="item" :class="['t-' + it.type, !it.read && 'unread']" @click="open(it)">
@@ -37,6 +34,8 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import Skeleton from '../../components/Skeleton/Skeleton.vue'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 const dark = computed(() => theme.mode === 'dark')
 
 const notifications = ref([])
@@ -179,6 +178,7 @@ onPullDownRefresh(async () => {
 </script>
 
 <style scoped>
+.loading { display:flex; justify-content:center; padding:30rpx 0; }
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; margin-bottom: 20rpx; }
 .tabs { display: flex; gap: 14rpx; margin-bottom: 20rpx; flex-wrap: wrap; }

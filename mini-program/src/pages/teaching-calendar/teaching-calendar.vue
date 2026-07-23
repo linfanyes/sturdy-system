@@ -11,10 +11,15 @@
       <text class="mn-btn" @click="changeMonth(1)">▶</text>
     </view>
 
-    <view class="weekdays">
+    <view v-if="loading" class="loading">
+      <Skeleton :rows="4" />
+    </view>
+
+    <view v-else class="weekdays">
       <text class="wd" v-for="d in ['日','一','二','三','四','五','六']" :key="d">{{ d }}</text>
     </view>
-    <view class="grid">
+
+    <view v-if="!loading" class="grid">
       <view v-for="(d,i) in days" :key="i" class="day" :class="{other:d.other, today:d.today, has:d.items.length}">
         <text class="d-n">{{ d.num }}</text>
         <view class="d-items" v-if="d.items.length">
@@ -24,7 +29,13 @@
       </view>
     </view>
 
-    <view class="list" v-if="items.length">
+    <view v-if="!loading && !items.length" class="empty">
+      <text class="empty-icon">📅</text>
+      <text class="empty-text">本月暂无教学计划</text>
+      <text class="empty-hint">点击右上角"+ 添加计划"开始安排</text>
+    </view>
+
+    <view v-if="!loading && items.length" class="list">
       <view class="row" v-for="it in items" :key="it.id">
         <view class="d-c" :style="{background:it.color||'#e8f1fb'}"></view>
         <view class="info">
@@ -61,8 +72,10 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
+import Skeleton from '../../components/Skeleton/Skeleton.vue'
 
 const items = ref([])
+const loading = ref(false)
 const show = ref(false), editing = ref(null), saving = ref(false)
 const colors = ['#e8f1fb','#e8f9e8','#fff3e0','#fde8ea','#fff8e1','#f3eefb']
 const typeOpts = [
@@ -98,12 +111,14 @@ function changeMonth(dir) {
 }
 
 async function load() {
+  loading.value = true
   try {
     const res = await api.get('/teaching-calendar', { year: year.value, month: month.value })
     items.value = res.items || []
   } catch (e) {
-    // 接口不存在时静默失败
     items.value = []
+  } finally {
+    loading.value = false
   }
 }
 onShow(load)
@@ -149,6 +164,11 @@ function del(it) {
 </script>
 
 <style scoped>
+.loading { display:flex; justify-content:center; align-items:center; padding:40rpx 0; }
+.empty { text-align:center; padding:40rpx 0; color:var(--c-sub); }
+.empty-icon { font-size:48rpx; display:block; margin-bottom:10rpx; }
+.empty-text { font-size:28rpx; color:var(--c-title); display:block; }
+.empty-hint { font-size:24rpx; color:var(--c-sub); display:block; margin-top:6rpx; }
 .page { padding:24rpx; }
 .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14rpx; }
 .h { font-size:36rpx; font-weight:800; color:var(--c-title); }
