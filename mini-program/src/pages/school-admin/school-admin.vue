@@ -1,5 +1,5 @@
 <template>
-  <view class="page" :class="{ dark }">
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="hd">
       <view class="hd-left">
         <view class="t">🏫 {{ schoolName || '学校管理' }}</view>
