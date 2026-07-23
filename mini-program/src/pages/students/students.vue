@@ -307,8 +307,10 @@ async function load() {
 async function loadClasses() {
   try { classList.value = await api.get('/classes') || [] } catch (e) { classList.value = [] }
 }
-onShow(load)
-onShow(() => flushTabBarStyle())
+onShow(async () => {
+  await load()
+  flushTabBarStyle()
+})
 onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()

@@ -184,8 +184,10 @@ async function load() {
   }
 }
 const pubSubjects = ref([])
-onShow(load)
-onShow(() => flushTabBarStyle())
+onShow(async () => {
+  await load()
+  flushTabBarStyle()
+})
 onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()

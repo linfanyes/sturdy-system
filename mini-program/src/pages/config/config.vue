@@ -116,9 +116,9 @@ import { inRange, isUrl, clip, MAX_LEN } from '../../common/validators'
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
 const PROVIDER_PRESETS = {
   '阿里百炼（通义千问）': {
-    baseUrl: 'https://llm-vd2v208bfoq2g7cm.cn-beijing.maas.aliyuncs.com/api/v1',
-    textModels: ['qwen3.7-plus', 'qwen3-max', 'qwen3-turbo'],
-    visionModels: ['qwen3-vl-plus', 'qwen3-vl-max'],
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    textModels: ['qwen-plus', 'qwen-max', 'qwen-turbo'],
+    visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
     imageModels: [],
     videoModels: [],
   },
@@ -290,9 +290,11 @@ async function load() {
   providerIdx.value = detectProvider(ai.value.baseUrl)
   app.value = await api.get('/config/app')
 }
-const defaultModelName = (key) => ai.value.textModel || 'qwen3.7-plus'
-onShow(load)
-onShow(() => flushTabBarStyle())
+const defaultModelName = (key) => ai.value.textModel || 'qwen-plus'
+onShow(async () => {
+  await load()
+  flushTabBarStyle()
+})
 
 async function saveAi() {
   if (savingAi.value) return

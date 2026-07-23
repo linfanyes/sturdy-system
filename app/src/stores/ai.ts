@@ -9,16 +9,16 @@ const SETTINGS_KEY = () => getStorageKey('ai-settings')
 const CHATS_KEY = () => getStorageKey('ai-chats')
 
 /** 默认文本模型列表 */
-export const DEFAULT_TEXT_MODELS = ['qwen3.7-plus', 'deepseek-chat', 'deepseek-reasoner']
+export const DEFAULT_TEXT_MODELS = ['qwen-plus', 'deepseek-chat', 'deepseek-reasoner']
 
 /** 默认多模态模型列表 */
-export const DEFAULT_VISION_MODELS = ['qwen3-vl-plus', 'gpt-4o', 'qwen-vl-max']
+export const DEFAULT_VISION_MODELS = ['qwen-vl-plus', 'gpt-4o', 'qwen-vl-max']
 
 const DEFAULT_SETTINGS: AISettings = {
   baseUrl: AI_DASHSCOPE_BASE_URL,
   apiKey: '',
-  textModel: 'qwen3.7-plus',
-  visionModel: 'qwen3-vl-plus',
+  textModel: 'qwen-plus',
+  visionModel: 'qwen-vl-plus',
   temperature: 0.8,
   aiName: '小林子',
   systemPrompt:

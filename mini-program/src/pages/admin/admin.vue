@@ -397,8 +397,8 @@ const configGroups = ref([])
 const CONFIG_SCHEMA = [
   { key: 'defaultSubjects', label: '默认学科', desc: '逗号分隔，教师端注册时可选', placeholder: '语文,数学,英语', secret: false },
   { key: 'loginCode', label: '小程序登录码', desc: '教师首次进入小程序的验证码', placeholder: '自定义4-8位', secret: false },
-  { key: 'aiTextModel', label: 'AI 文本模型', desc: '对话/备课/出题等文本生成', placeholder: 'qwen3.7-plus', secret: false },
-  { key: 'aiVisionModel', label: 'AI 视觉模型', desc: '图片识别/OCR等视觉任务', placeholder: 'qwen3-vl-plus', secret: false },
+  { key: 'aiTextModel', label: 'AI 文本模型', desc: '对话/备课/出题等文本生成', placeholder: 'qwen-plus', secret: false },
+  { key: 'aiVisionModel', label: 'AI 视觉模型', desc: '图片识别/OCR等视觉任务', placeholder: 'qwen-vl-plus', secret: false },
   { key: 'aiTemperature', label: 'AI 温度', desc: '输出随机性(0-2)，越低越严谨', placeholder: '0.7', secret: false },
   { key: 'aiName', label: 'AI 助手名称', desc: '教师端AI助手的显示名称', placeholder: '小林子', secret: false },
   { key: 'aiBaseUrl', label: 'AI 接口地址', desc: '兼容 OpenAI 格式的 API 地址', placeholder: 'https://api.openai.com/v1', secret: false },

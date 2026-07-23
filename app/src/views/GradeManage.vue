@@ -287,7 +287,7 @@ async function recognizeScoresFromImage() {
     return
   }
   if (!currentModelIsVision.value) {
-    toast.warning('当前模型不支持图片识别，请在「AI 对话」设置中切换为多模态模型（如 qwen3-vl-plus）')
+    toast.warning('当前模型不支持图片识别，请在「AI 对话」设置中切换为多模态模型（如 qwen-vl-plus）')
     return
   }
   isRecognizing.value = true

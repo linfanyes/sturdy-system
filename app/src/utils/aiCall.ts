@@ -49,7 +49,7 @@ export const VISION_MODELS = [
   'qwen2-vl',
   'qwen2.5-vl',
   'qwen3-vl',
-  'qwen3-vl-plus',
+  'qwen-vl-plus',
   'glm-4v',
   'glm-4v-plus',
   'claude-3',
@@ -77,7 +77,7 @@ export function isVisionModel(model?: string): boolean {
 
 /** 给用户的、支持图片识别的模型示例 (用于设置页 / 上传图片时的提示) */
 export const VISION_MODEL_EXAMPLES = [
-  'qwen3-vl-plus',
+  'qwen-vl-plus',
   'longcat-2.0',
   'gpt-4o',
   'qwen-vl-max',
@@ -196,8 +196,8 @@ export async function aiChat(opts: {
   const type = resolveModelType(opts.messages, opts.modelType)
   const model =
     type === 'vision'
-      ? settings.visionModel || settings.textModel || 'qwen3-vl-plus'
-      : settings.textModel || settings.visionModel || 'qwen3.7-plus'
+      ? settings.visionModel || settings.textModel || 'qwen-vl-plus'
+      : settings.textModel || settings.visionModel || 'qwen-plus'
 
   const baseUrl = (settings.baseUrl || AI_DEEPSEEK_BASE_URL).replace(/\/$/, '')
   const useStream = opts.stream !== false

@@ -435,7 +435,7 @@ async function recognizeStudentsFromImage() {
     return
   }
   if (!isVisionModel(aiStore.settings.visionModel)) {
-    toast.warning('当前多模态模型不支持图片识别，请在「AI 对话」设置中切换为视觉模型（如 qwen3-vl-plus）')
+    toast.warning('当前多模态模型不支持图片识别，请在「AI 对话」设置中切换为视觉模型（如 qwen-vl-plus）')
     return
   }
   isImageRecognizing.value = true

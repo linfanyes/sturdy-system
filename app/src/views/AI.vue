@@ -268,14 +268,14 @@ const editSettings = ref({ ...ai.settings })
 const settingsTab = ref<'text' | 'vision'>('text')
 
 // 文本模型选择状态
-const textModelSelect = ref('qwen3.7-plus')
+const textModelSelect = ref('qwen-plus')
 const textCustomModel = ref('')
 // 多模态模型选择状态
-const visionModelSelect = ref('qwen3-vl-plus')
+const visionModelSelect = ref('qwen-vl-plus')
 const visionCustomModel = ref('')
 
 function syncTextModelField() {
-  const m = editSettings.value.textModel || 'qwen3.7-plus'
+  const m = editSettings.value.textModel || 'qwen-plus'
   if (DEFAULT_TEXT_MODELS.includes(m)) {
     textModelSelect.value = m
     textCustomModel.value = ''
@@ -285,7 +285,7 @@ function syncTextModelField() {
   }
 }
 function syncVisionModelField() {
-  const m = editSettings.value.visionModel || 'qwen3-vl-plus'
+  const m = editSettings.value.visionModel || 'qwen-vl-plus'
   if (DEFAULT_VISION_MODELS.includes(m)) {
     visionModelSelect.value = m
     visionCustomModel.value = ''
@@ -319,12 +319,12 @@ function saveSettings() {
   const textModel = resolveModelFromSelect(
     textModelSelect.value,
     textCustomModel.value,
-    'qwen3.7-plus',
+    'qwen-plus',
   )
   const visionModel = resolveModelFromSelect(
     visionModelSelect.value,
     visionCustomModel.value,
-    'qwen3-vl-plus',
+    'qwen-vl-plus',
   )
   if (!textModel.trim() || !visionModel.trim()) {
     toast.warning('请选择或填写模型')
@@ -1097,7 +1097,7 @@ onUnmounted(() => {
               />
             </div>
             <div class="text-[10px] text-cocoa-500 truncate hidden sm:block">
-              文本: {{ ai.settings.textModel || 'qwen3.7-plus' }} / 多模态: {{ ai.settings.visionModel || 'qwen3-vl-plus' }} · 已注入本地数据
+              文本: {{ ai.settings.textModel || 'qwen-plus' }} / 多模态: {{ ai.settings.visionModel || 'qwen-vl-plus' }} · 已注入本地数据
             </div>
           </div>
         </div>
@@ -1450,7 +1450,7 @@ onUnmounted(() => {
             placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
           >
           <div class="text-[10px] text-cocoa-400 mt-0.5">
-            支持 OpenAI 兼容协议 (阿里通义千问等). 默认 qwen3.7-plus, 可改为其他.
+            支持 OpenAI 兼容协议 (阿里通义千问等). 默认 qwen-plus, 可改为其他.
           </div>
         </div>
         <div>

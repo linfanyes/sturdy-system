@@ -229,8 +229,8 @@
 ## 🤖 AI 模型透明度提示
 
 所有调用 AI 大模型的功能页面，顶部均显示 **AI 模型信息提示条**：
-- 🤖 当前文本模型（如 `qwen3.7-plus`）
-- 👁️ 当前多模态模型（如 `qwen3-vl-plus`）
+- 🤖 当前文本模型（如 `qwen-plus`）
+- 👁️ 当前多模态模型（如 `qwen-vl-plus`）
 - ✅ 是否已注入本地数据
 
 让教师清楚知道 AI 用的是什么模型、数据来源，增强透明度与信任感。
@@ -256,7 +256,7 @@
 2. 填入：
    - **Base URL**（默认 `https://dashscope.aliyuncs.com/compatible-mode/v1`）
    - **API Key**（如 `sk-...`）
-   - **模型**（默认 `qwen3.7-plus`，可选 `qwen3-vl-plus`，可自定义）
+   - **模型**（默认 `qwen-plus`，可选 `qwen-vl-plus`，可自定义）
 3. 点保存
 
 > Key 仅保存在本地浏览器，**不会上传**到任何服务器。

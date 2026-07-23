@@ -306,9 +306,9 @@ function moveSection(dir, title) {
 }
 
 onShow(() => {
-  if (!auth.token) uni.reLaunch({ url: '/pages/login/login' })
+  if (!auth.token) { uni.reLaunch({ url: '/pages/login/login' }); return }
+  flushTabBarStyle()
 })
-onShow(() => flushTabBarStyle())
 </script>
 
 <style scoped>

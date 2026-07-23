@@ -675,9 +675,8 @@ onShow(() => {
   currentMood.value = uni.getStorageSync('mood_' + todayStr) || ''
   selKeys.value = uni.getStorageSync('dash_widgets') || widgetCands.slice(0, 4).map((w) => w.label)
   loadAll()
+  flushTabBarStyle()
 })
-// 进入 tabBar 页面时落地待应用的主题/tabBar 样式（非 tabBar 页面修改主题后需此兜底）
-onShow(() => flushTabBarStyle())
 onPullDownRefresh(async () => {
   await loadAll()
   uni.stopPullDownRefresh()
