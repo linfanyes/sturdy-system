@@ -42,8 +42,10 @@
           /
           <text class="tv">{{ selectedExam.totalFullScore ?? '--' }}</text>
           分
-          <text v-if="selectedExam.classRank != null" class="tr">（班级第 {{ selectedExam.classRank }} 名</text>
-          <text v-if="selectedExam.gradeRank != null"> / 年级第 {{ selectedExam.gradeRank }} 名）</text>
+          <text v-if="selectedExam.classRank != null" class="tr">
+            （班级第 {{ selectedExam.classRank }} 名
+            <text v-if="selectedExam.gradeRank != null"> / 年级第 {{ selectedExam.gradeRank }} 名</text>）
+          </text>
         </view>
 
         <view v-if="strengths.length || weaknesses.length" class="sw-section">
