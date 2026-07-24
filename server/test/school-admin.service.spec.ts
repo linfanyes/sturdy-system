@@ -293,6 +293,65 @@ describe('SchoolAdminService', () => {
     })
   })
 
+  describe('createClass（校管建班并指定班主任）', () => {
+    function setupQueryBuilder() {
+      const qb: any = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        orUpdate: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      }
+      classMemberRepo.createQueryBuilder.mockReturnValue(qb)
+      return qb
+    }
+
+    it('缺必填字段时应抛出 "班级名称/年级/班主任必填"', async () => {
+      await expect(
+        service.createClass('school-1', { name: '', grade: '', classNo: '', headTeacher: '', headTeacherId: '' }),
+      ).rejects.toThrow('班级名称/年级/班主任必填')
+    })
+
+    it('指定的班主任不在本校时应抛出异常', async () => {
+      userRepo.findOne.mockResolvedValue(null) // 班主任查不到
+      await expect(
+        service.createClass('school-1', { name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1' }),
+      ).rejects.toThrow('指定的班主任不在本校')
+    })
+
+    it('成功建班时应同步写入 class_members head 记录并记审计日志', async () => {
+      const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(teacher)
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+      const qb = setupQueryBuilder()
+
+      const res = await service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
+      })
+
+      // 返回保存的班级
+      expect(res.id).toBe('c1')
+      // classMemberRepo.createQueryBuilder 被调用写入 head 记录
+      expect(classMemberRepo.createQueryBuilder).toHaveBeenCalled()
+      expect(qb.insert).toHaveBeenCalled()
+      expect(qb.into).toHaveBeenCalledWith('class_members')
+      expect(qb.values).toHaveBeenCalledWith(
+        expect.objectContaining({
+          teacherId: 't1',
+          classId: 'c1',
+          className: '一班',
+          role: 'head',
+        }),
+      )
+      expect(qb.orUpdate).toHaveBeenCalledWith(['role', 'className'], ['teacherId', 'classId'])
+      expect(qb.execute).toHaveBeenCalled()
+      // 审计日志
+      expect(audit.log).toHaveBeenCalledWith('school-1', 'create_class', '系统', '一班', expect.stringContaining('张老师'))
+    })
+  })
+
   describe('toCsv（正确转义逗号/引号/换行）', () => {
     it('包含逗号的内容应被双引号包裹', () => {
       const csv = service.toCsv([['姓名', '备注'], ['张三', '你好,世界']])

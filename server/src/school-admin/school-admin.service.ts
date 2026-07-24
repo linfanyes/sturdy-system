@@ -251,7 +251,7 @@ export class SchoolAdminService {
     return { items, total }
   }
 
-  /** 创建班级（班主任必须是本校教师） */
+  /** 创建班级（班主任必须是本校教师，由校管指定班主任身份） */
   async createClass(schoolId: string, dto: { name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string; term?: string }) {
     if (!dto.name || !dto.grade || !dto.headTeacherId) throw new BadRequestException('班级名称/年级/班主任必填')
     const teacher = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
@@ -260,7 +260,25 @@ export class SchoolAdminService {
       teacherId: teacher.id, name: dto.name, grade: dto.grade, classNo: dto.classNo || '1',
       headTeacher: dto.headTeacher || teacher.name, term: dto.term || '',
     })
-    return this.classRepo.save(c)
+    const saved = await this.classRepo.save(c)
+    // 同步写入 class_members 的 head 记录（班主任身份标记，供 ClassMemberService 鉴权使用）
+    await this.classMemberRepo
+      .createQueryBuilder()
+      .insert()
+      .into('class_members')
+      .values({
+        id: require('crypto').randomUUID().replace(/-/g, ''),
+        teacherId: teacher.id,
+        classId: saved.id,
+        className: saved.name,
+        role: 'head',
+        subjects: '[]',
+      })
+      .orUpdate(['role', 'className'], ['teacherId', 'classId'])
+      .execute()
+      .catch(() => {})
+    this.audit.log(schoolId, 'create_class', '系统', saved.name, `班主任：${teacher.name}`).catch(() => {})
+    return saved
   }
 
   /** 更新班级信息（支持转交班主任） */

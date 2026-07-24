@@ -25,14 +25,13 @@ class ClassesService extends CrudService<ClassItem> {
     return true
   }
 
-  /** 创建班级时自动写入 class_members head 记录 */
+  /**
+   * 禁止老师端自建班级：班主任身份必须由学校管理员指定（createClass 接口）。
+   * 老师 self-service 建班会绕过校管授权，导致权责不清。
+   * 如需建班请走 POST /school-admin/classes（需校管登录态）。
+   */
   async create(teacherId: string, dto: any) {
-    const e = await super.create(teacherId, dto)
-    // 自动写入班主任成员关系
-    if (this.classMemberSvc) {
-      await this.classMemberSvc.addHeadTeacher(teacherId, e.id, e.name, (e as any).subjects || [])
-    }
-    return e
+    throw new ForbiddenException('班级需由学校管理员创建并指定班主任，请联系校管')
   }
 
   /**

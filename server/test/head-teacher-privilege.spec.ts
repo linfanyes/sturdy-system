@@ -24,6 +24,7 @@ function readSrc(rel: string): string {
 
 const classesModuleSrc = readSrc('src/classes/classes.module.ts')
 const classMemberModuleSrc = readSrc('src/class-members/class-members.module.ts')
+const schoolAdminSrc = readSrc('src/school-admin/school-admin.service.ts')
 
 describe('班主任特权相关逻辑', () => {
   describe('班级写操作仅限班主任', () => {
@@ -206,13 +207,28 @@ describe('班主任特权相关逻辑', () => {
     })
   })
 
-  describe('创建班级自动写入班主任关系', () => {
-    it('22. ClassesService.create 调用 addHeadTeacher', () => {
+  describe('建班策略调整：老师端禁用，班主任由校管指定', () => {
+    it('22. ClassesService.create 抛 ForbiddenException（禁止老师自建班）', () => {
       const m = classesModuleSrc.match(
         /async create\(teacherId: string, dto: any\)\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
-      expect(m![1]).toMatch(/this\.classMemberSvc\.addHeadTeacher\(teacherId, e\.id, e\.name/)
+      expect(m![1]).toMatch(/throw new ForbiddenException/)
+      // 不再调用 super.create / addHeadTeacher（班主任身份改由校管 createClass 写入）
+      expect(m![1]).not.toMatch(/super\.create/)
+      expect(m![1]).not.toMatch(/addHeadTeacher/)
+    })
+
+    it('23. 校管 createClass 写入 class_members head 记录', () => {
+      // school-admin.service.ts 的 createClass 用 createQueryBuilder 写入 class_members
+      const m = schoolAdminSrc.match(
+        /async createClass\(schoolId: string, dto: \{[\s\S]*?\}\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      const body = m![1]
+      expect(body).toMatch(/classMemberRepo/)
+      expect(body).toMatch(/role: 'head'/)
+      expect(body).toMatch(/orUpdate/)
     })
   })
 })
