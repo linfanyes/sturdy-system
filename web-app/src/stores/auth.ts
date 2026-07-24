@@ -35,6 +35,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('trace_web_user')
   }
 
+  /** 局部更新当前用户信息（如编辑个人资料后同步本地） */
+  function updateUser(patch: Partial<AuthUser>) {
+    if (!user.value) return
+    user.value = { ...user.value, ...patch }
+    localStorage.setItem('trace_web_user', JSON.stringify(user.value))
+  }
+
   // 各角色登录
   async function loginAsSuper(username: string, password: string) {
     const { token: t, user: u } = await authApi.superLogin({ username, password })
@@ -60,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     role,
     setAuth,
     logout,
+    updateUser,
     loginAsSuper,
     loginAsSchoolAdmin,
     loginAsTeacher,
