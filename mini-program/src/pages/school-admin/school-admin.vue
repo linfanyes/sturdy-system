@@ -443,6 +443,9 @@ async function apiCall(method, path, data) {
           const msg = r.data && (r.data.message || r.data.error)
           uni.removeStorageSync('sa_token')
           uni.removeStorageSync('sa_user')
+          uni.removeStorageSync('g_token')
+          uni.removeStorageSync('g_user')
+          uni.removeStorageSync('g_mock_mode')
           uni.reLaunch({ url: '/pages/login/login' })
           return reject(new Error(msg || '登录已过期'))
         }
@@ -619,6 +622,11 @@ function logout() {
   setMockMode(false)
   uni.removeStorageSync('sa_token')
   uni.removeStorageSync('sa_user')
+  // 清除校管登录时写入的共享 token + 演示模式标记，
+  // 防止冷启动时 App.vue 误读 g_token 判为教师登录态
+  uni.removeStorageSync('g_token')
+  uni.removeStorageSync('g_user')
+  uni.removeStorageSync('g_mock_mode')
   uni.reLaunch({ url: '/pages/login/login' })
 }
 

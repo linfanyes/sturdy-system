@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { BadRequestException } from '@nestjs/common'
-import * as crypto from 'node:crypto'
 import { SchoolAdminService } from '../src/school-admin/school-admin.service'
+import { hashPassword } from '../src/common/utils/password.util'
 
 /** 构造一个包含常用 Repository 方法的 mock 对象 */
 function mockRepo(): any {
@@ -29,6 +29,7 @@ describe('SchoolAdminService', () => {
   let noticeRepo: any
   let attRepo: any
   let hwRepo: any
+  let classMemberRepo: any
   let audit: any
   let em: any
 
@@ -42,6 +43,7 @@ describe('SchoolAdminService', () => {
     noticeRepo = mockRepo()
     attRepo = mockRepo()
     hwRepo = mockRepo()
+    classMemberRepo = mockRepo()
     audit = { log: jest.fn().mockResolvedValue(undefined) }
     // EntityManager mock：transaction 直接执行回调并传入自身
     em = {
@@ -59,6 +61,7 @@ describe('SchoolAdminService', () => {
       noticeRepo,
       attRepo,
       hwRepo,
+      classMemberRepo,
       audit as any,
       em as any,
     )
@@ -214,7 +217,6 @@ describe('SchoolAdminService', () => {
     it('成功创建教师应返回 teacherNo', async () => {
       setupEmForCreate({ existUser: null, lastTeacher: null })
       schoolRepo.findOne.mockResolvedValue(school)
-      const hash = crypto.createHash('sha256').update('123456').digest('hex')
 
       const res = await service.createTeacher('s1', {
         username: 'wang',
@@ -227,12 +229,11 @@ describe('SchoolAdminService', () => {
       // teacherNo = 'JS' + 学校编号 + 5 位流水号（首条为 00001）
       expect(res.teacherNo).toBe('JSSCH00100001')
       expect(res.name).toBe('王老师')
-      // 校验密码哈希被正确传入
+      // 校验密码哈希被正确传入：bcrypt 格式（$2 开头，长度 60）
       const userRepoEm = em.getRepository()
       expect(userRepoEm.create).toHaveBeenCalledWith(
         expect.objectContaining({
           username: 'wang',
-          passwordHash: hash,
           name: '王老师',
           schoolId: 's1',
           school: '测试学校',
@@ -240,6 +241,13 @@ describe('SchoolAdminService', () => {
           teacherNo: 'JSSCH00100001',
         }),
       )
+      // 单独校验 passwordHash 为 bcrypt 格式（不与固定值比较，因盐随机）
+      const createCall = userRepoEm.create.mock.calls[0][0]
+      expect(createCall.passwordHash).toMatch(/^\$2[abxy]\$\d{2}\$/)
+      expect(createCall.passwordHash).toHaveLength(60)
+      // 通过 verifyAndUpgrade 可校验通过
+      const { verifyAndUpgrade } = require('../src/common/utils/password.util')
+      expect(verifyAndUpgrade('123456', createCall.passwordHash).valid).toBe(true)
       // 审计日志被记录
       expect(audit.log).toHaveBeenCalled()
     })

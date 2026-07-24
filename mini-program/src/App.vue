@@ -3,9 +3,12 @@ import { onLaunch } from '@dcloudio/uni-app'
 import { mockMode, initTheme } from './common/store'
 import { setMockMode } from './common/request'
 import { CLOUDRUN_ENV } from './common/config'
+import { setupRouteGuard } from './common/route-guard'
 
 export default {
   onLaunch() {
+    // 注册前端路由角色守卫（拦截越权导航，如教师进入管理员面板）
+    setupRouteGuard()
     // 屏蔽 uni-app 运行框架内置的 DCloud CDN 阴影图预加载（wx.preloadAssets）。
     // 该预加载仅作性能优化，非页面实际渲染图；在无法访问 cdn1.dcloud.net.cn 的环境会
     // 持续刷「渲染层网络层错误 / ERR_TIMED_OUT」且无任何功能影响。仅拦截此 CDN 的预加载，

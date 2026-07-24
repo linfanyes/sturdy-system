@@ -15,6 +15,7 @@ import { Student } from './student.entity'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
@@ -307,7 +308,7 @@ class StudentsController extends CrudController<Student> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact]), AiModule],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact]), AiModule, ClassMembersModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })

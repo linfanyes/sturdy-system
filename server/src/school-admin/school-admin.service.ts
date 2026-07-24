@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
 import { Repository, EntityManager, In } from 'typeorm'
-import * as crypto from 'node:crypto'
 import { SchoolAdmin } from './school-admin.entity'
 import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
@@ -11,7 +10,9 @@ import { ClassItem } from '../classes/class.entity'
 import { Notice } from '../school/school.entity'
 import { Attendance } from '../school/school.entity'
 import { Homework } from '../school/school.entity'
+import { ClassMember } from '../class-members/class-member.entity'
 import { AuditService } from '../audit/audit.service'
+import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
@@ -38,6 +39,7 @@ export class SchoolAdminService {
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     @InjectRepository(Attendance) private readonly attRepo: Repository<Attendance>,
     @InjectRepository(Homework) private readonly hwRepo: Repository<Homework>,
+    @InjectRepository(ClassMember) private readonly classMemberRepo: Repository<ClassMember>,
     private readonly audit: AuditService,
     @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
@@ -46,8 +48,9 @@ export class SchoolAdminService {
   async login(username: string, password: string) {
     const admin = await this.saRepo.findOne({ where: { username } })
     if (!admin) throw new UnauthorizedException('账号或密码错误')
-    const hash = crypto.createHash('sha256').update(password).digest('hex')
-    if (hash !== admin.passwordHash) throw new UnauthorizedException('账号或密码错误')
+    const { valid, newHash } = verifyAndUpgrade(password, admin.passwordHash)
+    if (!valid) throw new UnauthorizedException('账号或密码错误')
+    if (newHash) { admin.passwordHash = newHash; await this.saRepo.save(admin) }
     if (admin.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
     const school = await this.schoolRepo.findOne({ where: { id: admin.schoolId } })
     const token = this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId })
@@ -138,7 +141,7 @@ export class SchoolAdminService {
       const exist = await userRepo.findOne({ where: { username: dto.username } })
       if (exist) throw new BadRequestException('用户名已存在')
       const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
-      const hash = crypto.createHash('sha256').update(dto.password).digest('hex')
+      const hash = hashPassword(dto.password)
       const teacherNo = await this.genTeacherNo(schoolId, em)
       const user = userRepo.create({
         username: dto.username, passwordHash: hash, name: dto.name,
@@ -186,7 +189,7 @@ export class SchoolAdminService {
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
-    user.passwordHash = crypto.createHash('sha256').update(newPassword).digest('hex')
+    user.passwordHash = hashPassword(newPassword)
     return this.userRepo.save(user)
   }
 
@@ -260,14 +263,31 @@ export class SchoolAdminService {
     return this.classRepo.save(c)
   }
 
-  /** 更新班级信息 */
-  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string }>) {
+  /** 更新班级信息（支持转交班主任） */
+  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string; headTeacherId: string }>) {
     const cls = await this.classRepo.findOne({ where: { id } })
     if (!cls) throw new BadRequestException('班级不存在')
     // 验证班级属于本校
     const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
     if (!teacher) throw new BadRequestException('无权操作此班级')
-    Object.assign(cls, dto)
+    // 转交班主任：修改 classes.teacherId 并更新 class_members
+    if (dto.headTeacherId && dto.headTeacherId !== cls.teacherId) {
+      const newHead = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
+      if (!newHead) throw new BadRequestException('指定的新班主任不在本校')
+      cls.teacherId = newHead.id
+      cls.headTeacher = dto.headTeacher || newHead.name
+      // 更新 class_members：旧班主任降级为科任老师，新班主任升为 head
+      await this.classMemberRepo.query(
+        'UPDATE class_members SET role = ? WHERE classId = ? AND teacherId = ?',
+        ['subject', id, teacher.id],
+      ).catch(() => {})
+      await this.classMemberRepo.query(
+        'INSERT INTO class_members (id, teacherId, classId, className, role, subjects, createdAt, updatedAt) VALUES (?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE role = ?',
+        [require('crypto').randomUUID().replace(/-/g, ''), newHead.id, id, cls.name, 'head', '[]', 'head'],
+      ).catch(() => {})
+    } else {
+      Object.assign(cls, dto)
+    }
     return this.classRepo.save(cls)
   }
 

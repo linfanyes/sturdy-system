@@ -1,8 +1,9 @@
 import 'reflect-metadata'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import * as crypto from 'node:crypto'
+import * as bcrypt from 'bcrypt'
 import { CrudService } from '../src/common/crud/base.service'
+import { hashPassword, verifyAndUpgrade } from '../src/common/utils/password.util'
 
 /**
  * 系统安全相关逻辑测试。
@@ -23,13 +24,36 @@ const schoolAdminSrc = readSrc('src/school-admin/school-admin.service.ts')
 
 describe('系统安全相关逻辑', () => {
   describe('密码哈希', () => {
-    it('1. sha256 哈希不等于明文', () => {
+    it('1. bcrypt 加盐哈希不等于明文且可通过 verifyAndUpgrade 校验', () => {
       const plain = '123456'
-      const hash = crypto.createHash('sha256').update(plain).digest('hex')
+      const hash = hashPassword(plain)
+      // bcrypt 哈希以 $2 开头，长度 60
       expect(hash).not.toBe(plain)
-      expect(hash).toHaveLength(64)
-      // 源码使用 sha256 哈希
-      expect(authServiceSrc).toMatch(/createHash\(['"]sha256['"]\)/)
+      expect(hash.startsWith('$2')).toBe(true)
+      expect(hash).toHaveLength(60)
+      // 同一明文两次哈希结果不同（盐随机）
+      expect(hashPassword(plain)).not.toBe(hash)
+      // verifyAndUpgrade 可正确校验 bcrypt 哈希，且不触发升级
+      const r = verifyAndUpgrade(plain, hash)
+      expect(r.valid).toBe(true)
+      expect(r.newHash).toBeNull()
+      // 错误密码校验失败
+      expect(verifyAndUpgrade('wrong', hash).valid).toBe(false)
+      // 源码使用 bcrypt 实现的 hashPassword/verifyAndUpgrade
+      expect(authServiceSrc).toMatch(/hashPassword\(/)
+      expect(authServiceSrc).toMatch(/verifyAndUpgrade\(/)
+    })
+
+    it('1b. 旧 sha256 哈希可被 verifyAndUpgrade 校验并自动升级为 bcrypt', () => {
+      const crypto = require('node:crypto')
+      const plain = '123456'
+      const legacyHash = crypto.createHash('sha256').update(plain).digest('hex')
+      const r = verifyAndUpgrade(plain, legacyHash)
+      expect(r.valid).toBe(true)
+      expect(r.newHash).not.toBeNull()
+      // 升级后的哈希应为 bcrypt 格式
+      expect(r.newHash!.startsWith('$2')).toBe(true)
+      expect(r.newHash).toHaveLength(60)
     })
   })
 

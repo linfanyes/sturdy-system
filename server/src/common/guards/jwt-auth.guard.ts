@@ -8,11 +8,13 @@ import { Reflector } from '@nestjs/core'
 import { JwtService } from '@nestjs/jwt'
 
 /**
- * 自定义 JWT 守卫（不依赖 passport，减少依赖）。
- * 校验 Authorization: Bearer <token>，把 { sub, openid, role } 挂到 req.user。
+ * 统一 JWT 守卫（不依赖 passport，减少依赖）。
+ * 校验 Authorization: Bearer <token>，把完整 payload 挂到 req.user，
+ * 并统一 role 字段（家长令牌 type='parent' → role='parent'），
+ * 使 @CurrentTeacher / @CurrentSchoolAdmin / @CurrentParent 装饰器均可直接读取所需字段。
  *
  * 使用方法级别 @Roles() 标注所需角色（非标注则不校验角色）：
- *   @Roles('teacher')
+ *   @Roles('teacher') / @Roles('super') / @Roles('school_admin') / @Roles('parent')
  *   @UseGuards(JwtAuthGuard)
  */
 @Injectable()
@@ -31,7 +33,9 @@ export class JwtAuthGuard implements CanActivate {
     const token = auth.slice(7)
     try {
       const payload = this.jwt.verify(token)
-      req.user = { sub: payload.sub, openid: payload.openid, role: payload.role }
+      // 统一 role：家长令牌用 type='parent'，映射为 role='parent' 供 @Roles 校验
+      const role = payload.role || (payload.type === 'parent' ? 'parent' : undefined)
+      req.user = { ...payload, role }
 
       // 检查 RequiredRole 注解（使用 Reflector 读取类/方法上的 @Roles 元数据）
       const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
@@ -39,7 +43,7 @@ export class JwtAuthGuard implements CanActivate {
         context.getClass(),
       ])
       if (requiredRoles && requiredRoles.length > 0) {
-        if (!requiredRoles.includes(payload.role)) {
+        if (!role || !requiredRoles.includes(role)) {
           throw new UnauthorizedException('权限不足')
         }
       }

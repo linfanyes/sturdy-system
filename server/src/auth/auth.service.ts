@@ -10,7 +10,7 @@ import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { parentImUserId } from '../im/parent-im.util'
-import * as crypto from 'node:crypto'
+import { verifyAndUpgrade, hashPassword } from '../common/utils/password.util'
 
 const PARENT_DEFAULT_PASSWORD = '123456'
 
@@ -44,7 +44,13 @@ export class AuthService {
     const admin = await this.saRepo.findOne({ where: { username: u } })
     if (admin) {
       if (admin.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
-      if (p === admin.passwordHash || crypto.createHash('sha256').update(p).digest('hex') === admin.passwordHash) {
+      const { valid, newHash } = verifyAndUpgrade(p, admin.passwordHash)
+      if (valid) {
+        // 透明升级旧 sha256 为 bcrypt
+        if (newHash) {
+          admin.passwordHash = newHash
+          await this.saRepo.save(admin)
+        }
         const school = await this.schoolRepo.findOne({ where: { id: admin.schoolId } })
         return {
           role: 'school_admin',
@@ -60,8 +66,13 @@ export class AuthService {
     if (teacher) {
       if (teacher.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
       if (!teacher.passwordHash) throw new UnauthorizedException('该账号未设置密码，请用微信登录')
-      const h = crypto.createHash('sha256').update(p).digest('hex')
-      if (h !== teacher.passwordHash) throw new UnauthorizedException('密码错误')
+      const { valid, newHash } = verifyAndUpgrade(p, teacher.passwordHash)
+      if (!valid) throw new UnauthorizedException('密码错误')
+      // 透明升级旧 sha256 为 bcrypt
+      if (newHash) {
+        teacher.passwordHash = newHash
+        await this.users.update(teacher.id, { passwordHash: newHash })
+      }
       // 仅返回安全的字段，避免泄露 passwordHash/sessionKey
       const safeUser = {
         id: teacher.id, name: teacher.name, username: teacher.username,
@@ -115,8 +126,10 @@ export class AuthService {
     const { openid } = await this.wechat.code2Session(code)
     const user = await this.users.findByUsername(username)
     if (!user || !user.passwordHash) throw new UnauthorizedException('教师账号不存在或未设密码')
-    const h = crypto.createHash('sha256').update(password).digest('hex')
-    if (h !== user.passwordHash) throw new UnauthorizedException('密码错误')
+    const h = user.passwordHash
+    const { valid, newHash } = verifyAndUpgrade(password, h)
+    if (!valid) throw new UnauthorizedException('密码错误')
+    if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }
     // 检查是否已有其他账号绑定此 openid
     const exist = await this.users.findByOpenid(openid)
     if (exist && exist.id !== user.id) throw new BadRequestException('该微信已绑定其他账号')
@@ -163,7 +176,7 @@ export class AuthService {
           throw new BadRequestException('该教师编号已被其他微信绑定')
         }
         const DEFAULT_PWD = '1314520'
-        const pwdHash = crypto.createHash('sha256').update(DEFAULT_PWD).digest('hex')
+        const pwdHash = hashPassword(DEFAULT_PWD)
         const displayName = nickName || ('老师' + number.slice(-4))
         Object.assign(lockedUser, { openid, passwordHash: pwdHash, sessionKey: '', name: displayName, wechatName: nickName || '' })
         await userRepo.save(lockedUser)
@@ -196,8 +209,9 @@ export class AuthService {
   async passwordLogin(username: string, password: string) {
     const user = await this.users.findByUsername(username)
     if (!user || !user.passwordHash) throw new UnauthorizedException('账号不存在或未设密码')
-    const h = crypto.createHash('sha256').update(password).digest('hex')
-    if (h !== user.passwordHash) throw new UnauthorizedException('密码错误')
+    const { valid, newHash } = verifyAndUpgrade(password, user.passwordHash)
+    if (!valid) throw new UnauthorizedException('密码错误')
+    if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }
     return { token: this.jwt.sign({ sub: user.id, role: 'teacher', schoolId: user.schoolId || '' }), user }
   }
 }

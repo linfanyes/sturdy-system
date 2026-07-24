@@ -14,6 +14,7 @@ import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import * as XLSX from 'xlsx'
@@ -219,7 +220,7 @@ class GradesController extends CrudController<Grade> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem])],
+  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem]), ClassMembersModule],
   providers: [GradesService],
   controllers: [GradesController],
 })

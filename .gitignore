@@ -15,6 +15,7 @@ app.pid
 seed-runner.js
 tester.js
 test-results.json
+test-report.json
 
 # WorkBuddy 项目数据（非源码）
 .workbuddy/

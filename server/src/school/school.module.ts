@@ -19,6 +19,7 @@ import { AiService } from '../ai/ai.service'
 import { SecurityModule, SecurityService } from '../security/security.module'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
+import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 
 class ScheduleService extends CrudService<ScheduleItem> {
   constructor(@InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>) {
@@ -343,6 +344,7 @@ class ScheduleImportController {
     TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem]),
     AiModule,
     SecurityModule,
+    ClassMembersModule,
   ],
   providers: [
     ScheduleService,

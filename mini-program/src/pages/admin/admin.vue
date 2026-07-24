@@ -365,7 +365,16 @@ async function doLogin() {
   finally { logging.value = false }
 }
 
-function logout() { adminToken.value = ''; uni.removeStorageSync(ADMIN_TOKEN_KEY); uni.reLaunch({ url: '/pages/login/login' }) }
+function logout() {
+  adminToken.value = ''
+  // 清除超管登录态 + 污染的共享 token + 演示模式标记，
+  // 防止冷启动时 App.vue 误读 g_token 判为教师登录态
+  uni.removeStorageSync(ADMIN_TOKEN_KEY)
+  uni.removeStorageSync('g_token')
+  uni.removeStorageSync('g_user')
+  uni.removeStorageSync('g_mock_mode')
+  uni.reLaunch({ url: '/pages/login/login' })
+}
 
 onMounted(() => {
   if (adminToken.value) loadAll()

@@ -9,6 +9,7 @@ import { ConfigModule as PlatformConfigModule } from './config/config.module'
 import { AiModule } from './ai/ai.module'
 
 import { ClassesModule } from './classes/classes.module'
+import { ClassMembersModule } from './class-members/class-members.module'
 import { StudentsModule } from './students/students.module'
 import { SeatsModule } from './seats/seats.module'
 import { ExamsModule } from './exams/exams.module'
@@ -87,6 +88,7 @@ import { HealthController } from './health.controller'
     PlatformConfigModule,
     AiModule,
     ClassesModule,
+    ClassMembersModule,
     StudentsModule,
     SeatsModule,
     ExamsModule,

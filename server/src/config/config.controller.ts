@@ -9,7 +9,6 @@ import {
 import { ConfigService } from './config.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
-import { SuperAdminGuard } from '../admin/super-admin.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
 // 明文下发存在泄露风险的密钥类配置项（仅做脱敏展示，写入时仍可接收明文）
@@ -30,8 +29,9 @@ export class ConfigController {
     return this.cfg.publicConfig()
   }
 
+  @Roles('super')
   @Get('app')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(JwtAuthGuard)
   listApp() {
     // 仅超级管理员可读取平台级配置；密钥类字段脱敏下发，避免明文泄露到前端/日志。
     const rows = this.cfg.listAppConfig()
@@ -40,8 +40,9 @@ export class ConfigController {
       : rows
   }
 
+  @Roles('super')
   @Put('app/:key')
-  @UseGuards(SuperAdminGuard)
+  @UseGuards(JwtAuthGuard)
   setApp(@Param('key') key: string, @Body() body: { value: string }) {
     return this.cfg.setAppConfig(key, body.value)
   }

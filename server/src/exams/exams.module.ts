@@ -8,14 +8,22 @@ import { Grade } from '../grades/grade.entity'
 import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 
 class ExamsService extends CrudService<Exam> {
   constructor(
     @InjectRepository(Exam) repo: Repository<Exam>,
     @InjectRepository(Grade) private gradeRepo: Repository<Grade>,
     @InjectRepository(ClassItem) private classRepo: Repository<ClassItem>,
+    classMemberSvc: ClassMemberService,
   ) {
     super(repo)
+    this.withClassMemberService(classMemberSvc)
+  }
+
+  /** 考试是班级维度实体 */
+  protected isClassScopedEntity(): boolean {
+    return true
   }
 
   /**
@@ -78,7 +86,7 @@ class ExamsController extends CrudController<Exam> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Exam, Grade, ClassItem])],
+  imports: [TypeOrmModule.forFeature([Exam, Grade, ClassItem]), ClassMembersModule],
   providers: [ExamsService],
   controllers: [ExamsController],
 })

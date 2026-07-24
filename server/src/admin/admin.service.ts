@@ -9,6 +9,7 @@ import { School } from '../school/school.entity'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
+import { hashPassword } from '../common/utils/password.util'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -42,7 +43,7 @@ export class AdminService implements OnModuleInit {
         // 学校管理员
         const saCount = await this.saRepo.count()
         if (saCount === 0 && schools.length >= 1) {
-          const pwd = crypto.createHash('sha256').update('123456').digest('hex')
+          const pwd = hashPassword('123456')
           const sa1 = this.saRepo.create({ username: 'sa1', passwordHash: pwd, name: '赵主任', schoolId: schools[0].id, enabled: true })
           const sa2 = this.saRepo.create({ username: 'sa2', passwordHash: pwd, name: '钱主任', schoolId: schools[schools.length - 1]?.id || schools[0].id, enabled: true })
           await this.saRepo.save([sa1, sa2])
@@ -51,7 +52,7 @@ export class AdminService implements OnModuleInit {
         // 教师用户
         const userCount = await this.userRepo.count()
         if (userCount === 0 && schools.length >= 1) {
-          const pwd = crypto.createHash('sha256').update('123456').digest('hex')
+          const pwd = hashPassword('123456')
           const teachers = [
             { name: '王老师', username: 'teacher1', subject: '语文', enabled: true },
             { name: '李老师', username: 'teacher2', subject: '数学', enabled: true },
@@ -282,7 +283,7 @@ export class AdminService implements OnModuleInit {
     if (!newPassword) throw new BadRequestException('新密码必填')
     const a = await this.saRepo.findOne({ where: { id } })
     if (!a) throw new BadRequestException('管理员不存在')
-    a.passwordHash = crypto.createHash('sha256').update(newPassword).digest('hex')
+    a.passwordHash = hashPassword(newPassword)
     await this.saRepo.save(a)
     return { ok: true }
   }
