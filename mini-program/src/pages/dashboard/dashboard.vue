@@ -9,32 +9,13 @@
         </picker>
         <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
       </view>
-      <view class="bell" @click="openNotifications">
+      <view class="bell" @click="goNotifications">
         <text class="bell-icon">🔔</text>
         <text v-if="unreadCount > 0" class="bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
       </view>
       <view class="moods">
         <text class="mood" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)">{{ moodEmojis[i] }} {{ m }}</text>
       </view>
-    </view>
-
-    <!-- 通知面板 -->
-    <view v-if="showNotifications" class="notif-panel">
-      <view class="notif-hd">
-        <text class="notif-title">🔔 通知</text>
-        <text class="notif-act" @click="markAllRead">全部已读</text>
-        <text class="notif-act" @click="showNotifications = false">✕</text>
-      </view>
-      <scroll-view scroll-y class="notif-list">
-        <view v-if="!notificationsList.length" class="notif-empty">暂无通知</view>
-        <view v-for="n in notificationsList" :key="n.id" class="notif-item" :class="!n.read && 'unread'" @click="markAllRead">
-          <view class="notif-icon">{{ n.type === 'notice' ? '📢' : n.type === 'homework' ? '📝' : n.type === 'grade' ? '📊' : 'ℹ️' }}</view>
-          <view class="notif-body">
-            <text class="notif-title-text">{{ n.title }}</text>
-            <text class="notif-content" v-if="n.content">{{ n.content }}</text>
-          </view>
-        </view>
-      </scroll-view>
     </view>
 
     <!-- 班级切换（任教多个班时） -->
@@ -350,7 +331,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh, onHide } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme, flushTabBarStyle } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -469,31 +450,16 @@ async function askAi() {
 function quickAsk(q) { aiQuery.value = q; askAi() }
 
 // 通知中心
-const showNotifications = ref(false)
 const unreadCount = ref(0)
-const notificationsList = ref([])
+let notifTimer = null
 async function loadNotifications() {
   try {
     const r = await api.get('/notifications/unread-count')
     unreadCount.value = r?.count || 0
   } catch {}
 }
-async function openNotifications() {
-  showNotifications.value = !showNotifications.value
-  if (showNotifications.value) {
-    try {
-      const r = await api.get('/notifications')
-      notificationsList.value = r?.items || []
-    } catch { notificationsList.value = [] }
-  }
-}
-async function markAllRead() {
-  try {
-    await api.post('/notifications/mark-all-read')
-    unreadCount.value = 0
-    notificationsList.value.forEach(n => n.read = true)
-    uni.showToast({ title: '全部已读', icon: 'success' })
-  } catch {}
+function goNotifications() {
+  uni.navigateTo({ url: '/pages/notifications/notifications' })
 }
 const attendanceList = ref([])
 const homeworkList = ref([])
@@ -676,6 +642,12 @@ onShow(() => {
   selKeys.value = uni.getStorageSync('dash_widgets') || widgetCands.slice(0, 4).map((w) => w.label)
   loadAll()
   flushTabBarStyle()
+  // 通知未读数每 60 秒刷新一次
+  if (notifTimer) clearInterval(notifTimer)
+  notifTimer = setInterval(loadNotifications, 60000)
+})
+onHide(() => {
+  if (notifTimer) { clearInterval(notifTimer); notifTimer = null }
 })
 onPullDownRefresh(async () => {
   await loadAll()

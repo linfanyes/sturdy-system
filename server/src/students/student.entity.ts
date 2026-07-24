@@ -16,6 +16,7 @@ export class Student extends BaseEntity {
   @Column({ default: '' }) parentOpenId: string
   @Column({ default: '' }) parentNickName: string
   @Column({ default: false }) parentLoginEnabled: boolean
+  @Column({ type: 'varchar', nullable: true }) parentPasswordHash: string | null
   @Column({ type: 'text', nullable: true }) note: string
   @Column('simple-json', { nullable: true }) tags: string[]
   @Column({ nullable: true }) duty: string

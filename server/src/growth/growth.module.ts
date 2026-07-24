@@ -6,12 +6,14 @@ import { Controller } from '@nestjs/common'
 import { GrowthEntry, BehaviorRecord } from './growth.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class GrowthService extends CrudService<GrowthEntry> {
   constructor(@InjectRepository(GrowthEntry) repo: Repository<GrowthEntry>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('growth-entries')
 class GrowthController extends CrudController<GrowthEntry> {
   constructor(s: GrowthService) {
@@ -24,6 +26,7 @@ class BehaviorService extends CrudService<BehaviorRecord> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('behavior-records')
 class BehaviorController extends CrudController<BehaviorRecord> {
   constructor(s: BehaviorService) {

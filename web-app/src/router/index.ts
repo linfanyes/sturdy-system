@@ -117,6 +117,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'office-blackboard', name: 'teacher-office-blackboard', component: () => import('@/views/office/Blackboard.vue'), meta: { title: '黑板报', feature: 'worklog' } },
       { path: 'office-speech', name: 'teacher-office-speech', component: () => import('@/views/office/Speech.vue'), meta: { title: '演讲稿', feature: 'worklog' } },
       { path: 'plan-template-lib', name: 'teacher-plan-template-lib', component: () => import('@/views/office/PlanTemplateLib.vue'), meta: { title: '文案模板库', feature: 'worklog' } },
+      // 工具箱聚合入口
+      { path: 'toolbox', name: 'teacher-toolbox', component: () => import('@/views/tools/Toolbox.vue'), meta: { title: '工具箱', feature: 'tools' } },
       // 课堂互动工具
       { path: 'tools/picker', name: 'tool-picker', component: () => import('@/views/tools/RandomPicker.vue'), meta: { title: '随机点名', feature: 'tools' } },
       { path: 'tools/grouper', name: 'tool-grouper', component: () => import('@/views/tools/RandomGrouper.vue'), meta: { title: '随机分组', feature: 'tools' } },

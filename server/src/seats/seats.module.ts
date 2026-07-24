@@ -13,6 +13,7 @@ import { SeatLayout } from './seat.entity'
 import { Student } from '../students/student.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
@@ -55,6 +56,7 @@ class SeatsService extends CrudService<SeatLayout> {
   }
 }
 
+@Roles('teacher')
 @Controller('seat-layouts')
 class SeatsController extends CrudController<SeatLayout> {
   constructor(s: SeatsService) {

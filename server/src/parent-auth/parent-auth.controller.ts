@@ -15,6 +15,16 @@ export class ParentAuthController {
     return this.s.login((b && b.studentNo) || '', (b && b.password) || '')
   }
 
+  /** 家长修改登录密码（需已登录，校验原密码） */
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  changePassword(
+    @Body() b: { oldPassword?: string; newPassword?: string },
+    @CurrentParent() p: any,
+  ) {
+    return this.s.changePassword(p, (b && b.oldPassword) || '', (b && b.newPassword) || '')
+  }
+
   /** 家长绑定微信（自动或手动） */
   @Post('bind-wechat')
   @UseGuards(JwtAuthGuard)

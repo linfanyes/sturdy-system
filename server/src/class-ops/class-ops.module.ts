@@ -6,12 +6,14 @@ import { Controller } from '@nestjs/common'
 import { ClassExpense, ClassActivity, ClassDutyConfig } from './class-ops.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class ExpenseService extends CrudService<ClassExpense> {
   constructor(@InjectRepository(ClassExpense) repo: Repository<ClassExpense>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('class-expenses')
 class ExpenseController extends CrudController<ClassExpense> {
   constructor(s: ExpenseService) {
@@ -24,6 +26,7 @@ class ActivityService extends CrudService<ClassActivity> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('class-activities')
 class ActivityController extends CrudController<ClassActivity> {
   constructor(s: ActivityService) {
@@ -36,6 +39,7 @@ class DutyConfigService extends CrudService<ClassDutyConfig> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('class-duty-configs')
 class DutyConfigController extends CrudController<ClassDutyConfig> {
   constructor(s: DutyConfigService) {

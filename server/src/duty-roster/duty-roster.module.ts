@@ -6,6 +6,7 @@ import { Controller } from '@nestjs/common'
 import { DutyRoster } from './duty.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class DutyRosterService extends CrudService<DutyRoster> {
   constructor(@InjectRepository(DutyRoster) repo: Repository<DutyRoster>) {
@@ -13,6 +14,7 @@ class DutyRosterService extends CrudService<DutyRoster> {
   }
 }
 
+@Roles('teacher')
 @Controller('duty-rosters')
 class DutyRosterController extends CrudController<DutyRoster> {
   constructor(s: DutyRosterService) {

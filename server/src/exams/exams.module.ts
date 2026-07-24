@@ -8,6 +8,7 @@ import { Grade } from '../grades/grade.entity'
 import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 
 class ExamsService extends CrudService<Exam> {
@@ -78,6 +79,7 @@ class ExamsService extends CrudService<Exam> {
   }
 }
 
+@Roles('teacher')
 @Controller('exams')
 class ExamsController extends CrudController<Exam> {
   constructor(s: ExamsService) {

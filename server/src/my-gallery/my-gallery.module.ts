@@ -7,6 +7,7 @@ import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 const jsonArrayTransformer: ValueTransformer = {
   to: (value: string[]) => (value ? JSON.stringify(value) : null),
@@ -26,6 +27,7 @@ export class MyGallery extends BaseEntity {
 }
 
 class Svc extends CrudService<MyGallery> { constructor(@InjectRepository(MyGallery) r: Repository<MyGallery>) { super(r) } }
+@Roles('teacher')
 @Controller('my-galleries') class Ctrl extends CrudController<MyGallery> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([MyGallery])], providers: [Svc], controllers: [Ctrl] })

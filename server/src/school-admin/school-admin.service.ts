@@ -11,9 +11,11 @@ import { Notice } from '../school/school.entity'
 import { Attendance } from '../school/school.entity'
 import { Homework } from '../school/school.entity'
 import { ClassMember } from '../class-members/class-member.entity'
+import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassMemberService } from '../class-members/class-members.module'
 import { AuditService } from '../audit/audit.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
+import * as XLSX from 'xlsx'
 
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
@@ -410,6 +412,143 @@ export class SchoolAdminService {
     if (!teacher) throw new BadRequestException('无权操作此学生')
     Object.assign(student, dto)
     return this.studentRepo.save(student)
+  }
+
+  /**
+   * 批量创建学生：校验所有 classId 属于该 schoolId，逐条写入并返回成功/失败明细。
+   * 参考 students.module.ts 的 importStudents，但以 schoolId 做归属校验、
+   * 逐条 try/catch 收集结果（不因单条失败回滚全部，与 batchCreateTeachers 风格一致）。
+   * 同步为带家长信息的学生生成 parent-contact 记录。
+   */
+  async batchCreateStudents(schoolId: string, students: any[]) {
+    if (!students?.length) throw new BadRequestException('请提供至少一名学生信息')
+    // 1. 校验：本校所有班级
+    const allTeachers = await this.userRepo.find({ where: { schoolId }, select: ['id'] })
+    const teacherIds = allTeachers.map(t => t.id)
+    if (!teacherIds.length) throw new BadRequestException('本校暂无教师，无法创建学生')
+    const classes = await this.classRepo.find({ where: teacherIds.map(id => ({ teacherId: id })) })
+    const classMap = new Map(classes.map(c => [c.id, c]))
+    if (!classMap.size) throw new BadRequestException('本校暂无班级，无法创建学生')
+
+    // 2. 逐条校验 + 写入
+    const results: any[] = []
+    let success = 0
+    let failed = 0
+    const today = new Date().toISOString().slice(0, 10)
+    for (const it of students) {
+      const name = String(it.name || '').trim()
+      let gender = String(it.gender || '').trim()
+      const studentNo = String(it.studentNo || '').trim()
+      const classId = String(it.classId || '').trim()
+      const parentName = String(it.parentName || '').trim()
+      const parentPhone = String(it.parentPhone || '').trim()
+      // 性别归一化
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      try {
+        if (!name) throw new Error('缺少姓名')
+        if (gender !== '男' && gender !== '女') throw new Error('性别须为男/女')
+        if (!classId) throw new Error('缺少班级ID')
+        const cls = classMap.get(classId)
+        if (!cls) throw new Error('班级不属于本校')
+        if (parentPhone && !/^\d{6,15}$/.test(parentPhone)) throw new Error('家长电话格式不正确')
+
+        // 当前班级已有学生数 + 1 作为 seatNo
+        const existCount = await this.studentRepo.count({ where: { classId } })
+        const e = new Student()
+        Object.assign(e, {
+          name, gender, studentNo, classId, parentName, parentPhone,
+          seatNo: existCount + 1, tags: [], teacherId: cls.teacherId,
+        })
+        const saved = await this.studentRepo.save(e)
+        // 同步生成家长联系记录
+        if (parentName || parentPhone) {
+          const pc = new ParentContact()
+          Object.assign(pc, {
+            studentId: saved.id, studentName: name, classId,
+            parentName: parentName || '家长', relation: '家长',
+            phone: parentPhone || '', wechat: '',
+            method: parentPhone ? '电话' : '其他',
+            content: '校管批量导入时自动建立', date: today, followUp: '',
+            teacherId: cls.teacherId,
+          })
+          await this.entityManager.save(ParentContact, pc).catch(() => {})
+        }
+        results.push({ name, studentNo, classId, status: '成功', id: saved.id })
+        success++
+      } catch (err: any) {
+        results.push({ name, studentNo, classId, status: '失败', error: err.message || String(err) })
+        failed++
+      }
+    }
+    this.audit.log(schoolId, 'batch_create_students', '系统',
+      `批量创建学生 ${success} 成功 / ${failed} 失败`, '校管批量导入学生').catch(() => {})
+    return { total: students.length, success, failed, results }
+  }
+
+  /**
+   * 解析学生文件（Excel/CSV/TXT/JSON），返回校验后的明细。
+   * 与 students.module.ts parseFile 一致的列顺序：姓名,性别,学号,家长姓名,家长电话。
+   * JSON 文件则直接解析为数组对象。classId 由调用方（import 端点）按班级统一填充。
+   */
+  parseStudentFile(filename: string, dataBase64: string): { rows: any[]; validCount: number; errorCount: number } {
+    const ext = (filename.split('.').pop() || '').toLowerCase()
+    const buf = Buffer.from(dataBase64, 'base64')
+    let rawRows: string[][] = []
+
+    if (ext === 'json') {
+      // JSON 文件：直接解析为数组对象，转为统一的 row 结构
+      let arr: any[] = []
+      try {
+        arr = JSON.parse(buf.toString('utf-8'))
+      } catch {
+        throw new BadRequestException('JSON 文件格式错误')
+      }
+      if (!Array.isArray(arr)) throw new BadRequestException('JSON 文件应为数组结构')
+      rawRows = arr.map((o) => [
+        String(o?.name ?? ''), String(o?.gender ?? ''), String(o?.studentNo ?? ''),
+        String(o?.parentName ?? ''), String(o?.parentPhone ?? ''),
+      ])
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      const wb = XLSX.read(buf, { type: 'buffer' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][]
+    } else {
+      const text = buf.toString('utf-8')
+      rawRows = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\t|,/).map((c) => c.trim()))
+    }
+
+    // 跳过表头（首格含「姓名」认定为表头）
+    if (rawRows.length && /姓名|name/i.test(String(rawRows[0][0]))) {
+      rawRows = rawRows.slice(1)
+    }
+
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    rawRows.forEach((r, i) => {
+      const name = String(r[0] || '').trim()
+      let gender = String(r[1] || '').trim()
+      const studentNo = String(r[2] || '').trim()
+      const parentName = String(r[3] || '').trim()
+      const parentPhone = String(r[4] || '').trim()
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+
+      let error = ''
+      if (!name) error = '缺少姓名'
+      else if (gender !== '男' && gender !== '女') error = '性别须为男/女'
+      else if (parentPhone && !/^\d{6,15}$/.test(parentPhone))
+        error = '家长电话格式不正确（应为6-15位数字）'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, gender, studentNo, parentName, parentPhone, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
   }
 
   /** 全局搜索：按关键词搜索本校学生/教师/班级 */

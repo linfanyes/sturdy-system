@@ -6,12 +6,14 @@ import { Controller } from '@nestjs/common'
 import { NoteItem, TodoItem, PickerHistory } from './notes.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class NoteService extends CrudService<NoteItem> {
   constructor(@InjectRepository(NoteItem) repo: Repository<NoteItem>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('notes')
 class NoteController extends CrudController<NoteItem> {
   constructor(s: NoteService) {
@@ -24,6 +26,7 @@ class TodoService extends CrudService<TodoItem> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('todos')
 class TodoController extends CrudController<TodoItem> {
   constructor(s: TodoService) {
@@ -36,6 +39,7 @@ class PickerService extends CrudService<PickerHistory> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('picker-history')
 class PickerController extends CrudController<PickerHistory> {
   constructor(s: PickerService) {

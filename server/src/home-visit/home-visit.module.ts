@@ -7,6 +7,7 @@ import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 @Index('idx_teacher_student', ['teacherId', 'studentId'])
 @Index('idx_home_visits_cov', ['teacherId', 'createdAt'])
@@ -23,6 +24,7 @@ export class HomeVisit extends BaseEntity {
 }
 
 class Svc extends CrudService<HomeVisit> { constructor(@InjectRepository(HomeVisit) r: Repository<HomeVisit>) { super(r) } }
+@Roles('teacher')
 @Controller('home-visits') class Ctrl extends CrudController<HomeVisit> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([HomeVisit])], providers: [Svc], controllers: [Ctrl] })

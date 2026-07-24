@@ -191,6 +191,7 @@ describe('AuthService', () => {
       parentOpenId: '',
       parentNickName: '',
       parentLoginEnabled: true,
+      parentPasswordHash: null,
       note: null,
       tags: [],
       duty: null,

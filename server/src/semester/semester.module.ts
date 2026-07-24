@@ -7,6 +7,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } f
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 @Index('idx_teacher', ['teacherId'])
 @Entity('semesters')
@@ -18,6 +19,7 @@ export class Semester extends BaseEntity {
 }
 
 class Svc extends CrudService<Semester> { constructor(@InjectRepository(Semester) r: Repository<Semester>) { super(r) } }
+@Roles('teacher')
 @Controller('semesters') class Ctrl extends CrudController<Semester> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([Semester])], providers: [Svc], controllers: [Ctrl] })

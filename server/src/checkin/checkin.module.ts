@@ -7,6 +7,7 @@ import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 @Index('idx_teacher_student', ['teacherId', 'studentId'])
 @Index('idx_checkins_cov', ['teacherId', 'createdAt'])
@@ -21,6 +22,7 @@ export class Checkin extends BaseEntity {
 }
 
 class Svc extends CrudService<Checkin> { constructor(@InjectRepository(Checkin) r: Repository<Checkin>) { super(r) } }
+@Roles('teacher')
 @Controller('checkins') class Ctrl extends CrudController<Checkin> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([Checkin])], providers: [Svc], controllers: [Ctrl] })

@@ -92,6 +92,12 @@ const teacherGroups: MenuGroup[] = [
     ],
   },
   {
+    label: '工具箱', icon: Wrench, feature: 'tools',
+    items: [
+      { name: 'teacher-toolbox', label: '工具箱总览', to: '/teacher/toolbox', feature: 'tools' },
+    ],
+  },
+  {
     label: '课堂工具', icon: Wrench, feature: 'tools',
     items: [
       { name: 'tool-picker', label: '随机点名', to: '/teacher/tools/picker', feature: 'tools' },

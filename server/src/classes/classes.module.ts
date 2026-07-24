@@ -6,6 +6,7 @@ import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException,
 import { ClassItem } from './class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
@@ -253,6 +254,7 @@ class ClassesService extends CrudService<ClassItem> {
   }
 }
 
+@Roles('teacher')
 @Controller('classes')
 class ClassesController extends CrudController<ClassItem> {
   constructor(private readonly s: ClassesService) {

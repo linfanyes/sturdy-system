@@ -6,12 +6,14 @@ import { Controller } from '@nestjs/common'
 import { AwardRecord, AwardCategory } from './award.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class AwardService extends CrudService<AwardRecord> {
   constructor(@InjectRepository(AwardRecord) repo: Repository<AwardRecord>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('award-records')
 class AwardController extends CrudController<AwardRecord> {
   constructor(s: AwardService) {
@@ -24,6 +26,7 @@ class CategoryService extends CrudService<AwardCategory> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('award-categories')
 class CategoryController extends CrudController<AwardCategory> {
   constructor(s: CategoryService) {

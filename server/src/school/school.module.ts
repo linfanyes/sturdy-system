@@ -12,6 +12,7 @@ import {
 } from './school.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
@@ -26,6 +27,7 @@ class ScheduleService extends CrudService<ScheduleItem> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('schedules')
 class ScheduleController extends CrudController<ScheduleItem> {
   constructor(s: ScheduleService) {
@@ -38,6 +40,7 @@ class AttendanceService extends CrudService<Attendance> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('attendances')
 class AttendanceController extends CrudController<Attendance> {
   constructor(s: AttendanceService) {
@@ -50,6 +53,7 @@ class HomeworkService extends CrudService<Homework> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('homework')
 class HomeworkController extends CrudController<Homework> {
   constructor(s: HomeworkService) {
@@ -83,6 +87,7 @@ class NoticeService extends CrudService<Notice> {
     return super.create(teacherId, dto)
   }
 }
+@Roles('teacher')
 @Controller('notices')
 class NoticeController extends CrudController<Notice> {
   constructor(
@@ -133,6 +138,7 @@ class ResourceService extends CrudService<Resource> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('resources')
 class ResourceController extends CrudController<Resource> {
   constructor(s: ResourceService) {

@@ -12,6 +12,7 @@ import { Exam } from '../exams/exam.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 import { WechatService } from '../auth/wechat.service'
+import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 
 /** 家长默认密码（与 auth.service.ts 保持一致） */
 const PARENT_DEFAULT_PASSWORD = '123456'
@@ -45,7 +46,24 @@ export class ParentAuthService {
     const stu = await this.studentRepo.findOne({ where: { studentNo: no } })
     if (!stu) throw new BadRequestException('未找到该学号对应的学生，请检查学号是否正确')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权，请联系老师开启')
-    if (password !== PARENT_DEFAULT_PASSWORD) throw new UnauthorizedException('密码错误')
+
+    // 密码校验：若已设置 parentPasswordHash 则用 bcrypt 校验（并透明升级旧 sha256）；
+    // 否则回退到默认密码 '123456'，保持向后兼容（存量学生未设置自定义密码）。
+    const hash = stu.parentPasswordHash
+    let passwordOk = false
+    if (hash) {
+      const { valid, newHash } = verifyAndUpgrade(password, hash)
+      passwordOk = valid
+      // 旧 sha256 校验通过后自动升级为 bcrypt
+      if (valid && newHash) {
+        stu.parentPasswordHash = newHash
+        await this.studentRepo.save(stu)
+      }
+    } else {
+      passwordOk = password === PARENT_DEFAULT_PASSWORD
+    }
+    if (!passwordOk) throw new UnauthorizedException('密码错误')
+
     const parentName = stu.parentName || '家长'
     const imUserId = parentImUserId({ studentId: stu.id, relation: '家长', parentName })
     const token = this.jwt.sign({
@@ -60,6 +78,33 @@ export class ParentAuthService {
       token,
       parent: { imUserId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: no },
     }
+  }
+
+  /** 家长修改自己的登录密码（需已登录） */
+  async changePassword(payload: any, oldPassword: string, newPassword: string) {
+    if (!oldPassword) throw new BadRequestException('请输入原密码')
+    if (!newPassword || newPassword.length < 6)
+      throw new BadRequestException('新密码至少 6 位')
+    const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
+    if (!stu) throw new BadRequestException('学生不存在')
+
+    // 校验原密码：与 login 一致的回退逻辑
+    const hash = stu.parentPasswordHash
+    let oldOk = false
+    if (hash) {
+      oldOk = verifyAndUpgrade(oldPassword, hash).valid
+    } else {
+      oldOk = oldPassword === PARENT_DEFAULT_PASSWORD
+    }
+    if (!oldOk) throw new UnauthorizedException('原密码错误')
+
+    // 新密码不能与默认密码相同（避免弱密码）
+    if (newPassword === PARENT_DEFAULT_PASSWORD)
+      throw new BadRequestException('新密码不能与默认密码相同')
+
+    stu.parentPasswordHash = hashPassword(newPassword)
+    await this.studentRepo.save(stu)
+    return { ok: true }
   }
 
   /** 当前家长信息 + 孩子 */

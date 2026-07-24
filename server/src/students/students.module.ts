@@ -8,6 +8,7 @@ import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
@@ -241,6 +242,7 @@ class StudentsService extends CrudService<Student> {
   }
 }
 
+@Roles('teacher')
 @Controller('students')
 class StudentsController extends CrudController<Student> {
   constructor(s: StudentsService) {

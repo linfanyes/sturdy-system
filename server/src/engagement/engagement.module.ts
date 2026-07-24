@@ -6,12 +6,14 @@ import { Controller } from '@nestjs/common'
 import { RewardRecord, ScoreRecord, GroupScore } from './engagement.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class RewardService extends CrudService<RewardRecord> {
   constructor(@InjectRepository(RewardRecord) repo: Repository<RewardRecord>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('reward-records')
 class RewardController extends CrudController<RewardRecord> {
   constructor(s: RewardService) {
@@ -24,6 +26,7 @@ class ScoreService extends CrudService<ScoreRecord> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('score-records')
 class ScoreController extends CrudController<ScoreRecord> {
   constructor(s: ScoreService) {
@@ -36,6 +39,7 @@ class GroupService extends CrudService<GroupScore> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('group-scores')
 class GroupController extends CrudController<GroupScore> {
   constructor(s: GroupService) {

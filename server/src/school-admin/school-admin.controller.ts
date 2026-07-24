@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query, Res } from '@nestjs/common'
+import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query, Res, BadRequestException } from '@nestjs/common'
 import { SchoolAdminService } from './school-admin.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -103,6 +103,45 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   updateStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
     return this.svc.updateStudent(a.schoolId, id, b)
+  }
+
+  /** 批量创建学生（接收 students 数组，可跨班级；校验所有 classId 属于本校） */
+  @Post('students/batch')
+  @UseGuards(JwtAuthGuard)
+  batchCreateStudents(@CurrentSchoolAdmin() a: any, @Body() b: { students: any[] }) {
+    return this.svc.batchCreateStudents(a.schoolId, b?.students || [])
+  }
+
+  /**
+   * 从 CSV/Excel/JSON 文件导入学生到指定班级。
+   * body: { classId, filename, data(base64) }
+   * 文件列顺序与教师端一致：姓名,性别,学号,家长姓名,家长电话。
+   * 解析后取有效行写入指定 classId，返回成功/失败明细。
+   */
+  @Post('students/import')
+  @UseGuards(JwtAuthGuard)
+  importStudents(
+    @CurrentSchoolAdmin() a: any,
+    @Body() b: { classId?: string; filename?: string; data?: string },
+  ) {
+    if (!b?.classId) throw new BadRequestException('缺少班级ID')
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    const { rows } = this.svc.parseStudentFile(b.filename, b.data)
+    // 仅导入校验通过的有效行，统一填充 classId
+    const valid = rows.filter((r) => r.valid).map((r) => ({
+      name: r.name, gender: r.gender, studentNo: r.studentNo,
+      parentName: r.parentName, parentPhone: r.parentPhone, classId: b.classId,
+    }))
+    if (!valid.length) throw new BadRequestException('文件中无有效学生数据')
+    return this.svc.batchCreateStudents(a.schoolId, valid)
+  }
+
+  /** 学生文件预览：解析并校验文件，不落库，返回明细（含错误行） */
+  @Post('students/import-preview')
+  @UseGuards(JwtAuthGuard)
+  importPreview(@Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return this.svc.parseStudentFile(b.filename, b.data)
   }
 
   // ===== 数据导出 =====

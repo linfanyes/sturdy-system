@@ -7,6 +7,7 @@ import { Controller } from '@nestjs/common'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 @Entity('lesson_observations')
 export class LessonObservation extends BaseEntity {
@@ -27,6 +28,7 @@ class LessonObsService extends CrudService<LessonObservation> {
   }
 }
 
+@Roles('teacher')
 @Controller('lesson-observations')
 class LessonObsController extends CrudController<LessonObservation> {
   constructor(s: LessonObsService) {

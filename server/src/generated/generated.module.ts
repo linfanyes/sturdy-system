@@ -11,12 +11,14 @@ import {
 } from './generated.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
+import { Roles } from '../common/decorators/roles.decorator'
 
 class PapersService extends CrudService<GeneratedPaper> {
   constructor(@InjectRepository(GeneratedPaper) repo: Repository<GeneratedPaper>) {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('generated/papers')
 class PapersController extends CrudController<GeneratedPaper> {
   constructor(s: PapersService) {
@@ -31,6 +33,7 @@ class PlansService extends CrudService<GeneratedLessonPlan> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('generated/lesson-plans')
 class PlansController extends CrudController<GeneratedLessonPlan> {
   constructor(s: PlansService) {
@@ -45,6 +48,7 @@ class KnowledgeService extends CrudService<GeneratedKnowledge> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('generated/knowledges')
 class KnowledgeController extends CrudController<GeneratedKnowledge> {
   constructor(s: KnowledgeService) {
@@ -57,6 +61,7 @@ class QueryService extends CrudService<PaperQueryDoc> {
     super(repo)
   }
 }
+@Roles('teacher')
 @Controller('generated/queries')
 class QueryController extends CrudController<PaperQueryDoc> {
   constructor(s: QueryService) {
