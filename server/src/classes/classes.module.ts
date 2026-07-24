@@ -2,12 +2,15 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Controller, Post, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { ClassItem } from './class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { User } from '../users/user.entity'
+import { Student } from '../students/student.entity'
+import { Notice } from '../school/school.entity'
+import { Grade } from '../grades/grade.entity'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
 class ClassesService extends CrudService<ClassItem> {
@@ -15,6 +18,9 @@ class ClassesService extends CrudService<ClassItem> {
     @InjectRepository(ClassItem) repo: Repository<ClassItem>,
     private readonly classMemberSvc2: ClassMemberService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
+    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
   ) {
     super(repo)
     this.withClassMemberService(classMemberSvc2)
@@ -158,6 +164,93 @@ class ClassesService extends CrudService<ClassItem> {
       username: t.username || '',
     }))
   }
+
+  /**
+   * 班主任为同班科任老师指定/修改任教学科。
+   * 仅班主任可操作；不能修改班主任自己的学科（班主任学科走 updateMySubjects）。
+   */
+  async updateMemberSubjects(classId: string, headTeacherId: string, memberTeacherId: string, subjects: string[]) {
+    await this.assertHeadTeacher(headTeacherId, classId)
+    if (memberTeacherId === headTeacherId) {
+      throw new BadRequestException('不能修改班主任自己的学科，请在「我的任教学科」中自行更新')
+    }
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const term = cls.term || ''
+    // 校验被操作者是同班成员
+    const role = await this.classMemberSvc.getRole(memberTeacherId, classId, term)
+    if (!role) throw new BadRequestException('该教师不是本班成员')
+    if (role === 'head') throw new BadRequestException('不能修改其他班主任的学科')
+    return this.classMemberSvc.updateMySubjects(memberTeacherId, classId, subjects, term)
+  }
+
+  /**
+   * 班级数据看板：班主任看全班汇总，科任老师只看自己学科相关。
+   * 汇总：学生人数、班级成员、各科成绩概览、近期公告。
+   */
+  async getDashboard(classId: string, teacherId: string) {
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const term = cls.term || ''
+    // 权限校验：班主任或同班科任均可查看
+    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, term)
+    if (!canAccess) throw new ForbiddenException('无权访问该班级')
+    const role = await this.classMemberSvc.getRole(teacherId, classId, term)
+    const isHead = role === 'head'
+
+    // 学生人数
+    const studentCount = await this.studentRepo.count({ where: { classId } as any })
+
+    // 班级成员（班主任看全部，科任只看自己）
+    const members = isHead
+      ? await this.classMemberSvc.listByClass(classId, term)
+      : await this.classMemberSvc.listByClass(classId, term).then(ms => ms.filter(m => m.teacherId === teacherId))
+
+    // 各科成绩概览：按 subject 聚合平均分
+    const grades = await this.gradeRepo.find({ where: { classId } as any, take: 200 })
+    const subjectStats: { subject: string; count: number; avg: number }[] = []
+    const bySubject = new Map<string, number[]>()
+    for (const g of grades) {
+      for (const s of (g.scores || [])) {
+        if (s.score == null) continue
+        if (!bySubject.has(g.subject)) bySubject.set(g.subject, [])
+        bySubject.get(g.subject)!.push(s.score)
+      }
+    }
+    for (const [subject, scores] of bySubject) {
+      // 科任老师只看自己任教学科
+      if (!isHead) {
+        const mySubjects = members.find(m => m.teacherId === teacherId)?.subjects || []
+        if (!mySubjects.includes(subject)) continue
+      }
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+      subjectStats.push({ subject, count: scores.length, avg: Math.round(avg * 10) / 10 })
+    }
+
+    // 近期公告（班主任看全部班级公告，科任只看自己发的）
+    const noticeWhere: any = { classId, scope: 'class' }
+    if (!isHead) noticeWhere.teacherId = teacherId
+    const recentNotices = await this.noticeRepo.find({
+      where: noticeWhere,
+      order: { createdAt: 'DESC' } as any,
+      take: 5,
+      select: ['id', 'title', 'pinned', 'createdAt'] as any,
+    })
+
+    return {
+      className: cls.name,
+      term,
+      role,
+      studentCount,
+      members: members.map(m => ({
+        teacherId: m.teacherId,
+        role: m.role,
+        subjects: m.subjects || [],
+      })),
+      subjectStats,
+      recentNotices,
+    }
+  }
 }
 
 @Controller('classes')
@@ -195,10 +288,27 @@ class ClassesController extends CrudController<ClassItem> {
   updateMySubjects(@Param('id') id: string, @Body() body: any, @CurrentTeacher() t: any) {
     return this.s.updateMySubjects(id, t.sub, body.subjects || [])
   }
+
+  /** 班主任为同班科任老师指定/修改任教学科 */
+  @Patch(':id/members/:teacherId/subjects')
+  updateMemberSubjects(
+    @Param('id') id: string,
+    @Param('teacherId') teacherId: string,
+    @Body() body: any,
+    @CurrentTeacher() t: any,
+  ) {
+    return this.s.updateMemberSubjects(id, t.sub, teacherId, body.subjects || [])
+  }
+
+  /** 班级数据看板（班主任看全班汇总，科任只看自己学科相关） */
+  @Get(':id/dashboard')
+  getDashboard(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return this.s.getDashboard(id, t.sub)
+  }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ClassItem, User]), ClassMembersModule],
+  imports: [TypeOrmModule.forFeature([ClassItem, User, Student, Notice, Grade]), ClassMembersModule],
   providers: [ClassesService],
   controllers: [ClassesController],
 })

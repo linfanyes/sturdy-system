@@ -2,17 +2,10 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  UseGuards,
-  BadRequestException,
-} from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { Student } from './student.entity'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
+import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
@@ -37,8 +30,22 @@ class StudentsService extends CrudService<Student> {
     @InjectRepository(Student) repo: Repository<Student>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly ai: AiService,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    cmSvc: ClassMemberService,
   ) {
     super(repo)
+    this.withClassMemberService(cmSvc)
+  }
+
+  /** 校验当前教师是指定班级的班主任（批量导入/清空仅限班主任） */
+  private async assertHeadTeacher(teacherId: string, classId: string) {
+    const cls = await this.classRepo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const term = cls.term || ''
+    const role = await this.classMemberSvc.getRole(teacherId, classId, term)
+    if (role !== 'head') {
+      throw new ForbiddenException('仅班主任可批量导入/清空学生名单')
+    }
   }
 
   /** 解析 Excel / TXT / CSV 学生文件，返回校验后的明细 */
@@ -101,6 +108,8 @@ class StudentsService extends CrudService<Student> {
 
   /** 事务批量写入，任意一行失败整体回滚；同步为带家长信息的学生生成 parent-contact 记录 */
   async importStudents(teacherId: string, classId: string, items: any[]) {
+    // 仅班主任可批量导入学生名单
+    await this.assertHeadTeacher(teacherId, classId)
     return await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Student)
       const pRepo = manager.getRepository(ParentContact)
@@ -308,7 +317,7 @@ class StudentsController extends CrudController<Student> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact]), AiModule, ClassMembersModule],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })

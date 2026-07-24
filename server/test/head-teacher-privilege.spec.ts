@@ -271,4 +271,114 @@ describe('班主任特权相关逻辑', () => {
       expect(body).toMatch(/classMemberSvc\.addHeadTeacher/)
     })
   })
+
+  describe('班主任指定科任学科', () => {
+    it('24. updateMemberSubjects 校验班主任身份', () => {
+      const m = classesModuleSrc.match(
+        /async updateMemberSubjects\(classId: string, headTeacherId: string, memberTeacherId: string, subjects: string\[\]\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      expect(m![1]).toMatch(/await this\.assertHeadTeacher\(headTeacherId, classId\)/)
+    })
+
+    it('25. updateMemberSubjects 禁止修改班主任自己的学科', () => {
+      const m = classesModuleSrc.match(
+        /async updateMemberSubjects\(classId: string, headTeacherId: string, memberTeacherId: string, subjects: string\[\]\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m![1]).toMatch(/memberTeacherId === headTeacherId/)
+      expect(m![1]).toMatch(/不能修改班主任自己的学科/)
+    })
+
+    it('26. updateMemberSubjects 校验被操作者是同班成员且非班主任', () => {
+      const m = classesModuleSrc.match(
+        /async updateMemberSubjects\(classId: string, headTeacherId: string, memberTeacherId: string, subjects: string\[\]\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m![1]).toMatch(/getRole\(memberTeacherId, classId, term\)/)
+      expect(m![1]).toMatch(/不能修改其他班主任的学科/)
+    })
+  })
+
+  describe('班级数据看板', () => {
+    it('27. getDashboard 校验班级访问权限（班主任或同班科任均可查看）', () => {
+      const m = classesModuleSrc.match(
+        /async getDashboard\(classId: string, teacherId: string\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      expect(m![1]).toMatch(/canAccess\(teacherId, classId, term\)/)
+      expect(m![1]).toMatch(/ForbiddenException\('无权访问该班级'\)/)
+    })
+
+    it('28. getDashboard 班主任看全部成员，科任只看自己', () => {
+      const m = classesModuleSrc.match(
+        /async getDashboard\(classId: string, teacherId: string\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m![1]).toMatch(/isHead/)
+      expect(m![1]).toMatch(/listByClass\(classId, term\)/)
+    })
+
+    it('29. getDashboard 返回学生人数、各科成绩概览、近期公告', () => {
+      const m = classesModuleSrc.match(
+        /async getDashboard\(classId: string, teacherId: string\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m![1]).toMatch(/studentRepo\.count/)
+      expect(m![1]).toMatch(/gradeRepo\.find/)
+      expect(m![1]).toMatch(/noticeRepo\.find/)
+      expect(m![1]).toMatch(/subjectStats/)
+      expect(m![1]).toMatch(/recentNotices/)
+    })
+  })
+
+  describe('公告发布权：仅班主任可发布班级公告', () => {
+    const schoolModuleSrc = readSrc('src/school/school.module.ts')
+
+    it('30. NoticeService 注入 ClassMemberService', () => {
+      expect(schoolModuleSrc).toMatch(/class NoticeService[\s\S]*?ClassMemberService/)
+    })
+
+    it('31. NoticeService.create 班级公告校验班主任身份', () => {
+      const m = schoolModuleSrc.match(
+        /async create\(teacherId: string, dto: any\)\s*\{([\s\S]*?)\n    \}/,
+      )
+      expect(m).not.toBeNull()
+      const body = m![1]
+      expect(body).toMatch(/scope === 'class'/)
+      expect(body).toMatch(/getRole\(teacherId, dto\.classId, term\)/)
+      expect(body).toMatch(/role !== 'head'/)
+      expect(body).toMatch(/ForbiddenException\('仅班主任可发布班级公告'\)/)
+    })
+
+    it('32. NoticeService.create 学校公告不限制（任何教师可发）', () => {
+      const m = schoolModuleSrc.match(
+        /async create\(teacherId: string, dto: any\)\s*\{([\s\S]*?)\n    \}/,
+      )
+      // 仅 scope='class' 时校验，scope='school' 不在校验分支内
+      expect(m![1]).toMatch(/dto\.scope === 'class'/)
+    })
+  })
+
+  describe('批量导入学生：仅班主任可批量导入', () => {
+    const studentsModuleSrc = readSrc('src/students/students.module.ts')
+
+    it('33. StudentsService 注入 ClassMemberService', () => {
+      expect(studentsModuleSrc).toMatch(/class StudentsService[\s\S]*?ClassMemberService/)
+    })
+
+    it('34. StudentsService.assertHeadTeacher 校验班主任身份', () => {
+      const m = studentsModuleSrc.match(
+        /private async assertHeadTeacher\(teacherId: string, classId: string\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      expect(m![1]).toMatch(/getRole\(teacherId, classId, term\)/)
+      expect(m![1]).toMatch(/role !== 'head'/)
+      expect(m![1]).toMatch(/ForbiddenException\('仅班主任可批量导入\/清空学生名单'\)/)
+    })
+
+    it('35. importStudents 调用 assertHeadTeacher 前置校验', () => {
+      const m = studentsModuleSrc.match(
+        /async importStudents\(teacherId: string, classId: string, items: any\[\]\)\s*\{([\s\S]*?)\n    return await this\.dataSource\.transaction/,
+      )
+      expect(m).not.toBeNull()
+      expect(m![1]).toMatch(/await this\.assertHeadTeacher\(teacherId, classId\)/)
+    })
+  })
 })

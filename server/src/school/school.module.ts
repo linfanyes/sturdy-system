@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource, Not } from 'typeorm'
-import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException } from '@nestjs/common'
+import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import {
   ScheduleItem,
   Attendance,
@@ -58,8 +58,29 @@ class HomeworkController extends CrudController<Homework> {
 }
 
 class NoticeService extends CrudService<Notice> {
-  constructor(@InjectRepository(Notice) repo: Repository<Notice>) {
+  constructor(
+    @InjectRepository(Notice) repo: Repository<Notice>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    cmSvc: ClassMemberService,
+  ) {
     super(repo)
+    this.withClassMemberService(cmSvc)
+  }
+
+  /**
+   * 覆盖 create：班级公告（scope='class'）仅班主任可发布。
+   * 学校公告（scope='school'）暂不限制（任何教师可发）。
+   */
+  async create(teacherId: string, dto: any) {
+    if (dto.scope === 'class' && dto.classId && dto.classId !== '全校') {
+      const cls = await this.classRepo.findOne({ where: { id: dto.classId } as any })
+      const term = cls?.term || ''
+      const role = await this.classMemberSvc.getRole(teacherId, dto.classId, term)
+      if (role !== 'head') {
+        throw new ForbiddenException('仅班主任可发布班级公告')
+      }
+    }
+    return super.create(teacherId, dto)
   }
 }
 @Controller('notices')
