@@ -198,7 +198,7 @@ describe('SchoolAdminService', () => {
       const userRepoEm: any = {
         findOne: jest.fn().mockResolvedValue(opts.existUser),
         create: jest.fn((data: any) => ({ ...data })),
-        save: jest.fn().mockResolvedValue({ id: 'u-1', name: '王老师', username: 'wang' }),
+        save: jest.fn().mockImplementation(async (data: any) => ({ ...data, id: 'u-1' })),
         createQueryBuilder: jest.fn(() => ({
           where: jest.fn().mockReturnThis(),
           orderBy: jest.fn().mockReturnThis(),
@@ -261,10 +261,58 @@ describe('SchoolAdminService', () => {
       expect(audit.log).toHaveBeenCalled()
     })
 
-    it('缺必填字段时应抛出异常', async () => {
+    it('未传 username 时自动用 teacherNo 作为登录用户名', async () => {
+      setupEmForCreate({ existUser: null, lastTeacher: null })
+      schoolRepo.findOne.mockResolvedValue(school)
+
+      const res = await service.createTeacher('s1', { name: '李老师', phone: '13900000000' })
+
+      expect(res.ok).toBe(true)
+      expect(res.teacherNo).toBe('JSSCH00100001')
+      // username 应等于 teacherNo（一个编号既是序列ID也是登录账号）
+      expect(res.username).toBe('JSSCH00100001')
+      const userRepoEm = em.getRepository()
+      expect(userRepoEm.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          username: 'JSSCH00100001',
+          teacherNo: 'JSSCH00100001',
+          name: '李老师',
+        }),
+      )
+    })
+
+    it('未传 password 时用统一默认密码 123456', async () => {
+      setupEmForCreate({ existUser: null, lastTeacher: null })
+      schoolRepo.findOne.mockResolvedValue(school)
+
+      const res = await service.createTeacher('s1', { name: '张老师' })
+      expect(res.ok).toBe(true)
+      const userRepoEm = em.getRepository()
+      const createCall = userRepoEm.create.mock.calls[0][0]
+      // 默认密码 123456 的 bcrypt 哈希应能校验通过
+      const { verifyAndUpgrade } = require('../src/common/utils/password.util')
+      expect(verifyAndUpgrade('123456', createCall.passwordHash).valid).toBe(true)
+    })
+
+    it('支持 gender 和 subject 字段', async () => {
+      setupEmForCreate({ existUser: null, lastTeacher: null })
+      schoolRepo.findOne.mockResolvedValue(school)
+
+      await service.createTeacher('s1', { name: '王老师', gender: '女', subject: '数学' })
+      const userRepoEm = em.getRepository()
+      expect(userRepoEm.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: '王老师',
+          gender: '女',
+          subject: '数学',
+        }),
+      )
+    })
+
+    it('缺姓名时应抛出 "姓名必填"', async () => {
       await expect(
-        service.createTeacher('s1', { username: '', password: '', name: '' }),
-      ).rejects.toThrow('用户名/密码/姓名必填')
+        service.createTeacher('s1', { name: '' }),
+      ).rejects.toThrow('姓名必填')
     })
   })
 
@@ -432,6 +480,136 @@ describe('SchoolAdminService', () => {
       expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', [])
       // 审计日志
       expect(audit.log).toHaveBeenCalledWith('school-1', 'create_class', '系统', '一班', expect.stringContaining('张老师'))
+    })
+
+    it('建班时一次性带入科任老师（subjectTeachers 数组）', async () => {
+      const headTeacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      const subjectTeacher1 = { id: 't2', schoolId: 'school-1', name: '李老师' }
+      const subjectTeacher2 = { id: 't3', schoolId: 'school-1', name: '王老师' }
+      // userRepo.findOne 按查询 id 返回不同教师
+      userRepo.findOne.mockImplementation((q: any) => {
+        const id = q?.where?.id
+        if (id === 't1') return Promise.resolve(headTeacher)
+        if (id === 't2') return Promise.resolve(subjectTeacher1)
+        if (id === 't3') return Promise.resolve(subjectTeacher2)
+        return Promise.resolve(null)
+      })
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026春季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
+        subjectTeachers: [
+          { teacherId: 't2', subjects: ['数学'] },
+          { teacherId: 't3', subjects: ['英语', '科学'] },
+        ],
+      })
+
+      // 班主任 head 记录
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', [])
+      // 两位科任老师被加入（按 term 隔离）
+      expect(classMemberSvc.addSubjectTeacher).toHaveBeenCalledWith('t2', 'c1', '一班', ['数学'], '2026春季')
+      expect(classMemberSvc.addSubjectTeacher).toHaveBeenCalledWith('t3', 'c1', '一班', ['英语', '科学'], '2026春季')
+      expect(classMemberSvc.addSubjectTeacher).toHaveBeenCalledTimes(2)
+    })
+
+    it('科任老师不在本校时应抛出异常', async () => {
+      const headTeacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockImplementation((q: any) => {
+        const id = q?.where?.id
+        if (id === 't1') return Promise.resolve(headTeacher)
+        return Promise.resolve(null) // t2 不在本校
+      })
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026春季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await expect(service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
+        subjectTeachers: [{ teacherId: 't2', subjects: ['数学'] }],
+      })).rejects.toThrow('不在本校')
+    })
+
+    it('subjectTeachers 中跳过班主任自身（已是 head，不重复加）', async () => {
+      const headTeacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(headTeacher)
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026春季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
+        subjectTeachers: [{ teacherId: 't1', subjects: ['语文'] }], // 班主任自身
+      })
+
+      // 班主任 head 记录正常写入
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', [])
+      // 不应调用 addSubjectTeacher（跳过班主任自身）
+      expect(classMemberSvc.addSubjectTeacher).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('batchCreateTeachers（批量导入：username/password 可选，自动生成）', () => {
+    function setupEmForBatch() {
+      let savedCount = 0
+      const userRepoEm: any = {
+        findOne: jest.fn().mockResolvedValue(null), // 无重复
+        create: jest.fn((data: any) => ({ ...data })),
+        save: jest.fn().mockImplementation(async (data: any) => {
+          savedCount++
+          return { ...data, id: 'u-' + savedCount }
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          where: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          setLock: jest.fn().mockReturnThis(),
+          // 已保存过教师则返回上一次的 teacherNo，使序号递增；首次返回 null
+          getOne: jest.fn().mockImplementation(async () => {
+            if (savedCount === 0) return null
+            return { teacherNo: 'JSSCH001' + String(savedCount).padStart(5, '0') }
+          }),
+        })),
+      }
+      em.getRepository.mockReturnValue(userRepoEm)
+      em.transaction.mockImplementation(async (cb: any) => cb(em))
+      return userRepoEm
+    }
+
+    it('批量导入时自动生成 username(=teacherNo) 和默认密码', async () => {
+      setupEmForBatch()
+      schoolRepo.findOne.mockResolvedValue({ id: 's1', code: 'SCH001', name: '测试学校' })
+
+      const res = await service.batchCreateTeachers('s1', [
+        { name: '张老师', phone: '13800000001', gender: '男', subject: '语文' },
+        { name: '李老师', phone: '13800000002', gender: '女', subject: '数学' },
+      ])
+
+      expect(res.total).toBe(2)
+      expect(res.success).toBe(2)
+      // 每条结果应含 teacherNo，序号递增
+      expect(res.results[0].teacherNo).toBe('JSSCH00100001')
+      expect(res.results[1].teacherNo).toBe('JSSCH00100002')
+      // username 应等于 teacherNo（自动生成）
+      expect(res.results[0].username).toBe('JSSCH00100001')
+      expect(res.results[1].username).toBe('JSSCH00100002')
+    })
+
+    it('批量导入支持自定义 password', async () => {
+      const userRepoEm = setupEmForBatch()
+      schoolRepo.findOne.mockResolvedValue({ id: 's1', code: 'SCH001', name: '测试学校' })
+
+      await service.batchCreateTeachers('s1', [
+        { name: '张老师', password: 'mypwd' },
+      ])
+
+      const createCall = userRepoEm.create.mock.calls[0][0]
+      const { verifyAndUpgrade } = require('../src/common/utils/password.util')
+      expect(verifyAndUpgrade('mypwd', createCall.passwordHash).valid).toBe(true)
+    })
+
+    it('空列表应抛出 "请提供至少一位教师信息"', async () => {
+      await expect(service.batchCreateTeachers('s1', [])).rejects.toThrow('请提供至少一位教师信息')
     })
   })
 

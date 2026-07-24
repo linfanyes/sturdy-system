@@ -30,7 +30,7 @@ export class SchoolAdminController {
 
   @Post('teachers/batch')
   @UseGuards(JwtAuthGuard)
-  batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { teachers: { username: string; password: string; name: string; phone?: string }[] }) {
+  batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { teachers: { name: string; phone?: string; gender?: string; subject?: string; password?: string; username?: string }[] }) {
     return this.svc.batchCreateTeachers(a.schoolId, b.teachers || [])
   }
 

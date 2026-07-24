@@ -38,6 +38,9 @@ export class User {
   @Column({ default: '' })
   phone: string
 
+  @Column({ default: '', comment: '性别（男/女）' })
+  gender: string
+
   @Column({ default: '' })
   email: string
 

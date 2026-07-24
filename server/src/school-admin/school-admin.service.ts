@@ -107,7 +107,7 @@ export class SchoolAdminService {
     })
     const items = users.map(u => ({
       id: u.id, name: u.name, username: u.username, subject: u.subject,
-      phone: u.phone, school: u.school, features: u.features || [],
+      phone: u.phone, gender: u.gender, school: u.school, features: u.features || [],
       enabled: u.enabled !== false, createdAt: u.createdAt,
       teacherNo: u.teacherNo || '',
     }))
@@ -135,19 +135,23 @@ export class SchoolAdminService {
     return prefix + String(seq).padStart(5, '0')
   }
 
-  /** 创建教师账号（自动生成教师编号，事务保护） */
-  async createTeacher(schoolId: string, dto: { username: string; password: string; name: string; phone?: string; enabled?: boolean }) {
-    if (!dto.username || !dto.password || !dto.name) throw new BadRequestException('用户名/密码/姓名必填')
+  /** 创建教师账号（自动生成教师编号 teacherNo，username 默认=teacherNo，事务保护） */
+  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; enabled?: boolean }) {
+    if (!dto.name) throw new BadRequestException('姓名必填')
     return await this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User)
-      const exist = await userRepo.findOne({ where: { username: dto.username } })
+      const teacherNo = await this.genTeacherNo(schoolId, em)
+      // username 可选：未传则用 teacherNo 作为登录用户名（一个编号既是序列ID也是登录账号）
+      const username = dto.username?.trim() || teacherNo
+      const exist = await userRepo.findOne({ where: { username } })
       if (exist) throw new BadRequestException('用户名已存在')
       const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
-      const hash = hashPassword(dto.password)
-      const teacherNo = await this.genTeacherNo(schoolId, em)
+      // password 可选：未传则用统一默认密码 123456
+      const hash = hashPassword(dto.password || '123456')
       const user = userRepo.create({
-        username: dto.username, passwordHash: hash, name: dto.name,
+        username, passwordHash: hash, name: dto.name,
         schoolId, school: school?.name || '', phone: dto.phone || '',
+        gender: dto.gender || '', subject: dto.subject || '语文',
         enabled: dto.enabled !== false, teacherNo,
       })
       const saved = await userRepo.save(user)
@@ -156,23 +160,26 @@ export class SchoolAdminService {
     })
   }
 
-  /** 批量创建教师（逐条创建，返回成功/失败明细） */
-  async batchCreateTeachers(schoolId: string, teachers: { username: string; password: string; name: string; phone?: string }[]) {
+  /** 批量创建教师（逐条创建，返回成功/失败明细；username/password 可选，自动生成） */
+  async batchCreateTeachers(schoolId: string, teachers: { name: string; phone?: string; gender?: string; subject?: string; password?: string; username?: string }[]) {
     if (!teachers?.length) throw new BadRequestException('请提供至少一位教师信息')
-    const results: { name: string; username: string; status: string; error?: string }[] = []
+    const results: { name: string; username: string; teacherNo?: string; status: string; error?: string }[] = []
     for (const t of teachers) {
       try {
-        await this.createTeacher(schoolId, { username: t.username, password: t.password, name: t.name, phone: t.phone })
-        results.push({ name: t.name, username: t.username, status: '成功' })
+        const r = await this.createTeacher(schoolId, {
+          name: t.name, phone: t.phone, gender: t.gender, subject: t.subject,
+          password: t.password, username: t.username,
+        })
+        results.push({ name: t.name, username: r.username, teacherNo: r.teacherNo, status: '成功' })
       } catch (e: any) {
-        results.push({ name: t.name, username: t.username, status: '失败', error: e.message })
+        results.push({ name: t.name, username: t.username || '', status: '失败', error: e.message })
       }
     }
     return { total: teachers.length, success: results.filter(r => r.status === '成功').length, failed: results.filter(r => r.status === '失败').length, results }
   }
 
   /** 更新教师基本信息（用户名唯一性校验） */
-  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; enabled?: boolean }) {
+  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; enabled?: boolean }) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     if (dto.username && dto.username !== user.username) {
@@ -182,6 +189,8 @@ export class SchoolAdminService {
     }
     if (dto.name && dto.name.trim()) user.name = dto.name.trim()
     if (dto.phone !== undefined) user.phone = dto.phone
+    if (dto.gender !== undefined) user.gender = dto.gender
+    if (dto.subject !== undefined) user.subject = dto.subject
     if (dto.enabled !== undefined) user.enabled = dto.enabled
     await this.userRepo.save(user)
     return { ok: true }
@@ -253,8 +262,12 @@ export class SchoolAdminService {
     return { items, total }
   }
 
-  /** 创建班级（班主任必须是本校教师，由校管指定班主任身份；支持指定班主任任教学科） */
-  async createClass(schoolId: string, dto: { name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string; term?: string; subjects?: string[] }) {
+  /** 创建班级（班主任必须是本校教师，由校管指定班主任身份；支持指定班主任任教学科 + 一次性加入科任老师） */
+  async createClass(schoolId: string, dto: {
+    name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string;
+    term?: string; subjects?: string[];
+    subjectTeachers?: { teacherId: string; subjects?: string[] }[];
+  }) {
     if (!dto.name || !dto.grade || !dto.headTeacherId) throw new BadRequestException('班级名称/年级/班主任必填')
     const teacher = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
     if (!teacher) throw new BadRequestException('指定的班主任不在本校')
@@ -269,6 +282,15 @@ export class SchoolAdminService {
     // 写入 class_members 的 head 记录（addHeadTeacher 内部会再次 assertCanBecomeHead 兜底；
     // 数据库部分唯一索引 0014 迁移最终兜底并发场景；subjects 支持班主任兼任本班科任）
     await this.classMemberSvc.addHeadTeacher(teacher.id, saved.id, saved.name, term, dto.subjects || [])
+    // 一次性加入科任老师（校验同校，按学期写入 class_members）
+    if (dto.subjectTeachers?.length) {
+      for (const st of dto.subjectTeachers) {
+        if (!st.teacherId || st.teacherId === teacher.id) continue // 跳过空值和班主任自身（已是 head）
+        const stUser = await this.userRepo.findOne({ where: { id: st.teacherId, schoolId } })
+        if (!stUser) throw new BadRequestException(`科任老师 ${st.teacherId} 不在本校`)
+        await this.classMemberSvc.addSubjectTeacher(st.teacherId, saved.id, saved.name, st.subjects || [], term)
+      }
+    }
     this.audit.log(schoolId, 'create_class', '系统', saved.name, `班主任：${teacher.name}`).catch(() => {})
     return saved
   }
@@ -439,9 +461,9 @@ export class SchoolAdminService {
 
   async exportTeachers(schoolId: string): Promise<string> {
     const r = await this.listTeachers(schoolId)
-    const rows = [['姓名', '用户名', '学科', '手机号', '教师编号', '状态']]
+    const rows = [['姓名', '用户名', '学科', '性别', '手机号', '教师编号', '状态']]
     for (const t of r.items) {
-      rows.push([t.name, t.username || '', t.subject || '', t.phone || '', t.teacherNo || '', t.enabled ? '启用' : '禁用'])
+      rows.push([t.name, t.username || '', t.subject || '', t.gender || '', t.phone || '', t.teacherNo || '', t.enabled ? '启用' : '禁用'])
     }
     return this.toCsv(rows)
   }
