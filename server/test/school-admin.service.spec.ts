@@ -30,6 +30,7 @@ describe('SchoolAdminService', () => {
   let attRepo: any
   let hwRepo: any
   let classMemberRepo: any
+  let classMemberSvc: any
   let audit: any
   let em: any
 
@@ -44,6 +45,13 @@ describe('SchoolAdminService', () => {
     attRepo = mockRepo()
     hwRepo = mockRepo()
     classMemberRepo = mockRepo()
+    classMemberSvc = {
+      assertCanBecomeHead: jest.fn().mockResolvedValue(undefined),
+      assertTeacherNotHeadElsewhere: jest.fn().mockResolvedValue(undefined),
+      addHeadTeacher: jest.fn().mockResolvedValue(undefined),
+      addSubjectTeacher: jest.fn().mockResolvedValue(undefined),
+      removeMember: jest.fn().mockResolvedValue(undefined),
+    }
     audit = { log: jest.fn().mockResolvedValue(undefined) }
     // EntityManager mock：transaction 直接执行回调并传入自身
     em = {
@@ -62,6 +70,7 @@ describe('SchoolAdminService', () => {
       attRepo,
       hwRepo,
       classMemberRepo,
+      classMemberSvc as any,
       audit as any,
       em as any,
     )
@@ -293,19 +302,90 @@ describe('SchoolAdminService', () => {
     })
   })
 
-  describe('createClass（校管建班并指定班主任）', () => {
-    function setupQueryBuilder() {
+  describe('updateClass 转交班主任（业务规则1+2 校验）', () => {
+    /** 搭建转交场景：旧班主任 t-old 当前为 c1 的 head，校管要把班主任转给 t-new */
+    function setupTransferScene(opts: { newHead?: any } = {}) {
+      const cls = { id: 'c1', teacherId: 't-old', name: '一班', grade: '一年级', classNo: '1', headTeacher: '旧老师' }
+      classRepo.findOne.mockResolvedValue(cls)
+      const oldTeacher = { id: 't-old', schoolId: 'school-1', name: '旧老师' }
+      const newHead = opts.newHead === null ? null : (opts.newHead || { id: 't-new', schoolId: 'school-1', name: '新老师' })
+      userRepo.findOne.mockImplementation((q: any) => {
+        const id = q?.where?.id
+        if (id === 't-old') return Promise.resolve(oldTeacher)
+        if (id === 't-new') return Promise.resolve(newHead)
+        return Promise.resolve(null)
+      })
+      // 旧 head 降级用到的 createQueryBuilder mock
       const qb: any = {
-        insert: jest.fn().mockReturnThis(),
-        into: jest.fn().mockReturnThis(),
-        values: jest.fn().mockReturnThis(),
-        orUpdate: jest.fn().mockReturnThis(),
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
         execute: jest.fn().mockResolvedValue(undefined),
       }
       classMemberRepo.createQueryBuilder.mockReturnValue(qb)
-      return qb
+      classRepo.save.mockImplementation(async (c: any) => c)
+      return { cls, qb }
     }
 
+    it('转交成功：前置校验→降级旧head为subject→写入新head→更新班级teacherId', async () => {
+      const { qb } = setupTransferScene()
+      const res = await service.updateClass('school-1', 'c1', { headTeacherId: 't-new', headTeacher: '新老师' })
+
+      // 前置校验新班主任不是其他班 head（excludeClassId=c1，排除本班自身）
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t-new', 'c1')
+      // 旧 head 降级为 subject
+      expect(qb.update).toHaveBeenCalled()
+      expect(qb.set).toHaveBeenCalledWith({ role: 'subject' })
+      expect(qb.where).toHaveBeenCalledWith('classId = :cid AND teacherId = :tid', { cid: 'c1', tid: 't-old' })
+      // 写入新 head 记录
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t-new', 'c1', '一班')
+      // 班级 teacherId 已更新
+      expect(res.teacherId).toBe('t-new')
+      expect(res.headTeacher).toBe('新老师')
+    })
+
+    it('新班主任已是其他班班主任时应抛出 "一人只能担任一个班的班主任"（规则1）', async () => {
+      setupTransferScene()
+      classMemberSvc.assertTeacherNotHeadElsewhere.mockRejectedValue(
+        new BadRequestException('该老师已是「二班」的班主任，一人只能担任一个班的班主任'),
+      )
+      await expect(service.updateClass('school-1', 'c1', { headTeacherId: 't-new' })).rejects.toThrow(
+        '一人只能担任一个班的班主任',
+      )
+      // 前置校验失败时不应降级旧 head，也不应写入新 head（保证数据一致性）
+      expect(classMemberRepo.createQueryBuilder).not.toHaveBeenCalled()
+      expect(classMemberSvc.addHeadTeacher).not.toHaveBeenCalled()
+    })
+
+    it('新班主任不在本校时应抛出 "指定的新班主任不在本校"', async () => {
+      setupTransferScene({ newHead: null })
+      await expect(service.updateClass('school-1', 'c1', { headTeacherId: 't-new' })).rejects.toThrow(
+        '指定的新班主任不在本校',
+      )
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).not.toHaveBeenCalled()
+      expect(classMemberSvc.addHeadTeacher).not.toHaveBeenCalled()
+    })
+
+    it('未传 headTeacherId 时走普通更新分支，不触发转交逻辑', async () => {
+      const { qb } = setupTransferScene()
+      const res = await service.updateClass('school-1', 'c1', { name: '新班名' })
+      expect(res.name).toBe('新班名')
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).not.toHaveBeenCalled()
+      expect(qb.update).not.toHaveBeenCalled()
+      expect(classMemberSvc.addHeadTeacher).not.toHaveBeenCalled()
+    })
+
+    it('传入的 headTeacherId 与当前班主任相同时不触发转交（走普通更新分支）', async () => {
+      const { qb } = setupTransferScene()
+      const res = await service.updateClass('school-1', 'c1', { headTeacherId: 't-old', name: '改名' })
+      expect(res.name).toBe('改名')
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).not.toHaveBeenCalled()
+      expect(qb.update).not.toHaveBeenCalled()
+      expect(classMemberSvc.addHeadTeacher).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createClass（校管建班并指定班主任）', () => {
     it('缺必填字段时应抛出 "班级名称/年级/班主任必填"', async () => {
       await expect(
         service.createClass('school-1', { name: '', grade: '', classNo: '', headTeacher: '', headTeacherId: '' }),
@@ -319,13 +399,26 @@ describe('SchoolAdminService', () => {
       ).rejects.toThrow('指定的班主任不在本校')
     })
 
-    it('成功建班时应同步写入 class_members head 记录并记审计日志', async () => {
+    it('该老师已是其他班班主任时应抛出 "一人只能担任一个班的班主任"（业务规则1：一师一班 head）', async () => {
+      const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(teacher)
+      classMemberSvc.assertTeacherNotHeadElsewhere.mockRejectedValue(
+        new BadRequestException('该老师已是「二班」的班主任，一人只能担任一个班的班主任'),
+      )
+      await expect(
+        service.createClass('school-1', { name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1' }),
+      ).rejects.toThrow('一人只能担任一个班的班主任')
+      // 前置校验拦住：不应写入班级，也不应写入 head 记录
+      expect(classRepo.save).not.toHaveBeenCalled()
+      expect(classMemberSvc.addHeadTeacher).not.toHaveBeenCalled()
+    })
+
+    it('成功建班时应前置校验、写入 class_members head 记录并记审计日志', async () => {
       const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
       userRepo.findOne.mockResolvedValue(teacher)
       const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师' }
       classRepo.create.mockReturnValue(savedClass)
       classRepo.save.mockResolvedValue(savedClass)
-      const qb = setupQueryBuilder()
 
       const res = await service.createClass('school-1', {
         name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
@@ -333,20 +426,10 @@ describe('SchoolAdminService', () => {
 
       // 返回保存的班级
       expect(res.id).toBe('c1')
-      // classMemberRepo.createQueryBuilder 被调用写入 head 记录
-      expect(classMemberRepo.createQueryBuilder).toHaveBeenCalled()
-      expect(qb.insert).toHaveBeenCalled()
-      expect(qb.into).toHaveBeenCalledWith('class_members')
-      expect(qb.values).toHaveBeenCalledWith(
-        expect.objectContaining({
-          teacherId: 't1',
-          classId: 'c1',
-          className: '一班',
-          role: 'head',
-        }),
-      )
-      expect(qb.orUpdate).toHaveBeenCalledWith(['role', 'className'], ['teacherId', 'classId'])
-      expect(qb.execute).toHaveBeenCalled()
+      // 前置校验被调用（新班级尚无 id，excludeClassId 传空串，仅校验规则1）
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t1', '')
+      // 写入 head 记录
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班')
       // 审计日志
       expect(audit.log).toHaveBeenCalledWith('school-1', 'create_class', '系统', '一班', expect.stringContaining('张老师'))
     })

@@ -205,6 +205,35 @@ describe('班主任特权相关逻辑', () => {
       // 关键：existing.role === 'head' ? 'head' : 'subject'
       expect(m![1]).toMatch(/existing\.role === 'head' \? 'head' : 'subject'/)
     })
+
+    it('21a. assertCanBecomeHead 校验两条业务规则（一师一班 head / 一班一 head）', () => {
+      const m = classMemberModuleSrc.match(
+        /async assertCanBecomeHead\(teacherId: string, classId: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      const body = m![1]
+      // 规则1：该老师是否已在其他班级担任 head（role: 'head' 且 classId 不同）
+      expect(body).toMatch(/role: 'head'/)
+      expect(body).toMatch(/otherHeadClass\.classId !== classId/)
+      expect(body).toMatch(/一人只能担任一个班的班主任/)
+      // 规则2：该班级是否已有其他班主任
+      expect(body).toMatch(/existingHead\.teacherId !== teacherId/)
+      expect(body).toMatch(/该班级已有班主任/)
+    })
+
+    it('21b. assertTeacherNotHeadElsewhere 仅校验规则1（排除即将接手的班级，供转交前置校验）', () => {
+      const m = classMemberModuleSrc.match(
+        /async assertTeacherNotHeadElsewhere\(teacherId: string, excludeClassId: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      const body = m![1]
+      // 仅查该老师是否已是其他班 head，排除 excludeClassId
+      expect(body).toMatch(/role: 'head'/)
+      expect(body).toMatch(/otherHeadClass\.classId !== excludeClassId/)
+      expect(body).toMatch(/一人只能担任一个班的班主任/)
+      // 不应包含规则2的"该班级已有班主任"校验
+      expect(body).not.toMatch(/该班级已有班主任/)
+    })
   })
 
   describe('建班策略调整：老师端禁用，班主任由校管指定', () => {
@@ -219,16 +248,17 @@ describe('班主任特权相关逻辑', () => {
       expect(m![1]).not.toMatch(/addHeadTeacher/)
     })
 
-    it('23. 校管 createClass 写入 class_members head 记录', () => {
-      // school-admin.service.ts 的 createClass 用 createQueryBuilder 写入 class_members
+    it('23. 校管 createClass 调用 classMemberSvc 写入 head 记录并前置校验一师一班', () => {
+      // school-admin.service.ts 的 createClass 改用 classMemberSvc 复用校验与写入逻辑
       const m = schoolAdminSrc.match(
         /async createClass\(schoolId: string, dto: \{[\s\S]*?\}\)\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       const body = m![1]
-      expect(body).toMatch(/classMemberRepo/)
-      expect(body).toMatch(/role: 'head'/)
-      expect(body).toMatch(/orUpdate/)
+      // 前置校验：一师一班 head（excludeClassId 传空串，仅校验规则1）
+      expect(body).toMatch(/classMemberSvc\.assertTeacherNotHeadElsewhere/)
+      // 写入 head 记录（addHeadTeacher 内部再次 assertCanBecomeHead 兜底）
+      expect(body).toMatch(/classMemberSvc\.addHeadTeacher/)
     })
   })
 })

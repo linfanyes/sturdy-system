@@ -30,7 +30,7 @@ class ClassesService extends CrudService<ClassItem> {
    * 老师 self-service 建班会绕过校管授权，导致权责不清。
    * 如需建班请走 POST /school-admin/classes（需校管登录态）。
    */
-  async create(teacherId: string, dto: any) {
+  async create(teacherId: string, dto: any): Promise<ClassItem> {
     throw new ForbiddenException('班级需由学校管理员创建并指定班主任，请联系校管')
   }
 

@@ -11,6 +11,7 @@ import { Notice } from '../school/school.entity'
 import { Attendance } from '../school/school.entity'
 import { Homework } from '../school/school.entity'
 import { ClassMember } from '../class-members/class-member.entity'
+import { ClassMemberService } from '../class-members/class-members.module'
 import { AuditService } from '../audit/audit.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 
@@ -40,6 +41,7 @@ export class SchoolAdminService {
     @InjectRepository(Attendance) private readonly attRepo: Repository<Attendance>,
     @InjectRepository(Homework) private readonly hwRepo: Repository<Homework>,
     @InjectRepository(ClassMember) private readonly classMemberRepo: Repository<ClassMember>,
+    private readonly classMemberSvc: ClassMemberService,
     private readonly audit: AuditService,
     @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
@@ -256,27 +258,17 @@ export class SchoolAdminService {
     if (!dto.name || !dto.grade || !dto.headTeacherId) throw new BadRequestException('班级名称/年级/班主任必填')
     const teacher = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
     if (!teacher) throw new BadRequestException('指定的班主任不在本校')
+    // 前置校验：该老师是否已是其他班的班主任（业务规则：一师一班 head）
+    // excludeClassId 传空串，表示新班级尚无 id，仅校验规则1
+    await this.classMemberSvc.assertTeacherNotHeadElsewhere(teacher.id, '')
     const c = this.classRepo.create({
       teacherId: teacher.id, name: dto.name, grade: dto.grade, classNo: dto.classNo || '1',
       headTeacher: dto.headTeacher || teacher.name, term: dto.term || '',
     })
     const saved = await this.classRepo.save(c)
-    // 同步写入 class_members 的 head 记录（班主任身份标记，供 ClassMemberService 鉴权使用）
-    await this.classMemberRepo
-      .createQueryBuilder()
-      .insert()
-      .into('class_members')
-      .values({
-        id: require('crypto').randomUUID().replace(/-/g, ''),
-        teacherId: teacher.id,
-        classId: saved.id,
-        className: saved.name,
-        role: 'head',
-        subjects: '[]',
-      })
-      .orUpdate(['role', 'className'], ['teacherId', 'classId'])
-      .execute()
-      .catch(() => {})
+    // 写入 class_members 的 head 记录（addHeadTeacher 内部会再次 assertCanBecomeHead 兜底；
+    // 数据库部分唯一索引 0013 迁移最终兜底并发场景）
+    await this.classMemberSvc.addHeadTeacher(teacher.id, saved.id, saved.name)
     this.audit.log(schoolId, 'create_class', '系统', saved.name, `班主任：${teacher.name}`).catch(() => {})
     return saved
   }
@@ -292,17 +284,22 @@ export class SchoolAdminService {
     if (dto.headTeacherId && dto.headTeacherId !== cls.teacherId) {
       const newHead = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
       if (!newHead) throw new BadRequestException('指定的新班主任不在本校')
+      // 前置校验：新班主任是否已是其他班的班主任（业务规则：一师一班 head）
+      // 必须在降级旧 head 之前做，避免误触"该班级已有班主任"规则
+      await this.classMemberSvc.assertTeacherNotHeadElsewhere(newHead.id, id)
+      // 降级旧班主任为科任老师（保留协作关系，可在本班继续任教）
+      await this.classMemberRepo
+        .createQueryBuilder()
+        .update()
+        .set({ role: 'subject' })
+        .where('classId = :cid AND teacherId = :tid', { cid: id, tid: teacher.id })
+        .execute()
+        .catch(() => {})
+      // 写入新班主任 head 记录（addHeadTeacher 内部 assertCanBecomeHead 兜底：
+      // 规则1再次校验，规则2因旧 head 已降级而通过）
+      await this.classMemberSvc.addHeadTeacher(newHead.id, id, cls.name)
       cls.teacherId = newHead.id
       cls.headTeacher = dto.headTeacher || newHead.name
-      // 更新 class_members：旧班主任降级为科任老师，新班主任升为 head
-      await this.classMemberRepo.query(
-        'UPDATE class_members SET role = ? WHERE classId = ? AND teacherId = ?',
-        ['subject', id, teacher.id],
-      ).catch(() => {})
-      await this.classMemberRepo.query(
-        'INSERT INTO class_members (id, teacherId, classId, className, role, subjects, createdAt, updatedAt) VALUES (?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE role = ?',
-        [require('crypto').randomUUID().replace(/-/g, ''), newHead.id, id, cls.name, 'head', '[]', 'head'],
-      ).catch(() => {})
     } else {
       Object.assign(cls, dto)
     }
