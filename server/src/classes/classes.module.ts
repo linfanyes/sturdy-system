@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Controller, Post, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Controller, Post, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { ClassItem } from './class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -49,20 +49,23 @@ class ClassesService extends CrudService<ClassItem> {
 
   /**
    * 覆盖 remove：仅班主任可删除自己创建的班级。
+   * 删除时清理该班级所有学期的成员关系。
    */
   async remove(id: string, teacherId: string) {
     await this.assertHeadTeacher(teacherId, id)
-    // 删除班级同时清理成员关系
+    // 删除班级同时清理所有学期的成员关系
     const members = await this.classMemberSvc.listByClass(id)
     for (const m of members) {
-      await this.classMemberSvc.removeMember(m.teacherId, id)
+      await this.classMemberSvc.removeMember(m.teacherId, id, m.term)
     }
     return super.remove(id, teacherId)
   }
 
-  /** 校验当前教师是该班级的班主任（role='head'） */
+  /** 校验当前教师是该班级的班主任（role='head'，按班级当前学期判断） */
   private async assertHeadTeacher(teacherId: string, classId: string) {
-    const role = await this.classMemberSvc.getRole(teacherId, classId)
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    const term = cls?.term || ''
+    const role = await this.classMemberSvc.getRole(teacherId, classId, term)
     if (role !== 'head') {
       throw new ForbiddenException('仅班主任可执行此操作')
     }
@@ -87,7 +90,7 @@ class ClassesService extends CrudService<ClassItem> {
     }))
   }
 
-  /** 班主任添加科任老师到班级 */
+  /** 班主任添加科任老师到班级（按班级当前学期） */
   async addSubjectTeacher(classId: string, headTeacherId: string, body: { teacherId: string; subjects?: string[] }) {
     await this.assertHeadTeacher(headTeacherId, classId)
     if (!body?.teacherId) throw new BadRequestException('请选择要添加的教师')
@@ -99,24 +102,39 @@ class ClassesService extends CrudService<ClassItem> {
     if (target.schoolId !== (await this.userRepo.findOne({ where: { id: headTeacherId } as any }))?.schoolId) {
       throw new BadRequestException('只能添加本校教师')
     }
-    await this.classMemberSvc.addSubjectTeacher(body.teacherId, classId, cls.name, body.subjects || [])
+    await this.classMemberSvc.addSubjectTeacher(body.teacherId, classId, cls.name, body.subjects || [], cls.term || '')
     return { ok: true }
   }
 
-  /** 班主任移除科任老师 */
+  /** 班主任移除科任老师（按班级当前学期） */
   async removeSubjectTeacher(classId: string, headTeacherId: string, memberTeacherId: string) {
     await this.assertHeadTeacher(headTeacherId, classId)
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    const term = cls?.term || ''
     // 不能移除自己（班主任）
     if (memberTeacherId === headTeacherId) {
       throw new BadRequestException('不能移除自己（班主任），如需转交请联系学校管理员')
     }
     // 校验被移除者不是班主任
-    const targetRole = await this.classMemberSvc.getRole(memberTeacherId, classId)
+    const targetRole = await this.classMemberSvc.getRole(memberTeacherId, classId, term)
     if (targetRole === 'head') {
       throw new BadRequestException('不能移除班主任，如需转交请联系学校管理员')
     }
-    await this.classMemberSvc.removeMember(memberTeacherId, classId)
+    await this.classMemberSvc.removeMember(memberTeacherId, classId, term)
     return { ok: true }
+  }
+
+  /**
+   * 教师更新自己在某班级的任教学科（班主任可兼任本班科任，自行管理任教学科）。
+   * 校验调用者是该班级成员（班主任或科任老师）。
+   */
+  async updateMySubjects(classId: string, teacherId: string, subjects: string[]) {
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const term = cls.term || ''
+    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, term)
+    if (!canAccess) throw new ForbiddenException('无权操作此班级')
+    return this.classMemberSvc.updateMySubjects(teacherId, classId, subjects, term)
   }
 
   /**
@@ -170,6 +188,12 @@ class ClassesController extends CrudController<ClassItem> {
   @Delete(':id/members/:teacherId')
   removeMember(@Param('id') id: string, @Param('teacherId') teacherId: string, @CurrentTeacher() t: any) {
     return this.s.removeSubjectTeacher(id, t.sub, teacherId)
+  }
+
+  /** 教师更新自己在某班级的任教学科（班主任可兼任本班科任） */
+  @Patch(':id/my-subjects')
+  updateMySubjects(@Param('id') id: string, @Body() body: any, @CurrentTeacher() t: any) {
+    return this.s.updateMySubjects(id, t.sub, body.subjects || [])
   }
 }
 

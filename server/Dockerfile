@@ -13,6 +13,8 @@ ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./package.json
+# migrations 目录：供启动时自动 migration runner 执行（见 main.ts runMigrations）
+COPY --from=build /app/migrations ./migrations
 # 以非 root 用户运行，符合云托管安全最佳实践
 RUN chown -R node:node /app
 USER node

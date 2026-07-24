@@ -71,6 +71,8 @@ import { HealthController } from './health.controller'
             connectionLimit: 10,
             // 初始 TCP/TLS 握手 5 秒不成就放弃，避免挂死
             connectTimeout: 5000,
+            // 供启动时 migration runner 执行多语句 SQL（业务层仍用参数化查询，无注入风险）
+            multipleStatements: true,
           },
         }
       },

@@ -18,7 +18,7 @@ const src = fs.readFileSync(
 describe('ClassesService 老师端建班禁用', () => {
   it('create 方法直接抛 ForbiddenException，不再调用 super.create', () => {
     // 提取 create 方法体
-    const m = src.match(/async create\(teacherId: string, dto: any\)\s*\{([\s\S]*?)\n  \}/)
+    const m = src.match(/async create\(teacherId: string, dto: any\)[^{]*\{([\s\S]*?)\n  \}/)
     expect(m).not.toBeNull()
     const body = m![1]
     // 抛出 ForbiddenException

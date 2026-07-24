@@ -331,14 +331,14 @@ describe('SchoolAdminService', () => {
       const { qb } = setupTransferScene()
       const res = await service.updateClass('school-1', 'c1', { headTeacherId: 't-new', headTeacher: '新老师' })
 
-      // 前置校验新班主任不是其他班 head（excludeClassId=c1，排除本班自身）
-      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t-new', 'c1')
-      // 旧 head 降级为 subject
+      // 前置校验新班主任不是其他班 head（excludeClassId=c1，排除本班自身；term='' 因 cls 无 term）
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t-new', 'c1', '')
+      // 旧 head 降级为 subject（按 term 隔离，where 含 term）
       expect(qb.update).toHaveBeenCalled()
       expect(qb.set).toHaveBeenCalledWith({ role: 'subject' })
-      expect(qb.where).toHaveBeenCalledWith('classId = :cid AND teacherId = :tid', { cid: 'c1', tid: 't-old' })
-      // 写入新 head 记录
-      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t-new', 'c1', '一班')
+      expect(qb.where).toHaveBeenCalledWith('classId = :cid AND teacherId = :tid AND term = :term', { cid: 'c1', tid: 't-old', term: '' })
+      // 写入新 head 记录（含 term）
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t-new', 'c1', '一班', '')
       // 班级 teacherId 已更新
       expect(res.teacherId).toBe('t-new')
       expect(res.headTeacher).toBe('新老师')
@@ -426,12 +426,106 @@ describe('SchoolAdminService', () => {
 
       // 返回保存的班级
       expect(res.id).toBe('c1')
-      // 前置校验被调用（新班级尚无 id，excludeClassId 传空串，仅校验规则1）
-      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t1', '')
-      // 写入 head 记录
-      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班')
+      // 前置校验被调用（新班级尚无 id，excludeClassId 传空串，仅校验规则1；term 按学期隔离）
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t1', '', '2026春季')
+      // 写入 head 记录（含 term 和 subjects，subjects 默认空数组）
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', [])
       // 审计日志
       expect(audit.log).toHaveBeenCalledWith('school-1', 'create_class', '系统', '一班', expect.stringContaining('张老师'))
+    })
+  })
+
+  describe('学期轮换场景（term 隔离：春季班主任→秋季任课老师）', () => {
+    /** 搭建学期轮换场景：c1 班春季学期(t-old)是班主任，秋季要转给 t-new */
+    function setupTermRotationScene(opts: { clsTerm?: string; newHead?: any } = {}) {
+      const clsTerm = opts.clsTerm !== undefined ? opts.clsTerm : '2026春季'
+      const cls = { id: 'c1', teacherId: 't-old', name: '一班', grade: '一年级', classNo: '1', headTeacher: '旧老师', term: clsTerm }
+      classRepo.findOne.mockResolvedValue(cls)
+      const oldTeacher = { id: 't-old', schoolId: 'school-1', name: '旧老师' }
+      const newHead = opts.newHead === null ? null : (opts.newHead || { id: 't-new', schoolId: 'school-1', name: '新老师' })
+      userRepo.findOne.mockImplementation((q: any) => {
+        const id = q?.where?.id
+        if (id === 't-old') return Promise.resolve(oldTeacher)
+        if (id === 't-new') return Promise.resolve(newHead)
+        return Promise.resolve(null)
+      })
+      const qb: any = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      }
+      classMemberRepo.createQueryBuilder.mockReturnValue(qb)
+      classRepo.save.mockImplementation(async (c: any) => c)
+      return { cls, qb }
+    }
+
+    it('转交班主任时 term 按班级当前学期传递（春季班级转交，term=2026春季）', async () => {
+      const { qb } = setupTermRotationScene({ clsTerm: '2026春季' })
+      await service.updateClass('school-1', 'c1', { headTeacherId: 't-new' })
+
+      // term 应为班级当前学期 '2026春季'，而非空串
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t-new', 'c1', '2026春季')
+      expect(qb.where).toHaveBeenCalledWith('classId = :cid AND teacherId = :tid AND term = :term', { cid: 'c1', tid: 't-old', term: '2026春季' })
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t-new', 'c1', '一班', '2026春季')
+    })
+
+    it('秋季学期转交班主任时 term=2026秋季，与春季互不影响（跨学期隔离）', async () => {
+      const { qb } = setupTermRotationScene({ clsTerm: '2026秋季' })
+      await service.updateClass('school-1', 'c1', { headTeacherId: 't-new' })
+
+      // term 应为 '2026秋季'，春季的 head 记录不受影响
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t-new', 'c1', '2026秋季')
+      expect(qb.where).toHaveBeenCalledWith('classId = :cid AND teacherId = :tid AND term = :term', { cid: 'c1', tid: 't-old', term: '2026秋季' })
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t-new', 'c1', '一班', '2026秋季')
+    })
+
+    it('建班时指定 term，前置校验和写入 head 记录均按该 term 隔离', async () => {
+      const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(teacher)
+      const savedClass = { id: 'c2', name: '二班', grade: '二年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026秋季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await service.createClass('school-1', {
+        name: '二班', grade: '二年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026秋季',
+      })
+
+      // 同一老师在春季已是其他班 head，但秋季 term 不同，前置校验应通过（不抛异常）
+      expect(classMemberSvc.assertTeacherNotHeadElsewhere).toHaveBeenCalledWith('t1', '', '2026秋季')
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c2', '二班', '2026秋季', [])
+    })
+  })
+
+  describe('createClass 班主任兼任本班科任（subjects 支持）', () => {
+    it('建班时指定 subjects 应传递给 addHeadTeacher（班主任可兼任本班数学+科学）', async () => {
+      const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(teacher)
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026春季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1',
+        term: '2026春季', subjects: ['数学', '科学'],
+      })
+
+      // subjects 应原样传递给 addHeadTeacher
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', ['数学', '科学'])
+    })
+
+    it('建班时未指定 subjects 应传空数组（班主任任教学科可后续自行更新）', async () => {
+      const teacher = { id: 't1', schoolId: 'school-1', name: '张老师' }
+      userRepo.findOne.mockResolvedValue(teacher)
+      const savedClass = { id: 'c1', name: '一班', grade: '一年级', classNo: '1', teacherId: 't1', headTeacher: '张老师', term: '2026春季' }
+      classRepo.create.mockReturnValue(savedClass)
+      classRepo.save.mockResolvedValue(savedClass)
+
+      await service.createClass('school-1', {
+        name: '一班', grade: '一年级', classNo: '1', headTeacher: '张老师', headTeacherId: 't1', term: '2026春季',
+      })
+
+      expect(classMemberSvc.addHeadTeacher).toHaveBeenCalledWith('t1', 'c1', '一班', '2026春季', [])
     })
   })
 

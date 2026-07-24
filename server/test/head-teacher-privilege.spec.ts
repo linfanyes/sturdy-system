@@ -57,7 +57,7 @@ describe('班主任特权相关逻辑', () => {
       )
       expect(m).not.toBeNull()
       const body = m![1]
-      expect(body).toMatch(/getRole\(teacherId, classId\)/)
+      expect(body).toMatch(/getRole\(teacherId, classId, term\)/)
       expect(body).toMatch(/role !== 'head'/)
       expect(body).toMatch(/ForbiddenException\('仅班主任可执行此操作'\)/)
     })
@@ -169,61 +169,62 @@ describe('班主任特权相关逻辑', () => {
     })
   })
 
-  describe('ClassMemberService 行为', () => {
-    it('18. getRole 返回 head/subject/null', () => {
-      // 源码存在 getRole 方法，返回 row?.role || null
+  describe('ClassMemberService 行为（按学期隔离）', () => {
+    it('18. getRole 返回 head/subject/null（term 可选，按学期过滤）', () => {
       const m = classMemberModuleSrc.match(
-        /async getRole\(teacherId: string, classId: string\): Promise<string \| null>\s*\{([\s\S]*?)\n  \}/,
+        /async getRole\(teacherId: string, classId: string, term\?: string\): Promise<string \| null>\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
-      expect(m![1]).toMatch(/findOne\(\{ where: \{ teacherId, classId \} \}\)/)
       expect(m![1]).toMatch(/row\?\.role \|\| null/)
+      // term 传则按学期过滤
+      expect(m![1]).toMatch(/if \(term !== undefined\) where\.term = term/)
     })
 
-    it('19. canAccess 返回 boolean（存在记录即可访问，不区分角色）', () => {
+    it('19. canAccess 返回 boolean（term 可选，不传=任一学期可访问即可）', () => {
       const m = classMemberModuleSrc.match(
-        /async canAccess\(teacherId: string, classId: string\): Promise<boolean>\s*\{([\s\S]*?)\n  \}/,
+        /async canAccess\(teacherId: string, classId: string, term\?: string\): Promise<boolean>\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
-      expect(m![1]).toMatch(/count\(\{ where: \{ teacherId, classId \} \}\)/)
       expect(m![1]).toMatch(/count > 0/)
+      expect(m![1]).toMatch(/if \(term !== undefined\) where\.term = term/)
     })
 
-    it('20. addHeadTeacher 设置 role="head"', () => {
+    it('20. addHeadTeacher 设置 role="head"（按学期隔离，支持 subjects）', () => {
       const m = classMemberModuleSrc.match(
-        /async addHeadTeacher\(teacherId: string, classId: string, className: string, subjects: string\[\] = \[\]\)\s*\{([\s\S]*?)\n  \}/,
+        /async addHeadTeacher\(teacherId: string, classId: string, className: string, term: string, subjects: string\[\] = \[\]\)\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       expect(m![1]).toMatch(/role: 'head'/)
+      expect(m![1]).toMatch(/term/)
     })
 
-    it('21. addSubjectTeacher 不覆盖已有 head 记录（保留班主任身份）', () => {
+    it('21. addSubjectTeacher 不覆盖已有 head 记录（按学期隔离）', () => {
       const m = classMemberModuleSrc.match(
-        /async addSubjectTeacher\(teacherId: string, classId: string, className: string, subjects: string\[\]\)\s*\{([\s\S]*?)\n  \}/,
+        /async addSubjectTeacher\(teacherId: string, classId: string, className: string, subjects: string\[\], term: string\)\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       // 关键：existing.role === 'head' ? 'head' : 'subject'
       expect(m![1]).toMatch(/existing\.role === 'head' \? 'head' : 'subject'/)
     })
 
-    it('21a. assertCanBecomeHead 校验两条业务规则（一师一班 head / 一班一 head）', () => {
+    it('21a. assertCanBecomeHead 校验两条业务规则（同一 term 内：一师一班 head / 一班一 head）', () => {
       const m = classMemberModuleSrc.match(
-        /async assertCanBecomeHead\(teacherId: string, classId: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
+        /async assertCanBecomeHead\(teacherId: string, classId: string, term: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       const body = m![1]
-      // 规则1：该老师是否已在其他班级担任 head（role: 'head' 且 classId 不同）
+      // 规则1：该老师是否已在本学期其他班级担任 head
       expect(body).toMatch(/role: 'head'/)
       expect(body).toMatch(/otherHeadClass\.classId !== classId/)
       expect(body).toMatch(/一人只能担任一个班的班主任/)
-      // 规则2：该班级是否已有其他班主任
+      // 规则2：该班级在本学期是否已有其他班主任
       expect(body).toMatch(/existingHead\.teacherId !== teacherId/)
-      expect(body).toMatch(/该班级已有班主任/)
+      expect(body).toMatch(/该班级在本学期已有班主任/)
     })
 
-    it('21b. assertTeacherNotHeadElsewhere 仅校验规则1（排除即将接手的班级，供转交前置校验）', () => {
+    it('21b. assertTeacherNotHeadElsewhere 仅校验规则1（同一 term 内，排除即将接手的班级）', () => {
       const m = classMemberModuleSrc.match(
-        /async assertTeacherNotHeadElsewhere\(teacherId: string, excludeClassId: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
+        /async assertTeacherNotHeadElsewhere\(teacherId: string, excludeClassId: string, term: string\): Promise<void>\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       const body = m![1]
@@ -232,14 +233,23 @@ describe('班主任特权相关逻辑', () => {
       expect(body).toMatch(/otherHeadClass\.classId !== excludeClassId/)
       expect(body).toMatch(/一人只能担任一个班的班主任/)
       // 不应包含规则2的"该班级已有班主任"校验
-      expect(body).not.toMatch(/该班级已有班主任/)
+      expect(body).not.toMatch(/该班级在本学期已有班主任/)
+    })
+
+    it('21c. updateMySubjects 教师可更新自己任教学科（班主任兼任本班科任）', () => {
+      const m = classMemberModuleSrc.match(
+        /async updateMySubjects\(teacherId: string, classId: string, subjects: string\[\], term: string\)\s*\{([\s\S]*?)\n  \}/,
+      )
+      expect(m).not.toBeNull()
+      expect(m![1]).toMatch(/NotFoundException/)
+      expect(m![1]).toMatch(/row\.subjects = subjects/)
     })
   })
 
   describe('建班策略调整：老师端禁用，班主任由校管指定', () => {
     it('22. ClassesService.create 抛 ForbiddenException（禁止老师自建班）', () => {
       const m = classesModuleSrc.match(
-        /async create\(teacherId: string, dto: any\)\s*\{([\s\S]*?)\n  \}/,
+        /async create\(teacherId: string, dto: any\): Promise<ClassItem>\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()
       expect(m![1]).toMatch(/throw new ForbiddenException/)

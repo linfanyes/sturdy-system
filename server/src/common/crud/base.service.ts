@@ -27,14 +27,15 @@ export class CrudService<T extends { id: string; teacherId: string }> {
    * 查询列表：按 teacherId 过滤，或按班级集合过滤（如启用）。
    * @param teacherId 当前教师 id
    * @param classId 可选班级过滤
+   * @param term  可选学期过滤（前端切换学期时传入，按该学期任教班级集合过滤；不传=所有学期，兼容旧前端）
    */
-  async findAll(teacherId: string, classId?: string, skip = 0, take = 500): Promise<{ items: T[]; total: number }> {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string): Promise<{ items: T[]; total: number }> {
     const where: FindOptionsWhere<T> = {} as FindOptionsWhere<T>
 
     if (classId) {
-      // 指定 classId 时：校验教师是否有权访问该班级
+      // 指定 classId 时：校验教师是否有权访问该班级（term 可选，不传=任一学期可访问即可）
       if (this.classMemberSvc) {
-        const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
+        const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, term)
         if (!canAccess) return { items: [], total: 0 }
       }
       (where as any).classId = classId
@@ -43,8 +44,8 @@ export class CrudService<T extends { id: string; teacherId: string }> {
         (where as any).teacherId = teacherId
       }
     } else if (this.isClassScopedEntity() && this.classMemberSvc) {
-      // 未指定 classId 且为班级维度实体：按教师可访问的班级集合过滤
-      const classIds = await this.classMemberSvc.getClassIdsByTeacher(teacherId)
+      // 未指定 classId 且为班级维度实体：按教师可访问的班级集合过滤（按学期，不传=所有学期）
+      const classIds = await this.classMemberSvc.getClassIdsByTeacher(teacherId, term)
       if (!classIds.length) return { items: [], total: 0 };
       (where as any).classId = In(classIds)
     } else {

@@ -253,22 +253,22 @@ export class SchoolAdminService {
     return { items, total }
   }
 
-  /** 创建班级（班主任必须是本校教师，由校管指定班主任身份） */
-  async createClass(schoolId: string, dto: { name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string; term?: string }) {
+  /** 创建班级（班主任必须是本校教师，由校管指定班主任身份；支持指定班主任任教学科） */
+  async createClass(schoolId: string, dto: { name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string; term?: string; subjects?: string[] }) {
     if (!dto.name || !dto.grade || !dto.headTeacherId) throw new BadRequestException('班级名称/年级/班主任必填')
     const teacher = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
     if (!teacher) throw new BadRequestException('指定的班主任不在本校')
-    // 前置校验：该老师是否已是其他班的班主任（业务规则：一师一班 head）
-    // excludeClassId 传空串，表示新班级尚无 id，仅校验规则1
-    await this.classMemberSvc.assertTeacherNotHeadElsewhere(teacher.id, '')
+    const term = dto.term || ''
+    // 前置校验：该老师是否已在本学期其他班级担任班主任（业务规则：一师一班 head，按学期隔离）
+    await this.classMemberSvc.assertTeacherNotHeadElsewhere(teacher.id, '', term)
     const c = this.classRepo.create({
       teacherId: teacher.id, name: dto.name, grade: dto.grade, classNo: dto.classNo || '1',
-      headTeacher: dto.headTeacher || teacher.name, term: dto.term || '',
+      headTeacher: dto.headTeacher || teacher.name, term,
     })
     const saved = await this.classRepo.save(c)
     // 写入 class_members 的 head 记录（addHeadTeacher 内部会再次 assertCanBecomeHead 兜底；
-    // 数据库部分唯一索引 0013 迁移最终兜底并发场景）
-    await this.classMemberSvc.addHeadTeacher(teacher.id, saved.id, saved.name)
+    // 数据库部分唯一索引 0014 迁移最终兜底并发场景；subjects 支持班主任兼任本班科任）
+    await this.classMemberSvc.addHeadTeacher(teacher.id, saved.id, saved.name, term, dto.subjects || [])
     this.audit.log(schoolId, 'create_class', '系统', saved.name, `班主任：${teacher.name}`).catch(() => {})
     return saved
   }
@@ -280,24 +280,25 @@ export class SchoolAdminService {
     // 验证班级属于本校
     const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
     if (!teacher) throw new BadRequestException('无权操作此班级')
-    // 转交班主任：修改 classes.teacherId 并更新 class_members
+    // 转交班主任：修改 classes.teacherId 并更新 class_members（按班级当前学期 term 隔离）
     if (dto.headTeacherId && dto.headTeacherId !== cls.teacherId) {
       const newHead = await this.userRepo.findOne({ where: { id: dto.headTeacherId, schoolId } })
       if (!newHead) throw new BadRequestException('指定的新班主任不在本校')
-      // 前置校验：新班主任是否已是其他班的班主任（业务规则：一师一班 head）
+      const term = cls.term || ''
+      // 前置校验：新班主任是否已在本学期其他班级担任班主任（业务规则：一师一班 head，按学期隔离）
       // 必须在降级旧 head 之前做，避免误触"该班级已有班主任"规则
-      await this.classMemberSvc.assertTeacherNotHeadElsewhere(newHead.id, id)
-      // 降级旧班主任为科任老师（保留协作关系，可在本班继续任教）
+      await this.classMemberSvc.assertTeacherNotHeadElsewhere(newHead.id, id, term)
+      // 降级旧班主任为科任老师（同 term 内，保留协作关系可在本班继续任教）
       await this.classMemberRepo
         .createQueryBuilder()
         .update()
         .set({ role: 'subject' })
-        .where('classId = :cid AND teacherId = :tid', { cid: id, tid: teacher.id })
+        .where('classId = :cid AND teacherId = :tid AND term = :term', { cid: id, tid: teacher.id, term })
         .execute()
         .catch(() => {})
       // 写入新班主任 head 记录（addHeadTeacher 内部 assertCanBecomeHead 兜底：
       // 规则1再次校验，规则2因旧 head 已降级而通过）
-      await this.classMemberSvc.addHeadTeacher(newHead.id, id, cls.name)
+      await this.classMemberSvc.addHeadTeacher(newHead.id, id, cls.name, term)
       cls.teacherId = newHead.id
       cls.headTeacher = dto.headTeacher || newHead.name
     } else {

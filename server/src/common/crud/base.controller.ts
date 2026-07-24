@@ -55,8 +55,8 @@ export class CrudController<T extends { id: string; teacherId: string }> {
   }
 
   @Get()
-  findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.service.findAll(t.sub, classId, Number(skip) || 0, clampTake(take))
+  findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string) {
+    return this.service.findAll(t.sub, classId, Number(skip) || 0, clampTake(take), term)
   }
 
   @Get(':id')
