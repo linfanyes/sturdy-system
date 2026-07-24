@@ -52,9 +52,17 @@ describe('toolbox 工具箱分类逻辑', () => {
     expect(sections.length).toBe(11)
   })
 
-  it('2. 工具总数为 85（统计所有分区的 items）', () => {
+  it('2. 工具总数为 86（统计所有分区的 items）', () => {
     const total = sections.reduce((s, sec) => s + sec.items.length, 0)
-    expect(total).toBe(85)
+    expect(total).toBe(86)
+  })
+
+  it('2b. 班级成员工具在"班级管理"分区（班主任特权入口）', () => {
+    const sec = sections.find(s => s.items.some(i => i.label === '班级成员'))
+    expect(sec).toBeDefined()
+    expect(sec!.title).toBe('班级管理')
+    const item = sec!.items.find(i => i.label === '班级成员') as any
+    expect(item.tab).toBe('/pages/classes/classes')
   })
 
   it('3. 每个分区至少有 2 个工具', () => {

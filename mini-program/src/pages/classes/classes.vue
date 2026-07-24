@@ -110,7 +110,7 @@
       <button v-if="editingId" class="cancel" @click="cancelEdit">取消编辑</button>
     </view>
 
-    <!-- 班级详情（花名册/座位/课表/公告） -->
+    <!-- 班级详情（花名册/座位/课表/公告/成员） -->
     <view v-if="showDetail" class="mask" @click="showDetail = false">
       <view class="sheet" @click.stop>
         <view class="sh-t">{{ detailC.name }} · 班级详情</view>
@@ -128,10 +128,69 @@
           <view class="facet" @click="goNotice(detailC)">
             <text class="f-n">{{ noticesCount }}</text><text class="f-l">未结束公告</text>
           </view>
+          <view class="facet" @click="openMembers(detailC)">
+            <text class="f-n">{{ members.length }}</text><text class="f-l">班级成员</text>
+          </view>
         </view>
         <button class="enter" @click="goStudents(detailC)">进入学生管理</button>
         <button class="sync" @click="syncTerm">📅 将本学期同步到其他班级</button>
         <button class="cancel" @click="showDetail = false">关闭</button>
+      </view>
+    </view>
+
+    <!-- 班级成员管理（班主任特权） -->
+    <view v-if="showMembers" class="mask" @click="showMembers = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">{{ membersC.name }} · 班级成员</view>
+        <view class="sh-meta">
+          <text v-if="isHead">您是本班班主任，可管理科任老师</text>
+          <text v-else>您是本班科任老师，仅可查看成员列表</text>
+        </view>
+        <view class="members-list">
+          <view v-for="m in members" :key="m.teacherId" class="member-row">
+            <view class="member-info">
+              <text class="member-name">{{ m.teacherName }}</text>
+              <text class="member-role" :class="m.role === 'head' ? 'role-head' : 'role-subject'">
+                {{ m.role === 'head' ? '班主任' : '科任老师' }}
+              </text>
+              <text v-if="m.subjects && m.subjects.length" class="member-subj">{{ m.subjects.join('、') }}</text>
+            </view>
+            <text
+              v-if="isHead && m.role !== 'head'"
+              class="member-del"
+              @click="removeMember(m)"
+            >移除</text>
+          </view>
+          <view v-if="!members.length" class="empty-members">暂无成员</view>
+        </view>
+        <button v-if="isHead" class="enter" @click="showAddMember = true">＋ 添加科任老师</button>
+        <button class="cancel" @click="showMembers = false">关闭</button>
+      </view>
+    </view>
+
+    <!-- 添加科任老师（班主任特权） -->
+    <view v-if="showAddMember" class="mask" @click="showAddMember = false">
+      <view class="sheet" @click.stop>
+        <view class="sh-t">添加科任老师到「{{ membersC.name }}」</view>
+        <view class="field">
+          <text class="label">选择本校教师</text>
+          <picker :range="teacherOptions" range-key="label" @change="onTeacherPick">
+            <view class="picker">{{ addMemberForm.teacherId ? teacherLabel(addMemberForm.teacherId) : '请选择教师' }}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <text class="label">任教学科（多选）</text>
+          <view class="chips">
+            <view
+              v-for="s in pubSubjects"
+              :key="s"
+              :class="['chip', addMemberForm.subjects.includes(s) ? 'on' : '']"
+              @click="toggleAddMemberSubject(s)"
+            >{{ s }}</view>
+          </view>
+        </view>
+        <button class="save" :disabled="saving" @click="confirmAddMember">{{ saving ? '添加中…' : '确认添加' }}</button>
+        <button class="cancel" @click="showAddMember = false">取消</button>
       </view>
     </view>
   </view>
@@ -369,6 +428,115 @@ async function syncTerm() {
     },
   })
 }
+
+/* ===== 班级成员管理（班主任特权） ===== */
+const showMembers = ref(false)
+const membersC = ref({})
+const members = ref([])
+const isHead = ref(false)        // 当前教师在当前班级是否为班主任
+const showAddMember = ref(false)
+const addMemberForm = ref({ teacherId: '', subjects: [] })
+const schoolTeachers = ref([])   // 本校教师列表（用于添加科任老师）
+
+// 本校教师下拉选项（排除已是本班成员的）
+const teacherOptions = computed(() => {
+  const memberIds = new Set(members.value.map(m => m.teacherId))
+  return schoolTeachers.value
+    .filter(t => !memberIds.has(t.id))
+    .map(t => ({ id: t.id, label: t.name + (t.teacherNo ? '（' + t.teacherNo + '）' : '') }))
+})
+function teacherLabel(id) {
+  const t = teacherOptions.value.find(x => x.id === id)
+  return t ? t.label : '请选择教师'
+}
+function onTeacherPick(e) {
+  const idx = +e.detail.value
+  addMemberForm.value.teacherId = teacherOptions.value[idx]?.id || ''
+}
+
+function toggleAddMemberSubject(s) {
+  const arr = addMemberForm.value.subjects
+  if (arr.includes(s)) {
+    addMemberForm.value.subjects = arr.filter(x => x !== s)
+  } else {
+    addMemberForm.value.subjects = [...arr, s]
+  }
+}
+
+// 加载本校教师列表（首次打开成员管理时按需加载）
+async function loadSchoolTeachers() {
+  if (schoolTeachers.value.length) return
+  try {
+    // 班主任特权接口：查询本校教师列表（供添加科任老师时选择）
+    const res = await api.post('/classes/school-teachers')
+    if (Array.isArray(res)) schoolTeachers.value = res
+  } catch (e) {}
+}
+
+async function openMembers(c) {
+  membersC.value = c
+  showDetail.value = false
+  showMembers.value = true
+  uni.showLoading({ title: '加载成员…', mask: true })
+  try {
+    const list = await api.post('/classes/' + c.id + '/members/list')
+    members.value = list || []
+    // 判断当前教师在本班的角色
+    const me = (list || []).find(m => m.teacherId === auth.user?.id)
+    isHead.value = me?.role === 'head'
+    if (isHead.value) await loadSchoolTeachers()
+  } catch (e) {
+    uni.showToast({ title: '加载成员失败：' + (e.message || ''), icon: 'none' })
+    members.value = []
+    isHead.value = false
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+async function removeMember(m) {
+  uni.showModal({
+    title: '移除科任老师',
+    content: `确定将「${m.teacherName}」移出本班？该老师将无法再访问本班数据。`,
+    confirmColor: '#e64340',
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '移除中…', mask: true })
+      try {
+        await api.del('/classes/' + membersC.value.id + '/members/' + m.teacherId)
+        uni.showToast({ title: '已移除', icon: 'success' })
+        // 刷新成员列表
+        members.value = await api.post('/classes/' + membersC.value.id + '/members/list')
+      } catch (e) {
+        uni.showToast({ title: '移除失败：' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
+}
+
+async function confirmAddMember() {
+  if (!addMemberForm.value.teacherId) {
+    return uni.showToast({ title: '请选择教师', icon: 'none' })
+  }
+  saving.value = true
+  try {
+    await api.post('/classes/' + membersC.value.id + '/members', {
+      teacherId: addMemberForm.value.teacherId,
+      subjects: addMemberForm.value.subjects,
+    })
+    uni.showToast({ title: '添加成功', icon: 'success' })
+    showAddMember.value = false
+    addMemberForm.value = { teacherId: '', subjects: [] }
+    // 刷新成员列表
+    members.value = await api.post('/classes/' + membersC.value.id + '/members/list')
+  } catch (e) {
+    uni.showToast({ title: '添加失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -456,4 +624,20 @@ async function syncTerm() {
 .chip.on { background: var(--c-accent); color: #fff; }
 .no-subj { font-size: 24rpx; color: var(--c-sub); padding: 12rpx 0; }
 .hint { font-size: 22rpx; color: #07c160; margin-top: 6rpx; display: block; }
+
+/* 班级成员管理 */
+.members-list { margin-bottom: 24rpx; }
+.member-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20rpx 0; border-bottom: 1px solid var(--c-input-border);
+}
+.member-row:last-child { border-bottom: none; }
+.member-info { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 12rpx; }
+.member-name { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
+.member-role { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
+.role-head { background: rgba(7, 193, 96, 0.15); color: #07c160; }
+.role-subject { background: rgba(58, 142, 230, 0.15); color: #3a8ee6; }
+.member-subj { font-size: 22rpx; color: var(--c-sub); }
+.member-del { font-size: 24rpx; color: var(--c-danger); padding: 8rpx 18rpx; background: rgba(230, 67, 64, 0.12); border-radius: 24rpx; flex-shrink: 0; }
+.empty-members { text-align: center; color: var(--c-sub); padding: 40rpx 0; font-size: 26rpx; }
 </style>

@@ -138,6 +138,7 @@ const sections = ref([
   {
     title: '班级管理',
     items: [
+      { label: '班级成员', icon: '👥', tab: '/pages/classes/classes' },
       { label: '轮值表', icon: '📋', path: '/pages/duty-roster/duty-roster' },
       { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
       { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
@@ -235,7 +236,7 @@ const itemFeatureMap = {
   tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '计分板', '口算生成', '竖式计算', '口算答题卡', '乘法口诀', '单位换算', '错题本']),
   games: new Set(['小游戏合集', '笑口常开']),
   finance: new Set(['班费']),
-  activities: new Set(['班级活动', '班级风采', '我的相册']),
+  activities: new Set(['班级活动', '班级风采', '我的相册', '班级成员']),
   rewards: new Set(['成长记录', '行为记录', '获奖记录', '奖项类别', '课外阅读', '学生打卡', '加减分', '积分记录', '积分排行榜', '小组评分', '奖励兑换']),
   parents: new Set(['家长联系', '家校沟通']),
   teachers: new Set(['工作日志', '听课记录', '教学日历', '教师通讯录', '演讲稿']),

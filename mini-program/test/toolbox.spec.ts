@@ -37,9 +37,17 @@ describe('工具箱分类逻辑', () => {
     expect(sections.length).toBe(11)
   })
 
-  it('工具总数为 85', () => {
+  it('工具总数为 86', () => {
     const total = sections.reduce((n: number, s: any) => n + s.items.length, 0)
-    expect(total).toBe(85)
+    expect(total).toBe(86)
+  })
+
+  it('班级成员工具在"班级管理"分区（班主任特权入口）', () => {
+    const sec = findSectionByItemLabel('班级成员')
+    expect(sec).toBeDefined()
+    expect(sec.title).toBe('班级管理')
+    const item = allItems().find((i: any) => i.label === '班级成员')
+    expect(item.tab).toBe('/pages/classes/classes')
   })
 
   it('每个分区至少有 2 个工具', () => {
