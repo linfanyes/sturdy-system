@@ -1,0 +1,306 @@
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import {
+  listTeachers, createTeacher, updateTeacher, deleteTeacher,
+  updateTeacherFeatures, resetTeacherPassword,
+  type TeacherItem,
+} from '@/api/school-admin'
+import { ALL_FEATURES } from '@/constants/features'
+import Modal from '@/components/Modal.vue'
+import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Check, X } from 'lucide-vue-next'
+
+const loading = ref(false)
+const teachers = ref<TeacherItem[]>([])
+const total = ref(0)
+const keyword = ref('')
+
+const filtered = computed(() => {
+  if (!keyword.value) return teachers.value
+  const kw = keyword.value.toLowerCase()
+  return teachers.value.filter(t =>
+    t.name?.toLowerCase().includes(kw) ||
+    t.username?.toLowerCase().includes(kw) ||
+    t.phone?.includes(kw),
+  )
+})
+
+async function loadTeachers() {
+  loading.value = true
+  try {
+    const res = await listTeachers(0, 500)
+    teachers.value = res.items
+    total.value = res.total
+  } catch (e: any) {
+    alert(e?.message || '加载失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadTeachers)
+
+/* ============ 新增/编辑教师 ============ */
+const showForm = ref(false)
+const editingId = ref<string | null>(null)
+const form = ref({ name: '', phone: '', gender: '', subject: '', username: '', password: '' })
+const formLoading = ref(false)
+
+function openCreate() {
+  editingId.value = null
+  form.value = { name: '', phone: '', gender: '', subject: '', username: '', password: '' }
+  showForm.value = true
+}
+
+function openEdit(t: TeacherItem) {
+  editingId.value = t.id
+  form.value = { name: t.name, phone: t.phone || '', gender: t.gender || '', subject: t.subject || '', username: t.username || '', password: '' }
+  showForm.value = true
+}
+
+async function submitForm() {
+  if (!form.value.name) return
+  formLoading.value = true
+  try {
+    if (editingId.value) {
+      await updateTeacher(editingId.value, {
+        name: form.value.name, phone: form.value.phone,
+        gender: form.value.gender, subject: form.value.subject,
+      })
+    } else {
+      await createTeacher({
+        name: form.value.name, phone: form.value.phone,
+        gender: form.value.gender, subject: form.value.subject,
+        username: form.value.username || undefined,
+        password: form.value.password || undefined,
+      })
+    }
+    showForm.value = false
+    await loadTeachers()
+  } catch (e: any) {
+    alert(e?.message || '操作失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+/* ============ 功能权限配置 ============ */
+const showFeatures = ref(false)
+const featuresTeacher = ref<TeacherItem | null>(null)
+const selectedFeatures = ref<string[]>([])
+const featuresLoading = ref(false)
+
+function openFeatures(t: TeacherItem) {
+  featuresTeacher.value = t
+  selectedFeatures.value = [...(t.features || [])]
+  showFeatures.value = true
+}
+
+async function saveFeatures() {
+  if (!featuresTeacher.value) return
+  featuresLoading.value = true
+  try {
+    await updateTeacherFeatures(featuresTeacher.value.id, selectedFeatures.value)
+    featuresTeacher.value.features = [...selectedFeatures.value]
+    showFeatures.value = false
+  } catch (e: any) {
+    alert(e?.message || '保存失败')
+  } finally {
+    featuresLoading.value = false
+  }
+}
+
+function selectAllFeatures() { selectedFeatures.value = ALL_FEATURES.map(f => f.key) }
+function clearAllFeatures() { selectedFeatures.value = [] }
+
+/* ============ 重置密码 ============ */
+async function handleResetPassword(t: TeacherItem) {
+  if (!confirm(`确定重置 ${t.name} 的密码为默认密码？`)) return
+  try {
+    await resetTeacherPassword(t.id)
+    alert('密码已重置')
+  } catch (e: any) {
+    alert(e?.message || '重置失败')
+  }
+}
+
+/* ============ 删除 ============ */
+async function handleDelete(t: TeacherItem) {
+  if (!confirm(`确定删除教师「${t.name}」？此操作不可恢复。`)) return
+  try {
+    await deleteTeacher(t.id)
+    await loadTeachers()
+  } catch (e: any) {
+    alert(e?.message || '删除失败')
+  }
+}
+</script>
+
+<template>
+  <div class="space-y-4">
+    <!-- 顶栏 -->
+    <div class="flex items-center justify-between gap-4">
+      <h1 class="text-2xl font-bold text-cocoa-900">教师管理</h1>
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400" />
+          <input
+            v-model="keyword"
+            placeholder="搜索姓名/账号/手机"
+            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-56 focus:outline-none focus:border-butter-400"
+          />
+        </div>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
+          @click="openCreate"
+        >
+          <Plus class="w-4 h-4" /> 新增教师
+        </button>
+      </div>
+    </div>
+
+    <!-- 列表 -->
+    <div class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-cream-100 text-cocoa-500 text-left">
+          <tr>
+            <th class="px-4 py-3 font-medium">姓名</th>
+            <th class="px-4 py-3 font-medium">账号</th>
+            <th class="px-4 py-3 font-medium">手机</th>
+            <th class="px-4 py-3 font-medium">性别</th>
+            <th class="px-4 py-3 font-medium">学科</th>
+            <th class="px-4 py-3 font-medium">功能权限</th>
+            <th class="px-4 py-3 font-medium">状态</th>
+            <th class="px-4 py-3 font-medium text-right">操作</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-cream-100">
+          <tr v-if="loading" class="text-center text-cocoa-400">
+            <td colspan="8" class="py-8">加载中…</td>
+          </tr>
+          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
+            <td colspan="8" class="py-8">暂无教师数据</td>
+          </tr>
+          <tr v-for="t in filtered" :key="t.id" class="hover:bg-cream-50 transition-colors">
+            <td class="px-4 py-3 font-medium text-cocoa-900">{{ t.name }}</td>
+            <td class="px-4 py-3 text-cocoa-700">{{ t.username || '-' }}</td>
+            <td class="px-4 py-3 text-cocoa-700">{{ t.phone || '-' }}</td>
+            <td class="px-4 py-3 text-cocoa-700">{{ t.gender || '-' }}</td>
+            <td class="px-4 py-3 text-cocoa-700">{{ t.subject || '-' }}</td>
+            <td class="px-4 py-3">
+              <span v-if="!t.features || t.features.length === 0" class="text-mint-500 text-xs">全部可用</span>
+              <span v-else class="text-butter-600 text-xs">{{ t.features.length }} 项</span>
+            </td>
+            <td class="px-4 py-3">
+              <span :class="['text-xs px-2 py-0.5 rounded-full', t.enabled ? 'bg-mint-100 text-mint-500' : 'bg-red-50 text-red-500']">
+                {{ t.enabled ? '启用' : '停用' }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right space-x-1">
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(t)">
+                <Edit3 class="w-4 h-4" />
+              </button>
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="功能权限" @click="openFeatures(t)">
+                <Settings2 class="w-4 h-4" />
+              </button>
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="重置密码" @click="handleResetPassword(t)">
+                <KeyRound class="w-4 h-4" />
+              </button>
+              <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="删除" @click="handleDelete(t)">
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 新增/编辑模态框 -->
+  <Modal v-model="showForm" :title="editingId ? '编辑教师' : '新增教师'">
+    <div class="space-y-3">
+      <div>
+        <label class="text-sm text-cocoa-500">姓名 *</label>
+        <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入姓名" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-cocoa-500">性别</label>
+          <select v-model="form.gender" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+            <option value="">未设置</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">学科</label>
+          <input v-model="form.subject" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="如：语文" />
+        </div>
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">手机号</label>
+        <input v-model="form.phone" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="选填" />
+      </div>
+      <template v-if="!editingId">
+        <div>
+          <label class="text-sm text-cocoa-500">登录用户名</label>
+          <input v-model="form.username" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则自动生成" />
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">初始密码</label>
+          <input v-model="form.password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则默认 123456" />
+        </div>
+      </template>
+    </div>
+    <template #footer>
+      <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
+      <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60" :disabled="formLoading || !form.name" @click="submitForm">
+        {{ formLoading ? '保存中…' : '保存' }}
+      </button>
+    </template>
+  </Modal>
+
+  <!-- 功能权限配置 -->
+  <Modal v-model="showFeatures" :title="`功能权限 · ${featuresTeacher?.name || ''}`" width="max-w-2xl">
+    <div class="space-y-3">
+      <div class="flex items-center justify-between bg-cream-50 rounded-xl px-3 py-2">
+        <span class="text-sm text-cocoa-500">
+          空列表 = 全部可用；勾选后仅勾选的功能可用
+        </span>
+        <div class="flex gap-2">
+          <button class="text-xs px-2 py-1 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/40" @click="selectAllFeatures">全选</button>
+          <button class="text-xs px-2 py-1 rounded-lg bg-cream-200 text-cocoa-500 hover:bg-cream-300/40" @click="clearAllFeatures">清空</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <label
+          v-for="f in ALL_FEATURES"
+          :key="f.key"
+          :class="[
+            'flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-colors text-sm',
+            selectedFeatures.includes(f.key)
+              ? 'border-butter-400 bg-butter-100/50 text-cocoa-900'
+              : 'border-cream-200 hover:bg-cream-50 text-cocoa-700',
+          ]"
+        >
+          <input
+            type="checkbox"
+            :checked="selectedFeatures.includes(f.key)"
+            class="rounded text-butter-500 focus:ring-butter-400"
+            @change="() => {
+              const i = selectedFeatures.indexOf(f.key)
+              if (i >= 0) selectedFeatures.splice(i, 1)
+              else selectedFeatures.push(f.key)
+            }"
+          />
+          {{ f.label }}
+        </label>
+      </div>
+    </div>
+    <template #footer>
+      <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showFeatures = false">取消</button>
+      <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60" :disabled="featuresLoading" @click="saveFeatures">
+        {{ featuresLoading ? '保存中…' : '保存' }}
+      </button>
+    </template>
+  </Modal>
+</template>

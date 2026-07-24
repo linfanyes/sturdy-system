@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #app { @apply h-full; }
+  body {
+    @apply font-sans antialiased;
+    background: rgb(var(--cream-50));
+    color: rgb(var(--cocoa-900));
+  }
+}
