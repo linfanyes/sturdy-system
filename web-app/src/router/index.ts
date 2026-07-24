@@ -29,6 +29,10 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['super'] as Role[] },
     children: [
       { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '超管工作台' } },
+      { path: 'schools', name: 'super-schools', component: () => import('@/views/super/Schools.vue'), meta: { title: '学校管理' } },
+      { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '管理员管理' } },
+      { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },
+      { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
     ],
   },
   // 校管
@@ -51,6 +55,8 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['teacher'] as Role[] },
     children: [
       { path: '', name: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue'), meta: { title: '教师工作台' } },
+      { path: 'notifications', name: 'teacher-notifications', component: () => import('@/views/workspace/Notifications.vue'), meta: { title: '通知中心' } },
+      { path: 'messages', name: 'teacher-messages', component: () => import('@/views/workspace/Messages.vue'), meta: { title: '消息中心' } },
       // 个人空间
       { path: 'profile', name: 'teacher-profile', component: () => import('@/views/workspace/Profile.vue'), meta: { title: '个人资料' } },
       { path: 'config', name: 'teacher-config', component: () => import('@/views/workspace/Config.vue'), meta: { title: '设置' } },
@@ -180,21 +186,20 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长查看' } },
     ],
   },
-  // 根路径：按角色重定向到对应工作台
+  // 根路径：按角色重定向到对应工作台（优先用 auth store，兜底读 localStorage）
   {
     path: '/',
     name: 'home',
     redirect: () => {
-      const raw = localStorage.getItem('trace_web_user')
-      if (!raw) return { name: 'login' }
-      const role = (JSON.parse(raw) as { role: string }).role
+      const auth = useAuthStore()
+      const role = auth.role
       const map: Record<string, string> = {
         super: '/super',
         school_admin: '/school-admin',
         teacher: '/teacher',
         parent: '/parent',
       }
-      return map[role] || '/login'
+      return role ? (map[role] || '/login') : '/login'
     },
   },
   {

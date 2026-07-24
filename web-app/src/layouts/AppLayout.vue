@@ -168,6 +168,8 @@ const teacherGroups: MenuGroup[] = [
   {
     label: '个人空间', icon: User,
     items: [
+      { name: 'teacher-messages', label: '消息中心', to: '/teacher/messages' },
+      { name: 'teacher-notifications', label: '通知中心', to: '/teacher/notifications' },
       { name: 'teacher-todos', label: '待办事项', to: '/teacher/todos', feature: 'todos' },
       { name: 'teacher-notes', label: '笔记', to: '/teacher/notes', feature: 'notes' },
       { name: 'teacher-profile', label: '个人资料', to: '/teacher/profile' },
@@ -178,7 +180,13 @@ const teacherGroups: MenuGroup[] = [
 
 /** 非教师角色菜单（扁平） */
 const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
-  super: [{ name: 'super-dashboard', label: '工作台', to: '/super' }],
+  super: [
+    { name: 'super-dashboard', label: '工作台', to: '/super' },
+    { name: 'super-schools', label: '学校管理', to: '/super/schools' },
+    { name: 'super-admins', label: '管理员管理', to: '/super/admins' },
+    { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs' },
+    { name: 'super-config', label: '平台配置', to: '/super/config' },
+  ],
   school_admin: [
     { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin' },
     { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers' },

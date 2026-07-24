@@ -29,10 +29,10 @@ instance.interceptors.response.use(
     const status = err.response?.status
     const msg = err.response?.data?.message || err.message || '请求失败'
     if (status === 401) {
-      // token 失效：清除登录态，跳转登录
+      // token 失效：清除登录态，跳转登录（通过 hash 改变触发路由守卫，避免循环依赖）
       localStorage.removeItem('trace_web_token')
       localStorage.removeItem('trace_web_user')
-      if (location.hash !== '#/login') location.hash = '#/login'
+      if (!location.hash.startsWith('#/login')) location.hash = '#/login'
     }
     // 抛出业务错误（组件层 try/catch 捕获）
     return Promise.reject(new Error(typeof msg === 'string' ? msg : JSON.stringify(msg)))

@@ -105,14 +105,29 @@ const featureLabel = (count: number) => count === 0 ? '全部可用' : `${count}
       </div>
     </div>
 
-    <!-- 提示信息 -->
+    <!-- 快捷入口 -->
     <div class="bg-white rounded-2xl p-6 shadow-softer">
-      <div class="flex items-start gap-3">
-        <Megaphone class="w-5 h-5 text-sakura-500 mt-0.5" />
-        <div class="text-sm text-cocoa-600">
-          <div class="font-medium text-cocoa-900 mb-1">Web 端说明</div>
-          <p>Web 端当前提供校管管理功能（教师/班级/学生/公告等）。教师日常教学功能（成绩录入、考勤、作业、AI 备课、课堂工具等）请使用小程序端，数据互通。</p>
-        </div>
+      <div class="flex items-center gap-2 mb-4">
+        <Megaphone class="w-5 h-5 text-butter-500" />
+        <h2 class="text-lg font-semibold text-cocoa-900">快捷入口</h2>
+      </div>
+      <div class="grid grid-cols-4 gap-3">
+        <router-link to="/teacher/exams" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors">
+          <GraduationCap class="w-6 h-6 text-butter-500" />
+          <span class="text-sm text-cocoa-700">考试管理</span>
+        </router-link>
+        <router-link to="/teacher/grades" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors">
+          <BookOpen class="w-6 h-6 text-mint-500" />
+          <span class="text-sm text-cocoa-700">成绩录入</span>
+        </router-link>
+        <router-link to="/teacher/homework" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors">
+          <BookOpen class="w-6 h-6 text-sky2-500" />
+          <span class="text-sm text-cocoa-700">作业管理</span>
+        </router-link>
+        <router-link to="/teacher/ai-chat" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors">
+          <Megaphone class="w-6 h-6 text-sakura-500" />
+          <span class="text-sm text-cocoa-700">AI 助手</span>
+        </router-link>
       </div>
     </div>
   </div>
