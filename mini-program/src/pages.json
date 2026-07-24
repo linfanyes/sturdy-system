@@ -152,6 +152,12 @@
       }
     },
     {
+      "path": "pages/subject-list/subject-list",
+      "style": {
+        "navigationBarTitleText": "学科工具"
+      }
+    },
+    {
       "path": "pages/schedule/schedule",
       "style": {
         "navigationBarTitleText": "我的课表",

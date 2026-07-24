@@ -148,8 +148,122 @@ export const SUBJECT_TOOLS = {
     build: (f) =>
       `请为「${f.grade || '小学'}」学生创作一篇有趣的英语分级读物，主题：${f.theme}，篇幅：${f.length || '短篇'}。要求：1) 英文正文（用词贴合年级，情节轻松吸引人）；2) 逐段中文对照翻译；3) 重点词汇表（单词+音标+中文）。`,
   },
+
+  // ============ 科学 ============
+  'experiment-design': {
+    title: '实验设计助手', icon: '🧪', subject: '科学',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'topic', label: '实验主题', type: 'input', placeholder: '如：水的三态变化 / 光的折射', required: true },
+      { k: 'duration', label: '课时', type: 'picker', options: ['1课时(40分)', '2课时', '短课(20分)'] },
+    ],
+    build: (f) =>
+      `请为「${f.grade || '小学'}」科学课设计一份实验方案，主题：${f.topic}，课时：${f.duration || '1课时'}。要求包含：1) 实验目的（核心素养目标）；2) 实验材料清单（注明可替代的家用材料）；3) 详细实验步骤（含安全提示与教师演示要点）；4) 观察记录表模板；5) 实验结论引导问题；6) 拓展思考题。语言贴合年级，可直接用于课堂教学。`,
+  },
+  'science-knowledge': {
+    title: '科学知识图解', icon: '🔬', subject: '科学',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'concept', label: '科学概念', type: 'input', placeholder: '如：浮力 / 食物链 / 磁场', required: true },
+    ],
+    build: (f) =>
+      `请围绕科学概念「${f.concept}」（${f.grade || '小学'}）生成图解化教学资料：1) 概念的通俗定义（用生活化比喻）；2) 概念的形成过程或原理图示（用文字描述可画出的示意图）；3) 3 个生活中的实例；4) 常见误区辨析；5) 3 道分层练习题（含答案）；6) 拓展阅读建议。输出便于教师直接讲授课件使用。`,
+  },
+  'observation-record': {
+    title: '观察记录生成', icon: '📝', subject: '科学',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'object', label: '观察对象', type: 'input', placeholder: '如：种子发芽 / 月相变化', required: true },
+      { k: 'days', label: '观察周期(天)', type: 'number', placeholder: '如：7' },
+    ],
+    build: (f) =>
+      `请为「${f.grade || '小学'}」学生设计一份「${f.object}」的长期观察记录表，观察周期：${f.days || 7} 天。输出包含：1) 观察目的与背景知识；2) 每日观察记录表（含日期、天气、观察现象、绘图区、疑问栏）；3) 观察小结引导问题；4) 家长协助建议；5) 评估标准。表格清晰可打印，便于学生填写。`,
+  },
+
+  // ============ 道德与法治 ============
+  'moral-case': {
+    title: '案例分析', icon: '⚖️', subject: '道德与法治',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'topic', label: '主题', type: 'picker', options: ['诚实守信', '尊重他人', '遵守规则', '保护环境', '爱国教育', '网络安全', '消费维权', '校园安全'] },
+      { k: 'scene', label: '情境描述(选填)', type: 'textarea', placeholder: '如：同学捡到钱包后的处理方式' },
+    ],
+    build: (f) =>
+      `请为「${f.grade || '小学'}」道德与法治课设计一份案例分析，主题：${f.topic || '诚实守信'}${f.scene ? '，情境：' + f.scene : ''}。输出包含：1) 一个贴近学生生活的典型案例（200字左右）；2) 3-5 个分层讨论问题（从事实理解到价值判断）；3) 法律/道德依据说明（引用相关条款或价值观）；4) 教学引导建议；5) 行为实践延伸活动。语言与情境贴合年级。`,
+  },
+  'moral-discussion': {
+    title: '情境讨论', icon: '💬', subject: '道德与法治',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'dilemma', label: '两难情境', type: 'textarea', placeholder: '如：朋友作弊该不该告诉老师', required: true },
+    ],
+    build: (f) =>
+      `请围绕道德两难情境「${f.dilemma}」（${f.grade || '小学'}）设计一堂讨论课。输出包含：1) 情境的完整描述（增加细节让两难更突出）；2) 两种对立观点的论据分析（各 3 条）；3) 讨论流程设计（小组讨论→全班分享→教师引导）；4) 价值观引导要点（避免简单说教）；5) 总结反思问题；6) 课后实践任务。`,
+  },
+  'moral-value': {
+    title: '价值观辨析', icon: '🌟', subject: '道德与法治',
+    fields: [
+      { k: 'grade', label: '年级', type: 'picker', options: GRADE },
+      { k: 'value', label: '价值观关键词', type: 'input', placeholder: '如：公平 / 责任 / 包容', required: true },
+    ],
+    build: (f) =>
+      `请围绕价值观「${f.value}」（${f.grade || '小学'}）生成辨析教学资料：1) 概念的多维度解读（个人/他人/社会三个层面）；2) 3 个正反对比的小故事（每个100字左右）；3) 名人名言或经典语录 3-5 条（注明出处）；4) "我会怎么做"行为选择卡 5 题（含情境与选项）；5) 跨学科融合建议（如何与语文/班会结合）；6) 家校共育延伸活动。`,
+  },
 }
 
 export function getSubjectTool(type) {
   return SUBJECT_TOOLS[type] || null
+}
+
+/**
+ * 学科清单（用于工具箱"学科工具"上层菜单的学科入口展示）。
+ * subject 字段对应 SUBJECT_TOOLS 中工具的 subject 属性。
+ * 数学学科工具用独立 path 页面，extraPaths 字段声明该学科的独立工具入口。
+ */
+export const SUBJECT_LIST = [
+  { subject: '语文', icon: '📜', color: '#e6a23c', desc: '诗词/听写/作文/阅读' },
+  { subject: '数学', icon: '🔢', color: '#3a8ee6', desc: '口算/竖式/单位换算' },
+  { subject: '英语', icon: '🔤', color: '#07c160', desc: '单词/听力/口语/语法' },
+  { subject: '科学', icon: '🔬', color: '#9b59b6', desc: '实验设计/知识图解/观察记录' },
+  { subject: '道德与法治', icon: '⚖️', color: '#e06c75', desc: '案例分析/情境讨论/价值观辨析' },
+]
+
+/**
+ * 数学学科独立工具入口（不在 SUBJECT_TOOLS 中，跳转到独立页面）。
+ * 集中声明便于 subject-list 子页面统一展示。
+ */
+export const MATH_TOOLS = [
+  { label: '口算生成', icon: '➕', path: '/pages/tools/math' },
+  { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
+  { label: '口算答题卡', icon: '📋', path: '/pages/tools/anscard' },
+  { label: '乘法口诀', icon: '🔢', path: '/pages/tools/multitable' },
+  { label: '单位换算', icon: '⚖️', path: '/pages/tools/unit' },
+  { label: '错题本', icon: '📕', path: '/pages/tools/mistakes' },
+]
+
+/**
+ * 按学科名称返回该学科的所有工具列表。
+ * 返回统一格式：[{ key, title, icon, subject, path? }]
+ * - 语文/英语/科学/道德与法治：从 SUBJECT_TOOLS 提取，path 跳转到 /pages/subject/subject?type=key
+ * - 数学：从 MATH_TOOLS 提取，path 跳转到独立页面
+ */
+export function getToolsBySubject(subject) {
+  if (subject === '数学') {
+    return MATH_TOOLS.map((t) => ({
+      key: t.label,
+      title: t.label,
+      icon: t.icon,
+      subject: '数学',
+      path: t.path,
+    }))
+  }
+  return Object.keys(SUBJECT_TOOLS)
+    .filter((k) => SUBJECT_TOOLS[k].subject === subject)
+    .map((k) => ({
+      key: k,
+      title: SUBJECT_TOOLS[k].title,
+      icon: SUBJECT_TOOLS[k].icon,
+      subject,
+      subjectKey: k,
+    }))
 }

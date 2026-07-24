@@ -156,40 +156,13 @@ const sections = ref([
     ],
   },
   {
-    title: '学科专项 - 语文',
+    title: '学科工具',
     items: [
-      { label: '古诗词助手', icon: '📜', subject: 'poetry' },
-      { label: '汉字听写', icon: '🎧', subject: 'dictation' },
-      { label: '笔顺演示', icon: '✏️', subject: 'stroke' },
-      { label: '阅读理解生成', icon: '📖', subject: 'reading' },
-      { label: '小作文助手', icon: '✍️', subject: 'essay' },
-      { label: '成语词典', icon: '🔤', subject: 'idiom' },
-      { label: '拼音标注', icon: '🎵', subject: 'pinyin' },
-      { label: '作文素材', icon: '📚', subject: 'writing-materials' },
-    ],
-  },
-  {
-    title: '学科专项 - 数学',
-    items: [
-      { label: '口算生成', icon: '➕', path: '/pages/tools/math' },
-      { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
-      { label: '口算答题卡', icon: '📋', path: '/pages/tools/anscard' },
-      { label: '乘法口诀', icon: '🔢', path: '/pages/tools/multitable' },
-      { label: '单位换算', icon: '⚖️', path: '/pages/tools/unit' },
-      { label: '错题本', icon: '📕', path: '/pages/tools/mistakes' },
-    ],
-  },
-  {
-    title: '学科专项 - 英语',
-    items: [
-      { label: '单词卡片', icon: '🃏', subject: 'word-card' },
-      { label: '句型练习', icon: '✨', subject: 'sentence-practice' },
-      { label: '英语听力', icon: '📻', subject: 'listening' },
-      { label: '语法练习', icon: '🔡', subject: 'grammar' },
-      { label: '情景对话', icon: '💬', subject: 'scene-dialogue' },
-      { label: '单词拼写', icon: '⌨️', subject: 'spell' },
-      { label: '口语练习', icon: '🎙️', subject: 'speaking' },
-      { label: '英语爽文', icon: '📕', subject: 'english-story' },
+      { label: '语文', icon: '📜', subjectEntry: '语文' },
+      { label: '数学', icon: '🔢', subjectEntry: '数学' },
+      { label: '英语', icon: '🔤', subjectEntry: '英语' },
+      { label: '科学', icon: '🔬', subjectEntry: '科学' },
+      { label: '道德与法治', icon: '⚖️', subjectEntry: '道德与法治' },
     ],
   },
   {
@@ -216,8 +189,8 @@ const secItemsFeatureMap = {
   schedule: new Set(['我的工作台']),
   homework: new Set(['学情与考试']),
   notices: new Set(['我的工作台', '家校沟通']),
-  ai: new Set(['AI 备课', '学科专项 - 语文', '学科专项 - 英语', '教师办公']),
-  tools: new Set(['课堂互动', '学科专项 - 数学']),
+  ai: new Set(['AI 备课', '学科工具', '教师办公']),
+  tools: new Set(['课堂互动', '学科工具']),
   games: new Set(['课堂互动']),
   finance: new Set(['班级管理']),
   activities: new Set(['班级管理']),
@@ -232,8 +205,9 @@ const itemFeatureMap = {
   schedule: new Set(['课表']),
   homework: new Set(['作业']),
   notices: new Set(['公告', '通知模板']),
-  ai: new Set(['AI 助手', '优质教案生成', '知识点生成', '优选试卷生成', '互动讲义', '图像创造', '教案模板', '资源', '评语生成', '期末总结', '古诗词助手', '汉字听写', '笔顺演示', '阅读理解生成', '小作文助手', '成语词典', '拼音标注', '作文素材', '翻译', '教育论文', '黑板报', '文案模板库', '单词卡片', '句型练习', '英语听力', '语法练习', '情景对话', '单词拼写', '口语练习', '英语爽文']),
-  tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '计分板', '口算生成', '竖式计算', '口算答题卡', '乘法口诀', '单位换算', '错题本']),
+  // 学科工具分区下的5个学科入口都归入 ai/tools 功能键（语文/英语用 AI 生成，数学用独立工具）
+  ai: new Set(['AI 助手', '优质教案生成', '知识点生成', '优选试卷生成', '互动讲义', '图像创造', '教案模板', '资源', '评语生成', '期末总结', '翻译', '教育论文', '黑板报', '文案模板库', '语文', '英语', '科学', '道德与法治']),
+  tools: new Set(['随机点名', '倒计时', '课堂计算器', '随机决定器', '座位表', '随机分组', '计分板', '数学']),
   games: new Set(['小游戏合集', '笑口常开']),
   finance: new Set(['班费']),
   activities: new Set(['班级活动', '班级风采', '我的相册', '班级成员']),
@@ -258,8 +232,10 @@ const viewSections = computed(() => {
       // 过滤分区内的具体工具
       const filteredItems = sec.items.filter((it) => {
         const label = it.label
-        // 如果这个工具标记了 subject/quicktool，保留（它们不占用功能分区）
+        // subject/quicktool 工具不占用功能分区，始终保留（子页面单独处理权限）
         if (it.subject || it.quicktool) return true
+        // subjectEntry 学科入口按学科名走 feature 过滤
+        // （语文/英语/科学/道德归 ai，数学归 tools）
         for (const f of ftrs) {
           if (itemFeatureMap[f] && itemFeatureMap[f].has(label)) return true
         }
@@ -281,6 +257,7 @@ const viewSections = computed(() => {
 function go(t) {
   if (t.tab) uni.switchTab({ url: t.tab })
   else if (t.crud) uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(t.crud) })
+  else if (t.subjectEntry) uni.navigateTo({ url: '/pages/subject-list/subject-list?subject=' + encodeURIComponent(t.subjectEntry) })
   else if (t.subject) uni.navigateTo({ url: '/pages/subject/subject?type=' + encodeURIComponent(t.subject) })
   else if (t.quicktool) uni.navigateTo({ url: '/pages/quicktool/quicktool?type=' + encodeURIComponent(t.quicktool) })
   else uni.navigateTo({ url: t.path })

@@ -33,13 +33,13 @@ function allItems() {
 }
 
 describe('工具箱分类逻辑', () => {
-  it('分区数量为 11', () => {
-    expect(sections.length).toBe(11)
+  it('分区数量为 9（3个学科专项合并为"学科工具"上层菜单）', () => {
+    expect(sections.length).toBe(9)
   })
 
-  it('工具总数为 86', () => {
+  it('主页面工具总数为 69（学科工具入口5个，原22个学科工具移至子页面）', () => {
     const total = sections.reduce((n: number, s: any) => n + s.items.length, 0)
-    expect(total).toBe(86)
+    expect(total).toBe(69)
   })
 
   it('班级成员工具在"班级管理"分区（班主任特权入口）', () => {
@@ -56,13 +56,6 @@ describe('工具箱分类逻辑', () => {
     })
   })
 
-  it('笔顺演示使用 subject:"stroke"（不再用 path）', () => {
-    const stroke = allItems().find((i: any) => i.label === '笔顺演示')
-    expect(stroke).toBeDefined()
-    expect(stroke.subject).toBe('stroke')
-    expect(stroke.path).toBeUndefined()
-  })
-
   it('"我的工作台"和"教师办公"始终可见', () => {
     // 源码中存在对这两个分区始终 return true 的过滤逻辑
     expect(src).toMatch(
@@ -77,7 +70,7 @@ describe('工具箱分类逻辑', () => {
     // itemFeatureMap 可正确求值，且值为 Set
     expect(itemFeatureMap).toBeDefined()
     expect(itemFeatureMap.ai).toBeInstanceOf(Set)
-    // 过滤逻辑中“未分类的新工具默认显示”后兜底返回 true
+    // 过滤逻辑中"未分类的新工具默认显示"后兜底返回 true
     expect(src).toMatch(/未分类的新工具默认显示\s+return true/)
     expect(src).not.toMatch(/未分类的新工具默认显示\s+return false/)
   })
@@ -85,7 +78,7 @@ describe('工具箱分类逻辑', () => {
   it('secItemsFeatureMap 中 schedule 不映射"课堂互动"', () => {
     expect(secItemsFeatureMap.schedule).toBeDefined()
     expect(secItemsFeatureMap.schedule.has('课堂互动')).toBe(false)
-    // schedule 实际映射到“我的工作台”
+    // schedule 实际映射到"我的工作台"
     expect(secItemsFeatureMap.schedule.has('我的工作台')).toBe(true)
   })
 
@@ -116,5 +109,57 @@ describe('工具箱分类逻辑', () => {
     const sec = findSectionByItemLabel('演讲稿')
     expect(sec).toBeDefined()
     expect(sec!.title).toBe('教师办公')
+  })
+})
+
+describe('学科工具上层菜单重构', () => {
+  it('"学科工具"分区存在且包含5个学科入口', () => {
+    const sec = sections.find((s: any) => s.title === '学科工具')
+    expect(sec).toBeDefined()
+    expect(sec!.items.length).toBe(5)
+    const subjects = sec!.items.map((i: any) => i.label)
+    expect(subjects).toEqual(['语文', '数学', '英语', '科学', '道德与法治'])
+  })
+
+  it('每个学科入口使用 subjectEntry 属性标识', () => {
+    const sec = sections.find((s: any) => s.title === '学科工具')
+    sec!.items.forEach((item: any) => {
+      expect(item.subjectEntry).toBeDefined()
+      expect(item.subjectEntry).toBe(item.label)
+    })
+  })
+
+  it('原"学科专项 - 语文/数学/英语"3个分区已移除', () => {
+    const titles = sections.map((s: any) => s.title)
+    expect(titles).not.toContain('学科专项 - 语文')
+    expect(titles).not.toContain('学科专项 - 数学')
+    expect(titles).not.toContain('学科专项 - 英语')
+  })
+
+  it('go 函数处理 subjectEntry 跳转到 subject-list 子页面', () => {
+    expect(src).toMatch(/t\.subjectEntry\) uni\.navigateTo\(\{ url: '\/pages\/subject-list\/subject-list\?subject='/)
+  })
+
+  it('itemFeatureMap 中 ai 包含语文/英语/科学/道德与法治学科入口', () => {
+    expect(itemFeatureMap.ai.has('语文')).toBe(true)
+    expect(itemFeatureMap.ai.has('英语')).toBe(true)
+    expect(itemFeatureMap.ai.has('科学')).toBe(true)
+    expect(itemFeatureMap.ai.has('道德与法治')).toBe(true)
+  })
+
+  it('itemFeatureMap 中 tools 包含数学学科入口', () => {
+    expect(itemFeatureMap.tools.has('数学')).toBe(true)
+  })
+
+  it('secItemsFeatureMap 中 ai 和 tools 都映射"学科工具"分区', () => {
+    expect(secItemsFeatureMap.ai.has('学科工具')).toBe(true)
+    expect(secItemsFeatureMap.tools.has('学科工具')).toBe(true)
+  })
+
+  it('subjectEntry 工具走 feature 过滤（不直接 return true）', () => {
+    // 源码中 subjectEntry 不在"直接保留"分支，需走 itemFeatureMap 过滤
+    // 直接保留分支只含 subject/quicktool
+    expect(src).toMatch(/if \(it\.subject \|\| it\.quicktool\) return true/)
+    expect(src).not.toMatch(/if \(it\.subject \|\| it\.quicktool \|\| it\.subjectEntry\) return true/)
   })
 })
