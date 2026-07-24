@@ -2,8 +2,9 @@
   <view class="login" :class="{ dark }">
     <view class="logo">🎒</view>
     <view class="title">家长中心</view>
-    <view class="sub">输入孩子学号，即可查看成绩、班级通知，并与老师沟通</view>
+    <view class="sub">输入孩子学号与密码，即可查看成绩、班级通知，并与老师沟通</view>
     <input v-model="studentNo" class="inp" type="number" maxlength="20" placeholder="请输入学生学号" />
+    <input v-model="password" class="inp" password placeholder="请输入密码（默认 123456）" />
     <button class="btn" :disabled="loading" @click="login">{{ loading ? '登录中…' : '用学号登录' }}</button>
     <view class="or">— 或 —</view>
     <button class="btn wechat-btn" @click="wxLogin">微信一键登录</button>
@@ -21,6 +22,7 @@ import { setParent, theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
 const studentNo = ref('')
+const password = ref('')
 const loading = ref(false)
 
 async function login() {
@@ -28,9 +30,12 @@ async function login() {
   if (!no || !/^\d+$/.test(no)) {
     return uni.showToast({ title: '请输入正确的学号', icon: 'none' })
   }
+  if (!password.value) {
+    return uni.showToast({ title: '请输入密码', icon: 'none' })
+  }
   loading.value = true
   try {
-    const res = await parentApi.post('/parent-auth/login', { studentNo: no })
+    const res = await parentApi.post('/parent-auth/login', { studentNo: no, password: password.value })
     setParent(res.token, res.parent)
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => uni.redirectTo({ url: '/pages/parent/parent' }), 600)
@@ -83,18 +88,20 @@ async function wxLogin() {
 .title { font-size: 52rpx; font-weight: 700; color: var(--c-title); margin-top: 20rpx; }
 .sub { color: var(--c-sub); margin: 16rpx 0 60rpx; font-size: 26rpx; text-align: center; line-height: 1.6; }
 .inp {
-  width: 80%;
+  width: 100%;
+  max-width: 620rpx;
   background: var(--c-input);
   border: 1px solid var(--c-input-border);
   border-radius: 16rpx;
   padding: 24rpx 28rpx;
   font-size: 30rpx;
   color: var(--c-text);
-  margin-bottom: 30rpx;
+  margin-bottom: 24rpx;
   box-sizing: border-box;
 }
 .btn {
-  width: 80%;
+  width: 100%;
+  max-width: 620rpx;
   background: #07c160;
   color: #fff;
   border-radius: 50rpx;
