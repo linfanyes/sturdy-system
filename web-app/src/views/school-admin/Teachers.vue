@@ -2,12 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import {
   listTeachers, createTeacher, updateTeacher, deleteTeacher,
-  updateTeacherFeatures, resetTeacherPassword,
+  updateTeacherFeatures, resetTeacherPassword, exportTeachersCsv,
   type TeacherItem,
 } from '@/api/school-admin'
 import { ALL_FEATURES } from '@/constants/features'
 import Modal from '@/components/Modal.vue'
-import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Check, X } from 'lucide-vue-next'
+import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download } from 'lucide-vue-next'
 
 const loading = ref(false)
 const teachers = ref<TeacherItem[]>([])
@@ -133,6 +133,19 @@ async function handleDelete(t: TeacherItem) {
     alert(e?.message || '删除失败')
   }
 }
+
+/* ============ 导出 ============ */
+const exporting = ref(false)
+async function handleExport() {
+  exporting.value = true
+  try {
+    await exportTeachersCsv()
+  } catch (e: any) {
+    alert(e?.message || '导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -149,6 +162,13 @@ async function handleDelete(t: TeacherItem) {
             class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-56 focus:outline-none focus:border-butter-400"
           />
         </div>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30 transition-colors disabled:opacity-60"
+          :disabled="exporting"
+          @click="handleExport"
+        >
+          <Download class="w-4 h-4" /> {{ exporting ? '导出中…' : '导出 CSV' }}
+        </button>
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
           @click="openCreate"

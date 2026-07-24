@@ -125,3 +125,82 @@ export function createSchoolNotice(dto: { title: string; content: string; pinned
 export function deleteSchoolNotice(id: string) {
   return request.delete(`/school-admin/notices/${id}`)
 }
+
+/* ============ 学生管理 ============ */
+
+/** 学生记录（对齐 server Student 实体 + className 附加字段） */
+export interface StudentItem {
+  id: string
+  classId: string
+  className?: string
+  name: string
+  gender: string
+  studentNo: string
+  birthDate?: string | null
+  seatNo?: number
+  parentName: string
+  parentPhone: string
+  parentLoginEnabled: boolean
+  note?: string
+  tags?: string[]
+  createdAt: string
+}
+
+export function listSchoolStudents() {
+  return request.get<any, { items: StudentItem[]; total: number }>('/school-admin/students')
+}
+
+export function updateStudent(id: string, dto: Partial<Pick<StudentItem, 'name' | 'gender' | 'parentName' | 'parentPhone'>>) {
+  return request.patch(`/school-admin/students/${id}`, dto)
+}
+
+/* ============ 家长登录 ============ */
+
+export interface ParentLoginItem {
+  studentId: string
+  name: string
+  studentNo: string
+  classId: string
+  parentName: string
+  parentPhone: string
+  parentLoginEnabled: boolean
+}
+
+export function listParentLogins() {
+  return request.get<any, { items: ParentLoginItem[]; total: number }>('/school-admin/parent-logins')
+}
+
+/* ============ 全局搜索 ============ */
+
+export interface SearchResult {
+  students: Array<StudentItem & { className?: string }>
+  teachers: Array<{ id: string; name: string; username: string; teacherNo: string; subject: string }>
+  classes: ClassItem[]
+}
+
+export function search(q: string) {
+  return request.get<any, SearchResult>('/school-admin/search', { params: { q } })
+}
+
+/* ============ 数据导出（返回 CSV 文本，触发浏览器下载） ============ */
+
+export async function exportTeachersCsv(): Promise<void> {
+  const blob = await request.get('/school-admin/export/teachers', { responseType: 'blob' })
+  downloadCsv(blob as unknown as Blob, 'teachers.csv')
+}
+
+export async function exportStudentsCsv(): Promise<void> {
+  const blob = await request.get('/school-admin/export/students', { responseType: 'blob' })
+  downloadCsv(blob as unknown as Blob, 'students.csv')
+}
+
+function downloadCsv(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
