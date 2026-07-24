@@ -415,7 +415,7 @@ const allFeatures = [
   { key:'homework',label:'作业' },{ key:'notices',label:'公告' },{ key:'ai',label:'AI助手/备课' },
   { key:'tools',label:'课堂工具' },{ key:'games',label:'小游戏' },{ key:'finance',label:'班费' },
   { key:'activities',label:'班级活动' },{ key:'rewards',label:'奖励/积分' },{ key:'parents',label:'家长联系' },
-  { key:'teachers',label:'教师通讯录' },
+  { key:'teachers',label:'教师通讯录' },{ key:'demo',label:'演示模式' },
 ]
 
 function getToken() { return uni.getStorageSync('sa_token') }

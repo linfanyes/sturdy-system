@@ -87,6 +87,9 @@
 
     <button class="help-btn" @click="showHelp = true">📖 使用帮助</button>
 
+    <!-- 演示模式入口：可见性由校管在功能管理中控制（features 含 demo 或未限制时可见） -->
+    <button v-if="canDemo" class="demo-btn" @click="enterDemoMode">🛝 进入教师系统演示</button>
+
     <button class="logout" @click="logout">退出登录</button>
 
     <view v-if="showHelp" class="mask" @click="showHelp = false">
@@ -114,9 +117,9 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api, { batchRun } from '../../common/request'
+import api, { batchRun, setMockMode } from '../../common/request'
 import { isPhone, isEmail } from '../../common/validators'
-import { theme, auth, setUser, setColorScheme, logout as doLogout } from '../../common/store'
+import { theme, auth, setUser, setAuth, setColorScheme, logout as doLogout } from '../../common/store'
 
 const me = reactive({})
 const form = reactive({ name: '', subject: '', school: '', term: '', subjects: [], motto: '', avatar: '', phone: '', email: '' })
@@ -125,6 +128,13 @@ const saving = ref(false)
 const phoneError = ref('')
 const emailError = ref('')
 const showHelp = ref(false)
+
+// 演示入口可见性：校管在功能管理中配置 features
+// features 为空数组=全部可用（含演示）；非空=仅列表中的功能可用，需含 'demo' 才显示
+const canDemo = computed(() => {
+  const ftrs = auth.features || []
+  return ftrs.length === 0 || ftrs.includes('demo')
+})
 
 // 备份历史与自动备份相关状态
 const backups = ref([])
@@ -384,6 +394,23 @@ function logout() {
   })
 }
 
+// 演示模式：以模拟教师身份进入教师系统，所有 API 由本地 mock 数据响应
+async function enterDemoMode() {
+  uni.showLoading({ title: '进入演示…' })
+  try {
+    setMockMode(true)
+    const demoUser = {
+      name: '珊珊老师', school: '阳光实验小学（演示版）',
+      schoolId: 'demo-school', features: [],
+    }
+    setAuth('mock-teacher-token', demoUser)
+    uni.hideLoading()
+    uni.switchTab({ url: '/pages/dashboard/dashboard' })
+  } catch (e) {
+    uni.hideLoading()
+  }
+}
+
 // —— 备份与恢复 ——
 // 时间格式化：备份列表/上次自动备份均使用同一格式
 function fmtTime(t) {
@@ -543,6 +570,7 @@ async function maybeAutoBackup(force = false) {
 .btn-s { flex: 1; background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 .logout { background: var(--c-card2); color: var(--c-danger); border-radius: 50rpx; margin-top: 10rpx; }
 .help-btn { background: var(--c-card); color: var(--c-accent); border: 1px solid var(--c-accent); border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.demo-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-radius: 50rpx; margin-top: 10rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 /* 使用帮助弹层 */
 .help-modal { width: 640rpx; max-height: 84vh; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; display: flex; flex-direction: column; box-sizing: border-box; }
 .hm-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 16rpx; }
