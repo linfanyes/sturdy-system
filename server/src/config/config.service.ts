@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { AppConfig } from './app-config.entity'
 import { AiSettings } from './ai-settings.entity'
+import { fetchProviderModels, type ProviderModelsResult } from './provider-models'
 
 @Injectable()
 export class ConfigService implements OnModuleInit {
@@ -54,6 +55,21 @@ export class ConfigService implements OnModuleInit {
         key: 'aiVisionModel',
         value: this.env.get('AI_VISION_MODEL') || 'qwen-vl-plus',
         description: '多模态模型',
+      },
+      {
+        key: 'aiImageModel',
+        value: this.env.get('AI_IMAGE_MODEL') || '',
+        description: '文生图模型',
+      },
+      {
+        key: 'aiVideoModel',
+        value: this.env.get('AI_VIDEO_MODEL') || '',
+        description: '文生视频模型',
+      },
+      {
+        key: 'aiResourceModels',
+        value: this.env.get('AI_RESOURCE_MODELS') || '{}',
+        description: '按场景覆盖默认模型（JSON）',
       },
       {
         key: 'aiTemperature',
@@ -168,5 +184,20 @@ export class ConfigService implements OnModuleInit {
     if (!s) s = this.aiRepo.create({ teacherId })
     Object.assign(s, dto, { teacherId })
     return this.aiRepo.save(s)
+  }
+
+  /**
+   * 查询服务商的可用模型列表。
+   * 优先实时查询各服务商 /models 接口；baseUrl / apiKey 未传时回退平台级配置。
+   * 查询失败则使用预设默认（见 provider-models）。
+   */
+  async listProviderModels(dto: {
+    provider?: string
+    baseUrl?: string
+    apiKey?: string
+  }): Promise<ProviderModelsResult> {
+    const baseUrl = dto.baseUrl || (await this.getAppConfigValue('aiBaseUrl')) || ''
+    const apiKey = dto.apiKey || (await this.getAppConfigValue('aiApiKey')) || ''
+    return fetchProviderModels({ provider: dto.provider, baseUrl, apiKey })
   }
 }

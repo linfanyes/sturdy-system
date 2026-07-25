@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Param,
   Body,
   UseGuards,
@@ -59,5 +60,15 @@ export class ConfigController {
   @UseGuards(JwtAuthGuard)
   saveAi(@CurrentTeacher() t: any, @Body() dto: any) {
     return this.cfg.saveAiSettings(t.sub, dto)
+  }
+
+  /**
+   * 查询服务商可用模型列表（实时查询 /models，失败回退预设默认）。
+   * 任意已登录用户均可调用；baseUrl / apiKey 由客户端传入（不泄露平台密钥）。
+   */
+  @Post('ai/models')
+  @UseGuards(JwtAuthGuard)
+  listProviderModels(@Body() dto: { provider?: string; baseUrl?: string; apiKey?: string }) {
+    return this.cfg.listProviderModels(dto || {})
   }
 }
