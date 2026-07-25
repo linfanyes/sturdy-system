@@ -5,6 +5,7 @@ import {
   listClasses,
   type StudentItem, type ClassItem,
 } from '@/api/school-admin'
+import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Search, Download, Edit3, Phone, Users, Upload, Printer } from 'lucide-vue-next'
@@ -77,8 +78,16 @@ function openEdit(s: StudentItem) {
   showForm.value = true
 }
 
+const phoneError = computed(() =>
+  form.value.parentPhone && !isValidPhone(form.value.parentPhone) ? PHONE_HINT : '',
+)
+
 async function submitForm() {
   if (!editing.value) return
+  if (form.value.parentPhone && !isValidPhone(form.value.parentPhone)) {
+    alert(PHONE_HINT)
+    return
+  }
   formLoading.value = true
   try {
     await updateStudent(editing.value.id, {
@@ -263,7 +272,13 @@ function handlePrint() {
       </div>
       <div>
         <label class="text-sm text-cocoa-500">家长电话</label>
-        <input v-model="form.parentPhone" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="家长手机号" />
+        <input
+          v-model="form.parentPhone"
+          class="w-full mt-1 px-3 py-2 rounded-xl border focus:outline-none"
+          :class="phoneError ? 'border-red-400' : 'border-cream-200 focus:border-butter-400'"
+          placeholder="家长手机号"
+        />
+        <p v-if="phoneError" class="text-xs text-red-500 mt-1">{{ phoneError }}</p>
       </div>
       <div class="text-xs text-cocoa-400 flex items-center gap-1">
         <Phone class="w-3 h-3" />

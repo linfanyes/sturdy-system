@@ -6,6 +6,8 @@ import {
   type TeacherItem,
 } from '@/api/school-admin'
 import { ALL_FEATURES } from '@/constants/features'
+import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer } from 'lucide-vue-next'
@@ -58,20 +60,33 @@ function openEdit(t: TeacherItem) {
   showForm.value = true
 }
 
+const phoneError = computed(() =>
+  form.value.phone && !isValidPhone(form.value.phone) ? PHONE_HINT : '',
+)
+
 async function submitForm() {
   if (!form.value.name) return
+  if (form.value.phone && !isValidPhone(form.value.phone)) {
+    alert(PHONE_HINT)
+    return
+  }
   formLoading.value = true
   try {
     if (editingId.value) {
-      await updateTeacher(editingId.value, {
+      const dto: Record<string, any> = {
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
-      })
+      }
+      // 支持修改账号：非空才提交，后端校验库中是否已存在
+      if (form.value.username && form.value.username.trim()) {
+        dto.username = form.value.username.trim()
+      }
+      await updateTeacher(editingId.value, dto)
     } else {
       await createTeacher({
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
-        username: form.value.username || undefined,
+        username: form.value.username?.trim() || undefined,
         password: form.value.password || undefined,
       })
     }
@@ -293,18 +308,27 @@ function handlePrint() {
         </div>
         <div>
           <label class="text-sm text-cocoa-500">学科</label>
-          <input v-model="form.subject" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="如：语文" />
+          <select v-model="form.subject" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+            <option value="">未设置</option>
+            <option v-for="s in SUBJECT_OPTIONS" :key="s" :value="s">{{ s }}</option>
+          </select>
         </div>
       </div>
       <div>
         <label class="text-sm text-cocoa-500">手机号</label>
-        <input v-model="form.phone" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="选填" />
+        <input
+          v-model="form.phone"
+          class="w-full mt-1 px-3 py-2 rounded-xl border focus:outline-none"
+          :class="phoneError ? 'border-red-400' : 'border-cream-200 focus:border-butter-400'"
+          placeholder="选填"
+        />
+        <p v-if="phoneError" class="text-xs text-red-500 mt-1">{{ phoneError }}</p>
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">登录用户名{{ editingId ? '（可修改）' : '（留空自动生成）' }}</label>
+        <input v-model="form.username" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="如 zhangsan" />
       </div>
       <template v-if="!editingId">
-        <div>
-          <label class="text-sm text-cocoa-500">登录用户名</label>
-          <input v-model="form.username" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则自动生成" />
-        </div>
         <div>
           <label class="text-sm text-cocoa-500">初始密码</label>
           <input v-model="form.password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则默认 123456" />

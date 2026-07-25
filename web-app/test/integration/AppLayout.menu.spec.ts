@@ -64,10 +64,29 @@ describe('AppLayout 侧边栏菜单 / 搜索 / 退出（NAV-06 / SA-06 / SA-07�
     expect(wrapper.text()).not.toContain('学校管理')
   })
 
-  it('教师：菜单按分组渲染且含工具箱/小游戏分组', async () => {
+  it('教师：三级折叠菜单含课堂工具/小游戏/AI 对话', async () => {
     const { wrapper } = await mountWith('teacher', { features: [] })
-    expect(wrapper.text()).toContain('工具箱总览')
+    // 一级分类标题始终可见（折叠态下只显示分类头，旧「工具箱总览」已重命名为「课堂工具」）
+    expect(wrapper.text()).toContain('课堂工具')
+    expect(wrapper.text()).toContain('AI 与备课')
+
+    // 展开「课堂工具」分类 → 二级子分组「小游戏」→ 三级功能「游戏合集」
+    const catBtn = wrapper.findAll('button').find((b) => b.text().includes('课堂工具'))!
+    await catBtn.trigger('click')
+    await flushPromises()
     expect(wrapper.text()).toContain('小游戏')
+    const gameGroupBtn = wrapper.findAll('button').find((b) => b.text().trim() === '小游戏')!
+    await gameGroupBtn.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('游戏合集')
+
+    // 展开「AI 与备课」→「AI 工具」→ 三级功能「AI 对话」
+    const aiCatBtn = wrapper.findAll('button').find((b) => b.text().includes('AI 与备课'))!
+    await aiCatBtn.trigger('click')
+    await flushPromises()
+    const aiToolBtn = wrapper.findAll('button').find((b) => b.text().trim() === 'AI 工具')!
+    await aiToolBtn.trigger('click')
+    await flushPromises()
     expect(wrapper.text()).toContain('AI 对话')
   })
 

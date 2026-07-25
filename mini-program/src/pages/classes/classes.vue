@@ -229,7 +229,8 @@ const form = ref({
   subjectTeachers: {},
 })
 
-const className = computed(() => grades[form.value.gradeIdx] + classOpts[form.value.classIdx])
+// 班级名称：年级 + 数字序号 + 班，例如 五年级 + 1 → 五年级1班
+const className = computed(() => grades[form.value.gradeIdx] + (form.value.classIdx + 1) + '班')
 // 学期由年度+季度自动生成，格式：年度+季度+学期（如 "2026年春季学期"）
 const autoTermName = computed(() => years[form.value.yearIdx] + '年' + quarters[form.value.quarterIdx] + '学期')
 
@@ -289,7 +290,8 @@ function toggleSubject(s) {
 function edit(c) {
   editingId.value = c.id
   const gIdx = grades.indexOf(c.grade)
-  const cIdx = classOpts.indexOf(c.classNo)
+  // classNo 为数字序号（1 起），兼容历史「一班」等文本：转数字失败则回退 1
+  const cIdx = (parseInt(c.classNo, 10) || 1) - 1
   form.value = {
     gradeIdx: gIdx >= 0 ? gIdx : 0,
     classIdx: cIdx >= 0 ? cIdx : 0,
@@ -319,14 +321,18 @@ async function save() {
   if (!form.value.subjects.length) {
     return uni.showToast({ title: '请至少选择一门课程', icon: 'none' })
   }
-  const classNo = form.value.customNo.trim() || classOpts[form.value.classIdx]
+  // 班级序号：默认取数字序号（1 起），自定义班号优先；存储为数字
+  const classNo = form.value.customNo.trim() || String(form.value.classIdx + 1)
+  const displayName = form.value.customNo.trim()
+    ? grades[form.value.gradeIdx] + form.value.customNo.trim()
+    : grades[form.value.gradeIdx] + (form.value.classIdx + 1) + '班'
   // 默认未设置的任课老师为班主任
   const subjectTeachers = { ...form.value.subjectTeachers }
   form.value.subjects.forEach(s => {
     if (!subjectTeachers[s]) subjectTeachers[s] = form.value.headTeacher
   })
   const payload = {
-    name: grades[form.value.gradeIdx] + classNo,
+    name: displayName,
     grade: grades[form.value.gradeIdx],
     classNo,
     term: autoTermName.value,

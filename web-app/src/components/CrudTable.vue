@@ -26,6 +26,10 @@ export interface FieldDef {
   hideInList?: boolean
   /** 是否在表单中只读 */
   readonly?: boolean
+  /** 格式校验正则（仅当值非空时校验，如手机号） */
+  pattern?: RegExp
+  /** 校验失败提示语 */
+  patternHint?: string
   /** 渲染函数：自定义单元格渲染 */
   render?: (row: any) => string
 }
@@ -135,6 +139,14 @@ async function submitForm() {
     if (f.required && (form.value[f.key] == null || form.value[f.key] === '')) {
       alert(`${f.label}必填`)
       return
+    }
+    // 格式校验（仅当值非空时）
+    if (f.pattern && form.value[f.key]) {
+      const val = String(form.value[f.key]).trim()
+      if (val && !f.pattern.test(val)) {
+        alert(f.patternHint || `${f.label}格式不正确`)
+        return
+      }
     }
   }
   formLoading.value = true

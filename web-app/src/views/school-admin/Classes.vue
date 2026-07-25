@@ -7,6 +7,7 @@ import {
 } from '@/api/school-admin'
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
+import { SUBJECT_OPTIONS } from '@/constants/subjects'
 import { Plus, Search, Trash2, Edit3, Upload, Printer, Download } from 'lucide-vue-next'
 
 /* ============ 列表 ============ */
@@ -55,8 +56,7 @@ function teacherName(id: string) {
   return teachers.value.find(t => t.id === id)?.name || id
 }
 
-/* ============ 学科选项 ============ */
-const SUBJECT_OPTIONS = ['语文', '数学', '英语', '科学', '物理', '化学', '生物', '政治', '历史', '地理', '音乐', '体育', '美术', '信息技术', '道德与法治']
+/* ============ 学科选项（来自共享常量 @/constants/subjects） ============ */
 
 /* ============ 学期生成 ============ */
 function genTermOptions() {
@@ -76,7 +76,6 @@ const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const formLoading = ref(false)
 const form = ref({
-  name: '',
   grade: '',
   classNo: '1',
   term: '',
@@ -84,6 +83,13 @@ const form = ref({
   subjects: [] as string[],
   // 科任老师 [{ teacherId, subjects }]
   subjectTeachers: [] as { teacherId: string; subjects: string[] }[],
+})
+
+/** 班级名称由「年级 + 班级序号 + 班」自动拼接，例如 五年级 + 1 → 五年级1班（不可手动编辑） */
+const className = computed(() => {
+  const g = form.value.grade
+  const n = (form.value.classNo || '').trim()
+  return g && n ? `${g}${n}班` : ''
 })
 
 function defaultTerm() {
@@ -96,7 +102,7 @@ function defaultTerm() {
 function openCreate() {
   editingId.value = null
   form.value = {
-    name: '', grade: '', classNo: '1',
+    grade: '', classNo: '1',
     term: defaultTerm(),
     headTeacherId: '',
     subjects: [],
@@ -107,10 +113,12 @@ function openCreate() {
 
 function openEdit(c: ClassItem) {
   editingId.value = c.id
+  // 兼容历史数据：旧 classNo 可能为「一班」(带「班」尾)，去掉尾部「班」还原为序号
+  const rawNo = c.classNo || '1'
+  const classNo = /班$/.test(rawNo) ? rawNo.slice(0, -1) : rawNo
   form.value = {
-    name: c.name,
     grade: c.grade,
-    classNo: c.classNo || '1',
+    classNo,
     term: c.term || defaultTerm(),
     headTeacherId: c.teacherId,
     subjects: [...(c.subjects || [])],
@@ -133,8 +141,12 @@ function toggleSubject(list: string[], subj: string) {
 }
 
 async function submitForm() {
-  if (!form.value.name || !form.value.grade || !form.value.headTeacherId) {
-    alert('班级名称、年级、班主任必填')
+  if (!className.value) {
+    alert('请选择年级并填写班级序号（班级名称将自动生成为「年级+序号+班」）')
+    return
+  }
+  if (!form.value.headTeacherId) {
+    alert('请选择班主任')
     return
   }
   formLoading.value = true
@@ -142,7 +154,7 @@ async function submitForm() {
     if (editingId.value) {
       // 编辑：支持转交班主任 + 基本信息
       await updateClass(editingId.value, {
-        name: form.value.name,
+        name: className.value,
         grade: form.value.grade,
         classNo: form.value.classNo,
         term: form.value.term,
@@ -153,7 +165,7 @@ async function submitForm() {
       // 新增：班级 + 班主任任教学科 + 科任老师
       const validST = form.value.subjectTeachers.filter(st => st.teacherId && st.teacherId !== form.value.headTeacherId)
       await createClass({
-        name: form.value.name,
+        name: className.value,
         grade: form.value.grade,
         classNo: form.value.classNo,
         headTeacher: teacherName(form.value.headTeacherId),
@@ -301,8 +313,10 @@ function handlePrint() {
     <div class="space-y-3">
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="text-sm text-cocoa-500">班级名称 *</label>
-          <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="如：一年级1班" />
+          <label class="text-sm text-cocoa-500">班级名称（自动生成）</label>
+          <div class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-cocoa-700">
+            {{ className || '请选择年级并填写班级序号' }}
+          </div>
         </div>
         <div>
           <label class="text-sm text-cocoa-500">年级 *</label>
@@ -389,7 +403,7 @@ function handlePrint() {
       <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
       <button
         class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-        :disabled="formLoading || !form.name || !form.grade || !form.headTeacherId"
+        :disabled="formLoading || !className || !form.headTeacherId"
         @click="submitForm"
       >
         {{ formLoading ? '保存中…' : '保存' }}

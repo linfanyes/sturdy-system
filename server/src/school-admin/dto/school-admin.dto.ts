@@ -1,6 +1,6 @@
 import {
   IsNotEmpty, IsOptional, IsString, IsBoolean, IsArray,
-  MinLength, MaxLength, ValidateNested, ArrayMinSize,
+  MinLength, MaxLength, ValidateNested, ArrayMinSize, Matches,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -24,7 +24,7 @@ export class TeacherItemDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20, { message: '手机号过长' })
+  @Matches(/^1[3-9]\d{9}$|^$/, { message: '手机号格式不正确（应为 11 位手机号，可留空）' })
   phone?: string
 
   @IsOptional()
@@ -141,6 +141,6 @@ export class UpdateStudentDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20, { message: '家长手机号过长' })
+  @Matches(/^1[3-9]\d{9}$|^$/, { message: '家长手机号格式不正确（应为 11 位手机号，可留空）' })
   parentPhone?: string
 }

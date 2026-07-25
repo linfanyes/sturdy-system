@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import request from '@/api/request'
+import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import { User, School, Phone, BookOpen, Calendar, Save } from 'lucide-vue-next'
 
 const auth = useAuthStore()
@@ -34,7 +35,15 @@ async function loadProfile() {
 }
 onMounted(loadProfile)
 
+const phoneError = computed(() =>
+  form.value.phone && !isValidPhone(form.value.phone) ? PHONE_HINT : '',
+)
+
 async function save() {
+  if (form.value.phone && !isValidPhone(form.value.phone)) {
+    alert(PHONE_HINT)
+    return
+  }
   saving.value = true
   try {
     await request.patch('/users/me', {
@@ -77,7 +86,12 @@ async function save() {
           </div>
           <div>
             <label class="text-sm text-cocoa-500 flex items-center gap-1"><Phone class="w-3.5 h-3.5" />手机号</label>
-            <input v-model="form.phone" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
+            <input
+              v-model="form.phone"
+              class="w-full mt-1 px-3 py-2 rounded-xl border focus:outline-none"
+              :class="phoneError ? 'border-red-400' : 'border-cream-200 focus:border-butter-400'"
+            />
+            <p v-if="phoneError" class="text-xs text-red-500 mt-1">{{ phoneError }}</p>
           </div>
           <div>
             <label class="text-sm text-cocoa-500 flex items-center gap-1"><BookOpen class="w-3.5 h-3.5" />任教学科</label>
