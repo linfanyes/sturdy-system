@@ -153,8 +153,8 @@ async function del(row: any) {
           <div class="flex items-center justify-between">
             <div class="font-semibold text-cocoa-900 text-sm truncate">{{ row.title }}</div>
             <div class="flex items-center gap-1">
-              <button class="p-1 rounded hover:bg-cream-100 text-cocoa-500" @click="openEdit(row)"><Edit3 class="w-3.5 h-3.5" /></button>
-              <button class="p-1 rounded hover:bg-red-50 text-red-500" @click="del(row)"><Trash2 class="w-3.5 h-3.5" /></button>
+              <button class="p-1 rounded hover:bg-cream-100 text-cocoa-500" @click="openEdit(row)" title="编辑" aria-label="编辑"><Edit3 class="w-3.5 h-3.5" /></button>
+              <button class="p-1 rounded hover:bg-red-50 text-red-500" @click="del(row)" title="删除" aria-label="删除"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
           </div>
           <div class="text-xs text-cocoa-400 mt-1 flex items-center justify-between">

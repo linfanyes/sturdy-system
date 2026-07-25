@@ -3,6 +3,7 @@ import { ParentAuthService } from './parent-auth.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentParent } from './current-parent.decorator'
+import { ParentLoginDto, ChangePasswordDto, BindWechatDto, SubscribeDto } from './dto/parent-auth.dto'
 
 @Controller('parent-auth')
 @Roles('parent')
@@ -11,7 +12,7 @@ export class ParentAuthController {
 
   /** 家长凭学生学号 + 密码登录 */
   @Post('login')
-  login(@Body() b: { studentNo?: string; password?: string }) {
+  login(@Body() b: ParentLoginDto) {
     return this.s.login((b && b.studentNo) || '', (b && b.password) || '')
   }
 
@@ -19,7 +20,7 @@ export class ParentAuthController {
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   changePassword(
-    @Body() b: { oldPassword?: string; newPassword?: string },
+    @Body() b: ChangePasswordDto,
     @CurrentParent() p: any,
   ) {
     return this.s.changePassword(p, (b && b.oldPassword) || '', (b && b.newPassword) || '')
@@ -28,7 +29,7 @@ export class ParentAuthController {
   /** 家长绑定微信（自动或手动） */
   @Post('bind-wechat')
   @UseGuards(JwtAuthGuard)
-  bindWechat(@Body() b: { code?: string; nickName?: string }, @CurrentParent() p: any) {
+  bindWechat(@Body() b: BindWechatDto, @CurrentParent() p: any) {
     return this.s.bindWechat((b && b.code) || '', p, (b && b.nickName) || '')
   }
 
@@ -63,7 +64,7 @@ export class ParentAuthController {
   /** 家长订阅微信通知（wx.login code → openId 落库） */
   @Post('subscribe')
   @UseGuards(JwtAuthGuard)
-  subscribe(@Body() b: { code?: string }, @CurrentParent() p: any) {
+  subscribe(@Body() b: SubscribeDto, @CurrentParent() p: any) {
     return this.s.subscribe(p.studentNo, (b && b.code) || '')
   }
 

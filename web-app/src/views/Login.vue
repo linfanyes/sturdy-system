@@ -143,10 +143,6 @@ async function handleLogin() {
           用 <span class="scribble">爱</span> 浇灌每一颗小苗
         </p>
 
-        <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0 leading-relaxed mt-5">
-          统一使用用户名和密码登录，系统会根据账号自动进入对应的工作台。
-        </p>
-
         <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block mt-6">
           <li class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-full bg-butter-300 flex items-center justify-center text-xs font-bold">1</span>

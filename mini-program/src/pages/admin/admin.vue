@@ -71,8 +71,8 @@
         </view>
       </template>
 
-      <!-- ===== 学校管理员管理 ===== -->
-      <template v-else>
+      <!-- ===== 学校管理员管理（仅「管理员」页签展示，避免出现在配置/日志中） ===== -->
+      <template v-else-if="tab === 'admin'">
         <view class="stats">
           <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
           <text class="act" @click="openCreate">＋ 新增</text>
@@ -247,11 +247,13 @@
             </view>
             <view v-if="!editingId" class="form-item">
               <text class="label">密码 <text class="req">*</text></text>
-              <input v-model="form.password" class="inp" placeholder="登录密码" password />
+              <input v-model="form.password" class="inp inp-lg" placeholder="请输入登录密码" password />
+              <text class="field-hint">提示：该密码将作为此学校管理员的登录密码，请妥善保管。</text>
             </view>
             <view v-else class="form-item">
               <text class="label">新密码 <text class="opt">（留空则不修改）</text></text>
-              <input v-model="form.password" class="inp" placeholder="输入新密码可重置" password />
+              <input v-model="form.password" class="inp inp-lg" placeholder="输入新密码可重置" password />
+              <text class="field-hint">提示：留空则保持原密码不变；填写后将立即重置其登录密码。</text>
             </view>
             <view class="form-item switch-item">
               <view class="label-line">
@@ -271,7 +273,10 @@
       <view v-if="resetTarget" class="mask mask-center" @click="resetTarget = null">
         <view class="dialog" @click.stop>
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
-          <input v-model="resetPwd" class="inp-dialog" placeholder="新密码（必填）" password />
+          <view class="inp-wrap">
+            <input v-model="resetPwd" class="inp-dialog" placeholder="请输入新密码" password />
+            <text class="dialog-hint">提示：密码设置后，该管理员需使用新密码重新登录，原密码立即失效。</text>
+          </view>
           <button class="save-btn" :disabled="saving" @click="confirmReset">{{ saving ? '保存中…' : '确认重置' }}</button>
         </view>
       </view>
@@ -423,8 +428,14 @@ async function loadAdmins() {
   schoolAdmins.value = Array.isArray(r) ? r : (r.items || [])
 }
 
-// Tab 切换
-function switchTab(t) { tab.value = t; loadAll(); if (t === 'config') loadConfigs(); if (t === 'audit') loadAuditLogs() }
+// Tab 切换：按页签按需加载，避免「配置/日志」页签误加载并展示学校管理员列表
+function switchTab(t) {
+  tab.value = t
+  if (t === 'school') loadSchools()
+  if (t === 'admin') loadAdmins()
+  if (t === 'config') loadConfigs()
+  if (t === 'audit') loadAuditLogs()
+}
 
 // ===== 审计日志 =====
 const auditLogs = ref([])
@@ -803,7 +814,7 @@ function confirmResetAll() {
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .mask.mask-center { align-items: center; justify-content: center; }
 .dialog { width: 86%; max-width: 600rpx; background: var(--c-card); border-radius: 24rpx; padding: 40rpx 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
-.inp-dialog { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx 20rpx; margin: 20rpx 0; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
+.inp-dialog { border: 2rpx solid var(--c-border); border-radius: 16rpx; padding: 24rpx 24rpx; margin: 12rpx 0 4rpx; font-size: 32rpx; min-height: 92rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
 /* 全屏表单 */
@@ -819,6 +830,8 @@ function confirmResetAll() {
 /* 编辑学校时显示只读编号 */
 .code-display { font-size: 28rpx; padding: 18rpx; background: var(--c-card2); border-radius: 14rpx; color: var(--c-title); font-weight: 600; }
 .field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
+.field-hint { display: block; font-size: 24rpx; color: var(--c-sub); margin-top: 10rpx; line-height: 1.6; }
+.dialog-hint { display: block; font-size: 24rpx; color: var(--c-sub); margin: 10rpx 2rpx 14rpx; line-height: 1.6; }
 /* 重置密码弹窗输入框包裹（解决 flex 下 input 被挤压） */
 .inp-wrap { width: 100%; margin-bottom: 6rpx; }
 /* 学校管理员列表学校编号筛选 */
@@ -845,6 +858,8 @@ function confirmResetAll() {
 .picker-inp { border: 1px solid var(--c-border); border-radius: 14rpx; padding: 18rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 /* 全屏表单内的输入框：覆盖共享 .inp 的 margin，确保宽度撑满 */
 .full-body .inp { width: 100%; margin-bottom: 0; min-height: 72rpx; }
+/* 放大的密码输入框（创建/修改/重置场景） */
+.full-body .inp.inp-lg { font-size: 32rpx; padding: 24rpx 22rpx; min-height: 92rpx; }
 /* 平台配置 */
 .config-scroll { height: calc(100vh - 200rpx); padding: 0 0 40rpx; }
 .config-group { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 16rpx; }

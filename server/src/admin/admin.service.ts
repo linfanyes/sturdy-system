@@ -10,6 +10,7 @@ import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { hashPassword } from '../common/utils/password.util'
+import { BusinessException } from '../common/exceptions/business.exception'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -217,16 +218,17 @@ export class AdminService implements OnModuleInit {
   /** 新增学校管理员：绑定已存在的学校（通过 schoolId 下拉选择） */
   async createAdmin(dto: { username: string; password: string; name: string; schoolId: string; enabled?: boolean }) {
     if (!dto.username || !dto.password || !dto.name || !dto.schoolId) {
-      throw new BadRequestException('学校/用户名/密码/姓名必填')
+      throw new BusinessException('ADMIN_FIELDS_REQUIRED', '学校/用户名/密码/姓名必填')
     }
     const school = await this.schoolRepo.findOne({ where: { id: dto.schoolId } })
-    if (!school) throw new BadRequestException('所选学校不存在')
+    if (!school) throw new BusinessException('SCHOOL_NOT_FOUND', '所选学校不存在')
     // 用户名唯一性校验
     const exist = await this.saRepo.findOne({ where: { username: dto.username } })
-    if (exist) throw new BadRequestException('用户名已存在')
+    if (exist) throw new BusinessException('ADMIN_USERNAME_EXISTS', '用户名已存在')
 
-    // 创建学校管理员
-    const hash = crypto.createHash('sha256').update(dto.password).digest('hex')
+    // 创建学校管理员：统一使用 bcrypt 哈希（与 seed / resetAdminPassword 保持一致，
+    // 避免 sha256 与 bcrypt 双格式并存导致登录校验偶发失败）
+    const hash = hashPassword(dto.password)
     const admin = await this.saRepo.save(this.saRepo.create({
       username: dto.username,
       passwordHash: hash,

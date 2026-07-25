@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { resolveApiBase, getRuntimeApiBase } from '@/config/apiBase'
+import { getViteEnvApiBase } from '@/config/viteEnv'
 
 /**
  * 全局 HTTP 封装：对接小程序后端（NestJS）。
@@ -11,16 +12,7 @@ import { resolveApiBase, getRuntimeApiBase } from '@/config/apiBase'
 
 /** 解析后端 API 基础地址（支持运行时覆盖，便于更换云托管域名免重建） */
 export function getApiBase(): string {
-  // 构建期环境变量（仅 Vite 运行时生效；非 ESM 环境下 import.meta 不可用时安全回退）
-  let buildTime: string | undefined
-  try {
-    // @ts-ignore Vite 注入的 import.meta.env
-    const v = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_BASE
-    if (typeof v === 'string' && v.trim()) buildTime = v.trim()
-  } catch {
-    /* 非 Vite 环境（如 Jest）回退 */
-  }
-  return resolveApiBase(getRuntimeApiBase(), buildTime, '/api')
+  return resolveApiBase(getRuntimeApiBase(), getViteEnvApiBase(), '/api')
 }
 
 const instance: AxiosInstance = axios.create({

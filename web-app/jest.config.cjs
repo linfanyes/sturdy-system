@@ -27,5 +27,15 @@ module.exports = {
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'lcov', 'html', 'clover'],
+  // 回归门禁：仅在 `test:coverage`（CI 中执行）时生效；冒烟用例位于 test/integration，
+  // 不参与 src 覆盖率统计，天然被排除。当前基线与报告目标见 TEST_REPORT.md 第 8 节。
+  coverageThreshold: {
+    global: {
+      statements: 55,
+      branches: 40,
+      functions: 45,
+      lines: 55,
+    },
+  },
   verbose: true,
 }

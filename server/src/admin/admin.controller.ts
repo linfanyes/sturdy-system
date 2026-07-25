@@ -5,6 +5,11 @@ import { Roles } from '../common/decorators/roles.decorator'
 import { AuditService } from '../audit/audit.service'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 import { AdminLoginDto } from '../auth/dto/unified-login.dto'
+import { CreateSchoolDto, UpdateSchoolDto } from './dto/create-school.dto'
+import {
+  CreateSchoolAdminDto, UpdateSchoolAdminDto, ToggleEnabledDto,
+  ResetPasswordDto, ResetAllDto,
+} from './dto/school-admin.dto'
 
 // 超管登录：每分钟最多 6 次
 const AdminLoginRateLimit = createRateLimitGuard(60_000, 6)
@@ -32,11 +37,11 @@ export class AdminController {
 
   @Post('schools')
   @UseGuards(JwtAuthGuard)
-  createSchool(@Body() b: any) { return this.svc.createSchool(b) }
+  createSchool(@Body() b: CreateSchoolDto) { return this.svc.createSchool(b) }
 
   @Patch('schools/:id')
   @UseGuards(JwtAuthGuard)
-  updateSchool(@Param('id') id: string, @Body() b: any) { return this.svc.updateSchool(id, b) }
+  updateSchool(@Param('id') id: string, @Body() b: UpdateSchoolDto) { return this.svc.updateSchool(id, b) }
 
   @Delete('schools/:id')
   @UseGuards(JwtAuthGuard)
@@ -51,21 +56,21 @@ export class AdminController {
 
   @Post('school-admins')
   @UseGuards(JwtAuthGuard)
-  createAdmin(@Body() b: any) { return this.svc.createAdmin(b) }
+  createAdmin(@Body() b: CreateSchoolAdminDto) { return this.svc.createAdmin(b) }
 
   @Patch('school-admins/:id')
   @UseGuards(JwtAuthGuard)
-  updateAdmin(@Param('id') id: string, @Body() b: any) { return this.svc.updateAdmin(id, b) }
+  updateAdmin(@Param('id') id: string, @Body() b: UpdateSchoolAdminDto) { return this.svc.updateAdmin(id, b) }
 
   @Patch('school-admins/:id/enabled')
   @UseGuards(JwtAuthGuard)
-  toggleEnabled(@Param('id') id: string, @Body() b: { enabled?: boolean }) {
+  toggleEnabled(@Param('id') id: string, @Body() b: ToggleEnabledDto) {
     return this.svc.toggleAdminEnabled(id, b?.enabled !== false)
   }
 
   @Patch('school-admins/:id/password')
   @UseGuards(JwtAuthGuard)
-  resetPassword(@Param('id') id: string, @Body() b: { password?: string }) {
+  resetPassword(@Param('id') id: string, @Body() b: ResetPasswordDto) {
     return this.svc.resetAdminPassword(id, b?.password || '')
   }
 
@@ -75,7 +80,7 @@ export class AdminController {
 
   @Post('reset-all')
   @UseGuards(JwtAuthGuard)
-  resetAll(@Body() b: { confirm?: boolean }) { return this.svc.resetAll(b?.confirm === true) }
+  resetAll(@Body() b: ResetAllDto) { return this.svc.resetAll(b?.confirm === true) }
 
   @Get('audit-logs')
   @UseGuards(JwtAuthGuard)

@@ -3,6 +3,9 @@ import { SchoolAdminService } from './school-admin.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentSchoolAdmin } from './current-school-admin.decorator'
+import {
+  CreateTeacherDto, BatchCreateTeachersDto, CreateClassDto, CreateNoticeDto, UpdateStudentDto,
+} from './dto/school-admin.dto'
 
 @Controller('school-admin')
 @Roles('school_admin')
@@ -26,11 +29,11 @@ export class SchoolAdminController {
 
   @Post('teachers')
   @UseGuards(JwtAuthGuard)
-  createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createTeacher(a.schoolId, b) }
+  createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: CreateTeacherDto) { return this.svc.createTeacher(a.schoolId, b) }
 
   @Post('teachers/batch')
   @UseGuards(JwtAuthGuard)
-  batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { teachers: { name: string; phone?: string; gender?: string; subject?: string; password?: string; username?: string }[] }) {
+  batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: BatchCreateTeachersDto) {
     return this.svc.batchCreateTeachers(a.schoolId, b.teachers || [])
   }
 
@@ -68,7 +71,7 @@ export class SchoolAdminController {
 
   @Post('classes')
   @UseGuards(JwtAuthGuard)
-  createClass(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createClass(a.schoolId, b) }
+  createClass(@CurrentSchoolAdmin() a: any, @Body() b: CreateClassDto) { return this.svc.createClass(a.schoolId, b) }
 
   @Patch('classes/:id')
   @UseGuards(JwtAuthGuard)
@@ -88,7 +91,7 @@ export class SchoolAdminController {
 
   @Post('notices')
   @UseGuards(JwtAuthGuard)
-  createNotice(@CurrentSchoolAdmin() a: any, @Body() b: any) { return this.svc.createSchoolNotice(a.schoolId, a.sub, b) }
+  createNotice(@CurrentSchoolAdmin() a: any, @Body() b: CreateNoticeDto) { return this.svc.createSchoolNotice(a.schoolId, a.sub, b) }
 
   @Delete('notices/:id')
   @UseGuards(JwtAuthGuard)
@@ -101,7 +104,7 @@ export class SchoolAdminController {
 
   @Patch('students/:id')
   @UseGuards(JwtAuthGuard)
-  updateStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+  updateStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: UpdateStudentDto) {
     return this.svc.updateStudent(a.schoolId, id, b)
   }
 

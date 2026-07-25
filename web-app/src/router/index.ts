@@ -9,7 +9,7 @@ import type { Role } from '@/types/user'
  * - 未登录访问受保护路由 → 跳转登录页
  * - 已登录但角色不匹配 → 跳转 403
  */
-const routes: RouteRecordRaw[] = [
+export const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
@@ -25,7 +25,7 @@ const routes: RouteRecordRaw[] = [
   // 超管
   {
     path: '/super',
-    component: () => import('@/layouts/AppLayout.vue'),
+    component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['super'] as Role[] },
     children: [
       { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '超管工作台' } },
@@ -38,7 +38,7 @@ const routes: RouteRecordRaw[] = [
   // 校管
   {
     path: '/school-admin',
-    component: () => import('@/layouts/AppLayout.vue'),
+    component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['school_admin'] as Role[] },
     children: [
       { path: '', name: 'school-admin-dashboard', component: () => import('@/views/school-admin/Dashboard.vue'), meta: { title: '校管工作台' } },
@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
   // 教师：全部子路由，meta.feature 控制可见性
   {
     path: '/teacher',
-    component: () => import('@/layouts/AppLayout.vue'),
+    component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['teacher'] as Role[] },
     children: [
       { path: '', name: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue'), meta: { title: '教师工作台' } },
@@ -182,7 +182,7 @@ const routes: RouteRecordRaw[] = [
   // 家长
   {
     path: '/parent',
-    component: () => import('@/layouts/AppLayout.vue'),
+    component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['parent'] as Role[] },
     children: [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长查看' } },
