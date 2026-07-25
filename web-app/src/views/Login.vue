@@ -2,14 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Shield, School, GraduationCap, Users, Loader2, Sparkles } from 'lucide-vue-next'
+import { Loader2, Sparkles } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const tab = ref<Role>('teacher')
 const loading = ref(false)
 const errMsg = ref('')
 const form = ref({ username: '', password: '' })
@@ -21,39 +20,32 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-const tabs: { key: Role; label: string; icon: any; desc: string }[] = [
-  { key: 'teacher', label: '教师', icon: GraduationCap, desc: '教师工作台' },
-  { key: 'school_admin', label: '校管', icon: School, desc: '学校管理端' },
-  { key: 'parent', label: '家长', icon: Users, desc: '家长门户' },
-  { key: 'super', label: '超管', icon: Shield, desc: '超级管理员' },
-]
-
 const dashboardMap: Record<Role, string> = {
   super: '/super',
   school_admin: '/school-admin',
   teacher: '/teacher',
   parent: '/parent',
 }
+function targetDashboard(): string {
+  return (auth.role && dashboardMap[auth.role]) || '/login'
+}
 
-/* ============ 历史账号（本地存储，最近 3 条） ============ */
+/* ============ 历史账号（本地存储，最近 3 条，不再区分角色） ============ */
 const RECENT_KEY = 'g_recent_accounts'
-type RecentMap = Record<string, string[]>
-const recent = ref<RecentMap>({})
+const recent = ref<string[]>([])
 function loadRecent() {
   try {
-    recent.value = JSON.parse(localStorage.getItem(RECENT_KEY) || '{}')
+    recent.value = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
   } catch {
-    recent.value = {}
+    recent.value = []
   }
 }
-function saveRecent(role: string, val: string) {
+function saveRecent(val: string) {
   if (!val) return
-  const map: RecentMap = { ...recent.value }
-  const list = (map[role] || []).filter((v) => v !== val)
+  const list = recent.value.filter((v) => v !== val)
   list.unshift(val)
-  map[role] = list.slice(0, 3)
-  recent.value = map
-  localStorage.setItem(RECENT_KEY, JSON.stringify(map))
+  recent.value = list.slice(0, 3)
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent.value))
 }
 function fillRecent(val: string) {
   form.value.username = val
@@ -96,9 +88,10 @@ async function handleLogin() {
   loading.value = true
   errMsg.value = ''
   try {
-    await auth.login(tab.value, form.value.username, form.value.password)
-    saveRecent(tab.value, form.value.username)
-    const redirect = (route.query.redirect as string) || dashboardMap[tab.value]
+    // 后端统一登录，自动识别角色；登录成功后按返回角色跳转
+    await auth.loginByUsername(form.value.username, form.value.password)
+    saveRecent(form.value.username)
+    const redirect = (route.query.redirect as string) || targetDashboard()
     router.push(redirect)
   } catch (e: any) {
     errMsg.value = e?.message || '登录失败，请检查账号密码'
@@ -125,23 +118,22 @@ async function handleLogin() {
 
     <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-14 max-w-5xl xl:max-w-6xl w-full items-center relative">
       <!-- 左侧欢迎 -->
-      <div class="space-y-6 text-center lg:text-left">
+      <div class="space-y-7 text-center lg:text-left">
         <div class="inline-flex items-center gap-1.5 chip bg-white/80 text-cocoa-800 border border-white/80 shadow-softer px-4 py-1.5 text-sm font-semibold tracking-wide">
           <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
 
-        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-[1.15] text-cocoa-900">
+        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-[1.35] text-cocoa-900 mt-3">
           {{ greeting }}，欢迎回来 <span class="inline-block animate-wiggle">👋</span>
           <br class="hidden sm:block" />
           <span class="hidden sm:inline">用 <span class="scribble">爱</span> 浇灌每一颗小苗</span>
         </h1>
 
-        <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0 leading-relaxed">
-          Web 管理端 · 多角色安全登录。教师、学校管理员、家长与超级管理员，
-          统一使用用户名和密码进入专属工作台。
+        <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0 leading-relaxed mt-5">
+          统一使用用户名和密码登录，系统会根据账号自动进入对应的工作台。
         </p>
 
-        <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block">
+        <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block mt-6">
           <li class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-full bg-butter-300 flex items-center justify-center text-xs font-bold">1</span>
             选择您的角色
@@ -180,30 +172,10 @@ async function handleLogin() {
 
         <div class="text-center mt-5 mb-6">
           <h2 class="title-display text-xl sm:text-2xl mb-1">登录</h2>
-          <p class="text-xs sm:text-sm text-cocoa-500">选择角色后，输入用户名和密码</p>
+          <p class="text-xs sm:text-sm text-cocoa-500">请输入用户名和密码</p>
         </div>
 
-        <!-- 角色选择 -->
-        <div class="grid grid-cols-4 gap-2 mb-6">
-          <button
-            v-for="t in tabs"
-            :key="t.key"
-            type="button"
-            @click="tab = t.key; errMsg = ''"
-            :class="[
-              'flex flex-col items-center gap-1.5 py-3 rounded-2xl text-xs font-medium transition-all border',
-              tab === t.key
-                ? 'bg-white text-butter-600 border-butter-300 shadow-softer'
-                : 'bg-cream-50/60 text-cocoa-500 border-transparent hover:bg-white hover:text-cocoa-700',
-            ]"
-            :aria-pressed="tab === t.key"
-          >
-            <component :is="t.icon" class="w-5 h-5" />
-            <span>{{ t.label }}</span>
-          </button>
-        </div>
-
-        <!-- 头像选择 -->
+        <!-- 头像选择（装饰） -->
         <div class="flex items-center justify-center gap-1.5 mb-5">
           <span class="text-xs text-cocoa-400 mr-1">头像</span>
           <button
@@ -222,11 +194,11 @@ async function handleLogin() {
         </div>
 
         <!-- 最近登录 -->
-        <div v-if="recent[tab] && recent[tab].length" class="mb-4">
+        <div v-if="recent.length" class="mb-4">
           <div class="text-xs text-cocoa-400 mb-1.5">最近登录</div>
           <div class="flex flex-wrap gap-1.5">
             <button
-              v-for="acc in recent[tab]"
+              v-for="acc in recent"
               :key="acc"
               type="button"
               @click="fillRecent(acc)"

@@ -393,10 +393,10 @@ const hasResults = computed(() => {
           </div>
         </div>
       </div>
-      <!-- 实际页面内容 -->
+      <!-- 实际页面内容（嵌套子路由通过 router-view 渲染） -->
       <div class="flex-1 overflow-auto">
         <div class="max-w-6xl mx-auto p-6">
-          <slot />
+          <router-view />
         </div>
       </div>
     </main>

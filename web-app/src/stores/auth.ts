@@ -48,6 +48,12 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth(t, u)
   }
 
+  /** 后端自动识别角色的统一登录（新登录页使用） */
+  async function loginByUsername(username: string, password: string) {
+    const { token: t, user: u } = await authApi.unifiedLogin(username, password)
+    setAuth(t, u)
+  }
+
   // 各角色登录（兼容旧调用，内部均走统一 login）
   async function loginAsSuper(username: string, password: string) {
     await login('super', username, password)
@@ -71,6 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     updateUser,
     login,
+    loginByUsername,
     loginAsSuper,
     loginAsSchoolAdmin,
     loginAsTeacher,
