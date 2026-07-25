@@ -123,11 +123,12 @@ async function handleLogin() {
           <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
 
-        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-[1.35] text-cocoa-900 mt-3">
+        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-tight text-cocoa-900 mt-3">
           {{ greeting }}，欢迎回来 <span class="inline-block animate-wiggle">👋</span>
-          <br class="hidden sm:block" />
-          <span class="hidden sm:inline">用 <span class="scribble">爱</span> 浇灌每一颗小苗</span>
         </h1>
+        <p class="text-xl sm:text-2xl lg:text-[1.6rem] text-cocoa-600 font-medium mt-4 hidden sm:block">
+          用 <span class="scribble">爱</span> 浇灌每一颗小苗
+        </p>
 
         <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0 leading-relaxed mt-5">
           统一使用用户名和密码登录，系统会根据账号自动进入对应的工作台。
@@ -136,11 +137,11 @@ async function handleLogin() {
         <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block mt-6">
           <li class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-full bg-butter-300 flex items-center justify-center text-xs font-bold">1</span>
-            选择您的角色
+            输入用户名与密码
           </li>
           <li class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-full bg-sakura-300 flex items-center justify-center text-xs font-bold">2</span>
-            输入用户名与密码
+            系统自动识别您的角色
           </li>
           <li class="flex items-center gap-3">
             <span class="w-7 h-7 rounded-full bg-mint-300 flex items-center justify-center text-xs font-bold">3</span>

@@ -33,11 +33,14 @@ export class AuthService {
     const u = username.trim()
     const p = password
 
-    // 1) 超级管理员
+    // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报“账号不存在”）
     const su = this.config.get('SUPER_ADMIN_USER') || 'admin'
     const sp = this.config.get('SUPER_ADMIN_PASSWORD') || 'admin'
-    if (u === su && p === sp) {
-      return { role: 'super', token: this.jwt.sign({ sub: 'super', role: 'super' }), user: { name: '超级管理员' } }
+    if (u === su) {
+      if (p === sp) {
+        return { role: 'super', token: this.jwt.sign({ sub: 'super', role: 'super' }), user: { name: '超级管理员' } }
+      }
+      throw new UnauthorizedException('密码错误')
     }
 
     // 2) 学校管理员
