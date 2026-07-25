@@ -49,9 +49,8 @@
                 <text class="badge" :class="s.status === 'active' ? 'on' : 'off'">{{ s.status === 'active' ? '启用' : '停用' }}</text>
               </view>
               <text class="meta">编号：{{ s.code }}</text>
-              <view class="meta-line">
-                <text class="meta" v-if="s.address">地址：{{ s.address }}</text>
-                <text class="meta admin-count">{{ adminCountBySchool(s.id) }}位管理员</text>
+              <view class="meta-line" v-if="s.address">
+                <text class="meta">地址：{{ s.address }}</text>
               </view>
             </view>
             <view class="acts">
@@ -111,7 +110,36 @@
                 <text class="config-label">{{ cfg.label }}</text>
                 <text class="config-desc">{{ cfg.desc }}</text>
               </view>
-              <view class="config-input-row">
+
+              <!-- 默认学科：勾选标签 + 新增 / 删除（即时保存） -->
+              <template v-if="cfg.type === 'subjects'">
+                <view class="subject-chips">
+                  <view
+                    v-for="sub in parseSubjects(cfg.value)"
+                    :key="sub"
+                    class="subject-chip"
+                  >
+                    <text class="subject-check">✓</text>
+                    <text class="subject-name">{{ sub }}</text>
+                    <text class="subject-del" @click="removeSubject(cfg, sub)">×</text>
+                  </view>
+                  <view v-if="!parseSubjects(cfg.value).length" class="subject-empty">
+                    暂无学科，请在下方添加
+                  </view>
+                </view>
+                <view class="subject-add">
+                  <input
+                    v-model="newSubject"
+                    class="subject-inp"
+                    placeholder="输入学科后点添加，如：科学"
+                    @confirm="addSubject(cfg)"
+                  />
+                  <text class="subject-add-btn" @click="addSubject(cfg)">＋ 添加</text>
+                </view>
+              </template>
+
+              <!-- 其余配置项：通用输入 -->
+              <view v-else class="config-input-row">
                 <input v-if="!cfg.secret" v-model="cfg.value" class="inp config-inp" :placeholder="cfg.placeholder" />
                 <input v-else v-model="cfg.value" class="inp config-inp" :placeholder="cfg.placeholder" password />
                 <text class="config-save" @click="saveConfig(cfg)">保存</text>
@@ -303,10 +331,6 @@ function schoolLabel(id) {
   const s = schools.value.find((x) => x.id === id)
   return s ? s.name + '（' + s.code + '）' : '请选择学校'
 }
-// 每所学校的管理员数
-function adminCountBySchool(schoolId) {
-  return schoolAdmins.value.filter(a => a.schoolId === schoolId).length
-}
 
 async function apiCall(method, path, data) {
   const cloud = typeof wx !== 'undefined' && wx.cloud
@@ -407,15 +431,19 @@ const auditLogs = ref([])
 async function loadAuditLogs() {
   try {
     const r = await apiCall('GET', '/admin/audit-logs') || { items: [], total: 0 }
-    auditLogs.value = Array.isArray(r) ? r : (r.items || [])
+    const raw = Array.isArray(r) ? r : (r.items || [])
+    // 过滤学校管理员相关操作（create_school_admin / delete_school_admin），
+    // 学校管理员统一在「管理员」页签管理，避免此处重复展示
+    auditLogs.value = raw.filter((x) => !/school_admin/.test(x.action || ''))
   } catch (e) { auditLogs.value = [] }
 }
 
 // ===== 平台配置 =====
 const configGroups = ref([])
+const newSubject = ref('')
 
 const CONFIG_SCHEMA = [
-  { key: 'defaultSubjects', label: '默认学科', desc: '逗号分隔，教师端注册时可选', placeholder: '语文,数学,英语', secret: false },
+  { key: 'defaultSubjects', label: '默认学科', desc: '勾选/新增/删除，教师端注册时可选', placeholder: '语文,数学,英语', secret: false, type: 'subjects' },
   { key: 'loginCode', label: '小程序登录码', desc: '教师首次进入小程序的验证码', placeholder: '自定义4-8位', secret: false },
   { key: 'aiTextModel', label: 'AI 文本模型', desc: '对话/备课/出题等文本生成', placeholder: 'qwen-plus', secret: false },
   { key: 'aiVisionModel', label: 'AI 视觉模型', desc: '图片识别/OCR等视觉任务', placeholder: 'qwen-vl-plus', secret: false },
@@ -457,6 +485,39 @@ async function saveConfig(cfg) {
     uni.hideLoading()
     uni.showToast({ title: e.message || '保存失败', icon: 'none' })
   }
+}
+
+// ===== 默认学科：解析 / 新增 / 删除 =====
+function parseSubjects(value) {
+  if (!value) return []
+  return Array.from(
+    new Set(
+      String(value)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  )
+}
+
+async function addSubject(cfg) {
+  const name = (newSubject.value || '').trim()
+  if (!name) return uni.showToast({ title: '请输入学科名称', icon: 'none' })
+  const list = parseSubjects(cfg.value)
+  if (list.includes(name)) {
+    newSubject.value = ''
+    return uni.showToast({ title: '该学科已存在', icon: 'none' })
+  }
+  list.push(name)
+  cfg.value = list.join(',')
+  newSubject.value = ''
+  await saveConfig(cfg)
+}
+
+async function removeSubject(cfg, name) {
+  const list = parseSubjects(cfg.value).filter((s) => s !== name)
+  cfg.value = list.join(',')
+  await saveConfig(cfg)
 }
 
 /* ===== 学校表单 ===== */
@@ -738,7 +799,6 @@ function confirmResetAll() {
 .badge.off { background: rgba(230, 67, 64, .15); color: #e64340; }
 .meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 .meta-line { display: flex; gap: 16rpx; align-items: center; margin-top: 4rpx; }
-.admin-count { font-size: 20rpx; color: #409eff; background: rgba(64,158,255,.1); padding: 1rpx 10rpx; border-radius: 8rpx; }
 .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex-shrink: 0; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 100; }
 .mask.mask-center { align-items: center; justify-content: center; }
@@ -797,6 +857,17 @@ function confirmResetAll() {
 .config-input-row { display: flex; gap: 10rpx; align-items: center; }
 .config-inp { flex: 1; border: 1px solid var(--c-border); border-radius: 10rpx; padding: 14rpx 16rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-height: 64rpx; }
 .config-save { flex-shrink: 0; font-size: 24rpx; color: #409eff; font-weight: 600; padding: 8rpx 16rpx; background: rgba(64,158,255,.1); border-radius: 8rpx; }
+/* 默认学科：勾选标签 + 增删 */
+.subject-chips { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 6rpx 0 14rpx; }
+.subject-chip { display: inline-flex; align-items: center; gap: 8rpx; padding: 10rpx 16rpx; border-radius: 14rpx; background: rgba(76,175,80,.12); border: 1px solid rgba(76,175,80,.4); max-width: 100%; box-sizing: border-box; }
+.subject-check { color: #4CAF50; font-weight: 800; font-size: 24rpx; }
+.subject-name { font-size: 26rpx; color: var(--c-title); }
+.subject-del { color: #e64340; font-size: 30rpx; font-weight: 700; padding: 0 4rpx; line-height: 1; }
+.subject-del:active { opacity: .5; }
+.subject-empty { font-size: 24rpx; color: var(--c-sub); padding: 6rpx 0; }
+.subject-add { display: flex; gap: 12rpx; align-items: center; }
+.subject-inp { flex: 1; border: 1px solid var(--c-border); border-radius: 12rpx; padding: 14rpx 18rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-height: 64rpx; }
+.subject-add-btn { flex-shrink: 0; font-size: 24rpx; color: #fff; font-weight: 600; padding: 14rpx 24rpx; background: var(--c-primary, #4CAF50); border-radius: 12rpx; }
 /* 审计日志 */
 .audit-action { font-size: 24rpx; color: var(--c-sub); }
 .ndate { font-size: 20rpx; color: var(--c-sub2); margin-left: 10rpx; font-weight: 400; }
