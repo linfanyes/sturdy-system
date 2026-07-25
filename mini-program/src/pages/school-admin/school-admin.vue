@@ -131,11 +131,13 @@
           <scroll-view scroll-y class="full-body">
             <view class="form-item">
               <text class="label">班级名称 <text class="req">*</text></text>
-              <input v-model="classForm.name" class="inp" placeholder="如：一年级一班" />
+              <view class="readonly-inp">{{ className || '请选择年级并填写班级序号' }}</view>
             </view>
             <view class="form-item">
               <text class="label">年级 <text class="req">*</text></text>
-              <input v-model="classForm.grade" class="inp" placeholder="如：一年级" />
+              <picker class="picker" :range="GRADE_OPTIONS" @change="(e)=>classForm.grade=GRADE_OPTIONS[e.detail.value]">
+                <view class="picker-inp">{{ classForm.grade || '请选择年级' }}</view>
+              </picker>
             </view>
             <view class="form-item">
               <text class="label">班号</text>
@@ -176,6 +178,12 @@
           <view class="form-item">
             <text class="label">姓名 <text class="req">*</text></text>
             <input v-model="form.name" class="inp" placeholder="如：张老师" />
+          </view>
+          <view class="form-item">
+            <text class="label">学科</text>
+            <picker class="picker" :range="ALL_SUBJECTS" @change="(e)=>form.subject=ALL_SUBJECTS[e.detail.value]">
+              <view class="picker-inp">{{ form.subject || '请选择学科' }}</view>
+            </picker>
           </view>
           <view v-if="!editingId" class="form-item">
             <text class="label">密码 <text class="req">*</text></text>
@@ -375,6 +383,10 @@ import { theme } from '../../common/store'
 import { setMockMode } from '../../common/request'
 import { auth, setAuth } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { ALL_SUBJECTS } from '../../common/subject-schema'
+
+// 年级选项（与 web 对齐）
+const GRADE_OPTIONS = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
 
 const dark = computed(() => theme.mode === 'dark')
 const teachers = ref([])
@@ -400,7 +412,7 @@ const schoolCode = ref(saUser.schoolCode || '')
 // 统一表单（新增/编辑）
 const showForm = ref(false)
 const editingId = ref('')
-const form = ref({ username: '', password: '', name: '', phone: '', enabled: true })
+const form = ref({ username: '', password: '', name: '', subject: '', phone: '', enabled: true })
 const phoneError = ref('')
 
 const featUser = ref(null), sel = ref([])
@@ -507,7 +519,7 @@ async function loadMoreTeachers() {
 function openCreate() {
   editingId.value = ''
   phoneError.value = ''
-  form.value = { username: '', password: '', name: '', phone: '', enabled: true }
+  form.value = { username: '', password: '', name: '', subject: '', phone: '', enabled: true }
   showForm.value = true
 }
 
@@ -518,6 +530,7 @@ function openEdit(u) {
     username: u.username || '',
     password: '',
     name: u.name || '',
+    subject: u.subject || '',
     phone: u.phone || '',
     enabled: u.enabled !== false,
   }
@@ -548,7 +561,7 @@ async function saveForm() {
   saving.value = true
   try {
     if (editingId.value) {
-      const payload = { username: f.username, name: f.name, phone: f.phone, enabled: f.enabled }
+      const payload = { username: f.username, name: f.name, subject: f.subject, phone: f.phone, enabled: f.enabled }
       await apiCall('PATCH', '/school-admin/teachers/' + editingId.value, payload)
       if (f.password) {
         await apiCall('POST', '/school-admin/teachers/' + editingId.value + '/reset-password', { password: f.password })
@@ -558,7 +571,7 @@ async function saveForm() {
       uni.showToast({ title: '已保存', icon: 'success' })
     } else {
       await apiCall('POST', '/school-admin/teachers', {
-        username: f.username, name: f.name, password: f.password,
+        username: f.username, name: f.name, subject: f.subject, password: f.password,
         phone: f.phone, enabled: f.enabled,
       })
       showForm.value = false
@@ -709,6 +722,11 @@ const classes = ref([])
 const showClassForm = ref(false)
 const editingClassId = ref('')
 const classForm = ref({ name: '', grade: '', classNo: '', headTeacherId: '', term: '' })
+const className = computed(() => {
+  const g = classForm.value.grade
+  const n = classForm.value.classNo
+  return (g && n) ? g + n + '班' : ''
+})
 
 const teacherOptions = computed(() =>
   teachers.value.map(t => ({ id: t.id, label: t.name + (t.subject ? '(' + t.subject + ')' : '') }))
@@ -748,18 +766,20 @@ function onTeacherPick(e) {
 
 async function saveClass() {
   const f = classForm.value
-  if (!f.name || !f.grade || !f.headTeacherId) {
-    return uni.showToast({ title: '班级名称/年级/班主任必填', icon: 'none' })
+  const autoName = className.value
+  if (!autoName || !f.grade || !f.headTeacherId) {
+    return uni.showToast({ title: '年级/班号/班主任必填', icon: 'none' })
   }
   saving.value = true
   try {
+    const payload = { name: autoName, grade: f.grade, classNo: f.classNo, headTeacherId: f.headTeacherId, term: f.term }
     if (editingClassId.value) {
-      await apiCall('PATCH', '/school-admin/classes/' + editingClassId.value, f)
+      await apiCall('PATCH', '/school-admin/classes/' + editingClassId.value, payload)
       showClassForm.value = false
       await loadClasses()
       uni.showToast({ title: '已保存', icon: 'success' })
     } else {
-      await apiCall('POST', '/school-admin/classes', f)
+      await apiCall('POST', '/school-admin/classes', payload)
       showClassForm.value = false
       await loadClasses()
       uni.showToast({ title: '创建成功', icon: 'success' })
@@ -946,6 +966,7 @@ onShow(async () => {
 .sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 80vh; box-sizing: border-box; }
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
 .inp-wrap { width: 100%; margin-bottom: 6rpx; }
+.readonly-inp { font-size: 28rpx; color: var(--c-title); padding: 20rpx 24rpx; background: var(--c-input); border-radius: 12rpx; min-height: 40rpx; }
 .field-err { display: block; font-size: 22rpx; color: #e64340; margin-top: 4rpx; }
 .inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 6rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); width: 100%; box-sizing: border-box; }
 .btn { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }

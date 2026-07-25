@@ -11,6 +11,17 @@ export function isPhone(s) {
   return /^1[3-9]\d{9}$/.test(v)
 }
 
+/**
+ * 手机号校验（允许为空）：与 isPhone 相同但空/null/undefined 也合法。
+ * 用于可选手机号字段，与 web-app `validators.ts :: isValidPhone` 对齐。
+ */
+export function isValidPhone(s) {
+  if (s == null) return true
+  const v = String(s).replace(/[\s\-]/g, '')
+  if (v === '') return true
+  return /^1[3-9]\d{9}$/.test(v)
+}
+
 /** 邮箱校验：标准格式。 */
 export function isEmail(s) {
   if (s == null || s === '') return false

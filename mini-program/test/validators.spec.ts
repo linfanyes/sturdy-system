@@ -1,5 +1,6 @@
 import {
   isPhone,
+  isValidPhone,
   isEmail,
   inRange,
   isInt,
@@ -33,6 +34,22 @@ describe('validators', () => {
       expect(isPhone(null)).toBe(false)
       expect(isPhone(undefined)).toBe(false)
       expect(isPhone('')).toBe(false)
+    })
+  })
+
+  describe('isValidPhone（允许为空）', () => {
+    it('正确手机号通过', () => {
+      expect(isValidPhone('13812345678')).toBe(true)
+      expect(isValidPhone('19900001111')).toBe(true)
+    })
+    it('空/null 通过（可选字段）', () => {
+      expect(isValidPhone('')).toBe(true)
+      expect(isValidPhone(null)).toBe(true)
+      expect(isValidPhone(undefined)).toBe(true)
+    })
+    it('错误格式拒绝', () => {
+      expect(isValidPhone('12345678901')).toBe(false)
+      expect(isValidPhone('abc')).toBe(false)
     })
   })
 

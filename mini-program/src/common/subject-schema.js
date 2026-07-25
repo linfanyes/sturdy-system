@@ -229,6 +229,16 @@ export const SUBJECT_LIST = [
 ]
 
 /**
+ * 完整学科列表（15 科，与 web `constants/subjects.ts :: SUBJECT_OPTIONS` 对齐）。
+ * 用于教师管理/考试管理等场景的学科下拉框。
+ */
+export const ALL_SUBJECTS = [
+  '语文', '数学', '英语', '科学', '物理', '化学', '生物',
+  '政治', '历史', '地理', '音乐', '体育', '美术',
+  '信息技术', '道德与法治',
+]
+
+/**
  * 数学学科独立工具入口（不在 SUBJECT_TOOLS 中，跳转到独立页面）。
  * 集中声明便于 subject-list 子页面统一展示。
  */
