@@ -52,11 +52,25 @@ async function bootstrap() {
   app.use(json({ limit: '5mb' }))
   app.use(urlencoded({ limit: '5mb', extended: true }))
   const config = app.get(ConfigService)
-  const cors = config.get<string>('CORS_ORIGIN') || '*'
-  const corsStar = cors === '*'
+  // CORS：fail-closed。未配置或 '*' 时：
+  //  - 开发环境允许 '*'（仅警告）
+  //  - 生产环境禁止 '*'，必须显式配置可信来源逗号列表，否则拒绝启动
+  const corsRaw = (config.get<string>('CORS_ORIGIN') || '').trim()
+  let corsOrigin: string | string[] | boolean
+  if (!corsRaw) {
+    corsOrigin = false // 未配置：默认禁止跨域
+  } else if (corsRaw === '*') {
+    if (config.get('NODE_ENV') === 'production') {
+      throw new Error('生产环境禁止使用通配 CORS_ORIGIN=*，请在 .env 配置可信来源逗号列表（如小程序域名/管理端域名）。')
+    }
+    console.warn('⚠️  CORS 使用通配 *（仅限开发环境），生产环境请配置可信来源以避免跨站调用。')
+    corsOrigin = true
+  } else {
+    corsOrigin = corsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+  }
   app.enableCors({
-    origin: corsStar ? true : cors.split(','),
-    credentials: !corsStar,
+    origin: corsOrigin,
+    credentials: corsOrigin !== true && corsOrigin !== false,
   })
   app.setGlobalPrefix('api')
   app.useGlobalPipes(
@@ -87,6 +101,9 @@ async function bootstrap() {
   if (su === 'admin' && sp === 'admin') {
     // eslint-disable-next-line no-console
     console.warn('⚠️  安全警告: 超级管理员仍为默认账号 admin/admin，请通过 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 修改为强口令。')
+    if (config.get('NODE_ENV') === 'production') {
+      throw new Error('超级管理员仍为默认账号 admin/admin，生产环境拒绝启动，请修改 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 为强口令。')
+    }
   }
 
   // 启动时自动执行未应用的 migration SQL（幂等，失败不阻塞）

@@ -1,6 +1,6 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
 import { getToken, logout, auth, parent } from './store'
-import { getMockData } from './mock-data'
+import { getMockData } from './mock'
 
 // —— 演示模式（Mock）开关 ——
 let _mockMode = false

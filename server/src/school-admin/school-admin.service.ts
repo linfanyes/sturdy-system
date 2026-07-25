@@ -15,7 +15,7 @@ import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassMemberService } from '../class-members/class-members.module'
 import { AuditService } from '../audit/audit.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
-import * as XLSX from 'xlsx'
+import { xlsxFirstSheetToRows } from '../common/excel.util'
 
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
@@ -491,7 +491,7 @@ export class SchoolAdminService {
    * 与 students.module.ts parseFile 一致的列顺序：姓名,性别,学号,家长姓名,家长电话。
    * JSON 文件则直接解析为数组对象。classId 由调用方（import 端点）按班级统一填充。
    */
-  parseStudentFile(filename: string, dataBase64: string): { rows: any[]; validCount: number; errorCount: number } {
+  async parseStudentFile(filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
     const ext = (filename.split('.').pop() || '').toLowerCase()
     const buf = Buffer.from(dataBase64, 'base64')
     let rawRows: string[][] = []
@@ -510,9 +510,7 @@ export class SchoolAdminService {
         String(o?.parentName ?? ''), String(o?.parentPhone ?? ''),
       ])
     } else if (ext === 'xlsx' || ext === 'xls') {
-      const wb = XLSX.read(buf, { type: 'buffer' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][]
+      rawRows = await xlsxFirstSheetToRows(buf)
     } else {
       const text = buf.toString('utf-8')
       rawRows = text

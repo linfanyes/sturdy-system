@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { JwtModule } from '@nestjs/jwt'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 
 import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
@@ -85,6 +87,14 @@ import { HealthController } from './health.controller'
         signOptions: { expiresIn: c.get('JWT_EXPIRES_IN') || '30d' },
       }),
     }),
+    // 全局速率限制：兜底 60 次/分钟/IP，防止 AI/文件解析等高成本接口被滥用（DoS/费用滥用）。
+    // 具体接口可用 @Throttle(limit, ttl) 覆盖更严格配额（如 AI 接口）。
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     AuthModule,
     UsersModule,
     PlatformConfigModule,
@@ -122,6 +132,10 @@ import { HealthController } from './health.controller'
     SecurityModule,
     ImModule,
     TeachingCalendarModule,
+  ],
+  providers: [
+    // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
   controllers: [HealthController],
 })

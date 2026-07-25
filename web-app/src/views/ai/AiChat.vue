@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import request from '@/api/request'
+import request, { getApiBase } from '@/api/request'
 import { Send, Bot, User, Trash2 } from 'lucide-vue-next'
 
 const auth = useAuthStore()
@@ -33,7 +33,7 @@ async function send() {
   try {
     // 使用 SSE 流式接口
     const token = auth.token
-    const resp = await fetch(`${import.meta.env.VITE_API_BASE || ''}/ai/chat`, {
+    const resp = await fetch(`${getApiBase()}/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

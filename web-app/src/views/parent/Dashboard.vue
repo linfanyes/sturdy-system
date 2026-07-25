@@ -65,6 +65,16 @@ function fmtDate(s?: string) {
   return new Date(s).toLocaleDateString('zh-CN').replace(/\//g, '-')
 }
 
+/** HTML 实体转义：防止分布图 label 含标签字符时通过 v-html 注入脚本（存储型 XSS 防护） */
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /** 内联 SVG 柱状图：分数段分布，isStudent=true 的柱子高亮 */
 function barChart(distribution: Array<{ label: string; count: number; pct: number; isStudent: boolean }>) {
   if (!distribution?.length) return ''
@@ -78,8 +88,8 @@ function barChart(distribution: Array<{ label: string; count: number; pct: numbe
     // butter-400 / cream-200
     const fill = d.isStudent ? '#f59e0b' : '#fef3c7'
     return `<rect x="${x}" y="${y}" width="${barW * 0.7}" height="${bh}" fill="${fill}" rx="2"/>
-            <text x="${x + barW * 0.35}" y="${y - 4}" font-size="10" text-anchor="middle" fill="#78716c">${d.count}</text>
-            <text x="${x + barW * 0.35}" y="${h - padding + 12}" font-size="9" text-anchor="middle" fill="#a8a29e">${d.label}</text>`
+            <text x="${x + barW * 0.35}" y="${y - 4}" font-size="10" text-anchor="middle" fill="#78716c">${escapeHtml(d.count)}</text>
+            <text x="${x + barW * 0.35}" y="${h - padding + 12}" font-size="9" text-anchor="middle" fill="#a8a29e">${escapeHtml(d.label)}</text>`
   }).join('')
   return `<svg viewBox="0 0 ${w} ${h}" class="w-full" style="max-height:200px">${bars}</svg>`
 }

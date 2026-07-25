@@ -249,7 +249,7 @@ class ScheduleImportService {
     } else {
       const buf = Buffer.from(data, 'base64')
       if (/xlsx?/i.test(ext)) {
-        text = this.ai.parseExcel(buf)
+        text = await this.ai.parseExcel(buf)
       } else {
         text = buf.toString('utf-8')
       }

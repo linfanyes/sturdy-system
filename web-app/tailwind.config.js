@@ -56,6 +56,8 @@ export default {
         },
       },
       fontFamily: {
+        display: ['"ZCOOL KuaiLe"', '"Ma Shan Zheng"', '"Noto Sans SC"', 'cursive'],
+        hand: ['"Ma Shan Zheng"', '"Caveat"', 'cursive'],
         body: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
         sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
       },
@@ -63,11 +65,34 @@ export default {
       boxShadow: {
         soft: '0 8px 24px rgba(190,140,80,.10)',
         softer: '0 4px 14px rgba(190,140,80,.08)',
+        pop: '0 12px 32px rgba(255, 180, 80, .25)',
       },
       keyframes: {
         fadeIn: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        floaty: {
+          '0%,100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
+        wiggle: {
+          '0%,100%': { transform: 'rotate(-2deg)' },
+          '50%': { transform: 'rotate(2deg)' },
+        },
+        wiggleSlow: {
+          '0%,100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
+        },
+        bouncey: {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(-14px) scale(1.04)' },
+        },
       },
-      animation: { fadeIn: 'fadeIn .35s ease-out both' },
+      animation: {
+        fadeIn: 'fadeIn .35s ease-out both',
+        floaty: 'floaty 4s ease-in-out infinite',
+        wiggle: 'wiggle 1s ease-in-out infinite',
+        wiggleSlow: 'wiggleSlow 6s ease-in-out infinite',
+        bouncey: 'bouncey 1.3s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

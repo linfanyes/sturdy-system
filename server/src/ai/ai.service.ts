@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import axios from 'axios'
 import https from 'node:https'
 import * as path from 'path'
-import XLSX from 'xlsx'
+import { xlsxToCsvText } from '../common/excel.util'
 import mammoth from 'mammoth'
 import { createCanvas } from '@napi-rs/canvas'
 import pdfParse = require('pdf-parse/lib/pdf-parse.js')
@@ -33,6 +33,12 @@ try {
 // 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
 // "self-signed certificate"，这里仅为 AI 调用单独放宽证书校验。
 const tlsAgent = new https.Agent({ rejectUnauthorized: false })
+
+// 出站请求不自动跟随重定向，避免 AI 网关返回重定向导致的 SSRF / Authorization 头泄露
+axios.defaults.maxRedirects = 0
+
+// 上传文件大小上限（10MB），避免超大文件拖垮进程
+const MAX_FILE_BYTES = 10 * 1024 * 1024
 
 @Injectable()
 export class AiService {
@@ -84,6 +90,59 @@ export class AiService {
   }
 
   /**
+   * 按文件头 magic bytes 校验真实类型是否与扩展名一致，防止上传者以改名方式
+   * 投递非预期文件（如把恶意负载伪装成 .xlsx）。与扩展名路由解析配合，纵深防御；
+   * 同时强制单文件大小上限，避免超大文件拖垮进程。
+   */
+  private assertTypeMatches(ext: string, buf: Buffer): void {
+    if (buf.length > MAX_FILE_BYTES) {
+      throw new BadRequestException('文件过大（上限 10MB）')
+    }
+    const textExts = ['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml']
+    if (textExts.includes(ext)) return
+    const head = buf.subarray(0, 8)
+    const hex = head.toString('hex')
+    const isPdf = buf.subarray(0, 4).toString('latin1') === '%PDF'
+    const isZip = hex.startsWith('504b0304') || hex.startsWith('504b0506') || hex.startsWith('504b0708')
+    const isOle = hex.startsWith('d0cf11e0')
+    const isPng = hex.startsWith('89504e470d0a1a0a')
+    const isJpg = hex.startsWith('ffd8ff')
+    const isGif = hex.startsWith('47494638')
+    const isWebp = hex.startsWith('52494646') && buf.subarray(8, 12).toString('latin1') === 'WEBP'
+    const isBmp = hex.startsWith('424d')
+    switch (ext) {
+      case 'pdf':
+        if (!isPdf) throw new BadRequestException('文件类型与扩展名不符（非 PDF）')
+        break
+      case 'xlsx':
+      case 'xls':
+        if (!isZip && !isOle) throw new BadRequestException('文件类型与扩展名不符（非 Excel）')
+        break
+      case 'docx':
+        if (!isZip) throw new BadRequestException('文件类型与扩展名不符（非 Word）')
+        break
+      case 'png':
+        if (!isPng) throw new BadRequestException('文件类型与扩展名不符（非 PNG）')
+        break
+      case 'jpg':
+      case 'jpeg':
+        if (!isJpg) throw new BadRequestException('文件类型与扩展名不符（非 JPEG）')
+        break
+      case 'gif':
+        if (!isGif) throw new BadRequestException('文件类型与扩展名不符（非 GIF）')
+        break
+      case 'webp':
+        if (!isWebp) throw new BadRequestException('文件类型与扩展名不符（非 WEBP）')
+        break
+      case 'bmp':
+        if (!isBmp) throw new BadRequestException('文件类型与扩展名不符（非 BMP）')
+        break
+      default:
+        break
+    }
+  }
+
+  /**
    * 把多类型文件（Excel/Word/PDF/Markdown/文本）解析为纯文本，拼成可注入 AI 的提示块。
    * 单个文件文本上限 30000 字，超出截断，避免请求体过大。
    */
@@ -95,13 +154,14 @@ export class AiService {
     for (const f of files) {
       const buf = Buffer.from(f.data || '', 'base64')
       const ext = (f.name.split('.').pop() || '').toLowerCase()
+      this.assertTypeMatches(ext, buf)
       let text = ''
       let note = ''
       try {
         if (['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
           text = buf.toString('utf-8')
         } else if (['xlsx', 'xls'].includes(ext)) {
-          text = this.parseExcel(buf)
+          text = await this.parseExcel(buf)
         } else if (ext === 'docx') {
           const r = await mammoth.extractRawText({ buffer: buf })
           text = r.value
@@ -145,7 +205,7 @@ export class AiService {
       const viewport = page.getViewport({ scale: 2 })
       const canvas = createCanvas(viewport.width, viewport.height)
       const ctx = canvas.getContext('2d')
-      await page.render({ canvasContext: ctx, viewport, canvas }).promise
+      await page.render({ canvasContext: ctx, viewport, canvas, isEvalSupported: false }).promise
       const png = canvas.toBuffer('image/png')
       const dataUrl = 'data:image/png;base64,' + png.toString('base64')
       const pageText = await this.ocrImage(s, dataUrl)
@@ -199,14 +259,8 @@ export class AiService {
   }
 
   /** Excel 工作簿转为「每个工作表一段 CSV」的文本（公开方法，供导入场景复用） */
-  parseExcel(buf: Buffer): string {
-    const wb = XLSX.read(buf, { type: 'buffer' })
-    const sheets = wb.SheetNames.map((name) => {
-      const ws = wb.Sheets[name]
-      const csv = XLSX.utils.sheet_to_csv(ws)
-      return `—— 工作表「${name}」——\n${csv}`
-    })
-    return sheets.join('\n\n')
+  async parseExcel(buf: Buffer): Promise<string> {
+    return xlsxToCsvText(buf)
   }
 
   /**
@@ -550,6 +604,7 @@ export class AiService {
     if (!body.fileData) return { text: '' }
     const buf = Buffer.from(body.fileData, 'base64')
     const ext = (body.fileName.split('.').pop() || '').toLowerCase()
+    this.assertTypeMatches(ext, buf)
 
     // TXT / Markdown / 纯文本类
     if (['txt', 'md', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {

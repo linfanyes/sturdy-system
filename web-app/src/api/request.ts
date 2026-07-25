@@ -2,13 +2,27 @@ import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig 
 
 /**
  * 全局 HTTP 封装：对接小程序后端（NestJS）。
- * - baseURL 来自 VITE_API_BASE（开发=localhost:3000/api，生产=云托管公网域名/api）
+ * - baseURL 解析：运行时 window.__APP_CONFIG__.API_BASE_URL > 构建期 VITE_API_BASE > '/api'
  * - JWT 注入：Authorization: Bearer <token>（与小程序 callContainer 透传方式一致）
  * - 401 自动清除登录态并跳转登录页
  * - 响应拦截器返回 res.data（已解包），类型声明同步解包
  */
+
+/** 解析后端 API 基础地址（支持运行时覆盖，便于更换云托管域名免重建） */
+export function getApiBase(): string {
+  try {
+    const cfg = (window as unknown as { __APP_CONFIG__?: { API_BASE_URL?: string } }).__APP_CONFIG__
+    if (cfg && typeof cfg.API_BASE_URL === 'string' && cfg.API_BASE_URL) {
+      return cfg.API_BASE_URL
+    }
+  } catch {
+    /* 忽略：window 不可用时回退 */
+  }
+  return import.meta.env.VITE_API_BASE || '/api'
+}
+
 const instance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '/api',
+  baseURL: getApiBase(),
   timeout: 20000,
   headers: { 'Content-Type': 'application/json' },
 })

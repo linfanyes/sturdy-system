@@ -9,4 +9,68 @@
     background: rgb(var(--cream-50));
     color: rgb(var(--cocoa-900));
   }
+  ::selection {
+    background: #ffd479;
+    color: #3d2e1f;
+  }
+}
+
+@layer components {
+  .card-soft {
+    @apply rounded-3xl bg-white/80 backdrop-blur-sm shadow-soft border border-white/60;
+  }
+
+  .btn-pill {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-all duration-200 select-none active:scale-95;
+  }
+
+  .btn-primary {
+    @apply btn-pill bg-gradient-to-br from-butter-400 to-butter-500 text-cocoa-900 shadow-pop hover:brightness-105;
+  }
+
+  .input-soft {
+    @apply w-full rounded-2xl border border-cocoa-100/80 bg-white/80 px-4 py-2.5 text-cocoa-900 placeholder:text-cocoa-300 outline-none transition-all focus:border-butter-400 focus:ring-4 focus:ring-butter-100;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium;
+  }
+
+  .title-display {
+    @apply font-display text-cocoa-900;
+    letter-spacing: 0.04em;
+  }
+
+  .scribble {
+    position: relative;
+  }
+  .scribble::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: -6px;
+    height: 6px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 6' preserveAspectRatio='none'><path d='M0 4 Q 15 0 30 4 T 60 4 T 90 4 T 120 4' fill='none' stroke='%23FFB8CC' stroke-width='2' stroke-linecap='round'/></svg>")
+      no-repeat;
+    background-size: 100% 100%;
+    pointer-events: none;
+  }
+
+  /* 暗色模式：组件覆盖（保持暖色夜间风） */
+  .dark .card-soft {
+    @apply bg-cream-200/70 border-cocoa-100/40;
+  }
+  .dark .input-soft {
+    @apply bg-cream-200/60 border-cocoa-100/50 text-cocoa-900;
+  }
+  .dark .btn-primary {
+    @apply text-cream-300;
+  }
+  .dark .chip {
+    @apply bg-cream-200/80 text-cocoa-700;
+  }
+  .dark ::selection {
+    background: rgba(224, 184, 94, 0.4);
+    color: #f2e8d8;
+  }
 }

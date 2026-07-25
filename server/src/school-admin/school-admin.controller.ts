@@ -120,13 +120,13 @@ export class SchoolAdminController {
    */
   @Post('students/import')
   @UseGuards(JwtAuthGuard)
-  importStudents(
+  async importStudents(
     @CurrentSchoolAdmin() a: any,
     @Body() b: { classId?: string; filename?: string; data?: string },
   ) {
     if (!b?.classId) throw new BadRequestException('缺少班级ID')
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    const { rows } = this.svc.parseStudentFile(b.filename, b.data)
+    const { rows } = await this.svc.parseStudentFile(b.filename, b.data)
     // 仅导入校验通过的有效行，统一填充 classId
     const valid = rows.filter((r) => r.valid).map((r) => ({
       name: r.name, gender: r.gender, studentNo: r.studentNo,
@@ -139,9 +139,9 @@ export class SchoolAdminController {
   /** 学生文件预览：解析并校验文件，不落库，返回明细（含错误行） */
   @Post('students/import-preview')
   @UseGuards(JwtAuthGuard)
-  importPreview(@Body() b: { filename?: string; data?: string }) {
+  async importPreview(@Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return this.svc.parseStudentFile(b.filename, b.data)
+    return await this.svc.parseStudentFile(b.filename, b.data)
   }
 
   // ===== 数据导出 =====

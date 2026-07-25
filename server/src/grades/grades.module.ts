@@ -18,7 +18,7 @@ import { Roles } from '../common/decorators/roles.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
-import * as XLSX from 'xlsx'
+import { xlsxFirstSheetToRows } from '../common/excel.util'
 
 class GradesService extends CrudService<Grade> {
   constructor(
@@ -75,13 +75,11 @@ class GradesService extends CrudService<Grade> {
   }
 
   /** 解析成绩文件（Excel/TXT/CSV），返回原始行 */
-  private parseFile(filename: string, dataBase64: string): string[][] {
+  private async parseFile(filename: string, dataBase64: string): Promise<string[][]> {
     const ext = (filename.split('.').pop() || '').toLowerCase()
     const buf = Buffer.from(dataBase64, 'base64')
     if (ext === 'xlsx' || ext === 'xls') {
-      const wb = XLSX.read(buf, { type: 'buffer' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][]
+      return xlsxFirstSheetToRows(buf)
     }
     const text = buf.toString('utf-8')
     return text
@@ -98,7 +96,7 @@ class GradesService extends CrudService<Grade> {
     filename: string,
     dataBase64: string,
   ) {
-    const rawRows = this.parseFile(filename, dataBase64)
+    const rawRows = await this.parseFile(filename, dataBase64)
     if (rawRows.length && /学号|姓名|name|student/i.test(String(rawRows[0][0]))) {
       rawRows.shift()
     }

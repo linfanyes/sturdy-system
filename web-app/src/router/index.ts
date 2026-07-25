@@ -218,6 +218,9 @@ const router = createRouter({
 })
 
 // 全局守卫：登录态 + 角色校验 + 功能权限校验
+// 注意：localStorage 中的 role / features 仅用于 UX 层跳转与菜单显隐，
+// 真正的数据权限由后端 @Roles + JWT（t.sub）强制校验，本地篡改无法越权读取数据；
+// 且 api/request.ts 在收到 401 时会清除本地登录态并跳转登录，形成闭环防御。
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) {

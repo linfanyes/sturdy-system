@@ -1,4 +1,4 @@
-import request from './request'
+import request, { getApiBase } from './request'
 
 /**
  * 教师端 API 封装：对接小程序后端统一 CRUD 接口（base.controller.ts 模式）。
@@ -292,7 +292,7 @@ export async function aiChatStream(
   onError?: (msg: string) => void,
 ) {
   const token = localStorage.getItem('trace_web_token')
-  const base = import.meta.env.VITE_API_BASE || '/api'
+  const base = getApiBase()
   const resp = await fetch(base + '/ai/chat', {
     method: 'POST',
     headers: {

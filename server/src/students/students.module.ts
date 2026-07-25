@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
-import * as XLSX from 'xlsx'
+import { xlsxFirstSheetToRows } from '../common/excel.util'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -50,15 +50,16 @@ class StudentsService extends CrudService<Student> {
   }
 
   /** 解析 Excel / TXT / CSV 学生文件，返回校验后的明细 */
-  parseFile(filename: string, dataBase64: string) {
+  async parseFile(
+    filename: string,
+    dataBase64: string,
+  ): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
     const ext = (filename.split('.').pop() || '').toLowerCase()
     const buf = Buffer.from(dataBase64, 'base64')
     let rawRows: string[][] = []
 
     if (ext === 'xlsx' || ext === 'xls') {
-      const wb = XLSX.read(buf, { type: 'buffer' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][]
+      rawRows = await xlsxFirstSheetToRows(buf)
     } else {
       const text = buf.toString('utf-8')
       rawRows = text
@@ -183,7 +184,7 @@ class StudentsService extends CrudService<Student> {
     } else {
       const buf = Buffer.from(data, 'base64')
       if (/xlsx?/i.test(ext)) {
-        text = this.ai.parseExcel(buf)
+        text = await this.ai.parseExcel(buf)
       } else {
         text = buf.toString('utf-8')
       }
@@ -264,7 +265,7 @@ class StudentsController extends CrudController<Student> {
   /** 预览：解析并校验文件，不落库 */
   @Post('import')
   @UseGuards(JwtAuthGuard)
-  importPreview(@Body() body: { filename: string; data: string }) {
+  async importPreview(@Body() body: { filename: string; data: string }) {
     if (!body?.filename || !body?.data) throw new BadRequestException('缺少文件数据')
     return (this.service as StudentsService).parseFile(body.filename, body.data)
   }
