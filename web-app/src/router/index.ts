@@ -177,6 +177,12 @@ export const routes: RouteRecordRaw[] = [
       { path: 'games/memory', name: 'game-memory', component: () => import('@/views/games/GameMemory.vue'), meta: { title: '记忆翻牌', feature: 'games' } },
       { path: 'games/slide-puzzle', name: 'game-slide-puzzle', component: () => import('@/views/games/GameSlidePuzzle.vue'), meta: { title: '图片拼图', feature: 'games' } },
       { path: 'games/color-match', name: 'game-color-match', component: () => import('@/views/games/GameColorMatch.vue'), meta: { title: '颜色反应', feature: 'games' } },
+      // 学科小游戏
+      { path: 'games/idiom', name: 'game-idiom', component: () => import('@/views/games/GameIdiom.vue'), meta: { title: '成语填空', feature: 'games' } },
+      { path: 'games/speed-math', name: 'game-speed-math', component: () => import('@/views/games/GameSpeedMath.vue'), meta: { title: '速算挑战', feature: 'games' } },
+      { path: 'games/spelling', name: 'game-spelling', component: () => import('@/views/games/GameSpelling.vue'), meta: { title: '单词拼写', feature: 'games' } },
+      { path: 'games/science-quiz', name: 'game-science-quiz', component: () => import('@/views/games/GameScienceQuiz.vue'), meta: { title: '科学知识', feature: 'games' } },
+      { path: 'games/geo-quiz', name: 'game-geo-quiz', component: () => import('@/views/games/GameGeoQuiz.vue'), meta: { title: '人文地理', feature: 'games' } },
     ],
   },
   // 家长

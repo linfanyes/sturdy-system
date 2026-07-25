@@ -463,7 +463,12 @@
         },
         {
           "path": "slidepuzzle"
-        }
+        },
+        { "path": "idiom" },
+        { "path": "speedmath" },
+        { "path": "spelling" },
+        { "path": "science" },
+        { "path": "geo" }
       ]
     },
     {

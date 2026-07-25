@@ -100,6 +100,16 @@ const cats = [
       { label: '颜色匹配', icon: '🌈', path: '/pages/games/colormatch', tag: '新', tagType: 'new', desc: '30 秒找最接近目标色，连击 ×2', ctrl: '点对应色块', bg: '#fce4ec' },
     ],
   },
+  {
+    title: '学科趣学', icon: '📚',
+    items: [
+      { label: '成语填空', icon: '📜', path: '/pages/games/idiom', desc: '填写成语缺字，10 题闯关', ctrl: '点选正确汉字', bg: '#fff3e0' },
+      { label: '速算挑战', icon: '🔢', path: '/pages/games/speedmath', desc: '10 道口算，四则运算', ctrl: '点选答案', bg: '#e8f5e9' },
+      { label: '单词拼写', icon: '🔤', path: '/pages/games/spelling', desc: '10 个英文单词拼写', ctrl: '键盘输入', bg: '#e3f2fd' },
+      { label: '科学知识', icon: '🔬', path: '/pages/games/science', desc: '10 道科学知识问答', ctrl: '点选答案', bg: '#f3e5f5' },
+      { label: '人文地理', icon: '🌍', path: '/pages/games/geo', desc: '10 道地理人文问答', ctrl: '点选答案', bg: '#fce4ec' },
+    ],
+  },
 ]
 
 const total = computed(() => cats.reduce((s, c) => s + c.items.length, 0))
