@@ -42,22 +42,24 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('trace_web_user', JSON.stringify(user.value))
   }
 
-  // 各角色登录
-  async function loginAsSuper(username: string, password: string) {
-    const { token: t, user: u } = await authApi.superLogin({ username, password })
+  // 统一登录入口（前端所有角色共用用户名/密码表单）
+  async function login(role: Role, username: string, password: string) {
+    const { token: t, user: u } = await authApi.login(role, username, password)
     setAuth(t, u)
+  }
+
+  // 各角色登录（兼容旧调用，内部均走统一 login）
+  async function loginAsSuper(username: string, password: string) {
+    await login('super', username, password)
   }
   async function loginAsSchoolAdmin(username: string, password: string) {
-    const { token: t, user: u } = await authApi.schoolAdminLogin({ username, password })
-    setAuth(t, u)
+    await login('school_admin', username, password)
   }
   async function loginAsTeacher(username: string, password: string) {
-    const { token: t, user: u } = await authApi.teacherLogin({ username, password })
-    setAuth(t, u)
+    await login('teacher', username, password)
   }
   async function loginAsParent(studentNo: string, password: string) {
-    const { token: t, user: u } = await authApi.parentLogin({ studentNo, password })
-    setAuth(t, u)
+    await login('parent', studentNo, password)
   }
 
   return {
@@ -68,6 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth,
     logout,
     updateUser,
+    login,
     loginAsSuper,
     loginAsSchoolAdmin,
     loginAsTeacher,

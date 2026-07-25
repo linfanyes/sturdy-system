@@ -9,10 +9,10 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-type Tab = Role
-const tab = ref<Tab>('teacher')
+const tab = ref<Role>('teacher')
 const loading = ref(false)
 const errMsg = ref('')
+const form = ref({ username: '', password: '' })
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -21,27 +21,21 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-// 各角色表单
-const superForm = ref({ username: '', password: '' })
-const schoolAdminForm = ref({ username: '', password: '' })
-const teacherForm = ref({ username: '', password: '' })
-const parentForm = ref({ studentNo: '', password: '' })
-
-const tabs: { key: Tab; label: string; icon: any }[] = [
-  { key: 'teacher', label: '教师', icon: GraduationCap },
-  { key: 'school_admin', label: '学校管理员', icon: School },
-  { key: 'parent', label: '家长', icon: Users },
-  { key: 'super', label: '超管', icon: Shield },
+const tabs: { key: Role; label: string; icon: any; desc: string }[] = [
+  { key: 'teacher', label: '教师', icon: GraduationCap, desc: '教师工作台' },
+  { key: 'school_admin', label: '校管', icon: School, desc: '学校管理端' },
+  { key: 'parent', label: '家长', icon: Users, desc: '家长门户' },
+  { key: 'super', label: '超管', icon: Shield, desc: '超级管理员' },
 ]
 
-const dashboardMap: Record<Tab, string> = {
+const dashboardMap: Record<Role, string> = {
   super: '/super',
   school_admin: '/school-admin',
   teacher: '/teacher',
   parent: '/parent',
 }
 
-/* ============ 历史账号（本地存储，最近 3 条/角色） ============ */
+/* ============ 历史账号（本地存储，最近 3 条） ============ */
 const RECENT_KEY = 'g_recent_accounts'
 type RecentMap = Record<string, string[]>
 const recent = ref<RecentMap>({})
@@ -62,10 +56,7 @@ function saveRecent(role: string, val: string) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(map))
 }
 function fillRecent(val: string) {
-  if (tab.value === 'parent') parentForm.value.studentNo = val
-  else if (tab.value === 'super') superForm.value.username = val
-  else if (tab.value === 'school_admin') schoolAdminForm.value.username = val
-  else teacherForm.value.username = val
+  form.value.username = val
 }
 
 /* ============ 表情头像（本地选择，装饰用） ============ */
@@ -98,24 +89,15 @@ onUnmounted(() => {
 })
 
 async function handleLogin() {
+  if (!form.value.username || !form.value.password) {
+    errMsg.value = '请输入用户名和密码'
+    return
+  }
   loading.value = true
   errMsg.value = ''
   try {
-    let accVal = ''
-    if (tab.value === 'super') {
-      accVal = superForm.value.username
-      await auth.loginAsSuper(superForm.value.username, superForm.value.password)
-    } else if (tab.value === 'school_admin') {
-      accVal = schoolAdminForm.value.username
-      await auth.loginAsSchoolAdmin(schoolAdminForm.value.username, schoolAdminForm.value.password)
-    } else if (tab.value === 'teacher') {
-      accVal = teacherForm.value.username
-      await auth.loginAsTeacher(teacherForm.value.username, teacherForm.value.password)
-    } else {
-      accVal = parentForm.value.studentNo
-      await auth.loginAsParent(parentForm.value.studentNo, parentForm.value.password)
-    }
-    saveRecent(tab.value, accVal)
+    await auth.login(tab.value, form.value.username, form.value.password)
+    saveRecent(tab.value, form.value.username)
     const redirect = (route.query.redirect as string) || dashboardMap[tab.value]
     router.push(redirect)
   } catch (e: any) {
@@ -127,87 +109,102 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-full w-full flex items-center justify-center p-4 sm:p-6 py-8 relative overflow-hidden">
-    <!-- 浮动渐变光斑（与原始 web 页面一致的暖色氛围） -->
+  <div class="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+    <!-- 浮动渐变光斑 -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-      <div class="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-sakura-300/40 blur-3xl animate-floaty" />
+      <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-sakura-300/40 blur-3xl animate-floaty" />
       <div
-        class="absolute top-32 -right-16 w-80 h-80 rounded-full bg-mint-300/40 blur-3xl animate-floaty"
+        class="absolute top-1/3 -right-20 w-96 h-96 rounded-full bg-mint-300/40 blur-3xl animate-floaty"
         style="animation-delay: -2s"
       />
       <div
-        class="absolute -bottom-16 left-1/3 w-72 h-72 rounded-full bg-butter-300/40 blur-3xl animate-floaty"
+        class="absolute -bottom-20 left-1/4 w-80 h-80 rounded-full bg-butter-300/40 blur-3xl animate-floaty"
         style="animation-delay: -4s"
       />
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-6 sm:gap-10 max-w-5xl xl:max-w-6xl w-full items-center relative">
+    <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-14 max-w-5xl xl:max-w-6xl w-full items-center relative">
       <!-- 左侧欢迎 -->
-      <div class="space-y-5 text-center lg:text-left -mt-4">
+      <div class="space-y-6 text-center lg:text-left">
         <div class="inline-flex items-center gap-1.5 chip bg-white/80 text-cocoa-800 border border-white/80 shadow-softer px-4 py-1.5 text-sm font-semibold tracking-wide">
           <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
-        <h1 class="title-display text-3xl sm:text-4xl lg:text-5xl leading-tight text-cocoa-900">
+
+        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-[1.15] text-cocoa-900">
           {{ greeting }}，欢迎回来 <span class="inline-block animate-wiggle">👋</span>
           <br class="hidden sm:block" />
           <span class="hidden sm:inline">用 <span class="scribble">爱</span> 浇灌每一颗小苗</span>
         </h1>
-        <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0">
+
+        <p class="text-cocoa-500 text-sm sm:text-base max-w-md mx-auto lg:mx-0 leading-relaxed">
           Web 管理端 · 多角色安全登录。教师、学校管理员、家长与超级管理员，
-          各凭账号进入专属工作台。
+          统一使用用户名和密码进入专属工作台。
         </p>
-        <ul class="space-y-2 text-cocoa-700 text-sm hidden lg:block">
-          <li class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-full bg-butter-300 flex items-center justify-center">1</span>
+
+        <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block">
+          <li class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-full bg-butter-300 flex items-center justify-center text-xs font-bold">1</span>
             选择您的角色
           </li>
-          <li class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-full bg-sakura-300 flex items-center justify-center">2</span>
-            输入账号与密码
+          <li class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-full bg-sakura-300 flex items-center justify-center text-xs font-bold">2</span>
+            输入用户名与密码
           </li>
-          <li class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-full bg-mint-300 flex items-center justify-center">3</span>
+          <li class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-full bg-mint-300 flex items-center justify-center text-xs font-bold">3</span>
             进入专属工作台，开始今天的工作
           </li>
         </ul>
+
         <!-- 教育格言轮播 -->
         <transition name="motto" mode="out-in">
           <p :key="mottoIdx" class="text-cocoa-400 text-xs sm:text-sm italic hidden lg:block">
             「{{ mottos[mottoIdx] }}」
           </p>
         </transition>
-        <div class="flex items-center justify-center lg:justify-start gap-3 pt-2">
+
+        <div class="flex items-center justify-center lg:justify-start gap-3 pt-1">
           <div class="text-3xl sm:text-4xl animate-wiggleSlow">📚</div>
           <div class="text-2xl sm:text-3xl animate-floaty">✏️</div>
-          <div
-            class="text-3xl sm:text-4xl animate-wiggle"
-            style="animation-delay: -0.5s"
-          >
-            🍎
-          </div>
-          <div
-            class="text-2xl sm:text-3xl animate-floaty"
-            style="animation-delay: -1.5s"
-          >
-            🌈
-          </div>
+          <div class="text-3xl sm:text-4xl animate-wiggle" style="animation-delay: -0.5s">🍎</div>
+          <div class="text-2xl sm:text-3xl animate-floaty" style="animation-delay: -1.5s">🌈</div>
         </div>
       </div>
 
       <!-- 右侧登录卡 -->
-      <div class="card-soft p-5 sm:p-7 lg:p-9 relative animate-fadeIn">
-        <div class="absolute -top-4 -left-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-butter-300/80 flex items-center justify-center text-xl sm:text-2xl shadow-pop">
+      <div class="card-soft p-6 sm:p-8 relative animate-fadeIn flex flex-col">
+        <!-- 头像角标 -->
+        <div class="absolute -top-5 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-butter-300 to-butter-400 flex items-center justify-center text-2xl shadow-pop border-4 border-white">
           {{ selectedAvatar }}
         </div>
-        <h2 class="title-display text-xl sm:text-2xl mb-1">
-          登录
-        </h2>
-        <p class="text-xs sm:text-sm text-cocoa-500 mb-3 sm:mb-4">
-          只需几秒，立即开始今天的工作 ✨
-        </p>
 
-        <!-- 表情头像选择（本地装饰） -->
-        <div class="flex items-center gap-1.5 mb-4">
+        <div class="text-center mt-5 mb-6">
+          <h2 class="title-display text-xl sm:text-2xl mb-1">登录</h2>
+          <p class="text-xs sm:text-sm text-cocoa-500">选择角色后，输入用户名和密码</p>
+        </div>
+
+        <!-- 角色选择 -->
+        <div class="grid grid-cols-4 gap-2 mb-6">
+          <button
+            v-for="t in tabs"
+            :key="t.key"
+            type="button"
+            @click="tab = t.key; errMsg = ''"
+            :class="[
+              'flex flex-col items-center gap-1.5 py-3 rounded-2xl text-xs font-medium transition-all border',
+              tab === t.key
+                ? 'bg-white text-butter-600 border-butter-300 shadow-softer'
+                : 'bg-cream-50/60 text-cocoa-500 border-transparent hover:bg-white hover:text-cocoa-700',
+            ]"
+            :aria-pressed="tab === t.key"
+          >
+            <component :is="t.icon" class="w-5 h-5" />
+            <span>{{ t.label }}</span>
+          </button>
+        </div>
+
+        <!-- 头像选择 -->
+        <div class="flex items-center justify-center gap-1.5 mb-5">
           <span class="text-xs text-cocoa-400 mr-1">头像</span>
           <button
             v-for="a in avatarOptions"
@@ -216,7 +213,7 @@ async function handleLogin() {
             @click="pickAvatar(a)"
             :aria-label="`选择头像 ${a}`"
             :class="[
-              'w-7 h-7 rounded-full text-base flex items-center justify-center transition',
+              'w-8 h-8 rounded-full text-base flex items-center justify-center transition',
               selectedAvatar === a ? 'bg-butter-100 ring-2 ring-butter-400' : 'hover:bg-cream-100',
             ]"
           >
@@ -224,25 +221,8 @@ async function handleLogin() {
           </button>
         </div>
 
-        <!-- 角色切换 -->
-        <div class="grid grid-cols-4 gap-1.5 mb-5 bg-cream-100/80 p-1 rounded-2xl">
-          <button
-            v-for="t in tabs"
-            :key="t.key"
-            type="button"
-            @click="tab = t.key; errMsg = ''"
-            :class="[
-              'flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all',
-              tab === t.key ? 'bg-white text-butter-600 shadow-softer' : 'text-cocoa-500 hover:text-cocoa-700',
-            ]"
-          >
-            <component :is="t.icon" class="w-5 h-5" />
-            {{ t.label }}
-          </button>
-        </div>
-
-        <!-- 最近登录（历史账号快捷填充） -->
-        <div v-if="recent[tab] && recent[tab].length" class="mb-3">
+        <!-- 最近登录 -->
+        <div v-if="recent[tab] && recent[tab].length" class="mb-4">
           <div class="text-xs text-cocoa-400 mb-1.5">最近登录</div>
           <div class="flex flex-wrap gap-1.5">
             <button
@@ -257,52 +237,42 @@ async function handleLogin() {
           </div>
         </div>
 
-        <!-- 表单 -->
+        <!-- 统一表单 -->
         <form class="space-y-3" @submit.prevent="handleLogin">
-          <template v-if="tab !== 'parent'">
+          <div class="relative">
             <input
-              v-model="(tab === 'super' ? superForm : tab === 'school_admin' ? schoolAdminForm : teacherForm).username"
+              v-model="form.username"
               type="text"
-              :placeholder="tab === 'super' ? '超管用户名' : tab === 'school_admin' ? '校管用户名' : '教师用户名'"
+              autocomplete="username"
+              placeholder="用户名"
               class="input-soft"
             />
+          </div>
+          <div class="relative">
             <input
-              v-model="(tab === 'super' ? superForm : tab === 'school_admin' ? schoolAdminForm : teacherForm).password"
+              v-model="form.password"
               type="password"
+              autocomplete="current-password"
               placeholder="密码"
               class="input-soft"
             />
-          </template>
-          <template v-else>
-            <input
-              v-model="parentForm.studentNo"
-              type="text"
-              placeholder="学生学号"
-              class="input-soft"
-            />
-            <input
-              v-model="parentForm.password"
-              type="password"
-              placeholder="密码（默认 123456）"
-              class="input-soft"
-            />
-          </template>
+          </div>
 
           <!-- 错误提示 -->
-          <div v-if="errMsg" class="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{{ errMsg }}</div>
+          <div v-if="errMsg" class="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{{ errMsg }}</div>
 
           <!-- 登录按钮 -->
           <button
             type="submit"
             :disabled="loading"
-            class="btn-primary w-full !py-3 !text-base"
+            class="btn-primary w-full !py-3 !text-base mt-1"
           >
             <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
             {{ loading ? '登录中…' : '开始工作' }}
           </button>
         </form>
 
-        <div class="mt-4 text-xs text-center text-cocoa-400">
+        <div class="mt-5 text-xs text-center text-cocoa-400 leading-relaxed">
           登录后 token 将持久化到本地，关闭浏览器后无需重新登录
         </div>
       </div>

@@ -1,6 +1,7 @@
 import request from './request'
 import type {
   AuthUser,
+  Role,
   SuperLoginDto,
   SchoolAdminLoginDto,
   TeacherLoginDto,
@@ -81,6 +82,25 @@ export async function parentLogin(dto: ParentLoginDto): Promise<LoginResult> {
       studentName: p.studentName,
       classId: p.classId,
     },
+  }
+}
+
+/**
+ * 统一登录入口：前端所有角色共用一个用户名/密码表单，
+ * 根据 role 路由到对应后端接口。家长角色将 username 映射为 studentNo。
+ */
+export async function login(role: Role, username: string, password: string): Promise<LoginResult> {
+  switch (role) {
+    case 'super':
+      return superLogin({ username, password })
+    case 'school_admin':
+      return schoolAdminLogin({ username, password })
+    case 'teacher':
+      return teacherLogin({ username, password })
+    case 'parent':
+      return parentLogin({ studentNo: username, password })
+    default:
+      throw new Error('未知登录角色')
   }
 }
 
