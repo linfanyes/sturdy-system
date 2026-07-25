@@ -8,8 +8,13 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
+    // .vue 单文件组件由 vue3-jest 编译（内部用 babel 剥离 TS）
+    '^.+\\.vue$': '@vue/vue3-jest',
     '^.+\\.[tj]sx?$': ['ts-jest', { tsconfig: { allowJs: true, esModuleInterop: true }, diagnostics: false }],
   },
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  // 允许对 ESM-only 的依赖（如图标库）做转译，避免 Cannot use import statement
+  transformIgnorePatterns: ['/node_modules/(?!(lucide-vue-next|@vue|nanoid)/)'],
   collectCoverage: false,
   verbose: true,
 }
