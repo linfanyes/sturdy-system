@@ -17,6 +17,10 @@ tester.js
 test-results.json
 test-report.json
 
+# 测试覆盖率报告（本地生成，勿入库）
+coverage/
+.nyc_output/
+
 # WorkBuddy 项目数据（非源码）
 .workbuddy/
 

@@ -1,0 +1,48 @@
+name: Web 前端 CI
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'web-app/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'web-app/**'
+
+# 默认权限：仅读取内容（test 不需要写权限）
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 单元测试 + 覆盖率
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-app
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-app/package-lock.json
+
+      - name: 安装依赖（锁定版本）
+        run: npm ci
+
+      - name: 运行测试并生成覆盖率
+        run: npm run test:coverage
+
+      - name: 上传覆盖率报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: web-app/coverage
+          retention-days: 14

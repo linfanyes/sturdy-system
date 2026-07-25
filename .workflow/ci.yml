@@ -1,0 +1,23 @@
+# Gitee Go 流水线配置（与 GitHub Actions 语法兼容的子集）
+# 放置于仓库根 .workflow/ 目录，并在 Gitee 平台「DevOps > Gitee Go」中开启对应流水线。
+name: web-ci
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-test:
+    name: 单元测试 + 覆盖率
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v3
+      - name: 配置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: 安装依赖并测试
+        run: |
+          cd web-app
+          npm ci
+          npm run test:coverage
