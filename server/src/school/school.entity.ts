@@ -9,7 +9,7 @@ export class School {
   id: string
 
   @Column({ unique: true, length: 12 })
-  code: string // 学校编号（编号前缀 + 6 位随机字符，超管创建学校时生成，唯一且不可修改）
+  code: string // 学校编号（2 位前缀 + 5 位随机 + 平台后缀 H/W，共 8 位，超管创建时生成，唯一且不可修改）
 
   @Column()
   name: string

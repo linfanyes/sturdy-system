@@ -194,7 +194,68 @@ export async function exportStudentsCsv(): Promise<void> {
   downloadCsv(blob as unknown as Blob, 'students.csv')
 }
 
-function downloadCsv(blob: Blob, filename: string) {
+/* ============ 批量导入：教师 ============ */
+
+export function previewTeachersFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/teachers/import-preview', payload)
+}
+export function aiTeachersFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/teachers/import-ai', payload)
+}
+export function importTeachersFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/teachers/import', payload)
+}
+
+/* ============ 批量导入：学生 ============ */
+
+export function previewStudentsFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/students/import-preview', payload)
+}
+export function aiStudentsFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/students/import-ai', payload)
+}
+export function importStudentsFile(payload: { classId: string; filename: string; data: string }) {
+  return request.post('/school-admin/students/import', payload)
+}
+export function batchCreateStudents(
+  students: Array<{ name: string; gender?: string; studentNo?: string; parentName?: string; parentPhone?: string; classId: string }>,
+) {
+  return request.post('/school-admin/students/batch', { students })
+}
+
+/* ============ 批量导入：班级 ============ */
+
+export function previewClassesFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/classes/import-preview', payload)
+}
+export function aiClassesFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/classes/import-ai', payload)
+}
+export function importClassesFile(payload: { filename: string; data: string }) {
+  return request.post('/school-admin/classes/import', payload)
+}
+export function batchCreateClasses(
+  classes: Array<{ name: string; grade: string; classNo?: string; headTeacher: string; term?: string }>,
+) {
+  return request.post('/school-admin/classes/batch', { classes })
+}
+
+/* ============ xlsx 二进制导出 ============ */
+
+export async function exportTeachersXls(): Promise<void> {
+  const blob = await request.get('/school-admin/export/teachers-xls', { responseType: 'blob' })
+  downloadBlob(blob as unknown as Blob, 'teachers.xlsx')
+}
+export async function exportStudentsXls(): Promise<void> {
+  const blob = await request.get('/school-admin/export/students-xls', { responseType: 'blob' })
+  downloadBlob(blob as unknown as Blob, 'students.xlsx')
+}
+export async function exportClassesXls(): Promise<void> {
+  const blob = await request.get('/school-admin/export/classes-xls', { responseType: 'blob' })
+  downloadBlob(blob as unknown as Blob, 'classes.xlsx')
+}
+
+function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -203,4 +264,8 @@ function downloadCsv(blob: Blob, filename: string) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+function downloadCsv(blob: Blob, filename: string) {
+  downloadBlob(blob, filename)
 }

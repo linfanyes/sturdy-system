@@ -74,3 +74,31 @@
     color: #f2e8d8;
   }
 }
+
+/* ============ 打印：隐藏侧边栏/顶栏/操作按钮，仅输出表格与标题 ============ */
+@media print {
+  aside,
+  .no-print,
+  header .text-cocoa-500.text-right {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  main,
+  .flex-1.overflow-hidden,
+  .flex-1.overflow-auto {
+    overflow: visible !important;
+  }
+  .shadow-softer,
+  .shadow-soft {
+    box-shadow: none !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  th, td {
+    border: 1px solid #e5ddd0 !important;
+  }
+}

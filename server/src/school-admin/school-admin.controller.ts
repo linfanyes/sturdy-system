@@ -37,6 +37,33 @@ export class SchoolAdminController {
     return this.svc.batchCreateTeachers(a.schoolId, b.teachers || [])
   }
 
+  /** 从 CSV/Excel/JSON 文件导入教师（列：姓名,性别,学科,手机号） */
+  @Post('teachers/import')
+  @UseGuards(JwtAuthGuard)
+  async importTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    const { rows } = await this.svc.parseTeacherFile(b.filename, b.data)
+    const valid = rows.filter((r) => r.valid).map((r) => ({ name: r.name, gender: r.gender, subject: r.subject, phone: r.phone }))
+    if (!valid.length) throw new BadRequestException('文件中无有效教师数据')
+    return this.svc.batchCreateTeachers(a.schoolId, valid)
+  }
+
+  /** 教师文件预览：解析并校验，返回明细（含错误行） */
+  @Post('teachers/import-preview')
+  @UseGuards(JwtAuthGuard)
+  async importTeachersPreview(@Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return await this.svc.parseTeacherFile(b.filename, b.data)
+  }
+
+  /** 教师文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
+  @Post('teachers/import-ai')
+  @UseGuards(JwtAuthGuard)
+  async importTeachersAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return await this.svc.aiRecognizeTeachers(a.sub, b.filename, b.data)
+  }
+
   @Patch('teachers/:id')
   @UseGuards(JwtAuthGuard)
   updateTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
@@ -82,6 +109,43 @@ export class SchoolAdminController {
   @Delete('classes/:id')
   @UseGuards(JwtAuthGuard)
   deleteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteClass(a.schoolId, id) }
+
+  /** 批量创建班级（接收 classes 数组，逐条按班主任姓名解析为本校教师） */
+  @Post('classes/batch')
+  @UseGuards(JwtAuthGuard)
+  batchCreateClasses(@CurrentSchoolAdmin() a: any, @Body() b: { classes: any[] }) {
+    return this.svc.batchCreateClasses(a.schoolId, b?.classes || [])
+  }
+
+  /** 从 CSV/Excel/JSON 文件导入班级（列：班级名称,年级,班级序号,班主任姓名,学期） */
+  @Post('classes/import')
+  @UseGuards(JwtAuthGuard)
+  async importClasses(
+    @CurrentSchoolAdmin() a: any,
+    @Body() b: { filename?: string; data?: string },
+  ) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    const { rows } = await this.svc.parseClassFile(b.filename, b.data)
+    const valid = rows.filter((r) => r.valid).map((r) => ({ name: r.name, grade: r.grade, classNo: r.classNo, headTeacher: r.headTeacher, term: r.term }))
+    if (!valid.length) throw new BadRequestException('文件中无有效班级数据')
+    return this.svc.batchCreateClasses(a.schoolId, valid)
+  }
+
+  /** 班级文件预览：解析并校验，返回明细（含错误行） */
+  @Post('classes/import-preview')
+  @UseGuards(JwtAuthGuard)
+  async importClassesPreview(@Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return await this.svc.parseClassFile(b.filename, b.data)
+  }
+
+  /** 班级文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
+  @Post('classes/import-ai')
+  @UseGuards(JwtAuthGuard)
+  async importClassesAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return await this.svc.aiRecognizeClasses(a.sub, b.filename, b.data)
+  }
 
   // ===== 学校公告 =====
 
@@ -147,6 +211,14 @@ export class SchoolAdminController {
     return await this.svc.parseStudentFile(b.filename, b.data)
   }
 
+  /** 学生文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
+  @Post('students/import-ai')
+  @UseGuards(JwtAuthGuard)
+  async importStudentsAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    return await this.svc.aiRecognizeStudents(a.sub, b.filename, b.data)
+  }
+
   // ===== 数据导出 =====
   @Get('export/teachers')
   @UseGuards(JwtAuthGuard)
@@ -164,6 +236,35 @@ export class SchoolAdminController {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=students.csv')
     res.send('\uFEFF' + data)
+  }
+
+  /* ===== xlsx 二进制导出 ===== */
+
+  @Get('export/teachers-xls')
+  @UseGuards(JwtAuthGuard)
+  async exportTeachersXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+    const buf = await this.svc.exportTeachersXls(a.schoolId)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename=teachers.xlsx')
+    res.send(buf)
+  }
+
+  @Get('export/students-xls')
+  @UseGuards(JwtAuthGuard)
+  async exportStudentsXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+    const buf = await this.svc.exportStudentsXls(a.schoolId)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename=students.xlsx')
+    res.send(buf)
+  }
+
+  @Get('export/classes-xls')
+  @UseGuards(JwtAuthGuard)
+  async exportClassesXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+    const buf = await this.svc.exportClassesXls(a.schoolId)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename=classes.xlsx')
+    res.send(buf)
   }
 
   // ===== 全局搜索 =====

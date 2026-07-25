@@ -2,11 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import {
   listClasses, createClass, updateClass, deleteClass,
-  listTeachers,
+  listTeachers, exportClassesXls,
   type ClassItem, type TeacherItem,
 } from '@/api/school-admin'
 import Modal from '@/components/Modal.vue'
-import { Plus, Search, Trash2, Edit3 } from 'lucide-vue-next'
+import BatchImportDialog from '@/components/BatchImportDialog.vue'
+import { Plus, Search, Trash2, Edit3, Upload, Printer, Download } from 'lucide-vue-next'
 
 /* ============ 列表 ============ */
 const loading = ref(false)
@@ -181,12 +182,33 @@ async function handleDelete(c: ClassItem) {
     alert(e?.message || '删除失败')
   }
 }
+
+/* ============ 批量导入 ============ */
+const showImport = ref(false)
+
+/* ============ 导出 XLS ============ */
+const exportingXls = ref(false)
+async function handleExportXls() {
+  exportingXls.value = true
+  try {
+    await exportClassesXls()
+  } catch (e: any) {
+    alert(e?.message || '导出失败')
+  } finally {
+    exportingXls.value = false
+  }
+}
+
+/* ============ 打印 ============ */
+function handlePrint() {
+  window.print()
+}
 </script>
 
 <template>
   <div class="space-y-4">
     <!-- 顶栏 -->
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center justify-between gap-4 no-print">
       <h1 class="text-2xl font-bold text-cocoa-900">班级管理</h1>
       <div class="flex items-center gap-2">
         <div class="relative">
@@ -197,6 +219,25 @@ async function handleDelete(c: ClassItem) {
             class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-64 focus:outline-none focus:border-butter-400"
           />
         </div>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30 transition-colors disabled:opacity-60"
+          :disabled="exportingXls"
+          @click="handleExportXls"
+        >
+          <Download class="w-4 h-4" /> {{ exportingXls ? '导出中…' : '导出 XLS' }}
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cream-200 text-cocoa-700 text-sm font-medium hover:bg-cream-300 transition-colors"
+          @click="handlePrint"
+        >
+          <Printer class="w-4 h-4" /> 打印
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
+          @click="showImport = true"
+        >
+          <Upload class="w-4 h-4" /> 批量导入
+        </button>
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
           @click="openCreate"
@@ -355,4 +396,7 @@ async function handleDelete(c: ClassItem) {
       </button>
     </template>
   </Modal>
+
+  <!-- 批量导入 -->
+  <BatchImportDialog v-model="showImport" type="class" @imported="loadClasses" />
 </template>

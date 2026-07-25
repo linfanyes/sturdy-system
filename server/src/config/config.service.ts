@@ -19,6 +19,7 @@ export class ConfigService implements OnModuleInit {
   async onModuleInit() {
     await this.seed()
     await this.migrateModelDefaults()
+    await this.migrateImDefaults()
   }
 
   /** 用环境变量首次填充平台配置（仅当 key 不存在时） */
@@ -148,6 +149,35 @@ export class ConfigService implements OnModuleInit {
     c.value = value
     if (description) c.description = description
     return this.appRepo.save(c)
+  }
+
+  /** 批量保存平台配置（事务式逐条写入） */
+  async saveAppConfig(items: { key: string; value: string }[]) {
+    for (const it of items || []) {
+      if (!it || !it.key) continue
+      await this.setAppConfig(it.key, it.value ?? '')
+    }
+    return { ok: true }
+  }
+
+  /**
+   * 腾讯云 IM 配置：若已存在但值为空，则用后端环境变量（SDKAppID / SecretKey）回填，
+   * 保证「腾讯IM配置默认取后端的 SDKAppID 和 SecretKey」。
+   */
+  private async migrateImDefaults() {
+    for (const [key, envKey] of [
+      ['imSdkAppId', 'IM_SDK_APP_ID'],
+      ['imSecretKey', 'IM_SECRET_KEY'],
+    ] as const) {
+      const c = await this.appRepo.findOne({ where: { key } })
+      if (c && (!c.value || !c.value.trim())) {
+        const envVal = this.env.get(envKey) || ''
+        if (envVal) {
+          c.value = envVal
+          await this.appRepo.save(c)
+        }
+      }
+    }
   }
 
   /** 下发给小程序的公开配置（剔除敏感项） */

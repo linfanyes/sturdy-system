@@ -108,26 +108,34 @@ export class AdminService implements OnModuleInit {
     return { token: this.jwt.sign({ sub: 'super', role: 'super' }) }
   }
 
-  /** 生成学校编号：前缀(最多 6 位) + 中横线(-) + 6 位随机字符，保证唯一；无前缀则仅 6 位随机字符 */
-  private async genSchoolCode(prefix: string): Promise<string> {
+  /**
+   * 生成学校编号：2 位前缀（管理员输入）+ 5 位随机字母数字 + 1 位平台后缀，
+   * 共 8 位。web 端后缀 H，小程序端后缀 W。
+   * 前缀不足 2 位或含非法字符将抛错。
+   */
+  private async genSchoolCode(prefix: string, suffixChar = 'H'): Promise<string> {
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
     const digits = '23456789'
     const all = letters + digits
     const p = (prefix || '')
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
-      .slice(0, 6)
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const bytes = crypto.randomBytes(6)
+      .slice(0, 2)
+    if (p.length !== 2) {
+      throw new BadRequestException('学校编号前缀必须为 2 位字符（大写字母或数字）')
+    }
+    const suffix = (suffixChar || 'H').toUpperCase().slice(0, 1)
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const bytes = crypto.randomBytes(5)
       let rand = ''
-      for (let i = 0; i < 6; i++) rand += all[bytes[i] % all.length]
-      const code = p ? `${p}-${rand}` : rand
+      for (let i = 0; i < 5; i++) rand += all[bytes[i] % all.length]
+      const code = p + rand + suffix // 2 + 5 + 1 = 8 位
       const dup = await this.schoolRepo.findOne({ where: { code } })
       if (!dup) return code
     }
-    // 兜底：时间戳随机
-    const tail = crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 7)
-    return p ? `${p}-${tail}` : tail
+    // 兜底：极端冲突时缩短随机段
+    const tail = crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 5)
+    return p + tail + suffix
   }
 
   /* ===== 学校管理（超管维护） ===== */
@@ -140,10 +148,11 @@ export class AdminService implements OnModuleInit {
     return { items, total }
   }
 
-  /** 新增学校：编号 = 前缀 + 中横线 + 6 位随机字符（无前缀则仅 6 位随机字符） */
-  async createSchool(dto: { name: string; prefix?: string; address?: string; contact?: string; phone?: string; status?: string }) {
+  /** 新增学校：编号 = 2 位前缀 + 5 位随机 + 平台后缀(H/W)，共 8 位 */
+  async createSchool(dto: { name: string; prefix?: string; platform?: 'web' | 'mini'; address?: string; contact?: string; phone?: string; status?: string }) {
     if (!dto.name || !dto.name.trim()) throw new BadRequestException('学校名称必填')
-    const code = await this.genSchoolCode(dto.prefix || '')
+    const suffix = dto.platform === 'mini' ? 'W' : 'H'
+    const code = await this.genSchoolCode(dto.prefix || '', suffix)
     const school = await this.schoolRepo.save(this.schoolRepo.create({
       code,
       name: dto.name.trim(),

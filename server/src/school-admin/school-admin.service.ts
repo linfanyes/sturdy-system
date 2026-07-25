@@ -16,6 +16,9 @@ import { ClassMemberService } from '../class-members/class-members.module'
 import { AuditService } from '../audit/audit.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
+import { pinyin } from 'pinyin-pro'
+import * as ExcelJS from 'exceljs'
+import { AiService } from '../ai/ai.service'
 
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
@@ -45,6 +48,7 @@ export class SchoolAdminService {
     @InjectRepository(ClassMember) private readonly classMemberRepo: Repository<ClassMember>,
     private readonly classMemberSvc: ClassMemberService,
     private readonly audit: AuditService,
+    private readonly ai: AiService,
     @InjectEntityManager() private readonly entityManager: EntityManager,
   ) {}
 
@@ -137,16 +141,43 @@ export class SchoolAdminService {
     return prefix + String(seq).padStart(5, '0')
   }
 
-  /** 创建教师账号（自动生成教师编号 teacherNo，username 默认=teacherNo，事务保护） */
-  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; enabled?: boolean }) {
+  /**
+   * 根据中文姓名生成拼音登录名（不含声调，仅保留字母，小写）。
+   * 用于批量导入时自动生成教师登录账号。多音字等按 pinyin-pro 默认音处理，
+   * 若拼音为空则回退到教师编号。
+   */
+  private genPinyinLogin(name: string): string {
+    const clean = (name || '').trim()
+    if (!clean) return ''
+    try {
+      const arr = pinyin(clean, { toneType: 'none', type: 'array' }) as string[]
+      return arr.join('').toLowerCase().replace(/[^a-z]/g, '')
+    } catch {
+      return ''
+    }
+  }
+
+  /** 创建教师账号（自动生成教师编号 teacherNo；username 默认=teacherNo，autoPinyin 时改用中文名拼音；事务保护） */
+  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; enabled?: boolean; autoPinyin?: boolean }) {
     if (!dto.name) throw new BadRequestException('姓名必填')
     return await this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User)
       const teacherNo = await this.genTeacherNo(schoolId, em)
-      // username 可选：未传则用 teacherNo 作为登录用户名（一个编号既是序列ID也是登录账号）
-      const username = dto.username?.trim() || teacherNo
-      const exist = await userRepo.findOne({ where: { username } })
-      if (exist) throw new BadRequestException('用户名已存在')
+      // username 生成策略：显式传入 > 自动拼音（autoPinyin）> 教师编号
+      const baseUsername = dto.username?.trim()
+        || (dto.autoPinyin ? this.genPinyinLogin(dto.name) : '')
+        || teacherNo
+      // 唯一性：拼音冲突时追加数字后缀（如 zhangsan -> zhangsan1）
+      let username = baseUsername
+      let attempt = 0
+      while (true) {
+        const exist = await userRepo.findOne({ where: { username } })
+        if (!exist) break
+        attempt++
+        if (!dto.autoPinyin) throw new BadRequestException('用户名已存在')
+        username = `${baseUsername}${attempt}`
+        if (attempt > 200) throw new BadRequestException('无法生成唯一登录名，请为「' + dto.name + '」手动指定用户名')
+      }
       const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
       // password 可选：未传则用统一默认密码 123456
       const hash = hashPassword(dto.password || '123456')
@@ -170,7 +201,7 @@ export class SchoolAdminService {
       try {
         const r = await this.createTeacher(schoolId, {
           name: t.name, phone: t.phone, gender: t.gender, subject: t.subject,
-          password: t.password, username: t.username,
+          password: t.password, username: t.username, autoPinyin: true,
         })
         results.push({ name: t.name, username: r.username, teacherNo: r.teacherNo, status: '成功' })
       } catch (e: any) {
@@ -339,6 +370,95 @@ export class SchoolAdminService {
     if (!teacher) throw new BadRequestException('无权操作此班级')
     await this.classRepo.remove(cls)
     this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级').catch(() => {})
+  }
+
+  /**
+   * 解析班级文件（Excel/CSV/TXT/JSON），返回校验后的明细。
+   * 列顺序：班级名称, 年级, 班级序号(可选), 班主任(姓名), 学期(可选)。
+   * 班主任以姓名匹配本校教师，导入时再解析为 teacherId。
+   */
+  async parseClassFile(filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
+    const ext = (filename.split('.').pop() || '').toLowerCase()
+    const buf = Buffer.from(dataBase64, 'base64')
+    let rawRows: string[][] = []
+
+    if (ext === 'json') {
+      let arr: any[]
+      try {
+        arr = JSON.parse(buf.toString('utf-8'))
+      } catch {
+        throw new BadRequestException('JSON 文件格式错误')
+      }
+      if (!Array.isArray(arr)) throw new BadRequestException('JSON 文件应为数组结构')
+      rawRows = arr.map((o) => [
+        String(o?.name ?? ''), String(o?.grade ?? ''), String(o?.classNo ?? '1'),
+        String(o?.headTeacher ?? o?.headTeacherName ?? ''), String(o?.term ?? ''),
+      ])
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      rawRows = await xlsxFirstSheetToRows(buf)
+    } else {
+      const text = buf.toString('utf-8')
+      rawRows = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\t|,/).map((c) => c.trim()))
+    }
+
+    if (rawRows.length && /班级名称|名称|name/i.test(String(rawRows[0][0]))) {
+      rawRows = rawRows.slice(1)
+    }
+
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    rawRows.forEach((r, i) => {
+      const name = String(r[0] || '').trim()
+      const grade = String(r[1] || '').trim()
+      const classNo = String(r[2] || '1').trim() || '1'
+      const headTeacher = String(r[3] || '').trim()
+      const term = String(r[4] || '').trim()
+      let error = ''
+      if (!name) error = '缺少班级名称'
+      else if (!grade) error = '缺少年级'
+      else if (!headTeacher) error = '缺少班主任姓名'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, grade, classNo, headTeacher, term, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
+  }
+
+  /** 批量创建班级（逐条创建，自动按班主任姓名解析为本校教师；返回成功/失败明细） */
+  async batchCreateClasses(schoolId: string, classes: any[]) {
+    if (!classes?.length) throw new BadRequestException('请提供至少一个班级信息')
+    const results: any[] = []
+    let success = 0
+    let failed = 0
+    for (const c of classes) {
+      const name = String(c.name || '').trim()
+      const grade = String(c.grade || '').trim()
+      const classNo = String(c.classNo || '1').trim() || '1'
+      const headTeacherName = String(c.headTeacher || c.headTeacherName || '').trim()
+      const term = String(c.term || '').trim()
+      try {
+        if (!name) throw new Error('缺少班级名称')
+        if (!grade) throw new Error('缺少年级')
+        if (!headTeacherName) throw new Error('缺少班主任姓名')
+        const teacher = await this.userRepo.findOne({ where: { name: headTeacherName, schoolId } })
+        if (!teacher) throw new Error(`本校无名为「${headTeacherName}」的教师`)
+        await this.createClass(schoolId, {
+          name, grade, classNo, headTeacher: teacher.name, headTeacherId: teacher.id, term,
+        })
+        results.push({ name, grade, classNo, headTeacherName, status: '成功' })
+        success++
+      } catch (e: any) {
+        results.push({ name, grade, classNo, headTeacherName, status: '失败', error: e.message })
+        failed++
+      }
+    }
+    this.audit.log(schoolId, 'batch_create_classes', '系统', `批量创建班级 ${success} 成功 / ${failed} 失败`, '校管批量导入班级').catch(() => {})
+    return { total: classes.length, success, failed, results }
   }
 
   // ===== 学校公告 =====
@@ -549,6 +669,162 @@ export class SchoolAdminService {
     return { rows, validCount, errorCount }
   }
 
+  /**
+   * 解析教师文件（Excel/CSV/TXT/JSON），返回校验后的明细。
+   * 列顺序：姓名, 性别(可选), 学科(可选), 手机号(可选)。
+   * JSON 则直接解析为数组对象。供校管批量导入与 AI 识别预览复用。
+   */
+  async parseTeacherFile(filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
+    const ext = (filename.split('.').pop() || '').toLowerCase()
+    const buf = Buffer.from(dataBase64, 'base64')
+    let rawRows: string[][] = []
+
+    if (ext === 'json') {
+      let arr: any[]
+      try {
+        arr = JSON.parse(buf.toString('utf-8'))
+      } catch {
+        throw new BadRequestException('JSON 文件格式错误')
+      }
+      if (!Array.isArray(arr)) throw new BadRequestException('JSON 文件应为数组结构')
+      rawRows = arr.map((o) => [String(o?.name ?? ''), String(o?.gender ?? ''), String(o?.subject ?? ''), String(o?.phone ?? '')])
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      rawRows = await xlsxFirstSheetToRows(buf)
+    } else {
+      const text = buf.toString('utf-8')
+      rawRows = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\t|,/).map((c) => c.trim()))
+    }
+
+    if (rawRows.length && /姓名|name/i.test(String(rawRows[0][0]))) {
+      rawRows = rawRows.slice(1)
+    }
+
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    rawRows.forEach((r, i) => {
+      const name = String(r[0] || '').trim()
+      let gender = String(r[1] || '').trim()
+      const subject = String(r[2] || '').trim()
+      const phone = String(r[3] || '').trim()
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      let error = ''
+      if (!name) error = '缺少姓名'
+      else if (phone && !/^\d{6,15}$/.test(phone)) error = '手机号格式不正确'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, gender, subject, phone, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
+  }
+
+  /** 将 AI 返回的任意结构规整为数组（兼容 数组 / {teachers|data|list|rows:[]} 等） */
+  private normalizeAiRows(res: any): any[] {
+    if (Array.isArray(res)) return res
+    if (res && Array.isArray(res.teachers)) return res.teachers
+    if (res && Array.isArray(res.data)) return res.data
+    if (res && Array.isArray(res.list)) return res.list
+    if (res && Array.isArray(res.rows)) return res.rows
+    return []
+  }
+
+  /**
+   * AI 识别教师文件：先把文件转为文本（图片走 OCR、Excel 转 CSV），再交给大模型结构化解析。
+   * 返回与 parseTeacherFile 同构的预览行（含校验状态）。
+   */
+  async aiRecognizeTeachers(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
+    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const instruction =
+      '从下列文本中提取教师名单，每行/每位教师一行。只返回 JSON 数组，不要解释或前后缀。' +
+      '元素字段：name(姓名,必填字符串), gender(性别,仅"男"或"女",可空), subject(任教学科,可空), phone(手机号,可空)。'
+    const res = await this.ai.parse(teacherId, { text, instruction })
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    this.normalizeAiRows(res).forEach((o: any, i: number) => {
+      const name = String(o?.name ?? '').trim()
+      let gender = String(o?.gender ?? '').trim()
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      const subject = String(o?.subject ?? '').trim()
+      const phone = String(o?.phone ?? '').trim()
+      let error = ''
+      if (!name) error = '缺少姓名'
+      else if (phone && !/^\d{6,15}$/.test(phone)) error = '手机号格式不正确'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, gender, subject, phone, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
+  }
+
+  /**
+   * AI 识别学生文件：文本解析后交给大模型结构化，返回与 parseStudentFile 同构的预览行。
+   */
+  async aiRecognizeStudents(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
+    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const instruction =
+      '从下列文本中提取学生名单，每行/每位学生一行。只返回 JSON 数组，不要解释或前后缀。' +
+      '元素字段：name(姓名,必填字符串), gender(性别,仅"男"或"女",必填), studentNo(学号,可空), ' +
+      'parentName(家长姓名,可空), parentPhone(家长电话,可空数字)。'
+    const res = await this.ai.parse(teacherId, { text, instruction })
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    this.normalizeAiRows(res).forEach((o: any, i: number) => {
+      const name = String(o?.name ?? '').trim()
+      let gender = String(o?.gender ?? '').trim()
+      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
+      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      const studentNo = String(o?.studentNo ?? '').trim()
+      const parentName = String(o?.parentName ?? '').trim()
+      const parentPhone = String(o?.parentPhone ?? '').trim()
+      let error = ''
+      if (!name) error = '缺少姓名'
+      else if (gender !== '男' && gender !== '女') error = '性别须为男/女'
+      else if (parentPhone && !/^\d{6,15}$/.test(parentPhone)) error = '家长电话格式不正确'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, gender, studentNo, parentName, parentPhone, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
+  }
+
+  /**
+   * AI 识别班级文件：文本解析后交给大模型结构化，返回与 parseClassFile 同构的预览行。
+   */
+  async aiRecognizeClasses(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
+    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const instruction =
+      '从下列文本中提取班级名单，每行/每个班级一行。只返回 JSON 数组，不要解释或前后缀。' +
+      '元素字段：name(班级名称,必填), grade(年级,必填), classNo(班级序号,可空), ' +
+      'headTeacher(班主任姓名,必填), term(学期,可空)。'
+    const res = await this.ai.parse(teacherId, { text, instruction })
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    this.normalizeAiRows(res).forEach((o: any, i: number) => {
+      const name = String(o?.name ?? '').trim()
+      const grade = String(o?.grade ?? '').trim()
+      const classNo = String(o?.classNo ?? '1').trim() || '1'
+      const headTeacher = String(o?.headTeacher ?? '').trim()
+      const term = String(o?.term ?? '').trim()
+      let error = ''
+      if (!name) error = '缺少班级名称'
+      else if (!grade) error = '缺少年级'
+      else if (!headTeacher) error = '缺少班主任姓名'
+      if (error) errorCount++
+      else validCount++
+      rows.push({ name, grade, classNo, headTeacher, term, line: i + 1, valid: !error, error })
+    })
+    return { rows, validCount, errorCount }
+  }
+
   /** 全局搜索：按关键词搜索本校学生/教师/班级 */
   async search(schoolId: string, q: string, skip = 0, take = 20) {
     if (!q || q.length < 1) return { students: [], teachers: [], classes: [] }
@@ -596,6 +872,19 @@ export class SchoolAdminService {
     }).join(',')).join('\n')
   }
 
+  /** 用 exceljs 把二维数据写成 .xlsx 工作簿，返回 Buffer */
+  private async workbookFrom(headers: string[], rows: any[][]): Promise<Buffer> {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Sheet1')
+    ws.columns = headers.map((h) => ({ header: h, key: h, width: 18 }))
+    const headRow = ws.getRow(1)
+    headRow.font = { bold: true }
+    headRow.alignment = { vertical: 'middle' }
+    for (const r of rows) ws.addRow(r)
+    const buf = await wb.xlsx.writeBuffer()
+    return Buffer.from(buf)
+  }
+
   async exportTeachers(schoolId: string): Promise<string> {
     const r = await this.listTeachers(schoolId)
     const rows = [['姓名', '用户名', '学科', '性别', '手机号', '教师编号', '状态']]
@@ -612,5 +901,28 @@ export class SchoolAdminService {
       rows.push([s.name, s.studentNo || '', s.gender || '', s.className || '', s.parentName || '', s.parentPhone || '', s.parentLoginEnabled ? '是' : '否'])
     }
     return this.toCsv(rows)
+  }
+
+  /* —— 以下为 xlsx 二进制导出，供前端下载 .xlsx —— */
+
+  async exportTeachersXls(schoolId: string): Promise<Buffer> {
+    const r = await this.listTeachers(schoolId)
+    const headers = ['姓名', '用户名', '学科', '性别', '手机号', '教师编号', '状态']
+    const rows = r.items.map((t) => [t.name, t.username || '', t.subject || '', t.gender || '', t.phone || '', t.teacherNo || '', t.enabled ? '启用' : '禁用'])
+    return this.workbookFrom(headers, rows)
+  }
+
+  async exportStudentsXls(schoolId: string): Promise<Buffer> {
+    const r = await this.listSchoolStudents(schoolId)
+    const headers = ['姓名', '学号', '性别', '班级', '家长', '家长电话', '家长开通']
+    const rows = r.items.map((s) => [s.name, s.studentNo || '', s.gender || '', s.className || '', s.parentName || '', s.parentPhone || '', s.parentLoginEnabled ? '是' : '否'])
+    return this.workbookFrom(headers, rows)
+  }
+
+  async exportClassesXls(schoolId: string): Promise<Buffer> {
+    const { items } = await this.listClasses(schoolId)
+    const headers = ['班级名称', '年级', '班级序号', '学期', '班主任', '班主任任教学科']
+    const rows = items.map((c) => [c.name, c.grade || '', c.classNo || '', c.term || '', c.headTeacher || '', (c.subjects || []).join('/')])
+    return this.workbookFrom(headers, rows)
   }
 }

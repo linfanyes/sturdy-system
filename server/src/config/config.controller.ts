@@ -41,6 +41,18 @@ export class ConfigController {
       : rows
   }
 
+  /**
+   * 批量保存平台配置（前端平台配置页一次性提交所有字段）。
+   * body: { items: [{ key, value }] }；密钥类字段若为空且前端标记为脱敏态，
+   * 由前端在调用前剔除，这里直接覆盖写入。
+   */
+  @Roles('super')
+  @Put('app')
+  @UseGuards(JwtAuthGuard)
+  saveApp(@Body() body: { items?: { key: string; value: string }[] }) {
+    return this.cfg.saveAppConfig(body?.items || [])
+  }
+
   @Roles('super')
   @Put('app/:key')
   @UseGuards(JwtAuthGuard)

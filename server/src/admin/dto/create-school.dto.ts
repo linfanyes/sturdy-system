@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsIn, MaxLength } from 'class-validator'
+import { IsNotEmpty, IsOptional, IsString, IsIn, MaxLength, Matches } from 'class-validator'
 
 /** 新增学校入参校验（超管维护学校结构） */
 export class CreateSchoolDto {
@@ -7,10 +7,16 @@ export class CreateSchoolDto {
   @MaxLength(100, { message: '学校名称过长' })
   name: string
 
-  @IsOptional()
+  /** 学校编号前缀：管理员输入，限制 2 位大写字母或数字 */
+  @IsNotEmpty({ message: '请填写 2 位学校编号前缀' })
   @IsString()
-  @MaxLength(6, { message: '编号前缀最多 6 位' })
-  prefix?: string
+  @Matches(/^[A-Z0-9]{2}$/, { message: '编号前缀必须为 2 位大写字母或数字' })
+  prefix: string
+
+  /** 创建端：web 端编号末尾 H，小程序端末尾 W */
+  @IsOptional()
+  @IsIn(['web', 'mini'])
+  platform?: 'web' | 'mini'
 
   @IsOptional()
   @IsString()

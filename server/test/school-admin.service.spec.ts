@@ -32,6 +32,7 @@ describe('SchoolAdminService', () => {
   let classMemberRepo: any
   let classMemberSvc: any
   let audit: any
+  let ai: any
   let em: any
 
   beforeEach(() => {
@@ -53,6 +54,11 @@ describe('SchoolAdminService', () => {
       removeMember: jest.fn().mockResolvedValue(undefined),
     }
     audit = { log: jest.fn().mockResolvedValue(undefined) }
+    // AiService mock：AI 识别/文件解析在单测中无需真实调用
+    ai = {
+      parse: jest.fn().mockResolvedValue([]),
+      parseFile: jest.fn().mockResolvedValue({ text: '' }),
+    }
     // EntityManager mock：transaction 直接执行回调并传入自身
     em = {
       transaction: jest.fn(async (cb: any) => cb(em)),
@@ -72,6 +78,7 @@ describe('SchoolAdminService', () => {
       classMemberRepo,
       classMemberSvc as any,
       audit as any,
+      ai as any,
       em as any,
     )
   })
@@ -576,7 +583,7 @@ describe('SchoolAdminService', () => {
       return userRepoEm
     }
 
-    it('批量导入时自动生成 username(=teacherNo) 和默认密码', async () => {
+    it('批量导入时自动生成 pinyin 登录名与教师编号', async () => {
       setupEmForBatch()
       schoolRepo.findOne.mockResolvedValue({ id: 's1', code: 'SCH001', name: '测试学校' })
 
@@ -590,9 +597,9 @@ describe('SchoolAdminService', () => {
       // 每条结果应含 teacherNo，序号递增
       expect(res.results[0].teacherNo).toBe('JSSCH00100001')
       expect(res.results[1].teacherNo).toBe('JSSCH00100002')
-      // username 应等于 teacherNo（自动生成）
-      expect(res.results[0].username).toBe('JSSCH00100001')
-      expect(res.results[1].username).toBe('JSSCH00100002')
+      // 批量导入：未指定 username 时自动用中文名拼音作为登录名
+      expect(res.results[0].username).toBe('zhanglaoshi')
+      expect(res.results[1].username).toBe('lilaoshi')
     })
 
     it('批量导入支持自定义 password', async () => {

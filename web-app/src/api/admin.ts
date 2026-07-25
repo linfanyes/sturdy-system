@@ -5,8 +5,8 @@ export function listSchools(skip = 0, take = 100) {
   return request.get<any, { items: any[]; total: number }>('/admin/schools', { params: { skip, take } })
 }
 
-/** 超管：创建学校 */
-export function createSchool(dto: { name: string; code?: string }) {
+/** 超管：创建学校（编号 = 2 位前缀 + 随机 + 平台后缀 H/W，共 8 位） */
+export function createSchool(dto: { name: string; prefix: string; platform?: 'web' | 'mini'; address?: string; status?: string }) {
   return request.post('/admin/schools', dto)
 }
 

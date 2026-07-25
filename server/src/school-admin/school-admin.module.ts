@@ -11,12 +11,14 @@ import { ClassMembersModule } from '../class-members/class-members.module'
 import { SchoolAdminService } from './school-admin.service'
 import { SchoolAdminController } from './school-admin.controller'
 import { AuditModule } from '../audit/audit.module'
+import { AiModule } from '../ai/ai.module'
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SchoolAdmin, User, Student, School, ClassItem, Notice, Attendance, Homework, ClassMember]),
     AuditModule,
     ClassMembersModule,
+    AiModule,
   ],
   providers: [SchoolAdminService],
   controllers: [SchoolAdminController],

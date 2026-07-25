@@ -342,7 +342,7 @@ const today = computed(() =>
     <!-- 主内容区 -->
     <main class="flex-1 overflow-hidden bg-cream-50 flex flex-col">
       <!-- 顶栏：全局搜索（仅校管可见） -->
-      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-white/80 backdrop-blur px-6 py-2.5 shrink-0">
+      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-white/80 backdrop-blur px-6 py-2.5 shrink-0 no-print">
         <div class="max-w-7xl mx-auto relative">
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400" />
