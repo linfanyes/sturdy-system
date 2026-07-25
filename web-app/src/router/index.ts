@@ -185,7 +185,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['parent'] as Role[] },
     children: [
-      { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长查看' } },
+      { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长中心' } },
     ],
   },
   // 根路径：按角色重定向到对应工作台（优先用 auth store，兜底读 localStorage）

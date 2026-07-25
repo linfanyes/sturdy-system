@@ -128,8 +128,6 @@ function homeworkStatusClass(status?: string) {
 
 <template>
   <div class="space-y-4">
-    <h1 class="text-2xl font-bold text-cocoa-900">📊 家长中心</h1>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="bg-white rounded-2xl p-10 shadow-softer flex items-center justify-center">
       <Loader2 class="w-6 h-6 animate-spin text-butter-500" />
@@ -210,8 +208,8 @@ function homeworkStatusClass(status?: string) {
         </button>
       </div>
 
-      <!-- 待办公告 Tab -->
-      <div v-if="tab === 'pending'" class="space-y-4">
+      <!-- 待办公告 Tab：宽屏左右分栏，减少右侧留白 -->
+      <div v-if="tab === 'pending'" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <!-- 待完成作业 -->
         <div class="bg-white rounded-2xl p-5 shadow-softer">
           <div class="flex items-center gap-2 mb-3">

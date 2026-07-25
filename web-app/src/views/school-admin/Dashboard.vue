@@ -33,8 +33,7 @@ const cards = ref([
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-cocoa-900">校管工作台</h1>
+    <div class="flex items-center justify-end">
       <button
         class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-700 text-sm hover:bg-cream-200 transition-colors"
         @click="loadDashboard"
@@ -45,7 +44,7 @@ const cards = ref([
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div
         v-for="card in cards"
         :key="card.key"

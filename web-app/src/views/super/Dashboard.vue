@@ -56,13 +56,8 @@ const quickLinks = [
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-cocoa-900">超管工作台</h1>
-      <p class="text-sm text-cocoa-500 mt-1">欢迎回来，{{ auth.user?.name || '超级管理员' }}</p>
-    </div>
-
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div class="bg-white rounded-2xl p-5 shadow-softer">
         <div class="flex items-center gap-2 text-sm text-cocoa-500">
           <School class="w-4 h-4 text-butter-500" /> 学校总数
@@ -95,7 +90,7 @@ const quickLinks = [
     <!-- 快捷入口 -->
     <div>
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3">快捷入口</h2>
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           v-for="link in quickLinks"
           :key="link.to"

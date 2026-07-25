@@ -150,11 +150,8 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-6" @click="closeNotifyPanel">
-    <!-- 顶部：标题 + 搜索 + 铃铛 + 刷新 -->
-    <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold text-cocoa-900 shrink-0">教师工作台</h1>
-
-      <div class="flex items-center gap-3">
+    <!-- 顶部：搜索 + 铃铛 + 刷新 -->
+    <div class="flex items-center justify-end gap-4">
         <!-- 全局搜索框 -->
         <div class="relative" @click.stop>
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400 pointer-events-none" />
@@ -246,11 +243,10 @@ onUnmounted(() => {
         >
           {{ loading ? '刷新中…' : '刷新' }}
         </button>
-      </div>
     </div>
 
     <!-- 概览卡片 -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-white rounded-2xl p-5 shadow-softer flex items-center gap-4">
         <div class="w-12 h-12 rounded-xl bg-butter-100 flex items-center justify-center">
           <GraduationCap class="w-6 h-6 text-butter-600" />
@@ -286,7 +282,7 @@ onUnmounted(() => {
         <Megaphone class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">快捷操作</h2>
       </div>
-      <div class="grid grid-cols-5 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         <router-link
           v-for="a in quickActions"
           :key="a.to"
@@ -333,7 +329,7 @@ onUnmounted(() => {
         <School class="w-8 h-8 mx-auto mb-2 text-cocoa-300" />
         暂无班级，请联系校管为您分配班级
       </div>
-      <div v-else class="grid grid-cols-2 gap-3">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div
           v-for="c in classes"
           :key="c.id"
@@ -364,7 +360,7 @@ onUnmounted(() => {
         <ClipboardCheck class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">快捷入口</h2>
       </div>
-      <div class="grid grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <router-link to="/teacher/exams" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 transition-colors">
           <GraduationCap class="w-6 h-6 text-butter-500" />
           <span class="text-sm text-cocoa-700">考试管理</span>

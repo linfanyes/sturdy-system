@@ -88,7 +88,7 @@ describe('四角色 Dashboard 渲染（SUP-01 / SA-01 / TCH-01 / PAR-01）', () 
     withRole('teacher')
     const wrapper = mount(TeacherDashboard)
     await flushPromises()
-    expect(wrapper.text()).toContain('教师工作台')
+    expect(wrapper.text()).toContain('当前教师')
     // 未读计数 3（来自 getUnreadCount）
     expect(wrapper.text()).toContain('3')
     // 我的班级渲染

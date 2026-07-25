@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import {
   LayoutDashboard, School, LogOut, User, Search,
   BookOpen, Award, Home, Bot, Briefcase, Wrench, Gamepad2,
-  BarChart3, MessageSquare,
+  BarChart3, MessageSquare, ChevronRight,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -263,6 +263,14 @@ const hasResults = computed(() => {
   if (!r) return false
   return (r.teachers?.length || 0) + (r.classes?.length || 0) + (r.students?.length || 0) > 0
 })
+
+/** 当前页面标题（来自路由 meta） */
+const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
+
+/** 当前日期：用于页头展示 */
+const today = computed(() =>
+  new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
+)
 </script>
 
 <template>
@@ -332,10 +340,10 @@ const hasResults = computed(() => {
       </div>
     </aside>
     <!-- 主内容区 -->
-    <main class="flex-1 overflow-auto bg-cream-50 flex flex-col">
+    <main class="flex-1 overflow-hidden bg-cream-50 flex flex-col">
       <!-- 顶栏：全局搜索（仅校管可见） -->
-      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-white/60 backdrop-blur px-6 py-2.5">
-        <div class="max-w-6xl mx-auto relative">
+      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-white/80 backdrop-blur px-6 py-2.5 shrink-0">
+        <div class="max-w-7xl mx-auto relative">
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400" />
             <input
@@ -393,10 +401,31 @@ const hasResults = computed(() => {
           </div>
         </div>
       </div>
-      <!-- 实际页面内容（嵌套子路由通过 router-view 渲染） -->
+
+      <!-- 统一页头 -->
+      <header class="bg-white border-b border-cream-200 px-6 py-4 flex items-center justify-between shrink-0">
+        <div>
+          <nav aria-label="breadcrumb" class="flex items-center gap-1.5 text-xs text-cocoa-500 mb-1">
+            <Home class="w-3.5 h-3.5" />
+            <span>园丁工作台</span>
+            <ChevronRight class="w-3 h-3 text-cocoa-300" />
+            <span class="text-cocoa-700 font-medium">{{ pageTitle }}</span>
+          </nav>
+          <h1 class="text-xl font-bold text-cocoa-900">{{ pageTitle }}</h1>
+        </div>
+        <div class="text-sm text-cocoa-500 text-right">
+          <div>{{ roleLabel[auth.role || 'teacher'] }}</div>
+          <div class="text-xs text-cocoa-400 mt-0.5">{{ today }}</div>
+        </div>
+      </header>
+
+      <!-- 实际页面内容（铺满宽度，不再居中留白） -->
       <div class="flex-1 overflow-auto">
-        <div class="max-w-6xl mx-auto p-6">
+        <div class="w-full min-h-full px-8 py-6 flex flex-col">
           <router-view />
+          <footer class="mt-auto pt-8 pb-2 text-center text-xs text-cocoa-400">
+            © 2026 园丁工作台 · Web 管理端
+          </footer>
         </div>
       </div>
     </main>
