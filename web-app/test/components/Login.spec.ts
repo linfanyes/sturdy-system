@@ -84,6 +84,32 @@ describe('Login.vue 统一登录页测试', () => {
     expect((usernameInput.element as HTMLInputElement).value).toBe('old_tea')
   })
 
+  it('兼容旧版对象格式的历史账号（避免 recent.filter is not a function）', async () => {
+    // 重构前以 { 角色: string[] } 对象存储，旧浏览器数据会导致 recent 变为对象
+    localStorage.setItem(
+      'g_recent_accounts',
+      JSON.stringify({ teacher: ['old_tea'], super: ['admin'] }),
+    )
+    wrapper.unmount()
+    wrapper = mount(Login)
+    await flushPromises()
+    // 对象应被展平为数组，不再触发 .filter 报错；去重
+    const chips = wrapper
+      .findAll('button')
+      .map((b) => b.text())
+      .filter((t) => t === 'old_tea' || t === 'admin')
+    expect(chips).toEqual(expect.arrayContaining(['old_tea', 'admin']))
+    // 关键：再次登录保存时不应抛出 recent.filter is not a function
+    mockLogin.loginByUsername.mockResolvedValueOnce(undefined)
+    mockLogin.role = 'super'
+    const inputs = wrapper.findAll('input')
+    await inputs[0].setValue('admin')
+    await inputs[1].setValue('admin')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(mockLogin.loginByUsername).toHaveBeenCalled()
+  })
+
   it('提交登录：调用 auth.loginByUsername 并保存历史账号', async () => {
     mockLogin.loginByUsername.mockResolvedValueOnce(undefined)
     mockLogin.role = 'teacher'

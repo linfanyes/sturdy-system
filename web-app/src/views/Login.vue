@@ -35,14 +35,27 @@ const RECENT_KEY = 'g_recent_accounts'
 const recent = ref<string[]>([])
 function loadRecent() {
   try {
-    recent.value = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+    const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+    if (Array.isArray(parsed)) {
+      recent.value = parsed.filter((v): v is string => typeof v === 'string')
+    } else if (parsed && typeof parsed === 'object') {
+      // 兼容旧版：曾以 { 角色: string[] } 对象形式存储
+      recent.value = Object.values(parsed)
+        .flat()
+        .filter((v): v is string => typeof v === 'string')
+    } else if (typeof parsed === 'string') {
+      recent.value = [parsed]
+    } else {
+      recent.value = []
+    }
   } catch {
     recent.value = []
   }
 }
 function saveRecent(val: string) {
   if (!val) return
-  const list = recent.value.filter((v) => v !== val)
+  const base = Array.isArray(recent.value) ? recent.value : []
+  const list = base.filter((v) => v !== val)
   list.unshift(val)
   recent.value = list.slice(0, 3)
   localStorage.setItem(RECENT_KEY, JSON.stringify(recent.value))
