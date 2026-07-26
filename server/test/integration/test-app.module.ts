@@ -50,14 +50,47 @@ import { HealthController } from '../../src/health.controller';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.test' }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (c: ConfigService) => ({
-        type: 'better-sqlite3' as const,
-        database: ':memory:',
-        synchronize: true,
-        dropSchema: true,
-        autoLoadEntities: true,
-        logging: false,
-      }),
+      useFactory: (c: ConfigService) => {
+        // 优先使用环境中的 MySQL（云托管自带 MySQL8）
+        const dbHost = c.get('DB_HOST')
+        if (dbHost) {
+          return {
+            type: 'mysql',
+            host: dbHost,
+            port: +(c.get('DB_PORT') || 3306),
+            username: c.get('DB_USERNAME') || 'root',
+            password: c.get('DB_PASSWORD') || '',
+            database: c.get('DB_DATABASE') || 'gardener',
+            synchronize: true,
+            dropSchema: false,
+            autoLoadEntities: true,
+            logging: false,
+            charset: 'utf8mb4',
+            timezone: '+08:00',
+          }
+        }
+        // 回退：无数据库可用时使用 sqlite 内存库（仅单元测试场景）
+        try {
+          require.resolve('better-sqlite3')
+          return {
+            type: 'better-sqlite3' as const,
+            database: ':memory:',
+            synchronize: true,
+            dropSchema: true,
+            autoLoadEntities: true,
+            logging: false,
+          }
+        } catch {
+          return {
+            type: 'better-sqlite3' as const,
+            database: ':memory:',
+            synchronize: true,
+            dropSchema: true,
+            autoLoadEntities: true,
+            logging: false,
+          }
+        }
+      },
     }),
     JwtModule.registerAsync({
       global: true,
