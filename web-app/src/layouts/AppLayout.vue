@@ -5,6 +5,12 @@ import { useAuthStore } from '@/stores/auth'
 import {
   LayoutDashboard, School, LogOut, User, Search,
   Bot, Briefcase, Wrench, Home, ChevronRight,
+  Users, BookOpen, ClipboardList, Wallet, Camera,
+  Vote, Award, ListTodo, Send, Phone, Image as ImageIcon,
+  GraduationCap, Sparkles, FileText, FileQuestion,
+  CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
+  Pencil, BookMarked, Languages, PencilLine, Calculator,
+  Gamepad2, LanguagesIcon, ScrollText, Mail,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -21,220 +27,257 @@ const roleLabel: Record<Role, string> = {
   parent: '家长',
 }
 
-/** 教师菜单三级结构：分类（一级）→ 子分组（二级）→ 功能页（三级） */
-interface MenuItem { name: string; label: string; to: string; feature?: string }
-interface MenuSubGroup { label: string; items: MenuItem[] }
-interface MenuCategory { label: string; icon: any; groups: MenuSubGroup[] }
+/** 菜单图标类型：lucide Component 或 emoji string */
+type IconType = any
+/** 菜单项图标配色（带浅色背景 + 深色前景） */
+type ColorTone = 'butter' | 'rose' | 'blue' | 'green' | 'purple' | 'cocoa' | 'cream' | 'sky'
 
+interface MenuItem {
+  name: string
+  label: string
+  to: string
+  feature?: string
+  icon?: IconType         // 菜单项图标
+  color?: ColorTone        // 配色
+  emoji?: string           // emoji 风格图标（与 lucide 二选一）
+}
+
+interface MenuSubGroup {
+  label: string
+  /** 二级子项也展示为一级图标卡（has 多个 items 时显示） */
+  asGrid?: boolean
+  items: MenuItem[]
+}
+
+interface MenuCategory {
+  label: string
+  icon: IconType
+  color: ColorTone
+  emoji?: string
+  groups: MenuSubGroup[]
+}
+
+/* ============ 配色辅助 ============ */
+const colorClassMap: Record<ColorTone, { bg: string; ring: string; text: string; soft: string }> = {
+  butter: { bg: 'bg-butter-100', ring: 'ring-butter-300', text: 'text-butter-700', soft: 'bg-butter-50/60' },
+  rose:   { bg: 'bg-rose-100',   ring: 'ring-rose-300',   text: 'text-rose-700',   soft: 'bg-rose-50/60' },
+  blue:   { bg: 'bg-blue-100',   ring: 'ring-blue-300',   text: 'text-blue-700',   soft: 'bg-blue-50/60' },
+  green:  { bg: 'bg-emerald-100',ring: 'ring-emerald-300',text: 'text-emerald-700',soft: 'bg-emerald-50/60' },
+  purple: { bg: 'bg-purple-100', ring: 'ring-purple-300', text: 'text-purple-700', soft: 'bg-purple-50/60' },
+  cocoa:  { bg: 'bg-cocoa-100',  ring: 'ring-cocoa-300',  text: 'text-cocoa-700',  soft: 'bg-cocoa-50/60' },
+  cream:  { bg: 'bg-cream-100',  ring: 'ring-cream-300',  text: 'text-cocoa-600',  soft: 'bg-cream-50' },
+  sky:    { bg: 'bg-sky-100',    ring: 'ring-sky-300',    text: 'text-sky-700',    soft: 'bg-sky-50/60' },
+}
+const palette = (t: ColorTone) => colorClassMap[t] || colorClassMap.cream
+
+/* ============ 教师三级菜单 ============ */
 const teacherMenu: MenuCategory[] = [
   {
-    label: '工作台', icon: LayoutDashboard,
-    groups: [{ label: '', items: [{ name: 'teacher-dashboard', label: '教师工作台', to: '/teacher' }] }],
+    label: '工作台', color: 'cream', icon: LayoutDashboard,
+    groups: [{
+      label: '', items: [
+        { name: 'teacher-dashboard', label: '教师工作台', to: '/teacher', icon: Home, color: 'butter' },
+      ],
+    }],
   },
   {
-    label: '教学管理', icon: School,
+    label: '教学管理', color: 'blue', icon: School,
     groups: [
       {
-        label: '班级',
+        label: '班级与学生', asGrid: true,
         items: [
-          { name: 'teacher-classes', label: '班级成员', to: '/teacher/classes', feature: 'classes' },
-          { name: 'teacher-duty-roster', label: '轮值表', to: '/teacher/duty-roster', feature: 'duty' },
-          { name: 'teacher-class-finance', label: '班费', to: '/teacher/class-finance', feature: 'finance' },
-          { name: 'teacher-class-activities', label: '班级活动', to: '/teacher/class-activities', feature: 'activities' },
-          { name: 'teacher-gallery', label: '班级风采', to: '/teacher/gallery', feature: 'gallery' },
-          { name: 'teacher-my-gallery', label: '我的相册', to: '/teacher/my-gallery', feature: 'gallery' },
+          { name: 'teacher-classes', label: '班级成员', to: '/teacher/classes', feature: 'classes', emoji: '👥', color: 'blue' },
+          { name: 'teacher-duty-roster', label: '轮值表', to: '/teacher/duty-roster', feature: 'duty', emoji: '📋', color: 'butter' },
+          { name: 'teacher-class-finance', label: '班费', to: '/teacher/class-finance', feature: 'finance', emoji: '💰', color: 'green' },
+          { name: 'teacher-class-activities', label: '班级活动', to: '/teacher/class-activities', feature: 'activities', emoji: '🎉', color: 'rose' },
+          { name: 'teacher-gallery', label: '班级风采', to: '/teacher/gallery', feature: 'gallery', emoji: '🏆', color: 'purple' },
+          { name: 'teacher-my-gallery', label: '我的相册', to: '/teacher/my-gallery', feature: 'gallery', icon: Camera, color: 'sky' },
         ],
       },
       {
-        label: '学情与考试',
+        label: '学情与考试', asGrid: true,
         items: [
-          { name: 'teacher-exams', label: '考试管理', to: '/teacher/exams', feature: 'exams' },
-          { name: 'teacher-grades', label: '成绩管理', to: '/teacher/grades', feature: 'grades' },
-          { name: 'teacher-exam-analysis', label: '考试分析', to: '/teacher/exam-analysis', feature: 'analysis' },
-          { name: 'teacher-data-dashboard', label: '数据看板', to: '/teacher/data-dashboard', feature: 'analysis' },
-          { name: 'teacher-attendance', label: '考勤', to: '/teacher/attendance', feature: 'attendance' },
-          { name: 'teacher-homework', label: '作业', to: '/teacher/homework', feature: 'homework' },
+          { name: 'teacher-exams', label: '考试管理', to: '/teacher/exams', feature: 'exams', emoji: '📝', color: 'butter' },
+          { name: 'teacher-grades', label: '成绩管理', to: '/teacher/grades', feature: 'grades', emoji: '📊', color: 'blue' },
+          { name: 'teacher-exam-analysis', label: '考试分析', to: '/teacher/exam-analysis', feature: 'analysis', emoji: '📈', color: 'green' },
+          { name: 'teacher-data-dashboard', label: '数据看板', to: '/teacher/data-dashboard', feature: 'analysis', emoji: '🎯', color: 'purple' },
+          { name: 'teacher-attendance', label: '考勤', to: '/teacher/attendance', feature: 'attendance', emoji: '✅', color: 'sky' },
+          { name: 'teacher-homework', label: '作业', to: '/teacher/homework', feature: 'homework', emoji: '📓', color: 'rose' },
         ],
       },
       {
-        label: '学生评价',
+        label: '学生评价', asGrid: true,
         items: [
-          { name: 'teacher-rewards', label: '奖励记录', to: '/teacher/rewards', feature: 'rewards' },
-          { name: 'teacher-score-records', label: '加减分记录', to: '/teacher/score-records', feature: 'rewards' },
-          { name: 'teacher-group-scores', label: '小组评分', to: '/teacher/group-scores', feature: 'rewards' },
-          { name: 'teacher-leaderboard', label: '排行榜', to: '/teacher/leaderboard', feature: 'rewards' },
-          { name: 'teacher-growth', label: '成长记录', to: '/teacher/growth', feature: 'growth' },
-          { name: 'teacher-behavior', label: '行为记录', to: '/teacher/behavior', feature: 'behavior' },
-          { name: 'teacher-reading-log', label: '课外阅读', to: '/teacher/reading-log', feature: 'reading' },
-          { name: 'teacher-checkin', label: '学生打卡', to: '/teacher/checkin', feature: 'checkin' },
-          { name: 'teacher-awards', label: '我获奖啦', to: '/teacher/awards', feature: 'rewards' },
+          { name: 'teacher-rewards', label: '奖励记录', to: '/teacher/rewards', feature: 'rewards', emoji: '🏅', color: 'butter' },
+          { name: 'teacher-score-records', label: '加减分记录', to: '/teacher/score-records', feature: 'rewards', emoji: '➕', color: 'green' },
+          { name: 'teacher-group-scores', label: '小组评分', to: '/teacher/group-scores', feature: 'rewards', emoji: '👨‍👩‍👧‍👦', color: 'purple' },
+          { name: 'teacher-leaderboard', label: '排行榜', to: '/teacher/leaderboard', feature: 'rewards', icon: Award, color: 'rose' },
+          { name: 'teacher-growth', label: '成长记录', to: '/teacher/growth', feature: 'growth', emoji: '🌱', color: 'green' },
+          { name: 'teacher-behavior', label: '行为记录', to: '/teacher/behavior', feature: 'behavior', emoji: '📝', color: 'butter' },
+          { name: 'teacher-reading-log', label: '课外阅读', to: '/teacher/reading-log', feature: 'reading', emoji: '📚', color: 'sky' },
+          { name: 'teacher-checkin', label: '学生打卡', to: '/teacher/checkin', feature: 'checkin', emoji: '🌅', color: 'rose' },
+          { name: 'teacher-awards', label: '我获奖啦', to: '/teacher/awards', feature: 'rewards', emoji: '🎉', color: 'butter' },
         ],
       },
       {
-        label: '家校沟通',
+        label: '家校沟通', asGrid: true,
         items: [
-          { name: 'teacher-parent-contacts', label: '家长联系', to: '/teacher/parent-contacts', feature: 'parents' },
-          { name: 'teacher-im', label: '家校沟通', to: '/teacher/im', feature: 'im' },
-          { name: 'teacher-notices', label: '公告', to: '/teacher/notices', feature: 'notices' },
-          { name: 'teacher-notice-templates', label: '通知模板', to: '/teacher/notice-templates', feature: 'notices' },
+          { name: 'teacher-parent-contacts', label: '家长联系', to: '/teacher/parent-contacts', feature: 'parents', icon: Phone, color: 'green' },
+          { name: 'teacher-im', label: '家校沟通', to: '/teacher/im', feature: 'im', icon: MessageSquare, color: 'blue' },
+          { name: 'teacher-notices', label: '公告', to: '/teacher/notices', feature: 'notices', icon: Megaphone, color: 'butter' },
+          { name: 'teacher-notice-templates', label: '通知模板', to: '/teacher/notice-templates', feature: 'notices', icon: ScrollText, color: 'cocoa' },
         ],
       },
     ],
   },
   {
-    label: 'AI 与备课', icon: Bot,
+    label: 'AI 与备课', color: 'purple', icon: Bot,
     groups: [
       {
-        label: 'AI 工具',
+        label: 'AI 工具', asGrid: true,
         items: [
-          { name: 'teacher-ai-chat', label: 'AI 对话', to: '/teacher/ai-chat', feature: 'ai' },
-          { name: 'teacher-ai-image', label: 'AI 文生图', to: '/teacher/ai-image', feature: 'ai' },
-          { name: 'teacher-ai-lesson', label: '优质教案生成', to: '/teacher/ai-generator/lesson', feature: 'ai' },
-          { name: 'teacher-ai-knowledge', label: '知识点生成', to: '/teacher/ai-generator/knowledge', feature: 'ai' },
-          { name: 'teacher-ai-paper', label: '优选试卷生成', to: '/teacher/ai-generator/paper', feature: 'ai' },
+          { name: 'teacher-ai-chat', label: 'AI 对话', to: '/teacher/ai-chat', feature: 'ai', icon: Sparkles, color: 'purple' },
+          { name: 'teacher-ai-image', label: 'AI 文生图', to: '/teacher/ai-image', feature: 'ai', icon: ImageIcon, color: 'butter' },
+          { name: 'teacher-ai-lesson', label: '优质教案生成', to: '/teacher/ai-generator/lesson', feature: 'ai', icon: FileText, color: 'blue' },
+          { name: 'teacher-ai-knowledge', label: '知识点生成', to: '/teacher/ai-generator/knowledge', feature: 'ai', icon: BookOpen, color: 'green' },
+          { name: 'teacher-ai-paper', label: '优选试卷生成', to: '/teacher/ai-generator/paper', feature: 'ai', icon: FileQuestion, color: 'rose' },
         ],
       },
       {
-        label: '资源库',
+        label: '资源库', asGrid: true,
         items: [
-          { name: 'teacher-lesson-plans', label: '教案库', to: '/teacher/lesson-plans', feature: 'ai' },
-          { name: 'teacher-knowledges', label: '知识点库', to: '/teacher/knowledges', feature: 'ai' },
-          { name: 'teacher-papers', label: '试卷库', to: '/teacher/papers', feature: 'ai' },
-          { name: 'teacher-ai-resources', label: '教学资源', to: '/teacher/ai-resources', feature: 'ai' },
-          { name: 'teacher-schedule', label: '课表', to: '/teacher/schedule', feature: 'schedule' },
+          { name: 'teacher-lesson-plans', label: '教案库', to: '/teacher/lesson-plans', feature: 'ai', icon: BookMarked, color: 'blue' },
+          { name: 'teacher-knowledges', label: '知识点库', to: '/teacher/knowledges', feature: 'ai', icon: GraduationCap, color: 'green' },
+          { name: 'teacher-papers', label: '试卷库', to: '/teacher/papers', feature: 'ai', icon: ScrollText, color: 'purple' },
+          { name: 'teacher-ai-resources', label: '教学资源', to: '/teacher/ai-resources', feature: 'ai', icon: BookOpen, color: 'sky' },
+          { name: 'teacher-schedule', label: '课表', to: '/teacher/schedule', feature: 'schedule', icon: CalendarCheck, color: 'butter' },
         ],
       },
     ],
   },
   {
-    label: '课堂工具', icon: Wrench,
+    label: '课堂工具', color: 'rose', icon: Wrench,
     groups: [
       {
-        label: '通用',
+        label: '通用工具', asGrid: true,
         items: [
-          { name: 'tool-picker', label: '随机点名', to: '/teacher/tools/picker', feature: 'tools' },
-          { name: 'tool-grouper', label: '随机分组', to: '/teacher/tools/grouper', feature: 'tools' },
-          { name: 'tool-dice', label: '随机决定器', to: '/teacher/tools/dice', feature: 'tools' },
-          { name: 'tool-timer', label: '倒计时', to: '/teacher/tools/timer', feature: 'tools' },
-          { name: 'tool-calc', label: '课堂计算器', to: '/teacher/tools/calc', feature: 'tools' },
-          { name: 'tool-seat-map', label: '座位表', to: '/teacher/tools/seat-map', feature: 'seats' },
-          { name: 'tool-score-panel', label: '加减分', to: '/teacher/tools/score-panel', feature: 'rewards' },
-          { name: 'tool-comment', label: '评语生成', to: '/teacher/tools/comment', feature: 'tools' },
-          { name: 'tool-summary', label: '期末总结', to: '/teacher/tools/summary', feature: 'tools' },
-          { name: 'tool-class-duty', label: '班级职务', to: '/teacher/tools/class-duty', feature: 'duty' },
-          { name: 'tool-schedule-maker', label: '课表排版', to: '/teacher/tools/schedule-maker', feature: 'schedule' },
+          { name: 'tool-picker', label: '随机点名', to: '/teacher/tools/picker', feature: 'tools', emoji: '🎯', color: 'rose' },
+          { name: 'tool-grouper', label: '随机分组', to: '/teacher/tools/grouper', feature: 'tools', emoji: '🎲', color: 'blue' },
+          { name: 'tool-dice', label: '随机决定器', to: '/teacher/tools/dice', feature: 'tools', emoji: '🎰', color: 'purple' },
+          { name: 'tool-timer', label: '倒计时', to: '/teacher/tools/timer', feature: 'tools', emoji: '⏱️', color: 'cocoa' },
+          { name: 'tool-calc', label: '课堂计算器', to: '/teacher/tools/calc', feature: 'tools', emoji: '🧮', color: 'butter' },
+          { name: 'tool-seat-map', label: '座位表', to: '/teacher/tools/seat-map', feature: 'seats', emoji: '💺', color: 'green' },
+          { name: 'tool-score-panel', label: '加减分', to: '/teacher/tools/score-panel', feature: 'rewards', emoji: '➕', color: 'purple' },
+          { name: 'tool-comment', label: '评语生成', to: '/teacher/tools/comment', feature: 'tools', emoji: '✍️', color: 'rose' },
+          { name: 'tool-summary', label: '期末总结', to: '/teacher/tools/summary', feature: 'tools', emoji: '📝', color: 'butter' },
+          { name: 'tool-class-duty', label: '班级职务', to: '/teacher/tools/class-duty', feature: 'duty', emoji: '🧑‍🎓', color: 'sky' },
+          { name: 'tool-schedule-maker', label: '课表排版', to: '/teacher/tools/schedule-maker', feature: 'schedule', emoji: '📅', color: 'green' },
         ],
       },
       {
-        label: '语文工具',
+        label: '语文工具', asGrid: true,
         items: [
-          { name: 'tool-stroke-order', label: '汉字笔顺', to: '/teacher/tools/stroke-order', feature: 'tools' },
-          { name: 'tool-writing-materials', label: '作文素材', to: '/teacher/tools/writing-materials', feature: 'tools' },
-          { name: 'tool-poetry', label: '古诗词助手', to: '/teacher/tools/poetry', feature: 'tools' },
-          { name: 'tool-dictation', label: '汉字听写', to: '/teacher/tools/dictation', feature: 'tools' },
-          { name: 'tool-reading', label: '阅读理解', to: '/teacher/tools/reading', feature: 'tools' },
-          { name: 'tool-essay', label: '小作文助手', to: '/teacher/tools/essay', feature: 'tools' },
-          { name: 'tool-idiom', label: '成语词典', to: '/teacher/tools/idiom', feature: 'tools' },
-          { name: 'tool-pinyin', label: '拼音标注', to: '/teacher/tools/pinyin', feature: 'tools' },
+          { name: 'tool-stroke-order', label: '汉字笔顺', to: '/teacher/tools/stroke-order', feature: 'tools', emoji: '✏️', color: 'cocoa' },
+          { name: 'tool-writing-materials', label: '作文素材', to: '/teacher/tools/writing-materials', feature: 'tools', emoji: '📝', color: 'butter' },
+          { name: 'tool-poetry', label: '古诗词助手', to: '/teacher/tools/poetry', feature: 'tools', emoji: '🏯', color: 'rose' },
+          { name: 'tool-dictation', label: '汉字听写', to: '/teacher/tools/dictation', feature: 'tools', icon: BookOpen, color: 'green' },
+          { name: 'tool-reading', label: '阅读理解', to: '/teacher/tools/reading', feature: 'tools', emoji: '📖', color: 'sky' },
+          { name: 'tool-essay', label: '小作文助手', to: '/teacher/tools/essay', feature: 'tools', emoji: '📓', color: 'purple' },
+          { name: 'tool-idiom', label: '成语词典', to: '/teacher/tools/idiom', feature: 'tools', emoji: '📜', color: 'butter' },
+          { name: 'tool-pinyin', label: '拼音标注', to: '/teacher/tools/pinyin', feature: 'tools', emoji: '🔤', color: 'blue' },
         ],
       },
       {
-        label: '数学工具',
+        label: '数学工具', asGrid: true,
         items: [
-          { name: 'tool-math', label: '口算生成', to: '/teacher/tools/math', feature: 'tools' },
-          { name: 'tool-vertical-calc', label: '竖式计算', to: '/teacher/tools/vertical-calc', feature: 'tools' },
-          { name: 'tool-answer-card', label: '口算答题卡', to: '/teacher/tools/answer-card', feature: 'tools' },
-          { name: 'tool-multiplication-table', label: '乘法口诀', to: '/teacher/tools/multiplication-table', feature: 'tools' },
-          { name: 'tool-unit-conversion', label: '单位换算', to: '/teacher/tools/unit-conversion', feature: 'tools' },
-          { name: 'tool-math-mistakes', label: '错题本', to: '/teacher/tools/math-mistakes', feature: 'tools' },
+          { name: 'tool-math', label: '口算生成', to: '/teacher/tools/math', feature: 'tools', icon: Calculator, color: 'rose' },
+          { name: 'tool-vertical-calc', label: '竖式计算', to: '/teacher/tools/vertical-calc', feature: 'tools', emoji: '📐', color: 'blue' },
+          { name: 'tool-answer-card', label: '口算答题卡', to: '/teacher/tools/answer-card', feature: 'tools', emoji: '📝', color: 'butter' },
+          { name: 'tool-multiplication-table', label: '乘法口诀', to: '/teacher/tools/multiplication-table', feature: 'tools', emoji: '✖️', color: 'green' },
+          { name: 'tool-unit-conversion', label: '单位换算', to: '/teacher/tools/unit-conversion', feature: 'tools', icon: Calculator, color: 'purple' },
+          { name: 'tool-math-mistakes', label: '错题本', to: '/teacher/tools/math-mistakes', feature: 'tools', emoji: '📚', color: 'sky' },
         ],
       },
       {
-        label: '英语工具',
+        label: '英语工具', asGrid: true,
         items: [
-          { name: 'tool-word-card', label: '单词卡片', to: '/teacher/tools/word-card', feature: 'tools' },
-          { name: 'tool-sentence-practice', label: '句型练习', to: '/teacher/tools/sentence-practice', feature: 'tools' },
-          { name: 'tool-listening', label: '英语听力', to: '/teacher/tools/listening', feature: 'tools' },
-          { name: 'tool-grammar', label: '语法练习', to: '/teacher/tools/grammar', feature: 'tools' },
-          { name: 'tool-scene-dialogue', label: '情景对话', to: '/teacher/tools/scene-dialogue', feature: 'tools' },
-          { name: 'tool-spell', label: '单词拼写', to: '/teacher/tools/spell', feature: 'tools' },
-          { name: 'tool-speaking', label: '口语练习', to: '/teacher/tools/speaking', feature: 'tools' },
-          { name: 'tool-english-story', label: '英语爽文', to: '/teacher/tools/english-story', feature: 'tools' },
+          { name: 'tool-word-card', label: '单词卡片', to: '/teacher/tools/word-card', feature: 'tools', icon: LanguagesIcon, color: 'blue' },
+          { name: 'tool-sentence-practice', label: '句型练习', to: '/teacher/tools/sentence-practice', feature: 'tools', emoji: '📝', color: 'green' },
+          { name: 'tool-listening', label: '英语听力', to: '/teacher/tools/listening', feature: 'tools', emoji: '🎧', color: 'rose' },
+          { name: 'tool-grammar', label: '语法练习', to: '/teacher/tools/grammar', feature: 'tools', icon: LanguagesIcon, color: 'butter' },
+          { name: 'tool-scene-dialogue', label: '情景对话', to: '/teacher/tools/scene-dialogue', feature: 'tools', emoji: '💬', color: 'purple' },
+          { name: 'tool-spell', label: '单词拼写', to: '/teacher/tools/spell', feature: 'tools', emoji: '✍️', color: 'sky' },
+          { name: 'tool-speaking', label: '口语练习', to: '/teacher/tools/speaking', feature: 'tools', icon: MessageSquare, color: 'cocoa' },
+          { name: 'tool-english-story', label: '英语爽文', to: '/teacher/tools/english-story', feature: 'tools', emoji: '📖', color: 'rose' },
         ],
       },
       {
-        label: '小游戏',
+        label: '小游戏', asGrid: true,
         items: [
-          { name: 'games', label: '游戏合集', to: '/teacher/games', feature: 'games' },
-          { name: 'tool-flower', label: '笑口常开', to: '/teacher/tools/flower', feature: 'games' },
+          { name: 'games', label: '游戏合集', to: '/teacher/games', feature: 'games', icon: Gamepad2, color: 'purple' },
+          { name: 'tool-flower', label: '笑口常开', to: '/teacher/tools/flower', feature: 'games', emoji: '🌸', color: 'rose' },
         ],
       },
     ],
   },
   {
-    label: '教师办公', icon: Briefcase,
-    groups: [
-      {
-        label: '',
-        items: [
-          { name: 'teacher-work-log', label: '工作日志', to: '/teacher/work-log', feature: 'worklog' },
-          { name: 'teacher-lesson-obs', label: '听课记录', to: '/teacher/lesson-obs', feature: 'observation' },
-          { name: 'teacher-teaching-calendar', label: '教学日历', to: '/teacher/teaching-calendar', feature: 'calendar' },
-          { name: 'teacher-directory', label: '教师通讯录', to: '/teacher/teacher-directory', feature: 'teachers' },
-          { name: 'teacher-office-translate', label: '翻译', to: '/teacher/office-translate', feature: 'worklog' },
-          { name: 'teacher-office-paper', label: '教育论文', to: '/teacher/office-paper', feature: 'worklog' },
-          { name: 'teacher-office-blackboard', label: '黑板报', to: '/teacher/office-blackboard', feature: 'worklog' },
-          { name: 'teacher-office-speech', label: '演讲稿', to: '/teacher/office-speech', feature: 'worklog' },
-          { name: 'teacher-plan-template-lib', label: '文案模板库', to: '/teacher/plan-template-lib', feature: 'worklog' },
-        ],
-      },
-    ],
+    label: '教师办公', color: 'green', icon: Briefcase,
+    groups: [{
+      label: '', items: [
+        { name: 'teacher-work-log', label: '工作日志', to: '/teacher/work-log', feature: 'worklog', emoji: '📓', color: 'green' },
+        { name: 'teacher-lesson-obs', label: '听课记录', to: '/teacher/lesson-obs', feature: 'observation', emoji: '🎧', color: 'butter' },
+        { name: 'teacher-teaching-calendar', label: '教学日历', to: '/teacher/teaching-calendar', feature: 'calendar', icon: CalendarCheck, color: 'blue' },
+        { name: 'teacher-directory', label: '教师通讯录', to: '/teacher/teacher-directory', feature: 'teachers', emoji: '👥', color: 'purple' },
+        { name: 'teacher-office-translate', label: '翻译', to: '/teacher/office-translate', feature: 'worklog', emoji: '🌐', color: 'sky' },
+        { name: 'teacher-office-paper', label: '教育论文', to: '/teacher/office-paper', feature: 'worklog', emoji: '📄', color: 'cocoa' },
+        { name: 'teacher-office-blackboard', label: '黑板报', to: '/teacher/office-blackboard', feature: 'worklog', emoji: '🎨', color: 'rose' },
+        { name: 'teacher-office-speech', label: '演讲稿', to: '/teacher/office-speech', feature: 'worklog', emoji: '🎤', color: 'purple' },
+        { name: 'teacher-plan-template-lib', label: '文案模板库', to: '/teacher/plan-template-lib', feature: 'worklog', icon: BookOpen, color: 'green' },
+      ],
+    }],
   },
   {
-    label: '个人空间', icon: User,
-    groups: [
-      {
-        label: '',
-        items: [
-          { name: 'teacher-messages', label: '消息中心', to: '/teacher/messages' },
-          { name: 'teacher-notifications', label: '通知中心', to: '/teacher/notifications' },
-          { name: 'teacher-todos', label: '待办事项', to: '/teacher/todos', feature: 'todos' },
-          { name: 'teacher-notes', label: '笔记', to: '/teacher/notes', feature: 'notes' },
-          { name: 'teacher-profile', label: '个人资料', to: '/teacher/profile' },
-          { name: 'teacher-config', label: '设置', to: '/teacher/config' },
-        ],
-      },
-    ],
+    label: '个人空间', color: 'cocoa', icon: User,
+    groups: [{
+      label: '', items: [
+        { name: 'teacher-messages', label: '消息中心', to: '/teacher/messages', icon: Mail, color: 'blue' },
+        { name: 'teacher-notifications', label: '通知中心', to: '/teacher/notifications', icon: Bell, color: 'butter' },
+        { name: 'teacher-todos', label: '待办事项', to: '/teacher/todos', feature: 'todos', icon: ListTodo, color: 'rose' },
+        { name: 'teacher-notes', label: '笔记', to: '/teacher/notes', feature: 'notes', icon: BookOpen, color: 'green' },
+        { name: 'teacher-profile', label: '个人资料', to: '/teacher/profile', icon: User, color: 'cream' },
+        { name: 'teacher-config', label: '设置', to: '/teacher/config', icon: Settings, color: 'cocoa' },
+      ],
+    }],
   },
 ]
 
-/** 非教师角色菜单（扁平） */
+/* 非教师角色扁平菜单（保留原结构） */
 const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
   super: [
-    { name: 'super-dashboard', label: '工作台', to: '/super' },
-    { name: 'super-schools', label: '学校管理', to: '/super/schools' },
-    { name: 'super-admins', label: '管理员管理', to: '/super/admins' },
-    { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs' },
-    { name: 'super-config', label: '平台配置', to: '/super/config' },
+    { name: 'super-dashboard', label: '工作台', to: '/super', icon: LayoutDashboard, color: 'butter' },
+    { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
+    { name: 'super-admins', label: '管理员管理', to: '/super/admins', icon: Users, color: 'purple' },
+    { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ClipboardList, color: 'cocoa' },
+    { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
   ],
   school_admin: [
-    { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin' },
-    { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers' },
-    { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes' },
-    { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students' },
-    { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices' },
+    { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin', icon: LayoutDashboard, color: 'butter' },
+    { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
+    { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
+    { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
+    { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'purple' },
   ],
-  parent: [{ name: 'parent-dashboard', label: '孩子动态', to: '/parent' }],
+  parent: [{ name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' }],
 }
 
-/** 功能权限检查：features 为空数组或包含空串时全部放行 */
+/** 功能权限检查 */
 function hasFeature(feature?: string): boolean {
   if (!feature) return true
   const features = auth.user?.features || []
   return features.length === 0 || features.includes('') || features.includes(feature)
 }
 
-/** 教师可见的三级菜单（按 feature 过滤组与组内项） */
+/** 教师可见的三级菜单（按 feature 过滤） */
 const visibleTeacherMenu = computed<MenuCategory[]>(() => {
   return teacherMenu
     .map((cat) => ({
@@ -246,44 +289,56 @@ const visibleTeacherMenu = computed<MenuCategory[]>(() => {
     .filter((cat) => cat.groups.length > 0)
 })
 
-/** 非教师可见菜单 */
 const flatItems = computed<MenuItem[]>(() => (auth.role && auth.role !== 'teacher' ? flatNavItems[auth.role] : []))
 
-/** 折叠状态：一级分类、二级子分组各自独立展开 */
+/** 当前激活的一级分类（一级目录） */
+const activeCategory = ref<string>('')
+/** 折叠状态 */
 const openCats = ref<string[]>([])
-const openGroups = ref<string[]>([])
-function catOpen(label: string) { return openCats.value.includes(label) }
-function groupKey(cat: string, g: string) { return `${cat}::${g}` }
-function groupOpen(cat: string, g: string) { return openGroups.value.includes(groupKey(cat, g)) }
-function toggleCat(label: string) {
-  openCats.value = catOpen(label) ? openCats.value.filter((x) => x !== label) : [...openCats.value, label]
-}
-function toggleGroup(cat: string, g: string) {
-  const k = groupKey(cat, g)
-  openGroups.value = groupOpen(cat, g) ? openGroups.value.filter((x) => x !== k) : [...openGroups.value, k]
-}
-
-/** 自动展开当前路由所在的分类与子分组，保持侧栏整洁且当前页可达 */
-function expandActive() {
+/** 自动展开当前路由对应的分类 */
+function findCategoryForRoute(targetName: any) {
   for (const cat of visibleTeacherMenu.value) {
     for (const g of cat.groups) {
-      if (g.items.some((it) => it.name === route.name)) {
-        if (!catOpen(cat.label)) openCats.value = [...openCats.value, cat.label]
-        if (!groupOpen(cat.label, g.label)) openGroups.value = [...openGroups.value, groupKey(cat.label, g.label)]
-        return
-      }
+      if (g.items.some((it) => it.name === targetName)) return cat.label
     }
   }
+  return ''
 }
-onMounted(expandActive)
-watch(() => route.name, expandActive)
+
+onMounted(() => {
+  activeCategory.value = findCategoryForRoute(route.name)
+  if (activeCategory.value) openCats.value = [activeCategory.value]
+})
+watch(() => route.name, () => {
+  const c = findCategoryForRoute(route.name)
+  if (c) {
+    activeCategory.value = c
+    if (!openCats.value.includes(c)) openCats.value = [...openCats.value, c]
+  }
+})
+
+function toggleCat(label: string) {
+  if (activeCategory.value === label) {
+    activeCategory.value = ''
+  } else {
+    activeCategory.value = label
+  }
+  openCats.value = activeCategory.value
+    ? [activeCategory.value]
+    : []
+}
+
+/** 是否显示二级图标瓷砖面板（仅当已激活分类且页面是一级工作台根） */
+const showTilesPanel = computed(() =>
+  auth.role === 'teacher' && !!activeCategory.value && route.name === 'teacher-dashboard'
+)
 
 function handleLogout() {
   auth.logout()
   router.push({ name: 'login' })
 }
 
-/* ============ 全局搜索（仅校管） ============ */
+/* 全局搜索（仅校管） */
 const searchKeyword = ref('')
 const searchResult = ref<SearchResult | null>(null)
 const searchLoading = ref(false)
@@ -322,106 +377,126 @@ const hasResults = computed(() => {
   return (r.teachers?.length || 0) + (r.classes?.length || 0) + (r.students?.length || 0) > 0
 })
 
-/** 当前页面标题（来自路由 meta） */
 const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
 
-/** 当前日期：用于页头展示 */
 const today = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
 )
+
+/** 当前激活分类的二级组 */
+const activeGroups = computed(() => {
+  if (!activeCategory.value) return []
+  const cat = visibleTeacherMenu.value.find((c) => c.label === activeCategory.value)
+  return cat?.groups || []
+})
+
+function navigateTo(to: string) {
+  router.push(to)
+}
 </script>
 
 <template>
   <div class="flex h-full bg-cream-50">
-    <!-- 侧边栏 -->
-    <aside class="w-56 shrink-0 border-r border-cream-200 bg-gradient-to-b from-cream-100/90 to-cream-50/90 backdrop-blur flex flex-col">
-      <div class="px-5 py-6 border-b border-cream-200/60">
-        <div class="text-lg font-bold text-cocoa-900 flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-butter-400 inline-block" />
-          园丁工作台
-          <span class="w-2 h-2 rounded-full bg-butter-400 inline-block" />
-        </div>
-        <div class="text-xs text-cocoa-500 mt-0.5">用爱浇灌 · 静待花开</div>
+    <!-- 侧边栏：紧凑版本 -->
+    <aside class="w-20 shrink-0 border-r border-cream-200 bg-gradient-to-b from-cream-100/95 to-cream-50/95 backdrop-blur flex flex-col items-center py-4">
+      <!-- Logo（顶部圆形） -->
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-butter-300 to-butter-500 flex items-center justify-center text-white font-bold text-lg shadow-soft mb-6">
+        园
       </div>
-      <nav class="flex-1 px-3 space-y-2 overflow-y-auto">
-        <!-- 教师三级折叠菜单 -->
+
+      <!-- 一级分类图标按钮 -->
+      <nav class="flex-1 w-full px-2 overflow-y-auto space-y-2">
+        <!-- 教师三级菜单的二级组作为一级入口 -->
         <template v-if="auth.role === 'teacher'">
-          <div v-for="cat in visibleTeacherMenu" :key="cat.label" class="pb-1">
-            <!-- 一级：分类（可折叠） -->
-            <button
-              class="flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-xs font-semibold text-cocoa-500 hover:bg-cream-200 transition-colors"
-              @click="toggleCat(cat.label)"
+          <button
+            v-for="cat in visibleTeacherMenu"
+            :key="cat.label"
+            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+            :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            @click="toggleCat(cat.label)"
+          >
+            <div
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+              :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
             >
-              <span class="flex items-center gap-1.5">
-                <component :is="cat.icon" class="w-3.5 h-3.5" />
-                {{ cat.label }}
-              </span>
-              <ChevronRight class="w-3.5 h-3.5 transition-transform duration-200" :class="catOpen(cat.label) ? 'rotate-90' : ''" />
-            </button>
-            <!-- 二级 + 三级 -->
-            <div v-if="catOpen(cat.label)" class="mt-0.5 space-y-1">
-              <div v-for="g in cat.groups" :key="g.label">
-                <!-- 二级：子分组标题（可折叠，空 label 不显示） -->
-                <button
-                  v-if="g.label"
-                  class="flex items-center justify-between w-full px-3 py-1 text-[11px] font-medium text-cocoa-400 hover:text-cocoa-600"
-                  @click="toggleGroup(cat.label, g.label)"
-                >
-                  <span>{{ g.label }}</span>
-                  <ChevronRight class="w-3 h-3 transition-transform duration-200" :class="groupOpen(cat.label, g.label) ? 'rotate-90' : ''" />
-                </button>
-                <div v-if="!g.label || groupOpen(cat.label, g.label)" class="space-y-0.5">
-                  <router-link
-                    v-for="item in g.items"
-                    :key="item.name"
-                    :to="item.to"
-                    :class="[
-                      'flex items-center gap-2 pl-5 pr-3 py-1.5 rounded-lg text-sm transition-colors',
-                      route.name === item.name
-                        ? 'bg-butter-400 text-white font-semibold'
-                        : 'text-cocoa-700 hover:bg-cream-200',
-                    ]"
-                  >
-                    {{ item.label }}
-                  </router-link>
-                </div>
-              </div>
+              <component :is="cat.icon" class="w-5 h-5" />
             </div>
-          </div>
+            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+          </button>
         </template>
         <!-- 非教师扁平菜单 -->
-        <div v-else class="space-y-1">
+        <template v-else>
           <router-link
             v-for="item in flatItems"
             :key="item.name"
             :to="item.to"
-            :class="[
-              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors',
-              route.name === item.name
-                ? 'bg-butter-400 text-white font-semibold'
-                : 'text-cocoa-700 hover:bg-cream-200',
-            ]"
+            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+            :class="route.name === item.name ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
           >
-            {{ item.label }}
+            <div
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+              :class="route.name === item.name ? palette(item.color || 'cream').bg : palette(item.color || 'cream').soft + ' ' + palette(item.color || 'cream').text"
+            >
+              <component :is="item.icon || User" class="w-5 h-5" />
+            </div>
+            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ item.label }}</span>
           </router-link>
-        </div>
+        </template>
       </nav>
-      <!-- 底部用户信息 -->
-      <div class="p-3 border-t border-cream-200">
-        <div class="flex items-center gap-2 px-2 py-1.5">
-          <div class="w-8 h-8 rounded-full bg-butter-300 flex items-center justify-center">
-            <User class="w-4 h-4 text-cocoa-700" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-cocoa-900 truncate">{{ auth.user?.name }}</div>
-            <div class="text-xs text-cocoa-500">{{ auth.role ? roleLabel[auth.role] : '' }}</div>
-          </div>
-          <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="退出登录" @click="handleLogout">
-            <LogOut class="w-4 h-4" />
-          </button>
+
+      <!-- 用户信息底部 -->
+      <div class="border-t border-cream-200/60 pt-3 w-full flex flex-col items-center gap-2">
+        <div class="w-9 h-9 rounded-full bg-butter-300 flex items-center justify-center">
+          <User class="w-4 h-4 text-cocoa-700" />
         </div>
+        <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="退出登录" @click="handleLogout">
+          <LogOut class="w-4 h-4" />
+        </button>
       </div>
     </aside>
+
+    <!-- 二级菜单图标瓷砖面板（仅教师工作台根页面） -->
+    <transition name="slide">
+      <aside v-if="showTilesPanel" class="w-80 shrink-0 border-r border-cream-200 bg-white/80 backdrop-blur overflow-y-auto">
+        <div class="px-5 py-5 border-b border-cream-200/60">
+          <div class="flex items-center gap-2 text-xs text-cocoa-500">
+            <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">园丁工作台</button>
+            <ChevronRight class="w-3 h-3" />
+            <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
+          </div>
+          <h2 class="text-lg font-bold text-cocoa-900 mt-1">{{ activeCategory }}</h2>
+          <p class="text-xs text-cocoa-500 mt-1">点击图标进入相应功能</p>
+        </div>
+
+        <div v-for="g in activeGroups" :key="g.label || 'main'" class="px-4 pt-4">
+          <div v-if="g.label" class="flex items-center gap-2 mb-3">
+            <h3 class="text-xs font-semibold text-cocoa-700 uppercase tracking-wider">{{ g.label }}</h3>
+            <div class="flex-1 h-px bg-cream-200"></div>
+            <span class="text-xs text-cocoa-400">{{ g.items.length }}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3 pb-2">
+            <button
+              v-for="item in g.items"
+              :key="item.name"
+              class="group relative flex flex-col items-center justify-center aspect-square rounded-2xl transition-all border-2 border-transparent hover:scale-105"
+              :class="route.name === item.name ? ['ring-2', palette(item.color || 'butter').ring, palette(item.color || 'butter').bg] : ['hover:shadow-soft', palette(item.color || 'butter').soft]"
+              @click="navigateTo(item.to)"
+            >
+              <!-- 圆形图标背景 -->
+              <div
+                class="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+                :class="palette(item.color || 'butter').bg + ' ' + palette(item.color || 'butter').text"
+              >
+                <span v-if="item.emoji" class="text-2xl">{{ item.emoji }}</span>
+                <component v-else :is="item.icon || User" class="w-5 h-5" />
+              </div>
+              <span class="mt-1.5 text-[11px] font-medium text-cocoa-800 text-center leading-tight px-1 truncate w-full">{{ item.label }}</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </transition>
+
     <!-- 主内容区 -->
     <main class="flex-1 overflow-hidden bg-cream-50 flex flex-col">
       <!-- 顶栏：全局搜索（仅校管可见） -->
@@ -436,12 +511,10 @@ const today = computed(() =>
               @input="onSearchInput"
             />
           </div>
-          <!-- 搜索结果下拉 -->
           <div v-if="searchKeyword && (searchLoading || hasResults || (!searchLoading && !hasResults))" class="absolute z-20 mt-1 w-full bg-white rounded-xl shadow-soft border border-cream-200 max-h-96 overflow-y-auto">
             <div v-if="searchLoading" class="px-4 py-3 text-sm text-cocoa-400">搜索中…</div>
             <div v-else-if="!hasResults" class="px-4 py-3 text-sm text-cocoa-400">未找到匹配结果</div>
             <template v-else>
-              <!-- 教师结果 -->
               <div v-if="searchResult?.teachers?.length" class="py-1">
                 <div class="px-4 py-1 text-xs text-cocoa-400 bg-cream-50">教师</div>
                 <button
@@ -454,7 +527,6 @@ const today = computed(() =>
                   <span class="text-cocoa-400 text-xs">{{ t.subject || t.username }}</span>
                 </button>
               </div>
-              <!-- 班级结果 -->
               <div v-if="searchResult?.classes?.length" class="py-1">
                 <div class="px-4 py-1 text-xs text-cocoa-400 bg-cream-50">班级</div>
                 <button
@@ -467,7 +539,6 @@ const today = computed(() =>
                   <span class="text-cocoa-400 text-xs">{{ c.grade }} · {{ c.headTeacher }}</span>
                 </button>
               </div>
-              <!-- 学生结果 -->
               <div v-if="searchResult?.students?.length" class="py-1">
                 <div class="px-4 py-1 text-xs text-cocoa-400 bg-cream-50">学生</div>
                 <button
@@ -491,6 +562,10 @@ const today = computed(() =>
           <nav aria-label="breadcrumb" class="flex items-center gap-1.5 text-xs text-cocoa-500 mb-1">
             <Home class="w-3.5 h-3.5" />
             <span>园丁工作台</span>
+            <template v-if="activeCategory && auth.role === 'teacher'">
+              <ChevronRight class="w-3 h-3 text-cocoa-300" />
+              <span>{{ activeCategory }}</span>
+            </template>
             <ChevronRight class="w-3 h-3 text-cocoa-300" />
             <span class="text-cocoa-700 font-medium">{{ pageTitle }}</span>
           </nav>
@@ -502,7 +577,7 @@ const today = computed(() =>
         </div>
       </header>
 
-      <!-- 实际页面内容（铺满宽度，不再居中留白） -->
+      <!-- 实际页面内容 -->
       <div class="flex-1 overflow-auto">
         <div class="w-full min-h-full px-8 py-6 flex flex-col">
           <router-view />
@@ -514,3 +589,16 @@ const today = computed(() =>
     </main>
   </div>
 </template>
+
+<style scoped>
+/* 二级面板的滑入动画 */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-12px);
+  opacity: 0;
+}
+</style>
