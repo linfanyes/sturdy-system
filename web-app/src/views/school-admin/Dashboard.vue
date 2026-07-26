@@ -1,100 +1,76 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getDashboard } from '@/api/school-admin'
-import { Users, GraduationCap, School, Phone, TrendingUp, ClipboardList } from 'lucide-vue-next'
+import { Sparkles, School, Users, GraduationCap, AlertCircle, ArrowRight, Loader2 } from 'lucide-vue-next'
 
 const auth = useAuthStore()
-const loading = ref(true)
-const stats = ref<any>({})
+const router = useRouter()
+const loading = ref(false)
+const stats = ref({ totalTeachers: 0, totalClasses: 0, totalStudents: 0, pendingHomework: 0, attendanceRate: null as number | null })
+const greeting = computed(() => { const h = new Date().getHours(); return h < 6 ? '夜深了' : h < 9 ? '早上好' : h < 12 ? '上午好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好' })
 
-async function loadDashboard() {
+async function load() {
   loading.value = true
-  try {
-    stats.value = await getDashboard()
-  } catch (e: any) {
-    // 静默处理，dashboard 非关键
-  } finally {
-    loading.value = false
-  }
+  try { const d = await getDashboard(); Object.assign(stats.value, d) } catch { /* ignore */ }
+  finally { loading.value = false }
 }
+onMounted(load)
 
-onMounted(loadDashboard)
-
-const cards = ref([
-  { key: 'totalTeachers', label: '教师总数', icon: Users, color: 'butter' },
-  { key: 'totalClasses', label: '班级总数', icon: School, color: 'mint' },
-  { key: 'totalStudents', label: '学生总数', icon: GraduationCap, color: 'sky2' },
-  { key: 'parentEnabled', label: '家长已开通', icon: Phone, color: 'sakura' },
-  { key: 'attendanceRate', label: '今日考勤率', icon: TrendingUp, color: 'butter', suffix: '%' },
-  { key: 'pendingHomework', label: '待批改作业', icon: ClipboardList, color: 'mint' },
-])
+const quickLinks = [
+  { label: '教师管理', desc: '管理教师信息与账号', to: '/school-admin/teachers', icon: Users },
+  { label: '班级管理', desc: '管理班级结构与数据', to: '/school-admin/classes', icon: School },
+  { label: '学生管理', desc: '学生信息与家长关联', to: '/school-admin/students', icon: GraduationCap },
+]
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-end">
-      <button
-        class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-700 text-sm hover:bg-cream-200 transition-colors"
-        @click="loadDashboard"
-        :disabled="loading"
-      >
-        {{ loading ? '刷新中…' : '刷新' }}
-      </button>
-    </div>
-
-    <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div
-        v-for="card in cards"
-        :key="card.key"
-        class="bg-white rounded-2xl p-5 shadow-softer flex items-center gap-4"
-      >
-        <div
-          :class="[
-            'w-12 h-12 rounded-xl flex items-center justify-center',
-            card.color === 'butter' ? 'bg-butter-100' : '',
-            card.color === 'mint' ? 'bg-mint-100' : '',
-            card.color === 'sky2' ? 'bg-sky2-100' : '',
-            card.color === 'sakura' ? 'bg-sakura-100' : '',
-          ]"
-        >
-          <component
-            :is="card.icon"
-            :class="[
-              'w-6 h-6',
-              card.color === 'butter' ? 'text-butter-600' : '',
-              card.color === 'mint' ? 'text-mint-500' : '',
-              card.color === 'sky2' ? 'text-sky2-500' : '',
-              card.color === 'sakura' ? 'text-sakura-500' : '',
-            ]"
-          />
+    <div class="welcome-banner">
+      <div class="relative z-10 flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-butter-500/30 backdrop-blur flex items-center justify-center">
+          <Sparkles class="w-7 h-7 text-cocoa-800" />
         </div>
-        <div>
-          <div class="text-sm text-cocoa-500">{{ card.label }}</div>
-          <div class="text-2xl font-bold text-cocoa-900 mt-0.5">
-            {{ loading ? '—' : (stats[card.key] ?? '-') }}{{ card.suffix || '' }}
-          </div>
+        <div class="flex-1">
+          <div class="text-xl font-bold text-cocoa-900">{{ greeting }}，<span class="text-butter-700">{{ auth.user?.name || '管理员' }}</span></div>
+          <div class="text-sm text-cocoa-600/80 mt-0.5">{{ auth.user?.schoolName || '学校管理' }} · 管理员工作台</div>
         </div>
       </div>
     </div>
 
-    <!-- 当前账号信息 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
-      <div class="text-sm font-semibold text-cocoa-700 mb-3">当前账号</div>
-      <div class="grid grid-cols-3 gap-4 text-sm">
-        <div>
-          <span class="text-cocoa-500">姓名：</span>
-          <span class="text-cocoa-900 font-medium">{{ auth.user?.name }}</span>
-        </div>
-        <div>
-          <span class="text-cocoa-500">学校：</span>
-          <span class="text-cocoa-900 font-medium">{{ auth.user?.schoolName || auth.user?.schoolId || '-' }}</span>
-        </div>
-        <div>
-          <span class="text-cocoa-500">日期：</span>
-          <span class="text-cocoa-900 font-medium">{{ stats.todayDate || '-' }}</span>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-butter-500" /> 教师</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin text-butter-400" /><template v-else>{{ stats.totalTeachers }}</template></div>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><School class="w-4 h-4 text-mint-500" /> 班级</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin text-butter-400" /><template v-else>{{ stats.totalClasses }}</template></div>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-sky2-500" /> 学生</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin text-butter-400" /><template v-else>{{ stats.totalStudents }}</template></div>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><AlertCircle class="w-4 h-4 text-sakura-500" /> 待批改</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin text-butter-400" /><template v-else>{{ stats.pendingHomework }}</template></div>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><Sparkles class="w-5 h-5 text-butter-400" /> 快速管理</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <button v-for="link in quickLinks" :key="link.to" class="quick-card text-left" @click="router.push(link.to)">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-butter-100 flex items-center justify-center">
+              <component :is="link.icon" class="w-5 h-5 text-butter-500" />
+            </div>
+            <ArrowRight class="w-4 h-4 text-cocoa-300" />
+          </div>
+          <div class="mt-3 text-base font-semibold text-cocoa-900">{{ link.label }}</div>
+          <div class="text-xs text-cocoa-500 mt-0.5">{{ link.desc }}</div>
+        </button>
       </div>
     </div>
   </div>

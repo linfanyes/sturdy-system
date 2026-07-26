@@ -332,12 +332,16 @@ const today = computed(() =>
 </script>
 
 <template>
-  <div class="flex h-full">
+  <div class="flex h-full bg-cream-50">
     <!-- 侧边栏 -->
-    <aside class="w-56 shrink-0 border-r border-cream-200 bg-cream-100/60 flex flex-col">
-      <div class="px-5 py-6">
-        <div class="text-lg font-bold text-cocoa-900">园丁工作台</div>
-        <div class="text-xs text-cocoa-500 mt-0.5">Web 管理端</div>
+    <aside class="w-56 shrink-0 border-r border-cream-200 bg-gradient-to-b from-cream-100/90 to-cream-50/90 backdrop-blur flex flex-col">
+      <div class="px-5 py-6 border-b border-cream-200/60">
+        <div class="text-lg font-bold text-cocoa-900 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-butter-400 inline-block" />
+          园丁工作台
+          <span class="w-2 h-2 rounded-full bg-butter-400 inline-block" />
+        </div>
+        <div class="text-xs text-cocoa-500 mt-0.5">用爱浇灌 · 静待花开</div>
       </div>
       <nav class="flex-1 px-3 space-y-2 overflow-y-auto">
         <!-- 教师三级折叠菜单 -->

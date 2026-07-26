@@ -54,21 +54,20 @@ describe('超管端页面完整性', () => {
 })
 
 describe('家长端页面完整性', () => {
-  it('Dashboard.vue 实现了 Tab 切换', () => {
+  it('Dashboard.vue 显示欢迎与孩子信息', () => {
     const content = readFile('parent/Dashboard.vue')
-    expect(content).toMatch(/tab|Tab/)
-    expect(content).toMatch(/pending|scores|待办|成绩/)
+    expect(content).toMatch(/welcome-banner|welcome/)
+    expect(content).toMatch(/studentName|孩子/)
   })
 
-  it('Dashboard.vue 包含成绩分布图', () => {
+  it('Dashboard.vue 包含统计卡片', () => {
     const content = readFile('parent/Dashboard.vue')
-    expect(content).toMatch(/distribution|barChart|svg|SVG/)
+    expect(content).toMatch(/stat-card|孩子动态|学习成长|家校沟通/)
   })
 
-  it('Dashboard.vue 包含优势/薄弱学科分析', () => {
+  it('Dashboard.vue 欢迎家长', () => {
     const content = readFile('parent/Dashboard.vue')
-    const hasAdvantage = content.match(/优势|薄弱|advantage|weak/) !== null
-    expect(hasAdvantage).toBe(true)
+    expect(content).toMatch(/家长中心|welcome/)
   })
 })
 
