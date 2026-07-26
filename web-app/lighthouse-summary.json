@@ -1,0 +1,15 @@
+{
+  "smoke": {
+    "title": "园丁工作台 · Web 端",
+    "inputCount": 2,
+    "hasWelcome": true,
+    "consoleErrorCount": 1,
+    "note": "无后端联调时出现的 404 等 API 报错属预期，不影响渲染冒烟。"
+  },
+  "lighthouse": {
+    "performance": 81,
+    "accessibility": 92,
+    "best-practices": 96,
+    "seo": 82
+  }
+}
