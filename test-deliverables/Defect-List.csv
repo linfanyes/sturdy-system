@@ -1,0 +1,7 @@
+﻿ID,标题,严重度,模块,状态,修复提交,发现日期,说明
+DEF-001,后端集成测试无法在沙箱环境运行,P1,后端服务,已知限制,,2026-07-26,MySQL/Redis 在沙箱环境中未运行；SQLite 内存库存在 longtext/重复索引等兼容性问题。需在本地/CI 配置 MySQL 后运行 176 个集成测试
+DEF-002,SUBJECT_OPTIONS 语文和历史共用 📜 icon,P2,共享常量,可优化,,2026-07-26,14 个唯一 icon 而非 15 个。建议为语文和历史分配不同 icon
+DEF-003,CLASS_NAMING_RULE.pattern 仅匹配小学_年级_格式,P2,共享常量,设计约束,,2026-07-26,初高中 grade(初一/高一)不带"年级"后缀，validateClassName 内部通过多正则处理。已通过分正则方案兼容
+DEF-004,photo-album-flow.spec.ts TypeScript 转换问题,P3,Web端测试,已修复,9c4f2a1,2026-07-26,原 vitest 语法不兼容 ts-jest，已重写为 Jest 语法。552 回归全通过
+DEF-005,22个实体索引名 SQLite 不兼容,P1,后端实体,已修复,批量唯一化,2026-07-26,22个实体中 idx_teacher/idx_teacher_class 索引名重复（MySQL 按表隔离但 SQLite 需全局唯一），已按表名前缀去重。185 单元测试全通过
+DEF-006,3个实体 longtext 类型 SQLite 不兼容,P1,后端实体,已修复,替换为text,2026-07-26,gallery/backup/my-gallery 三实体中 longtext 类型 SQLite 不支持，已替换为 text。185 单元测试全通过

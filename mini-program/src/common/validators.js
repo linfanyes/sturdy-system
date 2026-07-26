@@ -2,24 +2,58 @@
  * 通用表单校验工具：所有校验函数返回 true/false，便于在页面层链式判断。
  * 配合 toast 提示用法：
  *   if (!isPhone(phone)) return uni.showToast({ title: '手机号格式错误', icon: 'none' })
+ * 重新导出共享校验器，保持向后兼容
  */
 
-/** 简单手机号校验：11 位数字、1 开头、第二位 3-9。宽松允许中间空格/横线。 */
-export function isPhone(s) {
-  if (s == null) return false
-  const v = String(s).replace(/[\s\-]/g, '')
-  return /^1[3-9]\d{9}$/.test(v)
-}
+import {
+  isPhone,
+  isValidPhone,
+  normalizePhone,
+  validateClassName,
+  generateClassName,
+  parseClassName,
+  isSubject,
+  getSubjectByValue,
+  isRole,
+  hasFeature,
+  isGrade,
+  isScore,
+  isNonEmpty,
+  isStudentNo,
+  isAmount,
+  isUrl,
+  isDateStr,
+  clip,
+  MAX_LEN,
+  PHONE_REGEX,
+  PHONE_HINT,
+  CLASS_NAMING_RULE,
+} from '@gardener/shared/validators'
 
-/**
- * 手机号校验（允许为空）：与 isPhone 相同但空/null/undefined 也合法。
- * 用于可选手机号字段，与 web-app `validators.ts :: isValidPhone` 对齐。
- */
-export function isValidPhone(s) {
-  if (s == null) return true
-  const v = String(s).replace(/[\s\-]/g, '')
-  if (v === '') return true
-  return /^1[3-9]\d{9}$/.test(v)
+// 重新导出所有共享校验器（保持向后兼容）
+export {
+  isPhone,
+  isValidPhone,
+  normalizePhone,
+  validateClassName,
+  generateClassName,
+  parseClassName,
+  isSubject,
+  getSubjectByValue,
+  isRole,
+  hasFeature,
+  isGrade,
+  isScore,
+  isNonEmpty,
+  isStudentNo,
+  isAmount,
+  isUrl,
+  isDateStr,
+  clip,
+  MAX_LEN,
+  PHONE_REGEX,
+  PHONE_HINT,
+  CLASS_NAMING_RULE,
 }
 
 /** 邮箱校验：标准格式。 */
@@ -42,68 +76,4 @@ export function isInt(num, min, max) {
   const n = Number(num)
   if (!Number.isInteger(n)) return false
   return inRange(n, min, max)
-}
-
-/** 分数校验：默认 0-100，可传 max 支持 150 分制等场景。 */
-export function isScore(num, max = 100) {
-  return inRange(num, 0, max)
-}
-
-/** 非空字符串（trim 后判断）。 */
-export function isNonEmpty(s) {
-  return s != null && String(s).trim() !== ''
-}
-
-/** 学号格式：字母数字组合，2-32 位（兼容各种学校编码）。 */
-export function isStudentNo(s) {
-  if (s == null || s === '') return true // 学号可选
-  return /^[A-Za-z0-9]{2,32}$/.test(String(s).trim())
-}
-
-/** 金额校验：最多两位小数的正数；0 不允许（业务上 0 金额无意义）。 */
-export function isAmount(num) {
-  const n = Number(num)
-  if (Number.isNaN(n) || n <= 0) return false
-  return /^\d+(\.\d{1,2})?$/.test(String(num).trim())
-}
-
-/* ========== 新增校验 ========== */
-
-/** URL 格式校验：http/https 开头，含域名。空值视为合法（可选字段）。 */
-export function isUrl(s) {
-  if (s == null || s === '') return true
-  try {
-    const u = new URL(String(s).trim())
-    return u.protocol === 'http:' || u.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
-/** 日期字符串校验：YYYY-MM-DD 格式。可选字段传入空串也合法。 */
-export function isDateStr(s) {
-  if (s == null || s === '') return true
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(s).trim())
-}
-
-/** 长度截断：确保字符串不超过 max 字节/字符。用于处理 `confirm` / `blur` 时裁剪过长输入。 */
-export function clip(s, max) {
-  if (s == null) return ''
-  const v = String(s)
-  return v.length > max ? v.slice(0, max) : v
-}
-
-/** 常见字段最大长度参考（与后端 entity 定义对齐） */
-export const MAX_LEN = {
-  NAME: 50,         // 姓名/称呼
-  TITLE: 100,       // 标题
-  PHONE: 11,        // 手机号
-  STUDENT_NO: 32,   // 学号
-  EMAIL: 100,       // 邮箱
-  URL: 500,         // 外部链接
-  TAG: 20,          // 单个标签
-  REMARK: 200,      // 备注
-  SCHOOL: 60,       // 学校名称
-  SUBJECT: 30,      // 科目
-  PASSWORD: 64,     // 密码
 }

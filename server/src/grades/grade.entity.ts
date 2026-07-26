@@ -6,7 +6,7 @@ export interface GradeScore {
   score: number | null
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_grd_tch_cls', ['teacherId', 'classId'])
 @Index('idx_grades_cov', ['teacherId', 'createdAt'])
 @Entity('grades')
 export class Grade extends BaseEntity {

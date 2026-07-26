@@ -10,7 +10,7 @@ const jsonArrayTransformer: ValueTransformer = {
   },
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_gal_tch_cls', ['teacherId', 'classId'])
 @Entity('class_galleries')
 export class ClassGallery extends BaseEntity {
   @Column() classId: string
@@ -18,5 +18,5 @@ export class ClassGallery extends BaseEntity {
   @Column({ type: 'text', nullable: true }) description: string
   @Column({ default: '' }) date: string
   // 图片以 base64 dataURL 数组直存，用 LONGTEXT(4GB) 容纳多张照片
-  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
+  @Column({ type: 'text', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }

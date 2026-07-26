@@ -6,7 +6,7 @@ import { BaseEntity } from '../common/entities/base.entity'
  * payload 字段保存 JSON 字符串，包含 user/classes/students/grades/notes/teachers 等全量数据快照。
  * 自动备份（每 2 小时一次）与手动备份都写入此表。
  */
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_bkp_tch', ['teacherId'])
 @Entity('backup_snapshots')
 export class BackupSnapshot extends BaseEntity {
   @Column({ type: 'varchar', length: 64, comment: '备份类型：manual / auto' })
@@ -15,6 +15,6 @@ export class BackupSnapshot extends BaseEntity {
   @Column({ type: 'varchar', length: 200 })
   label: string
 
-  @Column({ type: 'longtext' })
+  @Column({ type: 'text' })
   payload: string
 }

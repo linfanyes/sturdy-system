@@ -2,7 +2,9 @@
 // 每项：title 标题；icon 图标；subject 学科；fields 表单字段；build(f) 生成 prompt
 // 字段 type: input 文本 / number 数字 / picker 选项(带 options) / textarea 多行
 
-const GRADE = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
+import { SUBJECT_OPTIONS, GRADE_OPTIONS } from '@gardener/shared/constants'
+
+const GRADE = GRADE_OPTIONS
 
 export const SUBJECT_TOOLS = {
   // ============ 语文 ============
@@ -44,7 +46,7 @@ export const SUBJECT_TOOLS = {
       { k: 'words', label: '字数', type: 'input', placeholder: '如：400字' },
     ],
     build: (f) =>
-      `请作为语文老师，围绕作文题「${f.topic}」（${f.grade || '小学'}，类型：${f.type || '记叙'}，字数：${f.words || '400字左右'}）提供写作辅导：1) 审题与立意思路；2) 详细写作提纲；3) 一篇范文；4) 可用的好词好句摘录。中文输出，贴合年级水平。`,
+      `请作为语文老师，围绕作文题「${f.topic}”（${f.grade || '小学'}，类型：${f.type || '记叙'}，字数：${f.words || '400字左右'}）提供写作辅导：1) 审题与立意思路；2) 详细写作提纲；3) 一篇范文；4) 可用的好词好句摘录。中文输出，贴合年级水平。`,
   },
   idiom: {
     title: '成语词典', icon: '🔤', subject: '语文',
@@ -90,7 +92,7 @@ export const SUBJECT_TOOLS = {
       { k: 'pattern', label: '句型', type: 'input', placeholder: '如：There be / 一般现在时', required: true },
     ],
     build: (f) =>
-      `请围绕英语句型「${f.pattern}」（${f.grade || '小学'}）设计练习：1) 用中文讲清句型结构与用法；2) 给出 5 个例句（含中文）；3) 出 8 道练习题（造句/填空/改写混合）并附答案。`,
+      `请围绕英语句型「${f.pattern}”（${f.grade || '小学'}）设计练习：1) 用中文讲清句型结构与用法；2) 给出 5 个例句（含中文）；3) 出 8 道练习题（造句/填空/改写混合）并附答案。`,
   },
   listening: {
     title: '英语听力', icon: '📻', subject: '英语',
@@ -108,7 +110,7 @@ export const SUBJECT_TOOLS = {
       { k: 'point', label: '语法点', type: 'input', placeholder: '如：现在进行时 / 名词复数', required: true },
     ],
     build: (f) =>
-      `请围绕英语语法点「${f.point}」（${f.grade || '小学'}）讲解并出题：1) 中文讲清规则与常见错误；2) 5 个例句（含中文）；3) 10 道练习题（选择/填空/改错）并附答案与简要解析。`,
+      `请围绕英语语法点「${f.point}”（${f.grade || '小学'}）讲解并出题：1) 中文讲清规则与常见错误；2) 5 个例句（含中文）；3) 10 道练习题（选择/填空/改错）并附答案与简要解析。`,
   },
   'scene-dialogue': {
     title: '英语情景对话', icon: '💬', subject: '英语',
@@ -167,7 +169,7 @@ export const SUBJECT_TOOLS = {
       { k: 'concept', label: '科学概念', type: 'input', placeholder: '如：浮力 / 食物链 / 磁场', required: true },
     ],
     build: (f) =>
-      `请围绕科学概念「${f.concept}」（${f.grade || '小学'}）生成图解化教学资料：1) 概念的通俗定义（用生活化比喻）；2) 概念的形成过程或原理图示（用文字描述可画出的示意图）；3) 3 个生活中的实例；4) 常见误区辨析；5) 3 道分层练习题（含答案）；6) 拓展阅读建议。输出便于教师直接讲授课件使用。`,
+      `请围绕科学概念「${f.concept}”（${f.grade || '小学'}）生成图解化教学资料：1) 概念的通俗定义（用生活化比喻）；2) 概念的形成过程或原理图示（用文字描述可画出的示意图）；3) 3 个生活中的实例；4) 常见误区辨析；5) 3 道分层练习题（含答案）；6) 拓展阅读建议。输出便于教师直接讲授课件使用。`,
   },
   'observation-record': {
     title: '观察记录生成', icon: '📝', subject: '科学',
@@ -198,7 +200,7 @@ export const SUBJECT_TOOLS = {
       { k: 'dilemma', label: '两难情境', type: 'textarea', placeholder: '如：朋友作弊该不该告诉老师', required: true },
     ],
     build: (f) =>
-      `请围绕道德两难情境「${f.dilemma}」（${f.grade || '小学'}）设计一堂讨论课。输出包含：1) 情境的完整描述（增加细节让两难更突出）；2) 两种对立观点的论据分析（各 3 条）；3) 讨论流程设计（小组讨论→全班分享→教师引导）；4) 价值观引导要点（避免简单说教）；5) 总结反思问题；6) 课后实践任务。`,
+      `请围绕道德两难情境「${f.dilemma}”（${f.grade || '小学'}）设计一堂讨论课。输出包含：1) 情境的完整描述（增加细节让两难更突出）；2) 两种对立观点的论据分析（各 3 条）；3) 讨论流程设计（小组讨论→全班分享→教师引导）；4) 价值观引导要点（避免简单说教）；5) 总结反思问题；6) 课后实践任务。`,
   },
   'moral-value': {
     title: '价值观辨析', icon: '🌟', subject: '道德与法治',
@@ -207,7 +209,7 @@ export const SUBJECT_TOOLS = {
       { k: 'value', label: '价值观关键词', type: 'input', placeholder: '如：公平 / 责任 / 包容', required: true },
     ],
     build: (f) =>
-      `请围绕价值观「${f.value}」（${f.grade || '小学'}）生成辨析教学资料：1) 概念的多维度解读（个人/他人/社会三个层面）；2) 3 个正反对比的小故事（每个100字左右）；3) 名人名言或经典语录 3-5 条（注明出处）；4) "我会怎么做"行为选择卡 5 题（含情境与选项）；5) 跨学科融合建议（如何与语文/班会结合）；6) 家校共育延伸活动。`,
+      `请围绕价值观「${f.value}”（${f.grade || '小学'}）生成辨析教学资料：1) 概念的多维度解读（个人/他人/社会三个层面）；2) 3 个正反对比的小故事（每个100字左右）；3) 名人名言或经典语录 3-5 条（注明出处）；4) "我会怎么做"行为选择卡 5 题（含情境与选项）；5) 跨学科融合建议（如何与语文/班会结合）；6) 家校共育延伸活动。`,
   },
 }
 
@@ -232,11 +234,7 @@ export const SUBJECT_LIST = [
  * 完整学科列表（15 科，与 web `constants/subjects.ts :: SUBJECT_OPTIONS` 对齐）。
  * 用于教师管理/考试管理等场景的学科下拉框。
  */
-export const ALL_SUBJECTS = [
-  '语文', '数学', '英语', '科学', '物理', '化学', '生物',
-  '政治', '历史', '地理', '音乐', '体育', '美术',
-  '信息技术', '道德与法治',
-]
+export const ALL_SUBJECTS = SUBJECT_OPTIONS.map((s) => s.value)
 
 /**
  * 数学学科独立工具入口（不在 SUBJECT_TOOLS 中，跳转到独立页面）。

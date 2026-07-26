@@ -1,7 +1,7 @@
 import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_exm_tch_cls', ['teacherId', 'classId'])
 @Entity('exams')
 export class Exam extends BaseEntity {
   @Column() term: string

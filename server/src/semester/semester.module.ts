@@ -9,7 +9,7 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_sem_tch', ['teacherId'])
 @Entity('semesters')
 export class Semester extends BaseEntity {
   @Column() name: string        // 如：2025年春季学期

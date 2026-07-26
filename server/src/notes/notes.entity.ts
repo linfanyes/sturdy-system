@@ -1,7 +1,7 @@
 import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_not_tch', ['teacherId'])
 @Entity('notes')
 export class NoteItem extends BaseEntity {
   @Column() title: string
@@ -13,7 +13,7 @@ export class NoteItem extends BaseEntity {
   @Column({ type: 'simple-json', nullable: true }) images: string[]
 }
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_todo_tch', ['teacherId'])
 @Entity('todos')
 export class TodoItem extends BaseEntity {
   @Column() title: string
@@ -22,7 +22,7 @@ export class TodoItem extends BaseEntity {
   @Column({ type: 'boolean', default: false }) done: boolean
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_pkh_tch_cls', ['teacherId', 'classId'])
 @Entity('picker_history')
 export class PickerHistory extends BaseEntity {
   @Column() classId: string

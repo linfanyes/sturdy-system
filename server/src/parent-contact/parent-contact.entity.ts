@@ -19,7 +19,7 @@ export class ParentContact extends BaseEntity {
   @Column({ type: 'text', nullable: true }) followUp: string
 }
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_pcn_tch', ['teacherId'])
 @Entity('notice_templates')
 export class NoticeTemplate extends BaseEntity {
   @Column() title: string

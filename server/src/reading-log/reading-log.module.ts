@@ -9,7 +9,7 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 
-@Index('idx_teacher_student', ['teacherId', 'studentId'])
+@Index('idx_rdl_tch_stu', ['teacherId', 'studentId'])
 @Index('idx_reading_logs_cov', ['teacherId', 'createdAt'])
 @Entity('reading_logs')
 export class ReadingLog extends BaseEntity {

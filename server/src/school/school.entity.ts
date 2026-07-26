@@ -35,7 +35,7 @@ export class School {
 
 /* ===== 班级/课表/考勤/作业/通知/资源 ===== */
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_sch_tch_cls', ['teacherId', 'classId'])
 @Entity('schedules')
 export class ScheduleItem extends BaseEntity {
   @Column() classId: string
@@ -50,7 +50,7 @@ export class ScheduleItem extends BaseEntity {
   @Column({ type: 'text', nullable: true }) note: string
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_att_tch_cls', ['teacherId', 'classId'])
 @Entity('attendances')
 export class Attendance extends BaseEntity {
   @Column() classId: string
@@ -58,7 +58,7 @@ export class Attendance extends BaseEntity {
   @Column('simple-json') records: { studentId: string; status: string }[]
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_hwk_tch_cls', ['teacherId', 'classId'])
 @Entity('homework')
 export class Homework extends BaseEntity {
   @Column() classId: string
@@ -70,7 +70,7 @@ export class Homework extends BaseEntity {
   @Column({ default: '待批改' }) status: string
 }
 
-@Index('idx_teacher_class', ['teacherId', 'classId'])
+@Index('idx_ntc_tch_cls', ['teacherId', 'classId'])
 @Entity('notices')
 export class Notice extends BaseEntity {
   @Column({ default: '全校' }) classId: string
@@ -82,7 +82,7 @@ export class Notice extends BaseEntity {
   @Column({ default: 'class' }) scope: string  // 'class'=班级公告 'school'=学校公告
 }
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_res_tch', ['teacherId'])
 @Entity('resources')
 export class Resource extends BaseEntity {
   @Column() title: string

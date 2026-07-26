@@ -17,13 +17,13 @@ const jsonArrayTransformer: ValueTransformer = {
   },
 }
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_mgl_tch', ['teacherId'])
 @Entity('my_galleries')
 export class MyGallery extends BaseEntity {
   @Column() title: string
   @Column({ nullable: true }) date: string
   @Column({ type: 'text', nullable: true }) description: string
-  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
+  @Column({ type: 'text', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }
 
 class Svc extends CrudService<MyGallery> { constructor(@InjectRepository(MyGallery) r: Repository<MyGallery>) { super(r) } }

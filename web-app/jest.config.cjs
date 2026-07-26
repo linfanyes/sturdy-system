@@ -6,6 +6,7 @@ module.exports = {
   testMatch: ['**/*.spec.ts', '**/*.spec.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@gardener/shared/(.*)$': '<rootDir>/../shared/$1',
   },
   transform: {
     // .vue 单文件组件由 vue3-jest 编译（内部用 babel 剥离 TS）

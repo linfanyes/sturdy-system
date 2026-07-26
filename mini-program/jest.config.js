@@ -7,6 +7,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^../../common/(.*)$': '<rootDir>/src/common/$1',
+    '^@gardener/shared/(.*)$': '<rootDir>/../shared/$1',
   },
   // 覆盖预设：同时转换 .ts 与 .js（allowJs），以便直接 import/require src 下的 ESM .js 源文件
   transform: {

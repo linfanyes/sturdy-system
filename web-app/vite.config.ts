@@ -26,6 +26,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@gardener/shared': path.resolve(__dirname, '../../shared'),
     },
   },
 })

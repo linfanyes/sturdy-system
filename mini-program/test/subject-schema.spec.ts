@@ -4,14 +4,13 @@ import path from 'path'
 const schemaPath = path.resolve(__dirname, '../src/common/subject-schema.js')
 const src = fs.readFileSync(schemaPath, 'utf-8')
 
+// Import GRADE_OPTIONS from shared constants (replacing the old extraction approach)
+import { GRADE_OPTIONS } from '@gardener/shared/constants'
+const GRADE = GRADE_OPTIONS
+
 // 提取 SUBJECT_TOOLS 对象并求值（需传入 GRADE 常量）
 const toolsMatch = src.match(/export const SUBJECT_TOOLS = (\{[\s\S]*?\n\})/)
 if (!toolsMatch) throw new Error('未能从 subject-schema.js 提取 SUBJECT_TOOLS')
-// 提取 GRADE 常量
-const gradeMatch = src.match(/const GRADE = (\[[\s\S]*?\])/)
-if (!gradeMatch) throw new Error('未能从 subject-schema.js 提取 GRADE')
-// eslint-disable-next-line no-new-func
-const GRADE: any[] = new Function('return ' + gradeMatch[1])()
 // eslint-disable-next-line no-new-func
 const SUBJECT_TOOLS: Record<string, any> = new Function('GRADE', 'return ' + toolsMatch[1])(GRADE)
 

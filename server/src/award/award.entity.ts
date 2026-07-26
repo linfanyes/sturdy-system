@@ -1,7 +1,7 @@
 import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_awd_tch', ['teacherId'])
 @Entity('award_records')
 export class AwardRecord extends BaseEntity {
   @Column() name: string
@@ -14,7 +14,7 @@ export class AwardRecord extends BaseEntity {
   @Column({ type: 'int', nullable: true }) ratingScore: number
 }
 
-@Index('idx_teacher', ['teacherId'])
+@Index('idx_awd_cat_tch', ['teacherId'])
 @Entity('award_categories')
 export class AwardCategory extends BaseEntity {
   @Column() name: string

@@ -1,9 +1,13 @@
+/**
+ * 小程序端：本地校验器单元测试
+ * 测试 mini-program/src/common/validators.js 导出的校验器
+ * - 共享校验器：引用 @gardener/shared/validators，不重复测试核心逻辑（由 shared-validators.spec.ts 覆盖）
+ * - 本地扩展：isEmail、inRange、isInt 等小程序专用校验器
+ */
 import {
+  // 共享校验器（重新导出）
   isPhone,
   isValidPhone,
-  isEmail,
-  inRange,
-  isInt,
   isScore,
   isNonEmpty,
   isStudentNo,
@@ -12,65 +16,14 @@ import {
   isDateStr,
   clip,
   MAX_LEN,
+  // 本地扩展校验器
+  isEmail,
+  inRange,
+  isInt,
 } from '../src/common/validators'
 
-describe('validators', () => {
-  describe('isPhone', () => {
-    it('正确手机号', () => {
-      expect(isPhone('13812345678')).toBe(true)
-      expect(isPhone('19900001111')).toBe(true)
-    })
-    it('兼容中间空格/横线', () => {
-      expect(isPhone('138-1234-5678')).toBe(true)
-      expect(isPhone('138 1234 5678')).toBe(true)
-    })
-    it('错误手机号', () => {
-      expect(isPhone('12345678901')).toBe(false) // 第二位 2，不在 3-9
-      expect(isPhone('1381234567')).toBe(false) // 10 位
-      expect(isPhone('138123456789')).toBe(false) // 12 位
-      expect(isPhone('abc')).toBe(false)
-    })
-    it('空值', () => {
-      expect(isPhone(null)).toBe(false)
-      expect(isPhone(undefined)).toBe(false)
-      expect(isPhone('')).toBe(false)
-    })
-  })
-
-  describe('isValidPhone（允许为空）', () => {
-    it('正确手机号通过', () => {
-      expect(isValidPhone('13812345678')).toBe(true)
-      expect(isValidPhone('19900001111')).toBe(true)
-    })
-    it('空/null 通过（可选字段）', () => {
-      expect(isValidPhone('')).toBe(true)
-      expect(isValidPhone(null)).toBe(true)
-      expect(isValidPhone(undefined)).toBe(true)
-    })
-    it('错误格式拒绝', () => {
-      expect(isValidPhone('12345678901')).toBe(false)
-      expect(isValidPhone('abc')).toBe(false)
-    })
-  })
-
-  describe('isStudentNo', () => {
-    it('正确学号', () => {
-      expect(isStudentNo('A12345')).toBe(true)
-      expect(isStudentNo('2024001')).toBe(true)
-      expect(isStudentNo('AB')).toBe(true) // 最短 2 位
-    })
-    it('错误学号', () => {
-      expect(isStudentNo('A')).toBe(false) // 少于 2 位
-      expect(isStudentNo('A-1')).toBe(false) // 含非法字符
-      expect(isStudentNo('学号001')).toBe(false) // 含中文
-    })
-    it('空值视为合法（学号可选）', () => {
-      expect(isStudentNo('')).toBe(true)
-      expect(isStudentNo(null)).toBe(true)
-    })
-  })
-
-  describe('isEmail', () => {
+describe('validators (mini-program local)', () => {
+  describe('isEmail (local extension)', () => {
     it('正确邮箱', () => {
       expect(isEmail('a@b.com')).toBe(true)
       expect(isEmail('test.user+tag@example.co.uk')).toBe(true)
@@ -87,26 +40,7 @@ describe('validators', () => {
     })
   })
 
-  describe('isScore', () => {
-    it('正确分数', () => {
-      expect(isScore(0)).toBe(true)
-      expect(isScore(100)).toBe(true)
-      expect(isScore(85.5)).toBe(true)
-    })
-    it('超范围', () => {
-      expect(isScore(101)).toBe(false) // 默认满分 100
-      expect(isScore(-1)).toBe(false)
-      expect(isScore(150)).toBe(false)
-      expect(isScore(150, 150)).toBe(true) // 150 分制
-      expect(isScore(151, 150)).toBe(false)
-    })
-    it('非数字', () => {
-      expect(isScore('abc')).toBe(false)
-      expect(isScore(NaN)).toBe(false)
-    })
-  })
-
-  describe('inRange', () => {
+  describe('inRange (local extension)', () => {
     it('闭区间判断', () => {
       expect(inRange(5, 1, 10)).toBe(true)
       expect(inRange(1, 1, 10)).toBe(true) // 含下界
@@ -123,7 +57,7 @@ describe('validators', () => {
     })
   })
 
-  describe('isInt', () => {
+  describe('isInt (local extension)', () => {
     it('整数（含负数）', () => {
       expect(isInt(5, 0, 10)).toBe(true)
       expect(isInt(-3, -10, 10)).toBe(true)
@@ -133,84 +67,93 @@ describe('validators', () => {
     })
   })
 
-  describe('isNonEmpty', () => {
-    it('非空字符串', () => {
-      expect(isNonEmpty('hello')).toBe(true)
-      expect(isNonEmpty(' x ')).toBe(true)
+  // 共享校验器的冒烟测试：验证重新导出正常工作
+  // 核心逻辑测试在 shared-validators.spec.ts 中完整覆盖
+  describe('shared validators re-export smoke test', () => {
+    describe('isPhone', () => {
+      it('should work via re-export', () => {
+        expect(isPhone('13812345678')).toBe(true)
+        expect(isPhone('12345678901')).toBe(false)
+        expect(isPhone('')).toBe(false)
+      })
     })
-    it('空/纯空白/null', () => {
-      expect(isNonEmpty('')).toBe(false)
-      expect(isNonEmpty('   ')).toBe(false)
-      expect(isNonEmpty(null)).toBe(false)
-    })
-  })
 
-  describe('isAmount', () => {
-    it('正确金额', () => {
-      expect(isAmount(10)).toBe(true)
-      expect(isAmount(10.5)).toBe(true)
-      expect(isAmount(10.55)).toBe(true)
-      expect(isAmount('99.9')).toBe(true)
+    describe('isValidPhone', () => {
+      it('should work via re-export', () => {
+        expect(isValidPhone('13812345678')).toBe(true)
+        expect(isValidPhone('')).toBe(true)
+        expect(isValidPhone(null)).toBe(true)
+      })
     })
-    it('0 或负数不允许', () => {
-      expect(isAmount(0)).toBe(false)
-      expect(isAmount(-5)).toBe(false)
-    })
-    it('超过两位小数', () => {
-      expect(isAmount(10.555)).toBe(false)
-    })
-    it('非数字', () => {
-      expect(isAmount('abc')).toBe(false)
-    })
-  })
 
-  describe('isUrl', () => {
-    it('http/https 合法', () => {
-      expect(isUrl('http://example.com')).toBe(true)
-      expect(isUrl('https://example.com/path?q=1')).toBe(true)
+    describe('isScore', () => {
+      it('should work via re-export', () => {
+        expect(isScore(0)).toBe(true)
+        expect(isScore(100)).toBe(true)
+        expect(isScore(101)).toBe(false)
+        expect(isScore(150, 150)).toBe(true)
+      })
     })
-    it('非 http 协议非法', () => {
-      expect(isUrl('ftp://example.com')).toBe(false)
-    })
-    it('非法字符串', () => {
-      expect(isUrl('not a url')).toBe(false)
-    })
-    it('空值合法（可选字段）', () => {
-      expect(isUrl('')).toBe(true)
-      expect(isUrl(null)).toBe(true)
-    })
-  })
 
-  describe('isDateStr', () => {
-    it('YYYY-MM-DD 格式', () => {
-      expect(isDateStr('2024-01-15')).toBe(true)
-      expect(isDateStr('2024-1-5')).toBe(false) // 需两位补零
-      expect(isDateStr('2024/01/15')).toBe(false)
+    describe('isNonEmpty', () => {
+      it('should work via re-export', () => {
+        expect(isNonEmpty('hello')).toBe(true)
+        expect(isNonEmpty('')).toBe(false)
+        expect(isNonEmpty('   ')).toBe(false)
+        expect(isNonEmpty(null)).toBe(false)
+      })
     })
-    it('空值合法', () => {
-      expect(isDateStr('')).toBe(true)
-      expect(isDateStr(null)).toBe(true)
-    })
-  })
 
-  describe('clip', () => {
-    it('超长则截断', () => {
-      expect(clip('hello world', 5)).toBe('hello')
+    describe('isStudentNo', () => {
+      it('should work via re-export', () => {
+        expect(isStudentNo('A12345')).toBe(true)
+        expect(isStudentNo('AB')).toBe(true)
+        expect(isStudentNo('A')).toBe(false)
+        expect(isStudentNo('')).toBe(true)
+      })
     })
-    it('不超长原样返回', () => {
-      expect(clip('abc', 5)).toBe('abc')
-    })
-    it('null 返回空串', () => {
-      expect(clip(null, 5)).toBe('')
-    })
-  })
 
-  describe('MAX_LEN', () => {
-    it('常量存在且含预期字段', () => {
-      expect(MAX_LEN.NAME).toBe(50)
-      expect(MAX_LEN.PHONE).toBe(11)
-      expect(MAX_LEN.STUDENT_NO).toBe(32)
-      expect(MAX_LEN.EMAIL).toBe(100)
+    describe('isAmount', () => {
+      it('should work via re-export', () => {
+        expect(isAmount(10)).toBe(true)
+        expect(isAmount(10.55)).toBe(true)
+        expect(isAmount(0)).toBe(false)
+        expect(isAmount(10.555)).toBe(false)
+      })
+    })
+
+    describe('isUrl', () => {
+      it('should work via re-export', () => {
+        expect(isUrl('http://example.com')).toBe(true)
+        expect(isUrl('https://example.com/path')).toBe(true)
+        expect(isUrl('')).toBe(true)
+        expect(isUrl('ftp://example.com')).toBe(false)
+      })
+    })
+
+    describe('isDateStr', () => {
+      it('should work via re-export', () => {
+        expect(isDateStr('2024-01-15')).toBe(true)
+        expect(isDateStr('2024-1-5')).toBe(false)
+        expect(isDateStr('')).toBe(true)
+      })
+    })
+
+    describe('clip', () => {
+      it('should work via re-export', () => {
+        expect(clip('hello world', 5)).toBe('hello')
+        expect(clip('abc', 5)).toBe('abc')
+        expect(clip(null, 5)).toBe('')
+      })
+    })
+
+    describe('MAX_LEN', () => {
+      it('should work via re-export', () => {
+        expect(MAX_LEN.NAME).toBe(50)
+        expect(MAX_LEN.PHONE).toBe(11)
+        expect(MAX_LEN.STUDENT_NO).toBe(32)
+        expect(MAX_LEN.EMAIL).toBe(100)
+      })
     })
   })
 })

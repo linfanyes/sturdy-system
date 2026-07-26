@@ -7,7 +7,11 @@
     "strict": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@gardener/shared/*": ["../shared/*"]
+    }
   },
   "include": ["test/**/*.ts", "src/**/*"],
   "exclude": ["node_modules"]

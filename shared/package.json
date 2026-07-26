@@ -1,0 +1,43 @@
+{
+  "name": "@techer/shared",
+  "version": "1.0.0",
+  "description": "Techer 共享类型、常量、校验器 - Web端、小程序端、后端服务的单一事实来源",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./constants": {
+      "import": "./dist/constants/index.js",
+      "types": "./dist/constants/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./validators": {
+      "import": "./dist/validators/index.js",
+      "types": "./dist/validators/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "techer",
+    "shared",
+    "types",
+    "constants",
+    "validators"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

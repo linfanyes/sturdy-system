@@ -1,8 +1,5 @@
 /**
  * 学科选项（学校管理员教师/班级管理中复用）
+ * 重新导出共享包常量，保持向后兼容
  */
-export const SUBJECT_OPTIONS: string[] = [
-  '语文', '数学', '英语', '科学', '物理', '化学', '生物',
-  '政治', '历史', '地理', '音乐', '体育', '美术',
-  '信息技术', '道德与法治',
-]
+export { SUBJECT_OPTIONS, type SubjectOption } from '@gardener/shared/constants'
