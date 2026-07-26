@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { School, Plus, Edit3, Trash2, Power, Loader2 } from 'lucide-vue-next'
 import { listSchools, createSchool, updateSchool, deleteSchool } from '@/api/admin'
+import Modal from '@/components/Modal.vue'
 
 const loading = ref(false)
 const items = ref<any[]>([])
@@ -199,42 +200,39 @@ async function handleDelete(row: any) {
     </div>
 
     <!-- 新增/编辑 Modal -->
-    <div v-if="showForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-cocoa-900 mb-4">{{ editingId ? '编辑学校' : '新增学校' }}</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="text-sm text-cocoa-500">名称 *</label>
-            <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入学校名称" />
-          </div>
-          <div>
-            <label class="text-sm text-cocoa-500">编号前缀（2 位，必填）</label>
-            <input v-model="form.prefix" maxlength="2" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 uppercase" placeholder="如 BJ" />
-            <p v-if="codePreview" class="text-xs text-cocoa-400 mt-1">将生成编号：{{ codePreview }}（2 位前缀 + 5 位随机 + H，共 8 位）</p>
-          </div>
-          <div>
-            <label class="text-sm text-cocoa-500">地址（可选）</label>
-            <input v-model="form.address" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入地址" />
-          </div>
-          <div>
-            <label class="text-sm text-cocoa-500">状态</label>
-            <select v-model="form.status" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
-              <option value="active">启用</option>
-              <option value="inactive">停用</option>
-            </select>
-          </div>
+    <Modal v-model="showForm" :title="editingId ? '编辑学校' : '新增学校'" width="max-w-md">
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm text-cocoa-500">名称 *</label>
+          <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入学校名称" />
         </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="showForm = false">取消</button>
-          <button
-            class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-            :disabled="submitting || !form.name"
-            @click="submit"
-          >
-            {{ submitting ? '保存中…' : '保存' }}
-          </button>
+        <div>
+          <label class="text-sm text-cocoa-500">编号前缀（2 位，必填）</label>
+          <input v-model="form.prefix" maxlength="2" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 uppercase" placeholder="如 BJ" />
+          <p v-if="codePreview" class="text-xs text-cocoa-400 mt-1">将生成编号：{{ codePreview }}（2 位前缀 + 5 位随机 + H，共 8 位）</p>
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">地址（可选）</label>
+          <input v-model="form.address" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入地址" />
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">状态</label>
+          <select v-model="form.status" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+            <option value="active">启用</option>
+            <option value="inactive">停用</option>
+          </select>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
+        <button
+          class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
+          :disabled="submitting || !form.name"
+          @click="submit"
+        >
+          {{ submitting ? '保存中…' : '保存' }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>

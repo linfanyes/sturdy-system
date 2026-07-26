@@ -5,7 +5,7 @@
  * 支持：列表展示、新增、编辑、删除、按 classId 筛选、关键词搜索
  */
 import { ref, onMounted, computed, watch } from 'vue'
-import { Plus, Search, Edit3, Trash2 } from 'lucide-vue-next'
+import { Plus, Search, Edit3, Trash2, Inbox } from 'lucide-vue-next'
 import Modal from './Modal.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 
@@ -195,9 +195,9 @@ function fmtVal(row: any, f: FieldDef): string {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="card-soft">
     <!-- 顶栏 -->
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center justify-between gap-4 mb-4">
       <h1 class="text-2xl font-bold text-cocoa-900">{{ title }}管理</h1>
       <div class="flex items-center gap-2">
         <select
@@ -217,7 +217,7 @@ function fmtVal(row: any, f: FieldDef): string {
           />
         </div>
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
+          class="btn-pill bg-butter-500 text-white hover:bg-butter-600"
           @click="openCreate"
         >
           <Plus class="w-4 h-4" /> 新增
@@ -236,10 +236,20 @@ function fmtVal(row: any, f: FieldDef): string {
         </thead>
         <tbody class="divide-y divide-cream-100">
           <tr v-if="loading" class="text-center text-cocoa-400">
-            <td :colspan="listFields.length + 1" class="py-8">加载中…</td>
+            <td :colspan="listFields.length + 1" class="py-12">
+              <div class="flex flex-col items-center gap-2">
+                <div class="w-6 h-6 border-2 border-butter-500 border-t-transparent rounded-full animate-spin" />
+                <span class="text-sm">加载中…</span>
+              </div>
+            </td>
           </tr>
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
-            <td :colspan="listFields.length + 1" class="py-8">暂无数据</td>
+            <td :colspan="listFields.length + 1" class="py-12">
+              <div class="flex flex-col items-center gap-1">
+                <Inbox class="w-8 h-8 text-cocoa-300" />
+                <span class="text-sm">暂无数据</span>
+              </div>
+            </td>
           </tr>
           <tr v-for="row in filtered" :key="row.id" class="hover:bg-cream-50 transition-colors">
             <td v-for="f in listFields" :key="f.key" class="px-4 py-3 text-cocoa-700">{{ fmtVal(row, f) }}</td>

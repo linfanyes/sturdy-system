@@ -6,6 +6,7 @@ import {
   resetSchoolAdminPassword, toggleSchoolAdminEnabled, deleteSchoolAdmin,
   listSchools,
 } from '@/api/admin'
+import Modal from '@/components/Modal.vue'
 
 const loading = ref(false)
 const items = ref<any[]>([])
@@ -236,65 +237,59 @@ function formatTime(t?: string) {
     </div>
 
     <!-- 新增/编辑 Modal -->
-    <div v-if="showForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-cocoa-900 mb-4">{{ editingId ? '编辑管理员' : '新增管理员' }}</h3>
-        <div class="space-y-3">
+    <Modal v-model="showForm" :title="editingId ? '编辑管理员' : '新增管理员'" width="max-w-md">
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm text-cocoa-500">所属学校 *</label>
+          <select v-model="form.schoolId" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+            <option value="">请选择</option>
+            <option v-for="s in schools" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">姓名 *</label>
+          <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入姓名" />
+        </div>
+        <template v-if="!editingId">
           <div>
-            <label class="text-sm text-cocoa-500">所属学校 *</label>
-            <select v-model="form.schoolId" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
-              <option value="">请选择</option>
-              <option v-for="s in schools" :key="s.id" :value="s.id">{{ s.name }}</option>
-            </select>
+            <label class="text-sm text-cocoa-500">用户名 *</label>
+            <input v-model="form.username" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="登录用户名" />
           </div>
           <div>
-            <label class="text-sm text-cocoa-500">姓名 *</label>
-            <input v-model="form.name" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入姓名" />
+            <label class="text-sm text-cocoa-500">密码 *</label>
+            <input v-model="form.password" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="初始密码" />
           </div>
-          <template v-if="!editingId">
-            <div>
-              <label class="text-sm text-cocoa-500">用户名 *</label>
-              <input v-model="form.username" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="登录用户名" />
-            </div>
-            <div>
-              <label class="text-sm text-cocoa-500">密码 *</label>
-              <input v-model="form.password" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="初始密码" />
-            </div>
-          </template>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="showForm = false">取消</button>
-          <button
-            class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-            :disabled="submitting"
-            @click="submit"
-          >
-            {{ submitting ? '保存中…' : '保存' }}
-          </button>
-        </div>
+        </template>
       </div>
-    </div>
+      <template #footer>
+        <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
+        <button
+          class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
+          :disabled="submitting"
+          @click="submit"
+        >
+          {{ submitting ? '保存中…' : '保存' }}
+        </button>
+      </template>
+    </Modal>
 
     <!-- 重置密码 Modal -->
-    <div v-if="showReset" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-cocoa-900 mb-1">重置密码</h3>
-        <p class="text-sm text-cocoa-500 mb-4">为「{{ resetTarget?.name }}」设置新密码</p>
-        <div>
-          <label class="text-sm text-cocoa-500">新密码</label>
-          <input v-model="newPassword" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入新密码" />
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="showReset = false">取消</button>
-          <button
-            class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-            :disabled="resetting"
-            @click="submitReset"
-          >
-            {{ resetting ? '提交中…' : '确认重置' }}
-          </button>
-        </div>
+    <Modal v-model="showReset" title="重置密码" width="max-w-md">
+      <p class="text-sm text-cocoa-500 mb-4">为「{{ resetTarget?.name }}」设置新密码</p>
+      <div>
+        <label class="text-sm text-cocoa-500">新密码</label>
+        <input v-model="newPassword" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入新密码" />
       </div>
-    </div>
+      <template #footer>
+        <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showReset = false">取消</button>
+        <button
+          class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
+          :disabled="resetting"
+          @click="submitReset"
+        >
+          {{ resetting ? '提交中…' : '确认重置' }}
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
