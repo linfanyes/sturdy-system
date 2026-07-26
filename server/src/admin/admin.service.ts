@@ -309,21 +309,56 @@ export class AdminService implements OnModuleInit {
   /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号 */
   async resetAll(confirmed: boolean) {
     if (!confirmed) throw new BadRequestException('请确认重置操作（confirm: true）')
-    const tables = [
-      'students', 'classes', 'exams', 'grades', 'notes', 'todos', 'picker_history',
-      'backups', 'ai_settings', 'app_config', 'awards', 'generated',
-      'class_ops', 'duty_rosters', 'engagements', 'growth_records',
-      'parent_contacts', 'seats', 'gallery_items',
+
+    // 按依赖顺序排列所有业务表（先删子表再删父表，避免外键约束）
+    const allTables = [
+      // 第一层：叶子数据（无外键依赖）
+      'picker_history', 'todos', 'notes',
+      'ai_settings', 'app_config', 'audit_logs',
+      'paper_queries', 'generated_knowledges', 'generated_lesson_plans', 'generated_papers',
+      'notice_templates', 'notifications',
+      'semesters', 'teaching_calendar',
+      'backup_snapshots',
+      // 第二层：学生相关
+      'reading_logs', 'checkins', 'home_visits',
+      'behavior_records', 'growth_entries',
+      'parent_contacts',
+      'award_records', 'award_categories',
+      'score_records', 'reward_records', 'group_scores',
+      'grades', 'exams',
+      'homework',
+      'attendances',
+      'schedules',
+      'seat_layouts',
+      'resources',
+      'work_logs',
+      'lesson_observations', 'lesson_plan_templates',
+      'generated',
+      // 第三层：班级相关（含班级活动/班费/风采）
+      'class_members',
+      'class_activities', 'class_expenses', 'class_duty_configs',
+      'class_galleries', 'my_galleries',
+      'duty_rosters',
+      'students',
+      // 第四层：班级
+      'classes',
+      // 第五层：人员（教师+学校管理员）
+      'teachers',
+      'users',
+      'school_admins',
+      // 最终：学校（保留，仅当你希望连学校也清时取消注释下行）
+      // 'schools',
     ]
+
     await this.entityManager.transaction(async (em) => {
-      // 删除所有学校管理员和教师（raw query 避免 TypeORM delete({}) 空条件限制）
-      await em.query('DELETE FROM school_admins')
-      await em.query('DELETE FROM users')
-      // 删除所有业务数据表
-      for (const t of tables) {
-        try { await em.query(`DELETE FROM \`${t}\``) } catch (e) { /* 表不存在则跳过 */ }
+      for (const t of allTables) {
+        try {
+          await em.query(`DELETE FROM \`${t}\``)
+        } catch (e) {
+          // 表不存在则跳过（开发/测试环境可能缺少某些迁移表）
+        }
       }
     })
-    return { ok: true, message: '已清除所有管理员、教师、家长及业务数据，学校结构和超管账号保留' }
+    return { ok: true, message: '已清除所有管理员、教师（含无学校绑定）、家长及全部业务数据，学校结构和超管账号保留' }
   }
 }
