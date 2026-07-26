@@ -19,7 +19,7 @@ describe('AuthService', () => {
   let saRepo: { findOne: jest.Mock; save: jest.Mock }
   let studentRepo: { findOne: jest.Mock; save: jest.Mock }
   let schoolRepo: { findOne: jest.Mock }
-  let entityManager: { transaction: jest.Mock }
+  let entityManager: { transaction: jest.Mock; findOne: jest.Mock }
 
   beforeEach(() => {
     users = {
@@ -37,7 +37,7 @@ describe('AuthService', () => {
     saRepo = { findOne: jest.fn(), save: jest.fn() }
     studentRepo = { findOne: jest.fn(), save: jest.fn() }
     schoolRepo = { findOne: jest.fn() }
-    entityManager = { transaction: jest.fn() }
+    entityManager = { transaction: jest.fn(), findOne: jest.fn().mockResolvedValue(null) }
 
     service = new AuthService(
       users as unknown as UsersService,
