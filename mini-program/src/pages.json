@@ -468,7 +468,8 @@
         { "path": "speedmath" },
         { "path": "spelling" },
         { "path": "science" },
-        { "path": "geo" }
+        { "path": "geo" },
+        { "path": "story" }
       ]
     },
     {

@@ -110,6 +110,12 @@ const cats = [
       { label: '人文地理', icon: '🌍', path: '/pages/games/geo', desc: '10 道地理人文问答', ctrl: '点选答案', bg: '#fce4ec' },
     ],
   },
+  {
+    title: '创意写作', icon: '📖',
+    items: [
+      { label: '故事接龙', icon: '📚', path: '/pages/games/story', desc: '一人一句编故事，锻炼想象力与表达', ctrl: '文字输入，轮流接龙', bg: '#e8eaf6', tag: '新', tagType: 'new' },
+    ],
+  },
 ]
 
 const total = computed(() => cats.reduce((s, c) => s + c.items.length, 0))

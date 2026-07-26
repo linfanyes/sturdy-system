@@ -2,6 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Save, Bot, Settings, RefreshCw, Loader2 } from 'lucide-vue-next'
 import request from '@/api/request'
+import { useAuthStore } from '@/stores/auth'
+import { ROLE_PROMPTS, DEFAULT_TEACHER_PROMPT } from '@/constants/teacher-prompts'
+
+const auth = useAuthStore()
 
 const tab = ref<'ai' | 'app'>('ai')
 const loading = ref(false)
@@ -191,6 +195,13 @@ async function load() {
     // 再用教师个人配置覆盖（优先级更高）
     if (teacherRes) {
       Object.assign(aiForm, teacherRes)
+    }
+    // 如果 systemPrompt 仍为空，根据教师岗位自动填充默认提示词
+    if (!aiForm.systemPrompt && auth.user?.position) {
+      const matched = ROLE_PROMPTS[auth.user.position] || ROLE_PROMPTS[auth.user.position.replace(/教师$/, '')]
+      aiForm.systemPrompt = matched?.prompt || DEFAULT_TEACHER_PROMPT
+    } else if (!aiForm.systemPrompt) {
+      aiForm.systemPrompt = DEFAULT_TEACHER_PROMPT
     }
     refreshModels()
   } finally {

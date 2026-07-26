@@ -193,20 +193,44 @@ async function confirmImport() {
   }
 }
 
-function downloadTemplate() {
+function downloadTemplate(type: 'txt' | 'xls') {
   const meta = columns.value
   const header = meta.map((m) => m.label).join('\t')
   const sample = meta.map((m) => SAMPLES[props.type]?.[m.key] || '').join('\t')
-  const content = header + '\n' + sample + '\n'
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${props.type}-template.txt`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+
+  if (type === 'txt') {
+    const content = header + '\n' + sample + '\n'
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${props.type}-template.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } else {
+    // .xls: 用 HTML table 格式（Excel 可原生打开，无需 exceljs）
+    const rows = [meta.map((m) => m.label), meta.map((m) => SAMPLES[props.type]?.[m.key] || '')]
+    const html = [
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">',
+      '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>',
+      '<x:Name>Sheet1</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>',
+      '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>',
+      '<table>',
+      rows.map((r) => '<tr>' + r.map((c: string) => '<td>' + c + '</td>').join('') + '</tr>').join(''),
+      '</table></body></html>',
+    ].join('')
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${props.type}-template.xls`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 }
 
 function close() {
@@ -239,9 +263,15 @@ function close() {
         </button>
         <button
           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cream-200 text-cocoa-500 text-sm hover:bg-cream-50 transition-colors"
-          @click="downloadTemplate"
+          @click="downloadTemplate('txt')"
         >
-          下载模板
+          <FileText class="w-4 h-4" /> 模板 .txt
+        </button>
+        <button
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cream-200 text-cocoa-500 text-sm hover:bg-cream-50 transition-colors"
+          @click="downloadTemplate('xls')"
+        >
+          <FileText class="w-4 h-4" /> 模板 .xls
         </button>
         <span v-if="fileName" class="text-xs text-cocoa-500 truncate max-w-[200px]">{{ fileName }}</span>
       </div>

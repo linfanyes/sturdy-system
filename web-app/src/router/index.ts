@@ -183,6 +183,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'games/spelling', name: 'game-spelling', component: () => import('@/views/games/GameSpelling.vue'), meta: { title: '单词拼写', feature: 'games' } },
       { path: 'games/science-quiz', name: 'game-science-quiz', component: () => import('@/views/games/GameScienceQuiz.vue'), meta: { title: '科学知识', feature: 'games' } },
       { path: 'games/geo-quiz', name: 'game-geo-quiz', component: () => import('@/views/games/GameGeoQuiz.vue'), meta: { title: '人文地理', feature: 'games' } },
+      // 创意型小游戏
+      { path: 'games/story-chain', name: 'game-story-chain', component: () => import('@/views/games/GameStoryChain.vue'), meta: { title: '故事接龙', feature: 'games' } },
     ],
   },
   // 家长

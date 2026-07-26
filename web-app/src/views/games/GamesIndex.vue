@@ -36,6 +36,8 @@ const games: GameItem[] = [
   { name: '单词拼写', icon: '🔤', desc: '拼写英文单词', route: '/teacher/games/spelling' },
   { name: '科学知识', icon: '🔬', desc: '科学知识问答', route: '/teacher/games/science-quiz' },
   { name: '人文地理', icon: '🌍', desc: '地理人文问答', route: '/teacher/games/geo-quiz' },
+  // 创意型小游戏
+  { name: '故事接龙', icon: '📖', desc: '一人一句编故事（创意写作）', route: '/teacher/games/story-chain' },
 ]
 
 const cardColors = [

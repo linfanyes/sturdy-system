@@ -5,6 +5,7 @@ import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
 import { Repository, EntityManager } from 'typeorm'
 import { UsersService } from '../users/users.service'
 import { User } from '../users/user.entity'
+import { Teacher } from '../teacher/teacher.entity'
 import { WechatService } from './wechat.service'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
@@ -77,11 +78,13 @@ export class AuthService {
         await this.users.update(teacher.id, { passwordHash: newHash })
       }
       // 仅返回安全的字段，避免泄露 passwordHash/sessionKey
+      const teacherProfile = await this.entityManager.findOne(Teacher, { where: { id: teacher.id } }).catch(() => null)
       const safeUser = {
         id: teacher.id, name: teacher.name, username: teacher.username,
         school: teacher.school, schoolId: teacher.schoolId, phone: teacher.phone,
         features: teacher.features, enabled: teacher.enabled,
         avatar: teacher.avatar, teacherNo: teacher.teacherNo,
+        position: teacherProfile?.position || '',
       }
       return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }), user: safeUser }
     }

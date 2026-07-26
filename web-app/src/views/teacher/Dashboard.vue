@@ -254,6 +254,8 @@ onUnmounted(() => {
         <div>
           <div class="text-sm text-cocoa-500">当前教师</div>
           <div class="text-lg font-semibold text-cocoa-900 mt-0.5">{{ auth.user?.name }}</div>
+          <div v-if="auth.user?.position" class="text-xs text-cocoa-400 mt-0.5">{{ auth.user.position }}</div>
+          <div v-if="auth.user?.teacherNo" class="text-xs text-cocoa-400">编号：{{ auth.user.teacherNo }}</div>
         </div>
       </div>
       <div class="bg-white rounded-2xl p-5 shadow-softer flex items-center gap-4">

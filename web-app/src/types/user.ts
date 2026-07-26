@@ -8,6 +8,10 @@ export interface AuthUser {
   name: string
   schoolId?: string
   schoolName?: string
+  /** 教师岗位（如班主任、语文教师等） */
+  position?: string
+  /** 教师工号 */
+  teacherNo?: string
   /** 教师功能权限（仅 teacher 角色有值，空数组=全部可用） */
   features?: string[]
   /** 校管模块权限（仅 school_admin 角色有值） */
