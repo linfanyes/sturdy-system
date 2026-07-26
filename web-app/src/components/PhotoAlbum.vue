@@ -139,7 +139,7 @@ async function del(row: any) {
     </div>
 
     <div v-else class="grid grid-cols-3 gap-4">
-      <div v-for="row in filtered" :key="row.id" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div v-for="row in filtered" :key="row.id" class="table-wrap">
         <!-- 照片网格 -->
         <div class="grid grid-cols-2 gap-0.5 bg-cream-100" style="min-height: 8rem">
           <template v-if="row.photos?.length">

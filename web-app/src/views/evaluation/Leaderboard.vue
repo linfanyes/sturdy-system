@@ -62,7 +62,7 @@ const medalColor = (i: number) => i === 0 ? 'text-butter-500' : i === 1 ? 'text-
 
     <div v-if="loading" class="text-cocoa-400 text-sm py-4 text-center">加载中…</div>
 
-    <div v-else-if="ranking.length" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div v-else-if="ranking.length" class="table-wrap">
       <div class="px-4 py-3 bg-cream-100 text-cocoa-500 font-medium">排名（共 {{ ranking.length }} 人）</div>
       <div class="divide-y divide-cream-100">
         <div v-for="(r, i) in ranking" :key="r.name" class="flex items-center px-4 py-3 hover:bg-cream-50">

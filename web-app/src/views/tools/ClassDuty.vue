@@ -136,7 +136,7 @@ async function remove(row: any) {
     <div v-else-if="!items.length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       暂无职务，点击「新增职务」创建
     </div>
-    <div v-else class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div v-else class="table-wrap">
       <table class="w-full text-sm">
         <thead class="bg-cream-100 text-cocoa-500 text-left">
           <tr>

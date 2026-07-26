@@ -89,7 +89,7 @@ function fmtDate(s: string) {
     </div>
 
     <!-- 列表 -->
-    <div class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div class="table-wrap">
       <table class="w-full text-sm">
         <thead class="bg-cream-100 text-cocoa-500 text-left">
           <tr>

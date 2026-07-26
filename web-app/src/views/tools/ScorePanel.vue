@@ -147,7 +147,7 @@ watch(classId, onClassChange)
 
     <template v-else>
       <!-- 排行榜 -->
-      <div class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div class="table-wrap">
         <div class="flex items-center gap-2 px-4 py-3 bg-cream-100">
           <Trophy class="w-5 h-5 text-butter-500" />
           <span class="font-medium text-cocoa-700">实时排行榜</span>

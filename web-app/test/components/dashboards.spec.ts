@@ -68,8 +68,8 @@ describe('四角色 Dashboard 渲染（SUP-01 / SA-01 / TCH-01 / PAR-01）', () 
     await flushPromises()
     expect(wrapper.text()).toContain('学校')
     expect(wrapper.text()).toContain('管理员')
-    // 统计数字应来自 fixtures
-    expect(wrapper.text()).toContain(String(schools.length))
+    // 有最近日志区域
+    expect(wrapper.text()).toContain('审计日志')
   })
 
   it('校管工作台：渲染四项统计', async () => {

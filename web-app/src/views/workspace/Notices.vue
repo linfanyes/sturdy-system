@@ -277,7 +277,7 @@ function applyTemplate(t: any) {
     </div>
 
     <!-- 列表 -->
-    <div class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div class="table-wrap">
       <div v-if="loading" class="py-12 flex items-center justify-center text-cocoa-400">
         <Loader2 class="w-5 h-5 animate-spin mr-2" /> 加载中…
       </div>

@@ -147,7 +147,7 @@ async function handleDelete(row: any) {
     </div>
 
     <!-- 列表 -->
-    <div class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div class="table-wrap">
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left text-sm text-cocoa-500 border-b border-cream-200">

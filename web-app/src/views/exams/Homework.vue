@@ -253,7 +253,7 @@ function statusBadge(s?: string) {
         </div>
 
         <!-- 班级分组卡片 -->
-        <div v-for="group in groupedByClass" :key="group.classId" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+        <div v-for="group in groupedByClass" :key="group.classId" class="table-wrap">
           <!-- 班级头部 -->
           <button
             class="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-cream-50 transition-colors"

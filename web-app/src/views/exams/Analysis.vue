@@ -99,7 +99,7 @@ async function onClassChange() {
 
     <div v-if="loading" class="text-cocoa-400 text-sm py-4 text-center">加载中…</div>
 
-    <div v-else-if="stats.length" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+    <div v-else-if="stats.length" class="table-wrap">
       <table class="w-full text-sm">
         <thead class="bg-cream-100 text-cocoa-500 text-left">
           <tr>
