@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Post,
+  Patch,
   Param,
   Body,
   UseGuards,
@@ -82,5 +83,63 @@ export class ConfigController {
   @UseGuards(JwtAuthGuard)
   listProviderModels(@Body() dto: { provider?: string; baseUrl?: string; apiKey?: string }) {
     return this.cfg.listProviderModels(dto || {})
+  }
+
+  /**
+   * 教师读取平台 AI 默认配置（作为教师个人 AI 设置的兜底默认值）。
+   * 复用 getAiSettings：无教师个人设置时回退平台默认值。
+   */
+  @Roles('teacher')
+  @Get('teacher/ai-defaults')
+  @UseGuards(JwtAuthGuard)
+  getTeacherAiDefaults(@CurrentTeacher() t: any) {
+    return this.cfg.getAiSettings(t.sub)
+  }
+
+  /** 教师读取个人 AI 设置（无则回退平台默认值） */
+  @Roles('teacher')
+  @Get('ai-settings')
+  @UseGuards(JwtAuthGuard)
+  getAiSettings(@CurrentTeacher() t: any) {
+    return this.cfg.getAiSettings(t.sub)
+  }
+
+  /** 教师保存个人 AI 设置（web 用 PATCH；保留原有 @Put('ai') 超管域不变） */
+  @Roles('teacher')
+  @Patch('ai-settings')
+  @UseGuards(JwtAuthGuard)
+  saveAiSettings(@CurrentTeacher() t: any, @Body() dto: any) {
+    return this.cfg.saveAiSettings(t.sub, dto)
+  }
+
+  /**
+   * 教师读取平台应用配置（脱敏），返回 { key: value } 映射，
+   * 前端 Object.assign 直接覆盖到应用配置表单。密钥类字段脱敏下发。
+   */
+  @Roles('teacher')
+  @Get('app-config')
+  @UseGuards(JwtAuthGuard)
+  async getAppConfig() {
+    const rows = await this.cfg.listAppConfig()
+    const map: Record<string, string> = {}
+    for (const r of rows) {
+      map[r.key] = SECRET_KEYS.has(r.key) ? maskSecret(r.value) : r.value
+    }
+    return map
+  }
+
+  /**
+   * 教师保存应用偏好（如 theme/semester/schoolYear）。
+   * 仅允许非敏感的特定键，避免越权改写平台敏感配置（apiKey/secret 等仍由超管 @Put('app') 管理）。
+   */
+  @Roles('teacher')
+  @Patch('app-config')
+  @UseGuards(JwtAuthGuard)
+  async saveTeacherAppConfig(@Body() body: { theme?: string; semester?: string; schoolYear?: string }) {
+    const allowed = ['theme', 'semester', 'schoolYear']
+    const items = allowed
+      .filter((k) => (body as any)?.[k] !== undefined)
+      .map((k) => ({ key: k, value: String((body as any)[k]) }))
+    return this.cfg.saveAppConfig(items)
   }
 }

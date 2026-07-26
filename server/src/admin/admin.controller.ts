@@ -35,6 +35,12 @@ export class AdminController {
     return this.svc.listSchools(Number(skip) || 0, Number(take) || 100)
   }
 
+  @Get('schools/:id')
+  @UseGuards(JwtAuthGuard)
+  getSchool(@Param('id') id: string) {
+    return this.svc.getSchool(id)
+  }
+
   @Post('schools')
   @UseGuards(JwtAuthGuard)
   createSchool(@Body() b: CreateSchoolDto) { return this.svc.createSchool(b) }

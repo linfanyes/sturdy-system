@@ -33,6 +33,15 @@ class ClassesService extends CrudService<ClassItem> {
   }
 
   /**
+   * 班级实体本身没有 classId 列：其 id 即是班级 id。
+   * 按"教师可访问的班级集合"过滤时，应使用 id 而非 classId，避免
+   * "Property classId was not found in ClassItem" 导致 GET /classes 崩溃。
+   */
+  protected classScopeField(): 'classId' | 'id' {
+    return 'id'
+  }
+
+  /**
    * 禁止老师端自建班级：班主任身份必须由学校管理员指定（createClass 接口）。
    * 老师 self-service 建班会绕过校管授权，导致权责不清。
    * 如需建班请走 POST /school-admin/classes（需校管登录态）。

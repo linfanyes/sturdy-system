@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, OnModuleInit } from '@nestjs/common'
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
@@ -146,6 +146,13 @@ export class AdminService implements OnModuleInit {
       order: { createdAt: 'DESC' }, skip, take,
     })
     return { items, total }
+  }
+
+  /** 学校详情 */
+  async getSchool(id: string) {
+    const s = await this.schoolRepo.findOne({ where: { id } })
+    if (!s) throw new NotFoundException('学校不存在')
+    return s
   }
 
   /** 新增学校：编号 = 2 位前缀 + 5 位随机 + 平台后缀(H/W)，共 8 位 */

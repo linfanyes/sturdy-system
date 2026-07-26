@@ -23,7 +23,7 @@ import { AiService } from '../ai/ai.service'
 /** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
 const TEACHER_ID_TABLES = [
   'students', 'exams', 'grades', 'notes', 'todos', 'picker_history',
-  'backups', 'ai_settings', 'app_config', 'awards', 'generated',
+  'backup_snapshots', 'ai_settings', 'app_config', 'awards', 'generated',
   'class_ops', 'duty_rosters', 'engagements', 'growth_records',
   'parent_contacts', 'seats', 'gallery_items',
   'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',

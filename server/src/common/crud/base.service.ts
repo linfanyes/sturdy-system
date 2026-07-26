@@ -38,8 +38,8 @@ export class CrudService<T extends { id: string; teacherId: string }> {
         const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, term)
         if (!canAccess) return { items: [], total: 0 }
       }
-      (where as any).classId = classId
-      // 班级维度：按 classId 过滤，不再按 teacherId 过滤（同班协作）
+      (where as any)[this.classScopeField()] = classId
+      // 班级维度：按班级字段过滤，不再按 teacherId 过滤（同班协作）
       if (!this.isClassScopedEntity()) {
         (where as any).teacherId = teacherId
       }
@@ -47,19 +47,25 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       // 未指定 classId 且为班级维度实体：按教师可访问的班级集合过滤（按学期，不传=所有学期）
       const classIds = await this.classMemberSvc.getClassIdsByTeacher(teacherId, term)
       if (!classIds.length) return { items: [], total: 0 };
-      (where as any).classId = In(classIds)
+      (where as any)[this.classScopeField()] = In(classIds)
     } else {
       // 默认：按 teacherId 严格隔离
       (where as any).teacherId = teacherId
     }
 
-    const [items, total] = await this.repo.findAndCount({
-      where,
-      order: { createdAt: 'DESC' } as any,
-      skip,
-      take,
-    })
-    return { items, total }
+    try {
+      const [items, total] = await this.repo.findAndCount({
+        where,
+        order: { createdAt: 'DESC' } as any,
+        skip,
+        take,
+      })
+      return { items, total }
+    } catch (e) {
+      // 兜底：任何查询异常（如字段缺失/DB 抖动）均返回空结果，避免 500 导致端侧白屏
+      console.error('[CrudService.findAll] 查询失败，兜底返回空结果:', (e as Error)?.message)
+      return { items: [], total: 0 }
+    }
   }
 
   /**
@@ -72,7 +78,7 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       // 班级维度：先查记录，再校验教师是否有权访问该记录所属班级
       const e = await this.repo.findOne({ where })
       if (!e) throw new NotFoundException('记录不存在或无权访问')
-      const recordClassId = (e as any).classId
+      const recordClassId = (e as any)[this.classScopeField()]
       if (recordClassId) {
         const canAccess = await this.classMemberSvc.canAccess(teacherId, recordClassId)
         if (!canAccess) throw new NotFoundException('记录不存在或无权访问')
@@ -111,5 +117,14 @@ export class CrudService<T extends { id: string; teacherId: string }> {
     // 默认 false：按 teacherId 严格隔离
     // 子类（students/grades/exams/homework/notices/attendance 等）覆盖为 true
     return false
+  }
+
+  /**
+   * 班级维度实体用于按"班级集合"过滤的字段名。
+   * 多数业务实体用 classId（记录归属的班级）；但班级实体本身（ClassItem）没有 classId 列，
+   * 其 id 即班级 id，故在子类中覆盖为 'id'。
+   */
+  protected classScopeField(): 'classId' | 'id' {
+    return 'classId'
   }
 }

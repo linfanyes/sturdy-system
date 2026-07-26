@@ -10,6 +10,14 @@ export default defineConfig({
   server: {
     port: 5202,
     host: 'localhost',
+    proxy: {
+      // 开发模式直连云托管后端（无需本地启动 server）
+      '/api': {
+        target: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   build: {
     sourcemap: false,
@@ -26,7 +34,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@gardener/shared': path.resolve(__dirname, '../../shared'),
+      '@gardener/shared': path.resolve(__dirname, '../shared'),
     },
   },
 })

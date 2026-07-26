@@ -14,6 +14,7 @@ export default {
         butter: {
           50: 'rgb(var(--butter-50) / <alpha-value>)',
           100: 'rgb(var(--butter-100) / <alpha-value>)',
+          200: 'rgb(var(--butter-200) / <alpha-value>)',
           300: 'rgb(var(--butter-300) / <alpha-value>)',
           400: 'rgb(var(--butter-400) / <alpha-value>)',
           500: 'rgb(var(--butter-500) / <alpha-value>)',
