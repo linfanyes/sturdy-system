@@ -1,5 +1,5 @@
 {
-  "name": "@techer/shared",
+  "name": "@gardener/shared",
   "version": "1.0.0",
   "description": "Techer 共享类型、常量、校验器 - Web端、小程序端、后端服务的单一事实来源",
   "type": "module",

@@ -11,6 +11,7 @@ import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { hashPassword } from '../common/utils/password.util'
 import { BusinessException } from '../common/exceptions/business.exception'
+import { AuditService } from '../audit/audit.service'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -23,81 +24,79 @@ export class AdminService implements OnModuleInit {
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectEntityManager() private readonly entityManager: EntityManager,
+    private readonly audit: AuditService,
   ) {}
 
   /** 启动时自动检测种子数据，核心账号不存在时自动重建 */
   async onModuleInit() {
     try {
       const adminCount = await this.userRepo.count({ where: { username: 'admin' } } as any)
-      // 仅检测 admin 用户；不存在则创建默认学校/校管/教师
-      // 超管账号来自环境变量，无需重建
       if (adminCount === 0) {
         console.log('[Seed] 未检测到管理员账号，自动重建种子数据…')
-        // 学校
-        let schools = await this.schoolRepo.find()
-        if (schools.length === 0) {
-          const s1 = this.schoolRepo.create({ code: 'SCH001', name: '阳光实验小学', address: '默认地址' })
-          const s2 = this.schoolRepo.create({ code: 'SCH002', name: '明德小学' })
-          schools = await this.schoolRepo.save([s1, s2])
-          console.log('[Seed] 已创建 2 所默认学校')
-        }
-        // 学校管理员
-        const saCount = await this.saRepo.count()
-        if (saCount === 0 && schools.length >= 1) {
-          const pwd = hashPassword('123456')
-          const sa1 = this.saRepo.create({ username: 'sa1', passwordHash: pwd, name: '赵主任', schoolId: schools[0].id, enabled: true })
-          const sa2 = this.saRepo.create({ username: 'sa2', passwordHash: pwd, name: '钱主任', schoolId: schools[schools.length - 1]?.id || schools[0].id, enabled: true })
-          await this.saRepo.save([sa1, sa2])
-          console.log('[Seed] 已创建 2 名默认学校管理员 (sa1/sa2)')
-        }
-        // 教师用户
-        const userCount = await this.userRepo.count()
-        if (userCount === 0 && schools.length >= 1) {
-          const pwd = hashPassword('123456')
-          const teachers = [
-            { name: '王老师', username: 'teacher1', subject: '语文', enabled: true },
-            { name: '李老师', username: 'teacher2', subject: '数学', enabled: true },
-            { name: '张老师', username: 'teacher3', subject: '英语', enabled: true },
-            { name: '陈老师', username: 'teacher4', subject: '音乐', enabled: true },
-          ]
-          for (const t of teachers) {
-            const u = this.userRepo.create({
-              ...t, schoolId: schools[0].id, school: schools[0].name,
-              passwordHash: pwd, phone: '', teacherNo: '',
-            } as any)
-            await this.userRepo.save(u)
-          }
-          console.log('[Seed] 已创建 4 名默认教师 (teacher1~teacher4)')
-        }
-        // 班级
-        const classCount = await this.classRepo.count()
-        if (classCount === 0) {
-          const [wang, li] = await this.userRepo.find({ where: { username: 'teacher1' } } as any)
-          const c1 = this.classRepo.create({ teacherId: wang.id, name: '一年级一班', grade: '一年级', classNo: '1', headTeacher: wang.name, term: '2026春季学期', subjects: ['语文','数学','英语'], color: 'butter' })
-          const c2 = this.classRepo.create({ teacherId: li?.id || wang.id, name: '二年级二班', grade: '二年级', classNo: '2', headTeacher: li?.name || wang.name, term: '2026春季学期', subjects: ['语文','数学','英语','科学'], color: 'rose' })
-          const classes = await this.classRepo.save([c1, c2])
-          console.log('[Seed] 已创建 2 个默认班级')
-          // 学生
-          const stuCount = await this.studentRepo.count()
-          if (stuCount === 0) {
-            const stus = [
-              // c1 一年级一班 6人
-              { classId: classes[0].id, teacherId: wang.id, name: '张小明', gender: '男', studentNo: '2024001', parentName: '张伟', parentPhone: '13800001001' },
-              { classId: classes[0].id, teacherId: wang.id, name: '李小华', gender: '女', studentNo: '2024002', parentName: '李强', parentPhone: '13800001002' },
-              { classId: classes[0].id, teacherId: wang.id, name: '王小芳', gender: '女', studentNo: '2024003' },
-              { classId: classes[0].id, teacherId: wang.id, name: '赵小刚', gender: '男', studentNo: '2024004' },
-              { classId: classes[0].id, teacherId: wang.id, name: '刘思琪', gender: '女', studentNo: '2024005' },
-              { classId: classes[0].id, teacherId: wang.id, name: '孙浩然', gender: '男', studentNo: '2024006' },
-            ]
-            await this.studentRepo.save(stus.map(s => this.studentRepo.create(s)))
-            console.log('[Seed] 已创建 6 名默认学生（一年级一班）')
-          }
-        }
-        console.log('[Seed] 种子数据自动重建完成')
+        await this.seedDemoData()
       }
     } catch (e) {
       console.warn('[Seed] 自动重建失败（首次启动时表可能尚未就绪，可忽略）:', (e as Error).message)
     }
+  }
+
+  /** 重建演示模式种子数据（学校/校管/教师/班级/学生） */
+  async seedDemoData() {
+    let schools = await this.schoolRepo.find()
+    if (schools.length === 0) {
+      const s1 = this.schoolRepo.create({ code: 'SCH001', name: '阳光实验小学', address: '默认地址' })
+      const s2 = this.schoolRepo.create({ code: 'SCH002', name: '明德小学' })
+      schools = await this.schoolRepo.save([s1, s2])
+      console.log('[Seed] 已创建 2 所默认学校')
+    }
+    const saCount = await this.saRepo.count()
+    if (saCount === 0 && schools.length >= 1) {
+      const pwd = hashPassword('123456')
+      const sa1 = this.saRepo.create({ username: 'sa1', passwordHash: pwd, name: '赵主任', schoolId: schools[0].id, enabled: true })
+      const sa2 = this.saRepo.create({ username: 'sa2', passwordHash: pwd, name: '钱主任', schoolId: schools[schools.length - 1]?.id || schools[0].id, enabled: true })
+      await this.saRepo.save([sa1, sa2])
+      console.log('[Seed] 已创建 2 名默认学校管理员 (sa1/sa2)')
+    }
+    const userCount = await this.userRepo.count()
+    if (userCount === 0 && schools.length >= 1) {
+      const pwd = hashPassword('123456')
+      const teachers = [
+        { name: '王老师', username: 'teacher1', subject: '语文', enabled: true },
+        { name: '李老师', username: 'teacher2', subject: '数学', enabled: true },
+        { name: '张老师', username: 'teacher3', subject: '英语', enabled: true },
+        { name: '陈老师', username: 'teacher4', subject: '音乐', enabled: true },
+      ]
+      for (const t of teachers) {
+        const u = this.userRepo.create({
+          ...t, schoolId: schools[0].id, school: schools[0].name,
+          passwordHash: pwd, phone: '', teacherNo: '',
+        } as any)
+        await this.userRepo.save(u)
+      }
+      console.log('[Seed] 已创建 4 名默认教师 (teacher1~teacher4)')
+    }
+    const classCount = await this.classRepo.count()
+    if (classCount === 0) {
+      const [wang, li] = await this.userRepo.find({ where: { username: 'teacher1' } } as any)
+      const c1 = this.classRepo.create({ teacherId: wang.id, name: '一年级一班', grade: '一年级', classNo: '1', headTeacher: wang.name, term: '2026春季学期', subjects: ['语文','数学','英语'], color: 'butter' })
+      const c2 = this.classRepo.create({ teacherId: li?.id || wang.id, name: '二年级二班', grade: '二年级', classNo: '2', headTeacher: li?.name || wang.name, term: '2026春季学期', subjects: ['语文','数学','英语','科学'], color: 'rose' })
+      const classes = await this.classRepo.save([c1, c2])
+      console.log('[Seed] 已创建 2 个默认班���')
+      const stuCount = await this.studentRepo.count()
+      if (stuCount === 0) {
+        const stus = [
+          { classId: classes[0].id, teacherId: wang.id, name: '张小明', gender: '男', studentNo: '2024001', parentName: '张伟', parentPhone: '13800001001' },
+          { classId: classes[0].id, teacherId: wang.id, name: '李小华', gender: '女', studentNo: '2024002', parentName: '李强', parentPhone: '13800001002' },
+          { classId: classes[0].id, teacherId: wang.id, name: '王小芳', gender: '女', studentNo: '2024003' },
+          { classId: classes[0].id, teacherId: wang.id, name: '赵小刚', gender: '男', studentNo: '2024004' },
+          { classId: classes[0].id, teacherId: wang.id, name: '刘思琪', gender: '女', studentNo: '2024005' },
+          { classId: classes[0].id, teacherId: wang.id, name: '孙浩然', gender: '男', studentNo: '2024006' },
+        ]
+        await this.studentRepo.save(stus.map(s => this.studentRepo.create(s)))
+        console.log('[Seed] 已创建 6 名默认学生（一年级一班）')
+      }
+    }
+    console.log('[Seed] 种子数据自动重建完成')
   }
 
   /** 超管登录 → JWT */
@@ -313,8 +312,8 @@ export class AdminService implements OnModuleInit {
     return { ok: true }
   }
 
-  /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号 */
-  async resetAll(confirmed: boolean) {
+  /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号，然后恢复演示种子数据 */
+  async resetAll(confirmed: boolean, operator = 'super') {
     if (!confirmed) throw new BadRequestException('请确认重置操作（confirm: true）')
 
     // 按依赖顺序排列所有业务表（先删子表再删父表，避免外键约束）
@@ -341,10 +340,11 @@ export class AdminService implements OnModuleInit {
       'work_logs',
       'lesson_observations', 'lesson_plan_templates',
       'generated',
-      // 第三层：班级相关（含班级活动/班费/风采）
+      // 第三层：班级相关（含班级活动/公告/班费/风采）
       'class_members',
       'class_activities', 'class_expenses', 'class_duty_configs',
       'class_galleries', 'my_galleries',
+      'notices',
       'duty_rosters',
       'students',
       // 第四层：班级
@@ -353,8 +353,6 @@ export class AdminService implements OnModuleInit {
       'teachers',
       'users',
       'school_admins',
-      // 最终：学校（保留，仅当你希望连学校也清时取消注释下行）
-      // 'schools',
     ]
 
     await this.entityManager.transaction(async (em) => {
@@ -366,6 +364,91 @@ export class AdminService implements OnModuleInit {
         }
       }
     })
-    return { ok: true, message: '已清除所有管理员、教师（含无学校绑定）、家长及全部业务数据，学校结构和超管账号保留' }
+
+    // 恢复演示种子���据（学校/校管/教师/班级/学生）
+    await this.seedDemoData()
+
+    // 记录审计日志
+    try {
+      await this.audit.log('', 'system_reset_all', operator, '全系统', '一键重置：清除所有业务数据并恢复演示种子数据')
+    } catch { /* audit 失败不应阻断主流程 */ }
+
+    return { ok: true, message: '已清除所有管理员、教师、家长及业务数据，已恢复演示种子数据，学校结构和超管账号保留' }
+  }
+
+  /** 超管获取所有教师列表 */
+  async listTeachers(skip = 0, take = 500) {
+    const [items, total] = await this.userRepo.findAndCount({
+      order: { createdAt: 'DESC' }, skip, take,
+    })
+    // 关联学校名称
+    const schoolIds = [...new Set(items.map(u => u.schoolId).filter(Boolean))]
+    const schools = schoolIds.length ? await this.schoolRepo.find({ where: schoolIds.map(id => ({ id })) }) : []
+    const schoolMap = new Map(schools.map(s => [s.id, s.name]))
+    const list = items.map(u => ({
+      id: u.id, name: u.name, username: u.username, subject: u.subject,
+      schoolId: u.schoolId, schoolName: schoolMap.get(u.schoolId) || '',
+      teacherNo: u.teacherNo, phone: u.phone, enabled: u.enabled,
+      createdAt: u.createdAt,
+    }))
+    return { items: list, total }
+  }
+
+  /** 清除单个教师的业务数据（保留教师账号，仅清除其创建的记录） */
+  async clearTeacherData(teacherId: string, operator = 'super') {
+    const user = await this.userRepo.findOne({ where: { id: teacherId } })
+    if (!user) throw new BadRequestException('教师不存在')
+
+    // 所有包含 teacherId 的业务表（与 resetAll 清单一致，排除 schools/classes/students/teachers 等共享表）
+    const dataTables = [
+      // 个人数据
+      'notes', 'todos', 'picker_history',
+      'ai_settings', 'app_config',
+      'paper_queries', 'generated_papers', 'generated_lesson_plans', 'generated_knowledges',
+      'notice_templates', 'notifications',
+      'semesters', 'teaching_calendar',
+      'backup_snapshots',
+      // 教学数据
+      'reading_logs', 'checkins', 'home_visits',
+      'behavior_records', 'growth_entries',
+      'parent_contacts',
+      'award_records', 'award_categories',
+      'score_records', 'reward_records', 'group_scores',
+      'grades', 'exams',
+      'homework',
+      'attendances',
+      'schedules',
+      'seat_layouts',
+      'resources',
+      'work_logs',
+      'lesson_observations', 'lesson_plan_templates',
+      // 班级相关
+      'class_members',
+      'class_activities', 'class_expenses', 'class_duty_configs',
+      'class_galleries', 'my_galleries',
+      'notices',
+      'duty_rosters',
+    ]
+
+    await this.entityManager.transaction(async (em) => {
+      for (const t of dataTables) {
+        try {
+          await em.query(`DELETE FROM \`${t}\` WHERE teacherId = ?`, [teacherId])
+        } catch (e) {
+          // 表不存在则跳过
+        }
+      }
+      // 清除教师个人资料（teachers 表）
+      try {
+        await em.query(`DELETE FROM \`teachers\` WHERE id = ?`, [teacherId])
+      } catch { /* teachers 表可能无此记录 */ }
+    })
+
+    // 记录审计日志
+    try {
+      await this.audit.log(user.schoolId || '', 'clear_teacher_data', operator, user.name + '(' + user.username + ')', '清理教师业务数据')
+    } catch { /* audit 失败不应阻断主流程 */ }
+
+    return { ok: true, message: `已清除教师「${user.name}」的所有业务数据，教师账号已保留` }
   }
 }

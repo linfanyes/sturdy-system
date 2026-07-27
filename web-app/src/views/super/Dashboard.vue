@@ -2,8 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { listSchools, listSchoolAdmins, listAuditLogs } from '@/api/admin'
-import { Sparkles, School, Users, FileText, Settings, ArrowRight, Loader2, TrendingUp, Clock, Activity, BarChart3 } from 'lucide-vue-next'
+import { listSchools, listSchoolAdmins, listAuditLogs, resetAll } from '@/api/admin'
+import { Sparkles, School, Users, FileText, Settings, ArrowRight, Loader2, TrendingUp, Clock, Activity, BarChart3, Trash2 } from 'lucide-vue-next'
 import SvgBarChart from '@/components/SvgBarChart.vue'
 import SvgPieChart from '@/components/SvgPieChart.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
@@ -49,7 +49,7 @@ function schoolEnabledRate_list(active: number, total: number) {
 }
 
 // 学校学生容量（按总校均 30 学生估算）
-const studentCapacityList = computed(() => [
+const studentCapacityList = ref<{ label: string; value: number; total: number }[]>([
   { label: '当前学生', value: 0, total: 0 },
   { label: '预估容量', value: 0, total: 0 }
 ])
@@ -127,17 +127,43 @@ function shortTime(t?: string): string {
   if (!t) return ''
   return new Date(t).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
-function logIcon(type?: string): string {
-  const m: Record<string, string> = { login: '🔑', create: '✅', update: '✏️', delete: '🗑️' }
+
+const logIcon = (type?: string): string => {
+  const m: Record<string, string> = { login: '🔑', create: '✅', update: '✏️', delete: '🗑️', system_reset_all: '🔄' }
   return m[type || ''] || '📋'
 }
 
-const quickLinks = [
-  { label: '学校管理', desc: '管理所有学校', to: '/super/schools', icon: School, color: 'blue' },
-  { label: '管理员管理', desc: '管理学校管理员', to: '/super/admins', icon: Users, color: 'purple' },
-  { label: '审计日志', desc: '系统操作记录', to: '/super/audit-logs', icon: FileText, color: 'cocoa' },
-  { label: '平台配置', desc: 'AI/微信/IM配置', to: '/super/config', icon: Settings, color: 'cream' }
-]
+const resetting = ref(false)
+const resetConfirmText = ref('')
+const showResetDialog = ref(false)
+
+async function doResetAll() {
+  if (resetConfirmText.value.trim() !== '确认清除') {
+    toast('请输入「确认清除」以继续')
+    return
+  }
+  resetting.value = true
+  try {
+    await resetAll(true)
+    toast('已清除并恢复演示数据')
+    showResetDialog.value = false
+    resetConfirmText.value = ''
+    load()
+  } catch (e: any) {
+    toast(e?.message || '操作失败')
+  } finally {
+    resetting.value = false
+  }
+}
+
+function toast(msg: string) {
+  // 使用简单的浏览器 toast，避免引入新依赖
+  const el = document.createElement('div')
+  el.textContent = msg
+  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;animation:toastIn .3s'
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 2500)
+}
 </script>
 
 <template>
@@ -239,52 +265,90 @@ const quickLinks = [
       />
     </div>
 
-    <!-- 最近日志 + 快捷入口 -->
-    <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
-        <div class="text-sm font-semibold text-cocoa-700 mb-3 flex items-center justify-between">
-          <span>📋 最近审计日志</span>
-          <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="router.push('/super/audit-logs')">
-            全部 →
-          </button>
-        </div>
-        <div v-if="loading" class="text-cocoa-400 text-sm text-center py-6">加载中…</div>
-        <div v-else-if="!recentLogs.length" class="text-cocoa-400 text-sm text-center py-6">暂无日志</div>
-        <div v-else class="space-y-1">
-          <div v-for="(l, i) in recentLogs" :key="i" class="flex items-center gap-3 py-2 border-b border-cream-100/50 last:border-0 text-sm">
-            <span class="text-base">{{ logIcon(l.action || l.type) }}</span>
-            <span class="text-cocoa-600 flex-1 truncate">{{ l.detail || l.message || '-' }}</span>
-            <span class="text-cocoa-400 text-xs whitespace-nowrap">{{ shortTime(l.createdAt) }}</span>
-          </div>
+    <!-- 最近日志 -->
+    <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="text-sm font-semibold text-cocoa-700 mb-3 flex items-center justify-between">
+        <span>📋 最近审计日志</span>
+        <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="router.push('/super/audit-logs')">
+          全部 →
+        </button>
+      </div>
+      <div v-if="loading" class="text-cocoa-400 text-sm text-center py-6">加载中…</div>
+      <div v-else-if="!recentLogs.length" class="text-cocoa-400 text-sm text-center py-6">暂无日志</div>
+      <div v-else class="space-y-1">
+        <div v-for="(l, i) in recentLogs" :key="i" class="flex items-center gap-3 py-2 border-b border-cream-100/50 last:border-0 text-sm">
+          <span class="text-base">{{ logIcon(l.action || l.type) }}</span>
+          <span class="text-cocoa-600 flex-1 truncate">{{ l.detail || l.message || '-' }}</span>
+          <span class="text-cocoa-400 text-xs whitespace-nowrap">{{ shortTime(l.createdAt) }}</span>
         </div>
       </div>
-      <div class="space-y-4">
-        <h3 class="text-sm font-semibold text-cocoa-700 flex items-center gap-2">
-          <Sparkles class="w-4 h-4 text-butter-400" /> 快捷入口
-        </h3>
-        <button v-for="l in quickLinks" :key="l.to" class="quick-card w-full text-left" @click="router.push(l.to)">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 rounded-xl flex items-center justify-center"
-                :class="{
-                  'bg-blue-100 text-blue-600': l.color === 'blue',
-                  'bg-purple-100 text-purple-600': l.color === 'purple',
-                  'bg-cocoa-100 text-cocoa-600': l.color === 'cocoa',
-                  'bg-butter-100 text-butter-600': !l.color || l.color === 'cream'
-                }"
-              >
-                <component :is="l.icon" class="w-5 h-5" />
-              </div>
-              <div>
-                <div class="font-semibold text-cocoa-900 text-sm">{{ l.label }}</div>
-                <div class="text-xs text-cocoa-400">{{ l.desc }}</div>
-              </div>
-            </div>
-            <ArrowRight class="w-4 h-4 text-cocoa-300" />
+    </div>
+
+    <!-- 危险操作区 -->
+    <div class="bg-red-50/60 rounded-2xl p-5 shadow-softer border border-red-100">
+      <div class="text-sm font-semibold text-red-700 mb-2">⚠️ 危险操作区</div>
+      <div class="text-xs text-red-500/80 mb-3">以下操作不可恢复，请谨慎操作。一键重置会清除所有管理员、教师、家长及业务数据，并自动恢复演示种子数据。</div>
+      <button class="btn-danger" :disabled="resetting" @click="showResetDialog = true">
+        <Trash2 class="w-4 h-4 inline-block mr-1" />
+        {{ resetting ? '处理中…' : '一键清除（恢复演示数据）' }}
+      </button>
+    </div>
+
+    <!-- 一键清除确认弹窗 -->
+    <div v-if="showResetDialog" class="modal-mask" @click.self="showResetDialog = false">
+      <div class="modal">
+        <div class="modal-h"><h3>确认一键清除</h3><span class="modal-close" @click="showResetDialog = false">×</span></div>
+        <div class="modal-body">
+          <div class="text-sm text-cocoa-700 mb-2">此操作将：</div>
+          <ul class="text-sm text-cocoa-600 list-disc pl-5 space-y-1 mb-3">
+            <li>清除所有学校管理员、教师、家长账号及登录信息</li>
+            <li>清除所有业务数据（成绩、考勤、作业、通知等）</li>
+            <li>保留学校结构和超管账号</li>
+            <li>自动恢复演示种子数据（2 所学校、2 名校管、4 名教师、2 个班级、6 名学生）</li>
+          </ul>
+          <div class="text-sm text-red-600 mb-2">此操作不可撤销，请谨慎操作。</div>
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-cocoa-700 mb-1">请输入「确认清除」继续</label>
+            <input v-model="resetConfirmText" class="w-full" placeholder="确认清除" />
           </div>
-        </button>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-outline" @click="showResetDialog = false">取消</button>
+          <button class="btn-danger" :disabled="resetting || resetConfirmText.trim() !== '确认清除'" @click="doResetAll()">
+            {{ resetting ? '处理中…' : '确认清除' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style>
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 10px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-danger:hover:not(:disabled) { background: #c0392b; }
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+</style>

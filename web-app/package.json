@@ -15,6 +15,7 @@
     "test:coverage": "jest --forceExit --detectOpenHandles --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html"
   },
   "dependencies": {
+    "@gardener/shared": "file:../shared",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",

@@ -54,3 +54,18 @@ export function deleteSchoolAdmin(id: string) {
 export function listAuditLogs(skip = 0, take = 50, schoolId?: string) {
   return request.get<any, { items: any[]; total: number }>('/admin/audit-logs', { params: { skip, take, schoolId } })
 }
+
+/** 超管：一键重置（需 confirm: true） */
+export function resetAll(confirm = true) {
+  return request.post('/admin/reset-all', { confirm })
+}
+
+/** 超管：获取所有教师列表 */
+export function listTeachers(skip = 0, take = 500) {
+  return request.get<any, { items: any[]; total: number }>('/admin/teachers', { params: { skip, take } })
+}
+
+/** 超管：清除单个教师业务数据 */
+export function clearTeacherData(teacherId: string) {
+  return request.post(`/admin/teachers/${teacherId}/clear-data`)
+}

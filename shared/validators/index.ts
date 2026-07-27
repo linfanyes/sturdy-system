@@ -85,20 +85,20 @@ export function validateClassName(
 
   const primaryMatch = trimmed.match(/^((一|二|三|四|五|六)年级)(\d+)班$/)
   if (primaryMatch) {
-    parsedGrade = primaryMatch[1]
-    classNo = Number.parseInt(primaryMatch[3], 10)
+    parsedGrade = primaryMatch[1]!
+    classNo = Number.parseInt(primaryMatch[3]!, 10)
   } else {
     const middleMatch = trimmed.match(/^(初一|初二|初三)(\d+)班$/)
     if (middleMatch) {
-      parsedGrade = middleMatch[1]
-      classNo = Number.parseInt(middleMatch[2], 10)
+      parsedGrade = middleMatch[1]!
+      classNo = Number.parseInt(middleMatch[2]!, 10)
     } else {
       const highMatch = trimmed.match(/^(高一|高二|高三)(\d+)班$/)
       if (!highMatch) {
         return { valid: false, error: '无法解析班级序号' }
       }
-      parsedGrade = highMatch[1]
-      classNo = Number.parseInt(highMatch[2], 10)
+      parsedGrade = highMatch[1]!
+      classNo = Number.parseInt(highMatch[2]!, 10)
     }
   }
 
@@ -154,8 +154,8 @@ export function parseClassName(className: string): { grade: string; classNo: num
   // 尝试小学格式：五年级1班
   let match = trimmed.match(/^((一|二|三|四|五|六)年级)(\d+)班$/)
   if (match) {
-    const grade = match[1]
-    const classNo = Number.parseInt(match[3], 10)
+    const grade = match[1]!
+    const classNo = Number.parseInt(match[3]!, 10)
     if (GRADE_OPTIONS.includes(grade) && classNo > 0 && classNo <= 99) {
       return { grade, classNo }
     }
@@ -165,8 +165,8 @@ export function parseClassName(className: string): { grade: string; classNo: num
   // 尝试初中格式：初二3班
   match = trimmed.match(/^(初一|初二|初三)(\d+)班$/)
   if (match) {
-    const grade = match[1]
-    const classNo = Number.parseInt(match[2], 10)
+    const grade = match[1]!
+    const classNo = Number.parseInt(match[2]!, 10)
     if (GRADE_OPTIONS.includes(grade) && classNo > 0 && classNo <= 99) {
       return { grade, classNo }
     }
@@ -176,8 +176,8 @@ export function parseClassName(className: string): { grade: string; classNo: num
   // 尝试高中格式：高一5班
   match = trimmed.match(/^(高一|高二|高三)(\d+)班$/)
   if (match) {
-    const grade = match[1]
-    const classNo = Number.parseInt(match[2], 10)
+    const grade = match[1]!
+    const classNo = Number.parseInt(match[2]!, 10)
     if (GRADE_OPTIONS.includes(grade) && classNo > 0 && classNo <= 99) {
       return { grade, classNo }
     }

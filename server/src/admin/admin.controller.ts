@@ -88,6 +88,17 @@ export class AdminController {
   @UseGuards(JwtAuthGuard)
   resetAll(@Body() b: ResetAllDto) { return this.svc.resetAll(b?.confirm === true) }
 
+  /* ===== 教师管理（超管可以查看所有教师并清理单个教师数据） ===== */
+  @Get('teachers')
+  @UseGuards(JwtAuthGuard)
+  listTeachers(@Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listTeachers(Number(skip) || 0, Number(take) || 500)
+  }
+
+  @Post('teachers/:id/clear-data')
+  @UseGuards(JwtAuthGuard)
+  clearTeacherData(@Param('id') id: string) { return this.svc.clearTeacherData(id) }
+
   @Get('audit-logs')
   @UseGuards(JwtAuthGuard)
   auditLogs(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
