@@ -106,7 +106,13 @@ export function request(path, method = 'GET', data = {}, token) {
         if (settled) return
         settled = true
         clearTimeout(timer)
-        reject(toError(e, '网络异常，请检查网络或后端服务是否运行'))
+        // 微信框架超时（云托管链路不通/后端未启动）统一提示
+        const msg = (e && (e.message || e.errMsg)) || '网络异常'
+        if (msg.toLowerCase().includes('timeout') || msg.includes('超时')) {
+          reject(new Error('请求超时：后端服务或云托管链路可能未就绪，请检查网络或稍后重试'))
+        } else {
+          reject(toError(e, '网络异常，请检查网络或后端服务是否运行'))
+        }
       },
     })
   })
