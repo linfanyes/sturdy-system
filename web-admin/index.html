@@ -334,6 +334,8 @@ function renderSchools(el) {
   <div class="bar">
     <span class="bar-sc">学校管理（${state.schools.length}）</span>
     <div class="bar-acts">
+      <span class="btn-warning btn-sm" onclick="batchToggleSchools(true)">全部启用</span>
+      <span class="btn-danger btn-sm" onclick="batchToggleSchools(false)">全部停用</span>
       <span class="btn-primary btn-sm" onclick="showSchoolModal()">＋ 新增</span>
     </div>
   </div>
@@ -353,18 +355,34 @@ function renderSchools(el) {
   </div>` : ''}
   <div class="card table-wrap">
     <table>
-      <tr><th>学校</th><th>地址</th><th>管理员数</th><th></th></tr>
+      <tr><th style="width:30px"><input type="checkbox" onchange="toggleAllSchools(this)" /></th><th>学校</th><th>地址</th><th>管理员数</th><th>状态</th><th></th></tr>
       ${state.schools.map(s => `<tr>
+        <td><input type="checkbox" class="sch-check" value="${s.id}" /></td>
         <td><strong>${htmlEscape(s.name)}</strong></td>
         <td>${htmlEscape(s.address||'')}</td>
         <td><span class="badge on">${s.adminCount||0}</span></td>
+        <td><span class="badge ${s.status==='inactive'?'danger':'on'}">${s.status==='inactive'?'禁用':'启用'}</span></td>
         <td class="acts">
           <button class="btn-outline btn-xs" onclick="showSchoolModal('${s.id}')">编辑</button>
           <button class="btn-danger btn-xs" onclick="showSchoolModal('${s.id}','delete')">删除</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="4"><div class="empty">暂无学校</div></td></tr>'}
+      </tr>`).join('') || '<tr><td colspan="6"><div class="empty">暂无学校</div></td></tr>'}
     </table>
   </div>`
+}
+
+function toggleAllSchools(cb) {
+  document.querySelectorAll('.sch-check').forEach(c => c.checked = cb.checked)
+}
+
+function batchToggleSchools(enabled) {
+  const ids = Array.from(document.querySelectorAll('.sch-check:checked')).map(c => c.value)
+  if (!ids.length) { toast('请先勾选至少一所学校'); return }
+  if (!confirm(`确定要${enabled ? '启用' : '停用'}选中的 ${ids.length} 所学校吗？`)) return
+  API.post('/admin/schools/batch-toggle', { ids, enabled }).then(r => {
+    toast(r.message || '操作成功')
+    loadSchools(); render()
+  }).catch(e => toast(e.message))
 }
 
 function showSchoolModal(id, action) {
@@ -397,6 +415,8 @@ function renderSchoolAdmins(el) {
   <div class="bar">
     <span class="bar-sc">学校管理员（${state.schoolAdmins.length}）</span>
     <div class="bar-acts">
+      <span class="btn-warning btn-sm" onclick="batchToggleAdmins(true)">全部启用</span>
+      <span class="btn-danger btn-sm" onclick="batchToggleAdmins(false)">全部停用</span>
       <select class="search-input" id="saSchoolFilter" onchange="loadSchoolAdmins()">
         <option value="">全部学校</option>
         ${state.schools.map(s => `<option value="${s.id}">${htmlEscape(s.name)}</option>`).join('')}
@@ -406,8 +426,9 @@ function renderSchoolAdmins(el) {
   </div>
   <div class="card table-wrap">
     <table>
-      <tr><th>姓名</th><th>用户名</th><th>所属学校</th><th>状态</th><th></th></tr>
+      <tr><th style="width:30px"><input type="checkbox" onchange="toggleAllAdmins(this)" /></th><th>姓名</th><th>用户名</th><th>所属学校</th><th>状态</th><th></th></tr>
       ${state.schoolAdmins.map(sa => `<tr>
+        <td><input type="checkbox" class="sa-check" value="${sa.id}" /></td>
         <td><strong>${htmlEscape(sa.name)}</strong></td>
         <td>${htmlEscape(sa.username||'')}</td>
         <td>${htmlEscape(sa.schoolName||sa.school||'')}</td>
@@ -416,9 +437,23 @@ function renderSchoolAdmins(el) {
           <button class="btn-outline btn-xs" onclick="showSAModal('${sa.id}')">编辑</button>
           <button class="btn-danger btn-xs" onclick="delSA('${sa.id}')">删除</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无管理员</div></td></tr>'}
+      </tr>`).join('') || '<tr><td colspan="6"><div class="empty">暂无管理员</div></td></tr>'}
     </table>
   </div>`
+}
+
+function toggleAllAdmins(cb) {
+  document.querySelectorAll('.sa-check').forEach(c => c.checked = cb.checked)
+}
+
+function batchToggleAdmins(enabled) {
+  const ids = Array.from(document.querySelectorAll('.sa-check:checked')).map(c => c.value)
+  if (!ids.length) { toast('请先勾选至少一名管理员'); return }
+  if (!confirm(`确定要${enabled ? '启用' : '停用'}选中的 ${ids.length} 名管理员吗？`)) return
+  API.post('/admin/school-admins/batch-toggle', { ids, enabled }).then(r => {
+    toast(r.message || '操作成功')
+    loadSchoolAdmins(); render()
+  }).catch(e => toast(e.message))
 }
 
 function showSAModal(id) {
@@ -505,15 +540,17 @@ function renderAuditLogs(el) {
 // Reset
 function renderReset(el) {
   el.innerHTML = `
-  <div class="card" style="border:1px solid #fecaca;background:#fef2f2">
-    <div class="card-h"><h3 style="color:#991b1b">⚠️ 一键清除 / 系统初始化</h3></div>
+  <div class="card" style="border:1px solid #fecada;background:#fef2f2">
+    <div class="card-h"><h3 style="color:#991b1b">⚠️ 一键清除业务数据</h3></div>
     <div class="card-body">
       <div style="font-size:13px;color:#7f1d1d;line-height:1.8;margin-bottom:12px">
-        此操作将<b>不可恢复</b>地清除以下数据：<br/>
-        - 所有学校管理员、教师、家长账号及登录信息<br/>
-        - 所有业务数据（成绩、考勤、作业、通知、班级、学生等）<br/>
-        - <b>保留</b>：学校结构、超管账号、平台配置<br/>
-        - <b>自动恢复</b>：演示种子数据（2 所学校、2 名校管、4 名教师、2 个班级、6 名学生）
+        此操作将<b>不可恢复</b>地清除以下业务数据：<br/>
+        - 所有考试、成绩、作业、考勤、课表<br/>
+        - 所有通知、公告、班级活动、班级风采、值日<br/>
+        - 所有 AI 生成内容、教学资源、教学日志<br/>
+        - 所有学生奖惩、成长记录、家长联系记录<br/>
+        - <b>保留</b>：学校、校管、教师、班级、学生等演示数据<br/>
+        - <b>保留</b>：超管账号、平台配置
       </div>
       <div style="font-size:12px;color:#991b1b;margin-bottom:12px">请输入「确认清除」以启用按钮：</div>
       <input id="resetConfirm" placeholder="确认清除" style="margin-bottom:12px;border-color:#fca5a5" />
@@ -528,10 +565,10 @@ function renderReset(el) {
 async function doReset() {
   const txt = document.getElementById('resetConfirm')?.value?.trim()
   if (txt !== '确认清除') { toast('请输入「确认清除」'); return }
-  if (!confirm('最后确认：将清除所有非超管数据并恢复演示数据，此操作不可撤销。是否继续？')) return
+  if (!confirm('最后确认：将清除所有业务数据（考试/成绩/作业/考勤/通知等），保留演示数据，此操作不可撤销。是否继续？')) return
   try {
     await API.post('/admin/reset-all', { confirm: true })
-    toast('已清除并恢复演示数据')
+    toast('已清除所有业务数据，演示数据已保留')
     document.getElementById('resetConfirm').value = ''
     const btn = document.getElementById('resetBtn')
     if (btn) btn.disabled = true
@@ -812,11 +849,23 @@ function renderClasses(el) {
         <td>${htmlEscape(c.term||'')}</td>
         <td class="acts">
           <button class="btn-outline btn-xs" data-id="${c.id}" onclick="showClassModal(this.dataset.id)">编辑</button>
+          <button class="btn-warning btn-xs" data-id="${c.id}" data-name="${htmlEscape(c.name)}" data-grade="${htmlEscape(c.grade||'')}" onclick="promoteClass(this.dataset.id,this.dataset.name,this.dataset.grade)">升级</button>
           <button class="btn-danger btn-xs" data-id="${c.id}" data-name="${htmlEscape(c.name)}" onclick="delClass(this.dataset.id,this.dataset.name)">删除</button>
         </td>
       </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无班级</div></td></tr>'}
     </table>
   </div>`
+}
+
+function promoteClass(id, name, grade) {
+  const gradeMap = {'一年级':'二年级','二年级':'三年级','三年级':'四年级','四年级':'五年级','五年级':'六年级','六年级':'初一','初一':'初二','初二':'初三','初三':'高一','高一':'高二','高二':'高三'}
+  const next = gradeMap[grade]
+  if (!next) { toast(`「${grade}」无法自动升级，请手动编辑班级`); return }
+  if (!confirm(`确定将「${name}」升级为「${next}」？\n\n- 班级名称中的年级部分会自动更新\n- 学生和班主任保持不变`)) return
+  API.post('/school-admin/classes/' + id + '/promote', {}).then(r => {
+    toast(r.message || '升级成功')
+    loadClasses(); renderSchoolContent()
+  }).catch(e => toast(e.message))
 }
 
 function showClassModal(id) {

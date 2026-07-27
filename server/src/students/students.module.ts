@@ -233,13 +233,53 @@ class StudentsService extends CrudService<Student> {
     return { rows, validCount, errorCount }
   }
 
-  /** 切换家长登录权限 */
+  /** 切换家长登录权限（关闭时清空敏感绑定数据） */
   async toggleParentLogin(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
     s.parentLoginEnabled = !s.parentLoginEnabled
+    // 关闭时清空敏感绑定数据，防止重新开启时旧绑定仍有效
+    if (!s.parentLoginEnabled) {
+      s.parentOpenId = ''
+      s.parentNickName = ''
+      s.parentPasswordHash = null
+    }
     await this.repo.save(s)
     return { studentId, parentLoginEnabled: s.parentLoginEnabled }
+  }
+
+  /** 删除学生（级联清理：家长联系记录 + 业务数据） */
+  async remove(id: string, teacherId: string): Promise<{ id: string }> {
+    const e = await this.findOne(id, teacherId)
+    await this.dataSource.transaction(async (manager) => {
+      // 清理家长联系记录
+      await manager.getRepository(ParentContact).delete({ studentId: id })
+      // 清理按 studentId 关联的业务数据
+      const studentTables = [
+        'score_records', 'reward_records', 'behavior_records',
+        'growth_entries', 'reading_logs', 'checkins', 'home_visits',
+        'picker_history',
+      ]
+      for (const t of studentTables) {
+        try {
+          await manager.query(`DELETE FROM \`${t}\` WHERE studentId = ?`, [id])
+        } catch { /* 跳过 */ }
+      }
+      // 清理座位引用（从 seat_layouts 的 seats JSON 中移除该学生）
+      const seats = await manager.query(`SELECT id, seats FROM seat_layouts WHERE classId = ?`, [e.classId])
+      for (const row of seats) {
+        try {
+          const arr = JSON.parse(row.seats || '[]')
+          const filtered = arr.filter((s: any) => s.studentId !== id)
+          if (filtered.length !== arr.length) {
+            await manager.query(`UPDATE seat_layouts SET seats = ? WHERE id = ?`, [JSON.stringify(filtered), row.id])
+          }
+        } catch { /* 跳过 */ }
+      }
+      // 最后删除学生
+      await manager.getRepository(Student).remove(e)
+    })
+    return { id }
   }
 }
 

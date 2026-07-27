@@ -112,6 +112,11 @@ export function deleteClass(id: string) {
   return request.delete(`/school-admin/classes/${id}`)
 }
 
+/** 班级升级：三年级一班 → 四年级一班（年级+1，名称自动更新，学生和班主任保留） */
+export function promoteClass(id: string, targetGrade?: string) {
+  return request.post(`/school-admin/classes/${id}/promote`, { targetGrade })
+}
+
 /* ============ 学校公告 ============ */
 
 export function listSchoolNotices(skip = 0, take = 50) {

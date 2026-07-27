@@ -145,7 +145,7 @@ async function doResetAll() {
   resetting.value = true
   try {
     await resetAll(true)
-    toast('已清除并恢复演示数据')
+    toast('已清除所有业务数据，演示数据已保留')
     showResetDialog.value = false
     resetConfirmText.value = ''
     load()
@@ -287,10 +287,10 @@ function toast(msg: string) {
     <!-- 危险操作区 -->
     <div class="bg-red-50/60 rounded-2xl p-5 shadow-softer border border-red-100">
       <div class="text-sm font-semibold text-red-700 mb-2">⚠️ 危险操作区</div>
-      <div class="text-xs text-red-500/80 mb-3">以下操作不可恢复，请谨慎操作。一键重置会清除所有管理员、教师、家长及业务数据，并自动恢复演示种子数据。</div>
+      <div class="text-xs text-red-500/80 mb-3">以下操作不可恢复，请谨慎操作。一键清除会清除所有业务数据（考试/成绩/作业/考勤/通知等），保留演示数据（学校/校管/教师/班级/学生）。</div>
       <button class="btn-danger" :disabled="resetting" @click="showResetDialog = true">
         <Trash2 class="w-4 h-4 inline-block mr-1" />
-        {{ resetting ? '处理中…' : '一键清除（恢复演示数据）' }}
+        {{ resetting ? '处理中…' : '一键清除（保留演示数据）' }}
       </button>
     </div>
 
@@ -301,10 +301,12 @@ function toast(msg: string) {
         <div class="modal-body">
           <div class="text-sm text-cocoa-700 mb-2">此操作将：</div>
           <ul class="text-sm text-cocoa-600 list-disc pl-5 space-y-1 mb-3">
-            <li>清除所有学校管理员、教师、家长账号及登录信息</li>
-            <li>清除所有业务数据（成绩、考勤、作业、通知等）</li>
-            <li>保留学校结构和超管账号</li>
-            <li>自动恢复演示种子数据（2 所学校、2 名校管、4 名教师、2 个班级、6 名学生）</li>
+            <li>清除所有考试、成绩、作业、考勤、课表</li>
+            <li>清除所有通知、公告、班级活动、班级风采、值日</li>
+            <li>清除所有 AI 生成内容、教学资源、教学日志</li>
+            <li>清除所有学生奖惩、成长记录、家长联系记录</li>
+            <li><b>保留</b>：学校、校管、教师、班级、学生等演示数据</li>
+            <li><b>保留</b>：超管账号、平台配置</li>
           </ul>
           <div class="text-sm text-red-600 mb-2">此操作不可撤销，请谨慎操作。</div>
           <div class="form-group">

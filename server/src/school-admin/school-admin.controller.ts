@@ -110,6 +110,13 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   deleteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteClass(a.schoolId, id) }
 
+  /** 班级升级：三年级一班 → 四年级一班（年级+1，名称自动更新，学生和班主任保留） */
+  @Post('classes/:id/promote')
+  @UseGuards(JwtAuthGuard)
+  promoteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: { targetGrade?: string }) {
+    return this.svc.promoteClass(a.schoolId, id, b?.targetGrade)
+  }
+
   /** 批量创建班级（接收 classes 数组，逐条按班主任姓名解析为本校教师） */
   @Post('classes/batch')
   @UseGuards(JwtAuthGuard)

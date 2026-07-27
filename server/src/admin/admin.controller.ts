@@ -53,6 +53,12 @@ export class AdminController {
   @UseGuards(JwtAuthGuard)
   deleteSchool(@Param('id') id: string) { return this.svc.deleteSchool(id) }
 
+  @Post('schools/batch-toggle')
+  @UseGuards(JwtAuthGuard)
+  batchToggleSchool(@Body() b: { ids: string[]; enabled: boolean }) {
+    return this.svc.batchToggleSchoolEnabled(b?.ids || [], b?.enabled !== false)
+  }
+
   /* ===== 学校管理员管理（超管只管理学校管理员） ===== */
   @Get('school-admins')
   @UseGuards(JwtAuthGuard)
@@ -83,6 +89,12 @@ export class AdminController {
   @Delete('school-admins/:id')
   @UseGuards(JwtAuthGuard)
   deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
+
+  @Post('school-admins/batch-toggle')
+  @UseGuards(JwtAuthGuard)
+  batchToggleAdmin(@Body() b: { ids: string[]; enabled: boolean }) {
+    return this.svc.batchToggleAdminEnabled(b?.ids || [], b?.enabled !== false)
+  }
 
   @Post('reset-all')
   @UseGuards(JwtAuthGuard)

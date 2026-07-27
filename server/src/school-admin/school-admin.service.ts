@@ -20,17 +20,20 @@ import { pinyin } from 'pinyin-pro'
 import * as ExcelJS from 'exceljs'
 import { AiService } from '../ai/ai.service'
 
-/** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除 */
+/** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除（不含 students，学生保留但禁用家长登录） */
 const TEACHER_ID_TABLES = [
-  'students', 'exams', 'grades', 'notes', 'todos', 'picker_history',
-  'backup_snapshots', 'ai_settings', 'app_config', 'awards', 'generated',
-  'class_ops', 'duty_rosters', 'engagements', 'growth_records',
-  'parent_contacts', 'seats', 'gallery_items',
+  'exams', 'grades', 'notes', 'todos', 'picker_history',
+  'backup_snapshots', 'ai_settings', 'app_config',
+  'generated_papers', 'generated_lesson_plans', 'generated_knowledges', 'paper_queries',
+  'class_expenses', 'class_activities', 'duty_rosters',
+  'reward_records', 'score_records', 'group_scores',
+  'growth_entries', 'behavior_records',
+  'parent_contacts', 'seat_layouts', 'class_galleries',
   'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
-  'reading_logs', 'checkins', 'behavior_records', 'award_records',
-  'score_records', 'reward_records', 'group_scores', 'class_duty_configs',
-  'notice_templates', 'home_visits', 'teaching_calendars',
-  'class_activities', 'class_finance',
+  'reading_logs', 'checkins', 'award_records', 'award_categories',
+  'class_duty_configs', 'notice_templates', 'home_visits', 'teaching_calendar',
+  'class_members', 'my_galleries', 'notifications', 'schedules', 'resources',
+  'teachers',
 ]
 
 @Injectable()
@@ -237,18 +240,31 @@ export class SchoolAdminService {
     return this.userRepo.save(user)
   }
 
-  /** 删除教师账号及所有关联数据，再次添加时如同新用户（事务保护） */
+  /** 删除教师账号及所有关联数据，保留学生但禁用家长登录（事务保护） */
   async deleteTeacher(schoolId: string, teacherId: string) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     await this.entityManager.transaction(async (em) => {
+      // 获取该教师管理的所有班级
+      const classes = await em.getRepository(ClassItem).find({ where: { teacherId } })
+      const classIds = classes.map(c => c.id)
+      // 禁用这些班级下所有学生的家长登录，并清除家长绑定信息
+      if (classIds.length) {
+        await em.getRepository(Student).update(
+          { classId: In(classIds) },
+          { parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+        )
+      }
+      // 删除班级
       await em.getRepository(ClassItem).delete({ teacherId })
+      // 清除该教师的所有业务数据
       for (const table of TEACHER_ID_TABLES) {
         await em.query(`DELETE FROM \`${table}\` WHERE teacherId = ?`, [teacherId])
       }
+      // 删除教师账号
       await em.getRepository(User).remove(user)
     })
-    this.audit.log(schoolId, 'delete_teacher', '系统', user.name + '(' + user.username + ')', '删除教师').catch(() => {})
+    this.audit.log(schoolId, 'delete_teacher', '系统', user.name + '(' + user.username + ')', '删除教师（保留学生，禁用家长登录）').catch(() => {})
     return { ok: true }
   }
 
@@ -362,15 +378,70 @@ export class SchoolAdminService {
     return this.classRepo.save(cls)
   }
 
-  /** 删除班级 */
+  /** 删除班级（级联清理：class_members + 学生家长登录 + 班级业务数据） */
   async deleteClass(schoolId: string, id: string) {
     const cls = await this.classRepo.findOne({ where: { id } })
     if (!cls) throw new BadRequestException('班级不存在')
     const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
     if (!teacher) throw new BadRequestException('无权操作此班级')
-    await this.classRepo.remove(cls)
-    this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级').catch(() => {})
+    await this.entityManager.transaction(async (em) => {
+      // 1. 清理班级成员关系
+      await em.getRepository(ClassMember).delete({ classId: id })
+      // 2. 禁用学生家长登录并清空敏感数据
+      await em.getRepository(Student).update(
+        { classId: id },
+        { parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+      )
+      // 3. 清理班级关联的业务数据（按 classId）
+      const classIdTables = [
+        'grades', 'exams', 'homework', 'attendances', 'notices',
+        'schedules', 'seat_layouts', 'class_galleries', 'my_galleries',
+        'class_activities', 'class_expenses', 'class_duty_configs',
+        'duty_rosters', 'class_members',
+      ]
+      for (const t of classIdTables) {
+        try {
+          await em.query(`DELETE FROM \`${t}\` WHERE classId = ?`, [id])
+        } catch { /* 表不存在或无该字段则跳过 */ }
+      }
+      // 4. 最后删除班级
+      await em.getRepository(ClassItem).remove(cls)
+    })
+    this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级（级联清理学生家长登录 + 业务数据）').catch(() => {})
+    return { ok: true }
   }
+
+  /** 班级升级：三年级一班 → 四年级一班（年级+1，名称自动更新，学生和班主任保留） */
+  async promoteClass(schoolId: string, id: string, targetGrade?: string) {
+    const cls = await this.classRepo.findOne({ where: { id } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权操作此班级')
+
+    // 年级升级映射
+    const gradeMap: Record<string, string> = {
+      '一年级': '二年级', '二年级': '三年级', '三年级': '四年级',
+      '四年级': '五年级', '五年级': '六年级', '六年级': '初一',
+      '初一': '初二', '初二': '初三', '初三': '高一',
+      '高一': '高二', '高二': '高三',
+    }
+
+    const currentGrade = cls.grade || ''
+    const nextGrade = targetGrade || gradeMap[currentGrade]
+    if (!nextGrade) throw new BadRequestException(`无法识别「${currentGrade}」的下一个年级，请指定目标年级`)
+
+    // 更新年级和班级名称
+    cls.grade = nextGrade
+    // 自动更新班级名称中的年级部分（如 "三年级1班" → "四年级1班"）
+    if (cls.name) {
+      cls.name = cls.name.replace(currentGrade, nextGrade)
+    }
+
+    await this.classRepo.save(cls)
+    this.audit.log(schoolId, 'promote_class', '系统', cls.name, `班级升级：${currentGrade} → ${nextGrade}`).catch(() => {})
+    return { ok: true, message: `已升级至「${nextGrade}」，班级名称：${cls.name}` }
+  }
+
 
   /**
    * 解析班级文件（Excel/CSV/TXT/JSON），返回校验后的明细。

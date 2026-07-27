@@ -20,6 +20,11 @@ export function deleteSchool(id: string) {
   return request.delete(`/admin/schools/${id}`)
 }
 
+/** 超管：批量启用/禁用学校 */
+export function batchToggleSchool(ids: string[], enabled: boolean) {
+  return request.post('/admin/schools/batch-toggle', { ids, enabled })
+}
+
 /** 超管：校管列表 */
 export function listSchoolAdmins(skip = 0, take = 100) {
   return request.get<any, { items: any[]; total: number }>('/admin/school-admins', { params: { skip, take } })
@@ -48,6 +53,11 @@ export function toggleSchoolAdminEnabled(id: string, enabled: boolean) {
 /** 超管：删除校管 */
 export function deleteSchoolAdmin(id: string) {
   return request.delete(`/admin/school-admins/${id}`)
+}
+
+/** 超管：批量启用/禁用校管 */
+export function batchToggleAdmin(ids: string[], enabled: boolean) {
+  return request.post('/admin/school-admins/batch-toggle', { ids, enabled })
 }
 
 /** 超管：审计日志 */

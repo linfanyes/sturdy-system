@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException, NotFoundExcepti
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
-import { Repository, EntityManager } from 'typeorm'
+import { Repository, EntityManager, In } from 'typeorm'
 import * as crypto from 'node:crypto'
 import { User } from '../users/user.entity'
 import { School } from '../school/school.entity'
@@ -193,12 +193,71 @@ export class AdminService implements OnModuleInit {
     return s
   }
 
-  /** 删除学校（若仍有学校管理员则拒绝，避免产生孤儿管理员） */
+  /** 删除学校（级联清理：教师、班级、学生、所有业务数据） */
   async deleteSchool(id: string) {
     const admins = await this.saRepo.find({ where: { schoolId: id } })
     if (admins.length) throw new BadRequestException('该校仍有学校管理员，请先删除或转移管理员后再删除学校')
-    const r = await this.schoolRepo.delete(id)
-    if (!r.affected) throw new BadRequestException('删除失败：学校不存在或已被删除')
+    const r = await this.schoolRepo.findOne({ where: { id } })
+    if (!r) throw new BadRequestException('学校不存在')
+
+    await this.entityManager.transaction(async (em) => {
+      // 1. 获取该校所有教师
+      const teachers = await em.getRepository(User).find({ where: { schoolId: id } })
+      const teacherIds = teachers.map(t => t.id)
+      // 2. 获取该校所有班级
+      const classes = await em.getRepository(ClassItem).find({ where: { teacherId: In(teacherIds) } })
+      const classIds = classes.map(c => c.id)
+      // 3. 清理教师关联的业务数据
+      if (teacherIds.length) {
+        const teacherTables = [
+          'exams', 'grades', 'notes', 'todos', 'picker_history',
+          'backup_snapshots', 'ai_settings', 'app_config',
+          'generated_papers', 'generated_lesson_plans', 'generated_knowledges', 'paper_queries',
+          'class_expenses', 'class_activities', 'duty_rosters',
+          'reward_records', 'score_records', 'group_scores',
+          'growth_entries', 'behavior_records',
+          'parent_contacts', 'seat_layouts', 'class_galleries',
+          'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
+          'reading_logs', 'checkins', 'award_records', 'award_categories',
+          'class_duty_configs', 'notice_templates', 'home_visits', 'teaching_calendar',
+          'class_members', 'my_galleries', 'notifications', 'schedules', 'resources',
+          'teachers',
+        ]
+        for (const t of teacherTables) {
+          try {
+            await em.query(`DELETE FROM \`${t}\` WHERE teacherId IN (?)`, [teacherIds])
+          } catch { /* 跳过 */ }
+        }
+      }
+      // 4. 清理班级关联的业务数据
+      if (classIds.length) {
+        const classTables = [
+          'grades', 'exams', 'homework', 'attendances', 'notices',
+          'schedules', 'seat_layouts', 'class_galleries', 'my_galleries',
+          'class_activities', 'class_expenses', 'class_duty_configs',
+          'duty_rosters', 'class_members',
+        ]
+        for (const t of classTables) {
+          try {
+            await em.query(`DELETE FROM \`${t}\` WHERE classId IN (?)`, [classIds])
+          } catch { /* 跳过 */ }
+        }
+      }
+      // 5. 清理学生
+      if (classIds.length) {
+        await em.getRepository(Student).delete({ classId: In(classIds) })
+      }
+      // 6. 清理班级
+      if (teacherIds.length) {
+        await em.getRepository(ClassItem).delete({ teacherId: In(teacherIds) })
+      }
+      // 7. 清理教师
+      await em.getRepository(User).delete({ schoolId: id })
+      // 8. 清理校管
+      await em.getRepository(SchoolAdmin).delete({ schoolId: id })
+      // 9. 删除学校
+      await em.getRepository(School).delete(id)
+    })
     return { ok: true }
   }
 
@@ -312,25 +371,52 @@ export class AdminService implements OnModuleInit {
     return { ok: true }
   }
 
-  /** 一键重置：清除所有学校管理员/教师/家长/业务数据，保留学校结构和超管账号，然后恢复演示种子数据 */
-  async resetAll(confirmed: boolean, operator = 'super') {
-    if (!confirmed) throw new BadRequestException('请确认重置操作（confirm: true）')
+  /** 批量启用/禁用学校（勾选后一键停用/启用） */
+  async batchToggleSchoolEnabled(ids: string[], enabled: boolean, operator = 'super') {
+    if (!ids || !ids.length) throw new BadRequestException('请至少选择一条数据')
+    const result = await this.schoolRepo.update(ids, { status: enabled ? 'active' : 'inactive' })
+    // 级联禁用该校所有管理员和教师
+    for (const id of ids) {
+      await this.saRepo.update({ schoolId: id }, { enabled })
+      await this.userRepo.update({ schoolId: id }, { enabled })
+    }
+    try {
+      await this.audit.log('', 'batch_toggle_school', operator, `学校(${ids.length}所)`, `${enabled ? '批量启用' : '批量禁用'}学校`)
+    } catch { /* audit 失败不应阻断主流程 */ }
+    return { ok: true, message: `已${enabled ? '启用' : '禁用'} ${ids.length} 所学校` }
+  }
 
-    // 按依赖顺序排列所有业务表（先删子表再删父表，避免外键约束）
-    const allTables = [
-      // 第一层：叶子数据（无外键依赖）
+  /** 批量启用/禁用学校管理员（勾选后一键停用/启用） */
+  async batchToggleAdminEnabled(ids: string[], enabled: boolean, operator = 'super') {
+    if (!ids || !ids.length) throw new BadRequestException('请至少选择一条数据')
+    const result = await this.saRepo.update(ids, { enabled })
+    try {
+      await this.audit.log('', 'batch_toggle_admin', operator, `管理员(${ids.length}人)`, `${enabled ? '批量启用' : '批量禁用'}管理员`)
+    } catch { /* audit 失败不应阻断主流程 */ }
+    return { ok: true, message: `已${enabled ? '启用' : '禁用'} ${ids.length} 名管理员` }
+  }
+
+  /** 一键清除：清除所有业务数据（演练产生的考试/成绩/作业/考勤等），保留演示数据（学校/校管/教师/班级/学生）以确保演示功能正常运行 */
+  async resetAll(confirmed: boolean, operator = 'super') {
+    if (!confirmed) throw new BadRequestException('请确认清除操作（confirm: true）')
+
+    // 仅清除业务数据表，保留演示数据表：
+    // 演示数据表（不清除）：schools, school_admins, users(教师), classes, students
+    const businessTables = [
+      // 个人/工具数据
       'picker_history', 'todos', 'notes',
       'ai_settings', 'app_config', 'audit_logs',
       'paper_queries', 'generated_knowledges', 'generated_lesson_plans', 'generated_papers',
       'notice_templates', 'notifications',
       'semesters', 'teaching_calendar',
       'backup_snapshots',
-      // 第二层：学生相关
+      // 学生业务数据
       'reading_logs', 'checkins', 'home_visits',
       'behavior_records', 'growth_entries',
       'parent_contacts',
       'award_records', 'award_categories',
       'score_records', 'reward_records', 'group_scores',
+      // 核心教学业务数据
       'grades', 'exams',
       'homework',
       'attendances',
@@ -340,41 +426,32 @@ export class AdminService implements OnModuleInit {
       'work_logs',
       'lesson_observations', 'lesson_plan_templates',
       'generated',
-      // 第三层：班级相关（含班级活动/公告/班费/风采）
+      // 班级业务数据（风采/活动/公告/值日/班费等）
       'class_members',
       'class_activities', 'class_expenses', 'class_duty_configs',
       'class_galleries', 'my_galleries',
       'notices',
       'duty_rosters',
-      'students',
-      // 第四层：班级
-      'classes',
-      // 第五层：人员（教师+学校管理员）
-      'teachers',
-      'users',
-      'school_admins',
     ]
 
     await this.entityManager.transaction(async (em) => {
-      for (const t of allTables) {
+      for (const t of businessTables) {
         try {
           await em.query(`DELETE FROM \`${t}\``)
         } catch (e) {
-          // 表不存在则跳过（开发/测试环境可能缺少某些迁移表）
+          // 表不存在则跳过
         }
       }
     })
 
-    // 恢复演示种子���据（学校/校管/教师/班级/学生）
-    await this.seedDemoData()
-
     // 记录审计日志
     try {
-      await this.audit.log('', 'system_reset_all', operator, '全系统', '一键重置：清除所有业务数据并恢复演示种子数据')
+      await this.audit.log('', 'system_reset_all', operator, '全系统', '一键清除：清除所有业务数据，保留演示数据（学校/校管/教师/班级/学生）')
     } catch { /* audit 失败不应阻断主流程 */ }
 
-    return { ok: true, message: '已清除所有管理员、教师、家长及业务数据，已恢复演示种子数据，学校结构和超管账号保留' }
+    return { ok: true, message: '已清除所有业务数据（考试/成绩/作业/考勤/风采/值日等），演示数据（学校/校管/教师/班级/学生）已保留，演示功能可正常运行' }
   }
+
 
   /** 超管获取所有教师列表 */
   async listTeachers(skip = 0, take = 500) {
