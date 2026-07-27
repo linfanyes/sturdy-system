@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   base: './',
   server: {
-    port: 5202,
+    port: 5201,
     host: 'localhost',
     proxy: {
       // 开发模式直连云托管后端（无需本地启动 server）
