@@ -3,9 +3,15 @@ import { BaseEntity } from '../common/entities/base.entity'
 
 /**
  * 每位教师的 AI 设置。密钥仅存后端，绝不下发到小程序。
+ * 教师选择服务商（providerCode），自行录入 API Key。
+ * 管理员维护全局 ai_providers 清单（增删改厂商）。
  */
 @Entity('ai_settings')
 export class AiSettings extends BaseEntity {
+  /** 关联服务商 code（如 'ali-qwen'、'deepseek'），由教师选择 */
+  @Column({ default: '' })
+  providerCode: string
+
   @Column({ default: '' })
   baseUrl: string
 

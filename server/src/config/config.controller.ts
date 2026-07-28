@@ -78,10 +78,11 @@ export class ConfigController {
   /**
    * 查询服务商可用模型列表（实时查询 /models，失败回退预设默认）。
    * 任意已登录用户均可调用；baseUrl / apiKey 由客户端传入（不泄露平台密钥）。
+   * 支持传入 providerCode 自动从 ai_providers 表解析 baseUrl。
    */
   @Post('ai/models')
   @UseGuards(JwtAuthGuard)
-  listProviderModels(@Body() dto: { provider?: string; baseUrl?: string; apiKey?: string }) {
+  listProviderModels(@Body() dto: { provider?: string; providerCode?: string; baseUrl?: string; apiKey?: string }) {
     return this.cfg.listProviderModels(dto || {})
   }
 

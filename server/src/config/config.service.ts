@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { AppConfig } from './app-config.entity'
 import { AiSettings } from './ai-settings.entity'
+import { AiProvider } from './ai-provider.entity'
 import { fetchProviderModels, type ProviderModelsResult } from './provider-models'
 
 @Injectable()
@@ -13,6 +14,8 @@ export class ConfigService implements OnModuleInit {
     private readonly appRepo: Repository<AppConfig>,
     @InjectRepository(AiSettings)
     private readonly aiRepo: Repository<AiSettings>,
+    @InjectRepository(AiProvider)
+    private readonly providerRepo: Repository<AiProvider>,
     private readonly env: EnvConfigService,
   ) {}
 
@@ -188,23 +191,37 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  /** 取教师的 AI 设置；无则回退平台默认值 */
+  /** 取教师的 AI 设置；无则回退平台默认值 + 默认服务商 */
   async getAiSettings(teacherId: string): Promise<AiSettings> {
     let s = await this.aiRepo.findOne({ where: { teacherId } })
     if (!s) {
+      const defaultProv = await this.providerRepo.findOne({ where: { isDefault: true, enabled: true } })
+        || await this.providerRepo.findOne({ where: { enabled: true }, order: { sortOrder: 'ASC' } })
+      const env = (key: string, fallback = '') => this.env.get(key) || fallback
       s = this.aiRepo.create({
         teacherId,
-        baseUrl: (await this.getAppConfigValue('aiBaseUrl')) || '',
-        apiKey: (await this.getAppConfigValue('aiApiKey')) || '',
-        textModel: (await this.getAppConfigValue('aiTextModel')) || 'qwen-plus',
-        visionModel:
-          (await this.getAppConfigValue('aiVisionModel')) || 'qwen-vl-plus',
-        temperature: parseFloat(
-          (await this.getAppConfigValue('aiTemperature')) || '0.7',
-        ),
-        aiName: (await this.getAppConfigValue('aiName')) || '小林子',
-        systemPrompt: (await this.getAppConfigValue('aiSystemPrompt')) || '',
+        providerCode: defaultProv?.code || '',
+        baseUrl: defaultProv?.baseUrl || env('aiBaseUrl'),
+        apiKey: '', // 密钥必须由教师自行填写，平台不下发
+        textModel: defaultProv?.textModels?.[0] || env('aiTextModel', 'qwen-plus'),
+        visionModel: defaultProv?.visionModels?.[0] || env('aiVisionModel', 'qwen-vl-plus'),
+        imageModel: defaultProv?.imageModels?.[0] || env('aiImageModel'),
+        videoModel: defaultProv?.videoModels?.[0] || env('aiVideoModel'),
+        temperature: parseFloat(env('aiTemperature', '0.7')),
+        aiName: env('aiName', '小林子'),
+        systemPrompt: env('aiSystemPrompt', '你是一位耐心、专业的中国中小学班主任助手。'),
       })
+    }
+    // 若 baseUrl 为空但有 providerCode，自动从 ai_providers 填充
+    if (!s.baseUrl && s.providerCode) {
+      const prov = await this.providerRepo.findOne({ where: { code: s.providerCode } })
+      if (prov) {
+        s.baseUrl = prov.baseUrl
+        if (!s.textModel) s.textModel = prov.textModels?.[0] || ''
+        if (!s.visionModel) s.visionModel = prov.visionModels?.[0] || ''
+        if (!s.imageModel) s.imageModel = prov.imageModels?.[0] || ''
+        if (!s.videoModel) s.videoModel = prov.videoModels?.[0] || ''
+      }
     }
     return s
   }
@@ -212,6 +229,17 @@ export class ConfigService implements OnModuleInit {
   async saveAiSettings(teacherId: string, dto: Partial<AiSettings>) {
     let s = await this.aiRepo.findOne({ where: { teacherId } })
     if (!s) s = this.aiRepo.create({ teacherId })
+    // 若切换了 providerCode 且 apiKey 为空，自动从 ai_providers 填充 baseUrl + 默认模型
+    if (dto.providerCode && dto.providerCode !== s.providerCode && !dto.apiKey) {
+      const prov = await this.providerRepo.findOne({ where: { code: dto.providerCode } })
+      if (prov) {
+        dto.baseUrl = prov.baseUrl
+        if (!dto.textModel) dto.textModel = prov.textModels?.[0] || ''
+        if (!dto.visionModel) dto.visionModel = prov.visionModels?.[0] || ''
+        if (!dto.imageModel) dto.imageModel = prov.imageModels?.[0] || ''
+        if (!dto.videoModel) dto.videoModel = prov.videoModels?.[0] || ''
+      }
+    }
     Object.assign(s, dto, { teacherId })
     return this.aiRepo.save(s)
   }
@@ -219,14 +247,20 @@ export class ConfigService implements OnModuleInit {
   /**
    * 查询服务商的可用模型列表。
    * 优先实时查询各服务商 /models 接口；baseUrl / apiKey 未传时回退平台级配置。
-   * 查询失败则使用预设默认（见 provider-models）。
+   * 支持传入 providerCode 从 ai_providers 表自动解析 baseUrl。
    */
   async listProviderModels(dto: {
     provider?: string
+    providerCode?: string
     baseUrl?: string
     apiKey?: string
   }): Promise<ProviderModelsResult> {
-    const baseUrl = dto.baseUrl || (await this.getAppConfigValue('aiBaseUrl')) || ''
+    let baseUrl = dto.baseUrl
+    if (!baseUrl && dto.providerCode) {
+      const prov = await this.providerRepo.findOne({ where: { code: dto.providerCode } })
+      if (prov) baseUrl = prov.baseUrl
+    }
+    baseUrl = baseUrl || (await this.getAppConfigValue('aiBaseUrl')) || ''
     const apiKey = dto.apiKey || (await this.getAppConfigValue('aiApiKey')) || ''
     return fetchProviderModels({ provider: dto.provider, baseUrl, apiKey })
   }
