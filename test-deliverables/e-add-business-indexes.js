@@ -51,6 +51,8 @@ const INDEX_PLAN = [
   ['growth_entries', 'idx_teacher_student', ['teacherId', 'studentId']],
   ['notes', 'idx_teacher', ['teacherId']],
   ['award_records', 'idx_teacher', ['teacherId']],
+  // —— 新增：学生表 classId 索引（家长端成绩、班级管理高频查询） ——
+  ['students', 'idx_stu_class', ['classId']],
 ]
 
 async function addIndex(conn, table, name, cols) {
