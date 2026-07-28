@@ -118,6 +118,8 @@ class StudentsService extends CrudService<Student> {
       const ids: string[] = []
       let contactCount = 0
       const today = new Date().toISOString().slice(0, 10)
+      const studentEntities: Student[] = []
+      const contactEntities: ParentContact[] = []
       for (let i = 0; i < items.length; i++) {
         const it = items[i]
         const e = new Student()
@@ -132,10 +134,13 @@ class StudentsService extends CrudService<Student> {
           tags: [],
           teacherId,
         })
-        const saved = await repo.save(e)
+        studentEntities.push(e)
+      }
+      const savedStudents = await repo.save(studentEntities)
+      for (let i = 0; i < savedStudents.length; i++) {
+        const saved = savedStudents[i]
         ids.push(saved.id)
-
-        // 同步生成家长联系记录（至少要有家长姓名或电话）
+        const it = items[i]
         if (it.parentName || it.parentPhone) {
           const pc = new ParentContact()
           Object.assign(pc, {
@@ -152,10 +157,11 @@ class StudentsService extends CrudService<Student> {
             followUp: '',
             teacherId,
           })
-          await pRepo.save(pc)
+          contactEntities.push(pc)
           contactCount++
         }
       }
+      if (contactEntities.length) await pRepo.save(contactEntities)
       return { count: ids.length, ids, contactCount }
     })
   }
@@ -254,17 +260,15 @@ class StudentsService extends CrudService<Student> {
     await this.dataSource.transaction(async (manager) => {
       // 清理家长联系记录
       await manager.getRepository(ParentContact).delete({ studentId: id })
-      // 清理按 studentId 关联的业务数据
+      // 清理按 studentId 关联的业务数据（并行执行，减少事务持有时间）
       const studentTables = [
         'score_records', 'reward_records', 'behavior_records',
         'growth_entries', 'reading_logs', 'checkins', 'home_visits',
         'picker_history',
       ]
-      for (const t of studentTables) {
-        try {
-          await manager.query(`DELETE FROM \`${t}\` WHERE studentId = ?`, [id])
-        } catch { /* 跳过 */ }
-      }
+      await Promise.all(studentTables.map((t) =>
+        manager.query(`DELETE FROM \`${t}\` WHERE studentId = ?`, [id]).catch(() => {})
+      ))
       // 清理座位引用（从 seat_layouts 的 seats JSON 中移除该学生）
       const seats = await manager.query(`SELECT id, seats FROM seat_layouts WHERE classId = ?`, [e.classId])
       for (const row of seats) {
