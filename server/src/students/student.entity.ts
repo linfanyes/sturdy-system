@@ -1,8 +1,9 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
 @Entity('students')
 export class Student extends BaseEntity {
+  @Index('idx_stu_class')
   @Column() classId: string
   @Column() name: string
   @Column() gender: string

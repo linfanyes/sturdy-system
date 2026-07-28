@@ -310,57 +310,52 @@ export class AiService {
   /**
    * 构造本地上下文（教师本人 + 班级 + 学生 + 教师通讯录 + 最近成绩 + 考试 + 奖惩 + 笔记）
    * 数据量上限做了控制，避免 token 过大。
+   * 8 路并行查询，降低冷启动延迟（从 ~8×RTT 降为 ~1×RTT）。
    */
   private async buildLocalContext(teacherId: string): Promise<string> {
     const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
-    // 教师本人
-    const u = await this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null)
+    const [u, classes, students, teachers, grades, exams, awards, notes] = await Promise.all([
+      this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null),
+      this.classRepo.find({ take: 20 }).catch(() => []),
+      this.studentRepo.find({ take: 50 }).catch(() => []),
+      this.teacherRepo.find({ take: 20 }).catch(() => []),
+      this.gradeRepo.find({ take: 30, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.examRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.awardRepo.find({ take: 20, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.noteRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
+    ])
     if (u) {
       lines.push(
         `# 当前教师\n姓名: ${u.name || '-'} | 学校: ${u.school || '-'} | 任教学科: ${u.subject || '-'} | 任教学期: ${u.term || '-'}`,
       )
     }
-    // 班级（限 20 个）
-    const classes = (await this.classRepo.find({ take: 20 }).catch(() => [])) as any[]
-    if (classes.length) {
+    if ((classes as any[]).length) {
       lines.push('# 班级列表')
-      lines.push(classes.map((c, i) => `${i + 1}. ${c.name || '-'}（${c.studentCount || '?'}人，班主任：${c.headTeacher || '-'}）`).join('\n'))
+      lines.push((classes as any[]).map((c, i) => `${i + 1}. ${c.name || '-'}（${c.studentCount || '?'}人，班主任：${c.headTeacher || '-'}）`).join('\n'))
     }
-    // 学生（限 50 个，按班级聚合）
-    const students = (await this.studentRepo.find({ take: 50 }).catch(() => [])) as any[]
-    if (students.length) {
+    if ((students as any[]).length) {
       lines.push('# 学生名单（最多 50 条）')
-      lines.push(students.map((s) => `- ${s.name || '-'} | 学号: ${s.studentNo || '-'} | 性别: ${s.gender || '-'} | 班级ID: ${s.classId || '-'}`).join('\n'))
+      lines.push((students as any[]).map((s) => `- ${s.name || '-'} | 学号: ${s.studentNo || '-'} | 性别: ${s.gender || '-'} | 班级ID: ${s.classId || '-'}`).join('\n'))
     }
-    // 教师通讯录（限 20 条）
-    const teachers = (await this.teacherRepo.find({ take: 20 }).catch(() => [])) as any[]
-    if (teachers.length) {
+    if ((teachers as any[]).length) {
       lines.push('# 教师通讯录（最多 20 条）')
-      lines.push(teachers.map((t) => `- ${t.name || '-'} | 学科: ${t.subject || '-'} | 电话: ${t.phone || '-'}`).join('\n'))
+      lines.push((teachers as any[]).map((t) => `- ${t.name || '-'} | 学科: ${t.subject || '-'} | 电话: ${t.phone || '-'}`).join('\n'))
     }
-    // 最近成绩（限 30 条）
-    const grades = (await this.gradeRepo.find({ take: 30, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
-    if (grades.length) {
+    if ((grades as any[]).length) {
       lines.push('# 最近成绩记录（最多 30 条）')
-      lines.push(grades.map((g) => `- 学生ID: ${g.studentId || '-'} | 科目: ${g.subject || '-'} | 分数: ${g.score ?? '-'} | 考试: ${g.examName || '-'}`).join('\n'))
+      lines.push((grades as any[]).map((g) => `- 学生ID: ${g.studentId || '-'} | 科目: ${g.subject || '-'} | 分数: ${g.score ?? '-'} | 考试: ${g.examName || '-'}`).join('\n'))
     }
-    // 考试（限 10 条）
-    const exams = (await this.examRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
-    if (exams.length) {
+    if ((exams as any[]).length) {
       lines.push('# 最近考试（最多 10 条）')
-      lines.push(exams.map((e) => `- ${e.name || '-'} | 班级ID: ${e.classId || '-'} | 科目: ${(e.subjects || []).join('/')}`).join('\n'))
+      lines.push((exams as any[]).map((e) => `- ${e.name || '-'} | 班级ID: ${e.classId || '-'} | 科目: ${(e.subjects || []).join('/')}`).join('\n'))
     }
-    // 奖惩记录（限 20 条）
-    const awards = (await this.awardRepo.find({ take: 20, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
-    if (awards.length) {
+    if ((awards as any[]).length) {
       lines.push('# 最近奖惩记录（最多 20 条）')
-      lines.push(awards.map((a) => `- ${a.studentName || a.name || '-'} | 类型: ${a.type || '-'} | 等级: ${a.level || '-'} | 时间: ${a.date || '-'}`).join('\n'))
+      lines.push((awards as any[]).map((a) => `- ${a.studentName || a.name || '-'} | 类型: ${a.type || '-'} | 等级: ${a.level || '-'} | 时间: ${a.date || '-'}`).join('\n'))
     }
-    // 笔记（限 10 条）
-    const notes = (await this.noteRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => [])) as any[]
-    if (notes.length) {
+    if ((notes as any[]).length) {
       lines.push('# 最近笔记（最多 10 条标题）')
-      lines.push(notes.map((n) => `- ${n.title || '-'}`).join('\n'))
+      lines.push((notes as any[]).map((n) => `- ${n.title || '-'}`).join('\n'))
     }
     return lines.length > 1 ? lines.join('\n\n') : ''
   }

@@ -181,9 +181,9 @@ export class ParentAuthService {
       return this.filterExamsForStudent(cached.data, studentId)
     }
     const [exams, grades, students] = await Promise.all([
-      this.examRepo.find({ where: { classId }, order: { date: 'ASC' } }),
-      this.gradeRepo.find({ where: { classId } }),
-      this.studentRepo.find({ where: { classId } }),
+      this.examRepo.find({ where: { classId }, order: { date: 'ASC' }, take: 500 }),
+      this.gradeRepo.find({ where: { classId }, take: 1000 }),
+      this.studentRepo.find({ where: { classId }, take: 500 }),
     ])
     console.log('[getExams] classId=%s studentId=%s exams=%d grades=%d', 
       classId, studentId, exams.length, grades.length)
