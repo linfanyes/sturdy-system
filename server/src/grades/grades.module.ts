@@ -101,7 +101,8 @@ class GradesService extends CrudService<Grade> {
       rawRows.shift()
     }
     const students = await this.stuRepo.find({
-      where: { classId, teacherId } as any,
+      where: { classId } as any,
+      take: 500,
     })
     const byNo = new Map(students.map((s) => [s.studentNo, s]))
     const byName = new Map(students.map((s) => [s.name, s]))
