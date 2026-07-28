@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
