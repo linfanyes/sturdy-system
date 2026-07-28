@@ -206,6 +206,36 @@
       }
     },
     {
+      "path": "pages/subject-tools/word-cards",
+      "style": {
+        "navigationBarTitleText": "单词卡片"
+      }
+    },
+    {
+      "path": "pages/subject-tools/dictation",
+      "style": {
+        "navigationBarTitleText": "汉字听写"
+      }
+    },
+    {
+      "path": "pages/subject-tools/idiom",
+      "style": {
+        "navigationBarTitleText": "成语词典"
+      }
+    },
+    {
+      "path": "pages/subject-tools/sentence",
+      "style": {
+        "navigationBarTitleText": "句型练习"
+      }
+    },
+    {
+      "path": "pages/subject-tools/reading",
+      "style": {
+        "navigationBarTitleText": "阅读理解"
+      }
+    },
+    {
       "path": "pages/config/config",
       "style": {
         "navigationBarTitleText": "设置"
