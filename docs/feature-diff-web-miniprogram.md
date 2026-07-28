@@ -9,11 +9,10 @@
 |------|--------|-----|----------|
 | 页面/路由总数 | 130 页 | 136 路由 | Web 多出的主要是超管/校管管理分层 |
 | 游戏 | 33 | 33 | ✅ **P0 已完成：9 个小程序独有游戏已移植到 Web** |
-| 工具/办公 | 已对齐为主 | 已对齐为主 | 小程序独有 3 项，Web 独有 2 项 |
-| 工具/办公 | 已对齐为主 | 已对齐为主 | 小程序独有 3 项，Web 独有 2 项 |
+| 工具/办公 | ✅ P1 已完成 | ✅ P1 已完成 | 小程序 3 项已移植到 Web；Web 2 项评估为小程序已覆盖无需移植 |
 | AI | 生成向导式 | 库 + 对话式 | 能力对等，**架构不同** |
 | 管理端 | 管理员面板（合一） | 超管 + 校管分层 | Web 拆出独立超管页 |
-| 家长端 | 完整家长 App | 仅联系/沟通 | **小程序更强** |
+| 家长端 | 完整家长 App | Dashboard 聚合 | ✅ P1 评估：核心需求已覆盖 |
 
 ---
 
@@ -47,22 +46,24 @@
 
 ## 2. 工具 / 办公（Tools & Office）
 
-### 小程序独有（Web 缺失）
+### ✅ P1 已完成——小程序独有工具已移植到 Web
 
-| key | 名称 | 位置 |
-|-----|------|------|
-| `thesis` | 教育论文 | office-tools |
-| `planTemplates` | 计划模板 | tools |
-| `lesson-observation` | 听课记录 | 主包（教学 workflow） |
+以下 3 个小程序独有工具已于 **2026-07-28** 移植到 Web（localStorage 版，无需后端）：
 
-> 注：黑板报(`blackboard`)、演讲稿(`speech`)、翻译助手(`translate`)、期末总结(`summary`)、评语(`comment`) 等 office-tools **两端均已具备**，非差异。
+| 小程序 key | Web 组件 | 名称 | 实现方式 |
+|------------|---------|------|---------|
+| `thesis` | `Thesis.vue` (`/teacher/tools/thesis`) | 教育论文 | AiTextTool（AI 生成） |
+| `planTemplates` | `PlanTemplates.vue` (`/teacher/tools/planTemplates`) | 文案模板 | 本地 CRUD（localStorage） |
+| `lesson-observation` | `LessonObservation.vue` (`/teacher/tools/lessonObservation`) | 听课记录 | 本地 CRUD（localStorage） |
 
-### Web 独有（小程序缺失）
+> 注：Web 原有的 `office/LessonObs.vue` / `office/Paper.vue` / `office/PlanTemplateLib.vue` 基于后端 CRUD（需对应 NestJS 模块），新 `tools/` 路由为 localStorage 版，离线可用。Toolbox 导航已指向新路由。
 
-| key | 名称 |
-|-----|------|
-| `essay` | 小作文助手 |
-| `notice-templates` | 通知模板 |
+### 🔍 P2 评估——Web 独有工具是否移植到小程序
+
+| Web 独有 | 小程序已有 | 结论 |
+|----------|-----------|------|
+| `essay`（小作文助手） | `writingMaterials`（作文素材）+ quicktool AI 工具 | ✅ 已覆盖，无需移植 |
+| `notice-templates`（通知模板） | `planTemplates`（文案模板，本地 template 存储） | ✅ 已覆盖，无需移植 |
 
 ### 已对齐（举要，camelCase 一致）
 随机点名 `picker` / 随机分组 `grouper` / 随机决定器 `decider` / 倒计时 `timer` / 课堂计算器 `calc` / 座位表 `seatMap` / 加减分 `scorePanel` / 汉字笔顺 `strokeOrder` / 竖式计算 `verticalCalc` / 口算答题卡 `answerCard` / 乘法口诀 `multiplicationTable` / 单位换算 `unitConversion` / 错题本 `mathMistakes` / 班级职务 `classDuty` / 课表排版 `scheduleMaker`，以及全部语数英学科工具（作文素材 / 单词卡片 / 句型练习 / 单词拼写 / 汉字听写 / 语法 / 成语 / 听力 / 拼音 / 古诗词 / 阅读理解 / 口语 / 英语爽文 / 情景对话）。
@@ -104,9 +105,9 @@
 ## 5. 家长端（Parent）
 
 - **小程序**：完整家长 App —— `parent-login`（家长登录）、`parent`（家长中心）、`parent-contact`（家长联系）。
-- **Web**：仅 `parent-contacts`（家长联系）+ `im`（家校沟通），**无独立家长中心 / 家长登录页**。
+- **Web**：统一登录支持家长角色（`/parent`），Dashboard 聚合通知/考试/作业/排名核心信息。**无独立家长登录页**（Web 端使用统一登录表单，与教师共享）。
 
-→ 家长端是**小程序明显强于 Web** 的一块。Web 是否需补齐家长端取决于产品定位（Web 多为教师/管理后台，家长操作本就在小程序完成）。
+**✅ P1 评估结论**：Web Dashboard 已覆盖家长核心需求（成绩查看、作业提醒、通知接收），统一登录也能按角色自动路由。家长端在 Web 的使用场景主要为班主任/学校发通知，独立家长中心的意义有限，**当前功能已够用，无需额外页面**。
 
 ---
 
@@ -119,10 +120,10 @@
 
 ## 建议补齐优先级（目标：双向完全对等）
 
-1. ~~**P0**：移植 9 个小程序独有游戏到 Web（~~ **✅ 已完成，2026-07-28** ~~）~~。
-2. **P1**：评估并补齐 Web 家长中心 / 家长登录（或明确 Web 不需要家长端）。
-3. **P1**：Web 补 `planTemplates`（计划模板）、`thesis`（教育论文）、`lesson-observation`（听课记录）。
-4. **P2**：评估小程序是否需补 `essay`（小作文助手）、`notice-templates`（通知模板）——取决于产品定位。
+1. ~~**P0**：移植 9 个小程序独有游戏到 Web~~（**✅ 已完成，2026-07-28**）
+2. ~~**P1**：Web 补 `planTemplates`（文案模板）、`thesis`（教育论文）、`lesson-observation`（听课记录）~~（**✅ 已完成，2026-07-28**）
+3. ~~**P1**：评估并补齐 Web 家长中心 / 家长登录~~（**✅ 评估完成：Dashboard 已覆盖核心需求，无需额外页面**）
+4. ~~**P2**：评估小程序是否需补 `essay`/`notice-templates`~~（**✅ 评估完成：小程序已有等效实现，无需移植**）
 5. **架构**：评估是否把 AI "库"概念下沉到小程序（持久化教案 / 知识点 / 试卷）。
 
 ---
