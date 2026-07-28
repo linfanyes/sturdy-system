@@ -96,6 +96,7 @@ import api from '../../common/request'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
+import { safeParse } from '../../common/util'
 
 const statusList = ['出勤', '迟到', '请假', '旷课']
 const statusMap = {
@@ -154,7 +155,6 @@ function pickClass(ev) {
 
 const STATUS_MAP = { present: '出勤', late: '迟到', absent: '旷课', leave: '请假' }
 function normalizeStatus(s) { return STATUS_MAP[s] || s }
-function safeParse(v, fb) { try { return typeof v === 'string' ? JSON.parse(v) : (v || fb) } catch (e) { return fb } }
 
 async function loadAtt() {
   map.value = {}
