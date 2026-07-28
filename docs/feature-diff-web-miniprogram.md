@@ -10,7 +10,8 @@
 | 页面/路由总数 | 130 页 | 136 路由 | Web 多出的主要是超管/校管管理分层 |
 | 游戏 | 33 | 33 | ✅ **P0 已完成：9 个小程序独有游戏已移植到 Web** |
 | 工具/办公 | ✅ P1 已完成 | ✅ P1 已完成 | 小程序 3 项已移植到 Web；Web 2 项评估为小程序已覆盖无需移植 |
-| AI | 生成向导式 | 库 + 对话式 | 能力对等，**架构不同** |
+| AI | ✅ 已补齐库持久化链路 | 库 + 对话式 | 小程序 AI 页面已新增「存到库」按钮，生成内容可持久化保存到 CRUD 库 |
+| 管理端 | 管理员面板（合一） | 超管 + 校管分层 | Web 拆出独立超管页 |
 | 管理端 | 管理员面板（合一） | 超管 + 校管分层 | Web 拆出独立超管页 |
 | 家长端 | 完整家长 App | Dashboard 聚合 | ✅ P1 评估：核心需求已覆盖 |
 
@@ -70,24 +71,31 @@
 
 ---
 
-## 3. AI 功能（能力对等，架构不同）
+## 3. AI 功能（✅ 已补齐库持久化链路，能力对等）
 
-| 能力 | Web | 小程序 |
-|------|-----|--------|
-| 智能教案 | `lesson-plans`（教案库） | `ai-lesson`（智能教案） |
-| 知识点 | `knowledges`（知识点库） | `ai-knowledge`（知识点生成） |
-| 智能组卷 | `papers`（试卷库） | `ai-paper`（智能组卷） |
-| AI 对话 | `ai-chat` | `ai`（AI 助手）+ `ai-interactive`（互动答疑） |
-| 文生图 | `ai-image` | `image-creation`（图像创造） |
-| 教学资源 | `ai-resources` | `resource` + `quicktool` |
-| 考试分析 | `exam-analysis` | `ai-exam`（考试分析） |
-| 英语 AI | `toolEnglishStory` / `toolSceneDialogue` | `quicktool`（英语爽文 / 情景对话） |
+| 能力 | Web | 小程序 | 对齐状态 |
+|------|-----|--------|----------|
+| 智能教案 | `lesson-plans`（教案库） | `ai-lesson`（智能教案） | ✅ 已有「存到教案库」按钮，CRUD 可浏览 |
+| 知识点 | `knowledges`（知识点库） | `ai-knowledge`（知识点生成） | ✅ 同上 |
+| 智能组卷 | `papers`（试卷库） | `ai-paper`（智能组卷） | ✅ 同上 |
+| AI 对话 | `ai-chat` | `ai`（AI 助手）+ `ai-interactive`（互动答疑） | - |
+| 文生图 | `ai-image` | `image-creation`（图像创造） | - |
+| 教学资源 | `ai-resources` | `resource` + `quicktool` | - |
+| 考试分析 | `exam-analysis` | `ai-exam`（考试分析） | - |
+| 英语 AI | `toolEnglishStory` / `toolSceneDialogue` | `quicktool`（英语爽文 / 情景对话） | - |
 
-**架构差异点**：
-- Web 把 AI 产出沉淀为可复用的**"库"**（教案库 / 知识点库 / 试卷库），强调积累与二次使用。
-- 小程序以**一次性生成向导**为主（`ai-lesson`/`ai-knowledge`/`ai-paper`/`ai`），缺持久化"库"概念。
-- 小程序用 `quicktool` 聚合了一批 AI 文本工具，Web 以独立 `tool*` 页承载。
-- 功能覆盖上两端基本对等，差异主要在"是否沉淀为库"。
+**补齐内容（2026-07-28 提交 ba24e8a）**：
+- 子包 AI 页面（ai-lesson/ai-knowledge/ai-paper）新增**「保存到库」按钮**，生成后调用 `POST generated/{type}` 持久化。
+- 每个页面新增**「查看XX库」链接**，导航到通用 CRUD 页面（`pages/crud/crud`）浏览/搜索/编辑/删除。
+- AI 备课中心（`ai-center/index.vue`）新增**「教案库」入口**，补全三个库的导航。
+- **修复**：ai-center CRUD 导航链接使用错误 key 格式（如 `generated-papers` 应为 `generated/papers`），导致跳转后显示"未知类型"。
+
+**当前差异**：
+- Web 用 `CrudTable` 配置式展示库（字段可配置）；小程序用通用 `crud.vue` 统一处理。
+- 小程序 `crud.vue` 的 schema 依赖 `crud-schema.js` 配置，与 Web 的 `CrudTable` props 设计理念一致，只是写法不同。
+- AI 对话（ai-chat/ai）、文生图、资源管理等属交互模式差异，与「库」概念无关。
+
+**结论**：AI 架构差异已基本消除。小程序现在也是"生成→保存→浏览"三阶段，与 Web 对等。
 
 ---
 
@@ -124,7 +132,9 @@
 2. ~~**P1**：Web 补 `planTemplates`（文案模板）、`thesis`（教育论文）、`lesson-observation`（听课记录）~~（**✅ 已完成，2026-07-28**）
 3. ~~**P1**：评估并补齐 Web 家长中心 / 家长登录~~（**✅ 评估完成：Dashboard 已覆盖核心需求，无需额外页面**）
 4. ~~**P2**：评估小程序是否需补 `essay`/`notice-templates`~~（**✅ 评估完成：小程序已有等效实现，无需移植**）
-5. **架构**：评估是否把 AI "库"概念下沉到小程序（持久化教案 / 知识点 / 试卷）。
+5. ~~**架构**：评估是否把 AI "库"概念下沉到小程序~~（**✅ 已完成，小程序 AI 页面已补齐持久化链路**）
+
+**🎉 所有已知功能差异已处理完毕，两端功能对等。**
 
 ---
 
