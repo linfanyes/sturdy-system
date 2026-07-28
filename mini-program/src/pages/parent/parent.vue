@@ -254,20 +254,19 @@ function logout() { logoutParent(); uni.reLaunch({ url: '/pages/login/login' }) 
 
 onShow(async () => {
   if (!parent.token) { uni.reLaunch({ url: '/pages/parent-login/parent-login' }); return }
-  try {
-    const me = await parentApi.get('/parent-auth/me')
-    kids.value = (me && me.kids) || []
-  } catch (e) { console.error('[parent] me error:', e) }
-  try {
-    const edata = await parentApi.get('/parent-auth/exams')
-    exams.value = (edata && edata.exams) || []
-  } catch (e) { console.error('[parent] exams error:', e) }
-  try {
-    const ns = await parentApi.get('/parent-auth/notices')
-    notices.value = Array.isArray(ns) ? ns : []
-    const hw = await parentApi.get('/parent-auth/homework')
-    homework.value = Array.isArray(hw) ? hw : []
-  } catch (e) { console.error('[parent] notices/hw error:', e) }
+  // 并行发起所有请求，避免串行 4 轮网络往返（冷启动耗时近 4×RTT → 1×RTT）
+  const [me, edata, ns, hw] = await Promise.allSettled([
+    parentApi.get('/parent-auth/me'),
+    parentApi.get('/parent-auth/exams'),
+    parentApi.get('/parent-auth/notices'),
+    parentApi.get('/parent-auth/homework'),
+  ])
+  if (me.status === 'fulfilled') kids.value = (me.value && me.value.kids) || []
+  else console.error('[parent] me error:', me.reason)
+  if (edata.status === 'fulfilled') exams.value = (edata.value && edata.value.exams) || []
+  else console.error('[parent] exams error:', edata.reason)
+  if (ns.status === 'fulfilled') notices.value = Array.isArray(ns.value) ? ns.value : []
+  if (hw.status === 'fulfilled') homework.value = Array.isArray(hw.value) ? hw.value : []
 })
 </script>
 

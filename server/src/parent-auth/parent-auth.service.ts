@@ -162,12 +162,23 @@ export class ParentAuthService {
     return { ok: true, nickName }
   }
 
-  /** 考试成绩明细 + 排名 + 分布 */
+  /** 考试成绩明细 + 排名 + 分布（带缓存，避免全量重复计算） */
+  private _examCache = new Map<string, { ts: number; data: any }>()
+  private readonly EXAM_CACHE_TTL = 5 * 60 * 1000  // 5 分钟缓存
+  private readonly MAX_RECENT_EXAMS = 10  // 最多返回最近 10 次考试
+
   async getExams(payload: any) {
     const { classId, studentId } = payload
     if (!classId || !studentId) {
       console.warn('[getExams] 缺少 classId 或 studentId', { classId, studentId })
       return { exams: [] }
+    }
+    // 缓存命中（同班所有家长共享，减少全量计算频率）
+    const cacheKey = `exams:${classId}`
+    const cached = this._examCache.get(cacheKey)
+    if (cached && Date.now() - cached.ts < this.EXAM_CACHE_TTL) {
+      // 仅过滤当前学生数据返回，减少传输
+      return this.filterExamsForStudent(cached.data, studentId)
     }
     const [exams, grades, students] = await Promise.all([
       this.examRepo.find({ where: { classId }, order: { date: 'ASC' } }),
@@ -176,75 +187,9 @@ export class ParentAuthService {
     ])
     console.log('[getExams] classId=%s studentId=%s exams=%d grades=%d', 
       classId, studentId, exams.length, grades.length)
-
-    const examList = []
-    for (const exam of exams) {
-      const key = exam.id || exam.name
-      // 收集所有在该考试有成绩的学生ID
-      const studentScoreMap = new Map<string, { total: number; full: number; subjects: any[] }>()
-      
-      for (const g of grades) {
-        if ((g.examId || g.examName) !== key) continue
-        for (const s of g.scores || []) {
-          const fs = (exam.subjectFullScores && exam.subjectFullScores[g.subject]) || 100
-          if (!studentScoreMap.has(s.studentId)) studentScoreMap.set(s.studentId, { total: 0, full: 0, subjects: [] })
-          const entry = studentScoreMap.get(s.studentId)!
-          entry.subjects.push({ subject: g.subject, score: s.score, fullScore: fs })
-          if (s.score != null) { entry.total += Number(s.score); entry.full += fs }
-        }
-      }
-      
-      // 构建各科排名字典
-      const subjectRanks = new Map<string, Array<{ studentId: string; score: number }>>()
-      for (const [sid, data] of studentScoreMap) {
-        for (const sub of data.subjects) {
-          if (sub.score == null) continue
-          if (!subjectRanks.has(sub.subject)) subjectRanks.set(sub.subject, [])
-          subjectRanks.get(sub.subject)!.push({ studentId: sid, score: Number(sub.score) })
-        }
-      }
-      for (const [subj, arr] of subjectRanks) arr.sort((a, b) => b.score - a.score)
-      
-      // 该生数据
-      const myData = studentScoreMap.get(studentId)
-      const subjects = myData ? myData.subjects : []
-      const totalScore = myData ? myData.total : null
-      const totalFullScore = myData ? myData.full : null
-      
-      // 每科排名
-      subjects.forEach((sub) => {
-        const arr = subjectRanks.get(sub.subject) || []
-        sub.classRank = sub.score != null ? arr.findIndex(r => r.studentId === studentId) + 1 : null
-      })
-      
-      // 总分排名
-      const totalRanks = Array.from(studentScoreMap.entries())
-        .map(([sid, d]) => ({ studentId: sid, total: d.total }))
-        .filter(x => x.total > 0)
-        .sort((a, b) => b.total - a.total)
-      const classRank = totalRanks.findIndex(r => r.studentId === studentId) + 1
-      
-      // 分布柱状图数据（10分一段，基于总分实际值）
-      const distribution = buildDistribution([
-        ...totalRanks.map(r => r.total),
-      ], studentId, totalScore)
-      
-      examList.push({
-        examId: exam.id,
-        examName: exam.name,
-        date: exam.date,
-        term: exam.term,
-        subjects,
-        totalScore,
-        totalFullScore,
-        classRank: classRank > 0 ? classRank : null,
-        gradeRank: null,  // 同年级排名暂不支持
-        distribution,
-        analysisNote: exam.analysisNote || null,
-      })
-    }
-    
-    return { exams: examList }
+    const result = this.computeExams(exams, grades, students)
+    this._examCache.set(cacheKey, { ts: Date.now(), data: result })
+    return this.filterExamsForStudent(result, studentId)
   }
 
   /** 孩子所在班级的作业 */
@@ -293,6 +238,86 @@ export class ParentAuthService {
   /** 签发家长 IM UserSig */
   getImUserSig(payload: any) {
     return this.im.getUserSig(payload.sub)
+  }
+
+  /** 一次计算全班所有考试的排名与分布（可被同班多位家长缓存复用） */
+  private computeExams(exams: any[], grades: any[], students: any[]) {
+    const examList = []
+    for (const exam of exams) {
+      const key = exam.id || exam.name
+      const studentScoreMap = new Map<string, { total: number; full: number; subjects: any[] }>()
+      for (const g of grades) {
+        if ((g.examId || g.examName) !== key) continue
+        for (const s of g.scores || []) {
+          const fs = (exam.subjectFullScores && exam.subjectFullScores[g.subject]) || 100
+          if (!studentScoreMap.has(s.studentId)) studentScoreMap.set(s.studentId, { total: 0, full: 0, subjects: [] })
+          const entry = studentScoreMap.get(s.studentId)!
+          entry.subjects.push({ subject: g.subject, score: s.score, fullScore: fs })
+          if (s.score != null) { entry.total += Number(s.score); entry.full += fs }
+        }
+      }
+      const subjectRanks = new Map<string, Array<{ studentId: string; score: number }>>()
+      for (const [sid, data] of studentScoreMap) {
+        for (const sub of data.subjects) {
+          if (sub.score == null) continue
+          if (!subjectRanks.has(sub.subject)) subjectRanks.set(sub.subject, [])
+          subjectRanks.get(sub.subject)!.push({ studentId: sid, score: Number(sub.score) })
+        }
+      }
+      for (const [, arr] of subjectRanks) arr.sort((a, b) => b.score - a.score)
+      const totalRanks = Array.from(studentScoreMap.entries())
+        .map(([sid, d]) => ({ studentId: sid, total: d.total }))
+        .filter(x => x.total > 0)
+        .sort((a, b) => b.total - a.total)
+      const distribution = buildDistribution([...totalRanks.map(r => r.total)], '', null)
+      // 每科排名 + 总分排名（全班）
+      for (const [sid, data] of studentScoreMap) {
+        const totalRank = totalRanks.findIndex(r => r.studentId === sid) + 1
+        for (const sub of data.subjects) {
+          const arr = subjectRanks.get(sub.subject) || []
+          sub.classRank = sub.score != null ? arr.findIndex(r => r.studentId === sid) + 1 : null
+        }
+        // 挂载全班排名信息供后续单生过滤
+        ;(data as any).classRank = totalRank > 0 ? totalRank : null
+        ;(data as any).studentId = sid
+      }
+      examList.push({
+        examId: exam.id,
+        examName: exam.name,
+        date: exam.date,
+        term: exam.term,
+        _studentScoreMap: studentScoreMap,
+        _subjectRanks: subjectRanks,
+        _totalRanks: totalRanks,
+        distribution,
+        analysisNote: exam.analysisNote || null,
+      })
+    }
+    return { exams: examList }
+  }
+
+  /** 从全班考试计算结果中过滤出当前学生的视图（传输量最小化） */
+  private filterExamsForStudent(fullData: any, studentId: string) {
+    if (!fullData || !fullData.exams) return { exams: [] }
+    return {
+      exams: fullData.exams.map((exam: any) => {
+        const myData = exam._studentScoreMap?.get(studentId)
+        const subjects = myData ? myData.subjects : []
+        return {
+          examId: exam.examId,
+          examName: exam.examName,
+          date: exam.date,
+          term: exam.term,
+          subjects,
+          totalScore: myData ? myData.total : null,
+          totalFullScore: myData ? myData.full : null,
+          classRank: myData ? (myData as any).classRank : null,
+          gradeRank: null,
+          distribution: exam.distribution,
+          analysisNote: exam.analysisNote,
+        }
+      }),
+    }
   }
 }
 
