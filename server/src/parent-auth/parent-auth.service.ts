@@ -185,8 +185,6 @@ export class ParentAuthService {
       this.gradeRepo.find({ where: { classId }, take: 1000 }),
       this.studentRepo.find({ where: { classId }, take: 500 }),
     ])
-    console.log('[getExams] classId=%s studentId=%s exams=%d grades=%d', 
-      classId, studentId, exams.length, grades.length)
     const result = this.computeExams(exams, grades, students)
     this._examCache.set(cacheKey, { ts: Date.now(), data: result })
     return this.filterExamsForStudent(result, studentId)
