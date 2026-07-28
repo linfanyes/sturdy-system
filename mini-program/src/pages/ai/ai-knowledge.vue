@@ -44,8 +44,12 @@
       </view>
       <view class="result-acts">
         <text class="act-btn" @click="copyResult">📋 复制</text>
+        <text class="act-btn" @click="saveToLibrary">💾 存到知识点库</text>
         <text class="act-btn" @click="saveToNotes">📝 存笔记</text>
         <text class="act-btn primary" @click="reGenerate">🔄 重新生成</text>
+      </view>
+      <view class="result-acts" style="margin-top: 10rpx;">
+        <text class="act-link" @click="goLibrary">📖 查看知识点库</text>
       </view>
     </view>
   </view>
@@ -115,6 +119,27 @@ async function saveToNotes() {
   }
 }
 
+async function saveToLibrary() {
+  if (!result.value) return
+  try {
+    const title = `${form.value.subject || ''} ${form.value.topic}`.trim()
+    await api.post('/generated/knowledges', {
+      title,
+      subject: form.value.subject || '',
+      grade: form.value.grade || '',
+      topic: form.value.topic,
+      content: result.value,
+    })
+    uni.showToast({ title: '已保存到知识点库', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  }
+}
+
+function goLibrary() {
+  uni.navigateTo({ url: '/pages/crud/crud?type=generated/knowledges' })
+}
+
 onMounted(() => {})
 </script>
 
@@ -149,4 +174,5 @@ onMounted(() => {})
 .result-acts { display: flex; gap: 12rpx; flex-wrap: wrap; }
 .act-btn { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-text); }
 .act-btn.primary { background: var(--c-primary); color: #fff; }
+.act-link { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; color: var(--c-primary); text-decoration: underline; }
 </style>

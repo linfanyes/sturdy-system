@@ -50,8 +50,12 @@
       </view>
       <view class="result-acts">
         <text class="act-btn" @click="copyResult">📋 复制</text>
+        <text class="act-btn" @click="saveToLibrary">💾 存到教案库</text>
         <text class="act-btn" @click="saveToNotes">📝 存笔记</text>
         <text class="act-btn primary" @click="reGenerate">🔄 重新生成</text>
+      </view>
+      <view class="result-acts" style="margin-top: 10rpx;">
+        <text class="act-link" @click="goLibrary">📖 查看教案库</text>
       </view>
     </view>
   </view>
@@ -115,6 +119,27 @@ async function saveToNotes() {
     uni.showToast({ title: '保存失败', icon: 'none' })
   }
 }
+
+async function saveToLibrary() {
+  if (!result.value) return
+  try {
+    const title = `${form.value.subject || ''} ${form.value.topic} ${form.value.lesson || ''}`.trim()
+    await api.post('/generated/lesson-plans', {
+      title,
+      subject: form.value.subject || '',
+      grade: form.value.grade || '',
+      topic: form.value.topic,
+      content: result.value,
+    })
+    uni.showToast({ title: '已保存到教案库', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  }
+}
+
+function goLibrary() {
+  uni.navigateTo({ url: '/pages/crud/crud?type=generated/lesson-plans' })
+}
 </script>
 
 <style scoped>
@@ -148,4 +173,5 @@ async function saveToNotes() {
 .result-acts { display: flex; gap: 12rpx; flex-wrap: wrap; }
 .act-btn { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-text); }
 .act-btn.primary { background: var(--c-primary); color: #fff; }
+.act-link { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; color: var(--c-primary); text-decoration: underline; }
 </style>

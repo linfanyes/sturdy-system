@@ -54,8 +54,12 @@
       </view>
       <view class="result-acts">
         <text class="act-btn" @click="copyResult">📋 复制</text>
+        <text class="act-btn" @click="saveToLibrary">💾 存到试卷库</text>
         <text class="act-btn" @click="saveToNotes">📝 存笔记</text>
         <text class="act-btn primary" @click="reGenerate">🔄 重新组卷</text>
+      </view>
+      <view class="result-acts" style="margin-top: 10rpx;">
+        <text class="act-link" @click="goLibrary">📖 查看试卷库</text>
       </view>
     </view>
   </view>
@@ -137,6 +141,29 @@ async function saveToNotes() {
     uni.showToast({ title: '保存失败', icon: 'none' })
   }
 }
+
+async function saveToLibrary() {
+  if (!result.value) return
+  try {
+    const title = `${form.value.subject || ''}试卷 - ${form.value.scope}`.trim()
+    const difficultyMap = { easy: '基础', medium: '中等', hard: '较难' }
+    await api.post('/generated/papers', {
+      title,
+      subject: form.value.subject || '',
+      grade: form.value.grade || '',
+      scope: form.value.scope,
+      difficulty: form.value.difficulty,
+      content: result.value,
+    })
+    uni.showToast({ title: '已保存到试卷库', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  }
+}
+
+function goLibrary() {
+  uni.navigateTo({ url: '/pages/crud/crud?type=generated/papers' })
+}
 </script>
 
 <style scoped>
@@ -178,4 +205,5 @@ async function saveToNotes() {
 .result-acts { display: flex; gap: 12rpx; flex-wrap: wrap; }
 .act-btn { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-text); }
 .act-btn.primary { background: var(--c-primary); color: #fff; }
+.act-link { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; color: var(--c-primary); text-decoration: underline; }
 </style>

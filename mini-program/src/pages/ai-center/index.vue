@@ -41,19 +41,23 @@
           <view class="ic">📚</view>
           <view class="lb">教学资源</view>
         </view>
-        <view class="cell" @click="go('/pages/crud/index?type=lesson-plan-templates')">
+        <view class="cell" @click="go('/pages/crud/crud?type=lesson-plan-templates')">
           <view class="ic">📋</view>
           <view class="lb">教案模板</view>
         </view>
-        <view class="cell" @click="go('/pages/crud/index?type=generated-knowledges')">
+        <view class="cell" @click="go('/pages/crud/crud?type=generated/knowledges')">
           <view class="ic">🧠</view>
           <view class="lb">知识点库</view>
         </view>
-        <view class="cell" @click="go('/pages/crud/index?type=generated-papers')">
+        <view class="cell" @click="go('/pages/crud/crud?type=generated/lesson-plans')">
+          <view class="ic">📄</view>
+          <view class="lb">教案库</view>
+        </view>
+        <view class="cell" @click="go('/pages/crud/crud?type=generated/papers')">
           <view class="ic">📑</view>
           <view class="lb">试卷库</view>
         </view>
-        <view class="cell" @click="go('/pages/crud/index?type=paper-queries')">
+        <view class="cell" @click="go('/pages/crud/crud?type=generated/queries')">
           <view class="ic">🔍</view>
           <view class="lb">试卷查询</view>
         </view>
