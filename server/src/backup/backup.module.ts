@@ -43,23 +43,26 @@ export class BackupService {
     @InjectRepository(AiSettings) private readonly aiRepo: Repository<AiSettings>,
   ) {}
 
-  /** 拉取教师全量数据快照 */
+  /** 拉取教师全量数据快照（8 路并行查询） */
   async snapshot(teacherId: string): Promise<any> {
     const u = await this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null)
     const where = { teacherId } as any
+    const [classes, students, teachers, grades, exams, awards, notes, todos] = await Promise.all([
+      this.classRepo.find({ where }).catch(() => []),
+      this.studentRepo.find({ where }).catch(() => []),
+      this.teacherRepo.find({ where }).catch(() => []),
+      this.gradeRepo.find({ where }).catch(() => []),
+      this.examRepo.find({ where }).catch(() => []),
+      this.awardRepo.find({ where }).catch(() => []),
+      this.noteRepo.find({ where }).catch(() => []),
+      this.todoRepo.find({ where }).catch(() => []),
+    ])
+    const aiSettings = await this.aiRepo.findOne({ where }).catch(() => null)
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
       user: u,
-      classes: await this.classRepo.find({ where }).catch(() => []),
-      students: await this.studentRepo.find({ where }).catch(() => []),
-      teachers: await this.teacherRepo.find({ where }).catch(() => []),
-      grades: await this.gradeRepo.find({ where }).catch(() => []),
-      exams: await this.examRepo.find({ where }).catch(() => []),
-      awards: await this.awardRepo.find({ where }).catch(() => []),
-      notes: await this.noteRepo.find({ where }).catch(() => []),
-      todos: await this.todoRepo.find({ where }).catch(() => []),
-      aiSettings: await this.aiRepo.findOne({ where }).catch(() => null),
+      classes, students, teachers, grades, exams, awards, notes, todos, aiSettings,
     }
   }
 
