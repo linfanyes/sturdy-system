@@ -188,6 +188,28 @@ export const QUICK_TOOLS = {
     ],
     build: (f) => `请生成关于「${f.topic}」的英语口语对话练习（${f.level || '初级'}难度），包含：场景说明、核心句型、2 组示范对话、3 个练习提示。`,
   },
+  englishStory: {
+    icon: '📚',
+    title: '英语爽文',
+    hint: '按年级与主题生成趣味性英语短文，附带生词与理解题。',
+    fields: [
+      { k: 'topic', label: '主题', type: 'text', required: true, placeholder: '如：动物、太空、友谊' },
+      { k: 'grade', label: '年级', type: 'picker', options: ['三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三'] },
+      { k: 'level', label: '难度', type: 'picker', options: ['初级', '中级', '高级'] },
+    ],
+    build: (f) => `请为${f.grade || '小学'}学生生成一篇关于「${f.topic}」的英语趣味短文（${f.level || '初级'}难度，120-200词）。\n要求：① 正文（用词简单、句式多样、生动有趣）② 5 个核心生词（英文+音标+中文释义）③ 3 道阅读理解选择题（含答案）。`,
+  },
+  sceneDialogue: {
+    icon: '💬',
+    title: '情景对话',
+    hint: '按场景生成英语情景对话及角色扮演提示。',
+    fields: [
+      { k: 'scene', label: '场景', type: 'text', required: true, placeholder: '如：餐厅点餐、机场问路、医院挂号' },
+      { k: 'level', label: '难度', type: 'picker', options: ['初级', '中级', '高级'] },
+      { k: 'roles', label: '角色数', type: 'picker', options: ['2 人', '3 人', '4 人'] },
+    ],
+    build: (f) => `请生成一段发生在「${f.scene}」的英语情景对话（${f.level || '初级'}难度，${f.roles || '2 人'}角色）。\n要求：① 角色与场景设定 ② 完整对话（标注说话人 A/B/C/D）③ 3 个实用表达点拨 ④ 2 个延伸练习提示，适合课堂角色扮演。`,
+  },
 }
 
 export function getQuickTool(type) {

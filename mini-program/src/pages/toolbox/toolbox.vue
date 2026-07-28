@@ -104,6 +104,8 @@ const sections = ref([
       { label: '英语听力', icon: '🎧', quicktool: 'listening' },
       { label: '单词拼写', icon: '🔤', quicktool: 'spelling' },
       { label: '口语练习', icon: '🎤', quicktool: 'speaking' },
+      { label: '英语爽文', icon: '📚', quicktool: 'englishStory' },
+      { label: '情景对话', icon: '💬', quicktool: 'sceneDialogue' },
       { label: '笔顺演示', icon: '✍️', path: '/pages/tools/stroke/stroke' },
       { label: '口算练习', icon: '🧮', path: '/pages/tools/math' },
       { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
