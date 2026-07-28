@@ -303,23 +303,20 @@ class ScheduleImportService {
     let updated = 0
     await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(ScheduleItem)
+      // 批量查询已存在的课程，避免 N 次循环查询
+      const existing = await repo.find({ where: { classId } as any })
+      const existMap = new Map(existing.map((e) => [`${e.dayOfWeek}-${e.period}-${e.section || ''}`, e]))
+      const toSave: ScheduleItem[] = []
       for (const it of items) {
-        const exist = await repo.findOne({
-          where: {
-            classId,
-            dayOfWeek: it.dayOfWeek,
-            period: it.period,
-            section: it.section || null,
-            teacherId,
-          },
-        })
+        const key = `${it.dayOfWeek}-${it.period}-${it.section || ''}`
+        const exist = existMap.get(key)
         if (exist) {
           exist.subject = it.subject
           exist.teacher = it.teacher || ''
           exist.note = it.note || ''
           exist.weekType = it.weekType || 'all'
           exist.section = it.section || null
-          await repo.save(exist)
+          toSave.push(exist)
           updated++
         } else {
           const e = new ScheduleItem()
@@ -334,10 +331,11 @@ class ScheduleImportService {
             teacher: it.teacher || '',
             note: it.note || '',
           })
-          await repo.save(e)
+          toSave.push(e)
           created++
         }
       }
+      await repo.save(toSave)
     })
     return { created, updated, total: items.length }
   }
