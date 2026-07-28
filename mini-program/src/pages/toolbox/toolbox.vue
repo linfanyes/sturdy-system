@@ -76,9 +76,10 @@ const sections = ref([
     ],
   },
   {
-    title: 'AI 备课',
+    title: 'AI 备课中心',
     items: [
-      { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
+      { label: 'AI 备课中心', icon: '🤖', path: '/pages/ai-center/index' },
+      { label: 'AI 助手', icon: '💬', path: '/pages/ai/ai' },
       { label: '优质教案生成', icon: '📄', path: '/pages/ai-lesson/ai-lesson' },
       { label: '知识点生成', icon: '💡', path: '/pages/ai-knowledge/ai-knowledge' },
       { label: '优选试卷生成', icon: '📃', path: '/pages/ai-paper/ai-paper' },
@@ -86,6 +87,32 @@ const sections = ref([
       { label: '图像创造', icon: '🎨', path: '/pages/image-creation/image-creation' },
       { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
       { label: '资源', icon: '📚', path: '/pages/resource/resource' },
+    ],
+  },
+  {
+    title: '学科工具',
+    items: [
+      { label: '语文工具', icon: '📖', path: '/pages/subject-tools/chinese' },
+      { label: '英语工具', icon: '🔤', path: '/pages/subject-tools/english' },
+      { label: '数学工具', icon: '🔢', path: '/pages/subject-tools/math' },
+      { label: '笔顺演示', icon: '✍️', path: '/pages/tools/stroke' },
+      { label: '口算练习', icon: '🧮', path: '/pages/tools/math' },
+      { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
+      { label: '乘法口诀', icon: '✖️', path: '/pages/tools/multitable' },
+      { label: '单位换算', icon: '📏', path: '/pages/tools/unit' },
+      { label: '错题本', icon: '❌', path: '/pages/tools/mistakes' },
+    ],
+  },
+  {
+    title: '办公工具',
+    items: [
+      { label: '翻译助手', icon: '🌐', path: '/pages/office-tools/translate' },
+      { label: '教育论文', icon: '📝', path: '/pages/office-tools/thesis' },
+      { label: '黑板报', icon: '🎨', path: '/pages/office-tools/blackboard' },
+      { label: '演讲稿', icon: '🎤', path: '/pages/office-tools/speech' },
+      { label: '评语生成', icon: '💬', path: '/pages/office-tools/comment' },
+      { label: '期末总结', icon: '📋', path: '/pages/office-tools/summary' },
+      { label: '通知模板', icon: '✉️', crud: 'notice-templates' },
     ],
   },
   {

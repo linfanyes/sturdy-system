@@ -134,6 +134,42 @@
       }
     },
     {
+      "path": "pages/ai-center/index",
+      "style": {
+        "navigationBarTitleText": "AI 备课中心"
+      }
+    },
+    {
+      "path": "pages/subject-tools/index",
+      "style": {
+        "navigationBarTitleText": "学科工具"
+      }
+    },
+    {
+      "path": "pages/subject-tools/chinese",
+      "style": {
+        "navigationBarTitleText": "语文工具"
+      }
+    },
+    {
+      "path": "pages/subject-tools/english",
+      "style": {
+        "navigationBarTitleText": "英语工具"
+      }
+    },
+    {
+      "path": "pages/subject-tools/math",
+      "style": {
+        "navigationBarTitleText": "数学工具"
+      }
+    },
+    {
+      "path": "pages/office-tools/index",
+      "style": {
+        "navigationBarTitleText": "办公工具"
+      }
+    },
+    {
       "path": "pages/config/config",
       "style": {
         "navigationBarTitleText": "设置"
