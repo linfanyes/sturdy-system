@@ -69,11 +69,9 @@ class ClassesService extends CrudService<ClassItem> {
    */
   async remove(id: string, teacherId: string) {
     await this.assertHeadTeacher(teacherId, id)
-    // 删除班级同时清理所有学期的成员关系
+    // 删除班级同时清理所有学期的成员关系（并行）
     const members = await this.classMemberSvc.listByClass(id)
-    for (const m of members) {
-      await this.classMemberSvc.removeMember(m.teacherId, id, m.term)
-    }
+    await Promise.all(members.map((m) => this.classMemberSvc.removeMember(m.teacherId, id, m.term)))
     return super.remove(id, teacherId)
   }
 
