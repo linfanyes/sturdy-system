@@ -85,6 +85,11 @@ import api from '../../common/request'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isNonEmpty } from '../../common/validators'
+import { safeParse } from '../../common/util'
+
+// 值日表类型归一化：前后端约定中文枚举（值日/班干部），兼容其他端可能写入的英文
+const DUTY_TYPE_MAP = { weekly: '值日', duty: '值日', 值日: '值日', 班干部: '班干部', classcadre: '班干部', cadre: '班干部' }
+function dutyTypeLabel(t) { return DUTY_TYPE_MAP[t] || t }
 
 const classes = ref([])
 const classId = ref('')
@@ -106,7 +111,8 @@ async function loadRoster() {
   const list = await api.getList('/duty-rosters?classId=' + encodeURIComponent(classId.value), { silent: true })
   rosters.value = list.map((r) => ({
     ...r,
-    assignments: (typeof r.assignments === 'string' ? JSON.parse(r.assignments) : r.assignments) || [],
+    type: dutyTypeLabel(r.type),
+    assignments: safeParse(r.assignments, []),
   }))
 }
 onShow(load)
@@ -175,7 +181,7 @@ async function save() {
   const payload = {
     classId: classId.value,
     name: draft.value.name,
-    type: draft.value.type,
+    type: dutyTypeLabel(draft.value.type),
     assignments: draft.value.assignments
       .filter((a) => a.persons.some((p) => (p || '').trim()))
       .map((a) => ({ date: a.date, persons: a.persons.map((p) => (p || '').trim()).filter(Boolean) })),

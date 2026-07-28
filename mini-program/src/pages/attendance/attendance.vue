@@ -152,6 +152,10 @@ function pickClass(ev) {
   loadStudents()
 }
 
+const STATUS_MAP = { present: '出勤', late: '迟到', absent: '旷课', leave: '请假' }
+function normalizeStatus(s) { return STATUS_MAP[s] || s }
+function safeParse(v, fb) { try { return typeof v === 'string' ? JSON.parse(v) : (v || fb) } catch (e) { return fb } }
+
 async function loadAtt() {
   map.value = {}
   attId.value = ''
@@ -164,10 +168,8 @@ async function loadAtt() {
     const rec = list[0]
     attId.value = rec.id
     try {
-      const arr = typeof rec.records === 'string' ? JSON.parse(rec.records) : rec.records || []
-      // 归一化后端可能返回的英文状态→前端中文枚举
-      const STATUS_NORMALIZE = { present: '出勤', late: '迟到', absent: '旷课', leave: '请假' }
-      for (const r of arr) map.value[r.studentId] = STATUS_NORMALIZE[r.status] || r.status
+      const arr = safeParse(rec.records, [])
+      for (const r of arr) map.value[r.studentId] = normalizeStatus(r.status)
     } catch (e) {}
   }
   for (const s of students.value) if (!map.value[s.id]) map.value[s.id] = '出勤'
@@ -190,10 +192,10 @@ async function loadTrend() {
     const atts = (await api.get('/attendances')).filter((a) => a.classId === classId.value && a.date === datestr)
     if (atts.length) {
       const best = atts[0]
-      const recs = typeof best.records === 'string' ? JSON.parse(best.records) : (best.records || [])
+      const recs = safeParse(best.records, [])
       const total = recs.length || 1
-      const present = recs.filter((r) => r.status !== '旷课').length
-      const absent = recs.filter((r) => r.status === '旷课').length
+      const present = recs.filter((r) => normalizeStatus(r.status) !== '旷课').length
+      const absent = recs.filter((r) => normalizeStatus(r.status) === '旷课').length
       days.push({ label, presentRate: Math.round(present / total * 100), absentRate: Math.round(absent / total * 100) })
     } else {
       days.push({ label, presentRate: -1, absentRate: -1 })
@@ -357,9 +359,10 @@ async function loadCmpStats(name) {
     const filtered = atts.filter(a => a.classId === c.id && (!date.value || a.date === date.value))
     const o = { 出勤: 0, 迟到: 0, 请假: 0, 旷课: 0 }
     for (const a of filtered) {
-      const recs = typeof a.records === 'string' ? JSON.parse(a.records) : (a.records || [])
+      const recs = safeParse(a.records, [])
       for (const r of recs) {
-        if (o[r.status] !== undefined) o[r.status]++
+        const ns = normalizeStatus(r.status)
+        if (o[ns] !== undefined) o[ns]++
       }
     }
     cmpStats.value = o

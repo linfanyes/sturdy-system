@@ -566,6 +566,22 @@ export class SchoolAdminService {
     return this.noticeRepo.remove(notice)
   }
 
+  /** 更新学校公告（沿用跨校校验，仅覆盖传入字段） */
+  async updateSchoolNotice(
+    schoolId: string,
+    id: string,
+    dto: { title?: string; content?: string; pinned?: boolean },
+  ) {
+    const notice = await this.noticeRepo.findOne({ where: { id, scope: 'school' } })
+    if (!notice) throw new BadRequestException('公告不存在')
+    const admin = await this.saRepo.findOne({ where: { id: notice.teacherId, schoolId } })
+    if (!admin) throw new BadRequestException('无权操作此公告')
+    if (dto.title !== undefined) notice.title = dto.title
+    if (dto.content !== undefined) notice.content = dto.content
+    if (dto.pinned !== undefined) notice.pinned = dto.pinned
+    return this.noticeRepo.save(notice)
+  }
+
   // ===== 学生管理 =====
 
   /** 全校学生列表 */

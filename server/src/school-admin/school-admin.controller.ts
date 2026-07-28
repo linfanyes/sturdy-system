@@ -168,6 +168,14 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   deleteNotice(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteSchoolNotice(a.schoolId, id) }
 
+  @Patch('notices/:id')
+  @UseGuards(JwtAuthGuard)
+  updateNotice(
+    @CurrentSchoolAdmin() a: any,
+    @Param('id') id: string,
+    @Body() b: { title?: string; content?: string; pinned?: boolean },
+  ) { return this.svc.updateSchoolNotice(a.schoolId, id, b) }
+
   // ===== 学生管理 =====
   @Get('students')
   @UseGuards(JwtAuthGuard)

@@ -512,7 +512,7 @@ function editConfig(key, value, label) {
     </div>
   `, async () => {
     const val = document.getElementById('fCfgVal').value.trim()
-    await API.post('/admin/config', { key, value: val })
+    await API.put('/config/app', { items: [{ key, value: val }] })
     toast('已更新'); closeModal(); loadConfigs(); render()
   })
 }
@@ -1112,7 +1112,7 @@ async function loadSchoolAdmins() {
 }
 async function loadConfigs() {
   try {
-    const r = await API.get('/admin/config')
+    const r = await API.get('/config/app')
     state.configs = Array.isArray(r) ? r : (r.items || [])
   } catch(e) { console.warn('加载配置失败:', e.message) }
 }
