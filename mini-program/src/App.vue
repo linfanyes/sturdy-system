@@ -2,7 +2,7 @@
 import { onLaunch } from '@dcloudio/uni-app'
 import { mockMode, initTheme } from './common/store'
 import { setMockMode } from './common/request'
-import { CLOUDRUN_ENV } from './common/config'
+import { CLOUDRUN_ENV, DEMO_MODE_ENABLED } from './common/config'
 import { setupRouteGuard } from './common/route-guard'
 
 export default {
@@ -30,8 +30,8 @@ export default {
     if (typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.init === 'function') {
       wx.cloud.init({ env: CLOUDRUN_ENV, traceUser: true })
     }
-    // 演示模式：启动时自动恢复
-    if (uni.getStorageSync('g_mock_mode') === 'true') {
+    // 演示模式：启动时自动恢复（仅开发/预览构建；生产构建 DEMO_MODE_ENABLED=false，不会进入）
+    if (DEMO_MODE_ENABLED && uni.getStorageSync('g_mock_mode') === 'true') {
       mockMode.enabled = true
       setMockMode(true)
     }

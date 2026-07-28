@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { DEMO_MODE_ENABLED } from './config'
 
 const TOKEN_KEY = 'g_token'
 const USER_KEY = 'g_user'
@@ -85,8 +86,9 @@ export const theme = reactive({
 })
 
 // 演示模式开关（持久化到 localStorage，页面层通过 import { setMockMode } 生效）
+// 生产构建下 DEMO_MODE_ENABLED=false，初始即 false，即使本地残留 g_mock_mode 标记也不会误激活
 export const mockMode = reactive({
-  enabled: uni.getStorageSync(MOCK_KEY) === 'true',
+  enabled: DEMO_MODE_ENABLED && uni.getStorageSync(MOCK_KEY) === 'true',
 })
 
 // tabBar 页面之间传递参数（uni.switchTab 不支持 URL 参数，通过此桥接）

@@ -29,7 +29,7 @@ export class CrudService<T extends { id: string; teacherId: string }> {
    * @param classId 可选班级过滤
    * @param term  可选学期过滤（前端切换学期时传入，按该学期任教班级集合过滤；不传=所有学期，兼容旧前端）
    */
-  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string): Promise<{ items: T[]; total: number }> {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string, date?: string): Promise<{ items: T[]; total: number }> {
     const where: FindOptionsWhere<T> = {} as FindOptionsWhere<T>
 
     if (classId) {
@@ -51,6 +51,12 @@ export class CrudService<T extends { id: string; teacherId: string }> {
     } else {
       // 默认：按 teacherId 严格隔离
       (where as any).teacherId = teacherId
+    }
+
+    // 可选 date 过滤：仅当实体确实存在 date 列时生效，避免无 date 列的实体被误过滤
+    if (date) {
+      const hasDateCol = this.repo.metadata.columns.some((c) => c.propertyName === 'date')
+      if (hasDateCol) (where as any).date = date
     }
 
     try {

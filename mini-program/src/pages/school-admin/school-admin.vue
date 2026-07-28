@@ -381,6 +381,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { setMockMode } from '../../common/request'
+import { DEMO_MODE_ENABLED } from '../../common/config'
 import { auth, setAuth } from '../../common/store'
 import { isPhone } from '../../common/validators'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
@@ -661,6 +662,11 @@ function logout() {
 
 // ===== 演示模式：以教师身份进入教师系统 =====
 async function enterDemoMode() {
+  // 生产构建中演示模式已被隔离禁用，直接提示并返回，避免写入假 token 触发真实后端 401
+  if (!DEMO_MODE_ENABLED) {
+    uni.showToast({ title: '演示模式仅限开发/预览版', icon: 'none' })
+    return
+  }
   uni.showLoading({ title: '进入演示…' })
   try {
     setMockMode(true)

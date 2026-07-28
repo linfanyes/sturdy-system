@@ -1,4 +1,4 @@
-import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from './config'
+import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
 import { getToken, logout, auth, parent } from './store'
 import { getMockData } from './mock'
 
@@ -6,6 +6,11 @@ import { getMockData } from './mock'
 let _mockMode = false
 /** 开���后所有 API 返回本地模拟数据，无需后端即可全功能预览 */
 export function setMockMode(enabled) {
+  // 生产构建：无论调用方意图如何，演示模式强制关闭，避免发布包误开返回全量假数据
+  if (!DEMO_MODE_ENABLED) {
+    _mockMode = false
+    return
+  }
   _mockMode = enabled
   // 持久化演示模式开关，使小程序重启后仍能恢复（App.vue 启动时读取 g_mock_mode）
   uni.setStorageSync('g_mock_mode', enabled ? 'true' : 'false')
@@ -59,8 +64,8 @@ async function batchRun(tasks) {
 const REQUEST_TIMEOUT = 30000 // 30 秒（含冷启动），超时即视为后端/链路不可用
 
 export function request(path, method = 'GET', data = {}, token) {
-  // 演示模式：返回本地模拟数据，无需真实后端
-  if (_mockMode) {
+  // 演示模式：返回本地模拟数据，无需真实后端（生产构建下 DEMO_MODE_ENABLED 为 false，永不会进入）
+  if (DEMO_MODE_ENABLED && _mockMode) {
     return new Promise((resolve) => resolve(getMockData(path, method, data)))
   }
   const useToken = token !== undefined ? token : getToken()
@@ -172,8 +177,8 @@ export const api = {
  * @returns {Promise<string>} 完整回复文本
  */
 export function streamChat(path, data, onDelta, opts = {}) {
-  // 演示模式：返回模拟回复
-  if (_mockMode) {
+  // 演示模式：返回模拟回复（生产构建下 DEMO_MODE_ENABLED 为 false，永不会进入）
+  if (DEMO_MODE_ENABLED && _mockMode) {
     const mockReply = '这是演示模式下的模拟回复。您可以在「设置 → 演示模式」中关闭此功能连接到真实后端。'
     if (opts.onTask) opts.onTask({ abort: () => {} })
     return new Promise((resolve) => {

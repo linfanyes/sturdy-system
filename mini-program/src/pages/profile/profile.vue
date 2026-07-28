@@ -119,6 +119,7 @@ import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun, setMockMode } from '../../common/request'
 import { isPhone, isEmail } from '../../common/validators'
+import { DEMO_MODE_ENABLED } from '../../common/config'
 import { theme, auth, setUser, setAuth, setColorScheme, logout as doLogout } from '../../common/store'
 
 const me = reactive({})
@@ -396,6 +397,11 @@ function logout() {
 
 // 演示模式：以模拟教师身份进入教师系统，所有 API 由本地 mock 数据响应
 async function enterDemoMode() {
+  // 生产构建中演示模式已被隔离禁用，直接提示并返回，避免写入假 token 触发真实后端 401
+  if (!DEMO_MODE_ENABLED) {
+    uni.showToast({ title: '演示模式仅限开发/预览版', icon: 'none' })
+    return
+  }
   uni.showLoading({ title: '进入演示…' })
   try {
     setMockMode(true)

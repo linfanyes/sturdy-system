@@ -161,7 +161,10 @@ async function loadAtt() {
   attId.value = ''
   dirty = false
   if (!classId.value) return
-  const list = (await api.get('/attendances')).filter(
+  // 服务端按 classId（+date）过滤，避免全表拉取后在端侧过滤
+  let url = '/attendances?classId=' + encodeURIComponent(classId.value)
+  if (date.value) url += '&date=' + encodeURIComponent(date.value)
+  const list = (await api.get(url)).filter(
     (a) => a.classId === classId.value && (date.value ? a.date === date.value : true)
   )
   if (list.length) {
@@ -183,15 +186,21 @@ const trendAbsent = computed(() => trendData.value.map((d) => d.absentRate))
 
 async function loadTrend() {
   if (!classId.value || !students.value.length) return
+  // 仅按 classId 服务端过滤一次（避免近7天每天各拉一次全表），端侧按日期分组统计
+  const all = await api.get('/attendances?classId=' + encodeURIComponent(classId.value))
+  const byDate = {}
+  for (const a of all) {
+    if (a.classId !== classId.value) continue
+    if (!byDate[a.date]) byDate[a.date] = a
+  }
   const days = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
     const label = (d.getMonth() + 1) + '/' + d.getDate()
     const datestr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
-    const atts = (await api.get('/attendances')).filter((a) => a.classId === classId.value && a.date === datestr)
-    if (atts.length) {
-      const best = atts[0]
+    const best = byDate[datestr]
+    if (best) {
       const recs = safeParse(best.records, [])
       const total = recs.length || 1
       const present = recs.filter((r) => normalizeStatus(r.status) !== '旷课').length
@@ -355,8 +364,10 @@ async function loadCmpStats(name) {
   if (!c) return
   cmpClassName.value = name
   try {
-    const atts = await api.get('/attendances')
-    const filtered = atts.filter(a => a.classId === c.id && (!date.value || a.date === date.value))
+    // 服务端按 classId（+date）过滤，避免全表拉取
+    let url = '/attendances?classId=' + encodeURIComponent(c.id)
+    if (date.value) url += '&date=' + encodeURIComponent(date.value)
+    const filtered = await api.get(url)
     const o = { 出勤: 0, 迟到: 0, 请假: 0, 旷课: 0 }
     for (const a of filtered) {
       const recs = safeParse(a.records, [])
