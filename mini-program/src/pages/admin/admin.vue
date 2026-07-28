@@ -65,7 +65,7 @@
             <text class="reset-icon">⚠️</text>
             <view class="reset-text">
               <text class="reset-name">一键重置</text>
-              <text class="reset-sub">清除所有管理员/教师/家长数据，保留学校结构和超管账号</text>
+              <text class="reset-sub">清除所有业务数据及本机登录缓存，保留基础演示数据和超管登录</text>
             </view>
           </view>
         </view>
@@ -742,11 +742,11 @@ async function delAdmin(a) {
   })
 }
 
-// 一键重置：清除所有管理员/教师/家长数据
+// 一键重置：清除所有业务数据 + 本地所有登录信息/个人缓存，保留超管登录态和基础演示数据
 function confirmResetAll() {
   uni.showModal({
     title: '⚠️ 一键重置',
-    content: '确定要清除所有学校管理员、教师、家长及全部业务数据吗？\n\n此操作不可撤销！\n\n保留：学校结构 + 超管账号。',
+    content: '确定要执行一键重置吗？\n\n此操作将：\n1. 清除所有考试、成绩、作业、考勤等业务数据\n2. 清除本机所有学校管理员、教师、家长的登录信息及个人缓存\n\n此操作不可撤销！\n\n保留：学校、教师、校管等基础演示数据，超管登录态将保留。',
     confirmText: '确认重置',
     confirmColor: '#e64340',
     success: async (m) => {
@@ -755,18 +755,15 @@ function confirmResetAll() {
       try {
         await apiCall('POST', '/admin/reset-all', { confirm: true })
         uni.hideLoading()
-        uni.showModal({
-          title: '重置成功',
-          content: '所有数据已清除，建议重新登录以确保状态刷新。',
-          confirmText: '重新登录',
-          success: (r) => {
-            if (r.confirm) {
-              adminToken.value = ''
-              uni.removeStorageSync('admin_token')
-              uni.reLaunch({ url: '/pages/login/login' })
-            }
-          },
-        })
+        // 保存超管登录态
+        const savedAdminToken = adminToken.value
+        // 清除所有本地存储，实现系统初始化
+        uni.clearStorageSync()
+        // 恢复超管token
+        uni.setStorageSync(ADMIN_TOKEN_KEY, savedAdminToken)
+        // 重新加载管理员页面，重置所有内存状态
+        uni.reLaunch({ url: '/pages/admin/admin' })
+        uni.showToast({ title: '重置成功', icon: 'success' })
       } catch (e) {
         uni.hideLoading()
         uni.showToast({ title: e.message || '重置失败', icon: 'none' })

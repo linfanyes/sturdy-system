@@ -110,7 +110,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES } from '../../common/store'
+import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES, flushTabBarStyle } from '../../common/store'
 import { inRange, isUrl, clip, MAX_LEN } from '../../common/validators'
 
 // ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================

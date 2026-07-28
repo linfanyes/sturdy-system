@@ -1,0 +1,295 @@
+{
+  "timestamp": "2026-07-27T23:19:58.930Z",
+  "type": "frontend-static-analysis",
+  "summary": {
+    "total": 47,
+    "pass": 46,
+    "fail": 1,
+    "warn": 0
+  },
+  "results": [
+    {
+      "id": "TC-FE-LAYOUT-001",
+      "category": "排版",
+      "description": "全局 box-sizing: border-box 设置",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-002",
+      "category": "排版",
+      "description": "页面 overflow-x: hidden 防止横向溢出",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-003",
+      "category": "排版",
+      "description": "安全区域适配（safe-area-inset）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-004",
+      "category": "排版",
+      "description": "rpx 响应式单位使用",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-005",
+      "category": "排版",
+      "description": "暗色模式 CSS 变量覆盖",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-006",
+      "category": "排版",
+      "description": "字体缩放支持（fz-sm/md/lg）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-007",
+      "category": "排版",
+      "description": "tabBar 5个标签完整配置",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-008",
+      "category": "排版",
+      "description": "tabBar 选中色与主题色一致（#e6a23c）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-009",
+      "category": "排版",
+      "description": "全局导航栏背景色 #fff7e6",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-010",
+      "category": "排版",
+      "description": "图片最大宽度100%防止溢出",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-011",
+      "category": "排版",
+      "description": "模态框/底部栏安全区域 padding",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-LAYOUT-012",
+      "category": "排版",
+      "description": "4种配色方案定义（奶黄/薄荷/樱花/天蓝）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-001",
+      "category": "功能",
+      "description": "config.vue 正确导入 flushTabBarStyle",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-002",
+      "category": "功能",
+      "description": "dashboard.vue 正确导入 flushTabBarStyle",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-003",
+      "category": "功能",
+      "description": "classes.vue 正确导入 flushTabBarStyle",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-004",
+      "category": "功能",
+      "description": "students.vue 正确导入 flushTabBarStyle",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-005",
+      "category": "功能",
+      "description": "toolbox.vue 正确导入 flushTabBarStyle",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-006",
+      "category": "功能",
+      "description": "登录页空用户名/密码校验",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-007",
+      "category": "功能",
+      "description": "401 自动登出逻辑",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-008",
+      "category": "功能",
+      "description": "请求超时 30s 设置",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-009",
+      "category": "功能",
+      "description": "AI 流式超时 45s 设置",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-010",
+      "category": "功能",
+      "description": "路由守卫角色拦截",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-011",
+      "category": "功能",
+      "description": "多角色会话恢复（super/sa/parent/teacher）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-012",
+      "category": "功能",
+      "description": "Mock 模式开关持久化",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-013",
+      "category": "功能",
+      "description": "switchTab 参数桥接（switchTabParams）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-014",
+      "category": "功能",
+      "description": "下拉刷新配置（enablePullDownRefresh）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-015",
+      "category": "功能",
+      "description": "分包预加载规则（toolbox → tools）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-016",
+      "category": "功能",
+      "description": "EmptyState 组件存在且被引用",
+      "status": "FAIL",
+      "detail": "false"
+    },
+    {
+      "id": "TC-FE-FUNC-017",
+      "category": "功能",
+      "description": "Skeleton 加载骨架屏组件存在",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-018",
+      "category": "功能",
+      "description": "表单验证器导入（validators）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-019",
+      "category": "功能",
+      "description": "批量操作使用 Promise.allSettled（batchRun）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-FUNC-020",
+      "category": "功能",
+      "description": "删除操作二次确认（uni.showModal）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-001",
+      "category": "性能",
+      "description": "Dashboard 并行加载（Promise.all 或独立 catch）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-002",
+      "category": "性能",
+      "description": "学生列表客户端分页（PAGE_SIZE）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-003",
+      "category": "性能",
+      "description": "搜索防抖（debounce/watch）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-004",
+      "category": "性能",
+      "description": "定时器清理（onHide/onUnload clearInterval）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-005",
+      "category": "性能",
+      "description": "图片压缩（compressImage）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-006",
+      "category": "性能",
+      "description": "AI 会话持久化时剥离 base64",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-007",
+      "category": "性能",
+      "description": "分包加载（subPackages 配置）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-008",
+      "category": "性能",
+      "description": "请求 loading 状态防重复提交（saving flag）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-009",
+      "category": "性能",
+      "description": "云托管私网链路（callContainer 而非公网 HTTP）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-PERF-010",
+      "category": "性能",
+      "description": "DCloud CDN 预加载阻断（避免 ERR_TIMED_OUT）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-SEC-001",
+      "category": "安全",
+      "description": "AI 富文本 XSS 防护（HTML 转义）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-SEC-002",
+      "category": "安全",
+      "description": "图片 URL 协议限制（仅 http/https）",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-SEC-003",
+      "category": "安全",
+      "description": "Token 存储使用 storage key 前缀隔离",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-SEC-004",
+      "category": "安全",
+      "description": "登出清除所有角色 token",
+      "status": "PASS"
+    },
+    {
+      "id": "TC-FE-SEC-005",
+      "category": "安全",
+      "description": "云环境 ID 不暴露密钥",
+      "status": "PASS"
+    }
+  ]
+}
