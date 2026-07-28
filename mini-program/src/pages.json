@@ -170,6 +170,42 @@
       }
     },
     {
+      "path": "pages/office-tools/translate",
+      "style": {
+        "navigationBarTitleText": "翻译助手"
+      }
+    },
+    {
+      "path": "pages/office-tools/thesis",
+      "style": {
+        "navigationBarTitleText": "教育论文"
+      }
+    },
+    {
+      "path": "pages/office-tools/comment",
+      "style": {
+        "navigationBarTitleText": "评语生成"
+      }
+    },
+    {
+      "path": "pages/office-tools/summary",
+      "style": {
+        "navigationBarTitleText": "期末总结"
+      }
+    },
+    {
+      "path": "pages/subject-tools/composition",
+      "style": {
+        "navigationBarTitleText": "作文素材"
+      }
+    },
+    {
+      "path": "pages/subject-tools/poetry",
+      "style": {
+        "navigationBarTitleText": "古诗词助手"
+      }
+    },
+    {
       "path": "pages/config/config",
       "style": {
         "navigationBarTitleText": "设置"

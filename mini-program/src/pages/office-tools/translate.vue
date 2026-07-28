@@ -18,7 +18,6 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import api from '../../common/request'
 const text = ref('')

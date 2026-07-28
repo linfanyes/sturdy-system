@@ -9,11 +9,8 @@
   </view>
 </template>
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
-const router = useRouter()
-function go(path) { router.push(path) }
+function go(path) { uni.navigateTo({ url: path }) }
 </script>
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; }
