@@ -31,6 +31,7 @@
         <text class="tab" :class="{ on: tab === 'school' }" @click="switchTab('school')">🏫 学校</text>
         <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 管理员</text>
         <text class="tab" :class="{ on: tab === 'config' }" @click="switchTab('config')">⚙️ 配置</text>
+        <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI厂商</text>
         <text class="tab" :class="{ on: tab === 'audit' }" @click="switchTab('audit')">📋 日志</text>
       </view>
 
@@ -149,6 +150,32 @@
         </scroll-view>
       </template>
 
+      <!-- ===== AI 服务商管理 ===== -->
+      <template v-if="tab === 'ai'">
+        <view class="stats">
+          <text class="sc">共 {{ providers.length }} 个厂商</text>
+          <text class="act" @click="openCreateProvider">＋ 新增厂商</text>
+        </view>
+        <view class="list">
+          <EmptyState v-if="!providers.length" icon="🤖" text="暂无 AI 服务商" />
+          <view class="row" v-for="p in providers" :key="p.code">
+            <view class="info" @click="openEditProvider(p)">
+              <view class="nm-line">
+                <text class="nm">{{ p.name }}</text>
+                <text class="badge" :class="p.enabled ? 'on' : 'off'">{{ p.enabled ? '启用' : '停用' }}</text>
+                <text v-if="p.isDefault" class="badge on">默认</text>
+              </view>
+              <view class="meta">代码: {{ p.code }} | 排序: {{ p.sortOrder }}</view>
+              <view class="meta" v-if="p.baseUrl">{{ p.baseUrl }}</view>
+            </view>
+            <view class="acts">
+              <text class="act stop" @click="toggleProvider(p)">{{ p.enabled ? '停用' : '启用' }}</text>
+              <text class="act del" @click="delProvider(p)">删除</text>
+            </view>
+          </view>
+        </view>
+      </template>
+
       <!-- ===== 审计日志 ===== -->
       <template v-if="tab === 'audit'">
         <view class="stats"><text class="sc">操作日志（最近 100 条）</text></view>
@@ -168,6 +195,42 @@
           </view>
         </scroll-view>
       </template>
+
+      <!-- 新增/编辑 AI 厂商（全屏） -->
+      <view v-if="showProviderForm" class="full-mask">
+        <view class="full-page">
+          <view class="full-head">
+            <text class="full-back" @click="showProviderForm = false">← 返回</text>
+            <text class="full-title">{{ editingProviderCode ? '编辑厂商' : '新增厂商' }}</text>
+            <text class="full-placeholder"></text>
+          </view>
+          <scroll-view scroll-y class="full-body">
+            <view class="form-item">
+              <text class="label">厂商名称 <text class="req">*</text></text>
+              <input v-model="providerForm.name" class="inp" placeholder="如：阿里云" />
+            </view>
+            <view class="form-item">
+              <text class="label">代码标识 <text class="req">*</text></text>
+              <input v-model="providerForm.code" class="inp" placeholder="如：aliyun" />
+            </view>
+            <view class="form-item">
+              <text class="label">API 接口地址</text>
+              <input v-model="providerForm.baseUrl" class="inp" placeholder="如：https://dashscope.aliyuncs.com/v1" />
+            </view>
+            <view class="form-item">
+              <text class="label">排序</text>
+              <input v-model.number="providerForm.sortOrder" class="inp" type="number" placeholder="数字越小越靠前" />
+            </view>
+            <view class="switch-item">
+              <text class="label-line">启用</text>
+              <switch :checked="providerForm.enabled" @change="providerForm.enabled = $event.detail.value" color="#4CAF50" />
+            </view>
+          </scroll-view>
+          <view class="full-foot">
+            <button class="save-btn" :disabled="saving" @click="saveProvider">{{ saving ? '保存中…' : '保存' }}</button>
+          </view>
+        </view>
+      </view>
 
       <!-- 新增/编辑学校（全屏） -->
       <view v-if="showSchoolForm" class="full-mask">
@@ -434,7 +497,74 @@ function switchTab(t) {
   if (t === 'school') loadSchools()
   if (t === 'admin') loadAdmins()
   if (t === 'config') loadConfigs()
+  if (t === 'ai') loadProviders()
   if (t === 'audit') loadAuditLogs()
+}
+
+// ===== AI 服务商管理 =====
+const providers = ref([])
+const showProviderForm = ref(false)
+const editingProviderCode = ref('')
+const providerForm = ref({ name: '', code: '', baseUrl: '', enabled: true, isDefault: false, sortOrder: 0 })
+
+async function loadProviders() {
+  try {
+    const r = await apiCall('GET', '/admin/ai-providers') || { items: [] }
+    providers.value = r.items || r || []
+  } catch (e) { providers.value = [] }
+}
+
+function openCreateProvider() {
+  editingProviderCode.value = ''
+  providerForm.value = { name: '', code: '', baseUrl: '', enabled: true, isDefault: false, sortOrder: 0 }
+  showProviderForm.value = true
+}
+
+function openEditProvider(p) {
+  editingProviderCode.value = p.code
+  providerForm.value = { name: p.name, code: p.code, baseUrl: p.baseUrl || '', enabled: p.enabled, isDefault: p.isDefault, sortOrder: p.sortOrder || 0 }
+  showProviderForm.value = true
+}
+
+async function saveProvider() {
+  const f = providerForm.value
+  if (!f.name || !f.code) return uni.showToast({ title: '厂商名称和代码必填', icon: 'none' })
+  saving.value = true
+  try {
+    if (editingProviderCode.value) {
+      await apiCall('PATCH', '/admin/ai-providers/' + editingProviderCode.value, f)
+    } else {
+      await apiCall('POST', '/admin/ai-providers', f)
+    }
+    showProviderForm.value = false
+    await loadProviders()
+    uni.showToast({ title: '已保存', icon: 'success' })
+  } catch (e) { uni.showToast({ title: e.message || '操作失败', icon: 'none' }) }
+  saving.value = false
+}
+
+async function toggleProvider(p) {
+  try {
+    await apiCall('PATCH', '/admin/ai-providers/' + p.code, { enabled: !p.enabled })
+    p.enabled = !p.enabled
+    uni.showToast({ title: p.enabled ? '已启用' : '已停用', icon: 'success' })
+  } catch (e) { uni.showToast({ title: e.message || '操作失败', icon: 'none' }) }
+}
+
+async function delProvider(p) {
+  uni.showModal({
+    title: '删除厂商',
+    content: `确定删除「${p.name}」？`,
+    confirmColor: '#e64340',
+    success: async (m) => {
+      if (!m.confirm) return
+      try {
+        await apiCall('DELETE', '/admin/ai-providers/' + p.code)
+        providers.value = providers.value.filter(x => x.id !== p.code)
+        uni.showToast({ title: '已删除', icon: 'success' })
+      } catch (e) { uni.showToast({ title: e.message || '删除失败', icon: 'none' }) }
+    },
+  })
 }
 
 // ===== 审计日志 =====
@@ -742,11 +872,11 @@ async function delAdmin(a) {
   })
 }
 
-// 一键重置：清除所有业务数据 + 本地所有登录信息/个人缓存，保留超管登录态和基础演示数据
+// 一键重置：全量清除所有学校/教师/班级/学生/业务数据 + 重建种子
 function confirmResetAll() {
   uni.showModal({
-    title: '⚠️ 一键重置',
-    content: '确定要执行一键重置吗？\n\n此操作将：\n1. 清除所有考试、成绩、作业、考勤等业务数据\n2. 清除本机所有学校管理员、教师、家长的登录信息及个人缓存\n\n此操作不可撤销！\n\n保留：学校、教师、校管等基础演示数据，超管登录态将保留。',
+    title: '⚠️ 一键全量重置',
+    content: '确定要执行全量重置吗？\n\n此操作将：\n1. 清除所有考试、成绩、作业、考勤等业务数据\n2. 清除本机所有学校管理员、教师、家长的登录信息及个人缓存\n\n此操作不可撤销！\n\n保留：学校、教师、校管等基础演示数据，超管登录态将保留。',
     confirmText: '确认重置',
     confirmColor: '#e64340',
     success: async (m) => {
