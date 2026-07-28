@@ -7,23 +7,23 @@
     <view class="section">
       <view class="sec-title">📚 备课资源</view>
       <view class="grid">
-        <view class="cell" @click="go('/pages/ai-lesson/ai-lesson')">
+        <view class="cell" @click="go('/pages/ai/ai-lesson')">
           <view class="ic">📄</view>
           <view class="lb">优质教案</view>
         </view>
-        <view class="cell" @click="go('/pages/ai-knowledge/ai-knowledge')">
+        <view class="cell" @click="go('/pages/ai/ai-knowledge')">
           <view class="ic">💡</view>
           <view class="lb">知识点生成</view>
         </view>
-        <view class="cell" @click="go('/pages/ai-paper/ai-paper')">
+        <view class="cell" @click="go('/pages/ai/ai-paper')">
           <view class="ic">📃</view>
           <view class="lb">优选试卷</view>
         </view>
-        <view class="cell" @click="go('/pages/ai-interactive/ai-interactive')">
+        <view class="cell" @click="go('/pages/ai/ai-interactive')">
           <view class="ic">🎯</view>
           <view class="lb">互动讲义</view>
         </view>
-        <view class="cell" @click="go('/pages/ai-exam/ai-exam')">
+        <view class="cell" @click="go('/pages/ai/ai-exam')">
           <view class="ic">📊</view>
           <view class="lb">考试分析</view>
         </view>

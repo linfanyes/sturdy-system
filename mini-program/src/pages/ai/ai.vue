@@ -111,23 +111,23 @@
           <view class="sk-body"><text class="sk-t">{{ c.t }}</text><text class="sk-sub">{{ c.sub }}</text></view>
         </view>
         <view class="sk-section">专项工具</view>
-        <view class="skill" @click="goSkill('/pages/ai-exam/ai-exam')">
+        <view class="skill" @click="goSkill('/pages/ai/ai-exam')">
           <text class="sk-ico">📊</text>
           <view class="sk-body"><text class="sk-t">考试分析</text><text class="sk-sub">按考试生成分析描述</text></view>
         </view>
-        <view class="skill" @click="goSkill('/pages/ai-knowledge/ai-knowledge')">
+        <view class="skill" @click="goSkill('/pages/ai/ai-knowledge')">
           <text class="sk-ico">📚</text>
           <view class="sk-body"><text class="sk-t">知识点生成</text><text class="sk-sub">生成知识点讲解</text></view>
         </view>
-        <view class="skill" @click="goSkill('/pages/ai-paper/ai-paper')">
+        <view class="skill" @click="goSkill('/pages/ai/ai-paper')">
           <text class="sk-ico">📝</text>
           <view class="sk-body"><text class="sk-t">优选试卷</text><text class="sk-sub">智能组卷</text></view>
         </view>
-        <view class="skill" @click="goSkill('/pages/ai-lesson/ai-lesson')">
+        <view class="skill" @click="goSkill('/pages/ai/ai-lesson')">
           <text class="sk-ico">📒</text>
           <view class="sk-body"><text class="sk-t">智能教案</text><text class="sk-sub">生成教案框架</text></view>
         </view>
-        <view class="skill" @click="goSkill('/pages/ai-interactive/ai-interactive')">
+        <view class="skill" @click="goSkill('/pages/ai/ai-interactive')">
           <text class="sk-ico">🎯</text>
           <view class="sk-body"><text class="sk-t">互动答疑</text><text class="sk-sub">学生提问辅助回答</text></view>
         </view>

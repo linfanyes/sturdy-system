@@ -179,7 +179,7 @@ function cancelEdit() {
 }
 
 function analyze(e) {
-  uni.navigateTo({ url: '/pages/ai-exam/ai-exam?examId=' + encodeURIComponent(e.id) })
+  uni.navigateTo({ url: '/pages/ai/ai-exam?examId=' + encodeURIComponent(e.id) })
 }
 
 async function save() {
