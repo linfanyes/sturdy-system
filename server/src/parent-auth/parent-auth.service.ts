@@ -170,14 +170,17 @@ export class ParentAuthService {
   async getExams(payload: any) {
     const { classId, studentId } = payload
     if (!classId || !studentId) {
-      console.warn('[getExams] 缺少 classId 或 studentId', { classId, studentId })
+      return { exams: [] }
+    }
+    // 校验 studentId 是否属于当前家长绑定的孩子
+    const stu = await this.studentRepo.findOne({ where: { id: studentId, classId } })
+    if (!stu) {
       return { exams: [] }
     }
     // 缓存命中（同班所有家长共享，减少全量计算频率）
     const cacheKey = `exams:${classId}`
     const cached = this._examCache.get(cacheKey)
     if (cached && Date.now() - cached.ts < this.EXAM_CACHE_TTL) {
-      // 仅过滤当前学生数据返回，减少传输
       return this.filterExamsForStudent(cached.data, studentId)
     }
     const [exams, grades, students] = await Promise.all([
@@ -191,8 +194,12 @@ export class ParentAuthService {
   }
 
   /** 孩子所在班级的作业 */
-  async getHomework(classId: string) {
-    if (!classId) return []
+  async getHomework(payload: any) {
+    const { classId, studentId } = payload
+    if (!classId || !studentId) return []
+    // 校验 studentId 是否属于当前家长绑定的孩子
+    const stu = await this.studentRepo.findOne({ where: { id: studentId, classId } })
+    if (!stu) return []
     const list = await this.homeworkRepo.find({
       where: { classId },
       order: { createdAt: 'DESC' },

@@ -114,17 +114,27 @@ export class ConfigController {
   }
 
   /**
-   * 教师读取平台应用配置（脱敏），返回 { key: value } 映射，
-   * 前端 Object.assign 直接覆盖到应用配置表单。密钥类字段脱敏下发。
+   * 教师读取平台应用配置（仅公开配置，不含敏感密钥）。
+   * 仅返回教师需要的公开配置项，避免密钥脱敏下发。
    */
   @Roles('teacher')
   @Get('app-config')
   @UseGuards(JwtAuthGuard)
   async getAppConfig() {
     const rows = await this.cfg.listAppConfig()
+    // 仅返回教师需要的公开配置键
+    const publicKeys = new Set([
+      'theme', 'semester', 'schoolYear',
+      'loginCode', 'defaultSubjects',
+      'aiTextModel', 'aiVisionModel', 'aiImageModel', 'aiVideoModel',
+      'aiTemperature', 'aiName', 'aiBaseUrl',
+      'wxAppId', 'imSdkAppId', // 公开 ID 类（非密钥）
+    ])
     const map: Record<string, string> = {}
     for (const r of rows) {
-      map[r.key] = SECRET_KEYS.has(r.key) ? maskSecret(r.value) : r.value
+      if (publicKeys.has(r.key)) {
+        map[r.key] = r.value
+      }
     }
     return map
   }

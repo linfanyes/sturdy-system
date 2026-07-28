@@ -58,7 +58,7 @@ export class ParentAuthController {
   @Get('homework')
   @UseGuards(JwtAuthGuard)
   homework(@CurrentParent() p: any) {
-    return this.s.getHomework(p.classId)
+    return this.s.getHomework(p)
   }
 
   /** 家长订阅微信通知（wx.login code → openId 落库） */

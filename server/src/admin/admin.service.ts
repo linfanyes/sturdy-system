@@ -461,6 +461,10 @@ export class AdminService implements OnModuleInit {
       try {
         await em.query(`DELETE FROM \`teachers\` WHERE id = ?`, [teacherId])
       } catch { /* teachers 表可能无此记录 */ }
+      // 置空班级的 teacherId（避免孤儿班级）
+      try {
+        await em.getRepository(ClassItem).update({ teacherId }, { teacherId: null })
+      } catch { /* ClassItem 表可能无 teacherId 字段 */ }
     })
 
     // 记录审计日志

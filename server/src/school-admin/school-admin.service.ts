@@ -234,11 +234,11 @@ export class SchoolAdminService {
       // 获取该教师管理的所有班级
       const classes = await em.getRepository(ClassItem).find({ where: { teacherId } })
       const classIds = classes.map(c => c.id)
-      // 禁用这些班级下所有学生的家长登录，并清除家长绑定信息
+      // 先将学生 classId 置空（避免孤儿记录），再禁用家长登录
       if (classIds.length) {
         await em.getRepository(Student).update(
           { classId: In(classIds) },
-          { parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+          { classId: null, parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
         )
       }
       // 删除班级
@@ -250,7 +250,7 @@ export class SchoolAdminService {
       // 删除教师账号
       await em.getRepository(User).remove(user)
     })
-    this.audit.log(schoolId, 'delete_teacher', '系统', user.name + '(' + user.username + ')', '删除教师（保留学生，禁用家长登录）').catch(() => {})
+    this.audit.log(schoolId, 'delete_teacher', '系统', user.name + '(' + user.username + ')', '删除教师（保留学生，班级解散，学生 classId 置空）').catch(() => {})
     return { ok: true }
   }
 
@@ -371,7 +371,7 @@ export class SchoolAdminService {
     return this.classRepo.save(cls)
   }
 
-  /** 删除班级（级联清理：class_members + 学生家长登录 + 班级业务数据） */
+  /** 删除班级（级联清理：class_members + 学生家长登录 + 班级业务数据 + 学生 classId 置空） */
   async deleteClass(schoolId: string, id: string) {
     const cls = await this.classRepo.findOne({ where: { id } })
     if (!cls) throw new BadRequestException('班级不存在')
@@ -380,10 +380,10 @@ export class SchoolAdminService {
     await this.entityManager.transaction(async (em) => {
       // 1. 清理班级成员关系
       await em.getRepository(ClassMember).delete({ classId: id })
-      // 2. 禁用学生家长登录并清空敏感数据
+      // 2. 学生 classId 置空并禁用家长登录
       await em.getRepository(Student).update(
         { classId: id },
-        { parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+        { classId: null, parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
       )
       // 3. 清理班级关联的业务数据（按 classId，使用共享常量）
       for (const t of CLASS_ID_TABLES) {
@@ -394,7 +394,7 @@ export class SchoolAdminService {
       // 4. 最后删除班级
       await em.getRepository(ClassItem).remove(cls)
     })
-    this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级（级联清理学生家长登录 + 业务数据）').catch(() => {})
+    this.audit.log(schoolId, 'delete_class', '系统', cls.name, '删除班级（学生 classId 置空，禁用家长登录，清理业务数据）').catch(() => {})
     return { ok: true }
   }
 
