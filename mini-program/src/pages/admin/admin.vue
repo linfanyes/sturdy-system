@@ -285,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { theme } from '../../common/store'
 import { isPhone } from '../../common/validators'
 

@@ -75,6 +75,7 @@ import api from '../../common/request'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { compressImage } from '../../common/image'
+import { safeParse } from '../../common/util'
 
 const classes = ref([])
 const classId = ref('')
@@ -104,9 +105,6 @@ const photoItems = computed(() => {
 })
 const totalCount = computed(() => list.value.reduce((s, it) => s + photosOf(it).length, 0))
 const targetAlbums = computed(() => list.value.filter((x) => x.id !== (movePhoto.value && movePhoto.value.albumId)))
-function safeParse(s) {
-  try { return JSON.parse(s) || [] } catch (e) { return [] }
-}
 
 async function load() {
   classes.value = await api.getList('/classes', { silent: true })

@@ -61,6 +61,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 import { exportXlsx } from '../../common/exporter'
+import { safeParse } from '../../common/util'
 import uCharts from '@qiun/ucharts'
 
 const stat = ref({
@@ -162,13 +163,7 @@ async function load() {
     uni.hideLoading()
   }
 }
-function safeParse(s) {
-  try {
-    return JSON.parse(s)
-  } catch (e) {
-    return []
-  }
-}
+
 onShow(() => { loadSemesters(); load() })
 onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 

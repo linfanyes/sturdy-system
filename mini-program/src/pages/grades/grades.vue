@@ -194,7 +194,7 @@ import { auth, theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isScore } from '../../common/validators'
 import { copyText } from '../../common/print'
-import { exportXlsx, exportDocx } from '../../common/exporter'
+import { exportXlsx } from '../../common/exporter'
 
 const classes = ref([])
 const exams = ref([])
