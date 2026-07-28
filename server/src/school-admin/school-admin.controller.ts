@@ -86,6 +86,10 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   deleteTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteTeacher(a.schoolId, id) }
 
+  @Post('teachers/deactivate-all')
+  @UseGuards(JwtAuthGuard)
+  deactivateAllTeachers(@CurrentSchoolAdmin() a: any) { return this.svc.deactivateAllTeachers(a.schoolId) }
+
   @Get('parent-logins')
   @UseGuards(JwtAuthGuard)
   parentLogins(@CurrentSchoolAdmin() a: any) { return this.svc.listParentLogins(a.schoolId) }

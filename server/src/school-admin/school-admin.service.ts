@@ -20,21 +20,7 @@ import { pinyin } from 'pinyin-pro'
 import * as ExcelJS from 'exceljs'
 import { AiService } from '../ai/ai.service'
 
-/** 所有继承 BaseEntity 的业务表，统一按 teacherId 级联删除（不含 students，学生保留但禁用家长登录） */
-const TEACHER_ID_TABLES = [
-  'exams', 'grades', 'notes', 'todos', 'picker_history',
-  'backup_snapshots', 'ai_settings', 'app_config',
-  'generated_papers', 'generated_lesson_plans', 'generated_knowledges', 'paper_queries',
-  'class_expenses', 'class_activities', 'duty_rosters',
-  'reward_records', 'score_records', 'group_scores',
-  'growth_entries', 'behavior_records',
-  'parent_contacts', 'seat_layouts', 'class_galleries',
-  'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
-  'reading_logs', 'checkins', 'award_records', 'award_categories',
-  'class_duty_configs', 'notice_templates', 'home_visits', 'teaching_calendar',
-  'class_members', 'my_galleries', 'notifications', 'schedules', 'resources',
-  'teachers',
-]
+import { TEACHER_ID_TABLES, CLASS_ID_TABLES } from '../common/constants/tenant-tables'
 
 @Injectable()
 export class SchoolAdminService {
@@ -277,6 +263,13 @@ export class SchoolAdminService {
     return { id: teacherId, features }
   }
 
+  /** 批量停用本校所有教师 */
+  async deactivateAllTeachers(schoolId: string) {
+    const result = await this.userRepo.update({ schoolId, enabled: true }, { enabled: false })
+    this.audit.log(schoolId, 'deactivate_all_teachers', '系统', '全部教师', `批量停用 ${result.affected || 0} 名教师`).catch(() => {})
+    return { ok: true, affected: result.affected || 0 }
+  }
+
   /** 查看本校家长登录情况 */
   async listParentLogins(schoolId: string) {
     // 先获取本校班级 ID 列表，避免跨校数据泄露
@@ -392,14 +385,8 @@ export class SchoolAdminService {
         { classId: id },
         { parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
       )
-      // 3. 清理班级关联的业务数据（按 classId）
-      const classIdTables = [
-        'grades', 'exams', 'homework', 'attendances', 'notices',
-        'schedules', 'seat_layouts', 'class_galleries', 'my_galleries',
-        'class_activities', 'class_expenses', 'class_duty_configs',
-        'duty_rosters', 'class_members',
-      ]
-      for (const t of classIdTables) {
+      // 3. 清理班级关联的业务数据（按 classId，使用共享常量）
+      for (const t of CLASS_ID_TABLES) {
         try {
           await em.query(`DELETE FROM \`${t}\` WHERE classId = ?`, [id])
         } catch { /* 表不存在或无该字段则跳过 */ }

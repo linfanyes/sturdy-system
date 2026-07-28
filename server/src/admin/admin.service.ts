@@ -12,6 +12,7 @@ import { Student } from '../students/student.entity'
 import { hashPassword } from '../common/utils/password.util'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { AuditService } from '../audit/audit.service'
+import { TEACHER_ID_TABLES, CLASS_ID_TABLES, ALL_BUSINESS_TABLES } from '../common/constants/tenant-tables'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -209,21 +210,7 @@ export class AdminService implements OnModuleInit {
       const classIds = classes.map(c => c.id)
       // 3. 清理教师关联的业务数据
       if (teacherIds.length) {
-        const teacherTables = [
-          'exams', 'grades', 'notes', 'todos', 'picker_history',
-          'backup_snapshots', 'ai_settings', 'app_config',
-          'generated_papers', 'generated_lesson_plans', 'generated_knowledges', 'paper_queries',
-          'class_expenses', 'class_activities', 'duty_rosters',
-          'reward_records', 'score_records', 'group_scores',
-          'growth_entries', 'behavior_records',
-          'parent_contacts', 'seat_layouts', 'class_galleries',
-          'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
-          'reading_logs', 'checkins', 'award_records', 'award_categories',
-          'class_duty_configs', 'notice_templates', 'home_visits', 'teaching_calendar',
-          'class_members', 'my_galleries', 'notifications', 'schedules', 'resources',
-          'teachers',
-        ]
-        for (const t of teacherTables) {
+        for (const t of TEACHER_ID_TABLES) {
           try {
             await em.query(`DELETE FROM \`${t}\` WHERE teacherId IN (?)`, [teacherIds])
           } catch { /* 跳过 */ }
@@ -231,13 +218,7 @@ export class AdminService implements OnModuleInit {
       }
       // 4. 清理班级关联的业务数据
       if (classIds.length) {
-        const classTables = [
-          'grades', 'exams', 'homework', 'attendances', 'notices',
-          'schedules', 'seat_layouts', 'class_galleries', 'my_galleries',
-          'class_activities', 'class_expenses', 'class_duty_configs',
-          'duty_rosters', 'class_members',
-        ]
-        for (const t of classTables) {
+        for (const t of CLASS_ID_TABLES) {
           try {
             await em.query(`DELETE FROM \`${t}\` WHERE classId IN (?)`, [classIds])
           } catch { /* 跳过 */ }
@@ -396,60 +377,51 @@ export class AdminService implements OnModuleInit {
     return { ok: true, message: `已${enabled ? '启用' : '禁用'} ${ids.length} 名管理员` }
   }
 
-  /** 一键清除：清除所有业务数据（演练产生的考试/成绩/作业/考勤等），保留演示数据（学校/校管/教师/班级/学生）以确保演示功能正常运行 */
+  /**
+   * 超管一键全量重置：清除所有学校、教师及其全部个人数据，然后重建种子数据。
+   * 此操作不可逆，仅用于演示环境恢复到干净初始化状态。
+   */
   async resetAll(confirmed: boolean, operator = 'super') {
-    if (!confirmed) throw new BadRequestException('请确认清除操作（confirm: true）')
-
-    // 仅清除业务数据表，保留演示数据表：
-    // 演示数据表（不清除）：schools, school_admins, users(教师), classes, students
-    const businessTables = [
-      // 个人/工具数据
-      'picker_history', 'todos', 'notes',
-      'ai_settings', 'app_config', 'audit_logs',
-      'paper_queries', 'generated_knowledges', 'generated_lesson_plans', 'generated_papers',
-      'notice_templates', 'notifications',
-      'semesters', 'teaching_calendar',
-      'backup_snapshots',
-      // 学生业务数据
-      'reading_logs', 'checkins', 'home_visits',
-      'behavior_records', 'growth_entries',
-      'parent_contacts',
-      'award_records', 'award_categories',
-      'score_records', 'reward_records', 'group_scores',
-      // 核心教学业务数据
-      'grades', 'exams',
-      'homework',
-      'attendances',
-      'schedules',
-      'seat_layouts',
-      'resources',
-      'work_logs',
-      'lesson_observations', 'lesson_plan_templates',
-      'generated',
-      // 班级业务数据（风采/活动/公告/值日/班费等）
-      'class_members',
-      'class_activities', 'class_expenses', 'class_duty_configs',
-      'class_galleries', 'my_galleries',
-      'notices',
-      'duty_rosters',
-    ]
-
+    if (!confirmed) throw new BadRequestException('请确认全量重置操作（confirm: true）。此操作将清除所有学校和教师数据，不可逆！')
     await this.entityManager.transaction(async (em) => {
-      for (const t of businessTables) {
-        try {
-          await em.query(`DELETE FROM \`${t}\``)
-        } catch (e) {
-          // 表不存在则跳过
+      const teacherTables = [
+        'picker_history', 'todos', 'notes', 'ai_settings', 'app_config', 'audit_logs',
+        'paper_queries', 'generated_knowledges', 'generated_lesson_plans', 'generated_papers',
+        'notice_templates', 'notifications', 'semesters', 'teaching_calendar',
+        'backup_snapshots', 'reading_logs', 'checkins', 'home_visits',
+        'behavior_records', 'growth_entries', 'parent_contacts',
+        'award_records', 'award_categories', 'score_records', 'reward_records', 'group_scores',
+        'grades', 'exams', 'homework', 'attendances', 'schedules',
+        'seat_layouts', 'resources', 'work_logs', 'lesson_observations', 'lesson_plan_templates',
+        'class_members', 'class_activities', 'class_expenses', 'class_duty_configs',
+        'class_galleries', 'my_galleries', 'notices', 'duty_rosters', 'teachers',
+      ]
+      const classTables = [
+        'grades', 'exams', 'homework', 'attendances', 'notices', 'schedules',
+        'seat_layouts', 'class_galleries', 'my_galleries', 'class_activities',
+        'class_expenses', 'class_duty_configs', 'duty_rosters', 'class_members',
+      ]
+      const teacherIds = await em.getRepository(User).find({ select: ['id'] }).then(r => r.map(t => t.id))
+      const classIds = await em.getRepository(ClassItem).find({ select: ['id'] }).then(r => r.map(c => c.id))
+      if (teacherIds.length) {
+        for (const t of teacherTables) {
+          try { await em.query(`DELETE FROM \`${t}\` WHERE teacherId IN (?)`, [teacherIds]) } catch { /* skip */ }
         }
       }
+      if (classIds.length) {
+        for (const t of classTables) {
+          try { await em.query(`DELETE FROM \`${t}\` WHERE classId IN (?)`, [classIds]) } catch { /* skip */ }
+        }
+      }
+      await em.getRepository(Student).delete({})
+      await em.getRepository(ClassItem).delete({})
+      await em.getRepository(User).delete({})
+      await em.getRepository(SchoolAdmin).delete({})
+      await em.getRepository(School).delete({})
     })
-
-    // 记录审计日志
-    try {
-      await this.audit.log('', 'system_reset_all', operator, '全系统', '一键清除：清除所有业务数据，保留演示数据（学校/校管/教师/班级/学生）')
-    } catch { /* audit 失败不应阻断主流程 */ }
-
-    return { ok: true, message: '已清除所有业务数据（考试/成绩/作业/考勤/风采/值日等），演示数据（学校/校管/教师/班级/学生）已保留，演示功能可正常运行' }
+    await this.audit.log('', 'system_reset_all', operator, '全系统', '一键全量重置：清除所有学校/教师/班级/学生/业务数据').catch(() => {})
+    await this.seedDemoData()
+    return { ok: true, message: '已全量清除所有学校、教师、班级、学生及全部业务数据，并重建默认种子数据（超管/sa1/sa2/教师/班级/学生）' }
   }
 
 
@@ -476,42 +448,12 @@ export class AdminService implements OnModuleInit {
     const user = await this.userRepo.findOne({ where: { id: teacherId } })
     if (!user) throw new BadRequestException('教师不存在')
 
-    // 所有包含 teacherId 的业务表（与 resetAll 清单一致，排除 schools/classes/students/teachers 等共享表）
-    const dataTables = [
-      // 个人数据
-      'notes', 'todos', 'picker_history',
-      'ai_settings', 'app_config',
-      'paper_queries', 'generated_papers', 'generated_lesson_plans', 'generated_knowledges',
-      'notice_templates', 'notifications',
-      'semesters', 'teaching_calendar',
-      'backup_snapshots',
-      // 教学数据
-      'reading_logs', 'checkins', 'home_visits',
-      'behavior_records', 'growth_entries',
-      'parent_contacts',
-      'award_records', 'award_categories',
-      'score_records', 'reward_records', 'group_scores',
-      'grades', 'exams',
-      'homework',
-      'attendances',
-      'schedules',
-      'seat_layouts',
-      'resources',
-      'work_logs',
-      'lesson_observations', 'lesson_plan_templates',
-      // 班级相关
-      'class_members',
-      'class_activities', 'class_expenses', 'class_duty_configs',
-      'class_galleries', 'my_galleries',
-      'notices',
-      'duty_rosters',
-    ]
-
+    // 所有包含 teacherId 的业务表（使用共享常量，消除与 school-admin 的重复定义）
     await this.entityManager.transaction(async (em) => {
-      for (const t of dataTables) {
+      for (const t of ALL_BUSINESS_TABLES) {
         try {
           await em.query(`DELETE FROM \`${t}\` WHERE teacherId = ?`, [teacherId])
-        } catch (e) {
+        } catch {
           // 表不存在则跳过
         }
       }
