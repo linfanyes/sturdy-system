@@ -66,7 +66,7 @@
       }
     },
     {
-      "path": "pages/seats/seats",
+      "path": "pages/seatMap/seatMap",
       "style": {
         "navigationBarTitleText": "座位表",
         "enablePullDownRefresh": true
@@ -114,7 +114,7 @@
       }
     },
     {
-      "path": "pages/group/group",
+      "path": "pages/grouper/grouper",
       "style": {
         "navigationBarTitleText": "随机分组",
         "enablePullDownRefresh": true
@@ -206,7 +206,7 @@
       }
     },
     {
-      "path": "pages/subject-tools/composition",
+      "path": "pages/subject-tools/writingMaterials",
       "style": {
         "navigationBarTitleText": "作文素材"
       }
@@ -218,7 +218,7 @@
       }
     },
     {
-      "path": "pages/subject-tools/word-cards",
+      "path": "pages/subject-tools/wordCard",
       "style": {
         "navigationBarTitleText": "单词卡片"
       }
@@ -236,7 +236,7 @@
       }
     },
     {
-      "path": "pages/subject-tools/sentence",
+      "path": "pages/subject-tools/sentencePractice",
       "style": {
         "navigationBarTitleText": "句型练习"
       }
@@ -266,7 +266,7 @@
       }
     },
     {
-      "path": "pages/subject-tools/spelling",
+      "path": "pages/subject-tools/spell",
       "style": {
         "navigationBarTitleText": "单词拼写"
       }
@@ -537,7 +537,7 @@
           "path": "game24"
         },
         {
-          "path": "tictactoe"
+          "path": "ticTacToe"
         },
         {
           "path": "gomoku"
@@ -549,7 +549,7 @@
           "path": "memory"
         },
         {
-          "path": "numbersort"
+          "path": "numberSort"
         },
         {
           "path": "minesweeper"
@@ -558,10 +558,10 @@
           "path": "puzzle15"
         },
         {
-          "path": "picpuzzle"
+          "path": "slidePuzzle"
         },
         {
-          "path": "colorreact"
+          "path": "colorReact"
         },
         {
           "path": "snake"
@@ -573,10 +573,10 @@
           "path": "plane"
         },
         {
-          "path": "moto"
+          "path": "motorcycle"
         },
         {
-          "path": "cardodge"
+          "path": "carCrash"
         },
         {
           "path": "whack"
@@ -606,14 +606,14 @@
           "path": "colormatch"
         },
         {
-          "path": "slidepuzzle"
+          "path": "slidingPuzzle"
         },
         { "path": "idiom" },
-        { "path": "speedmath" },
+        { "path": "speedMath" },
         { "path": "spelling" },
-        { "path": "science" },
-        { "path": "geo" },
-        { "path": "story" }
+        { "path": "scienceQuiz" },
+        { "path": "geoQuiz" },
+        { "path": "storyChain" }
       ]
     },
     {
@@ -639,31 +639,31 @@
           "path": "flower"
         },
         {
-          "path": "templates"
+          "path": "planTemplates"
         },
         {
-          "path": "vcalc"
+          "path": "verticalCalc"
         },
         {
-          "path": "anscard"
+          "path": "answerCard"
         },
         {
-          "path": "multitable"
+          "path": "multiplicationTable"
         },
         {
-          "path": "unit"
+          "path": "unitConversion"
         },
         {
-          "path": "mistakes"
+          "path": "mathMistakes"
         },
         {
-          "path": "score-panel/score-panel"
+          "path": "scorePanel"
         },
         {
           "path": "reward/reward"
         },
         {
-          "path": "stroke/stroke"
+          "path": "strokeOrder"
         }
       ]
     },

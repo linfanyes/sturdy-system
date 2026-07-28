@@ -360,7 +360,7 @@ const features = [
   { label: '学生管理', icon: '👧', path: '/pages/students/students', tab: true },
   { label: '考试管理', icon: '📝', path: '/pages/exams/exams' },
   { label: '成绩管理', icon: '📊', path: '/pages/grades/grades' },
-  { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
+  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap' },
   { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
   { label: '工具箱', icon: '🧰', path: '/pages/toolbox/toolbox', tab: true },
   { label: '消息中心', icon: '📥', path: '/pages/messages/messages' },
@@ -372,10 +372,10 @@ const widgetCands = [
   { label: '抽签', icon: '🎲', path: '/pages/tools/picker' },
   { label: '计算器', icon: '🧮', path: '/pages/tools/calc' },
   { label: '口算', icon: '➗', path: '/pages/tools/math' },
-  { label: '错题本', icon: '📕', path: '/pages/tools/mistakes' },
+  { label: '错题本', icon: '📕', path: '/pages/tools/mathMistakes' },
   { label: '决策器', icon: '🔀', path: '/pages/tools/decider' },
-  { label: '随机分组', icon: '👥', path: '/pages/group/group' },
-  { label: '座位表', icon: '💺', path: '/pages/seats/seats' },
+  { label: '随机分组', icon: '👥', path: '/pages/grouper/grouper' },
+  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap' },
 ]
 const selKeys = ref([])
 const managing = ref(false)

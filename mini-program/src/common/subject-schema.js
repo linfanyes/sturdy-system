@@ -242,11 +242,11 @@ export const ALL_SUBJECTS = SUBJECT_OPTIONS.map((s) => s.value)
  */
 export const MATH_TOOLS = [
   { label: '口算生成', icon: '➕', path: '/pages/tools/math' },
-  { label: '竖式计算', icon: '📐', path: '/pages/tools/vcalc' },
-  { label: '口算答题卡', icon: '📋', path: '/pages/tools/anscard' },
-  { label: '乘法口诀', icon: '🔢', path: '/pages/tools/multitable' },
-  { label: '单位换算', icon: '⚖️', path: '/pages/tools/unit' },
-  { label: '错题本', icon: '📕', path: '/pages/tools/mistakes' },
+  { label: '竖式计算', icon: '📐', path: '/pages/tools/verticalCalc' },
+  { label: '口算答题卡', icon: '📋', path: '/pages/tools/answerCard' },
+  { label: '乘法口诀', icon: '🔢', path: '/pages/tools/multiplicationTable' },
+  { label: '单位换算', icon: '⚖️', path: '/pages/tools/unitConversion' },
+  { label: '错题本', icon: '📕', path: '/pages/tools/mathMistakes' },
 ]
 
 /**

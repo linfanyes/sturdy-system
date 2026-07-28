@@ -123,10 +123,10 @@ function nextPic() {
 }
 
 function readBest(n, picIdx) {
-  try { return uni.getStorageSync(`game_best_picpuzzle_${n}_${picIdx}`) || 0 } catch (e) { return 0 }
+  try { return uni.getStorageSync(`game_best_slidePuzzle_${n}_${picIdx}`) || 0 } catch (e) { return 0 }
 }
 function writeBest(n, picIdx, v) {
-  try { uni.setStorageSync(`game_best_picpuzzle_${n}_${picIdx}`, v) } catch (e) {}
+  try { uni.setStorageSync(`game_best_slidePuzzle_${n}_${picIdx}`, v) } catch (e) {}
 }
 
 // 生成可解局面：从已解决态做随机有效滑动

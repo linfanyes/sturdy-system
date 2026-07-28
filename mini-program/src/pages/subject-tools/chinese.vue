@@ -2,7 +2,7 @@
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="topbar"><text class="mtitle">📖 语文工具</text></view>
     <view class="grid">
-      <view class="cell" @click="go('/pages/subject-tools/composition')"><view class="ic">✏️</view><view class="lb">作文素材</view></view>
+      <view class="cell" @click="go('/pages/subject-tools/writingMaterials')"><view class="ic">✏️</view><view class="lb">作文素材</view></view>
       <view class="cell" @click="go('/pages/subject-tools/poetry')"><view class="ic">📜</view><view class="lb">古诗词助手</view></view>
       <view class="cell" @click="go('/pages/subject-tools/dictation')"><view class="ic">🎯</view><view class="lb">汉字听写</view></view>
       <view class="cell" @click="go('/pages/subject-tools/reading')"><view class="ic">📖</view><view class="lb">阅读理解</view></view>

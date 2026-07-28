@@ -69,7 +69,7 @@ import {
 
 const dark = computed(() => theme.mode === 'dark')
 const C = computed(() => pickColors(dark.value))
-const { best, isNewRecord, submitScore } = useGame('cardodge')
+const { best, isNewRecord, submitScore } = useGame('carCrash')
 
 // 4 车道高速公路
 const ROWS = 14, LANES = 4

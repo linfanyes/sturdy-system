@@ -3,10 +3,10 @@
     <view class="topbar"><text class="mtitle">🔢 数学工具</text></view>
     <view class="grid">
       <view class="cell" @click="go('/pages/tools/math')"><view class="ic">🧮</view><view class="lb">口算练习</view></view>
-      <view class="cell" @click="go('/pages/tools/vcalc')"><view class="ic">📐</view><view class="lb">竖式计算</view></view>
-      <view class="cell" @click="go('/pages/tools/multitable')"><view class="ic">✖️</view><view class="lb">乘法表</view></view>
-      <view class="cell" @click="go('/pages/tools/unit')"><view class="ic">📏</view><view class="lb">单位换算</view></view>
-      <view class="cell" @click="go('/pages/tools/mistakes')"><view class="ic">❌</view><view class="lb">错题本</view></view>
+      <view class="cell" @click="go('/pages/tools/verticalCalc')"><view class="ic">📐</view><view class="lb">竖式计算</view></view>
+      <view class="cell" @click="go('/pages/tools/multiplicationTable')"><view class="ic">✖️</view><view class="lb">乘法表</view></view>
+      <view class="cell" @click="go('/pages/tools/unitConversion')"><view class="ic">📏</view><view class="lb">单位换算</view></view>
+      <view class="cell" @click="go('/pages/tools/mathMistakes')"><view class="ic">❌</view><view class="lb">错题本</view></view>
       <view class="cell" @click="go('/pages/tools/calc')"><view class="ic">🔢</view><view class="lb">计算器</view></view>
     </view>
   </view>

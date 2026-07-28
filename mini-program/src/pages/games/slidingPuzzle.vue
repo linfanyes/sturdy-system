@@ -124,7 +124,7 @@ function buildSolved(n, pat) {
   return { arr, order, blankPos: order[n * n - 1] }
 }
 
-function bestKey() { return 'game_best_slidepuzzle_' + N.value + '_' + pattern.value }
+function bestKey() { return 'game_best_slidingPuzzle_' + N.value + '_' + pattern.value }
 
 function loadBest() {
   try { return uni.getStorageSync(bestKey()) || 0 } catch (e) { return 0 }

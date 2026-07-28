@@ -399,7 +399,7 @@ function goStudents(c) {
 }
 function goSeats(c) {
   showDetail.value = false
-  uni.navigateTo({ url: `/pages/seats/seats?classId=${c.id}` })
+  uni.navigateTo({ url: `/pages/seatMap/seatMap?classId=${c.id}` })
 }
 function goSchedule() {
   showDetail.value = false

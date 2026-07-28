@@ -89,7 +89,7 @@ export const QUICK_TOOLS = {
     ],
     build: (f) => `请介绍成语「${f.query}」的释义、出处、近义词、反义词、例句，并给出 5 个接龙成语。`,
   },
-  composition: {
+  writingMaterials: {
     icon: '✏️',
     title: '作文素材',
     hint: '按主题生成好词好句、开头结尾、结构提纲。',
@@ -130,7 +130,7 @@ export const QUICK_TOOLS = {
     build: (f) => `请生成${f.count || 10}个${f.grade}语文听写词语（含拼音），${f.unit ? `来自${f.unit}。` : ''}每行一个词语，格式：词语（拼音）。`,
   },
   // —— 英语学科工具 ——
-  wordCards: {
+  wordCard: {
     icon: '🃏',
     title: '单词卡片',
     hint: '按主题生成英语单词卡片（含音标/释义/例句）。',
@@ -140,7 +140,7 @@ export const QUICK_TOOLS = {
     ],
     build: (f) => `请生成${f.count || 10}个关于「${f.topic}」的英语单词卡片，每个单词包含：英文、音标、中文释义、例句。以清晰的表格格式呈现。`,
   },
-  sentence: {
+  sentencePractice: {
     icon: '💬',
     title: '句型练习',
     hint: '按主题和难度生成英语句型练习。',
@@ -168,7 +168,7 @@ export const QUICK_TOOLS = {
     ],
     build: (f) => `请生成一段英语听力材料（适合小学生），主题：${f.topic}。包含：听力原文（5-8句）、3 道理解题（选择题）及答案。`,
   },
-  spelling: {
+  spell: {
     icon: '🔤',
     title: '单词拼写',
     hint: '生成英语单词拼写练习题。',
