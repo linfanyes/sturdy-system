@@ -158,6 +158,9 @@ export const routes: RouteRecordRaw[] = [
       { path: 'tools/spell', name: 'toolSpell', component: () => import('@/views/tools/Spell.vue'), meta: { title: '单词拼写', feature: 'tools' } },
       { path: 'tools/speaking', name: 'toolSpeaking', component: () => import('@/views/tools/Speaking.vue'), meta: { title: '口语练习', feature: 'tools' } },
       { path: 'tools/englishStory', name: 'toolEnglishStory', component: () => import('@/views/tools/EnglishStory.vue'), meta: { title: '英语爽文', feature: 'tools' } },
+      { path: 'tools/planTemplates', name: 'toolPlanTemplates', component: () => import('@/views/tools/PlanTemplates.vue'), meta: { title: '文案模板', feature: 'tools' } },
+      { path: 'tools/thesis', name: 'toolThesis', component: () => import('@/views/tools/Thesis.vue'), meta: { title: '教育论文', feature: 'tools' } },
+      { path: 'tools/lessonObservation', name: 'toolLessonObservation', component: () => import('@/views/tools/LessonObservation.vue'), meta: { title: '听课记录', feature: 'tools' } },
       // 游戏合集
       { path: 'games', name: 'games', component: () => import('@/views/games/GamesIndex.vue'), meta: { title: '小游戏合集', feature: 'games' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },

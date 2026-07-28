@@ -96,14 +96,14 @@ const sections: ToolSection[] = [
     title: '教师办公', icon: Briefcase,
     items: [
       { label: '工作日志', icon: Notebook, to: '/teacher/work-log', feature: 'worklog' },
-      { label: '听课记录', icon: Eye, to: '/teacher/lesson-obs', feature: 'observation' },
+      { label: '听课记录', icon: Eye, to: '/teacher/tools/lessonObservation', feature: 'tools' },
       { label: '教学日历', icon: CalendarDays, to: '/teacher/teaching-calendar', feature: 'calendar' },
       { label: '教师通讯录', icon: Contact, to: '/teacher/teacher-directory', feature: 'teachers' },
       { label: '翻译', icon: Languages, to: '/teacher/office-translate', feature: 'worklog' },
-      { label: '教育论文', icon: FileText, to: '/teacher/office-paper', feature: 'worklog' },
+      { label: '教育论文', icon: FileText, to: '/teacher/tools/thesis', feature: 'tools' },
       { label: '黑板报', icon: SquarePen, to: '/teacher/office-blackboard', feature: 'worklog' },
       { label: '演讲稿', icon: Mic, to: '/teacher/office-speech', feature: 'worklog' },
-      { label: '文案模板库', icon: Library, to: '/teacher/plan-template-lib', feature: 'worklog' },
+      { label: '文案模板', icon: Library, to: '/teacher/tools/planTemplates', feature: 'tools' },
     ],
   },
   {
