@@ -310,7 +310,7 @@ function handlePrint() {
           <label class="text-sm text-cocoa-500">学科</label>
           <select v-model="form.subject" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
             <option value="">未设置</option>
-            <option v-for="s in SUBJECT_OPTIONS" :key="s" :value="s">{{ s }}</option>
+            <option v-for="s in SUBJECT_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </select>
         </div>
       </div>

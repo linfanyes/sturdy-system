@@ -354,16 +354,16 @@ function handlePrint() {
         <div class="flex flex-wrap gap-1.5 mt-1">
           <button
             v-for="s in SUBJECT_OPTIONS"
-            :key="s"
+            :key="s.value"
             type="button"
             :class="[
               'text-xs px-2.5 py-1 rounded-full border transition-colors',
-              form.subjects.includes(s)
+              form.subjects.includes(s.value)
                 ? 'border-butter-400 bg-butter-100 text-butter-600'
                 : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
             ]"
-            @click="toggleSubject(form.subjects, s)"
-          >{{ s }}</button>
+            @click="toggleSubject(form.subjects, s.value)"
+          >{{ s.label }}</button>
         </div>
       </div>
 
@@ -382,16 +382,16 @@ function handlePrint() {
           <div class="flex flex-wrap gap-1 max-w-xs">
             <button
               v-for="s in SUBJECT_OPTIONS.slice(0, 8)"
-              :key="s"
+              :key="s.value"
               type="button"
               :class="[
                 'text-xs px-2 py-0.5 rounded-full border',
-                st.subjects.includes(s)
+                st.subjects.includes(s.value)
                   ? 'border-mint-400 bg-mint-100 text-mint-500'
                   : 'border-cream-200 text-cocoa-400 hover:bg-cream-100',
               ]"
-              @click="toggleSubject(st.subjects, s)"
-            >{{ s }}</button>
+              @click="toggleSubject(st.subjects, s.value)"
+            >{{ s.label }}</button>
           </div>
           <button type="button" class="p-1 rounded-lg hover:bg-red-50 text-red-500" @click="removeSubjectTeacher(idx)">
             <Trash2 class="w-4 h-4" />

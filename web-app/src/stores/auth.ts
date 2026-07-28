@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 各角色登录（兼容旧调用，内部均走统一 login）
   async function loginAsSuper(username: string, password: string) {
-    await login('super', username, password)
+    await login('super_admin' as Role, username, password)
   }
   async function loginAsSchoolAdmin(username: string, password: string) {
     await login('school_admin', username, password)

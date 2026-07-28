@@ -116,11 +116,6 @@ function applyProvider(name: string) {
   refreshModels()
 }
 
-function onProviderChange(e: Event) {
-  const idx = (e.target as HTMLSelectElement).selectedIndex
-  applyProvider(PROVIDER_NAMES[idx])
-}
-
 function modelOptions(kind: 'text' | 'vision' | 'image' | 'video'): string[] {
   return [...models[kind], CUSTOM]
 }
