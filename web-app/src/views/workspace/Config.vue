@@ -11,44 +11,54 @@ const tab = ref<'ai' | 'app'>('ai')
 const loading = ref(false)
 const saving = ref(false)
 
-// ==================== 服务商预设（与平台配置对齐） ====================
-const PROVIDER_PRESETS: Record<string, {
+// ==================== 服务商（从后端 ai_providers 表加载） ====================
+interface ProviderItem {
+  code: string
+  name: string
   baseUrl: string
   textModels: string[]
   visionModels: string[]
   imageModels: string[]
   videoModels: string[]
-}> = {
-  '阿里百炼（通义千问）': {
-    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    textModels: ['qwen-plus', 'qwen-max', 'qwen-turbo'],
-    visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
-    imageModels: [],
-    videoModels: [],
-  },
-  DeepSeek: {
-    baseUrl: 'https://api.deepseek.com/v1',
-    textModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
-    visionModels: ['deepseek-v4-pro'],
-    imageModels: [],
-    videoModels: [],
-  },
-  '智谱GLM': {
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    textModels: ['GLM-4.7-Flash'],
-    visionModels: ['GLM-4.6V-Flash'],
-    imageModels: ['GLM-4.6V-Flash'],
-    videoModels: ['CogVideoX-Flash'],
-  },
-  '自定义': {
-    baseUrl: '',
-    textModels: [],
-    visionModels: [],
-    imageModels: [],
-    videoModels: [],
-  },
+  isDefault: boolean
+  enabled: boolean
+  sortOrder: number
 }
-const PROVIDER_NAMES = Object.keys(PROVIDER_PRESETS)
+
+const providers = ref<ProviderItem[]>([])
+const providerLoading = ref(false)
+
+async function loadProviders() {
+  providerLoading.value = true
+  try {
+    providers.value = await request.get('/ai-providers')
+  } catch {
+    providers.value = []
+  } finally {
+    providerLoading.value = false
+  }
+}
+
+const PROVIDER_NAMES = computed(() =>
+  providers.value.filter((p) => p.enabled).map((p) => p.name),
+)
+
+function getProviderByName(name: string): ProviderItem | undefined {
+  return providers.value.find((p) => p.name === name)
+}
+
+function getProviderByCode(code: string): ProviderItem | undefined {
+  return providers.value.find((p) => p.code === code)
+}
+
+function detectProvider(baseUrl?: string): string {
+  if (!baseUrl && providers.value.length) {
+    const def = providers.value.find((p) => p.isDefault && p.enabled) || providers.value.find((p) => p.enabled)
+    return def?.name || ''
+  }
+  const found = providers.value.find((p) => p.baseUrl === baseUrl)
+  return found?.name || ''
+}
 
 const RESOURCE_SCENES: Record<string, string> = {
   'exam-analysis': '考试分析',
@@ -56,18 +66,10 @@ const RESOURCE_SCENES: Record<string, string> = {
   'parse': 'AI 解析',
 }
 
-function detectProvider(baseUrl?: string): string {
-  if (baseUrl) {
-    if (baseUrl.includes('dashscope.aliyuncs.com') || baseUrl.includes('maas.aliyuncs.com')) return '阿里百炼（通义千问）'
-    if (baseUrl.includes('api.deepseek.com')) return 'DeepSeek'
-    if (baseUrl.includes('open.bigmodel.cn')) return '智谱GLM'
-  }
-  return '自定义'
-}
-
 // ==================== 教师 AI 配置表单 ====================
 const aiForm = reactive({
-  provider: '阿里百炼（通义千问）',
+  provider: '',
+  _providerCode: '',
   baseUrl: '',
   apiKey: '',
   textModel: '',
@@ -92,23 +94,24 @@ const modelSource = ref<'live' | 'fallback' | ''>('')
 
 const CUSTOM = '__custom__'
 
-const providerIdx = computed(() => PROVIDER_NAMES.indexOf(aiForm.provider))
-
 function applyProvider(name: string) {
   aiForm.provider = name
-  const preset = PROVIDER_PRESETS[name]
-  if (preset.baseUrl) aiForm.baseUrl = preset.baseUrl
-  if (!aiForm.textModel || models.text.includes(aiForm.textModel) === false) {
-    aiForm.textModel = preset.textModels[0] || ''
-  }
-  if (!aiForm.visionModel || models.vision.includes(aiForm.visionModel) === false) {
-    aiForm.visionModel = preset.visionModels[0] || ''
-  }
-  if (!aiForm.imageModel || models.image.includes(aiForm.imageModel) === false) {
-    aiForm.imageModel = preset.imageModels[0] || ''
-  }
-  if (!aiForm.videoModel || models.video.includes(aiForm.videoModel) === false) {
-    aiForm.videoModel = preset.videoModels[0] || ''
+  const p = getProviderByName(name)
+  if (p) {
+    aiForm.baseUrl = p.baseUrl
+    if (!aiForm.textModel || !p.textModels.includes(aiForm.textModel)) {
+      aiForm.textModel = p.textModels[0] || ''
+    }
+    if (!aiForm.visionModel || !p.visionModels.includes(aiForm.visionModel)) {
+      aiForm.visionModel = p.visionModels[0] || ''
+    }
+    if (!aiForm.imageModel || !p.imageModels.includes(aiForm.imageModel)) {
+      aiForm.imageModel = p.imageModels[0] || ''
+    }
+    if (!aiForm.videoModel || !p.videoModels.includes(aiForm.videoModel)) {
+      aiForm.videoModel = p.videoModels[0] || ''
+    }
+    aiForm._providerCode = p.code
   }
   refreshModels()
 }
@@ -139,7 +142,7 @@ async function refreshModels() {
   loadingModels.value = true
   try {
     const res = await request.post<any, any>('/config/ai/models', {
-      provider: aiForm.provider,
+      providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
     })
@@ -149,11 +152,11 @@ async function refreshModels() {
     models.video = res?.videoModels || []
     modelSource.value = res?.source || 'fallback'
   } catch {
-    const p = PROVIDER_PRESETS[aiForm.provider] || PROVIDER_PRESETS['自定义']
-    models.text = p.textModels
-    models.vision = p.visionModels
-    models.image = p.imageModels
-    models.video = p.videoModels
+    const p = getProviderByName(aiForm.provider)
+    models.text = p?.textModels || []
+    models.vision = p?.visionModels || []
+    models.image = p?.imageModels || []
+    models.video = p?.videoModels || []
     modelSource.value = 'fallback'
   } finally {
     loadingModels.value = false
@@ -170,6 +173,7 @@ watch(() => aiForm.baseUrl, () => {
 async function load() {
   loading.value = true
   try {
+    await loadProviders()
     // 同时加载平台默认配置和教师个人配置
     const [platformRes, teacherRes] = await Promise.all([
       request.get('/config/teacher/ai-defaults').catch(() => null),
@@ -177,7 +181,6 @@ async function load() {
     ])
     // 先用平台默认填充
     if (platformRes) {
-      aiForm.provider = platformRes.provider || platformRes.aiProvider || '阿里百炼（通义千问）'
       aiForm.baseUrl = platformRes.baseUrl || platformRes.aiBaseUrl || ''
       aiForm.textModel = platformRes.textModel || platformRes.aiTextModel || ''
       aiForm.visionModel = platformRes.visionModel || platformRes.aiVisionModel || ''
@@ -191,10 +194,36 @@ async function load() {
           ? JSON.parse(platformRes.resourceModels)
           : platformRes.resourceModels
       }
+      // 从 providerCode 匹配服务商名
+      if (platformRes.providerCode) {
+        const p = getProviderByCode(platformRes.providerCode)
+        aiForm.provider = p?.name || detectProvider(aiForm.baseUrl)
+        aiForm._providerCode = platformRes.providerCode
+      } else {
+        aiForm.provider = detectProvider(aiForm.baseUrl)
+        const found = getProviderByName(aiForm.provider)
+        aiForm._providerCode = found?.code || ''
+      }
     }
     // 再用教师个人配置覆盖（优先级更高）
     if (teacherRes) {
       Object.assign(aiForm, teacherRes)
+      // 重新匹配 providerCode
+      if (teacherRes.providerCode) {
+        const p = getProviderByCode(teacherRes.providerCode)
+        aiForm.provider = p?.name || aiForm.provider
+        aiForm._providerCode = teacherRes.providerCode
+      } else if (teacherRes.baseUrl) {
+        aiForm.provider = detectProvider(teacherRes.baseUrl)
+        const found = getProviderByName(aiForm.provider)
+        aiForm._providerCode = found?.code || ''
+      }
+    }
+    // 默认服务商
+    if (!aiForm.provider && PROVIDER_NAMES.value.length) {
+      aiForm.provider = PROVIDER_NAMES.value[0]
+      aiForm._providerCode = providers.value[0]?.code || ''
+      aiForm.baseUrl = providers.value[0]?.baseUrl || ''
     }
     // 如果 systemPrompt 仍为空，根据教师岗位自动填充默认提示词
     if (!aiForm.systemPrompt && auth.user?.position) {
@@ -209,13 +238,16 @@ async function load() {
   }
 }
 
-onMounted(load)
+function onProviderChange(e: Event) {
+  const idx = (e.target as HTMLSelectElement).selectedIndex
+  applyProvider(PROVIDER_NAMES.value[idx])
+}
 
 async function saveAi() {
   saving.value = true
   try {
     await request.patch('/config/ai-settings', {
-      provider: aiForm.provider,
+      providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
       textModel: aiForm.textModel,
@@ -242,7 +274,6 @@ async function resetAiDefaults() {
   try {
     const res = await request.get('/config/teacher/ai-defaults').catch(() => null)
     if (res) {
-      aiForm.provider = res.provider || res.aiProvider || '阿里百炼（通义千问）'
       aiForm.baseUrl = res.baseUrl || res.aiBaseUrl || ''
       aiForm.apiKey = ''
       aiForm.textModel = res.textModel || res.aiTextModel || ''
@@ -256,6 +287,15 @@ async function resetAiDefaults() {
         aiForm.resourceModels = typeof res.resourceModels === 'string'
           ? JSON.parse(res.resourceModels)
           : res.resourceModels
+      }
+      if (res.providerCode) {
+        const p = getProviderByCode(res.providerCode)
+        aiForm.provider = p?.name || ''
+        aiForm._providerCode = res.providerCode
+      } else {
+        aiForm.provider = detectProvider(aiForm.baseUrl)
+        const found = getProviderByName(aiForm.provider)
+        aiForm._providerCode = found?.code || ''
       }
       refreshModels()
     }

@@ -33,6 +33,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '管理员管理' } },
       { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },
       { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
+      { path: 'ai-providers', name: 'super-ai-providers', component: () => import('@/views/super/AiProviders.vue'), meta: { title: 'AI 服务商' } },
     ],
   },
   // 校管
