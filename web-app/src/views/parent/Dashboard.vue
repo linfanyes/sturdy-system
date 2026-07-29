@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe } from '@/api/parent'
+import request from '@/api/request'
 import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat } from 'lucide-vue-next'
 
 const auth = useAuthStore()
@@ -256,6 +257,20 @@ async function load() {
 }
 
 onMounted(load)
+
+const subscribeStatus = ref<'none' | 'loading' | 'done'>('none')
+
+async function subscribeNotifications() {
+  subscribeStatus.value = 'loading'
+  try {
+    await request.post('/parent-auth/subscribe', { code: 'demo_subscribe' })
+    subscribeStatus.value = 'done'
+    setTimeout(() => { subscribeStatus.value = 'none' }, 3000)
+  } catch (e) {
+    subscribeStatus.value = 'none'
+    console.error('订阅失败', e)
+  }
+}
 </script>
 
 <template>
@@ -395,6 +410,18 @@ onMounted(load)
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- 消息订阅 -->
+    <div class="mt-4 px-4" v-if="subscribeStatus !== 'done'">
+      <button @click="subscribeNotifications"
+        class="w-full py-2 rounded-lg text-sm text-white bg-[#07c160] disabled:opacity-50"
+        :disabled="subscribeStatus === 'loading'">
+        {{ subscribeStatus === 'loading' ? '订阅中…' : '🔔 开启通知订阅' }}
+      </button>
+    </div>
+    <div v-else class="mt-4 px-4 text-center text-xs text-[#07c160]">
+      ✅ 订阅成功，将及时收到通知
     </div>
 
     <!-- 成绩查询（历史切换 + 分布 + 优弱势，与小程序端对齐） -->
