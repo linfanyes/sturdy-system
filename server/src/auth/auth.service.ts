@@ -126,24 +126,15 @@ export class AuthService {
       this.parentRepo.findOne({ where: { openId: openid } }),
     ])
 
-    // 迁移兼容：如果 parentRepo 没查到，但旧 student.parentOpenId 有数据
-    let fallbackParent: Parent | null = null
-    if (!parent) {
-      const stuWithOpenId = await this.studentRepo.findOne({ where: { parentOpenId: openid } })
-      if (stuWithOpenId) {
-        // 创建 Parent 记录
-        fallbackParent = this.parentRepo.create({
-          openId: openid,
-          parentName: stuWithOpenId.parentName || '家长',
-          nickName: stuWithOpenId.parentNickName || undefined,
-        })
-        fallbackParent = await this.parentRepo.save(fallbackParent)
-        // 更新学生记录的 parentId
-        stuWithOpenId.parentId = fallbackParent.id
-        await this.studentRepo.save(stuWithOpenId)
-      }
+    // 确定是否存在家长身份
+    let parentExists = !!parent
+    let parentId = parent?.id || null
+
+    // 如果用户有 parentId 关联但 openid 未直接匹配 Parent，也认为存在家长身份
+    if (user && !parentExists && user.parentId) {
+      parentExists = true
+      parentId = user.parentId
     }
-    const effectiveParent = parent || fallbackParent
 
     // 更新 sessionKey
     if (user) {
@@ -151,13 +142,15 @@ export class AuthService {
     }
 
     // 情况1：同时是教师和家长 → 双角色选择
-    if (user && effectiveParent) {
-      const kids = await this.studentRepo.find({ where: { parentId: effectiveParent.id } })
+    if (user && parentExists) {
+      // 获取家长信息和 kids（通过 parentId）
+      const p = parent || await this.parentRepo.findOne({ where: { id: user.parentId } })
+      const kids = await this.studentRepo.find({ where: { parentId: p.id } })
       const firstKid = kids[0]
       let parentToken = ''
       if (firstKid) {
-        const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: effectiveParent.parentName })
-        parentToken = this.jwt.sign({ sub: pim, type: 'parent', parentId: effectiveParent.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
+        const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: p.parentName })
+        parentToken = this.jwt.sign({ sub: pim, type: 'parent', parentId: p.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
       }
       const teacherToken = this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' })
 
@@ -167,7 +160,7 @@ export class AuthService {
         teacher: { role: 'teacher', token: teacherToken, user },
         parent: {
           role: 'parent',
-          parentId: effectiveParent.id,
+          parentId: p.id,
           kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
           token: parentToken,
           needsBind: false,
@@ -176,14 +169,14 @@ export class AuthService {
     }
 
     // 情况2：仅家长
-    if (effectiveParent) {
-      const kids = await this.studentRepo.find({ where: { parentId: effectiveParent.id } })
+    if (parentExists) {
+      const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
       const firstKid = kids[0]
       if (!firstKid) throw new UnauthorizedException('未关联学生')
-      const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: effectiveParent.parentName })
-      const token = this.jwt.sign({ sub: pim, type: 'parent', parentId: effectiveParent.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
-      const pn = effectiveParent.parentName || '家长'
-      return { role: 'parent', token, parentId: effectiveParent.id, kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), parentName: pn, needsBind: false }
+      const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
+      const token = this.jwt.sign({ sub: pim, type: 'parent', parentId: parent.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
+      const pn = parent.parentName || '家长'
+      return { role: 'parent', token, parentId: parent.id, kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), parentName: pn, needsBind: false }
     }
 
     // 情况3：仅教师
@@ -248,9 +241,8 @@ export class AuthService {
       }
     }
 
-    // 设置学生 parentId（保留 parentOpenId 做兼容）
+    // 设置学生 parentId
     stu.parentId = parent.id
-    stu.parentOpenId = openid
     await this.studentRepo.save(stu)
 
     // 审计日志
@@ -305,7 +297,6 @@ export class AuthService {
         await this.parentRepo.save(parent)
       }
       stu.parentId = parent.id
-      stu.parentOpenId = openid
       await this.studentRepo.save(stu)
       // 审计日志
       const t = await this.users.findById(stu.teacherId).catch(() => null)

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, BadRequestException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Req, UseGuards, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { ParentAuthService } from './parent-auth.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
@@ -121,5 +121,14 @@ export class ParentAuthController {
   @UseGuards(JwtAuthGuard)
   async compareKids(@CurrentParent() p: any) {
     return this.s.getKidsComparison(p)
+  }
+
+  /** 师兼家角色切换：教师激活家长身份（需已登录教师） */
+  @Post('activate-parent')
+  @UseGuards(JwtAuthGuard)
+  async activateParent(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.id
+    if (!userId) throw new UnauthorizedException('无效身份')
+    return this.s.activateParent(userId)
   }
 }

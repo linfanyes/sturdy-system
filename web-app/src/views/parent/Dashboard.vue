@@ -2,11 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe } from '@/api/parent'
-import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle } from 'lucide-vue-next'
+import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat } from 'lucide-vue-next'
 
 const auth = useAuthStore()
+const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 
 const loading = ref(true)
@@ -65,6 +67,13 @@ function contactTeacher() {
   toastMsg.value = '请在「消息」中联系老师'
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toastMsg.value = '' }, 2500)
+}
+
+/** 师兼家：切换到教师端（仅当 roleSwitchStore 有 parentToken 时启用） */
+const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
+function switchToTeacher() {
+  roleSwitchStore.switchTo('teacher', auth.setAuth)
+  router.push('/teacher')
 }
 
 const greeting = computed(() => {
@@ -284,10 +293,19 @@ onMounted(load)
             <template v-else>家长中心</template>
           </div>
         </div>
-        <button
-          class="shrink-0 text-sm rounded-xl border border-white/40 bg-white/20 px-3 py-1.5 text-cocoa-800 hover:bg-white/30"
-          @click="showPwdModal = true"
-        >⚙️ 修改密码</button>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="canSwitchToTeacher"
+            class="shrink-0 text-sm rounded-xl border border-[#07c160]/30 bg-[#07c160]/10 px-3 py-1.5 text-[#07c160] hover:bg-[#07c160] hover:text-white transition-colors flex items-center gap-1"
+            @click="switchToTeacher"
+          >
+            <Repeat class="w-3.5 h-3.5" /> 切换至教师端
+          </button>
+          <button
+            class="shrink-0 text-sm rounded-xl border border-white/40 bg-white/20 px-3 py-1.5 text-cocoa-800 hover:bg-white/30"
+            @click="showPwdModal = true"
+          >⚙️ 修改密码</button>
+        </div>
       </div>
     </div>
 

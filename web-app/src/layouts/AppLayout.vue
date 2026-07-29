@@ -2,8 +2,9 @@
 import { computed, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import {
-  LayoutDashboard, School, LogOut, User, Search,
+  LayoutDashboard, School, LogOut, User, Search, Repeat,
   Bot, Briefcase, Wrench, Home, ChevronRight,
   Users, BookOpen, ClipboardList, Wallet, Camera,
   Vote, Award, ListTodo, Send, Phone, Image as ImageIcon,
@@ -16,6 +17,7 @@ import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
+const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -339,6 +341,14 @@ function handleLogout() {
   router.push({ name: 'login' })
 }
 
+/** 切换到家长端（仅当 roleSwitchStore 有 teacherToken 时启用） */
+const canSwitchToParent = computed(() => !!roleSwitchStore.teacherToken && auth.role === 'teacher')
+
+function switchToParent() {
+  roleSwitchStore.switchTo('parent', auth.setAuth)
+  router.push('/parent')
+}
+
 /* 全局搜索（仅校管） */
 const searchKeyword = ref('')
 const searchResult = ref<SearchResult | null>(null)
@@ -450,6 +460,18 @@ function navigateTo(to: string) {
         <div class="w-9 h-9 rounded-full bg-butter-300 flex items-center justify-center">
           <User class="w-4 h-4 text-cocoa-700" />
         </div>
+        <!-- 师兼家：切换到家长端 -->
+        <button
+          v-if="canSwitchToParent"
+          class="p-1.5 rounded-lg hover:bg-cream-200 text-[#E6A23C] relative group"
+          title="切换至家长端"
+          @click="switchToParent"
+        >
+          <Repeat class="w-4 h-4" />
+          <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-cocoa-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            切换至家长端
+          </span>
+        </button>
         <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="退出登录" @click="handleLogout">
           <LogOut class="w-4 h-4" />
         </button>

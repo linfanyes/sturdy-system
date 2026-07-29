@@ -325,6 +325,11 @@
       </view>
     </view>
 
+    <!-- 视角切换：切换到家长端（仅当有 parentToken 时显示） -->
+    <view class="switch-role" v-if="parent.parentToken" @tap="switchToParent">
+      🔄 切换到家长端
+    </view>
+
     <view v-if="loading" class="loadtip">加载中…</view>
   </view>
 </template>
@@ -333,7 +338,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh, onHide } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { auth, theme, flushTabBarStyle } from '../../common/store'
+import { auth, theme, flushTabBarStyle, parent, switchRole } from '../../common/store'
 import { copyText } from '../../common/print'
 
 // 生日卡片
@@ -698,6 +703,18 @@ function goCrud(type) {
   if (url) uni.switchTab({ url })  // 班级和学生是 tabBar 页面，用 switchTab
   else uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(type) })
 }
+
+function switchToParent() {
+  uni.showModal({
+    title: '切换身份',
+    content: '确定切换到家长端？',
+    success: (res) => {
+      if (res.confirm) {
+        switchRole('parent')
+      }
+    },
+  })
+}
 </script>
 
 <style scoped>
@@ -841,4 +858,5 @@ function goCrud(type) {
 .ic { font-size: 52rpx; }
 .lb { margin-top: 12rpx; color: var(--c-title); font-size: 26rpx; }
 .loadtip { text-align: center; color: var(--c-sub); font-size: 24rpx; padding: 20rpx 0; }
+.switch-role { text-align:center; padding:20rpx 0; font-size:26rpx; color:#07c160; border-top:1rpx solid var(--c-border); margin-top:20rpx; }
 </style>

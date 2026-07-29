@@ -15,7 +15,6 @@ export class Student extends BaseEntity {
   @Column({ type: 'int', nullable: true }) seatCol: number
   @Column({ default: '' }) parentName: string
   @Column({ default: '' }) parentPhone: string
-  @Column({ default: '' }) parentOpenId: string
   @Column({ nullable: true })
   parentId: string
 

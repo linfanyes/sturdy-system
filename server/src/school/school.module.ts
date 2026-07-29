@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
-import { Repository, DataSource, Not } from 'typeorm'
+import { Repository, DataSource } from 'typeorm'
 import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import {
   ScheduleItem,
@@ -108,9 +108,13 @@ class NoticeController extends CrudController<Notice> {
     const owned = await this.classRepo.findOne({ where: { id: b.classId, teacherId: t.sub } } as any)
     if (!owned) return { pushed: 0, error: '班级不存在或无权访问' }
     const students = await this.studentRepo.find({
-      where: { classId: b.classId, parentOpenId: Not('') },
+      where: { classId: b.classId },
+      relations: ['parent'],
     })
-    const openIds = students.map(s => s.parentOpenId).filter(Boolean)
+    const openIds: string[] = []
+    for (const s of students) {
+      if (s.parent?.openId) openIds.push(s.parent.openId)
+    }
     const result = await this.sec.pushNotice({ title: b.title, content: b.content }, openIds)
     return { pushed: result.sent, total: result.total }
   }

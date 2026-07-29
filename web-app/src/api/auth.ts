@@ -106,12 +106,36 @@ export async function login(role: Role, username: string, password: string): Pro
 }
 
 /**
+ * 统一登录响应（含师兼家双角色选择场景）
+ */
+export interface UnifiedLoginResult extends LoginResult {
+  needsRoleChoice?: boolean
+  roles?: Array<'teacher' | 'parent'>
+  teacher?: { role: string; token: string; user: any }
+  parent?: { role: string; token: string; parentId: string; kids: any[]; needsBind: boolean }
+}
+
+/**
  * 后端统一登录：POST /api/auth/unified-login
  * 后端按 超管→校管→教师→家长 顺序匹配，返回 { role, token, user }
  * 家长字段为 parent，这里统一映射为 AuthUser。
+ * 当教师同时拥有家长身份时，返回 needsRoleChoice: true 及双 token。
  */
-export async function unifiedLogin(username: string, password: string): Promise<LoginResult> {
+export async function unifiedLogin(username: string, password: string): Promise<UnifiedLoginResult> {
   const res = await request.post<any, any>('/auth/unified-login', { username, password })
+
+  // 师兼家双角色选择场景
+  if (res.needsRoleChoice) {
+    return {
+      token: '',
+      user: { id: '', role: 'teacher', name: '' },
+      needsRoleChoice: true,
+      roles: res.roles || ['teacher', 'parent'],
+      teacher: res.teacher,
+      parent: res.parent,
+    }
+  }
+
   const role: Role = res.role
   const token: string = res.token
 

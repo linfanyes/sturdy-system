@@ -12,6 +12,10 @@ const FONT_KEY = 'g_fontsize'
 const MOCK_KEY = 'g_mock_mode'
 const PARENT_TOKEN_KEY = 'g_parent_token'
 const PARENT_USER_KEY = 'g_parent_user'
+const PARENT_TEACHER_TOKEN_KEY = 'g_parent_teacher_token'
+const PARENT_PARENT_TOKEN_KEY = 'g_parent_parent_token'
+const PARENT_ROLE_KEY = 'g_parent_role'
+const PARENT_DATA_KEY = 'g_parent_data'
 
 export const auth = reactive({
   token: uni.getStorageSync(TOKEN_KEY) || '',
@@ -83,23 +87,90 @@ export const mockMode = reactive({
 export const switchTabParams = reactive({})
 
 // 家长端登录态（与教师端隔离，各自独立存储）
+// 双角色支持：当教师同时拥有家长身份时，teacherToken/parentToken 分别存两套令牌
 export const parent = reactive({
   token: uni.getStorageSync(PARENT_TOKEN_KEY) || '',
   user: uni.getStorageSync(PARENT_USER_KEY) || null,
+  // 双角色切换支持
+  teacherToken: uni.getStorageSync(PARENT_TEACHER_TOKEN_KEY) || '',
+  parentToken: uni.getStorageSync(PARENT_PARENT_TOKEN_KEY) || '',
+  currentRole: uni.getStorageSync(PARENT_ROLE_KEY) || 'parent',
+  parentId: '',
+  kids: [],
 })
+
+export function setDualTokens(teacherToken, parentToken, parentData) {
+  parent.teacherToken = teacherToken
+  parent.parentToken = parentToken
+  parent.token = parentToken
+  if (parentData) {
+    parent.parentId = parentData.parentId || ''
+    parent.kids = parentData.kids || []
+  }
+  parent.currentRole = 'parent'
+  // 持久化
+  uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, teacherToken)
+  uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parentToken)
+  uni.setStorageSync(PARENT_TOKEN_KEY, parentToken)
+  uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
+  if (parentData) {
+    uni.setStorageSync(PARENT_DATA_KEY, { parentId: parentData.parentId, kids: parentData.kids })
+  }
+}
+
+export function switchRole(targetRole) {
+  if (targetRole === 'teacher' && parent.teacherToken) {
+    // 切换到教师：备份当前 parentToken，激活 teacherToken
+    parent.parentToken = parent.token
+    parent.token = parent.teacherToken
+    parent.currentRole = 'teacher'
+    // 同步 auth.token 使 teacher api 生效
+    auth.token = parent.teacherToken
+    uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parent.parentToken)
+    uni.setStorageSync(PARENT_TOKEN_KEY, parent.teacherToken)
+    uni.setStorageSync(PARENT_ROLE_KEY, 'teacher')
+    uni.setStorageSync('g_token', parent.teacherToken)
+    uni.reLaunch({ url: '/pages/dashboard/dashboard' })
+  } else if (targetRole === 'parent' && parent.parentToken) {
+    // 切换到家长：备份当前 teacherToken，激活 parentToken
+    parent.teacherToken = parent.token
+    parent.token = parent.parentToken
+    parent.currentRole = 'parent'
+    // 同步 auth.token 使家长 API 也能工作
+    auth.token = parent.parentToken
+    uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, parent.teacherToken)
+    uni.setStorageSync(PARENT_TOKEN_KEY, parent.parentToken)
+    uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
+    uni.setStorageSync('g_token', parent.parentToken)
+    uni.reLaunch({ url: '/pages/parent/parent' })
+  }
+}
 
 export function setParent(token, user) {
   parent.token = token
   parent.user = user
+  parent.parentToken = token
+  parent.currentRole = 'parent'
   uni.setStorageSync(PARENT_TOKEN_KEY, token)
   uni.setStorageSync(PARENT_USER_KEY, user)
+  uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, token)
+  uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
 }
 
 export function logoutParent() {
   parent.token = ''
   parent.user = null
+  parent.teacherToken = ''
+  parent.parentToken = ''
+  parent.currentRole = 'parent'
+  parent.parentId = ''
+  parent.kids = []
   uni.removeStorageSync(PARENT_TOKEN_KEY)
   uni.removeStorageSync(PARENT_USER_KEY)
+  uni.removeStorageSync(PARENT_TEACHER_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_ROLE_KEY)
+  uni.removeStorageSync(PARENT_DATA_KEY)
 }
 
 export function setTheme(mode) {
@@ -205,6 +276,10 @@ export function logout() {
   uni.removeStorageSync(USER_KEY)
   uni.removeStorageSync(PARENT_TOKEN_KEY)
   uni.removeStorageSync(PARENT_USER_KEY)
+  uni.removeStorageSync(PARENT_TEACHER_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
+  uni.removeStorageSync(PARENT_ROLE_KEY)
+  uni.removeStorageSync(PARENT_DATA_KEY)
   uni.removeStorageSync('admin_token')
   uni.removeStorageSync('sa_token')
   // 清除演示模式标记，防止登出后冷启动时 App.vue 误读恢复演示数据

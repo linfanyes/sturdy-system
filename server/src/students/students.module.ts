@@ -252,9 +252,7 @@ class StudentsService extends CrudService<Student> {
     s.parentLoginEnabled = !s.parentLoginEnabled
     let initialPassword: string | undefined
     if (!s.parentLoginEnabled) {
-      // 关闭时清空敏感绑定数据，防止重新开启时旧绑定仍有效
-      s.parentOpenId = ''
-      s.parentNickName = ''
+      // 关闭时清空敏感绑定数据
       s.parentPasswordHash = null
       s.parentId = ''
     } else {

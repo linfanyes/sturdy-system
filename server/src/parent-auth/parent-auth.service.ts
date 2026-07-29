@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
 import { Parent } from '../parent/parent.entity'
+import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Notice, Homework } from '../school/school.entity'
 import { Grade } from '../grades/grade.entity'
@@ -27,6 +28,7 @@ import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 export class ParentAuthService {
   constructor(
     @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
+    @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
@@ -114,26 +116,8 @@ export class ParentAuthService {
     return { ok: true }
   }
 
-  /** 当前家长信息 + 全量 kids（支持新 payload 含 parentId 和旧 token 兼容） */
+  /** 当前家长信息 + 全量 kids */
   async getMe(payload: any) {
-    if (!payload.parentId) {
-      // 旧 token 兼容（无 parentId 的老 token）
-      const s = await this.studentRepo.findOne({ where: { id: payload.studentId } })
-      if (!s) return null
-      let className = ''
-      try {
-        const cls = await this.classRepo.findOne({ where: { id: s.classId } })
-        if (cls) className = cls.name
-      } catch {}
-      return {
-        parentName: s.parentName || '家长',
-        studentId: s.id, studentName: s.name, studentNo: s.studentNo,
-        classId: s.classId, className,
-        kids: [{ studentId: s.id, studentName: s.name, studentNo: s.studentNo, classId: s.classId }],
-        parentId: null,
-      }
-    }
-
     const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
     if (!parent) return null
 
@@ -207,6 +191,31 @@ export class ParentAuthService {
     }
   }
 
+  /** 师兼家角色切换：教师激活家长身份，返回家长 token */
+  async activateParent(teacherUserId: string) {
+    const user = await this.usersRepo.findOne({ where: { id: teacherUserId } })
+    if (!user?.parentId) throw new ForbiddenException('该教师未关联家长身份')
+
+    const parent = await this.parentRepo.findOne({ where: { id: user.parentId } })
+    if (!parent) throw new ForbiddenException('家长身份不存在')
+
+    const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
+    if (!kids.length) throw new ForbiddenException('家长身份未关联学生')
+
+    const firstKid = kids[0]
+    const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
+    const token = this.jwt.sign({
+      sub: pim, type: 'parent', parentId: parent.id,
+      studentId: firstKid.id, studentName: firstKid.name,
+      classId: firstKid.classId, studentNo: firstKid.studentNo,
+    })
+    return {
+      token,
+      parentId: parent.id,
+      kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })),
+    }
+  }
+
   /** 孩子所在班级的通知 */
   async getNotices(classId: string) {
     if (!classId) return []
@@ -232,7 +241,6 @@ export class ParentAuthService {
     const { openid } = await this.wechat.code2Session(code)
     const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
     if (!stu) throw new BadRequestException('学生不存在')
-    stu.parentOpenId = openid
     if (nickName) stu.parentNickName = nickName
     await this.studentRepo.save(stu)
     return { ok: true, nickName }
@@ -452,7 +460,6 @@ export class ParentAuthService {
       const data = (await resp.json()) as any
       const openId = (data && data.openid) || ''
       if (openId) {
-        stu.parentOpenId = openId
         await this.studentRepo.save(stu)
       }
       return { ok: !!openId, openId }

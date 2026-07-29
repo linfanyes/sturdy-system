@@ -2,16 +2,24 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useRoleSwitchStore } from '@/stores/roleSwitch'
+import { unifiedLogin } from '@/api/auth'
+import type { UnifiedLoginResult } from '@/api/auth'
 import { Loader2, Sparkles } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
+const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const route = useRoute()
 
 const loading = ref(false)
 const errMsg = ref('')
 const form = ref({ username: '', password: '' })
+
+/* ============ 师兼家双角色选择 ============ */
+const showRoleChoiceModal = ref(false)
+const roleChoiceData = ref<UnifiedLoginResult | null>(null)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -101,8 +109,18 @@ async function handleLogin() {
   loading.value = true
   errMsg.value = ''
   try {
-    // 后端统一登录，自动识别角色；登录成功后按返回角色跳转
-    await auth.loginByUsername(form.value.username, form.value.password)
+    // 调用统一登录，获取原始响应
+    const result = await unifiedLogin(form.value.username, form.value.password)
+
+    // 师兼家双角色选择
+    if (result.needsRoleChoice) {
+      roleChoiceData.value = result
+      showRoleChoiceModal.value = true
+      return
+    }
+
+    // 正常登录流程
+    auth.setAuth(result.token, result.user)
     saveRecent(form.value.username)
     const redirect = (route.query.redirect as string) || targetDashboard()
     router.push(redirect)
@@ -111,6 +129,24 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+
+/* ============ 双角色选择 ============ */
+function selectRole(role: 'teacher' | 'parent') {
+  const data = roleChoiceData.value
+  if (!data) return
+
+  if (role === 'teacher' && data.teacher) {
+    auth.setAuth(data.teacher.token, { role: 'teacher', ...data.teacher.user })
+    router.push('/teacher')
+  } else if (role === 'parent' && data.parent) {
+    roleSwitchStore.setTokens(data.teacher!.token, data.parent.token, data.parent)
+    auth.setAuth(data.parent.token, { role: 'parent', ...data.parent })
+    router.push('/parent')
+  }
+
+  showRoleChoiceModal.value = false
+  roleChoiceData.value = null
 }
 </script>
 
@@ -257,6 +293,24 @@ async function handleLogin() {
         <div class="mt-5 text-xs text-center text-cocoa-400 leading-relaxed">
           登录后 token 将持久化到本地，关闭浏览器后无需重新登录
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 师兼家双角色选择弹层 -->
+  <div v-if="showRoleChoiceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-2xl p-6 w-80 shadow-xl">
+      <h3 class="text-lg font-bold text-center mb-2">选择登录身份</h3>
+      <p class="text-sm text-gray-500 text-center mb-4">该微信账号同时关联了教师和家长身份</p>
+      <div class="space-y-3">
+        <button @click="selectRole('teacher')"
+          class="w-full py-3 rounded-xl border-2 border-[#07c160] text-[#07c160] font-medium hover:bg-[#07c160] hover:text-white transition-colors">
+          👨‍🏫 以老师身份进入
+        </button>
+        <button @click="selectRole('parent')"
+          class="w-full py-3 rounded-xl border-2 border-[#E6A23C] text-[#E6A23C] font-medium hover:bg-[#E6A23C] hover:text-white transition-colors">
+          👨‍👩‍👧‍👦 以家长身份进入
+        </button>
       </div>
     </div>
   </div>

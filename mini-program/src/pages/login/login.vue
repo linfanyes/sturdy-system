@@ -22,6 +22,22 @@
         <button class="ok" :disabled="bindLoading" @click="doBind">{{ bindLoading ? '绑定中…' : '完成绑定' }}</button>
       </view>
     </view>
+
+    <!-- 角色选择弹层（教师兼家长身份二选一） -->
+    <view class="role-mask" v-if="showRoleChoice">
+      <view class="role-modal">
+        <view class="role-title">选择登录身份</view>
+        <view class="role-desc">该微信账号同时关联了教师和家长身份</view>
+        <view class="role-buttons">
+          <view class="role-btn teacher" @tap="selectRole('teacher')">
+            <text>👨‍🏫 以老师身份进入</text>
+          </view>
+          <view class="role-btn parent" @tap="selectRole('parent')">
+            <text>👨‍👩‍👧‍👦 以家长身份进入</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -29,7 +45,7 @@
 import { ref, computed } from 'vue'
 import api from '../../common/request'
 import { setMockMode } from '../../common/request'
-import { setAuth, setUser, setParent, theme, auth } from '../../common/store'
+import { setAuth, setUser, setParent, setDualTokens, theme, auth, parent } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
@@ -79,6 +95,10 @@ const bindOpenid = ref(''), bindSessionKey = ref('')
 const bindNumber = ref(''), bindLoading = ref(false)
 let wechatNickName = ''  // 微信昵称（绑定教师时作默认称呼）
 
+// 角色选择（教师兼家长）
+const showRoleChoice = ref(false)
+const roleChoiceData = ref(null)
+
 async function doWechatLogin() {
   uni.showLoading({ title:'登录中' })
   try {
@@ -90,6 +110,12 @@ async function doWechatLogin() {
     } catch (e) { wechatNickName = '' }  // 用户拒绝或环境不支持
     const r = await api.post('/auth/wechat-login', { code })
     uni.hideLoading()
+    if (r.needsRoleChoice) {
+      // 教师兼家长身份，需要用户选择
+      roleChoiceData.value = r
+      showRoleChoice.value = true
+      return
+    }
     if (r.needsBind) {
       bindOpenid.value = r.openid || code
       bindSessionKey.value = r.sessionKey || ''
@@ -110,6 +136,28 @@ async function doBind() {
     handleLoginResult(r)
   } catch (e) { uni.showToast({ title: String(e?.message||'绑定失败').slice(0,40), icon:'none' }) }
   bindLoading.value = false
+}
+
+// 角色选择（教师兼家长身份）
+function selectRole(role) {
+  const data = roleChoiceData.value
+  if (!data) return
+  if (role === 'teacher') {
+    // 登录为教师
+    setAuth(data.teacher.token, data.teacher.user)
+    // 存储双角色数据到 parent store，供后续切换使用
+    setDualTokens(data.teacher.token, data.parent.token, data.parent)
+    uni.reLaunch({ url: '/pages/dashboard/dashboard' })
+  } else if (role === 'parent') {
+    // 登录为家长
+    setDualTokens(data.teacher.token, data.parent.token, data.parent)
+    // 同步 auth.token 让部分通用 API 也能工作
+    auth.token = data.parent.token
+    uni.setStorageSync('g_token', data.parent.token)
+    uni.reLaunch({ url: '/pages/parent/parent' })
+  }
+  showRoleChoice.value = false
+  roleChoiceData.value = null
 }
 </script>
 
@@ -137,4 +185,13 @@ async function doBind() {
 .ok::after { border:none; }
 .dark .inp2, .dark .inp { background:var(--c-input); }
 .dark .r2 { background:var(--c-card2); color:var(--c-sub); }
+/* 角色选择弹层 */
+.role-mask { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; display:flex; align-items:center; justify-content:center; }
+.role-modal { background:#fff; border-radius:32rpx; padding:48rpx; width:600rpx; text-align:center; }
+.role-title { font-size:36rpx; font-weight:bold; margin-bottom:16rpx; }
+.role-desc { font-size:26rpx; color:#999; margin-bottom:40rpx; }
+.role-buttons { display:flex; flex-direction:column; gap:24rpx; }
+.role-btn { padding:24rpx; border-radius:20rpx; font-size:30rpx; font-weight:500; }
+.role-btn.teacher { border:2rpx solid #07c160; color:#07c160; }
+.role-btn.parent { border:2rpx solid #E6A23C; color:#E6A23C; }
 </style>

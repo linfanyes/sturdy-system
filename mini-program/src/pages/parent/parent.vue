@@ -333,6 +333,11 @@
       </view>
     </scroll-view>
 
+    <!-- 视角切换：切换到教师端（仅当有 teacherToken 时显示） -->
+    <view class="switch-role" v-if="parent.teacherToken" @tap="switchToTeacher">
+      🔄 切换到教师端
+    </view>
+
     <!-- 修改密码弹窗 -->
     <view v-if="showPwdModal" class="pwd-mask" @click="showPwdModal = false">
       <view class="pwd-box" @click.stop>
@@ -355,7 +360,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme, parent, logoutParent } from '../../common/store'
+import { theme, parent, logoutParent, switchRole } from '../../common/store'
 import { parentApi } from '../../common/request'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -604,6 +609,18 @@ async function switchToKid(studentId) {
 
 function goCompare() {
   uni.navigateTo({ url: '/pages/parent/compare' })
+}
+
+function switchToTeacher() {
+  uni.showModal({
+    title: '切换身份',
+    content: '确定切换到教师端？',
+    success: (res) => {
+      if (res.confirm) {
+        switchRole('teacher')
+      }
+    },
+  })
 }
 
 function logout() { logoutParent(); uni.reLaunch({ url: '/pages/login/login' }) }
@@ -857,4 +874,5 @@ onShow(() => {
   margin-left: auto;
   flex-shrink: 0;
 }
+.switch-role { text-align:center; padding:20rpx 0; font-size:26rpx; color:#07c160; border-top:1rpx solid #f0f0f0; margin-top:20rpx; }
 </style>

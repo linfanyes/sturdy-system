@@ -244,7 +244,7 @@ export class SchoolAdminService {
       if (classIds.length) {
         await em.getRepository(Student).update(
           { classId: In(classIds) },
-          { classId: null, parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+          { classId: null, parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
         )
       }
       // 删除班级
@@ -391,7 +391,7 @@ export class SchoolAdminService {
       // 2. 学生 classId 置空并禁用家长登录
       await em.getRepository(Student).update(
         { classId: id },
-        { classId: null, parentLoginEnabled: false, parentOpenId: '', parentNickName: '', parentPasswordHash: null }
+        { classId: null, parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
       )
       // 3. 清理班级关联的业务数据（按 classId，使用共享常量）
       for (const t of CLASS_ID_TABLES) {
