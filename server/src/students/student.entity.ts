@@ -18,7 +18,7 @@ export class Student extends BaseEntity {
   @Column({ nullable: true })
   parentId: string
 
-  @ManyToOne(() => Parent)
+  @ManyToOne(() => Parent, { createForeignKeyConstraints: false })
   @JoinColumn({ name: 'parentId' })
   parent: Parent
   @Column({ default: '' }) parentNickName: string
