@@ -72,8 +72,15 @@ function contactTeacher() {
 /** 师兼家：切换到教师端（仅当 roleSwitchStore 有 parentToken 时启用） */
 const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
 function switchToTeacher() {
+  if (!window.confirm('确定切换到教师端？')) return
   roleSwitchStore.switchTo('teacher', auth.setAuth)
   router.push('/teacher')
+}
+
+// 微信绑定
+const isBound = ref(false)
+function bindWechat() {
+  alert('请在微信小程序中打开"家长端"完成微信绑定。\n或使用教师端-学生管理-开通家长登录功能。')
 }
 
 const greeting = computed(() => {
@@ -329,6 +336,16 @@ onMounted(load)
             <span v-if="k.nickName" class="text-mint-600 bg-mint-50 px-2 py-0.5 rounded-full">已微信绑 {{ k.nickName }}</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 微信绑定提示（仅演示模式或无绑定时显示） -->
+    <div v-if="me?.kids?.some(k => !k.nickName)" class="quick-card !py-3 !px-4">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-cocoa-600">微信绑定后可接收通知提醒</span>
+        <button @click="bindWechat" class="text-sm text-[#07c160] underline font-medium">
+          📱 绑定微信
+        </button>
       </div>
     </div>
 
