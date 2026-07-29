@@ -1,16 +1,22 @@
-# ---- 构建阶段 ----
+# ---- 构建阶段（含 devDeps，用于编译） ----
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
+
+# ---- 生产依赖阶段（仅安装运行时依赖） ----
+FROM node:20-alpine AS prod-deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts
 
 # ---- 运行阶段 ----
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./package.json
 # migrations 目录：供启动时自动 migration runner 执行（见 main.ts runMigrations）
