@@ -19,6 +19,7 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { SecurityModule, SecurityService } from '../security/security.module'
 import { Student } from '../students/student.entity'
+import { Parent } from '../parent/parent.entity'
 import { ClassItem } from '../classes/class.entity'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 
@@ -93,6 +94,7 @@ class NoticeController extends CrudController<Notice> {
   constructor(
     s: NoticeService,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     private readonly sec: SecurityService,
@@ -109,11 +111,17 @@ class NoticeController extends CrudController<Notice> {
     if (!owned) return { pushed: 0, error: '班级不存在或无权访问' }
     const students = await this.studentRepo.find({
       where: { classId: b.classId },
-      relations: ['parent'],
     })
+    const parentIds = [...new Set(students.map(s => s.parentId).filter(Boolean) as string[])]
+    const parentMap = new Map<string, Parent>()
+    if (parentIds.length) {
+      const parents = await this.parentRepo.find({ where: parentIds.map(id => ({ id })) as any })
+      parents.forEach(p => parentMap.set(p.id, p))
+    }
     const openIds: string[] = []
     for (const s of students) {
-      if (s.parent?.openId) openIds.push(s.parent.openId)
+      const p = s.parentId ? parentMap.get(s.parentId) : undefined
+      if (p?.openId) openIds.push(p.openId)
     }
     const result = await this.sec.pushNotice({ title: b.title, content: b.content }, openIds)
     return { pushed: result.sent, total: result.total }
@@ -370,7 +378,7 @@ class ScheduleImportController {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem]),
+    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem, Parent]),
     AiModule,
     SecurityModule,
     ClassMembersModule,
