@@ -16,11 +16,11 @@ describe('认证 Store 安全属性', () => {
   describe('Role 类型定义', () => {
     it('在共享包中定义了四级角色联合类型', () => {
       expect(sharedTypesContent).toMatch(/type\s+Role\s*=/)
-      // 共享包常量使用 'super_admin' 等值（在 constants 文件中定义）
+      // 共享包常量使用 'super' 等值（在 constants 文件中定义）
       // types 文件中重新导出了 Role 类型，验证常量文件中包含这些值
       const constantsPath = path.resolve(__dirname, '../../shared/constants/index.ts')
       const constantsContent = fs.readFileSync(constantsPath, 'utf-8')
-      expect(constantsContent).toMatch(/'super_admin'/)
+      expect(constantsContent).toMatch(/'super'/)
       expect(constantsContent).toMatch(/'school_admin'/)
       expect(constantsContent).toMatch(/'teacher'/)
       expect(constantsContent).toMatch(/'parent'/)

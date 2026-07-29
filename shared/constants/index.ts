@@ -77,7 +77,7 @@ export const GRADE_OPTIONS: string[] = [
  * è§’è‰²é€‰é¡¹ï¼ˆ4 ç§è§’è‰²ï¼‰
  * å¯¹é½ï¼šweb-app/src/types/user.ts::Roleã€åç«¯ JWT payload.role
  */
-export type Role = 'super_admin' | 'school_admin' | 'teacher' | 'parent'
+export type Role = 'super' | 'school_admin' | 'teacher' | 'parent'
 
 export interface RoleOption {
   label: string
@@ -86,7 +86,7 @@ export interface RoleOption {
 }
 
 export const ROLE_OPTIONS: RoleOption[] = [
-  { label: 'è¶…çº§ç®¡ç†å‘˜', value: 'super_admin', features: ['*'] },
+  { label: 'è¶…çº§ç®¡ç†å‘˜', value: 'super', features: ['*'] },
   { label: 'å­¦æ ¡ç®¡ç†å‘˜', value: 'school_admin', features: ['school_manage', 'teacher_manage', 'student_manage', 'class_manage', 'data_analysis'] },
   { label: 'æ•™å¸ˆ', value: 'teacher', features: ['exams', 'grades', 'homework', 'attendance', 'tools', 'seats', 'games', 'rewards', 'growth', 'behavior', 'reading', 'checkin', 'finance', 'activities', 'duty', 'gallery', 'parents', 'im', 'notices', 'ai', 'schedule', 'worklog', 'observation', 'calendar', 'teachers', 'todos', 'notes', 'demo'] },
   { label: 'å®¶é•¿', value: 'parent', features: ['grades', 'homework', 'notices', 'im', 'activities', 'gallery', 'checkin', 'reading'] },
@@ -123,8 +123,8 @@ export const FEATURE_FLAGS: string[] = [
 /** ç‰¹æ€§æ ‡è¯†é›†åˆï¼ˆç”¨äºå¿«é€Ÿ O(1) æŸ¥æ‰¾ï¼‰ */
 export const FEATURE_FLAGS_SET: Set<string> = new Set(FEATURE_FLAGS)
 /**
- * Ö÷ÌâÉ«·½°¸£¨4É«£©
- * ¶ÔÆë£ºmini-program/src/common/store.js::SCHEMES
+ * ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½4É«ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ë£ºmini-program/src/common/store.js::SCHEMES
  */
 export interface ColorScheme {
   value: string
@@ -133,18 +133,18 @@ export interface ColorScheme {
 }
 
 export const SCHEMES: ColorScheme[] = [
-  { value: 'butter', label: 'ÄÌ»Æ', color: '#e6a23c' },
-  { value: 'mint', label: '±¡ºÉ', color: '#07c160' },
-  { value: 'sakura', label: 'Ó£»¨', color: '#e06c75' },
-  { value: 'sky', label: 'ÌìÀ¶', color: '#409eff' },
+  { value: 'butter', label: 'ï¿½Ì»ï¿½', color: '#e6a23c' },
+  { value: 'mint', label: 'ï¿½ï¿½ï¿½ï¿½', color: '#07c160' },
+  { value: 'sakura', label: 'Ó£ï¿½ï¿½', color: '#e06c75' },
+  { value: 'sky', label: 'ï¿½ï¿½ï¿½ï¿½', color: '#409eff' },
 ]
 
-/** Ö÷ÌâÉ«ÖµÊı×é */
+/** ï¿½ï¿½ï¿½ï¿½É«Öµï¿½ï¿½ï¿½ï¿½ */
 export const SCHEME_VALUES: string[] = SCHEMES.map((s) => s.value)
 
 /**
- * ×ÖÌå´óĞ¡µµÎ»£¨3µµ£©
- * ¶ÔÆë£ºmini-program/src/common/store.js::FONT_SIZES
+ * ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½Î»ï¿½ï¿½3ï¿½ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ë£ºmini-program/src/common/store.js::FONT_SIZES
  */
 export interface FontSizeOption {
   value: string
@@ -154,6 +154,6 @@ export interface FontSizeOption {
 
 export const FONT_SIZES: FontSizeOption[] = [
   { value: 'sm', label: 'Ğ¡', scale: 0.9 },
-  { value: 'md', label: '±ê×¼', scale: 1 },
-  { value: 'lg', label: '´ó', scale: 1.15 },
+  { value: 'md', label: 'ï¿½ï¿½×¼', scale: 1 },
+  { value: 'lg', label: 'ï¿½ï¿½', scale: 1.15 },
 ]

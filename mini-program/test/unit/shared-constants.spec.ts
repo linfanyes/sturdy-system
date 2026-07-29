@@ -126,9 +126,9 @@ describe('mini-program: shared constants export', () => {
 
     it('should have correct role values and features', () => {
       const values = ROLE_OPTIONS.map((r) => r.value)
-      expect(values).toEqual(['super_admin', 'school_admin', 'teacher', 'parent'])
+      expect(values).toEqual(['super', 'school_admin', 'teacher', 'parent'])
 
-      const superAdmin = ROLE_OPTIONS.find((r) => r.value === 'super_admin')
+      const superAdmin = ROLE_OPTIONS.find((r) => r.value === 'super')
       expect(superAdmin).toBeDefined()
       expect(superAdmin?.features).toContain('*')
 

@@ -62,7 +62,7 @@
 | TC-MP-CONST-004 | SUBJECT_OPTIONS_icon去重_语文历史共用📜_放宽断言 | 边界条件 | P1 | - | 1.验证icon唯一数 | - | 14个唯一icon | P0-02 |
 | TC-MP-CONST-005 | GRADE_OPTIONS_12个标准年级_与Web端一致 | 正常流 | P0 | - | 1.验证长度与内容 | - | 12项含一~六年级/初一~初三/高一~高三 | P0-02 |
 | TC-MP-CONST-006 | CLASS_NAMING_RULE_pattern_行为与Web端一致 | 正常流 | P0 | - | 1.验证pattern.test小学/初中/高中格式 | 标准格式 | 全匹配 | P0-02 |
-| TC-MP-CONST-007 | ROLE_OPTIONS_四角色枚举_与Web端一致 | 正常流 | P0 | - | 1.验证角色值 | - | super_admin/school_admin/teacher/parent | P0-02 |
+| TC-MP-CONST-007 | ROLE_OPTIONS_四角色枚举_与Web端一致 | 正常流 | P0 | - | 1.验证角色值 | - | super/school_admin/teacher/parent | P0-02 |
 | TC-MP-CONST-008 | FEATURE_FLAGS_31个教师功能特性标识_与Web端一致 | 正常流 | P0 | - | 1.验证Set大小与内容 | - | size=31, 含homework/grades/ai等 | P0-02 |
 | TC-MP-CONST-009 | PHONE_REGEX_手机号正则_单一源头 | 正常流 | P0 | - | 1.验证正则与Web端完全相同 | /^1[3-9]\d{9}$/ | 完全一致 | P0-02 |
 | TC-MP-CONST-010 | SUBJECT_VALUES_值数组_与Web端对齐 | 正常流 | P0 | - | 1.对比Web端SUBJECT_VALUES | - | 内容顺序完全一致 | P0-02 |

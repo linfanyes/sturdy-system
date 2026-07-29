@@ -120,7 +120,7 @@ describe('shared constants export', () => {
 
     it('should have correct role values', () => {
       const values = ROLE_OPTIONS.map((r) => r.value)
-      expect(values).toContain('super_admin')
+      expect(values).toContain('super')
       expect(values).toContain('school_admin')
       expect(values).toContain('teacher')
       expect(values).toContain('parent')

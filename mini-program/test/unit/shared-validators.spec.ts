@@ -263,7 +263,7 @@ describe('shared validators - 学科校验', () => {
 describe('shared validators - 角色与权限校验', () => {
   describe('isRole', () => {
     it('should return true for valid roles', () => {
-      expect(isRole('super_admin')).toBe(true)
+      expect(isRole('super')).toBe(true)
       expect(isRole('school_admin')).toBe(true)
       expect(isRole('teacher')).toBe(true)
       expect(isRole('parent')).toBe(true)

@@ -161,7 +161,7 @@ describe('mini-program: shared types compilation validation', () => {
   })
 
   it('should validate Role type union', () => {
-    const roles: Role[] = ['super_admin', 'school_admin', 'teacher', 'parent']
+    const roles: Role[] = ['super', 'school_admin', 'teacher', 'parent']
     expect(roles).toHaveLength(4)
     // TypeScript will error if invalid role assigned
     const _validRole: Role = 'teacher'
@@ -307,7 +307,7 @@ describe('mini-program: shared types compilation validation', () => {
 //   Expect<Equal<PageResult<User>['list'], User[]>>,
 //
 //   // Role 联合类型
-//   Expect<Equal<Role, 'super_admin' | 'school_admin' | 'teacher' | 'parent'>>,
+//   Expect<Equal<Role, 'super' | 'school_admin' | 'teacher' | 'parent'>>,
 //
 //   // Utility types
 //   Expect<Equal<Optional<{ a: number; b?: string }, 'a'>, { a?: number; b?: string }>>,

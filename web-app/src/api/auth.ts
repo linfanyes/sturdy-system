@@ -16,13 +16,13 @@ export interface LoginResult {
 
 /**
  * 超管登录：POST /api/admin/login
- * 后端返回 { role:'super_admin', token, user:{ name } }
+ * 后端返回 { role:'super', token, user:{ name } }
  */
 export async function superLogin(dto: SuperLoginDto): Promise<LoginResult> {
   const res = await request.post<any, any>('/admin/login', dto)
   return {
     token: res.token,
-    user: { id: 'super_admin', role: 'super_admin' as Role, name: res.user?.name || '超级管理员' },
+    user: { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员' },
   }
 }
 
@@ -92,7 +92,7 @@ export async function parentLogin(dto: ParentLoginDto): Promise<LoginResult> {
  */
 export async function login(role: Role, username: string, password: string): Promise<LoginResult> {
   switch (role) {
-    case 'super_admin':
+    case 'super':
       return superLogin({ username, password })
     case 'school_admin':
       return schoolAdminLogin({ username, password })
@@ -141,8 +141,8 @@ export async function unifiedLogin(username: string, password: string): Promise<
 
   let user: AuthUser
   switch (role) {
-    case 'super_admin':
-      user = { id: 'super_admin', role: 'super_admin' as Role, name: res.user?.name || '超级管理员' }
+    case 'super':
+      user = { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员' }
       break
     case 'school_admin': {
       const a = res.user || {}

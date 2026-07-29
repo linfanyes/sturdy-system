@@ -595,7 +595,7 @@ const BUSINESS_RULES: BusinessRuleCheck[] = [
   },
   {
     ruleName: '角色枚举 (ROLE_VALUES 4角色)',
-    sharedSource: '@gardener/shared/constants::ROLE_VALUES [super_admin, school_admin, teacher, parent]',
+    sharedSource: '@gardener/shared/constants::ROLE_VALUES [super, school_admin, teacher, parent]',
     webImplementation: 'web-app/src/types/user.ts + router 守卫 roles',
     miniImplementation: 'mini-program route-guard.js + store 角色判断',
     backendImplementation: 'JWT payload.role + @Roles Guard',
@@ -1062,7 +1062,7 @@ describe('跨端一致性验证测试', () => {
     // 3.5 角色枚举
     describe('角色枚举 (ROLE_VALUES 4角色) 一致性', () => {
       it('ROLE_VALUES 应包含 4 种角色', () => {
-        expect(ROLE_VALUES).toEqual(['super_admin', 'school_admin', 'teacher', 'parent'])
+        expect(ROLE_VALUES).toEqual(['super', 'school_admin', 'teacher', 'parent'])
       })
 
       it('ROLE_OPTIONS 应有 label/value/features', () => {
@@ -1076,7 +1076,7 @@ describe('跨端一致性验证测试', () => {
 
       it('isRole 校验', () => {
         expect(isRole('teacher')).toBe(true)
-        expect(isRole('super_admin')).toBe(true)
+        expect(isRole('super')).toBe(true)
         expect(isRole('admin')).toBe(false)
         expect(isRole('')).toBe(false)
       })

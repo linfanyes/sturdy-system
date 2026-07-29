@@ -29,7 +29,7 @@ const greeting = computed(() => {
 })
 
 const dashboardMap: Record<Role, string> = {
-  super_admin: '/super',
+  super: '/super',
   school_admin: '/school-admin',
   teacher: '/teacher',
   parent: '/parent',

@@ -23,7 +23,7 @@ const route = useRoute()
 
 /** 角色中文标签 */
 const roleLabel: Record<Role, string> = {
-  super_admin: '超级管理员',
+  super: '超级管理员',
   school_admin: '学校管理员',
   teacher: '教师',
   parent: '家长',
@@ -255,7 +255,7 @@ const teacherMenu: MenuCategory[] = [
 
 /* 非教师角色扁平菜单（保留原结构） */
 const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
-  super_admin: [
+  super: [
     { name: 'super-dashboard', label: '工作台', to: '/super', icon: LayoutDashboard, color: 'butter' },
     { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
     { name: 'super-admins', label: '管理员管理', to: '/super/admins', icon: Users, color: 'purple' },
