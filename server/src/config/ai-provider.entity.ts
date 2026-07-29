@@ -21,19 +21,19 @@ export class AiProvider extends BaseEntity {
   baseUrl: string
 
   /** 文本模型列表 */
-  @Column('simple-json', { default: () => '[]' })
+  @Column('simple-json', { default: () => "'[]'" })
   textModels: string[]
 
   /** 多模态模型列表 */
-  @Column('simple-json', { default: () => '[]' })
+  @Column('simple-json', { default: () => "'[]'" })
   visionModels: string[]
 
   /** 文生图模型列表 */
-  @Column('simple-json', { default: () => '[]' })
+  @Column('simple-json', { default: () => "'[]'" })
   imageModels: string[]
 
   /** 文生视频模型列表 */
-  @Column('simple-json', { default: () => '[]' })
+  @Column('simple-json', { default: () => "'[]'" })
   videoModels: string[]
 
   /** 是否默认（教师未指定时 fallback 到此服务商） */
