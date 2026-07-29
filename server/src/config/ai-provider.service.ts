@@ -20,6 +20,7 @@ export class AiProviderService implements OnModuleInit {
     if (count > 0) return
     const defaults: Partial<AiProvider>[] = [
       {
+        teacherId: '',
         code: 'ali-qwen',
         name: '阿里百炼（通义千问）',
         baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -32,6 +33,7 @@ export class AiProviderService implements OnModuleInit {
         sortOrder: 1,
       },
       {
+        teacherId: '',
         code: 'deepseek',
         name: 'DeepSeek',
         baseUrl: 'https://api.deepseek.com/v1',
@@ -44,6 +46,7 @@ export class AiProviderService implements OnModuleInit {
         sortOrder: 2,
       },
       {
+        teacherId: '',
         code: 'glm',
         name: '智谱GLM',
         baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
@@ -81,6 +84,7 @@ export class AiProviderService implements OnModuleInit {
     if (exist) throw new Error(`服务商 ${dto.code} 已存在`)
     // 新服务商设为默认时，清除其他默认
     if (dto.isDefault) await this.repo.update({}, { isDefault: false })
+    if (!dto.teacherId) dto.teacherId = ''
     return this.repo.save(this.repo.create(dto))
   }
 
