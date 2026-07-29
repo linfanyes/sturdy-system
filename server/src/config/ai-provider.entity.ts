@@ -8,6 +8,10 @@ import { BaseEntity } from '../common/entities/base.entity'
  */
 @Entity('ai_providers')
 export class AiProvider extends BaseEntity {
+  /** 全局配置表，不绑定到特定教师 */
+  @Column({ nullable: true, comment: '全局配置，无需教师ID' })
+  teacherId: string
+
   /** 唯一标识，如 'ali-qwen'、'deepseek'、'custom-xxx' */
   @Column({ unique: true })
   code: string
