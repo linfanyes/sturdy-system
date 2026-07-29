@@ -43,23 +43,7 @@ export interface ParentHomework {
 
 /** 当前家长信息 */
 export function getParentMe() {
-  return request.get<any, {
-    imUserId: string
-    studentId: string
-    studentName: string
-    classId: string
-    className: string
-    studentNo: string
-    nickName: string
-    kids?: Array<{
-      studentId: string
-      studentName: string
-      studentNo: string
-      classId: string
-      className: string
-      nickName: string
-    }>
-  }>('/parent-auth/me')
+  return request.get<any, ParentMe>('/parent-auth/me')
 }
 
 export function getParentNotices() {
@@ -89,6 +73,37 @@ export function getParentAttendance() {
 /** 家长端：修改登录密码（需已登录，校验原密码） */
 export function changeParentPassword(oldPassword: string, newPassword: string) {
   return request.post<any, { ok: boolean }>('/parent-auth/change-password', { oldPassword, newPassword })
+}
+
+/** 家长基础信息（含多娃） */
+export interface ParentMe {
+  parentName: string
+  studentId: string
+  studentName: string
+  studentNo: string
+  classId: string
+  className: string
+  parentId?: string
+  kids: Array<{
+    studentId: string
+    studentName: string
+    studentNo: string
+    classId: string
+    className: string
+    nickName: string
+  }>
+}
+
+/** 切换孩子 */
+export async function switchStudent(studentId: string): Promise<{ token: string; studentId: string; studentName: string; studentNo: string; classId: string }> {
+  const r = await request.post('/parent-auth/switch-student', { studentId })
+  return r.data
+}
+
+/** 跨娃成绩比对 */
+export async function getKidsComparison(): Promise<any> {
+  const r = await request.get('/parent-auth/compare-kids')
+  return r.data
 }
 
 /** 家长端：孩子行为表现记录（按 studentId 隔离） */

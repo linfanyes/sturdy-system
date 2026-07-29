@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications } from '@/api/parent'
-import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications } from '@/api/parent'
+import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent } from '@/api/parent'
+import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe } from '@/api/parent'
 import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle } from 'lucide-vue-next'
 
 const auth = useAuthStore()
@@ -11,7 +11,8 @@ const router = useRouter()
 
 const loading = ref(true)
 const loadError = ref(false)
-const me = ref<any>(null)
+const me = ref<ParentMe | null>(null)
+const activeKidId = ref('')
 const notices = ref<any[]>([])
 const exams = ref<any[]>([])
 const homework = ref<any[]>([])
@@ -165,6 +166,25 @@ const newPwd = ref('')
 const pwdLoading = ref(false)
 const pwdError = ref('')
 const pwdOk = ref(false)
+async function switchToKid(studentId: string) {
+  if (studentId === activeKidId.value) return
+  try {
+    const result = await switchStudent(studentId)
+    // 替换 token
+    auth.setAuth(result.token, auth.user!)
+    // 更新 me（走服务端）
+    const freshMe = await getParentMe()
+    if (freshMe) {
+      me.value = freshMe
+      activeKidId.value = freshMe.studentId
+      // 重载所有看板数据
+      load()
+    }
+  } catch (e) {
+    console.error('切换孩子失败', e)
+  }
+}
+
 async function submitChangePwd() {
   pwdError.value = ''
   pwdOk.value = false
@@ -197,7 +217,10 @@ async function load() {
       getParentSchedule(),
       getParentCommunications(),
     ])
-    if (meData.status === 'fulfilled') me.value = meData.value
+    if (meData.status === 'fulfilled') {
+      me.value = meData.value
+      activeKidId.value = meData.value.studentId || ''
+    }
     if (noticeData.status === 'fulfilled') notices.value = Array.isArray(noticeData.value) ? noticeData.value : []
     if (examData.status === 'fulfilled') exams.value = (examData.value && examData.value.exams) || []
     if (hwData.status === 'fulfilled') homework.value = Array.isArray(hwData.value) ? hwData.value : []
@@ -221,6 +244,25 @@ onMounted(load)
 
 <template>
   <div class="space-y-6">
+    <!-- 孩子选择条 -->
+    <div v-if="me?.kids && me.kids.length > 1" class="flex gap-2 px-4 py-2 overflow-x-auto bg-white border-b shrink-0 -mx-4 -mt-6">
+      <div
+        v-for="kid in me.kids" :key="kid.studentId"
+        @click="switchToKid(kid.studentId)"
+        class="shrink-0 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors"
+        :class="kid.studentId === activeKidId ? 'bg-[#07c160] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+      >
+        {{ kid.studentName }}
+      </div>
+      <!-- 跨娃比对入口（>=2娃时显示） -->
+      <router-link
+        to="/parent/compare"
+        class="shrink-0 px-3 py-1.5 rounded-full text-sm bg-[#E6A23C] text-white ml-auto"
+      >
+        📊 跨娃比对
+      </router-link>
+    </div>
+
     <!-- 错误/重试态（与小程序端一致） -->
     <div
       v-if="loadError"
@@ -235,7 +277,7 @@ onMounted(load)
         </div>
         <div class="flex-1">
           <div class="text-xl font-bold text-cocoa-900">
-            {{ greeting }}，<span class="text-sakura-600">{{ studentName || '家长' }}</span>
+            {{ studentName || '家长' }}<span class="text-sm text-cocoa-600/80 ml-1">的成长看板</span>
           </div>
           <div class="text-sm text-cocoa-600/80 mt-0.5">
             <template v-if="className">班级：{{ className }}</template>

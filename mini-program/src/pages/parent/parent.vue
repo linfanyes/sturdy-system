@@ -16,6 +16,24 @@
       </view>
     </view>
 
+    <!-- 孩子选择条（多娃时显示） -->
+    <view class="kid-selector" v-if="me?.kids && me.kids.length > 1">
+      <view class="kid-chips">
+        <view
+          v-for="kid in me.kids" :key="kid.studentId"
+          class="kid-chip"
+          :class="{ active: kid.studentId === activeKidId }"
+          @tap="switchToKid(kid.studentId)"
+        >
+          {{ kid.studentName }}
+        </view>
+        <!-- 跨娃比对入口 -->
+        <view class="compare-btn" @tap="goCompare" v-if="me.kids.length > 1">
+          📊 跨娃比对
+        </view>
+      </view>
+    </view>
+
     <view class="kids" v-if="kids.length">
       <view class="kid" v-for="k in kids" :key="k.studentId">
         <view class="kn">{{ k.studentName }}<text v-if="k.studentNo" class="sno"> · {{ k.studentNo }}</text></view>
@@ -360,7 +378,9 @@ async function subscribeGuide() {
   }
 }
 
+const me = ref(null)
 const kids = ref([])
+const activeKidId = ref('')
 const notices = ref([])
 const exams = ref([])
 const homework = ref([])
@@ -551,8 +571,9 @@ function bindPhone() {
         await parentApi.post('/parent-auth/bind-wechat', { code, nickName })
         uni.hideLoading()
         uni.showToast({ title: '微信绑定成功' + (nickName ? '：' + nickName : ''), icon: 'success' })
-        const me = await parentApi.get('/parent-auth/me')
-        kids.value = (me && me.kids) || []
+        const meData = await parentApi.get('/parent-auth/me')
+        me.value = meData
+        kids.value = (meData && meData.kids) || []
       } catch (e) {
         uni.hideLoading()
         uni.showToast({ title: '绑定失败', icon: 'none' })
@@ -562,13 +583,36 @@ function bindPhone() {
   })
 }
 
+async function switchToKid(studentId) {
+  if (studentId === activeKidId.value) return
+  uni.showLoading({ title: '切换中…' })
+  try {
+    const res = await parentApi.post('/parent-auth/switch-student', { studentId })
+    const data = res.data || res
+    if (data.token) {
+      parent.token = data.token
+      // 重新加载数据
+      me.value = null
+      load()
+    }
+  } catch (e) {
+    uni.showToast({ title: '切换失败', icon: 'error' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+function goCompare() {
+  uni.navigateTo({ url: '/pages/parent/compare' })
+}
+
 function logout() { logoutParent(); uni.reLaunch({ url: '/pages/login/login' }) }
 
 async function load() {
   loading.value = true
   loadError.value = false
   // 并行发起所有请求，避免串行多轮网络往返（冷启动耗时近 N×RTT → 1×RTT）
-  const [me, edata, ns, hw, att, beh, sch, comm] = await Promise.allSettled([
+  const [meResult, edata, ns, hw, att, beh, sch, comm] = await Promise.allSettled([
     parentApi.get('/parent-auth/me'),
     parentApi.get('/parent-auth/exams'),
     parentApi.get('/parent-auth/notices'),
@@ -578,8 +622,11 @@ async function load() {
     parentApi.get('/parent-auth/schedule'),
     parentApi.get('/parent-auth/communications'),
   ])
-  if (me.status === 'fulfilled') kids.value = (me.value && me.value.kids) || []
-  else console.error('[parent] me error:', me.reason)
+  if (meResult.status === 'fulfilled') {
+    me.value = meResult.value
+    kids.value = (meResult.value && meResult.value.kids) || []
+    activeKidId.value = meResult.value?.studentId || ''
+  } else console.error('[parent] me error:', meResult.reason)
   if (edata.status === 'fulfilled') exams.value = (edata.value && edata.value.exams) || []
   else console.error('[parent] exams error:', edata.reason)
   if (ns.status === 'fulfilled') notices.value = Array.isArray(ns.value) ? ns.value : []
@@ -593,7 +640,7 @@ async function load() {
   if (comm.status === 'fulfilled') communications.value = comm.value || null
   else console.error('[parent] communications error:', comm.reason)
   // 身份/核心数据拉取失败 → 标记为可重试错误态
-  loadError.value = me.status !== 'fulfilled'
+  loadError.value = meResult.status !== 'fulfilled'
   loading.value = false
 }
 
@@ -774,4 +821,40 @@ onShow(() => {
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 26rpx; color: var(--c-sub); }
 .load-err { background: #E6A23C; color: #fff; font-size: 26rpx; text-align: center; padding: 20rpx; border-radius: 14rpx; margin-bottom: 12rpx; }
+/* 孩子选择器 */
+.kid-selector {
+  padding: 8rpx 0 8rpx 16rpx;
+  background: var(--c-card);
+  border-bottom: 1rpx solid #f0f0f0;
+  border-radius: 14rpx;
+  margin-bottom: 10rpx;
+}
+.kid-chips {
+  display: flex;
+  gap: 12rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+  align-items: center;
+}
+.kid-chip {
+  padding: 6rpx 20rpx;
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  background: #f5f5f5;
+  color: #666;
+  flex-shrink: 0;
+}
+.kid-chip.active {
+  background: #07c160;
+  color: #fff;
+}
+.compare-btn {
+  padding: 6rpx 20rpx;
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  background: #E6A23C;
+  color: #fff;
+  margin-left: auto;
+  flex-shrink: 0;
+}
 </style>

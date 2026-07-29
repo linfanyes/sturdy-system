@@ -35,9 +35,24 @@ export function getMockData(path, method = 'GET', body = {}) {
 
   // POST / PATCH / DELETE → 有预设 mock 则用预设，否则模拟成功返回
   if (method !== 'GET') {
+    // 优先查找 method+path 限定键（如 'POST /parent-auth/switch-student'），支持函数 handler
+    const methodKey = method + ' ' + clean
+    if (MOCK[methodKey] !== undefined) {
+      const mock = MOCK[methodKey]
+      if (typeof mock === 'function') {
+        return mock(body || {})
+      }
+      if (Array.isArray(mock)) {
+        return { ...body, id: body?.id || Date.now().toString(), createdAt: new Date().toISOString() }
+      }
+      return { ...mock, id: Date.now().toString() }
+    }
+    // 次优：按 path 查找（兼容旧注册方式）
     if (MOCK[clean] !== undefined) {
       const mock = MOCK[clean]
-      // 如果是数组，追加并返回新条目；否则原样返回
+      if (typeof mock === 'function') {
+        return mock(body || {})
+      }
       if (Array.isArray(mock)) {
         return { ...body, id: body?.id || Date.now().toString(), createdAt: new Date().toISOString() }
       }

@@ -3,7 +3,19 @@ import { HOMEWORK } from '../data.js'
 
 export const parentEndpoints = {
   '/parent-auth/login': { token: 'mock-parent-token', parent: { imUserId: 'p_demo_zhang', studentId: 's1', studentName: '张小明', classId: 'c1', studentNo: '2024001' } },
-  '/parent-auth/me': { imUserId: 'p_demo_zhang', studentId: 's1', studentName: '张小明', classId: 'c1', studentNo: '2024001', kids: [{ studentId: 's1', studentName: '张小明', classId: 'c1' }] },
+  '/parent-auth/me': {
+    parentName: '家长',
+    parentId: 'parent-001',
+    studentId: 'stu-1',
+    studentName: '小明',
+    studentNo: '2024001',
+    classId: 'class-a',
+    className: '三年级一班',
+    kids: [
+      { studentId: 'stu-1', studentName: '小明', studentNo: '2024001', classId: 'class-a' },
+      { studentId: 'stu-2', studentName: '小红', studentNo: '2024002', classId: 'class-b' },
+    ],
+  },
   '/parent-auth/im-user-sig': { sdkAppId: '', userSig: 'demo-parent-sig' },
   '/parent-auth/notices': [
     { id: 'n1', title: '下周期末考试安排', content: '请各位家长协助孩子做好复习准备，具体时间另行通知。', classId: 'c1', pinned: true, ended: false, createdAt: '2026-07-18' },
@@ -38,6 +50,20 @@ export const parentEndpoints = {
     },
   },
   '/parent-auth/homework': HOMEWORK.filter((h) => h.classId === 'c1'),
+  '/parent-auth/attendance': {
+    total: 8,
+    summary: { reading: 3, sport: 2, behavior: 1, homework: 2 },
+    recent: [
+      { id: 'a1', type: 'reading', date: '2026-07-22', count: 1, note: '' },
+      { id: 'a2', type: 'sport', date: '2026-07-22', count: 1, note: '' },
+      { id: 'a3', type: 'reading', date: '2026-07-21', count: 1, note: '' },
+      { id: 'a4', type: 'homework', date: '2026-07-21', count: 1, note: '' },
+    ],
+    byMonth: [
+      { month: '2026-07', count: 8 },
+      { month: '2026-06', count: 5 },
+    ],
+  },
   '/parent-auth/behavior': {
     total: 8,
     summary: { praise: 5, violation: 1, other: 2 },
@@ -93,6 +119,44 @@ export const parentEndpoints = {
       { id: 'pc1', date: '2026-07-19', method: '微信', content: '孩子近期课堂表现积极，请注意保持作息规律。', followUp: '', parentName: '张爸爸', relation: '父亲' },
       { id: 'pc2', date: '2026-07-10', method: '电话', content: '关于运动会报名事宜已与您沟通。', followUp: '已确认报名', parentName: '张爸爸', relation: '父亲' },
       { id: 'pc3', date: '2026-06-28', method: '面谈', content: '期末学情反馈，孩子总体平稳。', followUp: '建议关注阅读习惯', parentName: '张爸爸', relation: '父亲' },
+    ],
+  },
+  'POST /parent-auth/switch-student': (params) => {
+    const kids = {
+      'stu-1': { studentId: 'stu-1', studentName: '小明', studentNo: '2024001', classId: 'class-a' },
+      'stu-2': { studentId: 'stu-2', studentName: '小红', studentNo: '2024002', classId: 'class-b' },
+    }
+    const target = kids[params.studentId]
+    if (!target) return { code: 403, msg: '学生不属于该家长' }
+    return {
+      token: 'demo-parent-switch-' + params.studentId,
+      ...target,
+    }
+  },
+  '/parent-auth/compare-kids': {
+    kids: [
+      { studentId: 'stu-1', studentName: '小明', classId: 'class-a' },
+      { studentId: 'stu-2', studentName: '小红', classId: 'class-b' },
+    ],
+    exams: [
+      {
+        examName: '期中考试',
+        date: '2026-06-15',
+        term: '2026春',
+        rows: {
+          'stu-1': { totalScore: 302, totalFullScore: 350, classRank: 3, subjects: [{ subject: '语文', score: 88 }, { subject: '数学', score: 95 }] },
+          'stu-2': { totalScore: 285, totalFullScore: 350, classRank: 12, subjects: [{ subject: '语文', score: 78 }, { subject: '数学', score: 82 }] },
+        },
+      },
+      {
+        examName: '月考',
+        date: '2026-05-20',
+        term: '2026春',
+        rows: {
+          'stu-1': { totalScore: 296, totalFullScore: 350, classRank: 5, subjects: [{ subject: '语文', score: 85 }, { subject: '数学', score: 92 }] },
+          'stu-2': { totalScore: 278, totalFullScore: 350, classRank: 15, subjects: [{ subject: '语文', score: 76 }, { subject: '数学', score: 80 }] },
+        },
+      },
     ],
   },
 }

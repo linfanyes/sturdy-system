@@ -219,6 +219,7 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['parent'] as Role[] },
     children: [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长中心' } },
+      { path: 'compare', name: 'parent-compare', component: () => import('@/views/parent/KidsCompare.vue'), meta: { title: '跨娃比对' } },
     ],
   },
   // 根路径：按角色重定向到对应工作台（优先用 auth store，兜底读 localStorage）

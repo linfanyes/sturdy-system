@@ -25,6 +25,12 @@
       }
     },
     {
+      "path": "pages/parent/compare",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/dashboard/dashboard",
       "style": {
         "navigationBarTitleText": "工作台",
