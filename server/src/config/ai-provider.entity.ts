@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, AfterLoad } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
 /**
@@ -21,19 +21,19 @@ export class AiProvider extends BaseEntity {
   baseUrl: string
 
   /** 文本模型列表 */
-  @Column('simple-json', { default: () => "'[]'" })
+  @Column('simple-json', { nullable: true })
   textModels: string[]
 
   /** 多模态模型列表 */
-  @Column('simple-json', { default: () => "'[]'" })
+  @Column('simple-json', { nullable: true })
   visionModels: string[]
 
   /** 文生图模型列表 */
-  @Column('simple-json', { default: () => "'[]'" })
+  @Column('simple-json', { nullable: true })
   imageModels: string[]
 
   /** 文生视频模型列表 */
-  @Column('simple-json', { default: () => "'[]'" })
+  @Column('simple-json', { nullable: true })
   videoModels: string[]
 
   /** 是否默认（教师未指定时 fallback 到此服务商） */
@@ -47,4 +47,12 @@ export class AiProvider extends BaseEntity {
   /** 排序权重（越小越靠前） */
   @Column({ default: 0 })
   sortOrder: number
+
+  @AfterLoad()
+  initArrayDefaults() {
+    this.textModels = this.textModels ?? []
+    this.visionModels = this.visionModels ?? []
+    this.imageModels = this.imageModels ?? []
+    this.videoModels = this.videoModels ?? []
+  }
 }
