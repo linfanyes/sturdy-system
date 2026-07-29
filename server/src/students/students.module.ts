@@ -16,11 +16,10 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
 import { hashPassword } from '../common/utils/password.util'
-
-/** 家长默认登录口令 = 学号后 6 位（去除了弱口令 123456；家长登录后可自行修改，班主任可随时重置回默认） */
-function parentDefaultPassword(studentNo: string): string {
-  return (studentNo || '').trim().slice(-6)
-}
+import * as crypto from 'node:crypto'
+import { AuditService } from '../audit/audit.service'
+import { AuditModule } from '../audit/audit.module'
+import { User } from '../users/user.entity'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -39,6 +38,7 @@ class StudentsService extends CrudService<Student> {
     private readonly ai: AiService,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     cmSvc: ClassMemberService,
+    private readonly auditService: AuditService,
   ) {
     super(repo)
     this.withClassMemberService(cmSvc)
@@ -245,7 +245,7 @@ class StudentsService extends CrudService<Student> {
     return { rows, validCount, errorCount }
   }
 
-  /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时默认口令设为学号后 6 位并随响应返回） */
+  /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时默认口令为随机 hex 并随响应返回） */
   async toggleParentLogin(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
@@ -257,27 +257,35 @@ class StudentsService extends CrudService<Student> {
       s.parentNickName = ''
       s.parentPasswordHash = null
     } else {
-      // 开启时默认口令 = 学号后 6 位（去除弱口令 '123456'），由老师告知家长；
-      // 家长登录后可自行修改，班主任也可随时重置回该默认口令。
+      // 开启时默认口令 = 8位随机 hex，由老师告知家长
       const no = (s.studentNo || '').trim()
       if (!no) throw new BadRequestException('该学生缺少学号，无法设置默认口令，请先补全学号')
-      initialPassword = parentDefaultPassword(no)
+      initialPassword = crypto.randomBytes(4).toString('hex')
       s.parentPasswordHash = hashPassword(initialPassword)
     }
     await this.repo.save(s)
+    // 审计日志
+    const userRepo = this.dataSource.getRepository(User)
+    const teacherObj = await userRepo.findOne({ where: { id: teacherId } }).catch(() => null)
+    const schoolId = teacherObj?.schoolId || teacherId
+    await this.auditService.log(schoolId, 'toggle_parent_login', teacherId, s.studentNo, s.parentLoginEnabled ? '开启家长登录' : '关闭家长登录').catch(() => {})
     return { studentId, parentLoginEnabled: s.parentLoginEnabled, initialPassword }
   }
 
-  /** 班主任重置家长登录口令为默认口令（学号后 6 位） */
+  /** 班主任重置家长登录口令为默认口令（随机 hex） */
   async resetParentPassword(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
     if (!s.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未开启，无法重置')
     const no = (s.studentNo || '').trim()
     if (!no) throw new BadRequestException('该学生缺少学号，无法重置为默认口令')
-    const defaultPassword = parentDefaultPassword(no)
+    const defaultPassword = crypto.randomBytes(4).toString('hex')
     s.parentPasswordHash = hashPassword(defaultPassword)
     await this.repo.save(s)
+    // 审计日志
+    const userRepo2 = this.dataSource.getRepository(User)
+    const teacherObj2 = await userRepo2.findOne({ where: { id: teacherId } }).catch(() => null)
+    await this.auditService.log(teacherObj2?.schoolId || teacherId, 'reset_parent_password', teacherId, s.studentNo, '重置家长登录口令').catch(() => {})
     return { studentId, ok: true, defaultPassword }
   }
 
@@ -398,7 +406,7 @@ class StudentsController extends CrudController<Student> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule, AuditModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })
