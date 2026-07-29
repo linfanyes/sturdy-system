@@ -21,6 +21,8 @@ export const adminEndpoints = {
 
   // 单个学生家长登录开关
   '/students/s1/toggle-parent-login': { studentId: 's1', parentLoginEnabled: true },
+  // 单个学生家长登录口令重置（默认口令 = 学号后6位）
+  '/students/s1/reset-parent-password': { studentId: 's1', ok: true, defaultPassword: '240001' },
 
   // 超级管理员
   '/admin/login': { token: 'mock-super-token' },

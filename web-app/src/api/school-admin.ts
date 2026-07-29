@@ -175,6 +175,16 @@ export function listParentLogins() {
   return request.get<any, { items: ParentLoginItem[]; total: number }>('/school-admin/parent-logins')
 }
 
+/** 开通/关闭某学生的家长登录（后端翻转状态并初始化/清空密码），返回 { studentId, parentLoginEnabled, initialPassword? } */
+export function toggleParentLogin(id: string) {
+  return request.post<unknown, { studentId: string; parentLoginEnabled: boolean; initialPassword?: string }>(`/students/${id}/toggle-parent-login`)
+}
+
+/** 班主任重置某学生家长登录口令为学号后 6 位，返回 { studentId, ok, defaultPassword } */
+export function resetParentPassword(id: string) {
+  return request.post<unknown, { studentId: string; ok: boolean; defaultPassword: string }>(`/students/${id}/reset-parent-password`)
+}
+
 /* ============ 全局搜索 ============ */
 
 export interface SearchResult {

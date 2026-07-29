@@ -37,9 +37,11 @@
         <view class="tags" v-if="s.tags && s.tags.length">
           <text v-for="t in s.tags" :key="t" class="tag">{{ t }}</text>
         </view>
-        <view class="row-acts" v-if="s.parentPhone">
-          <text class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
+        <view class="row-acts" v-if="s.parentPhone || s.parentLoginEnabled">
+          <text v-if="s.parentPhone" class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
+          <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
         </view>
+        <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
       </view>
       <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
       <view v-if="!loading && hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
@@ -335,18 +337,55 @@ function toggleImport() {
 function selectAll() { selected.value = new Set(shown.value.map((s) => s.id)) }
 function deselectAll() { selected.value = new Set() }
 
-// 批量授权/取消授权家长
+// 批量授权/取消授权家长：调专用 toggle-parent-login（后端会初始化/清空密码，避免直写字段漏设口令）
 async function batchAuthParent(enabled) {
   const ids = [...selected.value]
   if (!ids.length) return uni.showToast({ title: '请先选择学生', icon: 'none' })
   uni.showLoading({ title: enabled ? '授权中…' : '取消授权中…', mask: true })
   try {
-    const { success, failed } = await batchRun(ids.map((id) => api.patch('/students/' + id, { parentLoginEnabled: enabled })))
+    // toggle-parent-login 会翻转状态；仅对当前状态与目标不一致的学生调用
+    const tasks = ids
+      .map((id) => shown.value.find((s) => s.id === id))
+      .filter((s) => s && s.parentLoginEnabled !== enabled)
+      .map((s) => api.post('/students/' + s.id + '/toggle-parent-login'))
+    const { success, failed } = await batchRun(tasks)
     uni.hideLoading()
-    uni.showToast({ title: `操作完成：成功 ${success} 条${failed ? '，失败 ' + failed + ' 条' : ''}`, icon: 'none' })
+    uni.showToast({
+      title: enabled
+        ? `已开通 ${success} 人，默认口令为学号后6位${failed ? '，失败 ' + failed + ' 人' : ''}`
+        : `操作完成：成功 ${success} 条${failed ? '，失败 ' + failed + ' 条' : ''}`,
+      icon: 'none',
+    })
     selected.value = new Set()
     load()
   } catch (e) { uni.hideLoading(); uni.showToast({ title: '操作失败', icon: 'none' }) }
+}
+
+// 班主任重置某学生家长登录口令为学号后6位
+async function resetParentPwd(s) {
+  uni.showModal({
+    title: '重置家长密码',
+    content: '确定将「' + s.name + '」的家长登录口令重置为学号后6位？',
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '重置中…', mask: true })
+      try {
+        const res = await api.post('/students/' + s.id + '/reset-parent-password')
+        uni.hideLoading()
+        uni.showModal({
+          title: '重置成功',
+          content: '默认口令已重置为学号后6位：' + (res.defaultPassword || defaultPwd(s)),
+          showCancel: false,
+        })
+        load()
+      } catch (e) { uni.hideLoading(); uni.showToast({ title: '重置失败', icon: 'none' }) }
+    },
+  })
+}
+
+// 家长默认口令 = 学号后6位（与后端规则一致，仅用于界面展示）
+function defaultPwd(s) {
+  return (s.studentNo || '').slice(-6)
 }
 
 function toggleSel(s) {

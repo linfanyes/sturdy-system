@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import {
   listSchoolStudents, updateStudent, exportStudentsCsv, exportStudentsXls,
-  listClasses,
+  listClasses, toggleParentLogin as apiToggleParentLogin, resetParentPassword,
   type StudentItem, type ClassItem,
 } from '@/api/school-admin'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
@@ -59,6 +59,33 @@ onMounted(loadClasses)
 
 function className(id: string) {
   return classes.value.find(c => c.id === id)?.name || id
+}
+
+/* ============ 家长登录：开通/关闭 + 重置密码 ============ */
+function defaultPwd(s: StudentItem) {
+  return (s.studentNo || '').slice(-6)
+}
+
+async function toggleParentLogin(s: StudentItem) {
+  try {
+    const res = await apiToggleParentLogin(s.id)
+    s.parentLoginEnabled = res.parentLoginEnabled
+    if (res.parentLoginEnabled && res.initialPassword) {
+      alert(`已开通家长登录，默认口令为学号后6位：${res.initialPassword}`)
+    }
+  } catch (e: any) {
+    alert(e?.message || '操作失败')
+  }
+}
+
+async function resetParentPwd(s: StudentItem) {
+  if (!confirm(`确定将「${s.name}」的家长登录口令重置为学号后6位（${defaultPwd(s)}）？`)) return
+  try {
+    const res = await resetParentPassword(s.id)
+    alert(`已重置为学号后6位：${res.defaultPassword}`)
+  } catch (e: any) {
+    alert(e?.message || '重置失败')
+  }
 }
 
 /* ============ 编辑 ============ */
@@ -225,9 +252,20 @@ function handlePrint() {
             <td class="px-4 py-3 text-cocoa-700">{{ s.parentName || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.parentPhone || '-' }}</td>
             <td class="px-4 py-3">
-              <span :class="['text-xs px-2 py-0.5 rounded-full', s.parentLoginEnabled ? 'bg-mint-100 text-mint-500' : 'bg-cream-100 text-cocoa-400']">
-                {{ s.parentLoginEnabled ? '已开通' : '未开通' }}
-              </span>
+              <div class="flex flex-col gap-1 items-start">
+                <span :class="['text-xs px-2 py-0.5 rounded-full', s.parentLoginEnabled ? 'bg-mint-100 text-mint-500' : 'bg-cream-100 text-cocoa-400']">
+                  {{ s.parentLoginEnabled ? '已开通' : '未开通' }}
+                </span>
+                <template v-if="s.parentLoginEnabled">
+                  <span class="text-xs text-cocoa-400">默认口令：学号后6位（{{ defaultPwd(s) }}）</span>
+                  <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="resetParentPwd(s)">重置密码</button>
+                </template>
+                <button
+                  class="text-xs underline"
+                  :class="s.parentLoginEnabled ? 'text-cocoa-400 hover:text-rose-500' : 'text-mint-500 hover:text-mint-600'"
+                  @click="toggleParentLogin(s)"
+                >{{ s.parentLoginEnabled ? '关闭' : '开通' }}</button>
+              </div>
             </td>
             <td class="px-4 py-3 text-right">
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(s)">
