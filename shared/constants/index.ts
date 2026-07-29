@@ -122,3 +122,38 @@ export const FEATURE_FLAGS: string[] = [
 
 /** ç‰¹æ€§æ ‡è¯†é›†åˆï¼ˆç”¨äºå¿«é€Ÿ O(1) æŸ¥æ‰¾ï¼‰ */
 export const FEATURE_FLAGS_SET: Set<string> = new Set(FEATURE_FLAGS)
+/**
+ * Ö÷ÌâÉ«·½°¸£¨4É«£©
+ * ¶ÔÆë£ºmini-program/src/common/store.js::SCHEMES
+ */
+export interface ColorScheme {
+  value: string
+  label: string
+  color: string
+}
+
+export const SCHEMES: ColorScheme[] = [
+  { value: 'butter', label: 'ÄÌ»Æ', color: '#e6a23c' },
+  { value: 'mint', label: '±¡ºÉ', color: '#07c160' },
+  { value: 'sakura', label: 'Ó£»¨', color: '#e06c75' },
+  { value: 'sky', label: 'ÌìÀ¶', color: '#409eff' },
+]
+
+/** Ö÷ÌâÉ«ÖµÊı×é */
+export const SCHEME_VALUES: string[] = SCHEMES.map((s) => s.value)
+
+/**
+ * ×ÖÌå´óĞ¡µµÎ»£¨3µµ£©
+ * ¶ÔÆë£ºmini-program/src/common/store.js::FONT_SIZES
+ */
+export interface FontSizeOption {
+  value: string
+  label: string
+  scale: number
+}
+
+export const FONT_SIZES: FontSizeOption[] = [
+  { value: 'sm', label: 'Ğ¡', scale: 0.9 },
+  { value: 'md', label: '±ê×¼', scale: 1 },
+  { value: 'lg', label: '´ó', scale: 1.15 },
+]

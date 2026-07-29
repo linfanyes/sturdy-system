@@ -1,5 +1,8 @@
 import { reactive } from 'vue'
 import { DEMO_MODE_ENABLED } from './config'
+import { SCHEMES, FONT_SIZES } from '@gardener/shared/constants'
+
+export { SCHEMES, FONT_SIZES }
 
 const TOKEN_KEY = 'g_token'
 const USER_KEY = 'g_user'
@@ -9,21 +12,6 @@ const FONT_KEY = 'g_fontsize'
 const MOCK_KEY = 'g_mock_mode'
 const PARENT_TOKEN_KEY = 'g_parent_token'
 const PARENT_USER_KEY = 'g_parent_user'
-
-// 字体大小档位（对齐 web 三档）
-export const FONT_SIZES = [
-  { value: 'sm', label: '小', scale: 0.9 },
-  { value: 'md', label: '标准', scale: 1 },
-  { value: 'lg', label: '大', scale: 1.15 },
-]
-
-// 主题色板（对齐 web 4 色）：奶黄/薄荷/樱花/天蓝
-export const SCHEMES = [
-  { value: 'butter', label: '奶黄', color: '#e6a23c' },
-  { value: 'mint', label: '薄荷', color: '#07c160' },
-  { value: 'sakura', label: '樱花', color: '#e06c75' },
-  { value: 'sky', label: '天蓝', color: '#409eff' },
-]
 
 export const auth = reactive({
   token: uni.getStorageSync(TOKEN_KEY) || '',

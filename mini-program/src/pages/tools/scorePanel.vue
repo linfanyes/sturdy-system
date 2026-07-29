@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="hd">
       <text class="ht">🎯 课堂计分板</text>
@@ -92,8 +92,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../../common/request'
-import { theme, auth } from '../../../common/store'
+import api from '../../common/request'
+import { theme, auth } from '../../common/store'
 
 const PALETTE = ['#e6a23c', '#07c160', '#409eff', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
 const MAX_GROUPS = 6

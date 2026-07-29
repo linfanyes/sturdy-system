@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import AiTextTool from '@/components/AiTextTool.vue'
-
-const fields = [
-  { key: 'theme', label: '黑板报主题', placeholder: '如：喜迎国庆、安全教育月、读书节' },
-  { key: 'grade', label: '年级', options: ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'] },
-  { key: 'sections', label: '板块数量', placeholder: '如：4个板块' },
-]
-function buildPrompt(f: Record<string, string>) {
-  return `请为${f.grade || '小学'}设计一份黑板报内容方案。主题：${f.theme || ''}；板块数量：${f.sections || '4个'}。
-每个板块需包含：板块标题、简短文字内容（适合黑板报排版）、配图建议。整体风格活泼、适合小学生。`
-}
-function buildSavePayload(f: Record<string, string>, result: string) {
-  return { title: f.theme || '黑板报', content: result, category: '黑板报' }
+import { ref } from 'vue'
+import request from '@/api/request'
+const topic = ref('')
+const content = ref('')
+const result = ref('')
+async function generate() {
+  if (!topic.value.trim()) return
+  try { const d = await request.post('/api/ai/blackboard', { topic: topic.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
 }
 </script>
-
 <template>
-  <AiTextTool title="黑板报生成" :fields="fields" :build-prompt="buildPrompt" save-path="notes" :build-save-payload="buildSavePayload" />
+  <div class="blackboard"><h2>黑板报生成</h2>
+    <div class="form"><input v-model="topic" placeholder="输入主题（如：国庆节、运动会）" />
+    <button class="btn-primary" @click="generate">生成</button></div>
+    <div v-if="result" class="result"><pre>{{ result }}</pre></div>
+  </div>
 </template>
+<style scoped>
+.blackboard{padding:20px} .blackboard h2{margin:0 0 16px;font-size:18px}
+.form{display:flex;gap:8px;margin-bottom:16px}
+.form input{flex:1;padding:10px;border:1px solid #e0d5c4;border-radius:4px;font-size:14px}
+.result{background:#f8f4ec;border:1px solid #e0d5c4;border-radius:6px;padding:14px}
+.result pre{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;font-family:inherit}
+</style>

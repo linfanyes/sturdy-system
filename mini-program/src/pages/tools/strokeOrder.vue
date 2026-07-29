@@ -78,8 +78,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../../common/request'
-import { auth, theme } from '../../../common/store'
+import api from '../../common/request'
+import { auth, theme } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
 const input = ref('')

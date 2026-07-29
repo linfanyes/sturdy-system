@@ -1,21 +1,25 @@
 <script setup lang="ts">
-import AiTextTool from '@/components/AiTextTool.vue'
-
-const fields = [
-  { key: 'topic', label: '演讲主题', placeholder: '如：我的教育初心、班级管理经验分享' },
-  { key: 'occasion', label: '场合', options: ['全体教师会', '年级组会议', '家长会', '开学典礼', '毕业典礼', '教研活动', '其他'] },
-  { key: 'duration', label: '时长（分钟）', placeholder: '如：5' },
-  { key: 'speaker', label: '演讲人身份', placeholder: '如：班主任、学科教师' },
-]
-function buildPrompt(f: Record<string, string>) {
-  return `请撰写一篇演讲稿。主题：${f.topic || ''}；场合：${f.occasion || ''}；时长：${f.duration || '5'}分钟；演讲人：${f.speaker || '教师'}。
-要求：开场有吸引力、内容充实有条理、结尾有力、语言口语化适合演讲、富有感染力。`
-}
-function buildSavePayload(f: Record<string, string>, result: string) {
-  return { title: f.topic || '演讲稿', content: result, category: '演讲稿' }
+import { ref } from 'vue'
+import request from '@/api/request'
+const topic = ref('')
+const role = ref('')
+const result = ref('')
+async function generate() {
+  if (!topic.value.trim()) return
+  try { const d = await request.post('/api/ai/speech', { topic: topic.value, role: role.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
 }
 </script>
-
 <template>
-  <AiTextTool title="演讲稿生成" :fields="fields" :build-prompt="buildPrompt" save-path="notes" :build-save-payload="buildSavePayload" />
+  <div class="speech"><h2>演讲稿生成</h2>
+    <div class="form"><input v-model="topic" placeholder="演讲主题" /><input v-model="role" placeholder="角色（如：班主任）" />
+    <button class="btn-primary" @click="generate">生成</button></div>
+    <div v-if="result" class="result"><pre>{{ result }}</pre></div>
+  </div>
 </template>
+<style scoped>
+.speech{padding:20px} .speech h2{margin:0 0 16px;font-size:18px}
+.form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.form input{flex:1;min-width:140px;padding:10px;border:1px solid #e0d5c4;border-radius:4px;font-size:14px}
+.result{background:#f8f4ec;border:1px solid #e0d5c4;border-radius:6px;padding:14px}
+.result pre{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;font-family:inherit}
+</style>
