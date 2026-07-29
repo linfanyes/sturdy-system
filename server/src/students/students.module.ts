@@ -16,7 +16,11 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
 import { hashPassword } from '../common/utils/password.util'
-import crypto from 'node:crypto'
+
+/** 家长默认登录口令 = 学号后 6 位（去除了弱口令 123456；家长登录后可自行修改，班主任可随时重置回默认） */
+function parentDefaultPassword(studentNo: string): string {
+  return (studentNo || '').trim().slice(-6)
+}
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -241,7 +245,7 @@ class StudentsService extends CrudService<Student> {
     return { rows, validCount, errorCount }
   }
 
-  /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时生成随机初始口令随响应返回） */
+  /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时默认口令设为学号后 6 位并随响应返回） */
   async toggleParentLogin(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
@@ -253,12 +257,28 @@ class StudentsService extends CrudService<Student> {
       s.parentNickName = ''
       s.parentPasswordHash = null
     } else {
-      // 开启时生成随机初始口令（去除默认弱口令 '123456'），由老师告知家长；家长登录后可自行修改
-      initialPassword = crypto.randomBytes(5).toString('hex') + Math.floor(Math.random() * 90 + 10)
+      // 开启时默认口令 = 学号后 6 位（去除弱口令 '123456'），由老师告知家长；
+      // 家长登录后可自行修改，班主任也可随时重置回该默认口令。
+      const no = (s.studentNo || '').trim()
+      if (!no) throw new BadRequestException('该学生缺少学号，无法设置默认口令，请先补全学号')
+      initialPassword = parentDefaultPassword(no)
       s.parentPasswordHash = hashPassword(initialPassword)
     }
     await this.repo.save(s)
     return { studentId, parentLoginEnabled: s.parentLoginEnabled, initialPassword }
+  }
+
+  /** 班主任重置家长登录口令为默认口令（学号后 6 位） */
+  async resetParentPassword(teacherId: string, studentId: string) {
+    const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
+    if (!s) throw new BadRequestException('学生不存在')
+    if (!s.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未开启，无法重置')
+    const no = (s.studentNo || '').trim()
+    if (!no) throw new BadRequestException('该学生缺少学号，无法重置为默认口令')
+    const defaultPassword = parentDefaultPassword(no)
+    s.parentPasswordHash = hashPassword(defaultPassword)
+    await this.repo.save(s)
+    return { studentId, ok: true, defaultPassword }
   }
 
   /** 删除学生（级联清理：家长联系记录 + 业务数据） */
@@ -367,6 +387,13 @@ class StudentsController extends CrudController<Student> {
   @UseGuards(JwtAuthGuard)
   async toggleParentLogin(@Param('id') id: string, @CurrentTeacher() t: any) {
     return (this.service as StudentsService).toggleParentLogin(t.sub, id)
+  }
+
+  /** 班主任将该学生的家长登录口令重置为默认口令（学号后 6 位） */
+  @Post(':id/reset-parent-password')
+  @UseGuards(JwtAuthGuard)
+  async resetParentPassword(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return (this.service as StudentsService).resetParentPassword(t.sub, id)
   }
 }
 

@@ -43,15 +43,19 @@
   - 路由补 `@Roles('teacher','super')`。
 - **验证**：静态审计通过；建议补充「传入 `http://169.254.169.254/` 应被拒」的回归用例。
 
-### 🔴 B3 · 家长默认弱密码 123456
+### 🔴 B3 · 家长默认弱密码 123456（已按业务规则改为「学号后 6 位」）
 - **文件**：`server/src/students/students.module.ts`、`server/src/parent-auth/parent-auth.service.ts`、`server/src/auth/auth.service.ts`、`server/src/parent-auth/parent-auth.controller.ts`
 - **问题**：家长登录回退到硬编码 `PARENT_DEFAULT_PASSWORD='123456'`。
+- **业务规则（用户确认）**：家长默认登录口令 = **学号后 6 位**；家长登录成功后可自行修改密码；班主任也可将口令重置回「学号后 6 位」。
 - **修复**：
-  - 教师开启家长登录时（`toggleParentLogin`）生成随机初始密码（`crypto.randomBytes(5).toString('hex')` + 2 位随机数），哈希存储并**返回给教师**。
+  - 新增派生助手 `parentDefaultPassword(studentNo) = (studentNo||'').trim().slice(-6)`。
+  - 教师开启家长登录时（`toggleParentLogin`）将默认口令设为**学号后 6 位**，哈希存储并随响应返回 `initialPassword`（教师可告知家长）。缺学号时拒绝开启，避免产生空口令。
+  - **新增**班主任重置接口 `POST students/:id/reset-parent-password`（`toggleParentLogin` 同权限，需 `parentLoginEnabled=true`），将 `parentPasswordHash` 重置回「学号后 6 位」并返回 `defaultPassword`。
   - 登录与改密路径移除 `123456` 回退：必须已有 `parentPasswordHash`，否则明确提示「密码尚未初始化，请联系老师重新开启家长登录以设置密码」。
   - `unifiedLogin` 家长分支同样改为 bcrypt 校验。
-  - 家长登录接口加 `@UseGuards(ParentLoginRateLimit)`（单 IP+学号 每分钟 ≤10 次）。
-- **注意（迁移）**：历史已开启但未设密码的家长（存量 `parentLoginEnabled=true` 且 `parentPasswordHash=null`）将被拒绝登录，需教师重新「关闭→开启」以生成新随机密码。属安全权衡，可接受。
+  - 家长登录接口加 `@UseGuards(ParentLoginRateLimit)`（单 IP+学号 每分钟 ≤10 次），缓解学号可枚举场景下的暴力破解。
+- **注意（迁移）**：历史已开启但未设密码的家长（存量 `parentLoginEnabled=true` 且 `parentPasswordHash=null`）将被拒绝登录，需教师重新「关闭→开启」以按学号后 6 位初始化。属安全权衡，可接受。
+- **残余风险**：默认口令由学号派生，仍属半公开信息；已用登录限速 + 鼓励首次登录改密缓解。如校方要求更强，可后续改为「开启时强制家长首次登录改密」。
 
 ### 🔴 B4 · pdfjs-dist 脆弱版本（CVE-2024-4367）
 - **文件**：`server/package.json`、`server/src/ai/ai.service.ts`、`mini-program/package.json`
