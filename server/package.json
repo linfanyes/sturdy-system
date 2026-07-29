@@ -36,9 +36,6 @@
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20"
   },
-  "overrides": {
-    "pdfjs-dist": "4.10.38"
-  },
   "devDependencies": {
     "@nestjs/cli": "^10.4.5",
     "@nestjs/schematics": "^10.1.4",
