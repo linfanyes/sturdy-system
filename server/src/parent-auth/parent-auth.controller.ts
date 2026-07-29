@@ -66,6 +66,34 @@ export class ParentAuthController {
     return this.s.getHomework(p)
   }
 
+  /** 孩子打卡/考勤汇总（仅限当前家长绑定的学生，按 studentId 隔离） */
+  @Get('attendance')
+  @UseGuards(JwtAuthGuard)
+  attendance(@CurrentParent() p: any) {
+    return this.s.getAttendance(p)
+  }
+
+  /** 孩子行为表现记录（仅限当前家长绑定的学生，按 studentId 隔离） */
+  @Get('behavior')
+  @UseGuards(JwtAuthGuard)
+  behavior(@CurrentParent() p: any) {
+    return this.s.getBehavior(p)
+  }
+
+  /** 孩子课表&值日（按 classId 隔离，值日再按孩子姓名匹配） */
+  @Get('schedule')
+  @UseGuards(JwtAuthGuard)
+  schedule(@CurrentParent() p: any) {
+    return this.s.getSchedule(p)
+  }
+
+  /** 家校沟通记录（仅限当前家长绑定的学生，按 studentId 隔离） */
+  @Get('communications')
+  @UseGuards(JwtAuthGuard)
+  communications(@CurrentParent() p: any) {
+    return this.s.getCommunications(p)
+  }
+
   /** 家长订阅微信通知（wx.login code → openId 落库） */
   @Post('subscribe')
   @UseGuards(JwtAuthGuard)

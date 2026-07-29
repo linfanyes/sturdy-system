@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>家长端看板 · 成绩趋势 + 概览数字卡（Web 基准示例）</title>
+<!-- 本文件由 design-html skill 产出：单文件、零外部依赖（无 CDN / 无外部字体 / 无网络请求）。
+     视觉与交互严格对齐仓库 DESIGN.md（家长端看板）§2 概览数字卡 / 走势图卡规范。 -->
+<style>
+  :root{
+    /* 双端 Token 映射（见仓库 DESIGN.md §3） */
+    --p-green:#07c160; --p-green-soft:#E8F5E9;
+    --p-amber:#E6A23C; --p-amber-soft:rgba(230,162,60,.14);
+    --c-pink:#C9436D;  --c-pink-soft:#FCE9EE;
+    --c-blue:#1C6FB3;  --c-blue-soft:#E0F0FC;
+    --p-danger:#f56c6c; --p-danger-soft:rgba(245,108,108,.14);
+    --cream-50:#FDFBF4; --cream-100:#FAF6EB;
+    --cocoa-700:#6B4C34; --cocoa-800:#543C28; --cocoa-500:#9D7450;
+    --card:#ffffff;
+    --shadow:0 4px 16px rgba(157,116,80,.10);
+    --shadow-hover:0 8px 24px rgba(157,116,80,.16);
+    --radius:16px;
+    --gray-line:#cfd4da;
+    --gray-text:#8a9099;
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--cream-50);color:var(--cocoa-800);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 20px 48px}
+
+  /* 顶部栏 */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;color:var(--cocoa-800)}
+  .brand .ico{font-size:22px}
+  .welcome{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--cocoa-700);background:var(--cream-100);padding:6px 12px;border-radius:999px}
+  .welcome .ico{color:var(--c-pink)}
+  .section-title{font-size:15px;font-weight:700;color:var(--cocoa-700);margin:22px 2px 12px;display:flex;align-items:center;gap:6px}
+
+  /* 概览数字卡 */
+  .overview{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;transition:transform .18s ease,box-shadow .18s ease;position:relative;overflow:hidden;}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+  .card.pink{--accent:var(--c-pink);--accent-soft:var(--c-pink-soft)}
+  .card.amber{--accent:var(--p-amber);--accent-soft:var(--p-amber-soft)}
+  .card.green{--accent:var(--p-green);--accent-soft:var(--p-green-soft)}
+  .card-top{display:flex;align-items:center;gap:10px}
+  .icon-chip{width:40px;height:40px;flex:none;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1}
+  .label{font-size:14px;font-weight:600;color:var(--cocoa-700)}
+  .num{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:.5px;line-height:1.1}
+  .num .unit{font-size:14px;font-weight:700;margin-left:2px;color:var(--accent)}
+  .trend{font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px}
+
+  /* 成绩趋势卡 */
+  .trend-card{background:var(--card);border-radius:var(--radius);padding:18px 18px 14px;box-shadow:var(--shadow);margin-top:4px}
+  .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .chart-title{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;color:var(--cocoa-800)}
+  .chart-title .ico{font-size:20px}
+  .chart-sub{font-size:12px;color:var(--gray-text);margin-top:2px;font-weight:500}
+  .mom{font-size:13px;font-weight:700;color:var(--p-green);background:var(--p-green-soft);padding:5px 10px;border-radius:999px;white-space:nowrap}
+  .legend{display:flex;gap:18px;margin:4px 2px 8px;font-size:13px;color:var(--cocoa-700)}
+  .legend-item{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;font-weight:600}
+  .legend-item.off{opacity:.4}
+  .sw-student{width:18px;height:3px;background:var(--p-green);border-radius:2px}
+  .sw-class{width:18px;height:0;border-top:2px dashed var(--gray-text)}
+
+  .chart-box{position:relative;width:100%}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .grid-line{stroke:var(--gray-line);stroke-width:1;stroke-dasharray:3 4;opacity:.5}
+  .axis-label{fill:var(--gray-text);font-size:12px;font-family:var(--font)}
+  .x-label{fill:var(--cocoa-700);font-size:12px;font-weight:600;font-family:var(--font)}
+  .pt-student{cursor:pointer;transition:r .12s ease}
+  .pt-student:hover{r:6}
+
+  .tooltip{position:absolute;pointer-events:none;background:var(--cocoa-800);color:#fff;padding:8px 11px;border-radius:10px;font-size:12px;line-height:1.5;white-space:nowrap;box-shadow:0 6px 18px rgba(84,60,40,.35);transform:translate(-50%,-100%);opacity:0;transition:opacity .12s ease;z-index:5}
+  .tooltip b{font-weight:800}
+  .tooltip .t-row{display:flex;justify-content:space-between;gap:14px}
+  .tooltip .pos{color:#7ee2a8}
+  .tooltip .neg{color:#ff9b9b}
+
+  .footnote{margin-top:22px;font-size:12px;color:var(--gray-text);line-height:1.7}
+  .footnote code{background:var(--cream-100);padding:1px 6px;border-radius:6px;color:var(--cocoa-700)}
+
+  @media (max-width:640px){
+    .overview{grid-template-columns:repeat(2,1fr);gap:12px}
+    .wrap{padding:18px 14px 40px}
+    .brand{font-size:18px}
+    .welcome{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><span class="ico">🏡</span>家长中心</div>
+    <div class="welcome"><span class="ico">💗</span>欢迎，李明妈妈 · 这是孩子近期的学习概览</div>
+  </div>
+
+  <div class="section-title">📊 学习概览</div>
+  <div class="overview">
+    <div class="card pink">
+      <div class="card-top"><span class="icon-chip">📢</span><span class="label">待读通知</span></div>
+      <div class="num">5</div>
+      <div class="trend">🔔 本周 +2 条未读</div>
+    </div>
+    <div class="card amber">
+      <div class="card-top"><span class="icon-chip">📝</span><span class="label">待完成作业</span></div>
+      <div class="num">3</div>
+      <div class="trend">⏰ 今日 1 项待提交</div>
+    </div>
+    <div class="card green">
+      <div class="card-top"><span class="icon-chip">📈</span><span class="label">考试次数</span></div>
+      <div class="num">4</div>
+      <div class="trend">📅 本学期</div>
+    </div>
+    <div class="card green">
+      <div class="card-top"><span class="icon-chip">🏆</span><span class="label">最新排名</span></div>
+      <div class="num">8<span class="unit">名</span></div>
+      <div class="trend">⬆️ 较上次进步 3 名</div>
+    </div>
+  </div>
+
+  <div class="section-title">📈 成绩趋势</div>
+  <div class="trend-card">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title"><span class="ico">📈</span>成绩趋势</div>
+        <div class="chart-sub">近 4 次考试 · 总分</div>
+      </div>
+      <div class="mom" id="mom">环比 ▲ +0.0%</div>
+    </div>
+    <div class="legend">
+      <div class="legend-item" id="lg-student"><span class="sw-student"></span>学生</div>
+      <div class="legend-item" id="lg-class"><span class="sw-class"></span>班级均分</div>
+    </div>
+    <div class="chart-box" id="chartBox">
+      <div class="tooltip" id="tip"></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    基准示例（Web 端），对应仓库 <code>DESIGN.md</code> §2 概览数字卡 / 走势图卡规范。语义色：粉=通知、琥珀=待办、绿=正向。
+    学生线 <code>#07c160</code> 实线 2.5px，班级均分灰色虚线；同一看板小程序端须保持同色 / 同线宽 / 同高亮逻辑（见 §4 一致性铁律）。
+  </div>
+
+</div>
+
+<script type="module">
+(function(){
+  // 可选：若页面引入了 Pretext 排版引擎则启用（本示例零依赖，此处安全跳过）
+  try{ if(window.Pretext && Pretext.setLocale) Pretext.setLocale('zh'); }catch(e){}
+
+  const SVGNS='http://www.w3.org/2000/svg';
+  const exams=[
+    {name:'9月月考',  student:286, cls:289},
+    {name:'期中考试', student:302, cls:291},
+    {name:'11月月考', student:296, cls:290},
+    {name:'期末模拟', student:315, cls:293}
+  ];
+  const W=720,H=300,padL=44,padR=20,padT=26,padB=42;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const yMin=270,yMax=320;
+  const x=i=> padL + (exams.length===1 ? plotW/2 : i*plotW/(exams.length-1));
+  const y=v=> padT + (1-(v-yMin)/(yMax-yMin))*plotH;
+
+  const svg=document.createElementNS(SVGNS,'svg');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('role','img');
+  svg.setAttribute('aria-label','成绩趋势折线图');
+
+  function el(name,attrs){const e=document.createElementNS(SVGNS,name);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+  // Y 网格 + 刻度
+  [280,290,300,310,320].forEach(function(v){
+    svg.appendChild(el('line',{class:'grid-line',x1:padL,y1:y(v),x2:W-padR,y2:y(v)}));
+    const t=el('text',{class:'axis-label',x:padL-10,y:y(v)+4,'text-anchor':'end'});
+    t.textContent=v; svg.appendChild(t);
+  });
+  // X 标签
+  exams.forEach(function(d,i){
+    const t=el('text',{class:'x-label',x:x(i),y:H-padB+20,'text-anchor':'middle'});
+    t.textContent=d.name; svg.appendChild(t);
+  });
+
+  // 班级均分线（灰虚线）
+  const clsPts=exams.map(function(d,i){return x(i)+','+y(d.cls);}).join(' ');
+  const clsLine=el('polyline',{points:clsPts,fill:'none',stroke:'#8a9099','stroke-width':1.5,'stroke-dasharray':'6 6','stroke-linejoin':'round','stroke-linecap':'round'});
+  svg.appendChild(clsLine);
+  const clsDots=[];
+  exams.forEach(function(d,i){
+    const r=el('rect',{x:x(i)-3.5,y:y(d.cls)-3.5,width:7,height:7,fill:'#8a9099',transform:'rotate(45 '+x(i)+' '+y(d.cls)+')'});
+    clsDots.push(r); svg.appendChild(r);
+  });
+
+  // 学生线（绿实线 2.5px）
+  const stuPts=exams.map(function(d,i){return x(i)+','+y(d.student);}).join(' ');
+  svg.appendChild(el('polyline',{points:stuPts,fill:'none',stroke:'#07c160','stroke-width':2.5,'stroke-linejoin':'round','stroke-linecap':'round'}));
+
+  // 学生数据点（可交互 tooltip）
+  const tip=document.getElementById('tip');
+  const box=document.getElementById('chartBox');
+  exams.forEach(function(d,i){
+    const c=el('circle',{class:'pt-student',cx:x(i),cy:y(d.student),r:4,fill:'#07c160',stroke:'#fff','stroke-width':2});
+    const delta=d.student-d.cls;
+    const deltaHtml = delta>=0 ? '<span class="pos">▲ +'+delta+'</span>' : '<span class="neg">▼ '+delta+'</span>';
+    function show(){
+      tip.innerHTML='<b>'+d.name+'</b>'+
+        '<div class="t-row"><span>总分</span><b>'+d.student+'</b></div>'+
+        '<div class="t-row"><span>班级均分</span><span>'+d.cls+'</span></div>'+
+        '<div class="t-row"><span>超班级</span>'+deltaHtml+'</div>';
+      const cr=c.getBoundingClientRect(), br=box.getBoundingClientRect();
+      tip.style.left=(cr.left-br.left+cr.width/2)+'px';
+      tip.style.top=(cr.top-br.top-10)+'px';
+      tip.style.opacity='1';
+    }
+    c.addEventListener('mouseenter',show);
+    c.addEventListener('mousemove',show);
+    c.addEventListener('mouseleave',function(){tip.style.opacity='0';});
+    svg.appendChild(c);
+  });
+  box.insertBefore(svg, tip);
+
+  // 环比小标
+  const last=exams[exams.length-1].student, prev=exams[exams.length-2].student;
+  const mom=((last-prev)/prev*100);
+  document.getElementById('mom').textContent='环比 ▲ +'+mom.toFixed(1)+'%';
+
+  // 图例切换班级线
+  let showClass=true;
+  const lgClass=document.getElementById('lg-class');
+  lgClass.addEventListener('click',function(){
+    showClass=!showClass;
+    clsLine.style.display=showClass?'':'none';
+    clsDots.forEach(function(r){r.style.display=showClass?'':'none';});
+    lgClass.classList.toggle('off',!showClass);
+  });
+})();
+</script>
+</body>
+</html>

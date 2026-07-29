@@ -72,6 +72,10 @@ page {
   --c-primary-d: #19d27e;
   --c-accent: #e6a23c;
   --c-danger: #f56c6c;
+  --c-pink: #C9436D;
+  --c-pink-soft: #FCE9EE;
+  --c-blue: #1C6FB3;
+  --c-blue-soft: #E0F0FC;
   --c-shadow: rgba(0, 0, 0, 0.04);
   /* 字体大小档位：通过 --fz-scale 缩放 rpx，由根 view 的 .fz-sm/.fz-lg class 控制 */
   --fz-scale: 1;
@@ -92,6 +96,10 @@ page {
   --c-primary-d: #19d27e;
   --c-accent: #e6a23c;
   --c-danger: #f56c6c;
+  --c-pink: #e06c8a;
+  --c-pink-soft: #3a2530;
+  --c-blue: #5aa9e6;
+  --c-blue-soft: #1c2a3a;
   --c-shadow: rgba(0, 0, 0, 0.35);
 }
 /* 字体大小档位：影响根 view 内文字大小（小程序 page font-size 不可改，仅影响 view 内 text） */

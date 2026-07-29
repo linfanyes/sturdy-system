@@ -38,4 +38,61 @@ export const parentEndpoints = {
     },
   },
   '/parent-auth/homework': HOMEWORK.filter((h) => h.classId === 'c1'),
+  '/parent-auth/behavior': {
+    total: 8,
+    summary: { praise: 5, violation: 1, other: 2 },
+    recent: [
+      { id: 'b1', date: '2026-07-22', behavior: '课堂表扬', note: '积极回答问题，思路清晰', category: 'praise' },
+      { id: 'b2', date: '2026-07-20', behavior: '助人为乐', note: '主动帮助同学打扫卫生', category: 'praise' },
+      { id: 'b3', date: '2026-07-18', behavior: '作业优秀', note: '书写工整，全对', category: 'praise' },
+      { id: 'b4', date: '2026-07-15', behavior: '违纪', note: '课间追逐打闹', category: 'violation' },
+      { id: 'b5', date: '2026-07-12', behavior: '进步奖', note: '数学进步明显', category: 'praise' },
+    ],
+    byMonth: [
+      { month: '2026-07', count: 8 },
+      { month: '2026-06', count: 5 },
+    ],
+  },
+  '/parent-auth/schedule': {
+    week: [
+      { dayOfWeek: 1, items: [
+        { period: 1, section: null, subject: '语文', teacher: '王老师', note: '' },
+        { period: 2, section: null, subject: '数学', teacher: '李老师', note: '' },
+        { period: 3, section: '早读', subject: '英语', teacher: '陈老师', note: '' },
+        { period: 4, section: null, subject: '体育', teacher: '刘老师', note: '' },
+      ] },
+      { dayOfWeek: 2, items: [
+        { period: 1, section: null, subject: '数学', teacher: '李老师', note: '' },
+        { period: 2, section: null, subject: '科学', teacher: '赵老师', note: '' },
+        { period: 5, section: null, subject: '音乐', teacher: '孙老师', note: '' },
+      ] },
+      { dayOfWeek: 3, items: [
+        { period: 1, section: null, subject: '英语', teacher: '陈老师', note: '' },
+        { period: 2, section: '早读', subject: '语文', teacher: '王老师', note: '' },
+        { period: 3, section: null, subject: '美术', teacher: '周老师', note: '' },
+      ] },
+      { dayOfWeek: 4, items: [
+        { period: 1, section: null, subject: '语文', teacher: '王老师', note: '' },
+        { period: 4, section: null, subject: '信息技术', teacher: '吴老师', note: '' },
+      ] },
+      { dayOfWeek: 5, items: [
+        { period: 1, section: null, subject: '数学', teacher: '李老师', note: '' },
+        { period: 2, section: null, subject: '班会', teacher: '王老师', note: '' },
+        { period: 6, section: '晚自习', subject: '自习', teacher: '', note: '' },
+      ] },
+    ],
+    todayDow: 3,
+    upcomingDuty: [
+      { date: '2026-07-30', name: '教室值日', type: 'daily' },
+      { date: '2026-08-02', name: '包干区清扫', type: 'weekly' },
+    ],
+  },
+  '/parent-auth/communications': {
+    total: 3,
+    recent: [
+      { id: 'pc1', date: '2026-07-19', method: '微信', content: '孩子近期课堂表现积极，请注意保持作息规律。', followUp: '', parentName: '张爸爸', relation: '父亲' },
+      { id: 'pc2', date: '2026-07-10', method: '电话', content: '关于运动会报名事宜已与您沟通。', followUp: '已确认报名', parentName: '张爸爸', relation: '父亲' },
+      { id: 'pc3', date: '2026-06-28', method: '面谈', content: '期末学情反馈，孩子总体平稳。', followUp: '建议关注阅读习惯', parentName: '张爸爸', relation: '父亲' },
+    ],
+  },
 }
