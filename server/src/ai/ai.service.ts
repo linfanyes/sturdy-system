@@ -17,16 +17,23 @@ import { Exam } from '../exams/exam.entity'
 import { AwardRecord } from '../award/award.entity'
 import { NoteItem } from '../notes/notes.entity'
 
-// pdfjs 用 legacy 构建（Node 友好），用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfjs = require('pdfjs-dist/legacy/build/pdf.js')
-try {
-  pdfjs.GlobalWorkerOptions.workerSrc = path.join(
-    path.dirname(require.resolve('pdfjs-dist/legacy/build/pdf.js')),
-    'pdf.worker.js',
-  )
-} catch {
-  /* 某些环境无 worker 文件也能用 fake worker 兜底 */
+// pdfjs-dist 4.x 为 ESM 模块（main: build/pdf.mjs），用异步 import() 加载
+// 用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
+let _pdfjs: any = null
+async function getPdfjs(): Promise<any> {
+  if (!_pdfjs) {
+    const mod = await import('pdfjs-dist')
+    _pdfjs = mod.default || mod
+    try {
+      _pdfjs.GlobalWorkerOptions.workerSrc = path.join(
+        path.dirname(require.resolve('pdfjs-dist/build/pdf.mjs')),
+        'pdf.worker.min.mjs',
+      )
+    } catch {
+      /* 某些环境无 worker 文件也能用 fake worker 兜底 */
+    }
+  }
+  return _pdfjs
 }
 
 // pdfjs-dist 4.x 使用 Promise.withResolvers（Node 22+ 原生），低版本 Node 缺少该 API，此处兜底兼容
@@ -208,7 +215,8 @@ export class AiService {
 
   /** 把扫描版 PDF 逐页光栅化为 PNG，送多模态模型做 OCR 文字识别 */
   private async ocrPdf(buf: Buffer, s: any): Promise<string> {
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise
+    const p = await getPdfjs()
+    const doc = await p.getDocument({ data: new Uint8Array(buf) }).promise
     const maxPages = Math.min(doc.numPages, 3) // 最多识别前 3 页，控制耗时
     let out = ''
     for (let i = 1; i <= maxPages; i++) {
@@ -227,7 +235,8 @@ export class AiService {
 
   /** 用 pdfjs 直接提取数字版 PDF 文本（替代已弃用的 pdf-parse，避免其携带的脆弱 pdfjs-dist） */
   private async extractPdfText(buf: Buffer): Promise<string> {
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
+    const p = await getPdfjs()
+    const doc = await p.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
     const maxPages = Math.min(doc.numPages, 20)
     let out = ''
     for (let i = 1; i <= maxPages; i++) {
