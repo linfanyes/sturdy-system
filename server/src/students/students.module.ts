@@ -256,6 +256,7 @@ class StudentsService extends CrudService<Student> {
       s.parentOpenId = ''
       s.parentNickName = ''
       s.parentPasswordHash = null
+      s.parentId = ''
     } else {
       // 开启时默认口令 = 8位随机 hex，由老师告知家长
       const no = (s.studentNo || '').trim()

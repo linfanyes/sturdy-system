@@ -11,6 +11,9 @@ export class User {
   @Column({ unique: true, nullable: true, comment: '微信 openid' })
   openid: string
 
+  @Column({ nullable: true, comment: '关联的家长身份 ID（师兼家锚点）' })
+  parentId: string
+
   @Column({ default: '老师' })
   name: string
 

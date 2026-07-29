@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, UseGuards, BadRequestException } from '@nestjs/common'
 import { ParentAuthService } from './parent-auth.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
@@ -106,5 +106,20 @@ export class ParentAuthController {
   @UseGuards(JwtAuthGuard)
   sig(@CurrentParent() p: any) {
     return this.s.getImUserSig(p)
+  }
+
+  /** 多娃切换：切换到另一个孩子的视角 */
+  @Post('switch-student')
+  @UseGuards(JwtAuthGuard)
+  async switchStudent(@CurrentParent() p: any, @Body() b: { studentId: string }) {
+    if (!b.studentId) throw new BadRequestException('缺少 studentId')
+    return this.s.switchStudent(p, b.studentId)
+  }
+
+  /** 多娃考试对比（≥2 个孩子时启用） */
+  @Get('compare-kids')
+  @UseGuards(JwtAuthGuard)
+  async compareKids(@CurrentParent() p: any) {
+    return this.s.getKidsComparison(p)
   }
 }

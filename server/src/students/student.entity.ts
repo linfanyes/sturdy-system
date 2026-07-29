@@ -1,5 +1,6 @@
-import { Entity, Column, Index } from 'typeorm'
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
+import { Parent } from '../parent/parent.entity'
 
 @Entity('students')
 export class Student extends BaseEntity {
@@ -15,6 +16,12 @@ export class Student extends BaseEntity {
   @Column({ default: '' }) parentName: string
   @Column({ default: '' }) parentPhone: string
   @Column({ default: '' }) parentOpenId: string
+  @Column({ nullable: true })
+  parentId: string
+
+  @ManyToOne(() => Parent)
+  @JoinColumn({ name: 'parentId' })
+  parent: Parent
   @Column({ default: '' }) parentNickName: string
   @Column({ default: false }) parentLoginEnabled: boolean
   @Column({ type: 'varchar', nullable: true }) parentPasswordHash: string | null

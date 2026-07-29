@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { ConfigService } from '@nestjs/config'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
+import { Parent } from '../parent/parent.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Notice, Homework } from '../school/school.entity'
 import { Grade } from '../grades/grade.entity'
@@ -25,6 +26,7 @@ import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 @Injectable()
 export class ParentAuthService {
   constructor(
+    @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
     @InjectRepository(ParentContact) private readonly pcRepo: Repository<ParentContact>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
@@ -112,27 +114,96 @@ export class ParentAuthService {
     return { ok: true }
   }
 
-  /** 当前家长信息 + 孩子 */
+  /** 当前家长信息 + 全量 kids（支持新 payload 含 parentId 和旧 token 兼容） */
   async getMe(payload: any) {
+    if (!payload.parentId) {
+      // 旧 token 兼容（无 parentId 的老 token）
+      const s = await this.studentRepo.findOne({ where: { id: payload.studentId } })
+      if (!s) return null
+      let className = ''
+      try {
+        const cls = await this.classRepo.findOne({ where: { id: s.classId } })
+        if (cls) className = cls.name
+      } catch {}
+      return {
+        parentName: s.parentName || '家长',
+        studentId: s.id, studentName: s.name, studentNo: s.studentNo,
+        classId: s.classId, className,
+        kids: [{ studentId: s.id, studentName: s.name, studentNo: s.studentNo, classId: s.classId }],
+        parentId: null,
+      }
+    }
+
+    const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
+    if (!parent) return null
+
+    const kids = await this.studentRepo.find({ where: { parentId: payload.parentId } })
+    // 当前激活娃
+    const activeKid = kids.find(k => k.id === payload.studentId) || kids[0] || null
+    if (!activeKid) return null
+
     let className = ''
-    let nickName = ''
     try {
-      const cls = await this.classRepo.findOne({ where: { id: payload.classId } })
+      const cls = await this.classRepo.findOne({ where: { id: activeKid.classId } })
       if (cls) className = cls.name
-      const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
-      if (stu && stu.parentNickName) nickName = stu.parentNickName
     } catch {}
+
     return {
-      imUserId: payload.sub,
-      studentId: payload.studentId,
-      studentName: payload.studentName,
-      classId: payload.classId,
-      className,
-      studentNo: payload.studentNo,
-      nickName,
-      kids: [
-        { studentId: payload.studentId, studentName: payload.studentName, studentNo: payload.studentNo, classId: payload.classId, className, nickName },
-      ],
+      parentName: parent.parentName || '家长',
+      studentId: activeKid.id, studentName: activeKid.name, studentNo: activeKid.studentNo,
+      classId: activeKid.classId, className,
+      parentId: parent.id,
+      kids: kids.map(k => ({
+        studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId,
+      })),
+    }
+  }
+
+  /** 切换当前激活的孩子（多娃场景） */
+  async switchStudent(payload: any, targetStudentId: string) {
+    // D13 强化：校验目标学生是否属于该家长
+    if (!payload.parentId) throw new ForbiddenException('无家长身份')
+    const target = await this.studentRepo.findOne({ where: { id: targetStudentId, parentId: payload.parentId } })
+    if (!target) throw new ForbiddenException('学生不属于该家长')
+
+    const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
+    const pn = parent?.parentName || '家长'
+    const pim = parentImUserId({ studentId: target.id, relation: '家长', parentName: pn })
+    const token = this.jwt.sign({
+      sub: pim, type: 'parent', parentId: payload.parentId,
+      studentId: target.id, studentName: target.name,
+      classId: target.classId, studentNo: target.studentNo,
+    })
+    return { token, studentId: target.id, studentName: target.name, studentNo: target.studentNo, classId: target.classId }
+  }
+
+  /** 多娃考试对比（仅 2 个以上孩子时启用） */
+  async getKidsComparison(payload: any) {
+    if (!payload.parentId) throw new ForbiddenException('无家长身份')
+    const kids = await this.studentRepo.find({ where: { parentId: payload.parentId } })
+    if (kids.length < 2) return { kids: kids.map(k => ({ studentId: k.id, studentName: k.name, classId: k.classId })), exams: [] }
+
+    // 对每个孩子班级别取考试数据
+    const examPromises = kids.map(async (kid) => {
+      const kidPayload = { classId: kid.classId, studentId: kid.id }
+      const result = await this.getExams(kidPayload)
+      return { studentId: kid.id, exams: result.exams || [] }
+    })
+    const results = await Promise.all(examPromises)
+
+    // 按考试名称对齐
+    const examMap = new Map<string, any>()
+    for (const r of results) {
+      for (const e of (r.exams || [])) {
+        const key = e.examName
+        if (!examMap.has(key)) examMap.set(key, { examName: e.examName, date: e.date, term: e.term, rows: {} })
+        examMap.get(key).rows[r.studentId] = e
+      }
+    }
+
+    return {
+      kids: kids.map(k => ({ studentId: k.id, studentName: k.name, classId: k.classId })),
+      exams: Array.from(examMap.values()),
     }
   }
 
