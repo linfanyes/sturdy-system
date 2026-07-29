@@ -12,6 +12,10 @@ dist-electron-new/
 app.log
 app.pid
 .env
+# 环境变量（可能含密钥，勿入库；保留示例文件供参考）
+.env.*
+.env.local
+!.env.example
 seed-runner.js
 tester.js
 test-results.json

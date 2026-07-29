@@ -15,6 +15,8 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
+import { hashPassword } from '../common/utils/password.util'
+import crypto from 'node:crypto'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -239,19 +241,24 @@ class StudentsService extends CrudService<Student> {
     return { rows, validCount, errorCount }
   }
 
-  /** 切换家长登录权限（关闭时清空敏感绑定数据） */
+  /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时生成随机初始口令随响应返回） */
   async toggleParentLogin(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
     s.parentLoginEnabled = !s.parentLoginEnabled
-    // 关闭时清空敏感绑定数据，防止重新开启时旧绑定仍有效
+    let initialPassword: string | undefined
     if (!s.parentLoginEnabled) {
+      // 关闭时清空敏感绑定数据，防止重新开启时旧绑定仍有效
       s.parentOpenId = ''
       s.parentNickName = ''
       s.parentPasswordHash = null
+    } else {
+      // 开启时生成随机初始口令（去除默认弱口令 '123456'），由老师告知家长；家长登录后可自行修改
+      initialPassword = crypto.randomBytes(5).toString('hex') + Math.floor(Math.random() * 90 + 10)
+      s.parentPasswordHash = hashPassword(initialPassword)
     }
     await this.repo.save(s)
-    return { studentId, parentLoginEnabled: s.parentLoginEnabled }
+    return { studentId, parentLoginEnabled: s.parentLoginEnabled, initialPassword }
   }
 
   /** 删除学生（级联清理：家长联系记录 + 业务数据） */

@@ -1,9 +1,13 @@
 import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common'
 import { ParentAuthService } from './parent-auth.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentParent } from './current-parent.decorator'
 import { ParentLoginDto, ChangePasswordDto, BindWechatDto, SubscribeDto } from './dto/parent-auth.dto'
+
+// 家长登录防暴力破解：单 IP+学号 每分钟最多 10 次
+const ParentLoginRateLimit = createRateLimitGuard(60_000, 10)
 
 @Controller('parent-auth')
 @Roles('parent')
@@ -12,6 +16,7 @@ export class ParentAuthController {
 
   /** 家长凭学生学号 + 密码登录 */
   @Post('login')
+  @UseGuards(ParentLoginRateLimit)
   login(@Body() b: ParentLoginDto) {
     return this.s.login((b && b.studentNo) || '', (b && b.password) || '')
   }

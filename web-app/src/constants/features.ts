@@ -24,7 +24,7 @@ export const ALL_FEATURES: { key: string; label: string }[] = [
   { key: 'worklog', label: '工作日志' }, { key: 'observation', label: '听课记录' }, { key: 'calendar', label: '教学日历' },
   { key: 'teachers', label: '教师通讯录' },
   // 个人
-  { key: 'todos', label: '待办事项' }, { key: 'notes', label: '笔记' }, { key: 'demo',
+  { key: 'todos', label: '待办事项' }, { key: 'notes', label: '笔记' }, { key: 'demo', label: '演示模式' },
   { key: 'office_tools', label: '办公工具' },
   { key: 'subject_tools', label: '学科工具' },
   { key: 'quicktool', label: '快捷工具' },
@@ -33,5 +33,5 @@ export const ALL_FEATURES: { key: string; label: string }[] = [
   { key: 'reward', label: '奖赏' },
   { key: 'translate', label: '翻译' },
   { key: 'blackboard', label: '黑板报' },
-  { key: 'speech', label: '演讲稿' }, label: '演示模式' },
+  { key: 'speech', label: '演讲稿' },
 ]

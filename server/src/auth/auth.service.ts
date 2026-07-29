@@ -13,8 +13,6 @@ import { School } from '../school/school.entity'
 import { parentImUserId } from '../im/parent-im.util'
 import { verifyAndUpgrade, hashPassword } from '../common/utils/password.util'
 
-const PARENT_DEFAULT_PASSWORD = '123456'
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -89,11 +87,18 @@ export class AuthService {
       return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }), user: safeUser }
     }
 
-    // 4) 家长（用户名=学号，默认密码 123456）
+    // 4) 家长（用户名=学号，密码为老师开启家长登录时生成的随机密码，不再支持默认弱密码）
     const stu = await this.studentRepo.findOne({ where: { studentNo: u } })
     if (stu) {
       if (!stu.parentLoginEnabled) throw new UnauthorizedException('该学生家长登录尚未被老师授权')
-      if (p !== PARENT_DEFAULT_PASSWORD) throw new UnauthorizedException('密码错误')
+      if (!stu.parentPasswordHash)
+        throw new BadRequestException('家长密码尚未初始化，请联系老师重新开启家长登录以设置密码')
+      const { valid, newHash } = verifyAndUpgrade(p, stu.parentPasswordHash)
+      if (!valid) throw new UnauthorizedException('密码错误')
+      if (newHash) {
+        stu.parentPasswordHash = newHash
+        await this.studentRepo.save(stu)
+      }
       const pn = stu.parentName || '家长'
       return {
         role: 'parent',

@@ -80,6 +80,7 @@ export class ConfigController {
    * 任意已登录用户均可调用；baseUrl / apiKey 由客户端传入（不泄露平台密钥）。
    * 支持传入 providerCode 自动从 ai_providers 表解析 baseUrl。
    */
+  @Roles('teacher', 'super')
   @Post('ai/models')
   @UseGuards(JwtAuthGuard)
   listProviderModels(@Body() dto: { provider?: string; providerCode?: string; baseUrl?: string; apiKey?: string }) {

@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import crypto from 'node:crypto'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
 import { Repository, EntityManager, In } from 'typeorm'
 import { SchoolAdmin } from './school-admin.entity'
@@ -168,8 +169,11 @@ export class SchoolAdminService {
         if (attempt > 200) throw new BadRequestException('无法生成唯一登录名，请为「' + dto.name + '」手动指定用户名')
       }
       const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
-      // password 可选：未传则用统一默认密码 123456
-      const hash = hashPassword(dto.password || '123456')
+      // password 可选：未传则生成随机初始密码（不再使用统一弱密码 123456），并返回给调用方
+      const initialPassword = dto.password && dto.password.length >= 8
+        ? dto.password
+        : crypto.randomBytes(5).toString('hex') + Math.floor(Math.random() * 90 + 10)
+      const hash = hashPassword(initialPassword)
       const user = userRepo.create({
         username, passwordHash: hash, name: dto.name,
         schoolId, school: school?.name || '', phone: dto.phone || '',
@@ -178,21 +182,21 @@ export class SchoolAdminService {
       })
       const saved = await userRepo.save(user)
       this.audit.log(schoolId, 'create_teacher', '系统', saved.name + '(' + saved.username + ')', '创建教师').catch(() => {})
-      return { id: saved.id, name: saved.name, username: saved.username, teacherNo, ok: true }
+      return { id: saved.id, name: saved.name, username: saved.username, teacherNo, ok: true, initialPassword }
     })
   }
 
   /** 批量创建教师（逐条创建，返回成功/失败明细；username/password 可选，自动生成） */
   async batchCreateTeachers(schoolId: string, teachers: { name: string; phone?: string; gender?: string; subject?: string; password?: string; username?: string }[]) {
     if (!teachers?.length) throw new BadRequestException('请提供至少一位教师信息')
-    const results: { name: string; username: string; teacherNo?: string; status: string; error?: string }[] = []
+    const results: { name: string; username: string; teacherNo?: string; initialPassword?: string; status: string; error?: string }[] = []
     for (const t of teachers) {
       try {
         const r = await this.createTeacher(schoolId, {
           name: t.name, phone: t.phone, gender: t.gender, subject: t.subject,
           password: t.password, username: t.username, autoPinyin: true,
         })
-        results.push({ name: t.name, username: r.username, teacherNo: r.teacherNo, status: '成功' })
+        results.push({ name: t.name, username: r.username, teacherNo: r.teacherNo, initialPassword: r.initialPassword, status: '成功' })
       } catch (e: any) {
         results.push({ name: t.name, username: t.username || '', status: '失败', error: e.message })
       }
@@ -220,6 +224,8 @@ export class SchoolAdminService {
 
   /** 重置教师密码 */
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 8)
+      throw new BadRequestException('新密码至少 8 位')
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     user.passwordHash = hashPassword(newPassword)
@@ -245,7 +251,9 @@ export class SchoolAdminService {
       await em.getRepository(ClassItem).delete({ teacherId })
       // 清除该教师的所有业务数据
       for (const table of TEACHER_ID_TABLES) {
-        await em.query(`DELETE FROM \`${table}\` WHERE teacherId = ?`, [teacherId])
+        try {
+          await em.query(`DELETE FROM \`${table}\` WHERE teacherId = ?`, [teacherId])
+        } catch { /* 表不存在或无该字段则跳过 */ }
       }
       // 删除教师账号
       await em.getRepository(User).remove(user)

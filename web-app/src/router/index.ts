@@ -160,7 +160,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'tools/englishStory', name: 'toolEnglishStory', component: () => import('@/views/tools/EnglishStory.vue'), meta: { title: '英语爽文', feature: 'tools' } },
       { path: 'tools/planTemplates', name: 'toolPlanTemplates', component: () => import('@/views/tools/PlanTemplates.vue'), meta: { title: '文案模板', feature: 'tools' } },
       { path: 'tools/thesis', name: 'toolThesis', component: () => import('@/views/tools/Thesis.vue'), meta: { title: '教育论文', feature: 'tools' } },
-      { path: 'tools/lessonObservation', name: 'toolLessonObservation',
+      { path: 'tools/lessonObservation', name: 'toolLessonObservation', component: () => import('@/views/tools/LessonObservation.vue'), meta: { title: '听课记录', feature: 'tools' } },
       // 补齐与小程序对齐的功能模块
       { path: 'office-tools', name: 'teacher-office-tools', component: () => import('@/views/office/OfficeTools.vue'), meta: { title: '办公工具', feature: 'tools' } },
       { path: 'office-tools/translate', name: 'teacher-translate', component: () => import('@/views/office/Translate.vue'), meta: { title: '翻译助手', feature: 'tools' } },
@@ -173,7 +173,6 @@ export const routes: RouteRecordRaw[] = [
       { path: 'grade-trend', name: 'teacher-grade-trend', component: () => import('@/views/evaluation/GradeTrend.vue'), meta: { title: '成绩趋势', feature: 'grades' } },
       { path: 'picker-history', name: 'teacher-picker-history', component: () => import('@/views/evaluation/PickerHistory.vue'), meta: { title: '点名历史', feature: 'tools' } },
       { path: 'tools/reward', name: 'teacher-reward', component: () => import('@/views/tools/Reward.vue'), meta: { title: '奖赏', feature: 'rewards' } },
- component: () => import('@/views/tools/LessonObservation.vue'), meta: { title: '听课记录', feature: 'tools' } },
       // 游戏合集
       { path: 'games', name: 'games', component: () => import('@/views/games/GamesIndex.vue'), meta: { title: '小游戏合集', feature: 'games' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },

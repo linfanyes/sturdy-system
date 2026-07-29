@@ -8,6 +8,8 @@
  * 则回退到下列默认预设，保证配置页始终可用。
  */
 
+import net from 'node:net'
+
 export type ModelKind = 'text' | 'vision' | 'image' | 'video'
 
 export interface ProviderPreset {
@@ -116,6 +118,40 @@ function fallbackResult(provider: string): ProviderModelsResult {
 }
 
 /**
+ * SSRF 防护：仅允许 https 公网地址，拒绝私网 / 回环 / 链路本地 / 云元数据 / 非法 IP。
+ * 用于校验客户端或服务端传入的 baseUrl，防止服务端 fetch 探测内网与云元数据。
+ */
+function isPrivateOrReservedIpv4(ip: string): boolean {
+  const parts = ip.split('.').map(Number)
+  if (parts.length !== 4 || parts.some((n) => isNaN(n) || n < 0 || n > 255)) return true
+  const [a, b] = parts
+  if (a === 0 || a === 10 || a === 127) return true
+  if (a === 169 && b === 254) return true // 链路本地 / 云元数据 169.254.169.254
+  if (a >= 224) return true // 组播 / 保留
+  if (a === 192 && b === 168) return true
+  if (a === 172 && b >= 16 && b <= 31) return true
+  if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
+  return false
+}
+
+function isSafeHttpUrl(url?: string): boolean {
+  if (!url) return false
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return false
+  }
+  if (u.protocol !== 'https:') return false
+  const host = u.hostname.toLowerCase()
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local'))
+    return false
+  if (net.isIP(host) === 6) return false // 拒绝 IPv6 字面量（服务商均为 IPv4 域名）
+  if (net.isIP(host) === 4 && isPrivateOrReservedIpv4(host)) return false
+  return true
+}
+
+/**
  * 实时查询服务商模型列表。
  * - 优先使用传入 baseUrl/apiKey；缺失则回退预设（自定义除外）。
  * - 调用 `${baseUrl}/models`（OpenAI 兼容），Bearer 鉴权。
@@ -132,7 +168,8 @@ export async function fetchProviderModels(
   const preset = PROVIDER_PRESETS[provider] || PROVIDER_PRESETS['自定义']
   const baseUrl = normalizeBaseUrl(opts.baseUrl) || normalizeBaseUrl(preset.baseUrl)
 
-  if (!baseUrl) return fallbackResult(provider)
+  // SSRF 防护：仅允许 https 公网地址，否则直接回退预设（不发起服务端请求）
+  if (!baseUrl || !isSafeHttpUrl(baseUrl)) return fallbackResult(provider)
 
   try {
     const controller = new AbortController()
@@ -142,6 +179,7 @@ export async function fetchProviderModels(
       const resp = await fetch(`${baseUrl}/models`, {
         headers: opts.apiKey ? { Authorization: `Bearer ${opts.apiKey}` } : {},
         signal: controller.signal,
+        redirect: 'error', // 禁止跟随重定向，防止重定向到内网造成 SSRF
       })
       if (!resp.ok) return fallbackResult(provider)
       json = await resp.json()

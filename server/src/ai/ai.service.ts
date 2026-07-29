@@ -7,7 +7,6 @@ import * as path from 'path'
 import { xlsxToCsvText } from '../common/excel.util'
 import mammoth from 'mammoth'
 import { createCanvas } from '@napi-rs/canvas'
-import pdfParse = require('pdf-parse/lib/pdf-parse.js')
 import { ConfigService } from '../config/config.service'
 import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
@@ -28,6 +27,19 @@ try {
   )
 } catch {
   /* 某些环境无 worker 文件也能用 fake worker 兜底 */
+}
+
+// pdfjs-dist 4.x 使用 Promise.withResolvers（Node 22+ 原生），低版本 Node 缺少该 API，此处兜底兼容
+if (typeof (Promise as any).withResolvers !== 'function') {
+  ;(Promise as any).withResolvers = function <T>() {
+    let resolve!: (value: T | PromiseLike<T>) => void
+    let reject!: (reason?: any) => void
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
 }
 
 // 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
@@ -168,8 +180,7 @@ export class AiService {
           if (!text.trim())
             note = '（Word 未提取到文字，若为图片型扫描件请导出 PDF 或截图发送）'
         } else if (ext === 'pdf') {
-          const r = await pdfParse(buf)
-          text = r.text
+          text = await this.extractPdfText(buf)
           // 文本极少 → 疑似扫描件，尝试用多模态模型 OCR 识别
           if (text.trim().length < 30 && s?.visionModel && s?.apiKey) {
             try {
@@ -212,6 +223,20 @@ export class AiService {
       out += (i > 1 ? '\n' : '') + `[第${i}页]\n` + pageText
     }
     return out || '（OCR 未识别到文字）'
+  }
+
+  /** 用 pdfjs 直接提取数字版 PDF 文本（替代已弃用的 pdf-parse，避免其携带的脆弱 pdfjs-dist） */
+  private async extractPdfText(buf: Buffer): Promise<string> {
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
+    const maxPages = Math.min(doc.numPages, 20)
+    let out = ''
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await doc.getPage(i)
+      const content = await page.getTextContent()
+      const strings = (content.items as any[]).map((it) => ('str' in it ? it.str : '')).join(' ')
+      out += (i > 1 ? '\n' : '') + strings
+    }
+    return out
   }
 
   /** 对外封装：传入图片 data URL，自动鉴权后调用多模态模型做 OCR 文字识别 */
@@ -609,8 +634,7 @@ export class AiService {
     // PDF
     if (ext === 'pdf') {
       try {
-        const r = await pdfParse(buf)
-        let text = r.text
+        let text = await this.extractPdfText(buf)
         // 文本极少 → 疑似扫描件，尝试用多模态 OCR
         if (text.trim().length < 30) {
           const s = await this.buildSettings(teacherId)
