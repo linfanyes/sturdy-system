@@ -41,6 +41,26 @@
       </view>
     </view>
 
+    <!-- 顶部统计卡片（与 Web 端对齐） -->
+    <view class="stats-row" v-if="!loading">
+      <view class="stat-card">
+        <view class="stat-label">📢 待读通知</view>
+        <view class="stat-value">{{ stats.notices }}</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-label">📝 待完成作业</view>
+        <view class="stat-value">{{ stats.homework }}</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-label">📊 考试次数</view>
+        <view class="stat-value">{{ stats.exams }}</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-label">🏆 最新排名</view>
+        <view class="stat-value">{{ stats.rank }}</view>
+      </view>
+    </view>
+
     <!-- Tab 切换 -->
     <view class="tabs">
       <text class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">📋 待办公告</text>
@@ -53,7 +73,7 @@
     <view class="subscribe-card" v-if="showSubscribeGuide">
       <view class="sub-icon">🔔</view>
       <view class="sub-text">
-        <text class="sub-title">开启微信通知</text>
+        <text class="sub-title">开启通知订阅</text>
         <text class="sub-desc">作业提醒、新公告、成绩发布即时推送到微信</text>
       </view>
       <text class="sub-btn" @click="subscribeGuide">去开启</text>
@@ -501,6 +521,19 @@ function contactTeacher() {
 // 孩子在校健康度总览（5 维状态灯）+ 提醒中心（聚合已有数据，各维逐步点亮）
 const latestExam = computed(() => exams.value.length ? exams.value[exams.value.length - 1] : null)
 const pendingHomework = computed(() => homework.value.filter(h => h.status !== '已完成').length)
+const stats = computed(() => {
+  const noticeCount = (notices.value || []).filter(n => n.pinned).length || notices.value.length || 0
+  const homeworkCount = pendingHomework.value
+  const examCount = exams.value.length || 0
+  const rank = latestExam.value
+    ? latestExam.value.classRank
+      ? `第${latestExam.value.classRank}名`
+      : latestExam.value.gradeRank
+        ? `年级第${latestExam.value.gradeRank}名`
+        : '--'
+    : '--'
+  return { notices: noticeCount, homework: homeworkCount, exams: examCount, rank }
+})
 const healthOverview = computed(() => {
   const att = attendance.value
   const attRecent = (att && att.recent) || []
@@ -684,6 +717,11 @@ onShow(() => {
 .tab { flex: 1; text-align: center; font-size: 28rpx; padding: 16rpx 0; border-radius: 12rpx; background: var(--c-card); color: var(--c-sub); font-weight: 600; }
 .tab.on { background: var(--c-primary); color: #fff; }
 .tab-body { flex: 1; overflow-y: auto; padding-bottom: 20rpx; }
+/* Stats Row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10rpx; margin-bottom: 14rpx; }
+.stat-card { background: var(--c-card); border-radius: 12rpx; padding: 14rpx 10rpx; text-align: center; }
+.stat-label { font-size: 22rpx; color: var(--c-sub); margin-bottom: 6rpx; }
+.stat-value { font-size: 28rpx; font-weight: 800; color: var(--c-title); }
 .sec { margin-bottom: 14rpx; }
 .st { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; display: flex; align-items: center; gap: 10rpx; }
 .sc-badge { font-size: 20rpx; color: #fff; background: var(--c-primary); padding: 2rpx 12rpx; border-radius: 20rpx; font-weight: 400; }
