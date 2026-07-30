@@ -446,9 +446,15 @@ async function subscribeNotifications() {
             <div class="font-semibold text-cocoa-900 text-lg">{{ selectedExam.examName }}</div>
             <div class="text-xs text-cocoa-500 mt-1">{{ selectedExam.date }} · 总分 {{ selectedExam.totalScore ?? '--' }} / {{ selectedExam.totalFullScore ?? '--' }}</div>
           </div>
-          <div v-if="selectedExam.classRank" class="text-right">
-            <div class="text-2xl font-bold text-mint-600">第 {{ selectedExam.classRank }} 名</div>
-            <div class="text-xs text-cocoa-500">班级排名</div>
+          <div v-if="selectedExam.classRank || selectedExam.gradeRank" class="text-right space-y-1">
+            <div v-if="selectedExam.classRank" class="text-right">
+              <div class="text-2xl font-bold text-mint-600">第 {{ selectedExam.classRank }} 名</div>
+              <div class="text-xs text-cocoa-500">班级排名</div>
+            </div>
+            <div v-if="selectedExam.gradeRank" class="text-right">
+              <div class="text-2xl font-bold text-butter-600">第 {{ selectedExam.gradeRank }} 名</div>
+              <div class="text-xs text-cocoa-500">年级排名</div>
+            </div>
           </div>
         </div>
 
