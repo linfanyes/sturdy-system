@@ -82,8 +82,13 @@ export class AiProviderService implements OnModuleInit {
     if (!dto.code || !dto.name) throw new Error('code 和 name 必填')
     const exist = await this.repo.findOne({ where: { code: dto.code } })
     if (exist) throw new Error(`服务商 ${dto.code} 已存在`)
-    // 新服务商设为默认时，清除其他默认
-    if (dto.isDefault) await this.repo.update({}, { isDefault: false })
+    // 新服务商设为默认时，清除其他默认（确保全局唯一默认）
+    if (dto.isDefault) {
+      await this.repo.createQueryBuilder()
+        .update()
+        .set({ isDefault: false })
+        .execute()
+    }
     if (!dto.teacherId) dto.teacherId = ''
     return this.repo.save(this.repo.create(dto))
   }
@@ -91,7 +96,15 @@ export class AiProviderService implements OnModuleInit {
   async update(code: string, dto: Partial<AiProvider>) {
     const p = await this.repo.findOne({ where: { code } })
     if (!p) throw new Error('服务商不存在')
-    if (dto.isDefault) await this.repo.update({ code: { $ne: code } } as any, { isDefault: false })
+    // 设为默认时，清除其他服务商的默认标记（确保全局唯一默认）。
+    // 注意：TypeORM 不支持 MongoDB 的 { code: { $ne } } 语法，必须用 QueryBuilder 的 where 表达式。
+    if (dto.isDefault) {
+      await this.repo.createQueryBuilder()
+        .update()
+        .set({ isDefault: false })
+        .where('code != :code', { code })
+        .execute()
+    }
     Object.assign(p, dto, { code: p.code }) // 不允许改 code
     return this.repo.save(p)
   }

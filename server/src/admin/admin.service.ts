@@ -347,17 +347,16 @@ export class AdminService implements OnModuleInit {
     return { ok: true }
   }
 
-  /** 重置管理员密码（密码长度 6-20 位） */
+  /** 重置管理员密码（未传新密码时重置为默认口令 1314520；自定义密码长度 6-20 位） */
   async resetAdminPassword(id: string, newPassword: string) {
-    if (!newPassword) throw new BadRequestException('新密码必填')
-    if (newPassword.length < 6 || newPassword.length > 20) {
-      throw new BadRequestException('密码长度须为 6-20 位')
-    }
+    const pwd = newPassword && newPassword.length >= 6 && newPassword.length <= 20
+      ? newPassword
+      : '1314520'
     const a = await this.saRepo.findOne({ where: { id } })
     if (!a) throw new BadRequestException('管理员不存在')
-    a.passwordHash = hashPassword(newPassword)
+    a.passwordHash = hashPassword(pwd)
     await this.saRepo.save(a)
-    return { ok: true }
+    return { ok: true, defaultPassword: pwd }
   }
 
   /** 删除管理员（不删学校，保留学校数据） */

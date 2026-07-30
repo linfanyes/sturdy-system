@@ -236,18 +236,14 @@ export class SchoolAdminService {
   }
 
   /** 重置教师密码
-   * 密码长度要求 6-20 位（与需求「所有密码修改时，长度须不少于6位字符且不超过20位字符」一致）。
-   * 未提供合规密码时，自动生成随机默认密码并返回。
-   * 常见默认密码：1314521（7位）/ 1314520（7位）/ 123456（6位）等均在允许范围内。
+   * 未提供合规密码（6-20 位）时，统一重置为默认口令 1314521。
    */
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
-    let pwd = newPassword
-    if (!pwd || pwd.length < 6 || pwd.length > 20) {
-      // 密码不符合合规（6-20 位）时，自动生成随机默认密码 8 位
-      pwd = crypto.randomBytes(4).toString('hex').toUpperCase() + Math.floor(Math.random() * 90 + 10)
-    }
+    const pwd = newPassword && newPassword.length >= 6 && newPassword.length <= 20
+      ? newPassword
+      : '1314521'
     user.passwordHash = hashPassword(pwd)
     await this.userRepo.save(user)
     return { ok: true, defaultPassword: pwd }

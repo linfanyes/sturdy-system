@@ -75,14 +75,6 @@ const palette = (t: ColorTone) => colorClassMap[t] || colorClassMap.cream
 /* ============ 教师三级菜单 ============ */
 const teacherMenu: MenuCategory[] = [
   {
-    label: '工作台', color: 'cream', icon: LayoutDashboard,
-    groups: [{
-      label: '', items: [
-        { name: 'teacher-dashboard', label: '教师工作台', to: '/teacher', icon: Home, color: 'butter' },
-      ],
-    }],
-  },
-  {
     label: '教学管理', color: 'blue', icon: School,
     groups: [
       {
@@ -324,22 +316,39 @@ watch(() => route.name, () => {
 })
 
 function toggleCat(label: string) {
+  const onSubPage = route.name !== 'teacher-dashboard'
+  // 从子页面点击分类：始终回到工作台并展示该分类的二级菜单（不 toggle off）
+  if (onSubPage) {
+    activeCategory.value = label
+    openCats.value = [label]
+    router.push('/teacher')
+    return
+  }
+  // 在工作台页面：切换/折叠分类
   if (activeCategory.value === label) {
     activeCategory.value = ''
   } else {
     activeCategory.value = label
   }
-  openCats.value = activeCategory.value
-    ? [activeCategory.value]
-    : []
+  openCats.value = activeCategory.value ? [activeCategory.value] : []
 }
 
-/** 是否显示二级图标瓷砖面板（仅当已激活分类且页面是一级工作台根） */
+/** 是否在内容区展示二级菜单瓷砖（仅教师 + 已选分类 + 工作台根页面） */
 const showTilesPanel = computed(() =>
   auth.role === 'teacher' && !!activeCategory.value && route.name === 'teacher-dashboard'
 )
 
+/** 返回工作台首页（清除分类选择，展示工作台内容） */
+function backToDashboard() {
+  activeCategory.value = ''
+  openCats.value = []
+  if (route.name !== 'teacher-dashboard') {
+    router.push('/teacher')
+  }
+}
+
 function handleLogout() {
+  if (!confirm('确定要退出登录吗？')) return
   auth.logout()
   router.push({ name: 'login' })
 }
@@ -396,6 +405,27 @@ const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
 const today = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
 )
+
+/** 根据当前时间生成问候语 */
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6) return '夜深了，早点休息'
+  if (h < 9) return '早上好'
+  if (h < 12) return '上午好'
+  if (h < 14) return '中午好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+})
+
+/** 当前用户显示名（教师用姓名，其他角色用角色标签） */
+const displayName = computed(() => {
+  const u = auth.user
+  if (!u) return roleLabel[auth.role || 'teacher']
+  if (auth.role === 'teacher') return u.name || '老师'
+  if (auth.role === 'school_admin') return u.name || '校管'
+  if (auth.role === 'super') return '超级管理员'
+  return u.name || roleLabel[auth.role || 'teacher']
+})
 
 /** 当前激活分类的二级组 */
 const activeGroups = computed(() => {
@@ -481,48 +511,6 @@ function navigateTo(to: string) {
       </div>
     </aside>
 
-    <!-- 二级菜单图标瓷砖面板（仅教师工作台根页面） -->
-    <transition name="slide">
-      <aside v-if="showTilesPanel" class="w-80 shrink-0 border-r border-cream-200 bg-white/80 backdrop-blur overflow-y-auto">
-        <div class="px-5 py-5 border-b border-cream-200/60">
-          <div class="flex items-center gap-2 text-xs text-cocoa-500">
-            <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">园丁工作台</button>
-            <ChevronRight class="w-3 h-3" />
-            <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
-          </div>
-          <h2 class="text-lg font-bold text-cocoa-900 mt-1">{{ activeCategory }}</h2>
-          <p class="text-xs text-cocoa-500 mt-1">点击图标进入相应功能</p>
-        </div>
-
-        <div v-for="g in activeGroups" :key="g.label || 'main'" class="px-4 pt-4">
-          <div v-if="g.label" class="flex items-center gap-2 mb-3">
-            <h3 class="text-xs font-semibold text-cocoa-700 uppercase tracking-wider">{{ g.label }}</h3>
-            <div class="flex-1 h-px bg-cream-200"></div>
-            <span class="text-xs text-cocoa-400">{{ g.items.length }}</span>
-          </div>
-          <div class="grid grid-cols-3 gap-3 pb-2">
-            <button
-              v-for="item in g.items"
-              :key="item.name"
-              class="group relative flex flex-col items-center justify-center aspect-square rounded-2xl transition-all border-2 border-transparent hover:scale-105"
-              :class="route.name === item.name ? ['ring-2', palette(item.color || 'butter').ring, palette(item.color || 'butter').bg] : ['hover:shadow-soft', palette(item.color || 'butter').soft]"
-              @click="navigateTo(item.to)"
-            >
-              <!-- 圆形图标背景 -->
-              <div
-                class="w-12 h-12 rounded-full flex items-center justify-center transition-all"
-                :class="palette(item.color || 'butter').bg + ' ' + palette(item.color || 'butter').text"
-              >
-                <span v-if="item.emoji" class="text-2xl">{{ item.emoji }}</span>
-                <component v-else :is="item.icon || User" class="w-5 h-5" />
-              </div>
-              <span class="mt-1.5 text-[11px] font-medium text-cocoa-800 text-center leading-tight px-1 truncate w-full">{{ item.label }}</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-    </transition>
-
     <!-- 主内容区 -->
     <main class="flex-1 overflow-hidden bg-cream-50 flex flex-col">
       <!-- 顶栏：全局搜索（仅校管可见） -->
@@ -585,9 +573,13 @@ function navigateTo(to: string) {
       <!-- 统一页头 -->
       <header class="bg-white border-b border-cream-200 px-6 py-4 flex items-center justify-between shrink-0">
         <div>
-          <nav aria-label="breadcrumb" class="flex items-center gap-1.5 text-xs text-cocoa-500 mb-1">
+          <div class="flex items-center gap-2 mb-1">
+            <h1 class="text-xl font-bold text-cocoa-900">{{ displayName }}</h1>
+            <span class="text-sm text-cocoa-500">{{ greeting }}</span>
+          </div>
+          <nav aria-label="breadcrumb" class="flex items-center gap-1.5 text-xs text-cocoa-500">
             <Home class="w-3.5 h-3.5" />
-            <span>园丁工作台</span>
+            <button class="hover:text-cocoa-700 transition-colors" @click="backToDashboard">园丁工作台</button>
             <template v-if="activeCategory && auth.role === 'teacher'">
               <ChevronRight class="w-3 h-3 text-cocoa-300" />
               <span>{{ activeCategory }}</span>
@@ -595,7 +587,6 @@ function navigateTo(to: string) {
             <ChevronRight class="w-3 h-3 text-cocoa-300" />
             <span class="text-cocoa-700 font-medium">{{ pageTitle }}</span>
           </nav>
-          <h1 class="text-xl font-bold text-cocoa-900">{{ pageTitle }}</h1>
         </div>
         <div class="text-sm text-cocoa-500 text-right">
           <div>{{ roleLabel[auth.role || 'teacher'] }}</div>
@@ -606,7 +597,43 @@ function navigateTo(to: string) {
       <!-- 实际页面内容 -->
       <div class="flex-1 overflow-auto">
         <div class="w-full min-h-full px-8 py-6 flex flex-col">
-          <router-view />
+          <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
+          <template v-if="showTilesPanel">
+            <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-4">
+              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回工作台</button>
+              <ChevronRight class="w-4 h-4" />
+              <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
+            </div>
+            <div v-for="g in activeGroups" :key="g.label || 'main'" class="mb-6">
+              <div v-if="g.label" class="flex items-center gap-2 mb-3">
+                <h3 class="text-sm font-semibold text-cocoa-700 tracking-wider">{{ g.label }}</h3>
+                <div class="flex-1 h-px bg-cream-200"></div>
+                <span class="text-xs text-cocoa-400">{{ g.items.length }} 项</span>
+              </div>
+              <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                <button
+                  v-for="item in g.items"
+                  :key="item.name"
+                  class="group flex flex-col items-center justify-center rounded-2xl transition-all border-2 border-transparent hover:scale-105 p-4"
+                  :class="route.name === item.name ? ['ring-2', palette(item.color || 'butter').ring, palette(item.color || 'butter').bg] : ['hover:shadow-soft', palette(item.color || 'butter').soft]"
+                  @click="navigateTo(item.to)"
+                >
+                  <div
+                    class="w-14 h-14 rounded-full flex items-center justify-center transition-all"
+                    :class="palette(item.color || 'butter').bg + ' ' + palette(item.color || 'butter').text"
+                  >
+                    <span v-if="item.emoji" class="text-2xl">{{ item.emoji }}</span>
+                    <component v-else :is="item.icon || User" class="w-6 h-6" />
+                  </div>
+                  <span class="mt-2 text-xs font-medium text-cocoa-800 text-center leading-tight">{{ item.label }}</span>
+                </button>
+              </div>
+            </div>
+          </template>
+          <!-- 常规页面内容 -->
+          <template v-else>
+            <router-view />
+          </template>
           <footer class="mt-auto pt-8 pb-2 text-center text-xs text-cocoa-400">
             © 2026 园丁工作台 · Web 管理端
           </footer>
@@ -615,16 +642,3 @@ function navigateTo(to: string) {
     </main>
   </div>
 </template>
-
-<style scoped>
-/* 二级面板的滑入动画 */
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(-12px);
-  opacity: 0;
-}
-</style>

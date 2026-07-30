@@ -108,18 +108,17 @@ const resetting = ref(false)
 
 function openReset(row: any) {
   resetTarget.value = row
-  newPassword.value = ''
+  newPassword.value = '1314520'
   showReset.value = true
 }
 
 async function submitReset() {
   if (!resetTarget.value) return
-  if (!newPassword.value) { alert('请输入新密码'); return }
   resetting.value = true
   try {
-    await resetSchoolAdminPassword(resetTarget.value.id, newPassword.value)
+    const res: any = await resetSchoolAdminPassword(resetTarget.value.id, newPassword.value)
     showReset.value = false
-    alert('密码已重置')
+    alert('密码已重置' + (res?.defaultPassword ? `，默认密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
     alert(e?.message || '重置失败')
   } finally {
@@ -275,10 +274,10 @@ function formatTime(t?: string) {
 
     <!-- 重置密码 Modal -->
     <Modal v-model="showReset" title="重置密码" width="max-w-md">
-      <p class="text-sm text-cocoa-500 mb-4">为「{{ resetTarget?.name }}」设置新密码</p>
+      <p class="text-sm text-cocoa-500 mb-4">为「{{ resetTarget?.name }}」设置新密码（留空或保持默认即重置为 <b>1314520</b>）</p>
       <div>
         <label class="text-sm text-cocoa-500">新密码</label>
-        <input v-model="newPassword" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入新密码" />
+        <input v-model="newPassword" type="text" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="默认 1314520" />
       </div>
       <template #footer>
         <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showReset = false">取消</button>

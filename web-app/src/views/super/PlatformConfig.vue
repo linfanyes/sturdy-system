@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { Settings, Save, Loader2, Bot, MessageCircle, Boxes, RefreshCw } from 'lucide-vue-next'
+import { Settings, Save, Loader2, Bot, MessageCircle, Boxes, RefreshCw, Plus, X, Check } from 'lucide-vue-next'
 import request from '@/api/request'
 
 interface ConfigItem { key: string; value: string }
@@ -215,6 +215,10 @@ async function load() {
       }
       ;(form as any)[k] = v
     }
+    // 学科默认全选（首次加载或后端未配置时，默认勾选全部预设学科）
+    if (!form.defaultSubjects || !form.defaultSubjects.trim()) {
+      form.defaultSubjects = ALL_PRESET_SUBJECTS.join(',')
+    }
     // 推导服务商
     providerName.value = detectProvider(form.aiBaseUrl)
     form.aiProvider = providerName.value
@@ -259,6 +263,79 @@ const sourceBadge = computed(() =>
     ? { text: '默认（接口不可达）', cls: 'bg-amber-100 text-amber-700' }
     : { text: '', cls: '' },
 )
+
+// ==================== 学科管理（小学/初中/高中预设 + 自定义添加） ====================
+const SUBJECT_STAGES: Record<string, string[]> = {
+  '小学': ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术', '综合实践', '劳动', '书法', '心理健康'],
+  '初中': ['语文', '数学', '英语', '物理', '化学', '生物', '道德与法治', '历史', '地理', '音乐', '美术', '体育', '信息技术', '综合实践'],
+  '高中': ['语文', '数学', '英语', '物理', '化学', '生物', '思想政治', '历史', '地理', '通用技术', '信息技术', '音乐', '美术', '体育', '心理健康'],
+}
+const ALL_PRESET_SUBJECTS = [...new Set(Object.values(SUBJECT_STAGES).flat())]
+
+const selectedSubjects = computed<string[]>(() => {
+  const raw = form.defaultSubjects || ''
+  if (!raw.trim()) return []
+  return raw.split(',').map(s => s.trim()).filter(Boolean)
+})
+
+const customSubjects = computed<string[]>(() =>
+  selectedSubjects.value.filter(s => !ALL_PRESET_SUBJECTS.includes(s)),
+)
+
+function isSubjectSelected(name: string): boolean {
+  return selectedSubjects.value.includes(name)
+}
+
+function toggleSubject(name: string) {
+  const list = new Set(selectedSubjects.value)
+  if (list.has(name)) list.delete(name)
+  else list.add(name)
+  form.defaultSubjects = [...list].join(',')
+}
+
+function toggleStage(stage: string) {
+  const stageSubjects = SUBJECT_STAGES[stage]
+  const allSelected = stageSubjects.every(s => isSubjectSelected(s))
+  const list = new Set(selectedSubjects.value)
+  if (allSelected) {
+    stageSubjects.forEach(s => list.delete(s))
+  } else {
+    stageSubjects.forEach(s => list.add(s))
+  }
+  form.defaultSubjects = [...list].join(',')
+}
+
+function isStageAllSelected(stage: string): boolean {
+  return SUBJECT_STAGES[stage].every(s => isSubjectSelected(s))
+}
+
+function isAllSelected(): boolean {
+  return ALL_PRESET_SUBJECTS.every(s => isSubjectSelected(s))
+}
+
+function selectAllSubjects() {
+  form.defaultSubjects = ALL_PRESET_SUBJECTS.join(',')
+}
+
+const newCustomSubject = ref('')
+function addCustomSubject() {
+  const name = newCustomSubject.value.trim()
+  if (!name) return
+  if (ALL_PRESET_SUBJECTS.includes(name) || selectedSubjects.value.includes(name)) {
+    alert('该学科已存在')
+    return
+  }
+  const list = new Set(selectedSubjects.value)
+  list.add(name)
+  form.defaultSubjects = [...list].join(',')
+  newCustomSubject.value = ''
+}
+
+function removeCustomSubject(name: string) {
+  const list = new Set(selectedSubjects.value)
+  list.delete(name)
+  form.defaultSubjects = [...list].join(',')
+}
 </script>
 
 <template>
@@ -438,8 +515,83 @@ const sourceBadge = computed(() =>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="col-span-2">
-            <label :class="labelCls">默认学科（逗号分隔）</label>
-            <input v-model="form.defaultSubjects" :class="inputCls" class="mt-1" placeholder="如 语文,数学,英语" />
+            <div class="flex items-center justify-between mb-2">
+              <label :class="labelCls">默认学科（勾选启用，默认全选）</label>
+              <button
+                type="button"
+                class="text-xs text-butter-600 hover:text-butter-700 underline"
+                @click="selectAllSubjects"
+                v-if="!isAllSelected()"
+              >全选</button>
+            </div>
+            <!-- 按学段分组的学科勾选网格 -->
+            <div class="space-y-3 mt-1">
+              <div v-for="(subjects, stage) in SUBJECT_STAGES" :key="stage" class="border border-cream-200 rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 text-sm font-medium text-cocoa-700 hover:text-cocoa-900"
+                    @click="toggleStage(stage as string)"
+                  >
+                    <span
+                      class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors"
+                      :class="isStageAllSelected(stage as string) ? 'bg-butter-500 border-butter-500 text-white' : 'border-cream-300 bg-white'"
+                    >
+                      <Check v-if="isStageAllSelected(stage as string)" class="w-3.5 h-3.5" />
+                    </span>
+                    {{ stage }}
+                  </button>
+                  <span class="text-xs text-cocoa-400">{{ subjects.filter(s => isSubjectSelected(s)).length }}/{{ subjects.length }}</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="subj in subjects"
+                    :key="subj"
+                    type="button"
+                    class="px-3 py-1.5 rounded-lg text-sm transition-all border"
+                    :class="isSubjectSelected(subj)
+                      ? 'bg-butter-100 border-butter-300 text-butter-700 font-medium'
+                      : 'bg-white border-cream-200 text-cocoa-400 hover:border-cream-300'"
+                    @click="toggleSubject(subj)"
+                  >
+                    {{ subj }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- 自定义学科 -->
+            <div class="mt-3 border border-dashed border-cream-300 rounded-xl p-3">
+              <div class="text-sm font-medium text-cocoa-700 mb-2">自定义学科</div>
+              <div v-if="customSubjects.length" class="flex flex-wrap gap-2 mb-2">
+                <span
+                  v-for="cs in customSubjects"
+                  :key="cs"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-mint-100 border border-mint-300 text-mint-700 font-medium"
+                >
+                  {{ cs }}
+                  <button type="button" class="text-mint-500 hover:text-rose-500" @click="removeCustomSubject(cs)">
+                    <X class="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </div>
+              <div class="flex gap-2">
+                <input
+                  v-model="newCustomSubject"
+                  class="flex-1 px-3 py-1.5 rounded-lg border border-cream-200 text-sm focus:outline-none focus:border-butter-400"
+                  placeholder="输入自定义学科名称"
+                  @keydown.enter.prevent="addCustomSubject"
+                />
+                <button
+                  type="button"
+                  class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 disabled:opacity-60"
+                  :disabled="!newCustomSubject.trim()"
+                  @click="addCustomSubject"
+                >
+                  <Plus class="w-4 h-4" /> 添加
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-cocoa-400 mt-2">已选 {{ selectedSubjects.length }} 个学科：{{ selectedSubjects.join('、') || '无' }}</p>
           </div>
           <div>
             <label :class="labelCls">家长登录码</label>

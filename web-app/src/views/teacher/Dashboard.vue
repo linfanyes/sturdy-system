@@ -16,8 +16,9 @@ const greeting = computed(() => { const h = new Date().getHours(); return h < 6 
 async function load() {
   loading.value = true
   try {
-    const list = await listMyClasses()
-    classes.value = Array.isArray(list) ? list : []
+    const list = await listMyClasses() as any
+    // 后端 findAll 返回 {items, total}，也兼容直接返回数组的情况
+    classes.value = Array.isArray(list) ? list : (list?.items || [])
     const res = await getUnreadCount()
     unreadCount.value = res?.count ?? 0
   } catch { classes.value = [] } finally { loading.value = false }

@@ -62,16 +62,12 @@ function className(id: string) {
 }
 
 /* ============ 家长登录：开通/关闭 + 重置密码 ============ */
-function defaultPwd(s: StudentItem) {
-  return (s.studentNo || '').slice(-6)
-}
-
 async function toggleParentLogin(s: StudentItem) {
   try {
     const res = await apiToggleParentLogin(s.id)
     s.parentLoginEnabled = res.parentLoginEnabled
     if (res.parentLoginEnabled && res.initialPassword) {
-      alert(`已开通家长登录，默认口令为学号后6位：${res.initialPassword}`)
+      alert(`已开通家长登录，默认口令：${res.initialPassword}（请通知家长登录后尽快修改）`)
     }
   } catch (e: any) {
     alert(e?.message || '操作失败')
@@ -79,10 +75,10 @@ async function toggleParentLogin(s: StudentItem) {
 }
 
 async function resetParentPwd(s: StudentItem) {
-  if (!confirm(`确定将「${s.name}」的家长登录口令重置为学号后6位（${defaultPwd(s)}）？`)) return
+  if (!confirm(`确定将「${s.name}」的家长登录口令重置为默认密码 123456？`)) return
   try {
     const res = await resetParentPassword(s.id)
-    alert(`已重置为学号后6位：${res.defaultPassword}`)
+    alert(`已重置为默认密码：${res.defaultPassword}`)
   } catch (e: any) {
     alert(e?.message || '重置失败')
   }
@@ -257,7 +253,7 @@ function handlePrint() {
                   {{ s.parentLoginEnabled ? '已开通' : '未开通' }}
                 </span>
                 <template v-if="s.parentLoginEnabled">
-                  <span class="text-xs text-cocoa-400">默认口令：学号后6位（{{ defaultPwd(s) }}）</span>
+                  <span class="text-xs text-cocoa-400">默认口令：123456</span>
                   <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="resetParentPwd(s)">重置密码</button>
                 </template>
                 <button

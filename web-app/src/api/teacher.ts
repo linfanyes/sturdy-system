@@ -56,9 +56,12 @@ export function listClassStudents(classId: string) {
   return request.get<any, TeacherStudent[]>('/students', { params: { classId } })
 }
 
-/** 获取班级成员（协作教师） */
+/** 获取班级成员（协作教师）
+ * 注意：后端用 POST /classes/:id/members/list 查询（避免与基类 GET :id 路由冲突），
+ * POST /classes/:id/members 是"添加科任老师"，GET /classes/:id/members 无对应路由会 404。
+ */
 export function listClassMembers(classId: string) {
-  return request.get<any, ClassMember[]>('/classes/' + classId + '/members')
+  return request.post<any, ClassMember[]>('/classes/' + classId + '/members/list')
 }
 
 /* ============ 班级运营：轮值/值日/班费/活动/风采 ============ */

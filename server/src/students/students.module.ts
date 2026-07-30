@@ -18,7 +18,6 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
 import { hashPassword } from '../common/utils/password.util'
-import * as crypto from 'node:crypto'
 import { AuditService } from '../audit/audit.service'
 import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
@@ -258,10 +257,10 @@ class StudentsService extends CrudService<Student> {
       s.parentPasswordHash = null
       s.parentId = ''
     } else {
-      // 开启时默认口令 = 8位随机 hex，由老师告知家长
+      // 开启时默认口令 = 123456（统一默认口令，由老师告知家长，家长登录后可自行修改）
       const no = (s.studentNo || '').trim()
       if (!no) throw new BadRequestException('该学生缺少学号，无法设置默认口令，请先补全学号')
-      initialPassword = crypto.randomBytes(4).toString('hex')
+      initialPassword = '123456'
       s.parentPasswordHash = hashPassword(initialPassword)
     }
     await this.repo.save(s)
@@ -273,14 +272,14 @@ class StudentsService extends CrudService<Student> {
     return { studentId, parentLoginEnabled: s.parentLoginEnabled, initialPassword }
   }
 
-  /** 班主任重置家长登录口令为默认口令（随机 hex） */
+  /** 班主任重置家长登录口令为默认口令 123456 */
   async resetParentPassword(teacherId: string, studentId: string) {
     const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
     if (!s) throw new BadRequestException('学生不存在')
     if (!s.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未开启，无法重置')
     const no = (s.studentNo || '').trim()
     if (!no) throw new BadRequestException('该学生缺少学号，无法重置为默认口令')
-    const defaultPassword = crypto.randomBytes(4).toString('hex')
+    const defaultPassword = '123456'
     s.parentPasswordHash = hashPassword(defaultPassword)
     await this.repo.save(s)
     // 审计日志
