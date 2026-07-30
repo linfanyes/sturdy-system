@@ -27,6 +27,8 @@ class ScheduleService extends CrudService<ScheduleItem> {
   constructor(@InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>) {
     super(repo)
   }
+
+  protected requiredCreateFields = ['classId']
 }
 @Roles('teacher')
 @Controller('schedules')

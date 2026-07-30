@@ -85,6 +85,10 @@ async function bootstrap() {
 
   // 托管 web-app 构建产物（新版 Vue3+Vite Web 管理端）
   const webAdminPath = join(__dirname, '..', '..', 'web-app', 'dist')
+  // 静态托管目录缺失时仅告警，不阻塞启动（避免 dist 未构建导致静默异常）
+  if (!fs.existsSync(webAdminPath)) {
+    console.warn('⚠️ web-app/dist 不存在，静态托管将跳过（请先执行 web-app 构建）')
+  }
   app.use(express.static(webAdminPath))
 
   // —— 安全启动自检 ——

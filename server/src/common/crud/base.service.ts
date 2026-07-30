@@ -1,6 +1,7 @@
 import { Repository, FindOptionsWhere, In } from 'typeorm'
 import { NotFoundException } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
+import { BusinessException } from '../exceptions/business.exception'
 
 /**
  * 通用 CRUD 服务基类，统一按 teacherId 做数据隔离。
@@ -14,6 +15,9 @@ import { ClassMemberService } from '../../class-members/class-members.module'
 export class CrudService<T extends { id: string; teacherId: string }> {
   /** 可选的班级成员服务，用于按班级集合过滤（非所有模块都需要） */
   protected classMemberSvc: ClassMemberService | null = null
+
+  /** 子类可覆盖：创建时必须提供的业务字段（缺省将返回 400，不再落到 DB 层报错） */
+  protected requiredCreateFields: string[] = []
 
   constructor(protected readonly repo: Repository<T>) {}
 
@@ -99,6 +103,13 @@ export class CrudService<T extends { id: string; teacherId: string }> {
   }
 
   async create(teacherId: string, dto: any): Promise<T> {
+    const missing = (this.requiredCreateFields || []).filter((f) => {
+      const v = (dto as any)?.[f]
+      return v === undefined || v === null || v === ''
+    })
+    if (missing.length) {
+      throw new BusinessException('MISSING_REQUIRED_FIELD', '请完整填写必填项（缺少: ' + missing.join('、') + '）')
+    }
     const e = this.repo.create({ ...dto, teacherId } as any)
     return (await this.repo.save(e)) as unknown as T
   }

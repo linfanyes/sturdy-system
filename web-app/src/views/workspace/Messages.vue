@@ -28,6 +28,7 @@ const items = ref<AppMessage[]>([])
 const total = ref(0)
 const skip = ref(0)
 const activeTab = ref('')
+const errorMsg = ref('')
 
 const page = computed(() => Math.floor(skip.value / PAGE_SIZE) + 1)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
@@ -74,6 +75,7 @@ function formatTime(createdAt: string): string {
 
 async function loadList() {
   loading.value = true
+  errorMsg.value = ''
   try {
     const res = await listMessages(skip.value, PAGE_SIZE)
     if (Array.isArray(res)) {
@@ -84,7 +86,7 @@ async function loadList() {
       total.value = res?.total || items.value.length
     }
   } catch (e: any) {
-    alert(e?.message || '加载消息失败')
+    errorMsg.value = e?.message || '加载消息失败'
     items.value = []
   } finally {
     loading.value = false
@@ -97,7 +99,7 @@ async function handleMarkRead(item: AppMessage) {
     await markMessageRead(item.id)
     item.read = true
   } catch (e: any) {
-    alert(e?.message || '标记已读失败')
+    errorMsg.value = e?.message || '标记已读失败'
   }
 }
 
@@ -161,6 +163,11 @@ onMounted(() => {
     <div v-if="loading" class="flex items-center justify-center py-12 text-cocoa-400">
       <Loader2 class="w-6 h-6 animate-spin mr-2" />
       加载中…
+    </div>
+
+    <!-- 错误提示 -->
+    <div v-if="errorMsg" class="rounded-xl p-4 border border-sakura-200 bg-sakura-50 text-sakura-700">
+      ⚠️ {{ errorMsg }}
     </div>
 
     <!-- 列表 -->

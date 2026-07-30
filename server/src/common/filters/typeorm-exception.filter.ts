@@ -50,10 +50,10 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
       let message: string
       switch (exception.code) {
         case 'ER_DATA_TOO_LONG':
-          message = `字段值过长: ${exception.sqlMessage?.match(/for column '(.+?)'/)?.[1] || ''}`
+          message = '字段值超出允许的长度限制'
           break
         case 'ER_BAD_NULL_ERROR':
-          message = `字段不能为空: ${exception.sqlMessage?.match(/for column '(.+?)'/)?.[1] || ''}`
+          message = '必填字段缺失或为空，请检查表单后重试'
           break
         case 'ER_DUP_ENTRY':
           message = '数据重复，该记录已存在'
@@ -62,7 +62,7 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
           message = '关联数据不存在，请检查引用的ID是否正确'
           break
         default:
-          message = `请求数据校验失败: ${exception.message?.slice(0, 120) || '输入参数不正确'}`
+          message = '请求数据校验失败，请检查输入参数'
       }
       return response.status(HttpStatus.BAD_REQUEST).json({
         statusCode: HttpStatus.BAD_REQUEST,
