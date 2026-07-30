@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
@@ -335,9 +335,12 @@ export class AdminService implements OnModuleInit {
     return { ok: true }
   }
 
-  /** 重置管理员密码 */
+  /** 重置管理员密码（密码长度 6-20 位） */
   async resetAdminPassword(id: string, newPassword: string) {
     if (!newPassword) throw new BadRequestException('新密码必填')
+    if (newPassword.length < 6 || newPassword.length > 20) {
+      throw new BadRequestException('密码长度须为 6-20 位')
+    }
     const a = await this.saRepo.findOne({ where: { id } })
     if (!a) throw new BadRequestException('管理员不存在')
     a.passwordHash = hashPassword(newPassword)
@@ -383,6 +386,10 @@ export class AdminService implements OnModuleInit {
    */
   async resetAll(confirmed: boolean, operator = 'super') {
     if (!confirmed) throw new BadRequestException('请确认全量重置操作（confirm: true）。此操作将清除所有学校和教师数据，不可逆！')
+    // 生产环境禁止一键全量重置：与项目"演示模式仅非生产启用"约定一致，作为 confirm 之外的纵深防御
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('生产环境禁止一键全量重置操作')
+    }
     await this.entityManager.transaction(async (em) => {
       const teacherTables = [
         'picker_history', 'todos', 'notes', 'ai_settings', 'app_config', 'audit_logs',

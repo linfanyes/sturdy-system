@@ -1,0 +1,43 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 教学管理
+          - generic [ref=e784]: 我获奖啦
+        - heading "我获奖啦" [level=1] [ref=e1834]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e1835]:
+        - generic [ref=e1836]:
+          - heading "获奖记录管理" [level=1] [ref=e1837]
+          - generic [ref=e1838]:
+            - textbox "搜索" [ref=e1843]
+            - button "新增" [ref=e1844] [cursor=pointer]
+        - table [ref=e1847]:
+          - rowgroup [ref=e1848]:
+            - row [ref=e1849]:
+              - columnheader "班级" [ref=e1850]
+              - columnheader "学生" [ref=e1851]
+              - columnheader "奖项名称" [ref=e1852]
+              - columnheader "类别" [ref=e1853]
+              - columnheader "级别" [ref=e1854]
+              - columnheader "获奖日期" [ref=e1855]
+              - columnheader "操作" [ref=e1856]
+          - rowgroup [ref=e1857]:
+            - row [ref=e1858]:
+              - cell "暂无数据" [ref=e1859]
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

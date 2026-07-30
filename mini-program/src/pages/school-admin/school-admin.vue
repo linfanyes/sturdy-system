@@ -114,6 +114,8 @@
               <text class="badge on">{{ c.headTeacher }}</text>
             </view>
             <view class="meta">年级：{{ c.grade }} · 班号：{{ c.classNo }} · 学期：{{ c.term || '未设置' }}</view>
+            <view class="meta" v-if="c.subjects && c.subjects.length">学科：{{ c.subjects.join('、') }}</view>
+            <view class="meta" v-else style="color:var(--c-warn,var(--c-sub))">学科：未设置</view>
           </view>
           <view class="acts">
             <text class="act del" @click.stop="delClass(c)">删除</text>
@@ -152,6 +154,11 @@
             <view class="form-item">
               <text class="label">学期</text>
               <input v-model="classForm.term" class="inp" placeholder="如：2026春季学期" />
+            </view>
+            <view class="form-item">
+              <text class="label">班主任任教学科</text>
+              <input v-model="classForm.subjectsText" class="inp" placeholder="如：语文,数学,英语" />
+              <text class="hint">多个学科用逗号分隔</text>
             </view>
           </scroll-view>
           <view class="full-foot">
@@ -311,7 +318,7 @@
             每行一条：姓名,用户名,密码（英文逗号分隔）
             例如：张三,zhangsan,123456
           </view>
-          <textarea v-model="batchText" class="inp batch-area" placeholder="张三,zhangsan,123456&#10;李四,lisi,123456" />
+          <textarea v-model="batchText" class="inp batch-area" placeholder="张三,zhangsan,123456（每行一条）" />
           <view v-if="batchResult.length" class="batch-result">
             <view class="batch-summary">共 {{ batchResult.length }} 条，成功 {{ batchResult.filter(r => r.status==='成功').length }}/{{ batchResult.length }}</view>
             <view class="batch-item" :class="r.status==='成功'?'ok':'fail'" v-for="r in batchResult" :key="r.username">
@@ -330,7 +337,8 @@
     <view v-if="pwdUser" class="mask" @click="pwdUser=null">
       <view class="sheet" @click.stop>
         <view class="sh-t">重置「{{ pwdUser.name }}」密码</view>
-        <view class="inp-wrap"><input v-model="newPwd" class="inp" placeholder="新密码" password /></view>
+        <view class="inp-wrap"><input v-model="newPwd" class="inp" placeholder="新密码（6-20位）" password /></view>
+        <view class="sh-sub">默认密码 1314521，也可自行设置（6-20位）</view>
         <button class="btn" :disabled="saving" @click="doResetPwd">确认重置</button>
       </view>
     </view>
@@ -381,7 +389,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { setMockMode } from '../../common/request'
-import { DEMO_MODE_ENABLED } from '../../common/config'
+import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
 import { auth, setAuth } from '../../common/store'
 import { isPhone } from '../../common/validators'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
@@ -418,9 +426,6 @@ const phoneError = ref('')
 
 const featUser = ref(null), sel = ref([])
 const pwdUser = ref(null), newPwd = ref('')
-
-const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53'
-const CLOUDRUN_SERVICE = 'tec-work'
 
 const allFeatures = [
   // 班级与学生
@@ -637,11 +642,21 @@ async function saveFeatures() {
 function resetPwd(u) { pwdUser.value = u; newPwd.value = '' }
 async function doResetPwd() {
   if (!newPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
+  if (newPwd.value.length < 6 || newPwd.value.length > 20) {
+    return uni.showToast({ title: '密码须为6-20位字符', icon: 'none' })
+  }
   saving.value = true
   try {
-    await apiCall('POST', '/school-admin/teachers/' + pwdUser.value.id + '/reset-password', { password: newPwd.value })
+    const r = await apiCall('POST', '/school-admin/teachers/' + pwdUser.value.id + '/reset-password', { password: newPwd.value })
     pwdUser.value = null
-    uni.showToast({ title: '已重置', icon: 'success' })
+    // 显示实际生效的密码（若后端因长度合规要求自动生成了随机密码，需要告知管理员）
+    const actualPwd = (r && r.defaultPassword) || newPwd.value
+    uni.showModal({
+      title: '密码已重置',
+      content: '新密码：' + actualPwd + '\n请将此密码告知教师',
+      showCancel: false,
+      confirmText: '知道了',
+    })
   } catch (e) {
     uni.showToast({ title: e.message || '重置失败', icon: 'none' })
   }
@@ -727,7 +742,7 @@ function downloadBlob(data, name) {
 const classes = ref([])
 const showClassForm = ref(false)
 const editingClassId = ref('')
-const classForm = ref({ name: '', grade: '', classNo: '', headTeacherId: '', term: '' })
+const classForm = ref({ name: '', grade: '', classNo: '', headTeacherId: '', term: '', subjectsText: '' })
 const className = computed(() => {
   const g = classForm.value.grade
   const n = classForm.value.classNo
@@ -751,7 +766,7 @@ async function loadClasses() {
 
 function openCreateClass() {
   editingClassId.value = ''
-  classForm.value = { name: '', grade: '', classNo: '', headTeacherId: '', term: '' }
+  classForm.value = { name: '', grade: '', classNo: '', headTeacherId: '', term: '', subjectsText: '' }
   showClassForm.value = true
 }
 
@@ -760,6 +775,7 @@ function openEditClass(c) {
   classForm.value = {
     name: c.name || '', grade: c.grade || '', classNo: c.classNo || '',
     headTeacherId: c.teacherId || '', term: c.term || '',
+    subjectsText: (c.subjects && c.subjects.length) ? c.subjects.join(',') : '',
   }
   showClassForm.value = true
 }
@@ -776,9 +792,10 @@ async function saveClass() {
   if (!autoName || !f.grade || !f.headTeacherId) {
     return uni.showToast({ title: '年级/班号/班主任必填', icon: 'none' })
   }
+  const subjects = f.subjectsText ? f.subjectsText.split(/[,，]/).map(s => s.trim()).filter(Boolean) : []
   saving.value = true
   try {
-    const payload = { name: autoName, grade: f.grade, classNo: f.classNo, headTeacherId: f.headTeacherId, term: f.term }
+    const payload = { name: autoName, grade: f.grade, classNo: f.classNo, headTeacherId: f.headTeacherId, term: f.term, subjects }
     if (editingClassId.value) {
       await apiCall('PATCH', '/school-admin/classes/' + editingClassId.value, payload)
       showClassForm.value = false

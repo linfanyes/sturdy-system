@@ -1,0 +1,55 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 课堂工具
+          - generic [ref=e784]: 课堂计算器
+        - heading "课堂计算器" [level=1] [ref=e3013]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e3014]:
+        - heading "课堂计算器" [level=1] [ref=e3015]
+        - generic [ref=e3018]:
+          - generic [ref=e3019]: "0"
+          - generic [ref=e3022]:
+            - button "C" [ref=e3023] [cursor=pointer]
+            - button "⌫" [ref=e3024] [cursor=pointer]
+            - button "(" [ref=e3025] [cursor=pointer]
+            - button ")" [ref=e3026] [cursor=pointer]
+            - button "7" [ref=e3027] [cursor=pointer]
+            - button "8" [ref=e3028] [cursor=pointer]
+            - button "9" [ref=e3029] [cursor=pointer]
+            - button "÷" [ref=e3030] [cursor=pointer]
+            - button "4" [ref=e3031] [cursor=pointer]
+            - button "5" [ref=e3032] [cursor=pointer]
+            - button "6" [ref=e3033] [cursor=pointer]
+            - button "×" [ref=e3034] [cursor=pointer]
+            - button "1" [ref=e3035] [cursor=pointer]
+            - button "2" [ref=e3036] [cursor=pointer]
+            - button "3" [ref=e3037] [cursor=pointer]
+            - button "−" [ref=e3038] [cursor=pointer]
+            - button "0" [ref=e3039] [cursor=pointer]
+            - button "." [ref=e3040] [cursor=pointer]
+            - button "=" [ref=e3041] [cursor=pointer]
+            - button "+" [ref=e3042] [cursor=pointer]
+        - generic [ref=e3043]:
+          - generic [ref=e3044]:
+            - heading "历史记录" [level=2] [ref=e3049]
+            - generic [ref=e3050]: 最近 5 条
+          - generic [ref=e3051]: 暂无记录
+          - paragraph [ref=e3052]: 点击记录可复用结果
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

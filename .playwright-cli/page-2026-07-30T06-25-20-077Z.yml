@@ -1,0 +1,52 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 课堂工具
+          - generic [ref=e784]: 随机点名
+        - heading "随机点名" [level=1] [ref=e2854]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e2855]:
+        - heading "随机点名" [level=1] [ref=e2856]
+        - generic [ref=e2863]:
+          - generic [ref=e2864]:
+            - text: 班级
+            - combobox [ref=e2865]:
+              - option "不绑定班级" [selected]
+          - button "从班级导入" [ref=e2866] [cursor=pointer]
+        - generic [ref=e2870]:
+          - generic [ref=e2871]:
+            - heading "学生名单" [level=2] [ref=e2877]
+            - generic [ref=e2878]: 共 0 人
+          - textbox "每行输入一个名字" [ref=e2879]
+        - generic [ref=e2880]:
+          - heading "抽取模式" [level=2] [ref=e2881]
+          - generic [ref=e2883]:
+            - button "单人" [ref=e2884] [cursor=pointer]
+            - button "多人" [ref=e2885] [cursor=pointer]
+            - button "去重" [ref=e2886] [cursor=pointer]
+        - generic [ref=e2887]:
+          - generic [ref=e2888]: 点击开始抽取
+          - button "开始抽取" [ref=e2889] [cursor=pointer]
+        - generic [ref=e2890]:
+          - generic [ref=e2891]:
+            - heading "历史记录" [level=2] [ref=e2896]
+            - generic [ref=e2897]: 最近 10 条
+            - button [ref=e2898] [cursor=pointer]
+          - generic [ref=e2902]: 暂无记录
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

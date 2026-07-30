@@ -1,0 +1,37 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 课堂工具
+          - generic [ref=e784]: 笑口常开
+        - heading "笑口常开" [level=1] [ref=e3097]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e3098]:
+        - heading "笑口常开" [level=1] [ref=e3099]
+        - generic [ref=e3105]:
+          - generic [ref=e3106] [cursor=pointer]: 👆 点击花朵
+          - generic [ref=e3126]: 一朵花骨朵，等待你轻轻点击…
+          - button "重新开始" [ref=e3128] [cursor=pointer]
+        - generic [ref=e3141]:
+          - heading "玩法" [level=2] [ref=e3142]
+          - list [ref=e3143]:
+            - listitem [ref=e3144]: 点击花朵，每次花瓣都会展开一些
+            - listitem [ref=e3145]: 点击满 8 次，花朵完全盛开
+            - listitem [ref=e3146]: 盛开后会随机出现一句祝福语
+            - listitem [ref=e3147]: 点击「重新开始」可让花朵变回花骨朵
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

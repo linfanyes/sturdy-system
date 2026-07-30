@@ -132,8 +132,9 @@ function clearAllFeatures() { selectedFeatures.value = [] }
 async function handleResetPassword(t: TeacherItem) {
   if (!confirm(`确定重置 ${t.name} 的密码为默认密码？`)) return
   try {
-    await resetTeacherPassword(t.id)
-    alert('密码已重置')
+    const r = await resetTeacherPassword(t.id)
+    const pwd = r?.defaultPassword
+    alert(pwd ? `密码已重置为：${pwd}\n请通知老师用此密码登录，并尽快修改。` : '密码已重置')
   } catch (e: any) {
     alert(e?.message || '重置失败')
   }

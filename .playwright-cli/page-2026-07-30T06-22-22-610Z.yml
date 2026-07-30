@@ -1,0 +1,72 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 个人空间
+          - generic [ref=e784]: 设置
+        - heading "设置" [level=1] [ref=e1086]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e1087]:
+        - heading "配置中心" [level=1] [ref=e1088]
+        - generic [ref=e1089]:
+          - button "AI 配置" [ref=e1090] [cursor=pointer]
+          - button "应用配置" [ref=e1094] [cursor=pointer]
+        - generic [ref=e1098]:
+          - generic [ref=e1099]: ⚠️ API Key 属敏感信息，请勿在公共环境泄露；仅保存在你自己的账号下。 默认继承管理员的平台配置，你可在本页按需自定义。
+          - generic [ref=e1100]:
+            - generic [ref=e1101]:
+              - text: 服务商
+              - combobox [ref=e1102]
+            - generic [ref=e1103]:
+              - text: 接口地址
+              - textbox "AI 接口地址" [ref=e1104]
+          - generic [ref=e1105]:
+            - text: API Key
+            - textbox "sk-..." [ref=e1106]
+          - generic [ref=e1107]:
+            - generic [ref=e1108]:
+              - text: 文本模型
+              - combobox [ref=e1109]:
+                - option "自定义…" [selected]
+              - textbox "输入模型名" [ref=e1110]
+            - generic [ref=e1111]:
+              - text: 多模态模型
+              - combobox [ref=e1112]:
+                - option "自定义…" [selected]
+              - textbox "自定义模型名" [ref=e1113]
+          - generic [ref=e1114]:
+            - text: 温度（0.7）
+            - generic [ref=e1115]:
+              - slider [ref=e1116]: "0.7"
+              - spinbutton [ref=e1117]: "0.7"
+          - generic [ref=e1118]:
+            - text: AI 名字
+            - textbox "AI 名字" [ref=e1119]: 小林子
+          - generic [ref=e1120]:
+            - text: 系统提示词
+            - textbox "系统提示词（描述 AI 角色与回答风格）" [ref=e1121]
+          - generic [ref=e1122]:
+            - group [ref=e1123]:
+              - generic "▶ 场景模型覆盖" [ref=e1124] [cursor=pointer]:
+                - generic [ref=e1125]: ▶
+                - text: 场景模型覆盖
+            - generic [ref=e1126]: 每个场景可单独指定模型名，不填则使用上方默认文本模型
+          - generic [ref=e1127]:
+            - button "恢复默认" [ref=e1128] [cursor=pointer]
+            - button "保存 AI 配置" [ref=e1134] [cursor=pointer]
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

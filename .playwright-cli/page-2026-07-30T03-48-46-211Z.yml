@@ -1,0 +1,152 @@
+- generic [ref=e707]:
+  - complementary [ref=e708]:
+    - generic [ref=e709]: 园
+    - navigation [ref=e710]:
+      - button "工作台" [ref=e711] [cursor=pointer]
+      - button "教学管理" [active] [ref=e719] [cursor=pointer]
+      - button "AI 与备课" [ref=e727] [cursor=pointer]
+      - button "课堂工具" [ref=e733] [cursor=pointer]
+      - button "教师办公" [ref=e738] [cursor=pointer]
+      - button "个人空间" [ref=e744] [cursor=pointer]
+    - button "退出登录" [ref=e755] [cursor=pointer]
+  - complementary [ref=e759]:
+    - generic [ref=e760]:
+      - generic [ref=e761]:
+        - button "园丁工作台" [ref=e762] [cursor=pointer]
+        - generic [ref=e765]: 教学管理
+      - heading "教学管理" [level=2] [ref=e862]
+      - paragraph [ref=e767]: 点击图标进入相应功能
+    - generic [ref=e863]:
+      - generic [ref=e864]:
+        - heading "班级与学生" [level=3] [ref=e865]
+        - generic [ref=e867]: "6"
+      - generic [ref=e868]:
+        - button "👥 班级成员" [ref=e869] [cursor=pointer]:
+          - generic [ref=e870]: 👥
+          - generic [ref=e872]: 班级成员
+        - button "📋 轮值表" [ref=e873] [cursor=pointer]:
+          - generic [ref=e874]: 📋
+          - generic [ref=e876]: 轮值表
+        - button "💰 班费" [ref=e877] [cursor=pointer]:
+          - generic [ref=e878]: 💰
+          - generic [ref=e880]: 班费
+        - button "🎉 班级活动" [ref=e881] [cursor=pointer]:
+          - generic [ref=e882]: 🎉
+          - generic [ref=e884]: 班级活动
+        - button "🏆 班级风采" [ref=e885] [cursor=pointer]:
+          - generic [ref=e886]: 🏆
+          - generic [ref=e888]: 班级风采
+        - button "我的相册" [ref=e889] [cursor=pointer]
+    - generic [ref=e895]:
+      - generic [ref=e896]:
+        - heading "学情与考试" [level=3] [ref=e897]
+        - generic [ref=e899]: "6"
+      - generic [ref=e900]:
+        - button "📝 考试管理" [ref=e901] [cursor=pointer]:
+          - generic [ref=e902]: 📝
+          - generic [ref=e904]: 考试管理
+        - button "📊 成绩管理" [ref=e905] [cursor=pointer]:
+          - generic [ref=e906]: 📊
+          - generic [ref=e908]: 成绩管理
+        - button "📈 考试分析" [ref=e909] [cursor=pointer]:
+          - generic [ref=e910]: 📈
+          - generic [ref=e912]: 考试分析
+        - button "🎯 数据看板" [ref=e913] [cursor=pointer]:
+          - generic [ref=e914]: 🎯
+          - generic [ref=e916]: 数据看板
+        - button "✅ 考勤" [ref=e917] [cursor=pointer]:
+          - generic [ref=e918]: ✅
+          - generic [ref=e920]: 考勤
+        - button "📓 作业" [ref=e921] [cursor=pointer]:
+          - generic [ref=e922]: 📓
+          - generic [ref=e924]: 作业
+    - generic [ref=e925]:
+      - generic [ref=e926]:
+        - heading "学生评价" [level=3] [ref=e927]
+        - generic [ref=e929]: "9"
+      - generic [ref=e930]:
+        - button "🏅 奖励记录" [ref=e931] [cursor=pointer]:
+          - generic [ref=e932]: 🏅
+          - generic [ref=e934]: 奖励记录
+        - button "➕ 加减分记录" [ref=e935] [cursor=pointer]:
+          - generic [ref=e936]: ➕
+          - generic [ref=e938]: 加减分记录
+        - button "👨‍👩‍👧‍👦 小组评分" [ref=e939] [cursor=pointer]:
+          - generic [ref=e940]: 👨‍👩‍👧‍👦
+          - generic [ref=e942]: 小组评分
+        - button "排行榜" [ref=e943] [cursor=pointer]
+        - button "🌱 成长记录" [ref=e949] [cursor=pointer]:
+          - generic [ref=e950]: 🌱
+          - generic [ref=e952]: 成长记录
+        - button "📝 行为记录" [ref=e953] [cursor=pointer]:
+          - generic [ref=e954]: 📝
+          - generic [ref=e956]: 行为记录
+        - button "📚 课外阅读" [ref=e957] [cursor=pointer]:
+          - generic [ref=e958]: 📚
+          - generic [ref=e960]: 课外阅读
+        - button "🌅 学生打卡" [ref=e961] [cursor=pointer]:
+          - generic [ref=e962]: 🌅
+          - generic [ref=e964]: 学生打卡
+        - button "🎉 我获奖啦" [ref=e965] [cursor=pointer]:
+          - generic [ref=e966]: 🎉
+          - generic [ref=e968]: 我获奖啦
+    - generic [ref=e969]:
+      - generic [ref=e970]:
+        - heading "家校沟通" [level=3] [ref=e971]
+        - generic [ref=e973]: "4"
+      - generic [ref=e974]:
+        - button "家长联系" [ref=e975] [cursor=pointer]
+        - button "家校沟通" [ref=e980] [cursor=pointer]
+        - button "公告" [ref=e985] [cursor=pointer]
+        - button "通知模板" [ref=e991] [cursor=pointer]
+  - main [ref=e776]:
+    - generic [ref=e777]:
+      - generic [ref=e778]:
+        - navigation "breadcrumb" [ref=e779]:
+          - generic [ref=e783]: 园丁工作台
+          - generic [ref=e786]: 教学管理
+          - generic [ref=e789]: 教师工作台
+        - heading "教师工作台" [level=1] [ref=e790]
+      - generic [ref=e791]:
+        - generic [ref=e792]: 教师
+        - generic [ref=e793]: 2026年7月30日星期四
+    - generic [ref=e795]:
+      - generic [ref=e796]:
+        - generic [ref=e798]:
+          - generic [ref=e802]:
+            - generic [ref=e803]: 上午好，王老师
+            - generic [ref=e804]: 麻城第九小学
+          - button [ref=e810] [cursor=pointer]
+        - generic [ref=e814]:
+          - generic [ref=e815]:
+            - generic [ref=e816]: 班级
+            - generic [ref=e820]: "0"
+          - generic [ref=e821]:
+            - generic [ref=e822]: 任教班级
+            - generic [ref=e828]: "0"
+          - generic [ref=e829]:
+            - generic [ref=e830]: 待办
+            - generic [ref=e834]: "0"
+          - generic [ref=e835]:
+            - generic [ref=e836]: 功能权限
+            - generic [ref=e839]: 全部
+        - generic [ref=e840]:
+          - heading "快捷工具" [level=2] [ref=e841]
+          - generic [ref=e844]:
+            - button "✅ 记考勤" [ref=e845] [cursor=pointer]:
+              - generic [ref=e846]: ✅
+              - generic [ref=e847]: 记考勤
+            - button "📝 布置作业" [ref=e848] [cursor=pointer]:
+              - generic [ref=e849]: 📝
+              - generic [ref=e850]: 布置作业
+            - button "📢 发通知" [ref=e851] [cursor=pointer]:
+              - generic [ref=e852]: 📢
+              - generic [ref=e853]: 发通知
+            - button "🤖 AI 对话" [ref=e854] [cursor=pointer]:
+              - generic [ref=e855]: 🤖
+              - generic [ref=e856]: AI 对话
+        - generic [ref=e857]:
+          - generic [ref=e858]: 📚
+          - generic [ref=e859]: 暂无班级
+          - generic [ref=e860]: 你还没有被分配到班级，请联系学校管理员
+      - generic [ref=e861]: © 2026 园丁工作台 · Web 管理端

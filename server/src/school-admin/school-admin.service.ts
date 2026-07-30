@@ -72,13 +72,19 @@ export class SchoolAdminService {
     const totalStudents = classIds.length
       ? await this.studentRepo.count({ where: classIds.map(id => ({ classId: id })) })
       : 0
-    // 今日考勤率
+    // 今日真实学生出勤率：出勤学生数 / 应到学生数（仅统计今天有考勤记录的班级）
     const today = new Date().toISOString().slice(0, 10)
     const todayAtts = classIds.length
       ? await this.attRepo.find({ where: classIds.flatMap(id => ({ classId: id, date: today })) })
       : []
-    const attPresent = todayAtts.filter(a => a.records?.some(r => r.status === '出勤' || r.status === 'present')).length
-    const attendanceRate = todayAtts.length > 0 ? Math.round((attPresent / todayAtts.length) * 100) : null
+    let expectedStudents = 0
+    let presentStudents = 0
+    for (const att of todayAtts) {
+      const stuCount = await this.studentRepo.count({ where: { classId: att.classId } })
+      expectedStudents += stuCount
+      presentStudents += (att.records || []).filter(r => r.status === '出勤' || r.status === 'present').length
+    }
+    const attendanceRate = expectedStudents > 0 ? Math.round((presentStudents / expectedStudents) * 100) : null
     // 待批改作业
     const pendingHomework = classIds.length
       ? await this.hwRepo.count({ where: classIds.flatMap(id => ({ classId: id, status: '待批改' })) })
@@ -204,8 +210,8 @@ export class SchoolAdminService {
     return { total: teachers.length, success: results.filter(r => r.status === '成功').length, failed: results.filter(r => r.status === '失败').length, results }
   }
 
-  /** 更新教师基本信息（用户名唯一性校验） */
-  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; enabled?: boolean }) {
+  /** 更新教师基本信息（用户名唯一性校验，支持密码修改） */
+  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; enabled?: boolean; password?: string }) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     if (dto.username && dto.username !== user.username) {
@@ -218,18 +224,33 @@ export class SchoolAdminService {
     if (dto.gender !== undefined) user.gender = dto.gender
     if (dto.subject !== undefined) user.subject = dto.subject
     if (dto.enabled !== undefined) user.enabled = dto.enabled
+    // 密码修改：长度 6-20 位
+    if (dto.password) {
+      if (dto.password.length < 6 || dto.password.length > 20) {
+        throw new BadRequestException('密码长度须为 6-20 位')
+      }
+      user.passwordHash = hashPassword(dto.password)
+    }
     await this.userRepo.save(user)
     return { ok: true }
   }
 
-  /** 重置教师密码 */
+  /** 重置教师密码
+   * 密码长度要求 6-20 位（与需求「所有密码修改时，长度须不少于6位字符且不超过20位字符」一致）。
+   * 未提供合规密码时，自动生成随机默认密码并返回。
+   * 常见默认密码：1314521（7位）/ 1314520（7位）/ 123456（6位）等均在允许范围内。
+   */
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
-    if (!newPassword || newPassword.length < 8)
-      throw new BadRequestException('新密码至少 8 位')
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
-    user.passwordHash = hashPassword(newPassword)
-    return this.userRepo.save(user)
+    let pwd = newPassword
+    if (!pwd || pwd.length < 6 || pwd.length > 20) {
+      // 密码不符合合规（6-20 位）时，自动生成随机默认密码 8 位
+      pwd = crypto.randomBytes(4).toString('hex').toUpperCase() + Math.floor(Math.random() * 90 + 10)
+    }
+    user.passwordHash = hashPassword(pwd)
+    await this.userRepo.save(user)
+    return { ok: true, defaultPassword: pwd }
   }
 
   /** 删除教师账号及所有关联数据，保留学生但禁用家长登录（事务保护） */
@@ -327,6 +348,7 @@ export class SchoolAdminService {
     const c = this.classRepo.create({
       teacherId: teacher.id, name: dto.name, grade: dto.grade, classNo: dto.classNo || '1',
       headTeacher: dto.headTeacher || teacher.name, term,
+      subjects: dto.subjects || [],
     })
     const saved = await this.classRepo.save(c)
     // 写入 class_members 的 head 记录（addHeadTeacher 内部会再次 assertCanBecomeHead 兜底；
@@ -346,7 +368,7 @@ export class SchoolAdminService {
   }
 
   /** 更新班级信息（支持转交班主任） */
-  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string; headTeacherId: string }>) {
+  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string; headTeacherId: string; subjects?: string[] }>) {
     const cls = await this.classRepo.findOne({ where: { id } })
     if (!cls) throw new BadRequestException('班级不存在')
     // 验证班级属于本校
@@ -376,6 +398,8 @@ export class SchoolAdminService {
     } else {
       Object.assign(cls, dto)
     }
+    // 同步「班主任任教学科」到班级主表（列表展示依赖 ClassItem.subjects）
+    if (dto.subjects !== undefined) cls.subjects = dto.subjects
     return this.classRepo.save(cls)
   }
 

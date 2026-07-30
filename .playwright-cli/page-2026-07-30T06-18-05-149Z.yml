@@ -1,0 +1,61 @@
+- generic [ref=e50]:
+  - complementary [ref=e51]:
+    - generic [ref=e52]: 园
+    - navigation [ref=e53]:
+      - link "工作台" [ref=e54] [cursor=pointer]:
+        - /url: "#/super"
+      - link "学校管理" [ref=e62] [cursor=pointer]:
+        - /url: "#/super/schools"
+      - link "管理员管理" [active] [ref=e70] [cursor=pointer]:
+        - /url: "#/super/admins"
+      - link "审计日志" [ref=e78] [cursor=pointer]:
+        - /url: "#/super/audit-logs"
+      - link "平台配置" [ref=e84] [cursor=pointer]:
+        - /url: "#/super/config"
+      - link "AI 服务商" [ref=e90] [cursor=pointer]:
+        - /url: "#/super/ai-providers"
+    - button "退出登录" [ref=e101] [cursor=pointer]
+  - main [ref=e105]:
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - navigation "breadcrumb" [ref=e108]:
+          - generic [ref=e112]: 园丁工作台
+          - generic [ref=e115]: 管理员管理
+        - heading "管理员管理" [level=1] [ref=e373]
+      - generic [ref=e117]:
+        - generic [ref=e118]: 超级管理员
+        - generic [ref=e119]: 2026年7月30日星期四
+    - generic [ref=e121]:
+      - generic [ref=e374]:
+        - generic [ref=e375]:
+          - heading "学校管理员" [level=1] [ref=e376]
+          - button "新增管理员" [ref=e382] [cursor=pointer]
+        - generic [ref=e384]:
+          - generic [ref=e385]:
+            - generic [ref=e386]: 管理员总数
+            - generic [ref=e387]: "1"
+          - generic [ref=e388]:
+            - generic [ref=e389]: 启用数
+            - generic [ref=e390]: "1"
+        - table [ref=e392]:
+          - rowgroup [ref=e393]:
+            - row [ref=e394]:
+              - columnheader "姓名" [ref=e395]
+              - columnheader "用户名" [ref=e396]
+              - columnheader "所属学校" [ref=e397]
+              - columnheader "状态" [ref=e398]
+              - columnheader "创建时间" [ref=e399]
+              - columnheader "操作" [ref=e400]
+          - rowgroup [ref=e401]:
+            - row [ref=e402]:
+              - cell "张三字" [ref=e403]
+              - cell "zhangsanzi" [ref=e404]
+              - cell "河铺小学" [ref=e405]
+              - cell "启用" [ref=e406]
+              - cell "2026-07-29 17:34:01" [ref=e407]
+              - cell [ref=e408]:
+                - button "编辑" [ref=e409] [cursor=pointer]
+                - button "重置密码" [ref=e412] [cursor=pointer]
+                - button "停用" [ref=e416] [cursor=pointer]
+                - button "删除" [ref=e419] [cursor=pointer]
+      - generic [ref=e289]: © 2026 园丁工作台 · Web 管理端

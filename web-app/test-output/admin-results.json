@@ -1,0 +1,56 @@
+[
+  {
+    "page": "工作台",
+    "url": "http://localhost:8890/#/super",
+    "status": "OK",
+    "buttonCount": 3,
+    "tableRows": 0,
+    "issues": "无",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-workbench.png"
+  },
+  {
+    "page": "学校管理",
+    "url": "http://localhost:8890/#/super/schools",
+    "status": "OK",
+    "buttonCount": 11,
+    "tableRows": 3,
+    "issues": "无",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-schools.png"
+  },
+  {
+    "page": "管理员管理",
+    "url": "http://localhost:8890/#/super/admins",
+    "status": "OK",
+    "buttonCount": 6,
+    "tableRows": 1,
+    "issues": "无",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-admins.png"
+  },
+  {
+    "page": "审计日志",
+    "url": "http://localhost:8890/#/super/audit",
+    "status": "404",
+    "buttonCount": 1,
+    "tableRows": 0,
+    "issues": "页面不存在 (404)；侧边栏菜单中已配置审计日志入口，但路由 /#/super/audit 未注册或组件缺失",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-audit.png"
+  },
+  {
+    "page": "平台配置",
+    "url": "http://localhost:8890/#/super/config",
+    "status": "OK",
+    "buttonCount": 3,
+    "tableRows": 0,
+    "issues": "无",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-config.png"
+  },
+  {
+    "page": "AI 服务商",
+    "url": "http://localhost:8890/#/super/ai-providers",
+    "status": "OK",
+    "buttonCount": 11,
+    "tableRows": 0,
+    "issues": "无",
+    "screenshot": "D:\\workspace\\my-prj\\tercher-work\\work-system\\web-app\\test-output\\admin-ai-providers.png"
+  }
+]

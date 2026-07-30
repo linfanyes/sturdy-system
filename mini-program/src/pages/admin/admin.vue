@@ -351,6 +351,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { theme } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
 
 const SERVER_URL = '/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
@@ -387,9 +388,6 @@ const form = reactive({ schoolId: '', name: '', username: '', password: '', enab
 
 const resetTarget = ref(null)
 const resetPwd = ref('')
-
-const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53'
-const CLOUDRUN_SERVICE = 'tec-work'
 
 // 学校下拉选项（管理员表单用）
 const schoolOptions = computed(() =>

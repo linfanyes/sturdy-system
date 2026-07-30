@@ -282,7 +282,8 @@ const sourceBadge = computed(() =>
     </div>
 
     <template v-else>
-      <!-- AI 配置 -->
+      <form @submit.prevent="save" novalidate>
+        <!-- AI 配置 -->
       <div class="bg-white rounded-2xl shadow-softer p-6">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
@@ -450,6 +451,7 @@ const sourceBadge = computed(() =>
           </div>
         </div>
       </div>
+      </form>
     </template>
   </div>
 </template>

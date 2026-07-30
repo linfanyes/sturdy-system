@@ -160,6 +160,10 @@ async function submitForm() {
         term: form.value.term,
         headTeacherId: form.value.headTeacherId,
         headTeacher: teacherName(form.value.headTeacherId),
+        subjects: form.value.subjects,
+        subjectTeachers: form.value.subjectTeachers
+          .filter(st => st.teacherId && st.teacherId !== form.value.headTeacherId)
+          .map(st => ({ teacherId: st.teacherId, subjects: st.subjects })),
       })
     } else {
       // 新增：班级 + 班主任任教学科 + 科任老师

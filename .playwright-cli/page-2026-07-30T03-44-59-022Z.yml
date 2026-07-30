@@ -1,0 +1,43 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - generic [ref=e7]: 园丁工作台
+    - heading "早上好，欢迎回来 👋" [level=1] [ref=e10]:
+      - text: 早上好，欢迎回来
+      - generic [ref=e11]: 👋
+    - paragraph [ref=e12]: 用 爱 浇灌每一颗小苗
+    - list [ref=e13]:
+      - listitem [ref=e14]:
+        - generic [ref=e15]: "1"
+        - text: 输入用户名与密码
+      - listitem [ref=e16]:
+        - generic [ref=e17]: "2"
+        - text: 系统自动识别您的角色
+      - listitem [ref=e18]:
+        - generic [ref=e19]: "3"
+        - text: 进入专属工作台，开始今天的工作
+    - paragraph [ref=e20]: 「用爱浇灌每一颗小苗」
+    - generic [ref=e21]:
+      - generic [ref=e22]: 📚
+      - generic [ref=e23]: ✏️
+      - generic [ref=e24]: 🍎
+      - generic [ref=e25]: 🌈
+  - generic [ref=e26]:
+    - generic [ref=e27]: 🍎
+    - generic [ref=e28]:
+      - heading "登录" [level=2] [ref=e29]
+      - paragraph [ref=e30]: 请输入用户名和密码
+    - generic [ref=e31]:
+      - generic [ref=e32]: 头像
+      - button "选择头像 🍎" [ref=e33] [cursor=pointer]: 🍎
+      - button "选择头像 🌱" [ref=e34] [cursor=pointer]: 🌱
+      - button "选择头像 🌈" [ref=e35] [cursor=pointer]: 🌈
+      - button "选择头像 📚" [ref=e36] [cursor=pointer]: 📚
+      - button "选择头像 🌟" [ref=e37] [cursor=pointer]: 🌟
+      - button "选择头像 🐣" [ref=e38] [cursor=pointer]: 🐣
+      - button "选择头像 🍀" [ref=e39] [cursor=pointer]: 🍀
+      - button "选择头像 ☀️" [ref=e40] [cursor=pointer]: ☀️
+    - generic [ref=e41]:
+      - textbox "用户名" [ref=e43]
+      - textbox "密码" [ref=e45]
+      - button "开始工作" [ref=e46] [cursor=pointer]
+    - generic [ref=e47]: 登录后 token 将持久化到本地，关闭浏览器后无需重新登录

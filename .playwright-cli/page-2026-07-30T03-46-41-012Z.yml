@@ -1,0 +1,56 @@
+- generic [ref=e51]:
+  - complementary [ref=e52]:
+    - generic [ref=e53]: 园
+    - navigation [ref=e54]:
+      - link "工作台" [ref=e55] [cursor=pointer]:
+        - /url: "#/super"
+      - link "学校管理" [ref=e63] [cursor=pointer]:
+        - /url: "#/super/schools"
+      - link "管理员管理" [ref=e71] [cursor=pointer]:
+        - /url: "#/super/admins"
+      - link "审计日志" [active] [ref=e79] [cursor=pointer]:
+        - /url: "#/super/audit-logs"
+      - link "平台配置" [ref=e85] [cursor=pointer]:
+        - /url: "#/super/config"
+      - link "AI 服务商" [ref=e91] [cursor=pointer]:
+        - /url: "#/super/ai-providers"
+    - button "退出登录" [ref=e102] [cursor=pointer]
+  - main [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - navigation "breadcrumb" [ref=e109]:
+          - generic [ref=e113]: 园丁工作台
+          - generic [ref=e116]: 审计日志
+        - heading "审计日志" [level=1] [ref=e424]
+      - generic [ref=e118]:
+        - generic [ref=e119]: 超级管理员
+        - generic [ref=e120]: 2026年7月30日星期四
+    - generic [ref=e122]:
+      - generic [ref=e425]:
+        - heading "审计日志" [level=1] [ref=e426]
+        - generic [ref=e430]:
+          - generic [ref=e431]: 学校筛选
+          - combobox [ref=e432]:
+            - option "全部学校" [selected]
+            - option "河铺小学"
+            - option "麻城第九小学"
+            - option "武汉小小学"
+          - generic [ref=e433]: 共 0 条
+        - table [ref=e435]:
+          - rowgroup [ref=e436]:
+            - row [ref=e437]:
+              - columnheader "时间" [ref=e438]
+              - columnheader "操作人" [ref=e439]
+              - columnheader "角色" [ref=e440]
+              - columnheader "动作" [ref=e441]
+              - columnheader "目标" [ref=e442]
+              - columnheader "IP" [ref=e443]
+          - rowgroup [ref=e444]:
+            - row [ref=e445]:
+              - cell "暂无日志数据" [ref=e446]
+        - generic [ref=e447]:
+          - generic [ref=e448]: 第 1 / 1 页
+          - generic [ref=e449]:
+            - button "上一页" [disabled] [ref=e450]
+            - button "下一页" [disabled] [ref=e453]
+      - generic [ref=e290]: © 2026 园丁工作台 · Web 管理端

@@ -83,8 +83,8 @@ async function bootstrap() {
   app.useGlobalFilters(new TypeOrmExceptionFilter())
   const port = config.get<number>('PORT') || 3000
 
-  // 托管 web-admin 静态页面（浏览器管理端）
-  const webAdminPath = join(__dirname, '..', '..', 'web-admin')
+  // 托管 web-app 构建产物（新版 Vue3+Vite Web 管理端）
+  const webAdminPath = join(__dirname, '..', '..', 'web-app', 'dist')
   app.use(express.static(webAdminPath))
 
   // —— 安全启动自检 ——

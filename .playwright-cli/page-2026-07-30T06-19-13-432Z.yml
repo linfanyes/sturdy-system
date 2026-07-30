@@ -1,0 +1,70 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - complementary [ref=e754]:
+    - generic [ref=e755]:
+      - generic [ref=e756]:
+        - button "园丁工作台" [ref=e757] [cursor=pointer]
+        - generic [ref=e760]: 工作台
+      - heading "工作台" [level=2] [ref=e761]
+      - paragraph [ref=e762]: 点击图标进入相应功能
+    - button "教师工作台" [ref=e765] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 工作台
+          - generic [ref=e784]: 教师工作台
+        - heading "教师工作台" [level=1] [ref=e785]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e791]:
+        - generic [ref=e793]:
+          - generic [ref=e797]:
+            - generic [ref=e798]: 下午好，王老师
+            - generic [ref=e799]: 麻城第九小学
+          - button [ref=e805] [cursor=pointer]
+        - generic [ref=e809]:
+          - generic [ref=e810]:
+            - generic [ref=e811]: 班级
+            - generic [ref=e815]: "0"
+          - generic [ref=e816]:
+            - generic [ref=e817]: 任教班级
+            - generic [ref=e823]: "0"
+          - generic [ref=e824]:
+            - generic [ref=e825]: 待办
+            - generic [ref=e829]: "0"
+          - generic [ref=e830]:
+            - generic [ref=e831]: 功能权限
+            - generic [ref=e834]: 全部
+        - generic [ref=e835]:
+          - heading "快捷工具" [level=2] [ref=e836]
+          - generic [ref=e839]:
+            - button "✅ 记考勤" [ref=e840] [cursor=pointer]:
+              - generic [ref=e841]: ✅
+              - generic [ref=e842]: 记考勤
+            - button "📝 布置作业" [ref=e843] [cursor=pointer]:
+              - generic [ref=e844]: 📝
+              - generic [ref=e845]: 布置作业
+            - button "📢 发通知" [ref=e846] [cursor=pointer]:
+              - generic [ref=e847]: 📢
+              - generic [ref=e848]: 发通知
+            - button "🤖 AI 对话" [ref=e849] [cursor=pointer]:
+              - generic [ref=e850]: 🤖
+              - generic [ref=e851]: AI 对话
+        - generic [ref=e852]:
+          - generic [ref=e853]: 📚
+          - generic [ref=e854]: 暂无班级
+          - generic [ref=e855]: 你还没有被分配到班级，请联系学校管理员
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

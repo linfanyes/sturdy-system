@@ -1,0 +1,44 @@
+- generic [ref=e702]:
+  - complementary [ref=e703]:
+    - generic [ref=e704]: 园
+    - navigation [ref=e705]:
+      - button "工作台" [ref=e706] [cursor=pointer]
+      - button "教学管理" [active] [ref=e714] [cursor=pointer]
+      - button "AI 与备课" [ref=e722] [cursor=pointer]
+      - button "课堂工具" [ref=e728] [cursor=pointer]
+      - button "教师办公" [ref=e733] [cursor=pointer]
+      - button "个人空间" [ref=e739] [cursor=pointer]
+    - button "退出登录" [ref=e750] [cursor=pointer]
+  - main [ref=e771]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - navigation "breadcrumb" [ref=e774]:
+          - generic [ref=e778]: 园丁工作台
+          - generic [ref=e781]: 教学管理
+          - generic [ref=e784]: 班费
+        - heading "班费" [level=1] [ref=e1296]
+      - generic [ref=e786]:
+        - generic [ref=e787]: 教师
+        - generic [ref=e788]: 2026年7月30日星期四
+    - generic [ref=e790]:
+      - generic [ref=e1297]:
+        - generic [ref=e1298]:
+          - heading "班费管理" [level=1] [ref=e1299]
+          - generic [ref=e1300]:
+            - textbox "搜索" [ref=e1305]
+            - button "新增" [ref=e1306] [cursor=pointer]
+        - table [ref=e1309]:
+          - rowgroup [ref=e1310]:
+            - row [ref=e1311]:
+              - columnheader "班级" [ref=e1312]
+              - columnheader "日期" [ref=e1313]
+              - columnheader "收支" [ref=e1314]
+              - columnheader "类别" [ref=e1315]
+              - columnheader "金额" [ref=e1316]
+              - columnheader "经手人" [ref=e1317]
+              - columnheader "说明" [ref=e1318]
+              - columnheader "操作" [ref=e1319]
+          - rowgroup [ref=e1320]:
+            - row [ref=e1321]:
+              - cell "暂无数据" [ref=e1322]
+      - generic [ref=e856]: © 2026 园丁工作台 · Web 管理端

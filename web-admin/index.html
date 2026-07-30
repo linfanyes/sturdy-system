@@ -435,6 +435,7 @@ function renderSchoolAdmins(el) {
         <td><span class="badge ${sa.enabled===false?'danger':'on'}">${sa.enabled===false?'禁用':'启用'}</span></td>
         <td class="acts">
           <button class="btn-outline btn-xs" onclick="showSAModal('${sa.id}')">编辑</button>
+          <button class="btn-outline btn-xs" onclick="resetSAPwd('${sa.id}','${htmlEscape(sa.name)}')">重置密码</button>
           <button class="btn-danger btn-xs" onclick="delSA('${sa.id}')">删除</button>
         </td>
       </tr>`).join('') || '<tr><td colspan="6"><div class="empty">暂无管理员</div></td></tr>'}
@@ -456,6 +457,22 @@ function batchToggleAdmins(enabled) {
   }).catch(e => toast(e.message))
 }
 
+/** 超管重置校管密码：默认 1314520 */
+function resetSAPwd(id, name) {
+  showModal('重置密码 - ' + name, `
+    <div class="form-group"><label>新密码</label>
+      <input id="fSaResetPwd" type="password" value="1314520" placeholder="6-20���字符" />
+      <div class="hint">默认密码 1314520，也可自行设置（6-20位）</div>
+    </div>
+  `, async () => {
+    const pwd = document.getElementById('fSaResetPwd').value.trim()
+    if (!pwd || pwd.length < 6 || pwd.length > 20) { toast('密码须为6-20位字符'); return }
+    await API.patch('/admin/school-admins/' + id + '/password', { password: pwd })
+    closeModal()
+    toast('密码已重置为：' + pwd)
+  })
+}
+
 function showSAModal(id) {
   const sa = id ? state.schoolAdmins.find(s => s.id === id) : null
   showModal(
@@ -475,8 +492,14 @@ function showSAModal(id) {
       if (!d.name) { toast('姓名必填'); return }
       if (!id) { d.password = document.getElementById('fSaPass').value; if(!d.password){toast('密码必填');return} }
       const pass = document.getElementById('fSaPass').value
-      if (pass) d.password = pass
-      if (id) { await API.patch('/admin/school-admins/' + id, d); toast('已更新') }
+      if (id) {
+        await API.patch('/admin/school-admins/' + id, d)
+        if (pass) {
+          if (pass.length < 6 || pass.length > 20) { toast('密码须为6-20位字符'); return }
+          await API.patch('/admin/school-admins/' + id + '/password', { password: pass })
+        }
+        toast('已更新')
+      }
       else { await API.post('/admin/school-admins', d); toast('已创建') }
       closeModal(); loadSchoolAdmins(); render()
     }
@@ -767,6 +790,7 @@ function renderTeachers(el) {
         <td><span class="badge ${t.enabled===false?'danger':'on'}">${t.enabled===false?'禁用':'启用'}</span></td>
         <td class="acts">
           <button class="btn-outline btn-xs" onclick="showTeacherModal('${t.id}')">编辑</button>
+          <button class="btn-outline btn-xs" onclick="resetTeacherPwd('${t.id}','${htmlEscape(t.name)}')">重置密码</button>
           <button class="btn-danger btn-xs" onclick="delTeacher('${t.id}')">删除</button>
         </td>
       </tr>`).join('') || '<tr><td colspan="7"><div class="empty">暂无教师</div></td></tr>'}
@@ -807,6 +831,22 @@ function delTeacher(id) {
   API.del('/school-admin/teachers/' + id).then(() => { toast('已删除'); loadTeachers(); renderSchoolContent() }).catch(e => toast(e.message))
 }
 
+/** 重置教师密码弹窗：校管输入新密码或使用默认密码 1314521 */
+function resetTeacherPwd(id, name) {
+  showModal('重置密码 - ' + name, `
+    <div class="form-group"><label>新密码</label>
+      <input id="fResetPwd" type="password" value="1314521" placeholder="6-20位字符" />
+      <div class="hint">默认密码 1314521，也可自行设置（6-20位）</div>
+    </div>
+  `, async () => {
+    const pwd = document.getElementById('fResetPwd').value.trim()
+    if (!pwd || pwd.length < 6 || pwd.length > 20) { toast('密码须为6-20位字符'); return }
+    const r = await API.post('/school-admin/teachers/' + id + '/reset-password', { password: pwd })
+    closeModal()
+    toast('密码已重置为：' + (r.defaultPassword || pwd))
+  })
+}
+
 function showBatchImport() {
   showModal('批量导入教师', `
     <div style="font-size:13px;color:var(--sub);margin-bottom:8px">每行一条：姓名,用户名,密码（英文逗号分隔）</div>
@@ -841,18 +881,19 @@ function renderClasses(el) {
   </div>
   <div class="card table-wrap">
     <table>
-      <tr><th>班级</th><th>年级</th><th>班主任</th><th>学期</th><th></th></tr>
+      <tr><th>班级</th><th>年级</th><th>班主任</th><th>班主任学科</th><th>学期</th><th></th></tr>
       ${state.classes.map(c => `<tr>
         <td><strong>${htmlEscape(c.name)}</strong></td>
         <td>${htmlEscape(c.grade||'')}</td>
         <td>${htmlEscape(c.headTeacher||'')}</td>
+        <td>${c.subjects && c.subjects.length ? htmlEscape(c.subjects.join('、')) : '<span style="color:var(--warn)">未设置</span>'}</td>
         <td>${htmlEscape(c.term||'')}</td>
         <td class="acts">
           <button class="btn-outline btn-xs" data-id="${c.id}" onclick="showClassModal(this.dataset.id)">编辑</button>
           <button class="btn-warning btn-xs" data-id="${c.id}" data-name="${htmlEscape(c.name)}" data-grade="${htmlEscape(c.grade||'')}" onclick="promoteClass(this.dataset.id,this.dataset.name,this.dataset.grade)">升级</button>
           <button class="btn-danger btn-xs" data-id="${c.id}" data-name="${htmlEscape(c.name)}" onclick="delClass(this.dataset.id,this.dataset.name)">删除</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="5"><div class="empty">暂无班级</div></td></tr>'}
+      </tr>`).join('') || '<tr><td colspan="6"><div class="empty">暂无班级</div></td></tr>'}
     </table>
   </div>`
 }
@@ -878,15 +919,21 @@ function showClassModal(id) {
     <div class="form-group"><label>班主任</label>
       <select id="fClsTeacher"><option value="">请选择</option>${state.teachers.map(t => `<option value="${t.id}" ${c?.headTeacherId===t.id||c?.headTeacher===t.name?'selected':''}>${htmlEscape(t.name)}</option>`).join('')}</select>
     </div>
+    <div class="form-group"><label>班主任任教学科 <span class="hint">（英文逗号分隔，如：语文,数学）</span></label>
+      <input id="fClsSubjects" value="${htmlEscape((c?.subjects||[]).join(','))}" placeholder="如：语文,数学,英语" />
+    </div>
     <div class="form-group"><label>学期</label><input id="fClsTerm" value="${htmlEscape(c?.term||'')}" placeholder="如：2026春季学期" /></div>
   `, async () => {
     const htId = document.getElementById('fClsTeacher').value
     const ht = state.teachers.find(t => t.id === htId)
+    const subjectsStr = document.getElementById('fClsSubjects').value.trim()
+    const subjects = subjectsStr ? subjectsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : []
     const data = {
       name: document.getElementById('fClsName').value.trim(),
       grade: document.getElementById('fClsGrade').value.trim(),
       headTeacher: ht?.name || '',
       headTeacherId: htId,
+      subjects,
       term: document.getElementById('fClsTerm').value.trim(),
     }
     if (id) { await API.patch('/school-admin/classes/' + id, data); toast('已更新') }

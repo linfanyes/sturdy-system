@@ -1,0 +1,117 @@
+- generic [ref=e51]:
+  - complementary [ref=e52]:
+    - generic [ref=e53]: 园
+    - navigation [ref=e54]:
+      - link "工作台" [ref=e55] [cursor=pointer]:
+        - /url: "#/super"
+      - link "学校管理" [ref=e63] [cursor=pointer]:
+        - /url: "#/super/schools"
+      - link "管理员管理" [ref=e71] [cursor=pointer]:
+        - /url: "#/super/admins"
+      - link "审计日志" [ref=e79] [cursor=pointer]:
+        - /url: "#/super/audit-logs"
+      - link "平台配置" [active] [ref=e85] [cursor=pointer]:
+        - /url: "#/super/config"
+      - link "AI 服务商" [ref=e91] [cursor=pointer]:
+        - /url: "#/super/ai-providers"
+    - button "退出登录" [ref=e102] [cursor=pointer]
+  - main [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - navigation "breadcrumb" [ref=e109]:
+          - generic [ref=e113]: 园丁工作台
+          - generic [ref=e116]: 平台配置
+        - heading "平台配置" [level=1] [ref=e456]
+      - generic [ref=e118]:
+        - generic [ref=e119]: 超级管理员
+        - generic [ref=e120]: 2026年7月30日星期四
+    - generic [ref=e122]:
+      - generic [ref=e457]:
+        - generic [ref=e458]:
+          - heading "平台配置" [level=1] [ref=e459]
+          - button "保存" [ref=e463] [cursor=pointer]
+        - generic [ref=e468]:
+          - generic [ref=e469]:
+            - heading "AI 配置" [level=2] [ref=e474]
+            - button "刷新模型列表" [ref=e475] [cursor=pointer]
+          - generic [ref=e481]:
+            - generic [ref=e482]:
+              - text: 服务商
+              - combobox [ref=e483]:
+                - option "阿里百炼（通义千问）"
+                - option "DeepSeek"
+                - option "智谱GLM"
+                - option "自定义" [selected]
+            - generic [ref=e484]:
+              - text: 接口地址
+              - textbox "如 https://dashscope.aliyuncs.com/compatible-mode/v1" [ref=e485]
+            - generic [ref=e486]:
+              - text: API Key
+              - textbox "留空则不修改已保存的密钥" [ref=e487]
+            - generic [ref=e488]:
+              - generic [ref=e489]: 默认（接口不可达）
+              - generic [ref=e490]: 模型列表由服务商 /models 接口实时查询，失败则回退默认预设
+            - generic [ref=e491]:
+              - text: 文本模型
+              - combobox [ref=e492]:
+                - option "自定义" [selected]
+              - textbox "输入模型名，如 qwen-plus" [ref=e493]
+            - generic [ref=e494]:
+              - text: 多模态模型
+              - combobox [ref=e495]:
+                - option "自定义" [selected]
+              - textbox "自定义模型名称" [ref=e496]
+            - generic [ref=e497]:
+              - text: 温度（0–2）
+              - textbox "0.7" [ref=e498]
+            - generic [ref=e499]:
+              - text: AI 名字
+              - textbox "小林子" [ref=e500]
+            - generic [ref=e501]:
+              - text: 系统提示词
+              - textbox "系统提示词（描述 AI 角色与回答风格）" [ref=e502]
+            - generic [ref=e503]:
+              - paragraph [ref=e504]: 场景模型覆盖（留空则使用上方默认文本模型）
+              - generic [ref=e506]:
+                - generic [ref=e507]: 考试分析
+                - textbox "如 qwen-max" [ref=e508]
+              - generic [ref=e510]:
+                - generic [ref=e511]: 学生诊断
+                - textbox "如 qwen-max" [ref=e512]
+              - generic [ref=e514]:
+                - generic [ref=e515]: AI 解析
+                - textbox "如 qwen-max" [ref=e516]
+        - generic [ref=e517]:
+          - heading "微信配置" [level=2] [ref=e521]
+          - generic [ref=e522]:
+            - generic [ref=e523]:
+              - text: 小程序 AppId
+              - textbox "wx..." [ref=e524]
+            - generic [ref=e525]:
+              - text: 小程序 AppSecret
+              - textbox "留空则不修改" [ref=e526]
+            - generic [ref=e527]:
+              - text: 订阅消息模板 ID
+              - textbox "订阅消息模板 ID" [ref=e528]
+        - generic [ref=e529]:
+          - heading "IM 配置" [level=2] [ref=e533]
+          - generic [ref=e534]:
+            - generic [ref=e535]:
+              - text: IM SDK AppId
+              - textbox "IM SDK AppId" [ref=e536]
+            - generic [ref=e537]:
+              - text: IM SecretKey
+              - textbox "留空则不修改" [ref=e538]
+        - generic [ref=e539]:
+          - heading "其他" [level=2] [ref=e551]
+          - generic [ref=e552]:
+            - generic [ref=e553]:
+              - text: 默认学科（逗号分隔）
+              - textbox "如 语文,数学,英语" [ref=e554]
+            - generic [ref=e555]:
+              - text: 家长登录码
+              - textbox "家长登录码" [ref=e556]
+            - generic [ref=e557]:
+              - text: JWT 过期时间
+              - textbox "如 7d" [ref=e558]
+      - generic [ref=e290]: © 2026 园丁工作台 · Web 管理端
