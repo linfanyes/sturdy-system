@@ -97,7 +97,7 @@ async function loadExams() {
 
 async function loadHistory() {
   try {
-    const res = await api.get('/generated-papers', { type: 'exam-analysis' })
+    const res = await api.get('/generated/papers', { type: 'exam-analysis' })
     history.value = (res.items || []).slice(0, 5)
   } catch {
     history.value = []

@@ -507,7 +507,7 @@ const providerForm = ref({ name: '', code: '', baseUrl: '', enabled: true, isDef
 
 async function loadProviders() {
   try {
-    const r = await apiCall('GET', '/admin/ai-providers') || { items: [] }
+    const r = await apiCall('GET', '/ai-providers') || { items: [] }
     providers.value = r.items || r || []
   } catch (e) { providers.value = [] }
 }
@@ -530,9 +530,9 @@ async function saveProvider() {
   saving.value = true
   try {
     if (editingProviderCode.value) {
-      await apiCall('PATCH', '/admin/ai-providers/' + editingProviderCode.value, f)
+      await apiCall('PATCH', '/ai-providers/' + editingProviderCode.value, f)
     } else {
-      await apiCall('POST', '/admin/ai-providers', f)
+      await apiCall('POST', '/ai-providers', f)
     }
     showProviderForm.value = false
     await loadProviders()
@@ -543,7 +543,7 @@ async function saveProvider() {
 
 async function toggleProvider(p) {
   try {
-    await apiCall('PATCH', '/admin/ai-providers/' + p.code, { enabled: !p.enabled })
+    await apiCall('PATCH', '/ai-providers/' + p.code, { enabled: !p.enabled })
     p.enabled = !p.enabled
     uni.showToast({ title: p.enabled ? '已启用' : '已停用', icon: 'success' })
   } catch (e) { uni.showToast({ title: e.message || '操作失败', icon: 'none' }) }
@@ -557,7 +557,7 @@ async function delProvider(p) {
     success: async (m) => {
       if (!m.confirm) return
       try {
-        await apiCall('DELETE', '/admin/ai-providers/' + p.code)
+        await apiCall('DELETE', '/ai-providers/' + p.code)
         providers.value = providers.value.filter(x => x.id !== p.code)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: e.message || '删除失败', icon: 'none' }) }

@@ -28,6 +28,7 @@ const PAGE_ROLES = {
   'pages/admin/admin': [ROLE.SUPER],
   'pages/school-admin/school-admin': [ROLE.SCHOOL_ADMIN],
   'pages/parent/parent': [ROLE.PARENT],
+  'pages/parent/compare': [ROLE.PARENT],
 }
 
 // 各角色首页（越权时回退目标）

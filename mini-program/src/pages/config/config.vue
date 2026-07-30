@@ -267,28 +267,34 @@ function resetAiDefaults() {
 }
 
 async function load() {
-  const me = await api.get('/users/me')
-  const a = await api.get('/config/ai')
-  // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
-  const firstProvider = PROVIDER_PRESETS[PROVIDER_NAMES[0]]
-  ai.value = {
-    baseUrl: a.baseUrl ?? firstProvider.baseUrl,
-    apiKey: a.apiKey ?? '',
-    textModel: a.textModel ?? firstProvider.textModels[0],
-    visionModel: a.visionModel ?? firstProvider.visionModels[0],
-    imageModel: a.imageModel ?? (firstProvider.imageModels[0] || ''),
-    videoModel: a.videoModel ?? (firstProvider.videoModels[0] || ''),
-    temperature:
-      typeof a.temperature === 'number' && !isNaN(a.temperature)
-        ? a.temperature
-        : DEFAULT_TEMPERATURE,
-    aiName: a.aiName ?? DEFAULT_AI_NAME,
-    systemPrompt: a.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
-    resourceModels: a.resourceModels || {},
+  try {
+    const me = await api.get('/users/me')
+    const a = await api.get('/config/ai')
+    // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
+    const firstProvider = PROVIDER_PRESETS[PROVIDER_NAMES[0]]
+    ai.value = {
+      baseUrl: a.baseUrl ?? firstProvider.baseUrl,
+      apiKey: a.apiKey ?? '',
+      textModel: a.textModel ?? firstProvider.textModels[0],
+      visionModel: a.visionModel ?? firstProvider.visionModels[0],
+      imageModel: a.imageModel ?? (firstProvider.imageModels[0] || ''),
+      videoModel: a.videoModel ?? (firstProvider.videoModels[0] || ''),
+      temperature:
+        typeof a.temperature === 'number' && !isNaN(a.temperature)
+          ? a.temperature
+          : DEFAULT_TEMPERATURE,
+      aiName: a.aiName ?? DEFAULT_AI_NAME,
+      systemPrompt: a.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+      resourceModels: a.resourceModels || {},
+    }
+    // 根据已保存的接口地址反查服务商
+    providerIdx.value = detectProvider(ai.value.baseUrl)
+    app.value = await api.get('/config/app')
+  } catch (e) {
+    // 401 由 request 拦截层统一处理（登出并回登录页），此处不重复处理；
+    // 其余瞬时网络/服务异常静默兜底，避免 tabBar 页停留在半载态。
+    console.warn('[config] 配置加载失败，已静默兜底：', e && e.message)
   }
-  // 根据已保存的接口地址反查服务商
-  providerIdx.value = detectProvider(ai.value.baseUrl)
-  app.value = await api.get('/config/app')
 }
 const defaultModelName = (key) => ai.value.textModel || 'qwen-plus'
 onShow(async () => {

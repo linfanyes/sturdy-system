@@ -154,18 +154,16 @@ function open(it) {
 async function load() {
   loading.value = true
   try {
-    const [n, t, k, nf, msg] = await Promise.all([
+    const [n, t, k, nf] = await Promise.all([
       api.get('/notices').catch(() => []),
       api.get('/todos').catch(() => []),
       api.get('/notes').catch(() => []),
       api.get('/notifications').catch(() => []),
-      api.get('/messages').catch(() => []),
     ])
     notices.value = Array.isArray(n) ? n : (n.items || [])
     todos.value = Array.isArray(t) ? t : (t.items || [])
     notes.value = Array.isArray(k) ? k : (k.items || [])
     notifications.value = Array.isArray(nf) ? nf : (nf.items || [])
-    messages.value = Array.isArray(msg) ? msg : (msg.items || [])
   } finally {
     loading.value = false
   }
