@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getDashboard } from '@/api/school-admin'
 import {
-  Sparkles, School, Users, GraduationCap, AlertCircle,
+  Sparkles, School, Users, GraduationCap,
   ArrowRight, Loader2, TrendingUp, Activity, BookOpen
 } from 'lucide-vue-next'
 import SvgBarChart from '@/components/SvgBarChart.vue'
@@ -108,9 +108,9 @@ const quickLinks = [
       </div>
     </div>
 
-    <!-- 4 个关键指标 -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat-card">
+    <!-- 3 个关键指标（校管不需要待批改） -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/school-admin/teachers')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <Users class="w-4 h-4 text-butter-500" /> 教师
         </div>
@@ -120,7 +120,7 @@ const quickLinks = [
         </div>
         <div class="text-xs text-cocoa-400 mt-1">在职教师</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/school-admin/classes')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <School class="w-4 h-4 text-mint-500" /> 班级
         </div>
@@ -130,7 +130,7 @@ const quickLinks = [
         </div>
         <div class="text-xs text-cocoa-400 mt-1">在读班级</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/school-admin/students')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <GraduationCap class="w-4 h-4 text-sky2-500" /> 学生
         </div>
@@ -141,16 +141,6 @@ const quickLinks = [
         <div class="text-xs text-mint-500 mt-1 flex items-center gap-1">
           <TrendingUp class="w-3 h-3" /> {{ stats.attendanceRate ?? '—' }}% 出勤
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
-          <AlertCircle class="w-4 h-4 text-sakura-500" /> 待批改
-        </div>
-        <div class="text-3xl font-bold text-cocoa-900">
-          <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
-          <template v-else>{{ stats.pendingHomework }}</template>
-        </div>
-        <div class="text-xs text-cocoa-400 mt-1">份待批作业</div>
       </div>
     </div>
 

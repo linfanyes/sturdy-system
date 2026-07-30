@@ -176,6 +176,17 @@ const showAllHomework = ref(false)
 const visibleNotices = computed(() => showAllNotices.value ? notices.value : notices.value.slice(0, 5))
 const visibleHomework = computed(() => showAllHomework.value ? homework.value : homework.value.slice(0, 5))
 
+// 看板卡片点击跳转：滚动到对应区块或打开弹窗
+const showExamListModal = ref(false)
+function scrollToSection(id: string) {
+  const el = document.getElementById(id)
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+function clickNoticeCard() { scrollToSection('parent-notices-section') }
+function clickHomeworkCard() { scrollToSection('parent-homework-section') }
+function clickExamCountCard() { showExamListModal.value = true }
+function clickRankCard() { scrollToSection('parent-grades-section') }
+
 // 修改密码（后端 change-password 已存在，补 Web 入口）
 const showPwdModal = ref(false)
 const oldPwd = ref('')
@@ -364,27 +375,31 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 概览卡片 -->
+    <!-- 概览卡片（点击跳转详情） -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Bell class="w-4 h-4 text-sakura-500" /> 待读通知</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ pendingNotices }}</template></div>
+        <div class="text-xs text-sakura-400 mt-1 flex items-center gap-0.5">查看通知 <ChevronRight class="w-3 h-3" /></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickHomeworkCard">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-butter-500" /> 待完成作业</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ pendingHomework }}</template></div>
+        <div class="text-xs text-butter-500 mt-1 flex items-center gap-0.5">查看作业 <ChevronRight class="w-3 h-3" /></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickExamCountCard">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Award class="w-4 h-4 text-mint-500" /> 考试次数</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ exams.length }}</template></div>
+        <div class="text-xs text-mint-500 mt-1 flex items-center gap-0.5">查看考试详情 <ChevronRight class="w-3 h-3" /></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickRankCard">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Star class="w-4 h-4 text-sky2-500" /> 最新排名</div>
         <div class="text-3xl font-bold text-cocoa-900">
           <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
           <template v-else-if="latestExam && latestExam.classRank">第 {{ latestExam.classRank }} 名</template>
           <template v-else>--</template>
         </div>
+        <div class="text-xs text-sky2-500 mt-1 flex items-center gap-0.5">查看成绩 <ChevronRight class="w-3 h-3" /></div>
       </div>
     </div>
 
@@ -425,12 +440,12 @@ async function subscribeNotifications() {
     </div>
 
     <!-- 成绩查询（历史切换 + 分布 + 优弱势，与小程序端对齐） -->
-    <div v-if="!loading && selectedExam">
+    <div v-if="!loading && selectedExam" id="parent-grades-section">
       <div class="flex items-center gap-2 mb-3">
         <BarChart3 class="w-5 h-5 text-mint-400" />
         <h2 class="text-lg font-semibold text-cocoa-900">成绩查询</h2>
         <select
-          v-if="exams.length > 1"
+          v-if="exams.length > 0"
           v-model.number="selectedExamIndex"
           class="ml-auto text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
         >
@@ -681,7 +696,7 @@ async function subscribeNotifications() {
     </div>
 
     <!-- 班级公告 -->
-    <div v-if="!loading && notices.length > 0">
+    <div v-if="!loading && notices.length > 0" id="parent-notices-section">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><Bell class="w-5 h-5 text-sakura-400" /> 班级公告</h2>
       <div class="space-y-3">
         <div v-for="n in visibleNotices" :key="n.id" class="quick-card">
@@ -701,7 +716,7 @@ async function subscribeNotifications() {
     </div>
 
     <!-- 作业列表 -->
-    <div v-if="!loading && homework.length > 0">
+    <div v-if="!loading && homework.length > 0" id="parent-homework-section">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><BookOpen class="w-5 h-5 text-butter-400" /> 作业</h2>
       <div class="space-y-3">
         <div v-for="h in visibleHomework" :key="h.id" class="quick-card">
@@ -747,6 +762,57 @@ async function subscribeNotifications() {
         >
           <Loader2 v-if="pwdLoading" class="w-4 h-4 inline animate-spin" /> {{ pwdLoading ? '提交中…' : '确认修改' }}
         </button>
+      </div>
+    </div>
+
+    <!-- 考试详情弹窗（点击「考试次数」卡片打开） -->
+    <div v-if="showExamListModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showExamListModal = false">
+      <div class="w-full max-w-2xl bg-white rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-lg font-semibold text-cocoa-900">考试详情（共 {{ exams.length }} 次）</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showExamListModal = false">✕</button>
+        </div>
+        <div v-if="!exams.length" class="text-sm text-cocoa-400 text-center py-6">暂无考试记录</div>
+        <div v-else class="space-y-3">
+          <div
+            v-for="(e, i) in exams"
+            :key="e.examId || i"
+            class="border border-cream-200 rounded-xl p-3 cursor-pointer hover:border-butter-300 transition-colors"
+            @click="selectedExamIndex = i; showExamListModal = false; scrollToSection('parent-grades-section')"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-cocoa-900">{{ e.examName }}</div>
+              <span class="text-xs text-cocoa-400">{{ e.date }}</span>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-xs">
+              <div class="bg-cocoa-50 rounded-lg p-2 text-center">
+                <div class="text-cocoa-400">总分</div>
+                <div class="font-bold text-cocoa-900 mt-0.5">{{ e.totalScore ?? '--' }}/{{ e.totalFullScore ?? '--' }}</div>
+              </div>
+              <div v-if="e.classRank" class="bg-mint-50 rounded-lg p-2 text-center">
+                <div class="text-mint-500">班级排名</div>
+                <div class="font-bold text-mint-600 mt-0.5">第{{ e.classRank }}名</div>
+              </div>
+              <div v-if="e.gradeRank" class="bg-butter-50 rounded-lg p-2 text-center">
+                <div class="text-butter-500">年级排名</div>
+                <div class="font-bold text-butter-600 mt-0.5">第{{ e.gradeRank }}名</div>
+              </div>
+              <div class="bg-sky2-50 rounded-lg p-2 text-center">
+                <div class="text-sky2-500">科目数</div>
+                <div class="font-bold text-sky2-600 mt-0.5">{{ (e.subjects || []).length }}科</div>
+              </div>
+            </div>
+            <!-- 各科成绩 -->
+            <div v-if="e.subjects?.length" class="mt-2 flex flex-wrap gap-1.5">
+              <span
+                v-for="s in e.subjects"
+                :key="s.subject"
+                class="text-xs px-2 py-1 rounded-full"
+                :class="s.score != null && s.fullScore && s.score / s.fullScore >= 0.8 ? 'bg-mint-50 text-mint-600' : s.score != null && s.fullScore && s.score / s.fullScore < 0.6 ? 'bg-sakura-50 text-sakura-600' : 'bg-cream-100 text-cocoa-600'"
+              >{{ s.subject }}: {{ s.score ?? '缺考' }}/{{ s.fullScore }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

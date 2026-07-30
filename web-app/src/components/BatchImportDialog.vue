@@ -186,6 +186,8 @@ async function confirmImport() {
     }
     importResult.value = res
     emit('imported')
+    // 导入完成：展示结果 1.2 秒后自动关闭弹窗
+    setTimeout(() => { close() }, 1200)
   } catch (e: any) {
     errorMsg.value = e?.message || '导入失败'
   } finally {

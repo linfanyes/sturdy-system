@@ -185,7 +185,17 @@ function fmtVal(row: any, f: FieldDef): string {
   if (f.render) return f.render(row)
   const v = row[f.key]
   if (v == null || v === '') return '-'
-  if (Array.isArray(v)) return v.join(', ')
+  if (Array.isArray(v)) {
+    // tags 类型：将每个 value 映射为 label 展示
+    if (f.type === 'tags') {
+      const opts = getOptions(f)
+      return v.map((item: string) => {
+        const hit = opts.find(o => o.value === item)
+        return hit ? hit.label : item
+      }).join(', ')
+    }
+    return v.join(', ')
+  }
   if (f.type === 'datetime' && v) return new Date(v).toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
   if (f.type === 'date' && v) return new Date(v).toLocaleDateString('zh-CN').replace(/\//g, '-')
   // select 字段展示 label（如 classId → 班级名）

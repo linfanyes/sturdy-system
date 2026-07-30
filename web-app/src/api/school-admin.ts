@@ -159,6 +159,10 @@ export function updateStudent(id: string, dto: Partial<Pick<StudentItem, 'name' 
   return request.patch(`/school-admin/students/${id}`, dto)
 }
 
+export function deleteStudent(id: string) {
+  return request.delete(`/school-admin/students/${id}`)
+}
+
 /* ============ 家长登录 ============ */
 
 export interface ParentLoginItem {

@@ -29,6 +29,15 @@ const roleLabel: Record<Role, string> = {
   parent: '家长',
 }
 
+/** 右上角角色显示（教师优先显示职务：班主任/科任老师等） */
+const roleDisplay = computed(() => {
+  if (auth.role === 'teacher') {
+    const pos = (auth.user as any)?.position
+    return pos || '教师'
+  }
+  return roleLabel[auth.role || 'teacher']
+})
+
 /** 菜单图标类型：lucide Component 或 emoji string */
 type IconType = any
 /** 菜单项图标配色（带浅色背景 + 深色前景） */
@@ -81,11 +90,11 @@ const teacherMenu: MenuCategory[] = [
         label: '班级与学生', asGrid: true,
         items: [
           { name: 'teacher-classes', label: '班级成员', to: '/teacher/classes', feature: 'classes', emoji: '👥', color: 'blue' },
+          { name: 'teacher-students', label: '学生管理', to: '/teacher/students', feature: 'students', emoji: '🎒', color: 'green' },
           { name: 'teacher-duty-roster', label: '轮值表', to: '/teacher/duty-roster', feature: 'duty', emoji: '📋', color: 'butter' },
           { name: 'teacher-class-finance', label: '班费', to: '/teacher/class-finance', feature: 'finance', emoji: '💰', color: 'green' },
           { name: 'teacher-class-activities', label: '班级活动', to: '/teacher/class-activities', feature: 'activities', emoji: '🎉', color: 'rose' },
           { name: 'teacher-gallery', label: '班级风采', to: '/teacher/gallery', feature: 'gallery', emoji: '🏆', color: 'purple' },
-          { name: 'teacher-my-gallery', label: '我的相册', to: '/teacher/my-gallery', feature: 'gallery', icon: Camera, color: 'sky' },
         ],
       },
       {
@@ -110,7 +119,6 @@ const teacherMenu: MenuCategory[] = [
           { name: 'teacher-behavior', label: '行为记录', to: '/teacher/behavior', feature: 'behavior', emoji: '📝', color: 'butter' },
           { name: 'teacher-reading-log', label: '课外阅读', to: '/teacher/reading-log', feature: 'reading', emoji: '📚', color: 'sky' },
           { name: 'teacher-checkin', label: '学生打卡', to: '/teacher/checkin', feature: 'checkin', emoji: '🌅', color: 'rose' },
-          { name: 'teacher-awards', label: '我获奖啦', to: '/teacher/awards', feature: 'rewards', emoji: '🎉', color: 'butter' },
         ],
       },
       {
@@ -238,6 +246,8 @@ const teacherMenu: MenuCategory[] = [
         { name: 'teacher-notifications', label: '通知中心', to: '/teacher/notifications', icon: Bell, color: 'butter' },
         { name: 'teacher-todos', label: '待办事项', to: '/teacher/todos', feature: 'todos', icon: ListTodo, color: 'rose' },
         { name: 'teacher-notes', label: '笔记', to: '/teacher/notes', feature: 'notes', icon: BookOpen, color: 'green' },
+        { name: 'teacher-my-gallery', label: '我的相册', to: '/teacher/my-gallery', feature: 'gallery', icon: Camera, color: 'sky' },
+        { name: 'teacher-awards', label: '我获奖啦', to: '/teacher/awards', feature: 'rewards', emoji: '🎉', color: 'butter' },
         { name: 'teacher-profile', label: '个人资料', to: '/teacher/profile', icon: User, color: 'cream' },
         { name: 'teacher-config', label: '设置', to: '/teacher/config', icon: Settings, color: 'cocoa' },
       ],
@@ -444,8 +454,8 @@ function navigateTo(to: string) {
     <!-- 侧边栏：紧凑版本 -->
     <aside class="w-20 shrink-0 border-r border-cream-200 bg-gradient-to-b from-cream-100/95 to-cream-50/95 backdrop-blur flex flex-col items-center py-4">
       <!-- Logo（顶部圆形） -->
-      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-butter-300 to-butter-500 flex items-center justify-center text-white font-bold text-lg shadow-soft mb-6">
-        园
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-butter-300 to-butter-500 flex items-center justify-center text-white font-bold text-sm shadow-soft mb-6 leading-none">
+        园丁
       </div>
 
       <!-- 一级分类图标按钮 -->
@@ -589,7 +599,7 @@ function navigateTo(to: string) {
           </nav>
         </div>
         <div class="text-sm text-cocoa-500 text-right">
-          <div>{{ roleLabel[auth.role || 'teacher'] }}</div>
+          <div>{{ roleDisplay }}</div>
           <div class="text-xs text-cocoa-400 mt-0.5">{{ today }}</div>
         </div>
       </header>

@@ -69,6 +69,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'notices', name: 'teacher-notices', component: () => import('@/views/workspace/Notices.vue'), meta: { title: '公告', feature: 'notices' } },
       // 班级与学生
       { path: 'classes', name: 'teacher-classes', component: () => import('@/views/classes/ClassMembers.vue'), meta: { title: '班级成员', feature: 'classes' } },
+      { path: 'students', name: 'teacher-students', component: () => import('@/views/teacher/Students.vue'), meta: { title: '学生管理', feature: 'students' } },
       { path: 'duty-roster', name: 'teacher-duty-roster', component: () => import('@/views/classes/DutyRoster.vue'), meta: { title: '轮值表', feature: 'duty' } },
       { path: 'duty-config', name: 'teacher-duty-config', component: () => import('@/views/classes/DutyConfig.vue'), meta: { title: '值日配置', feature: 'duty' } },
       { path: 'class-finance', name: 'teacher-class-finance', component: () => import('@/views/classes/ClassFinance.vue'), meta: { title: '班费', feature: 'finance' } },

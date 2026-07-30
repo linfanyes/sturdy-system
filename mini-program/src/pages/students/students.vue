@@ -37,9 +37,10 @@
         <view class="tags" v-if="s.tags && s.tags.length">
           <text v-for="t in s.tags" :key="t" class="tag">{{ t }}</text>
         </view>
-        <view class="row-acts" v-if="s.parentPhone || s.parentLoginEnabled">
+        <view class="row-acts" v-if="s.parentPhone || s.parentLoginEnabled || !batchMode">
           <text v-if="s.parentPhone" class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
           <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
+          <text v-if="!batchMode" class="dial del" @click.stop="deleteOne(s)">🗑 删除</text>
         </view>
         <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
       </view>
@@ -393,6 +394,27 @@ function toggleSel(s) {
   if (ns.has(s.id)) ns.delete(s.id)
   else ns.add(s.id)
   selected.value = ns
+}
+// 单条删除学生（与批量删除同后端接口，带确认弹窗）
+async function deleteOne(s) {
+  uni.showModal({
+    title: '删除学生',
+    content: `确定删除学生「${s.name}」（${s.studentNo || '无学号'}）吗？\n该操作不可恢复。`,
+    confirmColor: '#e64340',
+    success: async (r) => {
+      if (!r.confirm) return
+      uni.showLoading({ title: '删除中…' })
+      try {
+        await api.del('/students/' + s.id)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        load()
+      } catch (e) {
+        uni.showToast({ title: '删除失败：' + (e.message || ''), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+  })
 }
 async function batchDelete() {
   const ids = [...selected.value]
@@ -825,6 +847,8 @@ function drawRadar() {
 .tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
 .row-acts { margin-top: 10rpx; }
 .dial { font-size: 24rpx; color: var(--c-primary); background: rgba(7,193,96,.12); padding: 8rpx 20rpx; border-radius: 30rpx; }
+.dial.reset { color: #e6a23c; background: #fef3e6; }
+.dial.del { color: #e64340; background: #fde8e8; }
 .pf-tags { display: flex; flex-wrap: wrap; gap: 10rpx; justify-content: center; margin: 8rpx 0; }
 .pf-tag { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: #e8f1fb; color: #3a8ee6; }
 .pf-line { font-size: 24rpx; color: var(--c-sub); text-align: center; margin-bottom: 6rpx; }

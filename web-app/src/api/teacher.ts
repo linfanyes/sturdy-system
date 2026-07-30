@@ -56,6 +56,50 @@ export function listClassStudents(classId: string) {
   return request.get<any, TeacherStudent[]>('/students', { params: { classId } })
 }
 
+/** 获取当前教师所有学生（不传 classId 返回全部） */
+export function listAllStudents(params?: { classId?: string; skip?: number; take?: number }) {
+  return request.get<any, any>('/students', { params: params || {} })
+}
+
+/** 新增学生（单个录入） */
+export function createStudent(data: {
+  name: string
+  gender: string
+  studentNo?: string
+  parentName?: string
+  parentPhone?: string
+  classId: string
+}) {
+  return request.post<any, TeacherStudent>('/students', data)
+}
+
+/** 更新学生信息 */
+export function updateStudent(id: string, data: Partial<{
+  name: string
+  gender: string
+  studentNo: string
+  parentName: string
+  parentPhone: string
+  classId: string
+}>) {
+  return request.patch<any, TeacherStudent>('/students/' + id, data)
+}
+
+/** 删除学生 */
+export function deleteStudent(id: string) {
+  return request.delete<any, void>('/students/' + id)
+}
+
+/** 开通/关闭家长登录 */
+export function toggleStudentParentLogin(id: string) {
+  return request.post<any, { studentId: string; parentLoginEnabled: boolean; initialPassword?: string }>('/students/' + id + '/toggle-parent-login')
+}
+
+/** 重置家长登录口令 */
+export function resetStudentParentPassword(id: string) {
+  return request.post<any, { studentId: string; ok: boolean; defaultPassword: string }>('/students/' + id + '/reset-parent-password')
+}
+
 /** 获取班级成员（协作教师）
  * 注意：后端用 POST /classes/:id/members/list 查询（避免与基类 GET :id 路由冲突），
  * POST /classes/:id/members 是"添加科任老师"，GET /classes/:id/members 无对应路由会 404。

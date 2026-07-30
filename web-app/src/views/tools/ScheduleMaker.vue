@@ -4,7 +4,7 @@
  * 保存到 localStorage（web_tool_schedule_<classId>），支持打印。
  */
 import { ref, computed, watch, onMounted } from 'vue'
-import { CalendarDays, Save, Printer, Trash2 } from 'lucide-vue-next'
+import { CalendarDays, Save, Printer, Trash2, Wand2 } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 
 const { classes } = useClasses()
@@ -73,6 +73,78 @@ function clearAll() {
   initGrid()
 }
 
+/**
+ * 自动排版：按小学常见课时分配自动填充课表。
+ * 规则：主科（语文/数学/英语）分布到每天上午；副科穿插下午；
+ * 同一科目尽量不连续两节；每天上午安排主科，下午安排副科。
+ */
+function autoArrange() {
+  if (!classId.value) { alert('请先选择班级'); return }
+  initGrid()
+
+  // 各科目周课时数（小学常见分配）
+  const weeklyHours: Record<string, number> = {
+    '语文': 8, '数学': 6, '英语': 4,
+    '科学': 3, '道法': 2, '体育': 3,
+    '音乐': 2, '美术': 2, '劳动': 1, '信息': 1,
+  }
+
+  // 上午节次（1-4）适合主科，下午节次（5-8）适合副科
+  const morningSubjects = ['语文', '数学', '英语']
+  const afternoonSubjects = ['科学', '道法', '体育', '音乐', '美术', '劳动', '信息']
+
+  // 待排科目池：每个科目按周课时数展开为队列
+  const morningPool: string[] = []
+  for (const subj of morningSubjects) {
+    for (let i = 0; i < (weeklyHours[subj] || 0); i++) morningPool.push(subj)
+  }
+  const afternoonPool: string[] = []
+  for (const subj of afternoonSubjects) {
+    for (let i = 0; i < (weeklyHours[subj] || 0); i++) afternoonPool.push(subj)
+  }
+
+  // 打乱（保持均衡分布）
+  function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr]
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]]
+    }
+    return a
+  }
+
+  const shuffledMorning = shuffle(morningPool)
+  const shuffledAfternoon = shuffle(afternoonPool)
+
+  let morningIdx = 0
+  let afternoonIdx = 0
+
+  for (let p = 0; p < PERIODS; p++) {
+    for (let d = 0; d < dayCount.value; d++) {
+      if (p < 4) {
+        // 上午：主科
+        if (morningIdx < shuffledMorning.length) {
+          // 避免同一科目连续两节
+          const prev = d > 0 ? grid.value[p][d - 1] : ''
+          let subj = shuffledMorning[morningIdx]
+          if (subj === prev && morningIdx + 1 < shuffledMorning.length) {
+            morningIdx++
+            subj = shuffledMorning[morningIdx]
+          }
+          grid.value[p][d] = subj
+          morningIdx++
+        }
+      } else {
+        // 下午：副科
+        if (afternoonIdx < shuffledAfternoon.length) {
+          grid.value[p][d] = shuffledAfternoon[afternoonIdx]
+          afternoonIdx++
+        }
+      }
+    }
+  }
+}
+
 function subjectClass(subj: string) {
   if (!subj) return 'bg-white text-cocoa-400 border-cream-200'
   return SUBJECT_COLORS[subj.trim()] || 'bg-cream-100 text-cocoa-700 border-cream-200'
@@ -119,6 +191,9 @@ onMounted(async () => {
           <option :value="5">周一到周五</option>
           <option :value="6">周一到周六</option>
         </select>
+        <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-mint-100 text-mint-500 hover:bg-mint-300/30 text-sm" @click="autoArrange">
+          <Wand2 class="w-4 h-4" /> 自动排版
+        </button>
         <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200 text-sm" @click="clearAll">
           <Trash2 class="w-4 h-4" /> 清空
         </button>

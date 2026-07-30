@@ -175,10 +175,10 @@ export class SchoolAdminService {
         if (attempt > 200) throw new BadRequestException('无法生成唯一登录名，请为「' + dto.name + '」手动指定用户名')
       }
       const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
-      // password 可选：未传则生成随机初始密码（不再使用统一弱密码 123456），并返回给调用方
-      const initialPassword = dto.password && dto.password.length >= 8
+      // password 可选：未传则统一使用默认口令 1314521（与重置密码保持一致）
+      const initialPassword = dto.password && dto.password.length >= 6
         ? dto.password
-        : crypto.randomBytes(5).toString('hex') + Math.floor(Math.random() * 90 + 10)
+        : '1314521'
       const hash = hashPassword(initialPassword)
       const user = userRepo.create({
         username, passwordHash: hash, name: dto.name,
@@ -651,11 +651,32 @@ export class SchoolAdminService {
     return this.studentRepo.save(student)
   }
 
+  /** 删除学生（校验归属本校，事务清理关联家长联系记录） */
+  async deleteStudent(schoolId: string, id: string) {
+    const student = await this.studentRepo.findOne({ where: { id } })
+    if (!student) throw new BadRequestException('学生不存在')
+    const cls = await this.classRepo.findOne({ where: { id: student.classId } })
+    if (cls) {
+      const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+      if (!teacher) throw new BadRequestException('无权操作此学生')
+    }
+    await this.entityManager.transaction(async (em) => {
+      // 清理家长联系记录
+      try {
+        await em.getRepository(ParentContact).delete({ studentId: id })
+      } catch { /* 表不存在则跳过 */ }
+      await em.getRepository(Student).remove(student)
+    })
+    this.audit.log(schoolId, 'delete_student', '系统', student.name + '(' + (student.studentNo || '') + ')', '删除学生').catch(() => {})
+    return { ok: true }
+  }
+
   /**
    * 批量创建学生：校验所有 classId 属于该 schoolId，逐条写入并返回成功/失败明细。
    * 参考 students.module.ts 的 importStudents，但以 schoolId 做归属校验、
    * 逐条 try/catch 收集结果（不因单条失败回滚全部，与 batchCreateTeachers 风格一致）。
    * 同步为带家长信息的学生生成 parent-contact 记录。
+   * 根据学号控重：学号非空时，若数据库或本批次中已存在相同学号，则跳过并标记失败。
    */
   async batchCreateStudents(schoolId: string, students: any[]) {
     if (!students?.length) throw new BadRequestException('请提供至少一名学生信息')
@@ -667,7 +688,16 @@ export class SchoolAdminService {
     const classMap = new Map(classes.map(c => [c.id, c]))
     if (!classMap.size) throw new BadRequestException('本校暂无班级，无法创建学生')
 
-    // 2. 逐条校验 + 写入
+    // 2. 预查本校所有已存在学号，用于控重（学号非空才查）
+    const allClassIds = Array.from(classMap.keys())
+    const existingStudents = allClassIds.length
+      ? await this.studentRepo.find({ where: allClassIds.map(id => ({ classId: id })), select: ['studentNo'] })
+      : []
+    const existingNos = new Set(existingStudents.map(s => s.studentNo).filter(Boolean))
+    // 本批次内已写入的学号集合（防止批内重复）
+    const batchSeenNos = new Set<string>()
+
+    // 3. 逐条校验 + 写入
     const results: any[] = []
     let success = 0
     let failed = 0
@@ -689,6 +719,11 @@ export class SchoolAdminService {
         const cls = classMap.get(classId)
         if (!cls) throw new Error('班级不属于本校')
         if (parentPhone && !/^\d{6,15}$/.test(parentPhone)) throw new Error('家长电话格式不正确')
+        // 学号控重：学号非空时检查数据库已有 + 本批次已写入
+        if (studentNo) {
+          if (existingNos.has(studentNo)) throw new Error(`学号「${studentNo}」已存在（数据库）`)
+          if (batchSeenNos.has(studentNo)) throw new Error(`学号「${studentNo}」在本批次中重复`)
+        }
 
         // 当前班级已有学生数 + 1 作为 seatNo
         const existCount = await this.studentRepo.count({ where: { classId } })
@@ -698,6 +733,8 @@ export class SchoolAdminService {
           seatNo: existCount + 1, tags: [], teacherId: cls.teacherId,
         })
         const saved = await this.studentRepo.save(e)
+        // 记录已写入学号，供后续批次控重
+        if (studentNo) batchSeenNos.add(studentNo)
         // 同步生成家长联系记录
         if (parentName || parentPhone) {
           const pc = new ParentContact()

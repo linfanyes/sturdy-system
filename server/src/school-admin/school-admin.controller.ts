@@ -203,6 +203,12 @@ export class SchoolAdminController {
     return this.svc.updateStudent(a.schoolId, id, b)
   }
 
+  @Delete('students/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
+    return this.svc.deleteStudent(a.schoolId, id)
+  }
+
   /** 批量创建学生（接收 students 数组，可跨班级；校验所有 classId 属于本校） */
   @Post('students/batch')
   @UseGuards(JwtAuthGuard)

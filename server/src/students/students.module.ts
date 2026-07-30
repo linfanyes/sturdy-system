@@ -127,8 +127,24 @@ class StudentsService extends CrudService<Student> {
       const today = new Date().toISOString().slice(0, 10)
       const studentEntities: Student[] = []
       const contactEntities: ParentContact[] = []
+
+      // 学号控重：预查该班级已存在学号 + 本批次内去重
+      const existingStudents = await repo.find({ where: { classId } as any, select: ['studentNo'] })
+      const existingNos = new Set(existingStudents.map(s => s.studentNo).filter(Boolean))
+      const batchSeenNos = new Set<string>()
+      let skippedDup = 0
+
       for (let i = 0; i < items.length; i++) {
         const it = items[i]
+        const studentNo = String(it.studentNo || '').trim()
+        // 学号控重：学号非空时检查数据库已有 + 本批次已写入
+        if (studentNo) {
+          if (existingNos.has(studentNo) || batchSeenNos.has(studentNo)) {
+            skippedDup++
+            continue
+          }
+          batchSeenNos.add(studentNo)
+        }
         const e = new Student()
         Object.assign(e, {
           name: it.name,
@@ -137,11 +153,16 @@ class StudentsService extends CrudService<Student> {
           parentName: it.parentName || '',
           parentPhone: it.parentPhone || '',
           classId,
-          seatNo: i + 1,
+          seatNo: studentEntities.length + 1,
           tags: [],
           teacherId,
         })
         studentEntities.push(e)
+      }
+      if (!studentEntities.length) {
+        throw new BadRequestException(skippedDup
+          ? `导入的 ${skippedDup} 条学生学号已存在，全部跳过`
+          : '没有可导入的学生')
       }
       const savedStudents = await repo.save(studentEntities)
       for (let i = 0; i < savedStudents.length; i++) {

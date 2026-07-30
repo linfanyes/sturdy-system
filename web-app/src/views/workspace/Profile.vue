@@ -12,18 +12,42 @@ const form = ref({
   name: '',
   phone: '',
   subject: '',
+  subjects: [] as string[],
   gender: '',
   school: '',
 })
 
+/** 平台预设学科列表（从超管配置加载） */
+const platformSubjects = ref<string[]>([])
+const DEFAULT_SUBJECTS = ['语文', '数学', '英语', '科学', '体育', '音乐', '美术', '道法', '劳动', '信息']
+
+const subjectOptions = computed(() =>
+  platformSubjects.value.length ? platformSubjects.value : DEFAULT_SUBJECTS,
+)
+
 async function loadProfile() {
   loading.value = true
   try {
-    const res = await request.get('/users/me')
+    // 同时加载用户信息和平台配置的学科
+    const [res, appCfg] = await Promise.all([
+      request.get('/users/me'),
+      request.get('/config/app-config').catch(() => null),
+    ])
+    // 解析平台预设学科
+    if (appCfg?.defaultSubjects) {
+      try {
+        platformSubjects.value = typeof appCfg.defaultSubjects === 'string'
+          ? JSON.parse(appCfg.defaultSubjects)
+          : appCfg.defaultSubjects
+      } catch {
+        platformSubjects.value = String(appCfg.defaultSubjects).split(',').map((s: string) => s.trim()).filter(Boolean)
+      }
+    }
     form.value = {
       name: res.name || '',
       phone: res.phone || '',
       subject: res.subject || '',
+      subjects: Array.isArray(res.subjects) ? res.subjects : [],
       gender: res.gender || '',
       school: res.school || '',
     }
@@ -39,6 +63,15 @@ const phoneError = computed(() =>
   form.value.phone && !isValidPhone(form.value.phone) ? PHONE_HINT : '',
 )
 
+/** 切换学科选中状态 */
+function toggleSubject(subj: string) {
+  const idx = form.value.subjects.indexOf(subj)
+  if (idx >= 0) form.value.subjects.splice(idx, 1)
+  else form.value.subjects.push(subj)
+  // 同步单个 subject 字段（兼容旧逻辑）
+  form.value.subject = form.value.subjects.join(',')
+}
+
 async function save() {
   if (form.value.phone && !isValidPhone(form.value.phone)) {
     alert(PHONE_HINT)
@@ -49,7 +82,8 @@ async function save() {
     await request.patch('/users/me', {
       name: form.value.name,
       phone: form.value.phone,
-      subject: form.value.subject,
+      subject: form.value.subjects.join(','),
+      subjects: form.value.subjects,
       gender: form.value.gender,
     })
     auth.updateUser({ name: form.value.name })
@@ -94,10 +128,6 @@ async function save() {
             <p v-if="phoneError" class="text-xs text-red-500 mt-1">{{ phoneError }}</p>
           </div>
           <div>
-            <label class="text-sm text-cocoa-500 flex items-center gap-1"><BookOpen class="w-3.5 h-3.5" />任教学科</label>
-            <input v-model="form.subject" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
-          </div>
-          <div>
             <label class="text-sm text-cocoa-500 flex items-center gap-1"><Calendar class="w-3.5 h-3.5" />性别</label>
             <select v-model="form.gender" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
               <option value="">未设置</option>
@@ -109,6 +139,26 @@ async function save() {
             <label class="text-sm text-cocoa-500 flex items-center gap-1"><School class="w-3.5 h-3.5" />所属学校</label>
             <input v-model="form.school" readonly placeholder="由学校管理员分配" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-cocoa-400" />
           </div>
+        </div>
+
+        <!-- 任教学科（多选） -->
+        <div>
+          <label class="text-sm text-cocoa-500 flex items-center gap-1"><BookOpen class="w-3.5 h-3.5" />任教学科（可多选）</label>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button
+              v-for="subj in subjectOptions"
+              :key="subj"
+              type="button"
+              :class="[
+                'text-sm px-3 py-1.5 rounded-full border transition-colors',
+                form.subjects.includes(subj)
+                  ? 'border-butter-400 bg-butter-100 text-butter-600'
+                  : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+              ]"
+              @click="toggleSubject(subj)"
+            >{{ subj }}</button>
+          </div>
+          <p v-if="!subjectOptions.length" class="text-xs text-cocoa-300 mt-1">暂无可选学科</p>
         </div>
 
         <div class="flex justify-end pt-2">

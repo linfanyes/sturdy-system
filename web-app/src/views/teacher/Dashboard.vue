@@ -61,21 +61,21 @@ const shortcutTools = [
       </div>
     </div>
 
-    <!-- 概览卡片 -->
+    <!-- 概览卡片（可点击跳转） -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/classes')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-butter-500" /> 班级</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ classes.length }}</template></div>
       </div>
-      <div class="stat-card">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 任教班级</div>
-        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ classes.length }}</template></div>
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/students')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生管理</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ totalStudents }}</template></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/todos')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-sky2-500" /> 待办</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ totalExams }}</template></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/config')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-sakura-500" /> 功能权限</div>
         <div class="text-3xl font-bold text-cocoa-900">{{ auth.user?.features?.length ? (auth.user.features.length === 0 ? 0 : auth.user.features.length) : '全部' }}</div>
       </div>

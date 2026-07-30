@@ -13,6 +13,8 @@ export class Teacher extends BaseEntity {
   @Column({ default: '' }) phone: string
   @Column({ default: '' }) email: string
   @Column('simple-json', { nullable: true }) teachings: TeachingEntry[]
+  @Column('simple-array', { nullable: true }) subjects: string[]
+  @Column('simple-array', { nullable: true }) classIds: string[]
   @Column({ type: 'text', nullable: true }) remark: string
   @Column({ default: '' }) joinAt: string
   @Column({ default: '🧑' }) avatar: string

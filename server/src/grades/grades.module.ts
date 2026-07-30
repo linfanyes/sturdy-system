@@ -21,6 +21,17 @@ import { ClassMemberService, ClassMembersModule } from '../class-members/class-m
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
+import { AiModule } from '../ai/ai.module'
+import { AiService } from '../ai/ai.service'
+
+// 成绩 AI 识别指令：约束模型输出 [{name, studentNo, score}] 结构
+const GRADE_INSTRUCTION = `这是一份成绩单（图片 OCR 或文件提取后的文本），请识别其中每个学生及其分数并输出 JSON 数组。每个元素结构：
+{ "name": "学生姓名", "studentNo": "学号(可选)", "score": "分数(数字或空字符串表示缺考)" }
+规则：
+- 只识别真实学生成绩行，跳过表头/标题/合计/平均分/排名行；
+- 分数统一为数字（不含小数则整数，含小数保留一位）；
+- 缺考/空值用空字符串表示；
+- 只返回 JSON 数组，不要任何解释或前后缀文字。`
 
 class GradesService extends CrudService<Grade> {
   constructor(
@@ -28,6 +39,7 @@ class GradesService extends CrudService<Grade> {
     @InjectRepository(Student) private stuRepo: Repository<Student>,
     @InjectRepository(ClassItem) private classRepo: Repository<ClassItem>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly ai: AiService,
   ) {
     super(repo)
   }
@@ -180,6 +192,87 @@ class GradesService extends CrudService<Grade> {
       return { created: true, id: saved.id, count: scores.length }
     })
   }
+
+  /**
+   * AI 识别成绩单（图片 OCR / Excel / CSV 文本提取后交 AI 结构化）。
+   * 返回与 importPreview 一致的 { rows, validCount, errorCount }，前端可直接复用预览 UI 与 importCommit 落库。
+   */
+  async importAi(
+    teacherId: string,
+    classId: string,
+    mode: string,
+    data: string,
+    filename: string,
+  ) {
+    if (!data) throw new BadRequestException('缺少文件数据')
+    const ext = (filename || '').split('.').pop() || ''
+    let text = ''
+
+    if (mode === 'image') {
+      const mime = /png/i.test(ext)
+        ? 'image/png'
+        : /jpe?g/i.test(ext)
+          ? 'image/jpeg'
+          : 'image/png'
+      text = await this.ai.recognizeImage(teacherId, `data:${mime};base64,${data}`)
+    } else {
+      const buf = Buffer.from(data, 'base64')
+      if (/xlsx?/i.test(ext)) {
+        text = await this.ai.parseExcel(buf)
+      } else {
+        text = buf.toString('utf-8')
+      }
+    }
+
+    let parsed: any[] = []
+    try {
+      parsed = await this.ai.parse(teacherId, { text, instruction: GRADE_INSTRUCTION })
+    } catch (e: any) {
+      throw new BadRequestException('AI 解析失败：' + (e?.message || e))
+    }
+    if (!Array.isArray(parsed)) parsed = []
+
+    // 查询班级学生并匹配
+    const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
+    const byNo = new Map(students.map((s) => [s.studentNo, s]))
+    const byName = new Map(students.map((s) => [s.name, s]))
+
+    const rows: any[] = []
+    let validCount = 0
+    let errorCount = 0
+    parsed.forEach((raw, i) => {
+      const name = String(raw?.name || '').trim()
+      const studentNo = String(raw?.studentNo || '').trim()
+      const scoreRaw = String(raw?.score ?? '').trim()
+      const stu =
+        (studentNo && byNo.get(studentNo)) ||
+        (name && byName.get(name)) ||
+        undefined
+      let error = ''
+      let score: number | null = null
+      if (!stu) error = '找不到对应学生（按学号/姓名）'
+      else if (scoreRaw === '') {
+        /* 缺考视为空，允许 */
+      } else if (!/^\d+(\.\d+)?$/.test(scoreRaw)) {
+        error = '分数须为数字'
+      } else {
+        score = Number(scoreRaw)
+        if (score < 0 || score > 1000) error = '分数超出合理范围(0-1000)'
+      }
+      if (error) errorCount++
+      else validCount++
+      rows.push({
+        studentId: stu ? stu.id : null,
+        name: stu ? stu.name : (name || studentNo),
+        studentNo: stu ? stu.studentNo : studentNo,
+        score,
+        line: i + 1,
+        valid: !error,
+        error,
+      })
+    })
+    return { rows, validCount, errorCount, total: parsed.length }
+  }
 }
 
 @Roles('teacher')
@@ -222,10 +315,28 @@ class GradesController extends CrudController<Grade> {
       throw new BadRequestException('没有可导入的数据')
     return (this.service as GradesService).importGrades(t.sub, body)
   }
+
+  /** AI 识别成绩单：图片 OCR / Excel / CSV → AI 结构化 → 匹配学生 → 预览 */
+  @Post('import-ai')
+  @UseGuards(JwtAuthGuard)
+  importAi(
+    @Body() body: { classId: string; mode: string; data: string; filename?: string },
+    @CurrentTeacher() t: any,
+  ) {
+    if (!body?.classId || !body?.mode || !body?.data)
+      throw new BadRequestException('缺少必要参数')
+    return (this.service as GradesService).importAi(
+      t.sub,
+      body.classId,
+      body.mode,
+      body.data,
+      body.filename || '',
+    )
+  }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem]), ClassMembersModule],
+  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem]), ClassMembersModule, AiModule],
   providers: [GradesService],
   controllers: [GradesController],
 })

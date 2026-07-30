@@ -183,9 +183,9 @@ function toast(msg: string) {
       </div>
     </div>
 
-    <!-- 关键指标卡片（4 个） -->
+    <!-- 关键指标卡片（4 个，可点击跳转） -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/schools')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <School class="w-4 h-4 text-butter-500" /> 学校
         </div>
@@ -197,7 +197,7 @@ function toast(msg: string) {
           <TrendingUp class="w-3 h-3" /> +3 本周
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/admins')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <Users class="w-4 h-4 text-mint-500" /> 管理员
         </div>
@@ -209,7 +209,7 @@ function toast(msg: string) {
           <TrendingUp class="w-3 h-3" /> +1 本周
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/audit-logs')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <Clock class="w-4 h-4 text-sky2-500" /> 今日日志
         </div>
@@ -219,7 +219,7 @@ function toast(msg: string) {
         </div>
         <div class="text-xs text-cocoa-400 mt-1">条审计记录</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/audit-logs')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
           <Activity class="w-4 h-4 text-sakura-500" /> 本周活跃
         </div>

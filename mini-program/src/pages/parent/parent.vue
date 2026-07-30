@@ -41,21 +41,21 @@
       </view>
     </view>
 
-    <!-- 顶部统计卡片（与 Web 端对齐） -->
+    <!-- 顶部统计卡片（与 Web 端对齐，点击查看详情） -->
     <view class="stats-row" v-if="!loading">
-      <view class="stat-card">
+      <view class="stat-card clickable" @tap="tab = 'pending'">
         <view class="stat-label">📢 待读通知</view>
         <view class="stat-value">{{ stats.notices }}</view>
       </view>
-      <view class="stat-card">
+      <view class="stat-card clickable" @tap="tab = 'pending'">
         <view class="stat-label">📝 待完成作业</view>
         <view class="stat-value">{{ stats.homework }}</view>
       </view>
-      <view class="stat-card">
+      <view class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">📊 考试次数</view>
         <view class="stat-value">{{ stats.exams }}</view>
       </view>
-      <view class="stat-card">
+      <view class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">🏆 最新排名</view>
         <view class="stat-value">{{ stats.rank }}</view>
       </view>
@@ -656,7 +656,19 @@ function switchToTeacher() {
   })
 }
 
-function logout() { logoutParent(); uni.reLaunch({ url: '/pages/login/login' }) }
+function logout() {
+  uni.showModal({
+    title: '退出登录',
+    content: '确定退出当前账号？',
+    confirmColor: '#e64340',
+    success: (res) => {
+      if (res.confirm) {
+        logoutParent()
+        uni.reLaunch({ url: '/pages/login/login' })
+      }
+    },
+  })
+}
 
 async function load() {
   loading.value = true
@@ -720,6 +732,8 @@ onShow(() => {
 /* Stats Row */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10rpx; margin-bottom: 14rpx; }
 .stat-card { background: var(--c-card); border-radius: 12rpx; padding: 14rpx 10rpx; text-align: center; }
+.stat-card.clickable { transition: transform 0.15s, box-shadow 0.15s; }
+.stat-card.clickable:active { transform: scale(0.96); box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.1); }
 .stat-label { font-size: 22rpx; color: var(--c-sub); margin-bottom: 6rpx; }
 .stat-value { font-size: 28rpx; font-weight: 800; color: var(--c-title); }
 .sec { margin-bottom: 14rpx; }

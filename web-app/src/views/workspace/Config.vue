@@ -312,18 +312,52 @@ const SEMESTER_OPTIONS = (() => {
   return opts
 })()
 
+/** 当前学期默认值：9-12月为秋季，其余为春季 */
+function currentSemester(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  return d.getMonth() >= 8 ? `${y}秋季` : `${y}春季`
+}
+
+/** 应用主题到 document，实现深色/浅色即时切换 */
+function applyTheme(theme: string) {
+  const root = document.documentElement
+  if (theme === 'dark') {
+    root.classList.add('dark')
+  } else if (theme === 'auto') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    root.classList.toggle('dark', prefersDark)
+  } else {
+    root.classList.remove('dark')
+  }
+}
+
 async function loadApp() {
   try {
     const app = await request.get('/config/app-config').catch(() => null)
     if (app) Object.assign(appForm, app)
+    // 当前学期默认显示本学期
+    if (!appForm.semester) appForm.semester = currentSemester()
+    // 即时应用主题
+    applyTheme(appForm.theme)
   } catch { /* ignore */ }
 }
-onMounted(() => { loadApp() })
+
+/** 主题改变即时应用 */
+watch(() => appForm.theme, (t) => applyTheme(t))
+
+onMounted(() => {
+  loadApp()
+  load() // 加载 AI 配置（修复：原先未调用 load）
+})
 
 async function saveApp() {
   saving.value = true
   try {
     await request.patch('/config/app-config', appForm)
+    // 同步主题到用户档案
+    await request.patch('/users/me', { theme: appForm.theme }).catch(() => {})
+    applyTheme(appForm.theme)
     alert('应用配置已保存')
   } catch (e: any) {
     alert(e?.message || '保存失败')

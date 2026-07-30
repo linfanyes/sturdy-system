@@ -31,21 +31,24 @@ const calendarDays = computed(() => {
   const first = new Date(year.value, month.value, 1)
   const startDay = first.getDay()
   const daysInMonth = new Date(year.value, month.value + 1, 0).getDate()
-  const days: { date: string; day: number; inMonth: boolean }[] = []
+  const days: { date: string; day: number; inMonth: boolean; isWeekend: boolean }[] = []
   // 前置补位
   for (let i = startDay - 1; i >= 0; i--) {
     const d = new Date(year.value, month.value, -i)
-    days.push({ date: fmtDate(d), day: d.getDate(), inMonth: false })
+    const dow = d.getDay()
+    days.push({ date: fmtDate(d), day: d.getDate(), inMonth: false, isWeekend: dow === 0 || dow === 6 })
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year.value, month.value, d)
-    days.push({ date: fmtDate(date), day: d, inMonth: true })
+    const dow = date.getDay()
+    days.push({ date: fmtDate(date), day: d, inMonth: true, isWeekend: dow === 0 || dow === 6 })
   }
   // 后置补位至 6 行
   while (days.length % 7 !== 0) {
     const last = new Date(days[days.length - 1].date)
     last.setDate(last.getDate() + 1)
-    days.push({ date: fmtDate(last), day: last.getDate(), inMonth: false })
+    const dow = last.getDay()
+    days.push({ date: fmtDate(last), day: last.getDate(), inMonth: false, isWeekend: dow === 0 || dow === 6 })
   }
   return days
 })
@@ -153,7 +156,8 @@ const todayStr = fmtDate(new Date())
     <!-- 日历网格 -->
     <div class="bg-white rounded-2xl p-4 shadow-softer">
       <div class="grid grid-cols-7 gap-1 mb-1">
-        <div v-for="w in ['日','一','二','三','四','五','六']" :key="w" class="text-center text-xs text-cocoa-400 py-2">{{ w }}</div>
+        <div v-for="(w, i) in ['日','一','二','三','四','五','六']" :key="w"
+          :class="['text-center text-xs py-2 font-medium', (i === 0 || i === 6) ? 'text-sakura-400' : 'text-cocoa-500']">{{ w }}</div>
       </div>
       <div class="grid grid-cols-7 gap-1">
         <div
@@ -161,12 +165,20 @@ const todayStr = fmtDate(new Date())
           :key="d.date"
           :class="[
             'min-h-[5rem] rounded-lg border p-1.5 cursor-pointer transition-colors',
-            d.inMonth ? 'border-cream-200 bg-white hover:border-butter-300' : 'border-cream-100 bg-cream-50/50 text-cocoa-300',
+            d.inMonth
+              ? (d.isWeekend
+                ? 'border-sakura-200 bg-sakura-50/40 hover:border-sakura-300'
+                : 'border-mint-200 bg-mint-50/30 hover:border-mint-300')
+              : 'border-cream-100 bg-cream-50/50 text-cocoa-300',
             d.date === todayStr ? 'ring-2 ring-butter-400' : '',
           ]"
           @click="openCreate(d.date)"
         >
-          <div class="text-xs font-medium" :class="d.date === todayStr ? 'text-butter-600' : ''">{{ d.day }}</div>
+          <div class="text-xs font-medium" :class="[
+            d.date === todayStr ? 'text-butter-600'
+              : d.inMonth && d.isWeekend ? 'text-sakura-500'
+              : d.inMonth ? 'text-mint-600' : 'text-cocoa-300'
+          ]">{{ d.day }}</div>
           <div class="mt-1 space-y-0.5">
             <div
               v-for="item in itemsOnDate(d.date)"
@@ -179,6 +191,11 @@ const todayStr = fmtDate(new Date())
             </div>
           </div>
         </div>
+      </div>
+      <div class="flex items-center gap-4 mt-3 text-xs text-cocoa-400">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-mint-200 bg-mint-50/30"></span>工作日</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded border border-sakura-200 bg-sakura-50/40"></span>周末</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded ring-2 ring-butter-400"></span>今天</span>
       </div>
     </div>
   </div>

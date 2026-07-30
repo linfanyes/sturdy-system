@@ -15,6 +15,7 @@ export default defineConfig({
   server: {
     port: 5201,
     host: 'localhost',
+    hmr: false,
     proxy: {
       // 开发模式直连云托管后端（无需本地启动 server）
       '/api': {

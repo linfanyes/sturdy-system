@@ -385,7 +385,7 @@ function handlePrint() {
       <template v-if="!editingId">
         <div>
           <label class="text-sm text-cocoa-500">初始密码</label>
-          <input v-model="form.password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则默认 123456" />
+          <input v-model="form.password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="留空则默认 1314521" />
         </div>
       </template>
     </div>
