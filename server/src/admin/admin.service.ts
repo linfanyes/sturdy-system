@@ -13,7 +13,7 @@ import { hashPassword } from '../common/utils/password.util'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { AuditService } from '../audit/audit.service'
 import { TEACHER_ID_TABLES, CLASS_ID_TABLES, ALL_BUSINESS_TABLES } from '../common/constants/tenant-tables'
-import { FEATURE_FLAGS } from '@gardener/shared/constants'
+import { FEATURE_FLAGS } from '../common/feature/feature-flags.constants'
 
 @Injectable()
 export class AdminService implements OnModuleInit {

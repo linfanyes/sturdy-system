@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import { User } from '../../users/user.entity'
 import { Student } from '../../students/student.entity'
 import { School } from '../../school/school.entity'
-import { FEATURE_FLAGS } from '@gardener/shared/constants'
+import { FEATURE_FLAGS } from './feature-flags.constants'
 import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
 
 /** 层级解析器注入令牌（便于将来插入 ProjectLevelResolver 等而不返工） */
