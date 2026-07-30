@@ -83,7 +83,7 @@ const items = computed(() => {
   }))
   // 消息（来自 /messages）
   messages.value.forEach((m) => arr.push({
-    type: 'message', tag: mTypeTag(m.type), pinned: false, read: m.read,
+    type: 'message', tag: mTypeTag(m.type), pinned: false, read: m.isRead ?? m.read,
     title: m.title, sub: m.content, time: fmt(m.createdAt),
     ts: m.createdAt,
     raw: m,
@@ -135,6 +135,9 @@ function open(it) {
     it.read = true
     if (it.type === 'notification') {
       api.patch('/notifications/' + it.raw.id + '/read').catch(() => {})
+    } else if (it.type === 'message') {
+      // 标记消息已读（PATCH /api/messages/:id/read，仅收件人本人）
+      api.patch('/messages/' + it.raw.id + '/read').catch(() => {})
     }
   }
   // 跳转
@@ -154,16 +157,19 @@ function open(it) {
 async function load() {
   loading.value = true
   try {
-    const [n, t, k, nf] = await Promise.all([
+    const [n, t, k, nf, ms] = await Promise.all([
       api.get('/notices').catch(() => []),
       api.get('/todos').catch(() => []),
       api.get('/notes').catch(() => []),
       api.get('/notifications').catch(() => []),
+      api.get('/messages?skip=0&take=50').catch(() => []),
     ])
     notices.value = Array.isArray(n) ? n : (n.items || [])
     todos.value = Array.isArray(t) ? t : (t.items || [])
     notes.value = Array.isArray(k) ? k : (k.items || [])
     notifications.value = Array.isArray(nf) ? nf : (nf.items || [])
+    // 消息中心：真实请求 /api/messages，赋值给已声明的 messages ref
+    messages.value = Array.isArray(ms) ? ms : (ms.items || [])
   } finally {
     loading.value = false
   }

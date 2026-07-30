@@ -42,6 +42,7 @@ import { ParentAuthModule } from './parent-auth/parent-auth.module'
 import { SchoolAdminModule } from './school-admin/school-admin.module'
 import { AuditModule } from './audit/audit.module'
 import { NotificationModule } from './notification/notification.module'
+import { MessagesModule } from './messages/messages.module'
 import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.module'
 import { HealthController } from './health.controller'
 
@@ -110,6 +111,7 @@ import { HealthController } from './health.controller'
     SchoolAdminModule,
     AuditModule,
     NotificationModule,
+    MessagesModule,
     GeneratedModule,
     DutyRosterModule,
     SchoolModule,

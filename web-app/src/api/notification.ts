@@ -36,9 +36,23 @@ export interface AppMessage {
 }
 
 export function listMessages(skip = 0, take = 20) {
-  return request.get<any, { items: AppMessage[]; total: number } | AppMessage[]>('/messages', { params: { skip, take } })
+  return request
+    .get<any, { items: any[]; total: number } | any[]>('/messages', { params: { skip, take } })
+    .then((res) => {
+      // 后端返回 isRead / type；前端视图按 read / category 渲染，在此统一适配
+      const normalize = (m: any) => ({
+        ...m,
+        read: m.isRead ?? m.read ?? false,
+        category: 'message',
+      })
+      if (Array.isArray(res)) {
+        return res.map(normalize)
+      }
+      const items = (res?.items || []).map(normalize)
+      return { items, total: res?.total ?? items.length }
+    })
 }
 
 export function markMessageRead(id: string) {
-  return request.post(`/messages/${id}/read`)
+  return request.patch(`/messages/${id}/read`)
 }
