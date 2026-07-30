@@ -7,8 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "vue-tsc -b",
     "check": "vue-tsc -b",
     "test": "jest --forceExit --detectOpenHandles",
     "test:report": "jest --forceExit --detectOpenHandles --json --outputFile=test-report.json",

@@ -44,6 +44,7 @@ import { AuditModule } from './audit/audit.module'
 import { NotificationModule } from './notification/notification.module'
 import { MessagesModule } from './messages/messages.module'
 import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.module'
+import { FeatureModule } from './common/feature/feature.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -134,6 +135,7 @@ import { HealthController } from './health.controller'
     SecurityModule,
     ImModule,
     TeachingCalendarModule,
+    FeatureModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

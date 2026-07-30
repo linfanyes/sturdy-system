@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import {
   GeneratedPaper,
   GeneratedLessonPlan,
@@ -19,6 +22,8 @@ class PapersService extends CrudService<GeneratedPaper> {
   }
 }
 @Roles('teacher')
+@Feature('ai')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('generated/papers')
 class PapersController extends CrudController<GeneratedPaper> {
   constructor(s: PapersService) {
@@ -34,6 +39,8 @@ class PlansService extends CrudService<GeneratedLessonPlan> {
   }
 }
 @Roles('teacher')
+@Feature('ai')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('generated/lesson-plans')
 class PlansController extends CrudController<GeneratedLessonPlan> {
   constructor(s: PlansService) {
@@ -49,6 +56,8 @@ class KnowledgeService extends CrudService<GeneratedKnowledge> {
   }
 }
 @Roles('teacher')
+@Feature('ai')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('generated/knowledges')
 class KnowledgeController extends CrudController<GeneratedKnowledge> {
   constructor(s: KnowledgeService) {
@@ -62,6 +71,8 @@ class QueryService extends CrudService<PaperQueryDoc> {
   }
 }
 @Roles('teacher')
+@Feature('ai')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('generated/queries')
 class QueryController extends CrudController<PaperQueryDoc> {
   constructor(s: QueryService) {

@@ -228,15 +228,38 @@
           <text class="full-placeholder"></text>
         </view>
         <scroll-view scroll-y class="full-body">
+          <!-- 有效权限预览：effective = 学校级 ∩ 教师级（与 Web 端 Teachers.vue 同文案） -->
+          <view class="eff-box">
+            <view class="eff-head">
+              <text class="eff-title">有效权限预览</text>
+              <text class="eff-count">实际可用 {{ effectivePreview.length }} / {{ allFeatures.length }} 项</text>
+            </view>
+            <text class="eff-desc">实际可用 = 学校级 ∩ 教师级。学校级关闭后，该校教师即使勾选也不可用。<text v-if="schoolAllOn">当前学校级未做限制（全部开放）。</text></text>
+            <view v-if="effectivePreview.length" class="eff-tags">
+              <text class="eff-tag" v-for="f in effectivePreview" :key="f.key">{{ f.label }}</text>
+            </view>
+            <text v-else class="eff-none">当前配置下该教师无任何可用功能。</text>
+            <view v-if="blockedSelected.length" class="eff-blocked">
+              <text class="eff-blocked-t">以下 {{ blockedSelected.length }} 项已被学校级关闭，勾选也不生效：{{ blockedSelectedText }}</text>
+            </view>
+          </view>
+
           <view class="feat-toolbar">
             <text class="act" @click="selectAll">全选</text>
             <text class="act" @click="selectNone">全不选</text>
             <text class="sc">{{ sel.length }}/{{ allFeatures.length }} 项已启用</text>
           </view>
           <view class="flist">
-            <label class="frow" v-for="f in allFeatures" :key="f.key" @click="toggleFeat(f.key)">
-              <text class="ck" :class="sel.includes(f.key)&&'on'"></text>
+            <label
+              class="frow"
+              :class="blockedBySchool(f.key) && 'locked'"
+              v-for="f in allFeatures"
+              :key="f.key"
+              @click="toggleFeat(f.key)"
+            >
+              <text class="ck" :class="[sel.includes(f.key)&&'on', blockedBySchool(f.key)&&'dis']"></text>
               <text class="frow-label">{{ f.label }}</text>
+              <text v-if="blockedBySchool(f.key)" class="frow-lock">被学校级关闭</text>
             </label>
           </view>
         </scroll-view>
@@ -390,9 +413,10 @@ import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { setMockMode } from '../../common/request'
 import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
-import { auth, setAuth } from '../../common/store'
+import { auth, setAuth, setFeatureProfile } from '../../common/store'
 import { isPhone } from '../../common/validators'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
+import { FEATURE_FLAG_LIST } from '@gardener/shared/constants'
 
 // 年级选项（与 web 对齐）
 const GRADE_OPTIONS = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
@@ -427,30 +451,8 @@ const phoneError = ref('')
 const featUser = ref(null), sel = ref([])
 const pwdUser = ref(null), newPwd = ref('')
 
-const allFeatures = [
-  // 班级与学生
-  { key:'classes',label:'班级管理' },{ key:'students',label:'学生管理' },
-  // 学情与考试
-  { key:'exams',label:'考试管理' },{ key:'grades',label:'成绩管理' },{ key:'analysis',label:'考试分析/试卷查询' },
-  { key:'attendance',label:'考勤' },{ key:'homework',label:'作业' },
-  // 课堂工具
-  { key:'tools',label:'课堂工具' },{ key:'seats',label:'座位表' },{ key:'games',label:'小游戏' },
-  // 学生评价
-  { key:'rewards',label:'奖励/积分' },{ key:'growth',label:'成长记录' },{ key:'behavior',label:'行为记录' },
-  { key:'reading',label:'课外阅读' },{ key:'checkin',label:'学生打卡' },
-  // 班级管理
-  { key:'finance',label:'班费' },{ key:'activities',label:'班级活动' },{ key:'duty',label:'轮值表/值日' },
-  { key:'gallery',label:'班级风采/相册' },
-  // 家校沟通
-  { key:'parents',label:'家长联系' },{ key:'im',label:'家校沟通' },{ key:'notices',label:'公告' },
-  // AI 与备课
-  { key:'ai',label:'AI助手/备课' },{ key:'schedule',label:'课表' },
-  // 教师办公
-  { key:'worklog',label:'工作日志' },{ key:'observation',label:'听课记录' },{ key:'calendar',label:'教学日历' },
-  { key:'teachers',label:'教师通讯录' },
-  // 个人
-  { key:'todos',label:'待办事项' },{ key:'notes',label:'笔记' },{ key:'demo',label:'演示模式' },
-]
+// 教师级功能包清单：单一事实来源（shared/constants FEATURE_FLAG_LIST，与 Web 端对齐）
+const allFeatures = FEATURE_FLAG_LIST
 
 function getToken() { return uni.getStorageSync('sa_token') }
 
@@ -615,16 +617,59 @@ async function delTeacher(u) {
 function openFeatures(u) {
   featUser.value = u
   sel.value = u.features && u.features.length ? [...u.features] : allFeatures.map(f => f.key)
+  loadSchoolFlags()
 }
 
 function toggleFeat(key) {
+  // 被学校级关闭的项锁定，勾选也不生效
+  if (blockedBySchool(key)) return
   const i = sel.value.indexOf(key)
   if (i >= 0) sel.value.splice(i, 1)
   else sel.value.push(key)
 }
 
-function selectAll() { sel.value = allFeatures.map(f => f.key) }
+/** 全选：跳过被学校级关闭的项（选了也不可用） */
+function selectAll() { sel.value = allFeatures.filter(f => !blockedBySchool(f.key)).map(f => f.key) }
 function selectNone() { sel.value = [] }
+
+/* ---------- 有效权限预览：effective = 学校级 ∩ 教师级（与 Web 端 Teachers.vue 同公式/同文案） ---------- */
+
+/** 本校学校级功能包开关；null/[] = 全开（不收窄） */
+const schoolFlags = ref(Array.isArray(auth.schoolFeatureFlags) && auth.schoolFeatureFlags.length ? auth.schoolFeatureFlags : null)
+
+/** 学校级是否未做限制（全部开放） */
+const schoolAllOn = computed(() => schoolFlags.value === null)
+
+/** 拉取 /auth/me 刷新本校学校级开关（登录响应已含，这里做兜底与刷新） */
+async function loadSchoolFlags() {
+  try {
+    const me = await apiCall('GET', '/auth/me')
+    const flags = me && me.schoolFeatureFlags
+    schoolFlags.value = Array.isArray(flags) && flags.length ? flags : null
+    setFeatureProfile(me)
+  } catch (e) {
+    // 拉取失败时沿用登录态缓存，不阻塞功能配置
+  }
+}
+
+/** 某 key 是否被学校级关闭 */
+function blockedBySchool(key) {
+  if (schoolAllOn.value) return false
+  return schoolFlags.value.indexOf(key) < 0
+}
+
+/** 实际可用清单（保持 allFeatures 原始顺序） */
+const effectivePreview = computed(() =>
+  allFeatures.filter(f => !blockedBySchool(f.key) && sel.value.indexOf(f.key) >= 0),
+)
+
+/** 被学校级关闭、但教师侧勾选了的项 */
+const blockedSelected = computed(() =>
+  allFeatures.filter(f => blockedBySchool(f.key) && sel.value.indexOf(f.key) >= 0),
+)
+
+/** 被学校级关闭项的中文标签串（模板展示用） */
+const blockedSelectedText = computed(() => blockedSelected.value.map(f => f.label).join('、'))
 
 async function saveFeatures() {
   saving.value = true
@@ -1020,6 +1065,23 @@ onShow(async () => {
 .frow-label { flex: 1; }
 .ck { width: 28rpx; height: 28rpx; border-radius: 50%; border: 3rpx solid var(--c-sub); flex-shrink: 0; }
 .ck.on { background: var(--c-primary); border-color: var(--c-primary); }
+/* 被学校级关闭：置灰 + 锁定 */
+.ck.dis { background: transparent; border-color: var(--c-border); opacity: .5; }
+.frow.locked { opacity: .55; }
+.frow.locked .frow-label { text-decoration: line-through; }
+.frow-lock { font-size: 20rpx; color: var(--c-sub); flex-shrink: 0; }
+
+/* 有效权限预览 */
+.eff-box { margin: 12rpx 0 18rpx; padding: 18rpx 20rpx; border: 1px solid var(--c-border); border-radius: 16rpx; background: var(--c-card, transparent); }
+.eff-head { display: flex; align-items: center; justify-content: space-between; }
+.eff-title { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
+.eff-count { font-size: 22rpx; color: var(--c-sub); }
+.eff-desc { display: block; margin-top: 8rpx; font-size: 22rpx; line-height: 1.6; color: var(--c-sub); }
+.eff-tags { display: flex; flex-wrap: wrap; margin-top: 12rpx; }
+.eff-tag { font-size: 20rpx; color: var(--c-primary); border: 1px solid var(--c-border); border-radius: 20rpx; padding: 4rpx 14rpx; margin: 0 10rpx 10rpx 0; }
+.eff-none { display: block; margin-top: 12rpx; font-size: 22rpx; color: #e06c75; }
+.eff-blocked { margin-top: 12rpx; padding-top: 12rpx; border-top: 1px solid var(--c-border); }
+.eff-blocked-t { font-size: 22rpx; line-height: 1.6; color: var(--c-sub); }
 /* 演示模式 */
 .demo-section { margin-top: 40rpx; padding: 26rpx; background: var(--c-card); border-radius: 20rpx; }
 /* 学校公告 */

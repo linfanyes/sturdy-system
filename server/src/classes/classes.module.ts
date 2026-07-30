@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { ClassItem } from './class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -262,6 +265,8 @@ class ClassesService extends CrudService<ClassItem> {
 }
 
 @Roles('teacher')
+@Feature('classes')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('classes')
 class ClassesController extends CrudController<ClassItem> {
   constructor(private readonly s: ClassesService) {

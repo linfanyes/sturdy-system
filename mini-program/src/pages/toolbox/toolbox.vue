@@ -287,8 +287,11 @@ const viewSections = computed(() => {
   if (order.value && order.value.length) {
     secs = [...secs].sort((a, b) => order.value.indexOf(a.title) - order.value.indexOf(b.title))
   }
-  // 管理员功能过滤：根据 auth.features 限制可见分区
-  const ftrs = auth.features
+  // 功能过滤：优先用后端下发的 effectiveFeatures（= 学校级 ∩ 教师级实际可用），
+  // 未加载时回退旧的 auth.features（向后兼容）。本地仅做 UX 显隐，安全边界在后端 @Feature。
+  const ftrs = (auth.effectiveFeatures && auth.effectiveFeatures.length)
+    ? auth.effectiveFeatures
+    : auth.features
   if (ftrs && ftrs.length) {
     secs = secs.filter((sec) => {
       // 我的工作台+教师办公始终可见

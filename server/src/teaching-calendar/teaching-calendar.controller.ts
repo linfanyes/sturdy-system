@@ -1,4 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
@@ -27,6 +29,8 @@ function stripUnsafe(dto: any): any {
  */
 @Roles('teacher')
 @UseGuards(JwtAuthGuard)
+@Feature('calendar')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('teaching-calendar')
 export class TeachingCalendarController {
   constructor(private readonly svc: TeachingCalendarService) {}

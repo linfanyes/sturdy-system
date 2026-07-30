@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Entity, Column, ValueTransformer, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -28,6 +31,8 @@ export class MyGallery extends BaseEntity {
 
 class Svc extends CrudService<MyGallery> { constructor(@InjectRepository(MyGallery) r: Repository<MyGallery>) { super(r) } }
 @Roles('teacher')
+@Feature('gallery')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('my-galleries') class Ctrl extends CrudController<MyGallery> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([MyGallery])], providers: [Svc], controllers: [Ctrl] })

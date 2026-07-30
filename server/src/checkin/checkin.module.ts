@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Entity, Column, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -23,6 +26,8 @@ export class Checkin extends BaseEntity {
 
 class Svc extends CrudService<Checkin> { constructor(@InjectRepository(Checkin) r: Repository<Checkin>) { super(r) } }
 @Roles('teacher')
+@Feature('checkin')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('checkins') class Ctrl extends CrudController<Checkin> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([Checkin])], providers: [Svc], controllers: [Ctrl] })

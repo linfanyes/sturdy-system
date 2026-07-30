@@ -1,4 +1,6 @@
 import { Controller, Post, Body, Res, UseGuards } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { Response } from 'express'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -14,6 +16,8 @@ import { Student } from '../students/student.entity'
 @Roles('teacher')
 // AI 为高价接口（调用外部大模型 + 解析上传文件），单独限流为 10 次/分钟/IP，严于全局 60/min
 @Throttle({ default: { limit: 10, ttl: 60000 } })
+@Feature('ai')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('ai')
 export class AiController {
   constructor(

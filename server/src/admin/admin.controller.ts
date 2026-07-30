@@ -49,6 +49,13 @@ export class AdminController {
   @UseGuards(JwtAuthGuard)
   updateSchool(@Param('id') id: string, @Body() b: UpdateSchoolDto) { return this.svc.updateSchool(id, b) }
 
+  /** 学校级功能包开关（超管独占）：覆盖该校 featureFlags（null/[]=全部开启；数组=仅列出的包级key可用） */
+  @Patch('schools/:id/features')
+  @UseGuards(JwtAuthGuard)
+  updateSchoolFeatures(@Param('id') id: string, @Body() b: { featureFlags?: string[] }) {
+    return this.svc.updateSchoolFeatures(id, b?.featureFlags || [])
+  }
+
   @Delete('schools/:id')
   @UseGuards(JwtAuthGuard)
   deleteSchool(@Param('id') id: string) { return this.svc.deleteSchool(id) }

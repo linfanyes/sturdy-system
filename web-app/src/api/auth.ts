@@ -22,7 +22,7 @@ export async function superLogin(dto: SuperLoginDto): Promise<LoginResult> {
   const res = await request.post<any, any>('/admin/login', dto)
   return {
     token: res.token,
-    user: { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员' },
+    user: { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员', effectiveFeatures: res.effectiveFeatures },
   }
 }
 
@@ -41,6 +41,7 @@ export async function schoolAdminLogin(dto: SchoolAdminLoginDto): Promise<LoginR
       name: a.name,
       schoolId: a.schoolId,
       schoolName: a.schoolName,
+      effectiveFeatures: res.effectiveFeatures,
     },
   }
 }
@@ -61,6 +62,7 @@ export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
       schoolId: u.schoolId,
       schoolName: u.school,
       features: u.features || [],
+      effectiveFeatures: res.effectiveFeatures,
     },
   }
 }
@@ -81,6 +83,7 @@ export async function parentLogin(dto: ParentLoginDto): Promise<LoginResult> {
       studentId: p.studentId,
       studentName: p.studentName,
       classId: p.classId,
+      effectiveFeatures: res.effectiveFeatures,
     },
   }
 }
@@ -142,7 +145,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
   let user: AuthUser
   switch (role) {
     case 'super':
-      user = { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员' }
+      user = { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员', effectiveFeatures: res.effectiveFeatures }
       break
     case 'school_admin': {
       const a = res.user || {}
@@ -152,6 +155,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
         name: a.name,
         schoolId: a.schoolId,
         schoolName: a.schoolName,
+        effectiveFeatures: res.effectiveFeatures,
       }
       break
     }
@@ -164,6 +168,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
         schoolId: t.schoolId,
         schoolName: t.school,
         features: t.features || [],
+        effectiveFeatures: res.effectiveFeatures,
       }
       break
     }
@@ -176,6 +181,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
         studentId: p.studentId,
         studentName: p.studentName,
         classId: p.classId,
+        effectiveFeatures: res.effectiveFeatures,
       }
       break
     }
@@ -189,4 +195,13 @@ export async function unifiedLogin(username: string, password: string): Promise<
 /** 健康检查：GET /api/health */
 export function checkHealth() {
   return request.get<any, { status: string; time: string }>('/health')
+}
+
+/**
+ * 当前登录态功能档案：GET /api/auth/me
+ * 返回 { role, schoolId, effectiveFeatures, rawFeatures, schoolFeatureFlags, user }
+ */
+export async function getMe() {
+  const res = await request.get<any, any>('/auth/me')
+  return res
 }

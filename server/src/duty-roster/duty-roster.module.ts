@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { DutyRoster } from './duty.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -15,6 +18,8 @@ class DutyRosterService extends CrudService<DutyRoster> {
 }
 
 @Roles('teacher')
+@Feature('duty')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('duty-rosters')
 class DutyRosterController extends CrudController<DutyRoster> {
   constructor(s: DutyRosterService) {

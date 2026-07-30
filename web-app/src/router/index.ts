@@ -34,6 +34,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },
       { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
       { path: 'ai-providers', name: 'super-ai-providers', component: () => import('@/views/super/AiProviders.vue'), meta: { title: 'AI 服务商' } },
+      { path: 'school-features', name: 'super-school-features', component: () => import('@/views/super/SchoolFeatures.vue'), meta: { title: '学校功能包' } },
     ],
   },
   // 校管
@@ -47,6 +48,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'classes', name: 'school-admin-classes', component: () => import('@/views/school-admin/Classes.vue'), meta: { title: '班级管理' } },
       { path: 'students', name: 'school-admin-students', component: () => import('@/views/school-admin/Students.vue'), meta: { title: '学生管理' } },
       { path: 'notices', name: 'school-admin-notices', component: () => import('@/views/school-admin/Notices.vue'), meta: { title: '学校公告' } },
+      { path: 'features', name: 'school-admin-features', component: () => import('@/views/school-admin/FeatureFlags.vue'), meta: { title: '功能包开关' } },
     ],
   },
   // 教师：全部子路由，meta.feature 控制可见性
@@ -264,12 +266,14 @@ router.beforeEach((to) => {
   if (roles && auth.role && !roles.includes(auth.role)) {
     return { name: 'forbidden' }
   }
-  // 教师功能权限：features 为空数组或包含空串时放行全部；否则检查是否包含所需 feature
+  // 功能权限：以登录/me 返回的 effectiveFeatures（学校级 ∩ 教师级实际可用）为准。
+  // 未加载 effectiveFeatures 时放行（兼容），真正数据权限仍由后端 @Feature 强制校验。
   const feature = to.meta.feature as string | undefined
-  if (feature && auth.role === 'teacher') {
-    const features = auth.user?.features || []
-    const allowed = features.length === 0 || features.includes('') || features.includes(feature)
-    if (!allowed) return { name: 'teacher-dashboard' }
+  if (feature) {
+    const eff = auth.user?.effectiveFeatures
+    if (eff && !eff.includes(feature)) {
+      return { name: auth.role === 'teacher' ? 'teacher-dashboard' : 'forbidden' }
+    }
   }
   if (to.name === 'login' && auth.isLoggedIn) {
     return { name: 'home' }

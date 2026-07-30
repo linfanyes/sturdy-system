@@ -9,8 +9,16 @@
  *   teacher      → g_token
  *   parent       → g_parent_token
  *
- * 安全说明：前端守卫仅作体验兜底，真正的权限边界在后端 Guard。
+ * 功能包守卫：对 ai/games/tools 子包页面，额外校验 effectiveFeatures。
+ * 安全说明：前端守卫仅作体验兜底，真正的权限边界在后端 @Feature Guard。
  */
+
+// 子包页面路径前缀 → 所需功能包 key
+const FEATURE_PATH_MAP = {
+  'pages/ai/': 'ai',
+  'pages/games/': 'games',
+  'pages/tools/': 'tools',
+}
 
 export const ROLE = {
   SUPER: 'super',
@@ -56,6 +64,28 @@ function normalizePath(url) {
   return p
 }
 
+/**
+ * 获取当前用户 effectiveFeatures（存储 key: g_effective_features）。
+ * 空数组/非数组 = 未加载，向后兼容放行。
+ */
+function getEffectiveFeatures() {
+  const v = uni.getStorageSync('g_effective_features')
+  return Array.isArray(v) && v.length > 0 ? v : null
+}
+
+/** 校验目标页面是否需要功能包且当前用户是否持有 */
+function checkFeatureAccess(path) {
+  const features = getEffectiveFeatures()
+  // 未加载有效 features → 放行（向后兼容，安全边界以后端为准）
+  if (!features) return true
+  for (const [prefix, featureKey] of Object.entries(FEATURE_PATH_MAP)) {
+    if (path.startsWith(prefix)) {
+      return features.includes(featureKey)
+    }
+  }
+  return true // 非功能包子包页面不校验
+}
+
 /** 校验当前角色是否可访问目标页面 */
 export function canAccess(url) {
   const path = normalizePath(url)
@@ -63,8 +93,10 @@ export function canAccess(url) {
   const role = getCurrentRole()
   const allowedRoles = PAGE_ROLES[path]
   if (!allowedRoles) {
-    // 未在 PAGE_ROLES 声明的业务页（含子包 games/tools/ai）默认仅教师可访问
-    return role === ROLE.TEACHER
+    // 未在 PAGE_ROLES 声明的业务页默认仅教师可访问
+    if (role !== ROLE.TEACHER) return false
+    // 教师身份额外校验功能包
+    return checkFeatureAccess(path)
   }
   if (!role) {
     // 未登录：仅允许公开页

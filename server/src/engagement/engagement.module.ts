@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { RewardRecord, ScoreRecord, GroupScore } from './engagement.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -14,6 +17,8 @@ class RewardService extends CrudService<RewardRecord> {
   }
 }
 @Roles('teacher')
+@Feature('rewards')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('reward-records')
 class RewardController extends CrudController<RewardRecord> {
   constructor(s: RewardService) {
@@ -27,6 +32,8 @@ class ScoreService extends CrudService<ScoreRecord> {
   }
 }
 @Roles('teacher')
+@Feature('rewards')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('score-records')
 class ScoreController extends CrudController<ScoreRecord> {
   constructor(s: ScoreService) {
@@ -40,6 +47,8 @@ class GroupService extends CrudService<GroupScore> {
   }
 }
 @Roles('teacher')
+@Feature('rewards')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('group-scores')
 class GroupController extends CrudController<GroupScore> {
   constructor(s: GroupService) {

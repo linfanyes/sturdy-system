@@ -1,7 +1,8 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { WechatLoginDto } from './dto/wechat-login.dto'
 import { UnifiedLoginDto, AdminLoginDto } from './dto/unified-login.dto'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 
 // 密码登录类接口：每分钟最多 10 次（按 IP + 用户名 防暴力破解）
@@ -47,5 +48,16 @@ export class AuthController {
   @UseGuards(LoginRateLimit)
   passwordLogin(@Body() b: { username?: string; password?: string }) {
     return this.auth.passwordLogin(b?.username || '', b?.password || '')
+  }
+
+  /**
+   * 当前登录态功能档案：返回 role / schoolId / effectiveFeatures（学校级∩教师级实际可用）
+   * / rawFeatures（原始教师级配置）/ schoolFeatureFlags（学校级开关）/ user。
+   * 供 Web / 小程序登录后刷新权限、做「有效权限预览」与菜单显隐。
+   */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@Req() req: any) {
+    return this.auth.me(req.user)
   }
 }

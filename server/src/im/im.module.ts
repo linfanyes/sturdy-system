@@ -15,6 +15,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { NotFoundException, BadRequestException } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { AppConfig } from '../config/app-config.entity'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassItem } from '../classes/class.entity'
@@ -161,6 +163,8 @@ export class ImService {
   }
 }
 
+@Feature('im')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('im')
 export class ImController {
   constructor(private readonly im: ImService) {}

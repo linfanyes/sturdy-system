@@ -31,6 +31,10 @@ export interface AuthUser {
   schoolId?: number
   schoolName?: string
   features?: string[]
+  /** 有效功能包（学校级 ∩ 教师级 实际可用），来自登录/me；用于菜单显隐与路由守卫 */
+  effectiveFeatures?: string[]
+  /** 学校级功能包开关（School.featureFlags），来自登录/me；超管/校管为 null */
+  schoolFeatureFlags?: string[] | null
   studentId?: number
   studentName?: string
   classId?: number

@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { GrowthEntry, BehaviorRecord } from './growth.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -14,6 +17,8 @@ class GrowthService extends CrudService<GrowthEntry> {
   }
 }
 @Roles('teacher')
+@Feature('growth')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('growth-entries')
 class GrowthController extends CrudController<GrowthEntry> {
   constructor(s: GrowthService) {
@@ -27,6 +32,8 @@ class BehaviorService extends CrudService<BehaviorRecord> {
   }
 }
 @Roles('teacher')
+@Feature('behavior')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('behavior-records')
 class BehaviorController extends CrudController<BehaviorRecord> {
   constructor(s: BehaviorService) {

@@ -55,6 +55,7 @@
               </view>
             </view>
             <view class="acts">
+              <text class="act" @click.stop="openSchoolFeatures(s)">功能包</text>
               <text class="act" :class="s.status === 'active' ? 'stop' : 'start'" @click.stop="toggleSchoolStatus(s)">{{ s.status === 'active' ? '停用' : '启用' }}</text>
               <text class="act del" @click.stop="delSchool(s)">删除</text>
             </view>
@@ -740,6 +741,11 @@ async function delSchool(s) {
       }
     },
   })
+}
+
+// 跳转「学校功能包」页（超管独占的学校级功能开关，与 Web 端 /super/school-features 对应）
+function openSchoolFeatures(s) {
+  uni.navigateTo({ url: '/pages/school-admin/school-features?schoolId=' + s.id })
 }
 
 // 列表内快速「停用 / 启用」切换：仅更新 status（后端 updateSchool 支持部分更新）

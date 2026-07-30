@@ -115,11 +115,12 @@ const sections: ToolSection[] = [
   },
 ]
 
-/** 功能权限检查：features 为空数组或包含空串时全部放行 */
+/** 功能权限检查（基于 effectiveFeatures = 学校级 ∩ 教师级 实际可用） */
 function hasFeature(feature?: string): boolean {
   if (!feature) return true
-  const features = auth.user?.features || []
-  return features.length === 0 || features.includes('') || features.includes(feature)
+  const features = auth.user?.effectiveFeatures
+  if (!features) return true
+  return features.includes(feature)
 }
 
 /** 按 feature 过滤后的可见分区（自动隐藏空分区） */

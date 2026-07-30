@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
 import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { Student } from './student.entity'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassItem } from '../classes/class.entity'
@@ -322,6 +324,8 @@ class StudentsService extends CrudService<Student> {
 }
 
 @Roles('teacher')
+@Feature('students')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('students')
 class StudentsController extends CrudController<Student> {
   constructor(s: StudentsService) {

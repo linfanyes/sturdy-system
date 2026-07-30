@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { NoteItem, TodoItem, PickerHistory } from './notes.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -14,6 +17,8 @@ class NoteService extends CrudService<NoteItem> {
   }
 }
 @Roles('teacher')
+@Feature('notes')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('notes')
 class NoteController extends CrudController<NoteItem> {
   constructor(s: NoteService) {
@@ -27,6 +32,8 @@ class TodoService extends CrudService<TodoItem> {
   }
 }
 @Roles('teacher')
+@Feature('todos')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('todos')
 class TodoController extends CrudController<TodoItem> {
   constructor(s: TodoService) {
@@ -40,6 +47,8 @@ class PickerService extends CrudService<PickerHistory> {
   }
 }
 @Roles('teacher')
+@Feature('picker_history')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('picker-history')
 class PickerController extends CrudController<PickerHistory> {
   constructor(s: PickerService) {

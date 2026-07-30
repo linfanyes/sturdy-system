@@ -292,6 +292,21 @@ export class SchoolAdminService {
     return { id: teacherId, features }
   }
 
+  /** 校管查看本校学校级功能包开关（school ∩ teacher 预览用） */
+  async getSchoolFeatures(schoolId: string): Promise<{ schoolId: string; featureFlags: string[] | null }> {
+    const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
+    return { schoolId, featureFlags: school?.featureFlags ?? null }
+  }
+
+  /** 校管更新本校学校级功能包开关 */
+  async updateSchoolFeatures(schoolId: string, featureFlags: string[] | null): Promise<{ schoolId: string; featureFlags: string[] | null }> {
+    const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
+    if (!school) throw new BadRequestException('学校不存在')
+    school.featureFlags = featureFlags
+    await this.schoolRepo.save(school)
+    return { schoolId, featureFlags: school.featureFlags }
+  }
+
   /** 批量停用本校所有教师 */
   async deactivateAllTeachers(schoolId: string) {
     const result = await this.userRepo.update({ schoolId, enabled: true }, { enabled: false })

@@ -7,10 +7,13 @@ import {
 } from '@/api/school-admin'
 import { ALL_FEATURES } from '@/constants/features'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { useAuthStore } from '@/stores/auth'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer } from 'lucide-vue-next'
+
+const auth = useAuthStore()
 
 const loading = ref(false)
 const teachers = ref<TeacherItem[]>([])
@@ -40,7 +43,11 @@ async function loadTeachers() {
   }
 }
 
-onMounted(loadTeachers)
+onMounted(async () => {
+  await loadTeachers()
+  // 刷新本校学校级功能包开关（schoolFeatureFlags），供「有效权限预览」使用
+  await auth.fetchMe()
+})
 
 /* ============ 新增/编辑教师 ============ */
 const showForm = ref(false)
@@ -125,8 +132,54 @@ async function saveFeatures() {
   }
 }
 
-function selectAllFeatures() { selectedFeatures.value = ALL_FEATURES.map(f => f.key) }
+/** 全选：跳过被学校级关闭的项（选了也不可用） */
+function selectAllFeatures() {
+  selectedFeatures.value = ALL_FEATURES.filter(f => !isBlockedBySchool(f.key)).map(f => f.key)
+}
 function clearAllFeatures() { selectedFeatures.value = [] }
+
+/* ---------- 有效权限预览：effective = 学校级 ∩ 教师级 ---------- */
+
+/** 本校学校级功能包开关（来自登录/me 的 schoolFeatureFlags）；null/[] = 全开 */
+const schoolFlags = computed<string[] | null>(() => {
+  const f = auth.user?.schoolFeatureFlags
+  return Array.isArray(f) && f.length > 0 ? f : null
+})
+
+/** 学校级是否全开（未配置时不收窄） */
+const schoolAllOn = computed(() => schoolFlags.value === null)
+
+/** 某 key 是否被学校级关闭（教师即使勾选也不可用） */
+function isBlockedBySchool(key: string): boolean {
+  if (schoolAllOn.value) return false
+  return !schoolFlags.value!.includes(key)
+}
+
+/** 归一化某一级：null/[] → 全集，不做收窄（与后端同公式） */
+function normalizeLevel(flags: string[] | null | undefined): string[] {
+  if (!Array.isArray(flags) || flags.length === 0) return ALL_FEATURES.map(f => f.key)
+  return flags
+}
+
+/** 实际可用 key 列表（保持 ALL_FEATURES 原始顺序） */
+const effectivePreview = computed<{ key: string; label: string }[]>(() => {
+  const school = new Set(normalizeLevel(schoolFlags.value))
+  const teacher = new Set(normalizeLevel(selectedFeatures.value))
+  return ALL_FEATURES.filter(f => school.has(f.key) && teacher.has(f.key))
+})
+
+/** 被学校级关闭、但教师侧勾选了的项（提示冲突） */
+const blockedSelected = computed<{ key: string; label: string }[]>(() =>
+  ALL_FEATURES.filter(f => isBlockedBySchool(f.key) && selectedFeatures.value.includes(f.key)),
+)
+
+/** 勾选切换：被学校级关闭的项锁定，不允许操作 */
+function toggleFeature(key: string) {
+  if (isBlockedBySchool(key)) return
+  const i = selectedFeatures.value.indexOf(key)
+  if (i >= 0) selectedFeatures.value.splice(i, 1)
+  else selectedFeatures.value.push(key)
+}
 
 /* ============ 重置密码 ============ */
 async function handleResetPassword(t: TeacherItem) {
@@ -347,6 +400,35 @@ function handlePrint() {
   <!-- 功能权限配置 -->
   <Modal v-model="showFeatures" :title="`功能权限 · ${featuresTeacher?.name || ''}`" width="max-w-2xl">
     <div class="space-y-3">
+      <!-- 有效权限预览：effective = 学校级 ∩ 教师级 -->
+      <div class="bg-mint-100/40 border border-mint-300/50 rounded-xl px-3 py-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-cocoa-900">有效权限预览</span>
+          <span class="text-xs text-cocoa-500">
+            实际可用 {{ effectivePreview.length }} / {{ ALL_FEATURES.length }} 项
+          </span>
+        </div>
+        <p class="text-xs text-cocoa-500 mt-1">
+          实际可用 = 学校级 ∩ 教师级。学校级关闭后，该校教师即使勾选也不可用。<template v-if="schoolAllOn">当前学校级未做限制（全部开放）。</template>
+        </p>
+        <div v-if="effectivePreview.length" class="flex flex-wrap gap-1.5 mt-2">
+          <span
+            v-for="f in effectivePreview"
+            :key="f.key"
+            class="text-xs px-2 py-0.5 rounded-full bg-mint-100 text-mint-500"
+          >
+            {{ f.label }}
+          </span>
+        </div>
+        <p v-else class="text-xs text-red-500 mt-2">当前配置下该教师无任何可用功能。</p>
+        <div v-if="blockedSelected.length" class="mt-2 pt-2 border-t border-mint-300/40">
+          <p class="text-xs text-cocoa-400">
+            以下 {{ blockedSelected.length }} 项已被学校级关闭，勾选也不生效：
+            <span class="text-cocoa-500">{{ blockedSelected.map(f => f.label).join('、') }}</span>
+          </p>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between bg-cream-50 rounded-xl px-3 py-2">
         <span class="text-sm text-cocoa-500">
           空列表 = 全部可用；勾选后仅勾选的功能可用
@@ -360,24 +442,25 @@ function handlePrint() {
         <label
           v-for="f in ALL_FEATURES"
           :key="f.key"
+          :title="isBlockedBySchool(f.key) ? '被学校级关闭' : ''"
           :class="[
-            'flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-colors text-sm',
-            selectedFeatures.includes(f.key)
-              ? 'border-butter-400 bg-butter-100/50 text-cocoa-900'
-              : 'border-cream-200 hover:bg-cream-50 text-cocoa-700',
+            'flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors text-sm',
+            isBlockedBySchool(f.key)
+              ? 'border-cream-200 bg-cream-100 text-cocoa-400 cursor-not-allowed opacity-70'
+              : selectedFeatures.includes(f.key)
+                ? 'border-butter-400 bg-butter-100/50 text-cocoa-900 cursor-pointer'
+                : 'border-cream-200 hover:bg-cream-50 text-cocoa-700 cursor-pointer',
           ]"
         >
           <input
             type="checkbox"
             :checked="selectedFeatures.includes(f.key)"
-            class="rounded text-butter-500 focus:ring-butter-400"
-            @change="() => {
-              const i = selectedFeatures.indexOf(f.key)
-              if (i >= 0) selectedFeatures.splice(i, 1)
-              else selectedFeatures.push(f.key)
-            }"
+            :disabled="isBlockedBySchool(f.key)"
+            class="rounded text-butter-500 focus:ring-butter-400 disabled:cursor-not-allowed"
+            @change="toggleFeature(f.key)"
           />
-          {{ f.label }}
+          <span class="truncate">{{ f.label }}</span>
+          <span v-if="isBlockedBySchool(f.key)" class="ml-auto text-[10px] text-cocoa-400 whitespace-nowrap">被学校级关闭</span>
         </label>
       </div>
     </div>

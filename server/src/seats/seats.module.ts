@@ -9,6 +9,8 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { SeatLayout } from './seat.entity'
 import { Student } from '../students/student.entity'
 import { CrudService } from '../common/crud/base.service'
@@ -57,6 +59,8 @@ class SeatsService extends CrudService<SeatLayout> {
 }
 
 @Roles('teacher')
+@Feature('seats')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('seat-layouts')
 class SeatsController extends CrudController<SeatLayout> {
   constructor(s: SeatsService) {

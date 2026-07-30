@@ -8,6 +8,8 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { MessageService } from './message.service'
 import { CreateMessageDto } from './dto/create-message.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
@@ -18,8 +20,9 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
  * 守卫与取当前用户装饰器对齐项目现有 Notice/Notification 模块。
  * @CurrentTeacher 实际返回 req.user（含 sub=用户ID、role=角色），教师与家长令牌皆可解析。
  */
+@Feature('im')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('messages')
-@UseGuards(JwtAuthGuard)
 export class MessageController {
   constructor(private readonly svc: MessageService) {}
 

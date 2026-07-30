@@ -14,6 +14,7 @@ import { parentImUserId } from '../im/parent-im.util'
 import { verifyAndUpgrade } from '../common/utils/password.util'
 import { AuditService } from '../audit/audit.service'
 import { Parent } from '../parent/parent.entity'
+import { FeatureService } from '../common/feature/feature.service'
 
 @Injectable()
 export class AuthService {
@@ -28,7 +29,17 @@ export class AuthService {
     @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
     @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly auditService: AuditService,
+    private readonly feature: FeatureService,
   ) {}
+
+  /** 便捷：计算某角色的有效功能包（学校级 ∩ 教师级） */
+  private async effectiveFeaturesFor(
+    role: 'super' | 'school_admin' | 'teacher' | 'parent',
+    opts: { schoolId?: string; teacherFeatures?: string[] | null; studentId?: string } = {},
+  ): Promise<string[]> {
+    const fp = await this.feature.buildProfile({ role, ...opts })
+    return fp.effectiveFeatures
+  }
 
   /** 统一登录：遍历超管→学校管理员→教师→家长，命中即返回 */
   async unifiedLogin(username: string, password: string) {
@@ -41,7 +52,12 @@ export class AuthService {
     const sp = this.config.get('SUPER_ADMIN_PASSWORD') || 'admin'
     if (u === su) {
       if (p === sp) {
-        return { role: 'super', token: this.jwt.sign({ sub: 'super', role: 'super' }), user: { name: '超级管理员' } }
+        return {
+          role: 'super',
+          token: this.jwt.sign({ sub: 'super', role: 'super' }),
+          user: { name: '超级管理员' },
+          effectiveFeatures: await this.effectiveFeaturesFor('super'),
+        }
       }
       throw new UnauthorizedException('密码错误')
     }
@@ -62,6 +78,7 @@ export class AuthService {
           role: 'school_admin',
           token: this.jwt.sign({ sub: admin.id, role: 'school_admin', schoolId: admin.schoolId }),
           user: { id: admin.id, name: admin.name, schoolId: admin.schoolId, schoolName: school?.name || '', schoolCode: school?.code || '' },
+          effectiveFeatures: await this.effectiveFeaturesFor('school_admin'),
         }
       }
       throw new UnauthorizedException('密码错误')
@@ -112,19 +129,25 @@ export class AuthService {
         return {
           needsRoleChoice: true,
           roles: ['teacher', 'parent'],
-          teacher: { role: 'teacher', token: teacherToken, user: safeUser },
+          teacher: { role: 'teacher', token: teacherToken, user: safeUser, effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: teacher.schoolId, teacherFeatures: teacher.features }) },
           parent: {
             role: 'parent',
             parentId: parentRecord!.id,
             kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
             token: parentToken,
             needsBind: false,
+            effectiveFeatures: firstKid ? await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }) : [],
           },
         }
       }
 
       // 无家长身份 → 走原逻辑返回 teacher
-      return { role: 'teacher', token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }), user: safeUser }
+      return {
+        role: 'teacher',
+        token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }),
+        user: safeUser,
+        effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: teacher.schoolId, teacherFeatures: teacher.features }),
+      }
     }
 
     // 4) 家长（用户名=学号，密码为老师开启家长登录时生成的随机密码，不再支持默认弱密码）
@@ -143,6 +166,7 @@ export class AuthService {
       return {
         role: 'parent',
         token: this.jwt.sign({ sub: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), type: 'parent', studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u }),
+        effectiveFeatures: await this.effectiveFeaturesFor('parent', { studentId: stu.id }),
         parent: { imUserId: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u },
       }
     }
@@ -194,13 +218,14 @@ export class AuthService {
         needsRoleChoice: true,
         roles: ['teacher', 'parent'],
         teacher: { role: 'teacher', token: teacherToken, user },
-        parent: {
-          role: 'parent',
-          parentId: p.id,
-          kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
-          token: parentToken,
-          needsBind: false,
-        },
+          parent: {
+            role: 'parent',
+            parentId: p.id,
+            kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
+            token: parentToken,
+            needsBind: false,
+            effectiveFeatures: firstKid ? await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }) : [],
+          },
       }
     }
 
@@ -212,13 +237,13 @@ export class AuthService {
       const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
       const token = this.jwt.sign({ sub: pim, type: 'parent', parentId: parent.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
       const pn = parent.parentName || '家长'
-      return { role: 'parent', token, parentId: parent.id, kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), parentName: pn, needsBind: false }
+      return { role: 'parent', token, parentId: parent.id, effectiveFeatures: await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }), kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), parentName: pn, needsBind: false }
     }
 
     // 情况3：仅教师
     if (user) {
       if (user.enabled === false) throw new UnauthorizedException('账号已被学校管理员禁用，请联系学校')
-      return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user, needsBind: false }
+      return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user, effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }), needsBind: false }
     }
 
     // 情况4：皆无
@@ -352,6 +377,36 @@ export class AuthService {
     const { valid, newHash } = verifyAndUpgrade(password, user.passwordHash)
     if (!valid) throw new UnauthorizedException('密码错误')
     if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }
-    return { token: this.jwt.sign({ sub: user.id, role: 'teacher', schoolId: user.schoolId || '' }), user }
+    return {
+      token: this.jwt.sign({ sub: user.id, role: 'teacher', schoolId: user.schoolId || '' }),
+      user,
+      effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }),
+    }
+  }
+
+  /**
+   * 当前登录态功能档案（GET /auth/me）。
+   * 复用 FeatureService.buildProfile 计算 effectiveFeatures / rawFeatures / schoolFeatureFlags。
+   */
+  async me(user: any) {
+    const profile = await this.feature.buildProfile({
+      role: user.role,
+      schoolId: user.schoolId,
+      studentId: user.studentId,
+    })
+    return {
+      role: profile.role,
+      schoolId: profile.schoolId,
+      effectiveFeatures: profile.effectiveFeatures,
+      rawFeatures: profile.rawFeatures,
+      schoolFeatureFlags: profile.schoolFeatureFlags,
+      user: {
+        id: user.sub,
+        role: user.role,
+        schoolId: user.schoolId,
+        studentId: user.studentId,
+        studentName: user.studentName,
+      },
+    }
   }
 }

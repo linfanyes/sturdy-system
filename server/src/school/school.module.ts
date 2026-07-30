@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
 import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import {
   ScheduleItem,
   Attendance,
@@ -31,6 +33,8 @@ class ScheduleService extends CrudService<ScheduleItem> {
   protected requiredCreateFields = ['classId']
 }
 @Roles('teacher')
+@Feature('schedule')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('schedules')
 class ScheduleController extends CrudController<ScheduleItem> {
   constructor(s: ScheduleService) {
@@ -44,6 +48,8 @@ class AttendanceService extends CrudService<Attendance> {
   }
 }
 @Roles('teacher')
+@Feature('attendance')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('attendances')
 class AttendanceController extends CrudController<Attendance> {
   constructor(s: AttendanceService) {
@@ -57,6 +63,8 @@ class HomeworkService extends CrudService<Homework> {
   }
 }
 @Roles('teacher')
+@Feature('homework')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('homework')
 class HomeworkController extends CrudController<Homework> {
   constructor(s: HomeworkService) {
@@ -91,6 +99,8 @@ class NoticeService extends CrudService<Notice> {
   }
 }
 @Roles('teacher')
+@Feature('notices')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('notices')
 class NoticeController extends CrudController<Notice> {
   constructor(
@@ -153,6 +163,8 @@ class ResourceService extends CrudService<Resource> {
   }
 }
 @Roles('teacher')
+@Feature('subject_tools')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('resources')
 class ResourceController extends CrudController<Resource> {
   constructor(s: ResourceService) {
@@ -355,6 +367,8 @@ class ScheduleImportService {
   }
 }
 
+@Feature('schedule')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('schedules')
 class ScheduleImportController {
   constructor(private readonly svc: ScheduleImportService) {}

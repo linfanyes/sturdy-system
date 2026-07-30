@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller, NotFoundException } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { Exam } from './exam.entity'
 import { Grade } from '../grades/grade.entity'
 import { ClassItem } from '../classes/class.entity'
@@ -80,6 +83,8 @@ class ExamsService extends CrudService<Exam> {
 }
 
 @Roles('teacher')
+@Feature('exams')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('exams')
 class ExamsController extends CrudController<Exam> {
   constructor(s: ExamsService) {

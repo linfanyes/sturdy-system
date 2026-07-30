@@ -45,7 +45,7 @@
 import { ref, computed } from 'vue'
 import api from '../../common/request'
 import { setMockMode } from '../../common/request'
-import { setAuth, setUser, setParent, setDualTokens, theme, auth, parent } from '../../common/store'
+import { setAuth, setUser, setParent, setDualTokens, setFeatureProfile, theme, auth, parent } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
@@ -64,6 +64,8 @@ async function doLogin() {
 
 function handleLoginResult(r) {
   setMockMode(false)  // 正常登录始终退出演示模式
+  // 各登录路径响应均含 effectiveFeatures（= 学校级 ∩ 教师级），统一写入登录态
+  setFeatureProfile(r)
   switch (r.role) {
     case 'super':
       uni.setStorageSync('admin_token', r.token)
@@ -145,11 +147,14 @@ function selectRole(role) {
   if (role === 'teacher') {
     // 登录为教师
     setAuth(data.teacher.token, data.teacher.user)
+    // 教师身份的实际可用功能包（学校级 ∩ 教师级）
+    setFeatureProfile(data.teacher)
     // 存储双角色数据到 parent store，供后续切换使用
     setDualTokens(data.teacher.token, data.parent.token, data.parent)
     uni.reLaunch({ url: '/pages/dashboard/dashboard' })
   } else if (role === 'parent') {
     // 登录为家长
+    setFeatureProfile(data.parent)
     setDualTokens(data.teacher.token, data.parent.token, data.parent)
     // 同步 auth.token 让部分通用 API 也能工作
     auth.token = data.parent.token

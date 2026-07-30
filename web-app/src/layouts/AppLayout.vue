@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import {
   LayoutDashboard, School, LogOut, User, Search, Repeat,
-  Bot, Briefcase, Wrench, Home, ChevronRight,
+  Bot, Briefcase, Wrench, Home, ChevronRight, ToggleLeft,
   Users, BookOpen, ClipboardList, Wallet, Camera,
   Vote, Award, ListTodo, Send, Phone, Image as ImageIcon,
   GraduationCap, Sparkles, FileText, FileQuestion,
@@ -262,6 +262,7 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
     { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ClipboardList, color: 'cocoa' },
     { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
     { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
+    { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
   ],
   school_admin: [
     { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin', icon: LayoutDashboard, color: 'butter' },
@@ -273,11 +274,13 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
   parent: [{ name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' }],
 }
 
-/** 功能权限检查 */
+/** 功能权限检查（基于 effectiveFeatures = 学校级 ∩ 教师级 实际可用） */
 function hasFeature(feature?: string): boolean {
   if (!feature) return true
-  const features = auth.user?.features || []
-  return features.length === 0 || features.includes('') || features.includes(feature)
+  const features = auth.user?.effectiveFeatures
+  // 未加载 effectiveFeatures 时放行（兼容）；否则按实际可用集合判定
+  if (!features) return true
+  return features.includes(feature)
 }
 
 /** 教师可见的三级菜单（按 feature 过滤） */

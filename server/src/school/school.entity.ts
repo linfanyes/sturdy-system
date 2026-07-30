@@ -26,6 +26,15 @@ export class School {
   @Column({ default: 'active' })
   status: string // active / inactive
 
+  /**
+   * 学校级功能包开关（超管独占配置）。
+   * - null / [] / undefined  = 该校全部功能包开启（不收窄教师级）。
+   * - 指定数组            = 仅列出的「包级 key」可用，其余被学校级强制关闭。
+   * 解析顺序：学校级(order 10) ∩ 教师级(order 20)；学校级关闭的 key，下级即使开启也失效。
+   */
+  @Column('simple-json', { nullable: true, comment: '学校级功能包开关：null/[]=全部开启；数组=仅列出的包级key可用（超管独占）' })
+  featureFlags: string[] | null
+
   @CreateDateColumn()
   createdAt: Date
 

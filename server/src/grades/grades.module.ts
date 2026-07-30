@@ -9,6 +9,8 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { Grade, GradeScore } from './grade.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
@@ -181,6 +183,8 @@ class GradesService extends CrudService<Grade> {
 }
 
 @Roles('teacher')
+@Feature('grades')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('grades')
 class GradesController extends CrudController<Grade> {
   constructor(s: GradesService) {

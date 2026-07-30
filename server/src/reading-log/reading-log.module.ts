@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Entity, Column, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -27,6 +30,8 @@ class Service extends CrudService<ReadingLog> {
   constructor(@InjectRepository(ReadingLog) repo: Repository<ReadingLog>) { super(repo) }
 }
 @Roles('teacher')
+@Feature('reading')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('reading-logs')
 class Ctrl extends CrudController<ReadingLog> { constructor(s: Service) { super(s) } }
 

@@ -1,0 +1,67 @@
+classDiagram
+    class School {
+        +string id
+        +string code
+        +string name
+        +string status
+        +string[] featureFlags
+    }
+    class User {
+        +string id
+        +string schoolId
+        +string[] features
+    }
+    class Student {
+        +string id
+        +string teacherId
+        +string classId
+    }
+    class FeatureContext {
+        +string role
+        +string schoolId
+        +string[] teacherFeatures
+        +string studentId
+    }
+    class FeatureLevelResolver {
+        <<interface>>
+        +number order
+        +resolve(ctx): Promise~Set~string~ | null~
+    }
+    class SchoolLevelResolver {
+        +number order = 10
+        +resolve(ctx): Promise~Set~string~ | null~
+    }
+    class TeacherLevelResolver {
+        +number order = 20
+        +resolve(ctx): Promise~Set~string~ | null~
+    }
+    class FeatureService {
+        +getEffectiveFeatures(ctx): Promise~string[]~
+        +resolveContextFromReq(user): FeatureContext
+    }
+    class FeatureGuard {
+        +canActivate(ctx): Promise~boolean~
+    }
+    class JwtAuthGuard {
+        +canActivate(ctx): boolean
+    }
+    class AuthService {
+        +unifiedLogin()
+        +passwordLogin()
+        +wechatLogin()
+    }
+    class FeatureDecorator {
+        <<static>> +Feature(...keys)
+    }
+
+    FeatureLevelResolver <|.. SchoolLevelResolver
+    FeatureLevelResolver <|.. TeacherLevelResolver
+    FeatureService o-- FeatureLevelResolver : uses ordered chain
+    SchoolLevelResolver ..> School : reads featureFlags
+    TeacherLevelResolver ..> User : reads features
+    FeatureGuard --> FeatureService : computes effectiveFeatures
+    JwtAuthGuard <.. FeatureGuard : runs BEFORE (req.user)
+    FeatureDecorator .. FeatureGuard : metadata 'features'
+    User "1" --> "1" School : schoolId
+    Student "1" --> "1" User : teacherId (parent resolve)
+    AuthService --> FeatureService : attach effectiveFeatures at login

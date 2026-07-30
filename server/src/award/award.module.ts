@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { AwardRecord, AwardCategory } from './award.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -14,6 +17,8 @@ class AwardService extends CrudService<AwardRecord> {
   }
 }
 @Roles('teacher')
+@Feature('rewards')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('award-records')
 class AwardController extends CrudController<AwardRecord> {
   constructor(s: AwardService) {
@@ -27,6 +32,8 @@ class CategoryService extends CrudService<AwardCategory> {
   }
 }
 @Roles('teacher')
+@Feature('rewards')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('award-categories')
 class CategoryController extends CrudController<AwardCategory> {
   constructor(s: CategoryService) {

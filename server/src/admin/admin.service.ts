@@ -13,6 +13,7 @@ import { hashPassword } from '../common/utils/password.util'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { AuditService } from '../audit/audit.service'
 import { TEACHER_ID_TABLES, CLASS_ID_TABLES, ALL_BUSINESS_TABLES } from '../common/constants/tenant-tables'
+import { FEATURE_FLAGS } from '@gardener/shared/constants'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -192,6 +193,17 @@ export class AdminService implements OnModuleInit {
       // 教师不自动启用，需要学校管理员手动操作
     }
     return s
+  }
+
+  /** 学校级功能包开关：覆盖该校 featureFlags（归一化只保留合法 key） */
+  async updateSchoolFeatures(id: string, flags: string[]): Promise<{ id: string; featureFlags: string[] }> {
+    const school = await this.schoolRepo.findOne({ where: { id } })
+    if (!school) throw new NotFoundException('学校不存在')
+    const allowed = new Set(FEATURE_FLAGS)
+    const normalized = (flags || []).filter((f) => allowed.has(f))
+    school.featureFlags = normalized
+    await this.schoolRepo.save(school)
+    return { id, featureFlags: normalized }
   }
 
   /** 删除学校（级联清理：教师、班级、学生、所有业务数据） */

@@ -13,6 +13,12 @@
       }
     },
     {
+      "path": "pages/school-admin/school-features",
+      "style": {
+        "navigationBarTitleText": "学校功能包"
+      }
+    },
+    {
       "path": "pages/parent-login/parent-login",
       "style": {
         "navigationBarTitleText": "家长登录"

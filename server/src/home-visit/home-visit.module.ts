@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Entity, Column, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { BaseEntity } from '../common/entities/base.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -25,6 +28,8 @@ export class HomeVisit extends BaseEntity {
 
 class Svc extends CrudService<HomeVisit> { constructor(@InjectRepository(HomeVisit) r: Repository<HomeVisit>) { super(r) } }
 @Roles('teacher')
+@Feature('parents')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('home-visits') class Ctrl extends CrudController<HomeVisit> { constructor(s: Svc) { super(s) } }
 
 @Module({ imports: [TypeOrmModule.forFeature([HomeVisit])], providers: [Svc], controllers: [Ctrl] })

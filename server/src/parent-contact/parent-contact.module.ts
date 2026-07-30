@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common'
+import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { ParentContact, NoticeTemplate } from './parent-contact.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
@@ -15,6 +18,8 @@ class ParentContactService extends CrudService<ParentContact> {
   }
 }
 @Roles('teacher')
+@Feature('parents')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('parent-contacts')
 class ParentContactController extends CrudController<ParentContact> {
   constructor(s: ParentContactService) {
@@ -28,6 +33,8 @@ class NoticeTemplateService extends CrudService<NoticeTemplate> {
   }
 }
 @Roles('teacher')
+@Feature('notices')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('notice-templates')
 class NoticeTemplateController extends CrudController<NoticeTemplate> {
   constructor(s: NoticeTemplateService) {

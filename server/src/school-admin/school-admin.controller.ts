@@ -21,6 +21,18 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   dashboard(@CurrentSchoolAdmin() a: any) { return this.svc.dashboard(a.schoolId) }
 
+  /** 校管查看本校「学校级功能包开关」（用于教师有效权限预览，不修改） */
+  @Get('school-features')
+  @UseGuards(JwtAuthGuard)
+  getSchoolFeatures(@CurrentSchoolAdmin() a: any) { return this.svc.getSchoolFeatures(a.schoolId) }
+
+  /** 校管更新本校「学校级功能包开关」（超管默认，校管可覆盖本校功能子集） */
+  @Patch('school-features')
+  @UseGuards(JwtAuthGuard)
+  updateSchoolFeatures(@CurrentSchoolAdmin() a: any, @Body() b: { featureFlags?: string[] | null }) {
+    return this.svc.updateSchoolFeatures(a.schoolId, b.featureFlags ?? null)
+  }
+
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
   listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {

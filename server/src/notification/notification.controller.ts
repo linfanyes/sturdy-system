@@ -1,8 +1,12 @@
 import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards } from '@nestjs/common'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { NotificationService } from './notification.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
+@Feature('notices')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly svc: NotificationService) {}

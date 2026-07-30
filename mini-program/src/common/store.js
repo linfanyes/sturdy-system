@@ -16,11 +16,29 @@ const PARENT_TEACHER_TOKEN_KEY = 'g_parent_teacher_token'
 const PARENT_PARENT_TOKEN_KEY = 'g_parent_parent_token'
 const PARENT_ROLE_KEY = 'g_parent_role'
 const PARENT_DATA_KEY = 'g_parent_data'
+const EFFECTIVE_FEATURES_KEY = 'g_effective_features'
+const SCHOOL_FEATURE_FLAGS_KEY = 'g_school_feature_flags'
+
+/** 冷启动恢复：实际可用功能包（非数组一律回退空数组 = 未加载） */
+function readEffectiveFeatures() {
+  const v = uni.getStorageSync(EFFECTIVE_FEATURES_KEY)
+  return Array.isArray(v) ? v : []
+}
+
+/** 冷启动恢复：学校级功能包开关（空字符串表示 null = 全开） */
+function readSchoolFeatureFlags() {
+  const v = uni.getStorageSync(SCHOOL_FEATURE_FLAGS_KEY)
+  return Array.isArray(v) ? v : null
+}
 
 export const auth = reactive({
   token: uni.getStorageSync(TOKEN_KEY) || '',
   user: uni.getStorageSync(USER_KEY) || null,
   features: [], // 管理员配置的功能列表,空数组=全部可用
+  // 后端下发的实际可用功能包（effective = 学校级 ∩ 教师级），空数组=未加载，显隐回退 features
+  effectiveFeatures: readEffectiveFeatures(),
+  // 本校学校级功能包开关（null/[]=全开），用于教师「有效权限预览」
+  schoolFeatureFlags: readSchoolFeatureFlags(),
 })
 
 // tabBar 页面清单：微信限制 setTabBarStyle 只能在 tabBar 页面调用，
@@ -268,9 +286,33 @@ export function setUser(user) {
   uni.setStorageSync(USER_KEY, user)
 }
 
+/**
+ * 写入后端下发的功能档案（登录响应 / GET /auth/me 均含）。
+ * effectiveFeatures = 学校级 ∩ 教师级实际可用；schoolFeatureFlags 供校管端预览使用。
+ * @param {{ effectiveFeatures?: string[], schoolFeatureFlags?: string[]|null }} profile
+ */
+export function setFeatureProfile(profile) {
+  if (!profile) return
+  if (Array.isArray(profile.effectiveFeatures)) {
+    auth.effectiveFeatures = profile.effectiveFeatures
+    uni.setStorageSync(EFFECTIVE_FEATURES_KEY, profile.effectiveFeatures)
+  }
+  if ('schoolFeatureFlags' in profile) {
+    const flags = Array.isArray(profile.schoolFeatureFlags) ? profile.schoolFeatureFlags : null
+    auth.schoolFeatureFlags = flags
+    uni.setStorageSync(SCHOOL_FEATURE_FLAGS_KEY, flags === null ? '' : flags)
+  }
+}
+
 export function logout() {
   auth.token = ''
   auth.user = null
+  // 清除功能档案，避免换账号登录时沿用上一位用户的可用功能集合
+  auth.features = []
+  auth.effectiveFeatures = []
+  auth.schoolFeatureFlags = null
+  uni.removeStorageSync(EFFECTIVE_FEATURES_KEY)
+  uni.removeStorageSync(SCHOOL_FEATURE_FLAGS_KEY)
   // 清除全部角色的登录态，确保 401 等场景下各身份都能正确登出（而非仅清教师令牌）
   uni.removeStorageSync(TOKEN_KEY)
   uni.removeStorageSync(USER_KEY)

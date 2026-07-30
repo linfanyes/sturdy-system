@@ -96,8 +96,11 @@ export const ROLE_OPTIONS: RoleOption[] = [
 export const ROLE_VALUES: Role[] = ROLE_OPTIONS.map((r) => r.value)
 
 /**
- * 教师功能权限标识列表（FEATURE_FLAGS）
- * 对齐：web-app/src/constants/features.ts::ALL_FEATURES、mini-program 校管配置
+ * 功能包标识（FEATURE_FLAGS）—— 双端 + 后端的「单一事实来源」。
+ * - 以 Web 端 ALL_FEATURES（40 个）为基础，均为 camelCase「包级 key」，不做 games.2048 项级拆分。
+ * - 旧 ['games'] 等价于「games 包开启」，迁移零兼容负担。
+ * - 学校级 key 值域 = 教师级全集（超管可开关任意包级 key）。
+ * 对齐：web-app/src/constants/features.ts、mini-program/src/pages/school-admin/school-admin.vue
  */
 export const FEATURE_FLAGS: string[] = [
   // 班级与学生
@@ -118,10 +121,33 @@ export const FEATURE_FLAGS: string[] = [
   'worklog', 'observation', 'calendar', 'teachers',
   // 个人
   'todos', 'notes', 'demo',
+  // 办公/学科/快捷工具（Web 端既有，统一纳入单一来源）
+  'office_tools', 'subject_tools', 'quicktool', 'grade_trend', 'picker_history',
+  'reward', 'translate', 'blackboard', 'speech',
 ]
+
+/** 功能包 key → 中文标签（双端 UI 展示用，保持单一来源） */
+export const FEATURE_FLAG_LABELS: Record<string, string> = {
+  classes: '班级管理', students: '学生管理',
+  exams: '考试管理', grades: '成绩管理', analysis: '考试分析', attendance: '考勤', homework: '作业',
+  tools: '课堂工具', seats: '座位表', games: '小游戏',
+  rewards: '奖励/积分', growth: '成长记录', behavior: '行为记录', reading: '课外阅读', checkin: '学生打卡',
+  finance: '班费', activities: '班级活动', duty: '轮值表', gallery: '班级风采',
+  parents: '家长联系', im: '家校沟通', notices: '公告',
+  ai: 'AI助手/备课', schedule: '课表',
+  worklog: '工作日志', observation: '听课记录', calendar: '教学日历', teachers: '教师通讯录',
+  todos: '待办事项', notes: '笔记', demo: '演示模式',
+  office_tools: '办公工具', subject_tools: '学科工具', quicktool: '快捷工具', grade_trend: '成绩趋势', picker_history: '点名历史',
+  reward: '奖赏', translate: '翻译', blackboard: '黑板报', speech: '演讲稿',
+}
 
 /** 特性标识集合（用于快速 O(1) 查找） */
 export const FEATURE_FLAGS_SET: Set<string> = new Set(FEATURE_FLAGS)
+
+/** 标准功能包清单（双端 UI 直接复用） */
+export const FEATURE_FLAG_LIST: { key: string; label: string }[] = FEATURE_FLAGS.map(
+  (k) => ({ key: k, label: FEATURE_FLAG_LABELS[k] || k }),
+)
 /**
  * ����ɫ������4ɫ��
  * ���룺mini-program/src/common/store.js::SCHEMES
