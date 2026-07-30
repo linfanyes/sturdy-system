@@ -50,6 +50,12 @@ export class AdminController {
   updateSchool(@Param('id') id: string, @Body() b: UpdateSchoolDto) { return this.svc.updateSchool(id, b) }
 
   /** 学校级功能包开关（超管独占）：覆盖该校 featureFlags（null/[]=全部开启；数组=仅列出的包级key可用） */
+  @Get('schools/:id/features')
+  @UseGuards(JwtAuthGuard)
+  getSchoolFeatures(@Param('id') id: string) {
+    return this.svc.getSchoolFeatures(id)
+  }
+
   @Patch('schools/:id/features')
   @UseGuards(JwtAuthGuard)
   updateSchoolFeatures(@Param('id') id: string, @Body() b: { featureFlags?: string[] }) {

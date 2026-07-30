@@ -179,7 +179,8 @@ async function handleDelete(row: any) {
             </td>
             <td class="px-4 py-3 text-cocoa-700">{{ row.address || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ row.adminCount ?? row.admin_count ?? '-' }}</td>
-            <td class="px-4 py-3 text-right space-x-1">
+            <td class="px-4 py-3 text-right whitespace-nowrap">
+              <span class="inline-flex items-center gap-1">
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(row)">
                 <Edit3 class="w-4 h-4" />
               </button>
@@ -193,6 +194,7 @@ async function handleDelete(row: any) {
               <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="删除" @click="handleDelete(row)">
                 <Trash2 class="w-4 h-4" />
               </button>
+              </span>
             </td>
           </tr>
         </tbody>

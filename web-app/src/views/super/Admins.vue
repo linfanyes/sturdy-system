@@ -212,7 +212,8 @@ function formatTime(t?: string) {
               </span>
             </td>
             <td class="px-4 py-3 text-cocoa-700">{{ formatTime(row.createdAt || row.created_at) }}</td>
-            <td class="px-4 py-3 text-right space-x-1">
+            <td class="px-4 py-3 text-right whitespace-nowrap">
+              <span class="inline-flex items-center gap-1">
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(row)">
                 <Edit3 class="w-4 h-4" />
               </button>
@@ -229,6 +230,7 @@ function formatTime(t?: string) {
               <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="删除" @click="handleDelete(row)">
                 <Trash2 class="w-4 h-4" />
               </button>
+              </span>
             </td>
           </tr>
         </tbody>

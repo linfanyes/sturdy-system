@@ -97,13 +97,27 @@ export class AiProviderService implements OnModuleInit {
     const p = await this.repo.findOne({ where: { code } })
     if (!p) throw new Error('服务商不存在')
     // 设为默认时，清除其他服务商的默认标记（确保全局唯一默认）。
-    // 注意：TypeORM 不支持 MongoDB 的 { code: { $ne } } 语法，必须用 QueryBuilder 的 where 表达式。
-    if (dto.isDefault) {
+    if (dto.isDefault === true) {
       await this.repo.createQueryBuilder()
         .update()
         .set({ isDefault: false })
         .where('code != :code', { code })
         .execute()
+    }
+    // 取消默认时，自动将最早启用的其他服务商设为默认（确保始终有一个默认）
+    if (dto.isDefault === false && p.isDefault === true) {
+      const alt = await this.repo.createQueryBuilder('ap')
+        .where('ap.enabled = :enabled', { enabled: true })
+        .andWhere('ap.code != :code', { code })
+        .orderBy('ap.sortOrder', 'ASC')
+        .getOne()
+      if (alt) {
+        await this.repo.createQueryBuilder()
+          .update()
+          .set({ isDefault: true })
+          .where('code = :altCode', { altCode: alt.code })
+          .execute()
+      }
     }
     Object.assign(p, dto, { code: p.code }) // 不允许改 code
     return this.repo.save(p)

@@ -141,12 +141,32 @@ export class AdminService implements OnModuleInit {
 
   /* ===== 学校管理（超管维护） ===== */
 
-  /** 学校列表 */
+  /** 学校列表（含每校管理员数量） */
   async listSchools(skip = 0, take = 100) {
     const [items, total] = await this.schoolRepo.findAndCount({
       order: { createdAt: 'DESC' }, skip, take,
     })
+    // 批量查询每所学校的管理员数量，避免 N+1
+    const schoolIds = items.map(s => s.id)
+    if (schoolIds.length) {
+      const counts = await this.saRepo
+        .createQueryBuilder('sa')
+        .select('sa.schoolId', 'schoolId')
+        .addSelect('COUNT(*)', 'count')
+        .where('sa.schoolId IN (:...ids)', { ids: schoolIds })
+        .groupBy('sa.schoolId')
+        .getRawMany<{ schoolId: string; count: string }>()
+      const map = new Map(counts.map(c => [c.schoolId, Number(c.count)]))
+      items.forEach(s => { (s as any).adminCount = map.get(s.id) || 0 })
+    }
     return { items, total }
+  }
+
+  /** 获取某校功能包开关（超管读取） */
+  async getSchoolFeatures(id: string) {
+    const school = await this.schoolRepo.findOne({ where: { id } })
+    if (!school) throw new NotFoundException('学校不存在')
+    return { schoolId: id, featureFlags: school.featureFlags ?? null }
   }
 
   /** 学校详情 */
