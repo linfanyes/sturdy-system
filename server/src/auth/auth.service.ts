@@ -394,19 +394,37 @@ export class AuthService {
       schoolId: user.schoolId,
       studentId: user.studentId,
     })
+
+    const resultUser: any = {
+      id: user.sub,
+      role: user.role,
+      schoolId: user.schoolId,
+      studentId: user.studentId,
+      studentName: user.studentName,
+    }
+
+    // 教师角色：补充 subject / subjects 信息
+    if (user.role === 'teacher') {
+      const teacher = await this.users.findById(user.sub).catch(() => null)
+      if (teacher) {
+        resultUser.name = teacher.name
+        resultUser.username = teacher.username
+        resultUser.phone = teacher.phone
+        resultUser.teacherNo = teacher.teacherNo
+        resultUser.avatar = teacher.avatar
+        resultUser.enabled = teacher.enabled
+        resultUser.subject = teacher.subject
+        resultUser.subjects = teacher.subjects
+      }
+    }
+
     return {
       role: profile.role,
       schoolId: profile.schoolId,
       effectiveFeatures: profile.effectiveFeatures,
       rawFeatures: profile.rawFeatures,
       schoolFeatureFlags: profile.schoolFeatureFlags,
-      user: {
-        id: user.sub,
-        role: user.role,
-        schoolId: user.schoolId,
-        studentId: user.studentId,
-        studentName: user.studentName,
-      },
+      user: resultUser,
     }
   }
 }

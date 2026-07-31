@@ -17,11 +17,11 @@ export default defineConfig({
     host: 'localhost',
     hmr: false,
     proxy: {
-      // 开发模式直连云托管后端（无需本地启动 server）
+      // 开发模式代理到本地后端
       '/api': {
-        target: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },

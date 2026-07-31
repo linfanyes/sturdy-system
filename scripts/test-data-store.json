@@ -1,0 +1,1063 @@
+{
+  "schools": [
+    {
+      "code": "YG335VVW",
+      "name": "阳光小学",
+      "address": "朝阳区阳光路1号",
+      "contact": "张主任",
+      "phone": "13800000001",
+      "status": "active",
+      "featureFlags": null,
+      "id": "7280b5b3-c878-4b43-bf68-188842e727ef",
+      "createdAt": "2026-07-30T19:00:34.108Z",
+      "updatedAt": "2026-07-30T19:00:34.108Z",
+      "prefix": "YG"
+    },
+    {
+      "code": "YCVEM6FW",
+      "name": "育才中学",
+      "address": "海淀区育才路2号",
+      "contact": "李主任",
+      "phone": "13800000002",
+      "status": "active",
+      "featureFlags": null,
+      "id": "78e4415e-a879-4676-a899-cf026d7eaca1",
+      "createdAt": "2026-07-30T19:00:34.218Z",
+      "updatedAt": "2026-07-30T19:00:34.218Z",
+      "prefix": "YC"
+    },
+    {
+      "code": "SYNWFJXW",
+      "name": "实验学校",
+      "address": "西城区实验路3号",
+      "contact": "赵主任",
+      "phone": "13800000003",
+      "status": "active",
+      "featureFlags": null,
+      "id": "247adb04-f4ef-46bd-bfc9-d1e29e0bc519",
+      "createdAt": "2026-07-30T19:00:34.326Z",
+      "updatedAt": "2026-07-30T19:00:34.326Z",
+      "prefix": "SY"
+    },
+    {
+      "code": "DYAMPQJW",
+      "name": "第一小学",
+      "address": "东城区第一路4号",
+      "contact": "孙主任",
+      "phone": "13800000004",
+      "status": "active",
+      "featureFlags": null,
+      "id": "0108faf4-d5ce-4833-811d-c68da75e435e",
+      "createdAt": "2026-07-30T19:00:34.433Z",
+      "updatedAt": "2026-07-30T19:00:34.433Z",
+      "prefix": "DY"
+    },
+    {
+      "code": "XSTXQ7BW",
+      "name": "新世纪学校",
+      "address": "丰台区新世纪路5号",
+      "contact": "周主任",
+      "phone": "13800000005",
+      "status": "active",
+      "featureFlags": null,
+      "id": "4a33c75a-f20a-474a-b8e6-505a756566d4",
+      "createdAt": "2026-07-30T19:00:34.539Z",
+      "updatedAt": "2026-07-30T19:00:34.539Z",
+      "prefix": "XS"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "0fb924e2-2a28-4838-9a2a-e602f6a1f360",
+      "schoolIndex": 0,
+      "name": "张伟",
+      "username": "teacher_1_1",
+      "password": "teacher123",
+      "subject": "语文",
+      "subjects": [
+        "语文"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYG335VVW10000"
+    },
+    {
+      "id": "b5d3c5b0-1296-4d74-a7df-e9d67d2896a9",
+      "schoolIndex": 0,
+      "name": "王芳",
+      "username": "teacher_1_2",
+      "password": "teacher123",
+      "subject": "数学",
+      "subjects": [
+        "数学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYG335VVW10001"
+    },
+    {
+      "id": "f61c09ae-b5b2-4029-9d40-48f96cd55133",
+      "schoolIndex": 0,
+      "name": "李娜",
+      "username": "teacher_1_3",
+      "password": "teacher123",
+      "subject": "英语",
+      "subjects": [
+        "英语"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYG335VVW10002"
+    },
+    {
+      "id": "96e2a2c4-f065-4214-94b6-50b87364c6e0",
+      "schoolIndex": 0,
+      "name": "赵敏",
+      "username": "teacher_1_4",
+      "password": "teacher123",
+      "subject": "科学",
+      "subjects": [
+        "科学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYG335VVW10003"
+    },
+    {
+      "id": "42b6836f-1839-4d20-ba75-78570bb531cd",
+      "schoolIndex": 0,
+      "name": "孙静",
+      "username": "teacher_1_5",
+      "password": "teacher123",
+      "subject": "品德",
+      "subjects": [
+        "品德"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYG335VVW10004"
+    },
+    {
+      "id": "544e3d56-209f-4592-aee9-d4523f3d9e8f",
+      "schoolIndex": 0,
+      "name": "周丽",
+      "username": "teacher_1_6",
+      "password": "teacher123",
+      "subject": "音乐",
+      "subjects": [
+        "音乐"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYG335VVW10005"
+    },
+    {
+      "id": "3ac641e9-09ff-4e64-9ae9-4133e7f67c4e",
+      "schoolIndex": 0,
+      "name": "吴强",
+      "username": "teacher_1_7",
+      "password": "teacher123",
+      "subject": "美术",
+      "subjects": [
+        "美术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYG335VVW10006"
+    },
+    {
+      "id": "09f7a03b-a2f3-4c18-b9f4-6e39dd52e48a",
+      "schoolIndex": 0,
+      "name": "郑磊",
+      "username": "teacher_1_8",
+      "password": "teacher123",
+      "subject": "体育",
+      "subjects": [
+        "体育"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYG335VVW10007"
+    },
+    {
+      "id": "14c131fc-62dc-41b4-acca-97898e2f03d8",
+      "schoolIndex": 0,
+      "name": "冯军",
+      "username": "teacher_1_9",
+      "password": "teacher123",
+      "subject": "信息技术",
+      "subjects": [
+        "信息技术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYG335VVW10008"
+    },
+    {
+      "id": "03c5a2be-e8d4-4cbd-8120-8d2c287e1fa5",
+      "schoolIndex": 0,
+      "name": "陈洋",
+      "username": "teacher_1_10",
+      "password": "teacher123",
+      "subject": "综合实践",
+      "subjects": [
+        "综合实践"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYG335VVW10009"
+    },
+    {
+      "id": "818830d2-74a1-4c62-9185-ce0621ddb237",
+      "schoolIndex": 1,
+      "name": "张芳",
+      "username": "teacher_2_1",
+      "password": "teacher123",
+      "subject": "语文",
+      "subjects": [
+        "语文"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYCVEM6FW10010"
+    },
+    {
+      "id": "7197245f-ed35-4a79-8e29-7fd15bf70958",
+      "schoolIndex": 1,
+      "name": "王娜",
+      "username": "teacher_2_2",
+      "password": "teacher123",
+      "subject": "数学",
+      "subjects": [
+        "数学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYCVEM6FW10011"
+    },
+    {
+      "id": "870d330d-6bca-49f1-abdc-db747b921891",
+      "schoolIndex": 1,
+      "name": "李敏",
+      "username": "teacher_2_3",
+      "password": "teacher123",
+      "subject": "英语",
+      "subjects": [
+        "英语"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYCVEM6FW10012"
+    },
+    {
+      "id": "569bfb89-2d69-41a3-9f1a-997c350bf89b",
+      "schoolIndex": 1,
+      "name": "赵静",
+      "username": "teacher_2_4",
+      "password": "teacher123",
+      "subject": "科学",
+      "subjects": [
+        "科学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYCVEM6FW10013"
+    },
+    {
+      "id": "15dee3e7-5d83-4513-b800-1034152a79d6",
+      "schoolIndex": 1,
+      "name": "孙丽",
+      "username": "teacher_2_5",
+      "password": "teacher123",
+      "subject": "品德",
+      "subjects": [
+        "品德"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYCVEM6FW10014"
+    },
+    {
+      "id": "4b59a04a-c896-4340-bdf1-b866f291cfb9",
+      "schoolIndex": 1,
+      "name": "周强",
+      "username": "teacher_2_6",
+      "password": "teacher123",
+      "subject": "音乐",
+      "subjects": [
+        "音乐"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYCVEM6FW10015"
+    },
+    {
+      "id": "bc4ada68-8f45-4ae8-9229-facae643d172",
+      "schoolIndex": 1,
+      "name": "吴磊",
+      "username": "teacher_2_7",
+      "password": "teacher123",
+      "subject": "美术",
+      "subjects": [
+        "美术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYCVEM6FW10016"
+    },
+    {
+      "id": "abf32314-4e33-4482-92c3-6dea3be3ae68",
+      "schoolIndex": 1,
+      "name": "郑军",
+      "username": "teacher_2_8",
+      "password": "teacher123",
+      "subject": "体育",
+      "subjects": [
+        "体育"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYCVEM6FW10017"
+    },
+    {
+      "id": "c90eef23-c9ab-457f-9690-ac2bebfbd648",
+      "schoolIndex": 1,
+      "name": "冯洋",
+      "username": "teacher_2_9",
+      "password": "teacher123",
+      "subject": "信息技术",
+      "subjects": [
+        "信息技术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSYCVEM6FW10018"
+    },
+    {
+      "id": "40c73282-5b8b-4502-a3a0-6f54c7aa69ed",
+      "schoolIndex": 1,
+      "name": "陈伟",
+      "username": "teacher_2_10",
+      "password": "teacher123",
+      "subject": "综合实践",
+      "subjects": [
+        "综合实践"
+      ],
+      "gender": "女",
+      "teacherNo": "JSYCVEM6FW10019"
+    },
+    {
+      "id": "0a6b8220-3b92-4556-ad8d-e14053569f92",
+      "schoolIndex": 2,
+      "name": "张娜",
+      "username": "teacher_3_1",
+      "password": "teacher123",
+      "subject": "语文",
+      "subjects": [
+        "语文"
+      ],
+      "gender": "男",
+      "teacherNo": "JSSYNWFJXW10020"
+    },
+    {
+      "id": "396ccfdd-8c8b-49b2-a9c8-bde400821bb4",
+      "schoolIndex": 2,
+      "name": "王敏",
+      "username": "teacher_3_2",
+      "password": "teacher123",
+      "subject": "数学",
+      "subjects": [
+        "数学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSSYNWFJXW10021"
+    },
+    {
+      "id": "09dcfccb-54a5-41a7-90f7-f94739ca6f1e",
+      "schoolIndex": 2,
+      "name": "李静",
+      "username": "teacher_3_3",
+      "password": "teacher123",
+      "subject": "英语",
+      "subjects": [
+        "英语"
+      ],
+      "gender": "男",
+      "teacherNo": "JSSYNWFJXW10022"
+    },
+    {
+      "id": "b1eb0ed7-912c-4eb6-9bb2-8bc0f6366a00",
+      "schoolIndex": 2,
+      "name": "赵丽",
+      "username": "teacher_3_4",
+      "password": "teacher123",
+      "subject": "科学",
+      "subjects": [
+        "科学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSSYNWFJXW10023"
+    },
+    {
+      "id": "c64ab40e-b4e0-4a4f-b39b-ad1bfc8ad3ec",
+      "schoolIndex": 2,
+      "name": "孙强",
+      "username": "teacher_3_5",
+      "password": "teacher123",
+      "subject": "品德",
+      "subjects": [
+        "品德"
+      ],
+      "gender": "男",
+      "teacherNo": "JSSYNWFJXW10024"
+    },
+    {
+      "id": "8facdc31-13e2-4619-817a-e0fbb070178f",
+      "schoolIndex": 2,
+      "name": "周磊",
+      "username": "teacher_3_6",
+      "password": "teacher123",
+      "subject": "音乐",
+      "subjects": [
+        "音乐"
+      ],
+      "gender": "女",
+      "teacherNo": "JSSYNWFJXW10025"
+    },
+    {
+      "id": "48719745-8607-498f-8de9-6cad18f38181",
+      "schoolIndex": 2,
+      "name": "吴军",
+      "username": "teacher_3_7",
+      "password": "teacher123",
+      "subject": "美术",
+      "subjects": [
+        "美术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSSYNWFJXW10026"
+    },
+    {
+      "id": "ff973c7b-c8ec-49c6-8565-a0aab526687c",
+      "schoolIndex": 2,
+      "name": "郑洋",
+      "username": "teacher_3_8",
+      "password": "teacher123",
+      "subject": "体育",
+      "subjects": [
+        "体育"
+      ],
+      "gender": "女",
+      "teacherNo": "JSSYNWFJXW10027"
+    },
+    {
+      "id": "534b30e5-7a85-4b00-ba5c-3c8f87814255",
+      "schoolIndex": 2,
+      "name": "冯伟",
+      "username": "teacher_3_9",
+      "password": "teacher123",
+      "subject": "信息技术",
+      "subjects": [
+        "信息技术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSSYNWFJXW10028"
+    },
+    {
+      "id": "76b0b8bc-8e93-4e2b-8bef-b848317a7a5f",
+      "schoolIndex": 2,
+      "name": "陈芳",
+      "username": "teacher_3_10",
+      "password": "teacher123",
+      "subject": "综合实践",
+      "subjects": [
+        "综合实践"
+      ],
+      "gender": "女",
+      "teacherNo": "JSSYNWFJXW10029"
+    },
+    {
+      "id": "ea8c3a18-3f39-438b-9a62-2e7a64698785",
+      "schoolIndex": 3,
+      "name": "张敏",
+      "username": "teacher_4_1",
+      "password": "teacher123",
+      "subject": "语文",
+      "subjects": [
+        "语文"
+      ],
+      "gender": "男",
+      "teacherNo": "JSDYAMPQJW10030"
+    },
+    {
+      "id": "fa91583e-6477-4a8b-9f9f-10eff8713791",
+      "schoolIndex": 3,
+      "name": "王静",
+      "username": "teacher_4_2",
+      "password": "teacher123",
+      "subject": "数学",
+      "subjects": [
+        "数学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSDYAMPQJW10031"
+    },
+    {
+      "id": "1a309aaa-086d-4e29-a1a2-cad8bb3089b5",
+      "schoolIndex": 3,
+      "name": "李丽",
+      "username": "teacher_4_3",
+      "password": "teacher123",
+      "subject": "英语",
+      "subjects": [
+        "英语"
+      ],
+      "gender": "男",
+      "teacherNo": "JSDYAMPQJW10032"
+    },
+    {
+      "id": "115aec16-1209-4ec4-a16c-14b18a9b6d97",
+      "schoolIndex": 3,
+      "name": "赵强",
+      "username": "teacher_4_4",
+      "password": "teacher123",
+      "subject": "科学",
+      "subjects": [
+        "科学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSDYAMPQJW10033"
+    },
+    {
+      "id": "de2a6b29-7b46-401b-8a5e-2fb29f3d7965",
+      "schoolIndex": 3,
+      "name": "孙磊",
+      "username": "teacher_4_5",
+      "password": "teacher123",
+      "subject": "品德",
+      "subjects": [
+        "品德"
+      ],
+      "gender": "男",
+      "teacherNo": "JSDYAMPQJW10034"
+    },
+    {
+      "id": "1f05b0ed-38f1-4315-ae12-a260ff7ec410",
+      "schoolIndex": 3,
+      "name": "周军",
+      "username": "teacher_4_6",
+      "password": "teacher123",
+      "subject": "音乐",
+      "subjects": [
+        "音乐"
+      ],
+      "gender": "女",
+      "teacherNo": "JSDYAMPQJW10035"
+    },
+    {
+      "id": "d6e530c5-6ff8-49f2-ae5c-eee96814a9b5",
+      "schoolIndex": 3,
+      "name": "吴洋",
+      "username": "teacher_4_7",
+      "password": "teacher123",
+      "subject": "美术",
+      "subjects": [
+        "美术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSDYAMPQJW10036"
+    },
+    {
+      "id": "e48a0277-2c6c-438e-a2d6-47d62c924702",
+      "schoolIndex": 3,
+      "name": "郑伟",
+      "username": "teacher_4_8",
+      "password": "teacher123",
+      "subject": "体育",
+      "subjects": [
+        "体育"
+      ],
+      "gender": "女",
+      "teacherNo": "JSDYAMPQJW10037"
+    },
+    {
+      "id": "56d04bbc-ee13-4655-a70c-6946e55eb03d",
+      "schoolIndex": 3,
+      "name": "冯芳",
+      "username": "teacher_4_9",
+      "password": "teacher123",
+      "subject": "信息技术",
+      "subjects": [
+        "信息技术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSDYAMPQJW10038"
+    },
+    {
+      "id": "22065a4b-aaa1-4c43-ad98-905d8978f135",
+      "schoolIndex": 3,
+      "name": "陈娜",
+      "username": "teacher_4_10",
+      "password": "teacher123",
+      "subject": "综合实践",
+      "subjects": [
+        "综合实践"
+      ],
+      "gender": "女",
+      "teacherNo": "JSDYAMPQJW10039"
+    },
+    {
+      "id": "35f0d50b-3676-4471-a69e-ec659f6aae6b",
+      "schoolIndex": 4,
+      "name": "张静",
+      "username": "teacher_5_1",
+      "password": "teacher123",
+      "subject": "语文",
+      "subjects": [
+        "语文"
+      ],
+      "gender": "男",
+      "teacherNo": "JSXSTXQ7BW10040"
+    },
+    {
+      "id": "276edb16-57e1-49ac-9356-d0b561fdd458",
+      "schoolIndex": 4,
+      "name": "王丽",
+      "username": "teacher_5_2",
+      "password": "teacher123",
+      "subject": "数学",
+      "subjects": [
+        "数学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSXSTXQ7BW10041"
+    },
+    {
+      "id": "a9f494d7-ca4b-4086-9715-621182d5ed0e",
+      "schoolIndex": 4,
+      "name": "李强",
+      "username": "teacher_5_3",
+      "password": "teacher123",
+      "subject": "英语",
+      "subjects": [
+        "英语"
+      ],
+      "gender": "男",
+      "teacherNo": "JSXSTXQ7BW10042"
+    },
+    {
+      "id": "1a419529-4da4-4384-8821-5b00eff1f3a7",
+      "schoolIndex": 4,
+      "name": "赵磊",
+      "username": "teacher_5_4",
+      "password": "teacher123",
+      "subject": "科学",
+      "subjects": [
+        "科学"
+      ],
+      "gender": "女",
+      "teacherNo": "JSXSTXQ7BW10043"
+    },
+    {
+      "id": "51d96ed3-4d04-4b14-948a-ec3debc99aaa",
+      "schoolIndex": 4,
+      "name": "孙军",
+      "username": "teacher_5_5",
+      "password": "teacher123",
+      "subject": "品德",
+      "subjects": [
+        "品德"
+      ],
+      "gender": "男",
+      "teacherNo": "JSXSTXQ7BW10044"
+    },
+    {
+      "id": "8ff6b256-3983-4797-8a56-aaca1aafb21f",
+      "schoolIndex": 4,
+      "name": "周洋",
+      "username": "teacher_5_6",
+      "password": "teacher123",
+      "subject": "音乐",
+      "subjects": [
+        "音乐"
+      ],
+      "gender": "女",
+      "teacherNo": "JSXSTXQ7BW10045"
+    },
+    {
+      "id": "a3daa203-7bdf-4a92-8ae4-28e27dd98cd1",
+      "schoolIndex": 4,
+      "name": "吴伟",
+      "username": "teacher_5_7",
+      "password": "teacher123",
+      "subject": "美术",
+      "subjects": [
+        "美术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSXSTXQ7BW10046"
+    },
+    {
+      "id": "bf69c969-56f5-4a71-ad01-46043421aaa4",
+      "schoolIndex": 4,
+      "name": "郑芳",
+      "username": "teacher_5_8",
+      "password": "teacher123",
+      "subject": "体育",
+      "subjects": [
+        "体育"
+      ],
+      "gender": "女",
+      "teacherNo": "JSXSTXQ7BW10047"
+    },
+    {
+      "id": "bd61e050-2a3e-46d5-ba15-8e49eba33475",
+      "schoolIndex": 4,
+      "name": "冯娜",
+      "username": "teacher_5_9",
+      "password": "teacher123",
+      "subject": "信息技术",
+      "subjects": [
+        "信息技术"
+      ],
+      "gender": "男",
+      "teacherNo": "JSXSTXQ7BW10048"
+    },
+    {
+      "id": "ed184c61-a44a-4d9e-bc7a-54972dd238ec",
+      "schoolIndex": 4,
+      "name": "陈敏",
+      "username": "teacher_5_10",
+      "password": "teacher123",
+      "subject": "综合实践",
+      "subjects": [
+        "综合实践"
+      ],
+      "gender": "女",
+      "teacherNo": "JSXSTXQ7BW10049"
+    }
+  ],
+  "classes": [
+    {
+      "id": "999d7f29-3cdf-468e-b573-c8332fbefdc8",
+      "name": "一年级1班",
+      "schoolIndex": 0,
+      "headTeacher": "张伟",
+      "headTeacherId": "0fb924e2-2a28-4838-9a2a-e602f6a1f360",
+      "subjects": [
+        "语文",
+        "数学"
+      ]
+    },
+    {
+      "id": "25426d93-e150-4fb2-b1aa-416b787e3977",
+      "name": "二年级2班",
+      "schoolIndex": 0,
+      "headTeacher": "王芳",
+      "headTeacherId": "b5d3c5b0-1296-4d74-a7df-e9d67d2896a9",
+      "subjects": [
+        "数学",
+        "英语"
+      ]
+    },
+    {
+      "id": "e4410056-1c81-479b-af03-71e1ab7404cb",
+      "name": "三年级3班",
+      "schoolIndex": 0,
+      "headTeacher": "李娜",
+      "headTeacherId": "f61c09ae-b5b2-4029-9d40-48f96cd55133",
+      "subjects": [
+        "英语",
+        "科学"
+      ]
+    },
+    {
+      "id": "dd15285b-55f5-4afe-a738-5180b9dfaf1d",
+      "name": "四年级4班",
+      "schoolIndex": 0,
+      "headTeacher": "赵敏",
+      "headTeacherId": "96e2a2c4-f065-4214-94b6-50b87364c6e0",
+      "subjects": [
+        "科学",
+        "品德"
+      ]
+    },
+    {
+      "id": "e651672c-c408-43a1-b4d2-e2746657bdda",
+      "name": "五年级5班",
+      "schoolIndex": 0,
+      "headTeacher": "孙静",
+      "headTeacherId": "42b6836f-1839-4d20-ba75-78570bb531cd",
+      "subjects": [
+        "品德",
+        "音乐"
+      ]
+    },
+    {
+      "id": "71c4757d-7d41-4831-9135-90d87addb755",
+      "name": "一年级1班",
+      "schoolIndex": 1,
+      "headTeacher": "张芳",
+      "headTeacherId": "818830d2-74a1-4c62-9185-ce0621ddb237",
+      "subjects": [
+        "语文",
+        "数学"
+      ]
+    },
+    {
+      "id": "20e22223-1176-4aa1-8cf7-4c0df6595f7c",
+      "name": "二年级2班",
+      "schoolIndex": 1,
+      "headTeacher": "王娜",
+      "headTeacherId": "7197245f-ed35-4a79-8e29-7fd15bf70958",
+      "subjects": [
+        "数学",
+        "英语"
+      ]
+    },
+    {
+      "id": "83a95b48-7b4c-4e9d-9244-4ac50d51ef0e",
+      "name": "三年级3班",
+      "schoolIndex": 1,
+      "headTeacher": "李敏",
+      "headTeacherId": "870d330d-6bca-49f1-abdc-db747b921891",
+      "subjects": [
+        "英语",
+        "科学"
+      ]
+    },
+    {
+      "id": "bf22065b-b626-4f90-905e-5d4d136a137d",
+      "name": "四年级4班",
+      "schoolIndex": 1,
+      "headTeacher": "赵静",
+      "headTeacherId": "569bfb89-2d69-41a3-9f1a-997c350bf89b",
+      "subjects": [
+        "科学",
+        "品德"
+      ]
+    },
+    {
+      "id": "5970bf7e-a153-46a9-b765-1290d17bad46",
+      "name": "五年级5班",
+      "schoolIndex": 1,
+      "headTeacher": "孙丽",
+      "headTeacherId": "15dee3e7-5d83-4513-b800-1034152a79d6",
+      "subjects": [
+        "品德",
+        "音乐"
+      ]
+    },
+    {
+      "id": "dc65c386-471d-441c-82a8-4e814505173b",
+      "name": "一年级1班",
+      "schoolIndex": 2,
+      "headTeacher": "张娜",
+      "headTeacherId": "0a6b8220-3b92-4556-ad8d-e14053569f92",
+      "subjects": [
+        "语文",
+        "数学"
+      ]
+    },
+    {
+      "id": "67ccbe3b-a914-41a7-890c-2d7d5ab33c8d",
+      "name": "二年级2班",
+      "schoolIndex": 2,
+      "headTeacher": "王敏",
+      "headTeacherId": "396ccfdd-8c8b-49b2-a9c8-bde400821bb4",
+      "subjects": [
+        "数学",
+        "英语"
+      ]
+    },
+    {
+      "id": "ff877295-0f45-4d0d-a0d6-f807b09a3f16",
+      "name": "三年级3班",
+      "schoolIndex": 2,
+      "headTeacher": "李静",
+      "headTeacherId": "09dcfccb-54a5-41a7-90f7-f94739ca6f1e",
+      "subjects": [
+        "英语",
+        "科学"
+      ]
+    },
+    {
+      "id": "bf76e052-6fe1-48f6-930c-601bfcbc0477",
+      "name": "四年级4班",
+      "schoolIndex": 2,
+      "headTeacher": "赵丽",
+      "headTeacherId": "b1eb0ed7-912c-4eb6-9bb2-8bc0f6366a00",
+      "subjects": [
+        "科学",
+        "品德"
+      ]
+    },
+    {
+      "id": "874b29a6-5c37-4f12-bc41-ea282ace4e4d",
+      "name": "五年级5班",
+      "schoolIndex": 2,
+      "headTeacher": "孙强",
+      "headTeacherId": "c64ab40e-b4e0-4a4f-b39b-ad1bfc8ad3ec",
+      "subjects": [
+        "品德",
+        "音乐"
+      ]
+    },
+    {
+      "id": "5dd1c8d7-4209-4b49-8acb-c3f5a952d99f",
+      "name": "一年级1班",
+      "schoolIndex": 3,
+      "headTeacher": "张敏",
+      "headTeacherId": "ea8c3a18-3f39-438b-9a62-2e7a64698785",
+      "subjects": [
+        "语文",
+        "数学"
+      ]
+    },
+    {
+      "id": "69388d47-5a89-4559-a159-539a753ffafe",
+      "name": "二年级2班",
+      "schoolIndex": 3,
+      "headTeacher": "王静",
+      "headTeacherId": "fa91583e-6477-4a8b-9f9f-10eff8713791",
+      "subjects": [
+        "数学",
+        "英语"
+      ]
+    },
+    {
+      "id": "85fafd51-6f01-40e4-add2-673ac3176c7e",
+      "name": "三年级3班",
+      "schoolIndex": 3,
+      "headTeacher": "李丽",
+      "headTeacherId": "1a309aaa-086d-4e29-a1a2-cad8bb3089b5",
+      "subjects": [
+        "英语",
+        "科学"
+      ]
+    },
+    {
+      "id": "def09803-45a4-45df-830a-21fb9ee4f112",
+      "name": "四年级4班",
+      "schoolIndex": 3,
+      "headTeacher": "赵强",
+      "headTeacherId": "115aec16-1209-4ec4-a16c-14b18a9b6d97",
+      "subjects": [
+        "科学",
+        "品德"
+      ]
+    },
+    {
+      "id": "8fb604ef-e512-4bc2-adac-83d42e4bc888",
+      "name": "五年级5班",
+      "schoolIndex": 3,
+      "headTeacher": "孙磊",
+      "headTeacherId": "de2a6b29-7b46-401b-8a5e-2fb29f3d7965",
+      "subjects": [
+        "品德",
+        "音乐"
+      ]
+    },
+    {
+      "id": "f3102137-04a6-43eb-b6ff-b02e071570fb",
+      "name": "一年级1班",
+      "schoolIndex": 4,
+      "headTeacher": "张静",
+      "headTeacherId": "35f0d50b-3676-4471-a69e-ec659f6aae6b",
+      "subjects": [
+        "语文",
+        "数学"
+      ]
+    },
+    {
+      "id": "faa7a49d-5d0c-49a4-8a7e-43883d39ca04",
+      "name": "二年级2班",
+      "schoolIndex": 4,
+      "headTeacher": "王丽",
+      "headTeacherId": "276edb16-57e1-49ac-9356-d0b561fdd458",
+      "subjects": [
+        "数学",
+        "英语"
+      ]
+    },
+    {
+      "id": "e613406c-299f-4d03-bef0-8f7f2d3198fd",
+      "name": "三年级3班",
+      "schoolIndex": 4,
+      "headTeacher": "李强",
+      "headTeacherId": "a9f494d7-ca4b-4086-9715-621182d5ed0e",
+      "subjects": [
+        "英语",
+        "科学"
+      ]
+    },
+    {
+      "id": "f470dfdb-bc5f-4222-b8b9-ee7b15a16586",
+      "name": "四年级4班",
+      "schoolIndex": 4,
+      "headTeacher": "赵磊",
+      "headTeacherId": "1a419529-4da4-4384-8821-5b00eff1f3a7",
+      "subjects": [
+        "科学",
+        "品德"
+      ]
+    },
+    {
+      "id": "d2bb7bcf-37ca-44db-9870-b8640628ca38",
+      "name": "五年级5班",
+      "schoolIndex": 4,
+      "headTeacher": "孙军",
+      "headTeacherId": "51d96ed3-4d04-4b14-948a-ec3debc99aaa",
+      "subjects": [
+        "品德",
+        "音乐"
+      ]
+    }
+  ],
+  "students": [],
+  "schoolAdmins": [
+    {
+      "id": "88f0a38c-5feb-4474-81dc-035ca23611be",
+      "username": "admin_school_1",
+      "name": "王管理",
+      "schoolId": "7280b5b3-c878-4b43-bf68-188842e727ef",
+      "schoolName": "阳光小学",
+      "schoolCode": "YG335VVW",
+      "enabled": true,
+      "schoolIndex": 0,
+      "password": "admin123"
+    },
+    {
+      "id": "af136e06-ccc1-4ebf-a6a9-b5d9ee1af1ca",
+      "username": "admin_school_2",
+      "name": "李管理",
+      "schoolId": "78e4415e-a879-4676-a899-cf026d7eaca1",
+      "schoolName": "育才中学",
+      "schoolCode": "YCVEM6FW",
+      "enabled": true,
+      "schoolIndex": 1,
+      "password": "admin123"
+    },
+    {
+      "id": "8c1a6b1a-9e39-496d-9f55-a82e8524176e",
+      "username": "admin_school_3",
+      "name": "赵管理",
+      "schoolId": "247adb04-f4ef-46bd-bfc9-d1e29e0bc519",
+      "schoolName": "实验学校",
+      "schoolCode": "SYNWFJXW",
+      "enabled": true,
+      "schoolIndex": 2,
+      "password": "admin123"
+    },
+    {
+      "id": "37ce2f54-0957-4173-8f47-53696783b092",
+      "username": "admin_school_4",
+      "name": "孙管理",
+      "schoolId": "0108faf4-d5ce-4833-811d-c68da75e435e",
+      "schoolName": "第一小学",
+      "schoolCode": "DYAMPQJW",
+      "enabled": true,
+      "schoolIndex": 3,
+      "password": "admin123"
+    },
+    {
+      "id": "52bf1a97-8dfa-47b6-88f6-62315d11b170",
+      "username": "admin_school_5",
+      "name": "周管理",
+      "schoolId": "4a33c75a-f20a-474a-b8e6-505a756566d4",
+      "schoolName": "新世纪学校",
+      "schoolCode": "XSTXQ7BW",
+      "enabled": true,
+      "schoolIndex": 4,
+      "password": "admin123"
+    }
+  ],
+  "summary": {
+    "schools": 5,
+    "schoolAdmins": 5,
+    "teachers": 50,
+    "classes": 25,
+    "students": 0
+  }
+}

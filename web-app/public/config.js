@@ -8,6 +8,6 @@
 //   2) 走 CI：改 .env.production 的 VITE_API_BASE 后重新打包。
 //
 // 本地联调（指向本地 server:3000）时，将下面这行注释掉即可回退到 .env.development。
-window.__APP_CONFIG__ = {
-  API_BASE_URL: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api',
-}
+// window.__APP_CONFIG__ = {
+//   API_BASE_URL: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api',
+// }

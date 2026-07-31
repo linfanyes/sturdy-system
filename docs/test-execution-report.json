@@ -1,0 +1,1151 @@
+{
+  "startTime": "2026-07-31T03:12:15.833Z",
+  "summary": {
+    "total": 55,
+    "passed": 55,
+    "failed": 0,
+    "skipped": 0
+  },
+  "modules": [
+    {
+      "name": "1. Authentication & Security",
+      "cases": [
+        {
+          "id": "AUTH-LOGIN-VALID",
+          "title": "Valid Super Admin Login",
+          "module": "1. Authentication & Security",
+          "expected": "token",
+          "actual": true,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:16.995Z"
+        },
+        {
+          "id": "AUTH-LOGIN-INVALID",
+          "title": "Invalid Password Rejected",
+          "module": "1. Authentication & Security",
+          "expected": "401",
+          "actual": 401,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:16.997Z"
+        },
+        {
+          "id": "AUTH-ME-001",
+          "title": "Get Current User",
+          "module": "1. Authentication & Security",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.000Z"
+        },
+        {
+          "id": "AUTH-ME-002",
+          "title": "Has Role",
+          "module": "1. Authentication & Security",
+          "expected": "role",
+          "actual": "teacher",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.000Z"
+        },
+        {
+          "id": "AUTH-ME-003",
+          "title": "Has Effective Features",
+          "module": "1. Authentication & Security",
+          "expected": "features",
+          "actual": "present",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.000Z"
+        },
+        {
+          "id": "AUTH-ME-004",
+          "title": "Has User Object",
+          "module": "1. Authentication & Security",
+          "expected": "user object",
+          "actual": "present",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.000Z"
+        },
+        {
+          "id": "AUTH-ME-005",
+          "title": "User Has Subject",
+          "module": "1. Authentication & Security",
+          "expected": "subject",
+          "actual": "语文",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.000Z"
+        },
+        {
+          "id": "AUTH-RATE-001",
+          "title": "Rate Limiting",
+          "module": "1. Authentication & Security",
+          "expected": "429",
+          "actual": "429",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.624Z"
+        }
+      ]
+    },
+    {
+      "name": "2. Role & Permission Tests",
+      "cases": [
+        {
+          "id": "PERM-TCH-ADMIN",
+          "title": "Teacher Blocked from Admin",
+          "module": "2. Role & Permission Tests",
+          "expected": "401/403",
+          "actual": 401,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.629Z"
+        },
+        {
+          "id": "PERM-SA-ADMIN",
+          "title": "School Admin Blocked from Admin",
+          "module": "2. Role & Permission Tests",
+          "expected": "401/403",
+          "actual": 401,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.631Z"
+        },
+        {
+          "id": "PERM-SUPER-ACCESS",
+          "title": "Super Admin Can Access All",
+          "module": "2. Role & Permission Tests",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.634Z"
+        },
+        {
+          "id": "PERM-NO-TOKEN",
+          "title": "No Token Blocked",
+          "module": "2. Role & Permission Tests",
+          "expected": "401",
+          "actual": 401,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.636Z"
+        }
+      ]
+    },
+    {
+      "name": "3. School Management (CRUD)",
+      "cases": [
+        {
+          "id": "SCHOOL-LIST",
+          "title": "List Schools",
+          "module": "3. School Management (CRUD)",
+          "expected": ">=5",
+          "actual": 7,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.638Z"
+        },
+        {
+          "id": "SCHOOL-GET",
+          "title": "Get Single School",
+          "module": "3. School Management (CRUD)",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.640Z"
+        },
+        {
+          "id": "SCHOOL-UPDATE",
+          "title": "Update School",
+          "module": "3. School Management (CRUD)",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.643Z"
+        },
+        {
+          "id": "SCHOOL-FEAT",
+          "title": "Get School Features",
+          "module": "3. School Management (CRUD)",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.645Z"
+        },
+        {
+          "id": "SCHOOL-FEAT-UPDATE",
+          "title": "Update School Features",
+          "module": "3. School Management (CRUD)",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.647Z"
+        }
+      ]
+    },
+    {
+      "name": "4. School Admin Management",
+      "cases": [
+        {
+          "id": "SA-LIST",
+          "title": "List School Admins",
+          "module": "4. School Admin Management",
+          "expected": ">=5",
+          "actual": 7,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.650Z"
+        },
+        {
+          "id": "SA-DISABLE",
+          "title": "Disable School Admin",
+          "module": "4. School Admin Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.657Z"
+        },
+        {
+          "id": "SA-ENABLE",
+          "title": "Enable School Admin",
+          "module": "4. School Admin Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.663Z"
+        },
+        {
+          "id": "SA-RESET-PWD",
+          "title": "Reset Password",
+          "module": "4. School Admin Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.737Z"
+        },
+        {
+          "id": "SA-NEW-PWD-LOGIN",
+          "title": "Login with New Password",
+          "module": "4. School Admin Management",
+          "expected": "token",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.806Z"
+        }
+      ]
+    },
+    {
+      "name": "5. Teacher Management",
+      "cases": [
+        {
+          "id": "TCH-LIST",
+          "title": "List Teachers",
+          "module": "5. Teacher Management",
+          "expected": ">0",
+          "actual": 10,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.881Z"
+        },
+        {
+          "id": "TCH-CREATE",
+          "title": "Create Teacher",
+          "module": "5. Teacher Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.957Z"
+        },
+        {
+          "id": "TCH-FEAT-UPDATE",
+          "title": "Update Teacher Features",
+          "module": "5. Teacher Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.959Z"
+        },
+        {
+          "id": "TCH-DELETE",
+          "title": "Delete Teacher",
+          "module": "5. Teacher Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.971Z"
+        }
+      ]
+    },
+    {
+      "name": "6. Class Management",
+      "cases": [
+        {
+          "id": "CLS-LIST-SA",
+          "title": "School Admin List Classes",
+          "module": "6. Class Management",
+          "expected": ">=5",
+          "actual": 5,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.975Z"
+        },
+        {
+          "id": "CLS-CREATE",
+          "title": "Create Class",
+          "module": "6. Class Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:17.994Z"
+        },
+        {
+          "id": "CLS-UPDATE",
+          "title": "Update Class",
+          "module": "6. Class Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.011Z"
+        },
+        {
+          "id": "CLS-DELETE",
+          "title": "Delete Class",
+          "module": "6. Class Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.019Z"
+        },
+        {
+          "id": "CLS-TCH-LIST",
+          "title": "Teacher List Own Classes",
+          "module": "6. Class Management",
+          "expected": ">0",
+          "actual": 1,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.024Z"
+        }
+      ]
+    },
+    {
+      "name": "7. Student Management",
+      "cases": [
+        {
+          "id": "STD-LIST-SA",
+          "title": "School Admin List Students",
+          "module": "7. Student Management",
+          "expected": ">0",
+          "actual": 43,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.029Z"
+        },
+        {
+          "id": "STD-CREATE",
+          "title": "Batch Create Student",
+          "module": "7. Student Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.032Z"
+        },
+        {
+          "id": "STD-UPDATE",
+          "title": "Update Student",
+          "module": "7. Student Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.041Z"
+        },
+        {
+          "id": "STD-TCH-LIST",
+          "title": "Teacher List Students",
+          "module": "7. Student Management",
+          "expected": ">0",
+          "actual": 11,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.045Z"
+        },
+        {
+          "id": "STD-GET",
+          "title": "Get Single Student",
+          "module": "7. Student Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.048Z"
+        }
+      ]
+    },
+    {
+      "name": "8. Grade & Exam Management",
+      "cases": [
+        {
+          "id": "GRD-CREATE",
+          "title": "Create Grade",
+          "module": "8. Grade & Exam Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.065Z"
+        },
+        {
+          "id": "GRD-LIST",
+          "title": "List Grades",
+          "module": "8. Grade & Exam Management",
+          "expected": ">0",
+          "actual": 5,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.069Z"
+        },
+        {
+          "id": "EXM-CREATE",
+          "title": "Create Exam (Teacher)",
+          "module": "8. Grade & Exam Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.083Z"
+        },
+        {
+          "id": "EXM-LIST",
+          "title": "List Exams",
+          "module": "8. Grade & Exam Management",
+          "expected": ">0",
+          "actual": 2,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.088Z"
+        }
+      ]
+    },
+    {
+      "name": "9. Notice Management",
+      "cases": [
+        {
+          "id": "NTC-CREATE",
+          "title": "Create Notice",
+          "module": "9. Notice Management",
+          "expected": "201/200",
+          "actual": 201,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.093Z"
+        },
+        {
+          "id": "NTC-LIST",
+          "title": "List Notices",
+          "module": "9. Notice Management",
+          "expected": ">0",
+          "actual": 5,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.096Z"
+        },
+        {
+          "id": "NTC-UPDATE",
+          "title": "Update Notice",
+          "module": "9. Notice Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.103Z"
+        },
+        {
+          "id": "NTC-DELETE",
+          "title": "Delete Notice",
+          "module": "9. Notice Management",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.109Z"
+        }
+      ]
+    },
+    {
+      "name": "10. System & Health",
+      "cases": [
+        {
+          "id": "HEALTH-CHECK",
+          "title": "Health Check",
+          "module": "10. System & Health",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.110Z"
+        },
+        {
+          "id": "HEALTH-STATUS",
+          "title": "Status OK",
+          "module": "10. System & Health",
+          "expected": "ok",
+          "actual": "ok",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.110Z"
+        },
+        {
+          "id": "AUDIT-LIST",
+          "title": "List Audit Logs",
+          "module": "10. System & Health",
+          "expected": "200",
+          "actual": 200,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.112Z"
+        }
+      ]
+    },
+    {
+      "name": "11. Cross-School Data Isolation",
+      "cases": [
+        {
+          "id": "ISO-SCHOOLS",
+          "title": "Different Schools See Different Teachers",
+          "module": "11. Cross-School Data Isolation",
+          "expected": "both > 0",
+          "actual": "10 vs 10",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.117Z"
+        }
+      ]
+    },
+    {
+      "name": "12. Permission Edge Cases",
+      "cases": [
+        {
+          "id": "PERM-INVALID-TOKEN",
+          "title": "Invalid Token Rejected",
+          "module": "12. Permission Edge Cases",
+          "expected": "401",
+          "actual": 401,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.118Z"
+        },
+        {
+          "id": "PERM-SUPER-ALL",
+          "title": "Super Admin Can See All Teachers",
+          "module": "12. Permission Edge Cases",
+          "expected": ">=50",
+          "actual": 54,
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.122Z"
+        }
+      ]
+    },
+    {
+      "name": "13. Data Integrity",
+      "cases": [
+        {
+          "id": "DATA-SCHOOL-NAMES",
+          "title": "School Names Correct",
+          "module": "13. Data Integrity",
+          "expected": "correct names",
+          "actual": "测试更新, 第一小学, 实验学校, 育才中学, 阳光小学, 明德小学, 阳光实验小学",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.122Z"
+        },
+        {
+          "id": "DATA-TEACHER-SUBJECT",
+          "title": "Teacher Has Subject",
+          "module": "13. Data Integrity",
+          "expected": "subject",
+          "actual": "语文",
+          "passed": true,
+          "details": "",
+          "timestamp": "2026-07-31T03:12:18.125Z"
+        }
+      ]
+    }
+  ],
+  "defects": [],
+  "testCases": [
+    {
+      "id": "AUTH-SUPER-001",
+      "title": "Super Admin Login",
+      "module": "",
+      "expected": "token",
+      "actual": "token",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:15.851Z"
+    },
+    {
+      "id": "AUTH-SA-001",
+      "title": "All 5 School Admins Login",
+      "module": "",
+      "expected": "5 tokens",
+      "actual": "5 tokens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:16.288Z"
+    },
+    {
+      "id": "AUTH-TCH-001",
+      "title": "10 Teachers Login",
+      "module": "",
+      "expected": ">=10 tokens",
+      "actual": "10 tokens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:16.995Z"
+    },
+    {
+      "id": "AUTH-LOGIN-VALID",
+      "title": "Valid Super Admin Login",
+      "module": "1. Authentication & Security",
+      "expected": "token",
+      "actual": true,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:16.995Z"
+    },
+    {
+      "id": "AUTH-LOGIN-INVALID",
+      "title": "Invalid Password Rejected",
+      "module": "1. Authentication & Security",
+      "expected": "401",
+      "actual": 401,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:16.997Z"
+    },
+    {
+      "id": "AUTH-ME-001",
+      "title": "Get Current User",
+      "module": "1. Authentication & Security",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.000Z"
+    },
+    {
+      "id": "AUTH-ME-002",
+      "title": "Has Role",
+      "module": "1. Authentication & Security",
+      "expected": "role",
+      "actual": "teacher",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.000Z"
+    },
+    {
+      "id": "AUTH-ME-003",
+      "title": "Has Effective Features",
+      "module": "1. Authentication & Security",
+      "expected": "features",
+      "actual": "present",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.000Z"
+    },
+    {
+      "id": "AUTH-ME-004",
+      "title": "Has User Object",
+      "module": "1. Authentication & Security",
+      "expected": "user object",
+      "actual": "present",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.000Z"
+    },
+    {
+      "id": "AUTH-ME-005",
+      "title": "User Has Subject",
+      "module": "1. Authentication & Security",
+      "expected": "subject",
+      "actual": "语文",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.000Z"
+    },
+    {
+      "id": "AUTH-RATE-001",
+      "title": "Rate Limiting",
+      "module": "1. Authentication & Security",
+      "expected": "429",
+      "actual": "429",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.624Z"
+    },
+    {
+      "id": "PERM-TCH-ADMIN",
+      "title": "Teacher Blocked from Admin",
+      "module": "2. Role & Permission Tests",
+      "expected": "401/403",
+      "actual": 401,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.629Z"
+    },
+    {
+      "id": "PERM-SA-ADMIN",
+      "title": "School Admin Blocked from Admin",
+      "module": "2. Role & Permission Tests",
+      "expected": "401/403",
+      "actual": 401,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.631Z"
+    },
+    {
+      "id": "PERM-SUPER-ACCESS",
+      "title": "Super Admin Can Access All",
+      "module": "2. Role & Permission Tests",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.634Z"
+    },
+    {
+      "id": "PERM-NO-TOKEN",
+      "title": "No Token Blocked",
+      "module": "2. Role & Permission Tests",
+      "expected": "401",
+      "actual": 401,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.636Z"
+    },
+    {
+      "id": "SCHOOL-LIST",
+      "title": "List Schools",
+      "module": "3. School Management (CRUD)",
+      "expected": ">=5",
+      "actual": 7,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.638Z"
+    },
+    {
+      "id": "SCHOOL-GET",
+      "title": "Get Single School",
+      "module": "3. School Management (CRUD)",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.640Z"
+    },
+    {
+      "id": "SCHOOL-UPDATE",
+      "title": "Update School",
+      "module": "3. School Management (CRUD)",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.643Z"
+    },
+    {
+      "id": "SCHOOL-FEAT",
+      "title": "Get School Features",
+      "module": "3. School Management (CRUD)",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.645Z"
+    },
+    {
+      "id": "SCHOOL-FEAT-UPDATE",
+      "title": "Update School Features",
+      "module": "3. School Management (CRUD)",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.647Z"
+    },
+    {
+      "id": "SA-LIST",
+      "title": "List School Admins",
+      "module": "4. School Admin Management",
+      "expected": ">=5",
+      "actual": 7,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.650Z"
+    },
+    {
+      "id": "SA-DISABLE",
+      "title": "Disable School Admin",
+      "module": "4. School Admin Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.657Z"
+    },
+    {
+      "id": "SA-ENABLE",
+      "title": "Enable School Admin",
+      "module": "4. School Admin Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.663Z"
+    },
+    {
+      "id": "SA-RESET-PWD",
+      "title": "Reset Password",
+      "module": "4. School Admin Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.737Z"
+    },
+    {
+      "id": "SA-NEW-PWD-LOGIN",
+      "title": "Login with New Password",
+      "module": "4. School Admin Management",
+      "expected": "token",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.806Z"
+    },
+    {
+      "id": "TCH-LIST",
+      "title": "List Teachers",
+      "module": "5. Teacher Management",
+      "expected": ">0",
+      "actual": 10,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.881Z"
+    },
+    {
+      "id": "TCH-CREATE",
+      "title": "Create Teacher",
+      "module": "5. Teacher Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.957Z"
+    },
+    {
+      "id": "TCH-FEAT-UPDATE",
+      "title": "Update Teacher Features",
+      "module": "5. Teacher Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.959Z"
+    },
+    {
+      "id": "TCH-DELETE",
+      "title": "Delete Teacher",
+      "module": "5. Teacher Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.971Z"
+    },
+    {
+      "id": "CLS-LIST-SA",
+      "title": "School Admin List Classes",
+      "module": "6. Class Management",
+      "expected": ">=5",
+      "actual": 5,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.975Z"
+    },
+    {
+      "id": "CLS-CREATE",
+      "title": "Create Class",
+      "module": "6. Class Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:17.994Z"
+    },
+    {
+      "id": "CLS-UPDATE",
+      "title": "Update Class",
+      "module": "6. Class Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.011Z"
+    },
+    {
+      "id": "CLS-DELETE",
+      "title": "Delete Class",
+      "module": "6. Class Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.019Z"
+    },
+    {
+      "id": "CLS-TCH-LIST",
+      "title": "Teacher List Own Classes",
+      "module": "6. Class Management",
+      "expected": ">0",
+      "actual": 1,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.024Z"
+    },
+    {
+      "id": "STD-LIST-SA",
+      "title": "School Admin List Students",
+      "module": "7. Student Management",
+      "expected": ">0",
+      "actual": 43,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.029Z"
+    },
+    {
+      "id": "STD-CREATE",
+      "title": "Batch Create Student",
+      "module": "7. Student Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.032Z"
+    },
+    {
+      "id": "STD-UPDATE",
+      "title": "Update Student",
+      "module": "7. Student Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.041Z"
+    },
+    {
+      "id": "STD-TCH-LIST",
+      "title": "Teacher List Students",
+      "module": "7. Student Management",
+      "expected": ">0",
+      "actual": 11,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.045Z"
+    },
+    {
+      "id": "STD-GET",
+      "title": "Get Single Student",
+      "module": "7. Student Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.048Z"
+    },
+    {
+      "id": "GRD-CREATE",
+      "title": "Create Grade",
+      "module": "8. Grade & Exam Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.065Z"
+    },
+    {
+      "id": "GRD-LIST",
+      "title": "List Grades",
+      "module": "8. Grade & Exam Management",
+      "expected": ">0",
+      "actual": 5,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.069Z"
+    },
+    {
+      "id": "EXM-CREATE",
+      "title": "Create Exam (Teacher)",
+      "module": "8. Grade & Exam Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.083Z"
+    },
+    {
+      "id": "EXM-LIST",
+      "title": "List Exams",
+      "module": "8. Grade & Exam Management",
+      "expected": ">0",
+      "actual": 2,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.088Z"
+    },
+    {
+      "id": "NTC-CREATE",
+      "title": "Create Notice",
+      "module": "9. Notice Management",
+      "expected": "201/200",
+      "actual": 201,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.093Z"
+    },
+    {
+      "id": "NTC-LIST",
+      "title": "List Notices",
+      "module": "9. Notice Management",
+      "expected": ">0",
+      "actual": 5,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.096Z"
+    },
+    {
+      "id": "NTC-UPDATE",
+      "title": "Update Notice",
+      "module": "9. Notice Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.103Z"
+    },
+    {
+      "id": "NTC-DELETE",
+      "title": "Delete Notice",
+      "module": "9. Notice Management",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.109Z"
+    },
+    {
+      "id": "HEALTH-CHECK",
+      "title": "Health Check",
+      "module": "10. System & Health",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.110Z"
+    },
+    {
+      "id": "HEALTH-STATUS",
+      "title": "Status OK",
+      "module": "10. System & Health",
+      "expected": "ok",
+      "actual": "ok",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.110Z"
+    },
+    {
+      "id": "AUDIT-LIST",
+      "title": "List Audit Logs",
+      "module": "10. System & Health",
+      "expected": "200",
+      "actual": 200,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.112Z"
+    },
+    {
+      "id": "ISO-SCHOOLS",
+      "title": "Different Schools See Different Teachers",
+      "module": "11. Cross-School Data Isolation",
+      "expected": "both > 0",
+      "actual": "10 vs 10",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.117Z"
+    },
+    {
+      "id": "PERM-INVALID-TOKEN",
+      "title": "Invalid Token Rejected",
+      "module": "12. Permission Edge Cases",
+      "expected": "401",
+      "actual": 401,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.118Z"
+    },
+    {
+      "id": "PERM-SUPER-ALL",
+      "title": "Super Admin Can See All Teachers",
+      "module": "12. Permission Edge Cases",
+      "expected": ">=50",
+      "actual": 54,
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.122Z"
+    },
+    {
+      "id": "DATA-SCHOOL-NAMES",
+      "title": "School Names Correct",
+      "module": "13. Data Integrity",
+      "expected": "correct names",
+      "actual": "测试更新, 第一小学, 实验学校, 育才中学, 阳光小学, 明德小学, 阳光实验小学",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.122Z"
+    },
+    {
+      "id": "DATA-TEACHER-SUBJECT",
+      "title": "Teacher Has Subject",
+      "module": "13. Data Integrity",
+      "expected": "subject",
+      "actual": "语文",
+      "passed": true,
+      "details": "",
+      "timestamp": "2026-07-31T03:12:18.125Z"
+    }
+  ],
+  "endTime": "2026-07-31T03:12:18.125Z",
+  "duration": "2.3s"
+}
