@@ -303,7 +303,7 @@ async function resetAiDefaults() {
 }
 
 // ==================== 应用配置 ====================
-const appForm = reactive({ theme: 'light', semester: '', schoolYear: '' })
+const appForm = reactive({ theme: 'light', semester: '', schoolYear: '', colorScheme: 'butter' })
 
 const SEMESTER_OPTIONS = (() => {
   const y = new Date().getFullYear()
@@ -335,7 +335,16 @@ function applyTheme(theme: string) {
 async function loadApp() {
   try {
     const app = await request.get('/config/app-config').catch(() => null)
-    if (app) Object.assign(appForm, app)
+    if (app) {
+      // 兼容 map 形态（{theme, semester, ...}）与 items 形态（[{key,value}]）
+      if (app && Array.isArray(app.items)) {
+        const map: Record<string, any> = {}
+        for (const it of app.items) map[it.key] = it.value
+        Object.assign(appForm, map)
+      } else if (app && typeof app === 'object') {
+        Object.assign(appForm, app)
+      }
+    }
     // 当前学期默认显示本学期
     if (!appForm.semester) appForm.semester = currentSemester()
     // 即时应用主题
@@ -355,8 +364,11 @@ async function saveApp() {
   saving.value = true
   try {
     await request.patch('/config/app-config', appForm)
-    // 同步主题到用户档案
-    await request.patch('/users/me', { theme: appForm.theme }).catch(() => {})
+    // 同步主题/配色到用户档案，跨端可见
+    await request.patch('/users/me', {
+      theme: appForm.theme,
+      colorScheme: appForm.colorScheme,
+    }).catch(() => {})
     applyTheme(appForm.theme)
     alert('应用配置已保存')
   } catch (e: any) {

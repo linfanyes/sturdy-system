@@ -10,7 +10,7 @@
       </view>
       <view class="field">
         <text class="label">接口地址</text>
-        <input v-model="ai.baseUrl" placeholder="AI 接口地址" />
+        <input v-model="ai.baseUrl" placeholder="AI 接口地址（可由服务商自动填充）" />
       </view>
       <view class="field">
         <text class="label">密钥</text>
@@ -67,7 +67,7 @@
         </view>
         <view class="hint" style="margin-top:4rpx">每个场景可单独指定模型名，不填则使用上方默认文本模型</view>
       </view>
-      <view class="hint">当前服务商：{{ PROVIDER_NAMES[providerIdx] || '自定义' }}。切换服务商将自动更新接口地址与默认模型。{{ providerIdx === 1 ? 'DeepSeek v4 为原生多模态模型，文本与视觉使用同一模型名。' : '' }}</view>
+      <view class="hint">当前服务商：{{ PROVIDER_NAMES[providerIdx] || '自定义' }}（列表来自后端 AI 服务商表，Web 端新增/修改后此处可见）。切换服务商将自动更新接口地址与默认模型。{{ providerIdx === 1 ? 'DeepSeek v4 为原生多模态模型，文本与视觉使用同一模型名。' : '' }}</view>
       <view class="reset-row">
         <button class="ghost-btn" @click="resetAiDefaults">恢复默认</button>
       </view>
@@ -113,45 +113,80 @@ import api from '../../common/request'
 import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES, flushTabBarStyle } from '../../common/store'
 import { inRange, isUrl, clip, MAX_LEN } from '../../common/validators'
 
-// ==================== 服务商预设（切换服务商时自动更新接口地址与模型列表） ====================
-const PROVIDER_PRESETS = {
-  '阿里百炼（通义千问）': {
+// ==================== AI 服务商：以「后端 ai_providers 表」为准，内置预设仅作兜底 ====================
+const PROVIDER_FALLBACK = [
+  {
+    code: 'ali-qwen',
+    name: '阿里百炼（通义千问）',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     textModels: ['qwen-plus', 'qwen-max', 'qwen-turbo'],
     visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
     imageModels: [],
     videoModels: [],
+    isDefault: true,
+    enabled: true,
+    sortOrder: 1,
   },
-  'DeepSeek': {
+  {
+    code: 'deepseek',
+    name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com/v1',
     textModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
     visionModels: ['deepseek-v4-pro'],
     imageModels: [],
     videoModels: [],
+    isDefault: false,
+    enabled: true,
+    sortOrder: 2,
   },
-  '智谱GLM': {
+  {
+    code: 'glm',
+    name: '智谱GLM',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
     textModels: ['GLM-4.7-Flash'],
     visionModels: ['GLM-4.6V-Flash'],
-    imageModels: ['GLM-4.6V-Flash'],   // 文生图
-    videoModels: ['CogVideoX-Flash'],  // 文生视频
+    imageModels: ['GLM-4.6V-Flash'],
+    videoModels: ['CogVideoX-Flash'],
+    isDefault: false,
+    enabled: true,
+    sortOrder: 3,
   },
-  '自定义': {
+  {
+    code: 'custom',
+    name: '自定义',
     baseUrl: '',
     textModels: [],
     visionModels: [],
     imageModels: [],
     videoModels: [],
+    isDefault: false,
+    enabled: true,
+    sortOrder: 99,
   },
+]
+
+// 当前服务商列表（后端 ai_providers → 兜底预设）
+const providers = ref([])
+
+function getProviderIdx(code) {
+  if (!code) return 0
+  const i = providers.value.findIndex((p) => p.code === code)
+  return i >= 0 ? i : 0
 }
-const PROVIDER_NAMES = Object.keys(PROVIDER_PRESETS)
+
+function detectProviderIdx(baseUrl) {
+  if (!baseUrl) return 0
+  const i = providers.value.findIndex((p) => p.baseUrl && baseUrl.indexOf(p.baseUrl) === 0)
+  return i >= 0 ? i : 0
+}
+
+const PROVIDER_NAMES = computed(() => providers.value.map((p) => p.name))
 
 const DEFAULT_TEMPERATURE = 0.7
 const DEFAULT_AI_NAME = '小林子'
 const DEFAULT_SYSTEM_PROMPT =
   '你是一位亲切、专业的教师助理，名字叫「小林子」。回答要简洁、清晰、有条理。涉及数据时尽量用列表或表格，方便老师快速理解。'
 
-// 场景名映射
 const RESOURCE_MAP = {
   'exam-analysis': '考试分析',
   'student-diagnose': '学生诊断',
@@ -160,40 +195,50 @@ const RESOURCE_MAP = {
 
 const showResourceModels = ref(false)
 
-// 根据 baseUrl 反查当前服务商索引
-function detectProvider(baseUrl) {
-  if (baseUrl && (baseUrl.includes('dashscope.aliyuncs.com') || baseUrl.includes('maas.aliyuncs.com'))) return 0
-  if (baseUrl && baseUrl.includes('api.deepseek.com')) return 1
-  if (baseUrl && baseUrl.includes('open.bigmodel.cn')) return 2
-  return 3
-}
-
 const ai = ref({})
 const app = ref([])
+const appMap = ref({})
 const savingAi = ref(false)
 const providerIdx = ref(0)
+const providerCode = ref('')
 
 const curScheme = computed(() => SCHEMES.find((s) => s.value === theme.colorScheme) || SCHEMES[0])
-function onTheme(e) { setTheme(e.detail.value ? 'dark' : 'light') }
-function cycle() { const next = cycleColorScheme(); uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' }) }
 
-// 当前服务商的模型列表（computed）
-const currentTextModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].textModels)
-const currentVisionModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].visionModels)
-const currentImageModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].imageModels)
-const currentVideoModels = computed(() => PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]].videoModels)
+function onTheme(e) {
+  const mode = e.detail.value ? 'dark' : 'light'
+  setTheme(mode)
+  // 持久化到后端：Web 与小程序共享主题偏好
+  try {
+    api.patch('/config/app-config', { theme: mode }).catch(() => {})
+    api.patch('/users/me', { theme: mode }).catch(() => {})
+  } catch (e) {}
+}
 
-// 是否支持文生图/文生视频（有预设模型时显示对应字段）
+function cycle() {
+  const next = cycleColorScheme()
+  try {
+    api.patch('/config/app-config', { colorScheme: next }).catch(() => {})
+    api.patch('/users/me', { colorScheme: next }).catch(() => {})
+  } catch (e) {}
+  uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' })
+}
+
+// 当前选中服务商
+const currentProvider = computed(() => providers.value[providerIdx.value] || providers.value[0] || {})
+
+const currentTextModels = computed(() => currentProvider.value.textModels || [])
+const currentVisionModels = computed(() => currentProvider.value.visionModels || [])
+const currentImageModels = computed(() => currentProvider.value.imageModels || [])
+const currentVideoModels = computed(() => currentProvider.value.videoModels || [])
+
 const hasImageModels = computed(() => currentImageModels.value.length > 0)
 const hasVideoModels = computed(() => currentVideoModels.value.length > 0)
 
-// 下拉选项 = 当前服务商模型 + "自定义"
 const textModelOpts = computed(() => [...currentTextModels.value, '自定义'])
 const visionModelOpts = computed(() => [...currentVisionModels.value, '自定义'])
 const imageModelOpts = computed(() => [...currentImageModels.value, '自定义'])
 const videoModelOpts = computed(() => [...currentVideoModels.value, '自定义'])
 
-// 当前选中索引：命中当前服务商预设返回其索引，否则返回最后一项（自定义）
 const textModelIdx = computed(() => {
   const i = currentTextModels.value.indexOf(ai.value.textModel)
   return i >= 0 ? i : textModelOpts.value.length - 1
@@ -211,20 +256,19 @@ const videoModelIdx = computed(() => {
   return i >= 0 ? i : videoModelOpts.value.length - 1
 })
 
-// 服务商切换：自动填充接口地址 + 默认模型（含文生图/文生视频）
 function onProviderChange(e) {
   const idx = Number(e.detail.value)
   if (idx === providerIdx.value) return
   providerIdx.value = idx
-  const preset = PROVIDER_PRESETS[PROVIDER_NAMES[idx]]
-  ai.value.baseUrl = preset.baseUrl || ai.value.baseUrl
-  if (preset.textModels.length) ai.value.textModel = preset.textModels[0]
-  if (preset.visionModels.length) ai.value.visionModel = preset.visionModels[0]
-  if (preset.imageModels.length) ai.value.imageModel = preset.imageModels[0]
-  if (preset.videoModels.length) ai.value.videoModel = preset.videoModels[0]
+  const p = providers.value[idx]
+  providerCode.value = p.code || ''
+  if (p.baseUrl) ai.value.baseUrl = p.baseUrl
+  if (p.textModels && p.textModels.length) ai.value.textModel = p.textModels[0]
+  if (p.visionModels && p.visionModels.length) ai.value.visionModel = p.visionModels[0]
+  if (p.imageModels && p.imageModels.length) ai.value.imageModel = p.imageModels[0]
+  if (p.videoModels && p.videoModels.length) ai.value.videoModel = p.videoModels[0]
 }
 
-// 选择预设模型：选"自定义"时不清空（保留当前值方便微调），否则设为对应预设
 function onTextModelPick(e) {
   const idx = Number(e.detail.value)
   if (idx !== textModelOpts.value.length - 1) {
@@ -250,53 +294,109 @@ function onVideoModelPick(e) {
   }
 }
 
-// 恢复默认：重置为当前服务商的默认配置
 function resetAiDefaults() {
-  const preset = PROVIDER_PRESETS[PROVIDER_NAMES[providerIdx.value]]
+  const p = providers.value[providerIdx.value] || providers.value[0]
   ai.value = {
-    baseUrl: preset.baseUrl || '',
+    baseUrl: p.baseUrl || '',
     apiKey: ai.value.apiKey,
-    textModel: preset.textModels[0] || '',
-    visionModel: preset.visionModels[0] || '',
-    imageModel: preset.imageModels[0] || '',
-    videoModel: preset.videoModels[0] || '',
+    textModel: (p.textModels && p.textModels[0]) || '',
+    visionModel: (p.visionModels && p.visionModels[0]) || '',
+    imageModel: (p.imageModels && p.imageModels[0]) || '',
+    videoModel: (p.videoModels && p.videoModels[0]) || '',
     temperature: DEFAULT_TEMPERATURE,
     aiName: DEFAULT_AI_NAME,
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
+    resourceModels: {},
   }
+}
+
+/** 从后端加载 AI 服务商列表，失败时回退到本地兜底预设 */
+async function loadProviders() {
+  try {
+    const res = await api.get('/config/ai-providers')
+    const list = (res && res.items) || (Array.isArray(res) ? res : [])
+    if (list && list.length) {
+      providers.value = list
+      return
+    }
+  } catch (e) {
+    console.warn('[config] 加载 AI 服务商失败，使用本地兜底预设：', e && e.message)
+  }
+  // 兜底：使用本地预设（保证无后端时依然可用）
+  providers.value = PROVIDER_FALLBACK.filter((p) => p.enabled).map((p) => ({ ...p }))
 }
 
 async function load() {
   try {
-    const me = await api.get('/users/me')
-    const a = await api.get('/config/ai')
-    // 补全 ai 字段：即使后端返回 undefined 也要赋默认值，避免 UI 报错
-    const firstProvider = PROVIDER_PRESETS[PROVIDER_NAMES[0]]
+    await loadProviders()
+    // 读取教师个人 AI 设置（已从平台默认 + 教师自定义合并）
+    const a = await api.get('/config/ai').catch(() => ({}))
+    // 匹配 provider
+    if (a && a.providerCode) {
+      providerCode.value = a.providerCode
+      providerIdx.value = getProviderIdx(a.providerCode)
+    } else if (a && a.baseUrl) {
+      providerIdx.value = detectProviderIdx(a.baseUrl)
+      const p = providers.value[providerIdx.value]
+      providerCode.value = p ? p.code : ''
+    } else {
+      // 未配置时，优先默认服务商
+      const defIdx = providers.value.findIndex((p) => p.isDefault)
+      providerIdx.value = defIdx >= 0 ? defIdx : 0
+      const p = providers.value[providerIdx.value]
+      providerCode.value = p ? p.code : ''
+    }
+    const current = providers.value[providerIdx.value] || providers.value[0] || {}
     ai.value = {
-      baseUrl: a.baseUrl ?? firstProvider.baseUrl,
-      apiKey: a.apiKey ?? '',
-      textModel: a.textModel ?? firstProvider.textModels[0],
-      visionModel: a.visionModel ?? firstProvider.visionModels[0],
-      imageModel: a.imageModel ?? (firstProvider.imageModels[0] || ''),
-      videoModel: a.videoModel ?? (firstProvider.videoModels[0] || ''),
+      baseUrl: a.baseUrl || current.baseUrl || '',
+      apiKey: a.apiKey || '',
+      textModel: a.textModel || (current.textModels && current.textModels[0]) || '',
+      visionModel: a.visionModel || (current.visionModels && current.visionModels[0]) || '',
+      imageModel: a.imageModel || (current.imageModels && current.imageModels[0]) || '',
+      videoModel: a.videoModel || (current.videoModels && current.videoModels[0]) || '',
       temperature:
         typeof a.temperature === 'number' && !isNaN(a.temperature)
           ? a.temperature
           : DEFAULT_TEMPERATURE,
-      aiName: a.aiName ?? DEFAULT_AI_NAME,
-      systemPrompt: a.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+      aiName: a.aiName || DEFAULT_AI_NAME,
+      systemPrompt: a.systemPrompt || DEFAULT_SYSTEM_PROMPT,
       resourceModels: a.resourceModels || {},
     }
-    // 根据已保存的接口地址反查服务商
-    providerIdx.value = detectProvider(ai.value.baseUrl)
-    app.value = await api.get('/config/app')
+    // 加载平台公开配置（主题、学期、颜色等）
+    try {
+      const cfg = await api.get('/config/app-config').catch(() => null)
+      if (cfg) {
+        // 兼容 { items: [...], ...map } 结构
+        if (Array.isArray(cfg)) {
+          app.value = cfg
+          const map = {}
+          for (const it of cfg) map[it.key] = it.value
+          appMap.value = map
+        } else if (Array.isArray(cfg.items)) {
+          app.value = cfg.items
+          appMap.value = { ...cfg }
+        } else {
+          app.value = Object.keys(cfg).map((k) => ({ key: k, value: cfg[k] }))
+          appMap.value = { ...cfg }
+        }
+        // 主题同步：后端 theme/colorScheme 覆盖本地（跨端一致）
+        if (appMap.value.theme) {
+          theme.mode = appMap.value.theme
+        }
+        if (appMap.value.colorScheme) {
+          theme.colorScheme = appMap.value.colorScheme
+        }
+      }
+    } catch (e) {
+      console.warn('[config] 加载平台配置失败：', e && e.message)
+    }
   } catch (e) {
-    // 401 由 request 拦截层统一处理（登出并回登录页），此处不重复处理；
-    // 其余瞬时网络/服务异常静默兜底，避免 tabBar 页停留在半载态。
     console.warn('[config] 配置加载失败，已静默兜底：', e && e.message)
   }
 }
+
 const defaultModelName = (key) => ai.value.textModel || 'qwen-plus'
+
 onShow(async () => {
   await load()
   flushTabBarStyle()
@@ -304,13 +404,12 @@ onShow(async () => {
 
 async function saveAi() {
   if (savingAi.value) return
-  // 校验
   if (ai.value.baseUrl && !isUrl(ai.value.baseUrl)) return uni.showToast({ title: '接口地址格式错误，需 http/https 开头', icon: 'none' })
   if (ai.value.temperature && !inRange(ai.value.temperature, 0, 2)) return uni.showToast({ title: '温度值应在 0-2 之间', icon: 'none' })
   savingAi.value = true
   try {
-    // 显式构造纯对象，避免 Vue reactive proxy 序列化异常；temperature 转数字
     const payload = {
+      providerCode: providerCode.value || '',
       baseUrl: ai.value.baseUrl || '',
       apiKey: ai.value.apiKey || '',
       textModel: ai.value.textModel || '',
@@ -322,7 +421,12 @@ async function saveAi() {
       systemPrompt: ai.value.systemPrompt || '',
       resourceModels: ai.value.resourceModels || {},
     }
-    await api.put('/config/ai', payload)
+    // 兼容后端 @Put('ai') 与 @Patch('ai-settings') 两条路径，优先新端点
+    try {
+      await api.patch('/config/ai-settings', payload)
+    } catch (_) {
+      await api.put('/config/ai', payload)
+    }
     uni.showToast({ title: 'AI 配置已保存', icon: 'success' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
@@ -330,6 +434,7 @@ async function saveAi() {
     savingAi.value = false
   }
 }
+
 function doLogout() {
   uni.showModal({
     title: '退出登录',

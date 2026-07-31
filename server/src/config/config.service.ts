@@ -112,6 +112,31 @@ export class ConfigService implements OnModuleInit {
         value: this.env.get('IM_SECRET_KEY') || '',
         description: '腾讯云 IM 密钥（生成 UserSig 用，不与前端分享）',
       },
+      {
+        key: 'theme',
+        value: this.env.get('APP_THEME') || 'light',
+        description: '当前应用主题（light/dark/auto）',
+      },
+      {
+        key: 'semester',
+        value: this.env.get('APP_SEMESTER') || '',
+        description: '当前学期（如 2025春季）',
+      },
+      {
+        key: 'schoolYear',
+        value: this.env.get('APP_SCHOOL_YEAR') || '',
+        description: '当前学年（如 2025）',
+      },
+      {
+        key: 'colorScheme',
+        value: this.env.get('APP_COLOR_SCHEME') || 'butter',
+        description: '主题配色（butter/mint/rose）',
+      },
+      {
+        key: 'fontSize',
+        value: this.env.get('APP_FONT_SIZE') || 'md',
+        description: '字体大小（sm/md/lg）',
+      },
     ]
     for (const d of defaults) {
       const exist = await this.appRepo.findOne({ where: { key: d.key } })

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { ConfigService } from './config.service'
+import { AiProviderService } from './ai-provider.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
@@ -24,7 +25,10 @@ function maskSecret(value: string): string {
 
 @Controller('config')
 export class ConfigController {
-  constructor(private readonly cfg: ConfigService) {}
+  constructor(
+    private readonly cfg: ConfigService,
+    private readonly providerSvc: AiProviderService,
+  ) {}
 
   @Get('public')
   publicConfig() {
@@ -116,39 +120,68 @@ export class ConfigController {
 
   /**
    * 教师读取平台应用配置（仅公开配置，不含敏感密钥）。
-   * 仅返回教师需要的公开配置项，避免密钥脱敏下发。
+   * 同时返回 key-value 形式（兼容小程序 config.vue 以 map 渲染）
+   * 以及 items 数组形式（与超管端点保持一致）。
    */
   @Roles('teacher')
   @Get('app-config')
   @UseGuards(JwtAuthGuard)
   async getAppConfig() {
     const rows = await this.cfg.listAppConfig()
-    // 仅返回教师需要的公开配置键
     const publicKeys = new Set([
-      'theme', 'semester', 'schoolYear',
-      'loginCode', 'defaultSubjects',
+      'theme', 'semester', 'schoolYear', 'colorScheme', 'fontSize',
+      'loginCode', 'defaultSubjects', 'parentLoginCode', 'jwtExpiresIn',
       'aiTextModel', 'aiVisionModel', 'aiImageModel', 'aiVideoModel',
-      'aiTemperature', 'aiName', 'aiBaseUrl',
-      'wxAppId', 'imSdkAppId', // 公开 ID 类（非密钥）
+      'aiTemperature', 'aiName', 'aiBaseUrl', 'aiSystemPrompt',
+      'wxAppId', 'imSdkAppId',
     ])
+    const items: { key: string; value: string }[] = []
     const map: Record<string, string> = {}
     for (const r of rows) {
       if (publicKeys.has(r.key)) {
-        map[r.key] = r.value
+        items.push({ key: r.key, value: r.value ?? '' })
+        map[r.key] = r.value ?? ''
       }
     }
-    return map
+    // 小程序 /config/app 历史上以 items 数组消费，这里同时提供 map 与 items 两种形态
+    return { items, ...map }
   }
 
   /**
-   * 教师保存应用偏好（如 theme/semester/schoolYear）。
-   * 仅允许非敏感的特定键，避免越权改写平台敏感配置（apiKey/secret 等仍由超管 @Put('app') 管理）。
+   * 教师读取已启用的 AI 服务商列表（小程序配置页/教师配置页共用）。
+   * 与 GET /ai-providers 不同：此处仅返回启用项，且剔除内部字段（teacherId 等）。
+   */
+  @Roles('teacher')
+  @Get('ai-providers')
+  @UseGuards(JwtAuthGuard)
+  async listPublicProviders() {
+    const all = await this.providerSvc.list()
+    const items = (all || [])
+      .filter((p: any) => p.enabled)
+      .map((p: any) => ({
+        code: p.code,
+        name: p.name,
+        baseUrl: p.baseUrl,
+        textModels: p.textModels || [],
+        visionModels: p.visionModels || [],
+        imageModels: p.imageModels || [],
+        videoModels: p.videoModels || [],
+        isDefault: !!p.isDefault,
+        enabled: !!p.enabled,
+        sortOrder: p.sortOrder || 0,
+      }))
+    return { items }
+  }
+
+  /**
+   * 教师保存应用偏好（如 theme/semester/schoolYear/colorScheme）。
+   * 与 @Patch('app-config') 作用相同，保留旧端点以兼容老客户端。
    */
   @Roles('teacher')
   @Patch('app-config')
   @UseGuards(JwtAuthGuard)
-  async saveTeacherAppConfig(@Body() body: { theme?: string; semester?: string; schoolYear?: string }) {
-    const allowed = ['theme', 'semester', 'schoolYear']
+  async saveTeacherAppConfig(@Body() body: { theme?: string; semester?: string; schoolYear?: string; colorScheme?: string; fontSize?: string }) {
+    const allowed = ['theme', 'semester', 'schoolYear', 'colorScheme', 'fontSize']
     const items = allowed
       .filter((k) => (body as any)?.[k] !== undefined)
       .map((k) => ({ key: k, value: String((body as any)[k]) }))

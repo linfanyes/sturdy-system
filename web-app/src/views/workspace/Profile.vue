@@ -33,14 +33,19 @@ async function loadProfile() {
       request.get('/users/me'),
       request.get('/config/app-config').catch(() => null),
     ])
-    // 解析平台预设学科
-    if (appCfg?.defaultSubjects) {
-      try {
-        platformSubjects.value = typeof appCfg.defaultSubjects === 'string'
-          ? JSON.parse(appCfg.defaultSubjects)
-          : appCfg.defaultSubjects
-      } catch {
-        platformSubjects.value = String(appCfg.defaultSubjects).split(',').map((s: string) => s.trim()).filter(Boolean)
+    // 解析平台预设学科（兼容 {items:[...]} 与 map 两种形态）
+    if (appCfg) {
+      const rawSubjects = Array.isArray(appCfg.items)
+        ? (appCfg.items.find((it: any) => it.key === 'defaultSubjects')?.value)
+        : appCfg.defaultSubjects
+      if (rawSubjects) {
+        try {
+          platformSubjects.value = typeof rawSubjects === 'string'
+            ? JSON.parse(rawSubjects)
+            : rawSubjects
+        } catch {
+          platformSubjects.value = String(rawSubjects).split(',').map((s: string) => s.trim()).filter(Boolean)
+        }
       }
     }
     form.value = {
