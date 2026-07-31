@@ -5,9 +5,10 @@
  * - 班级改为下拉框（该老师任课的班级）
  */
 import { ref, computed, onMounted } from 'vue'
-import { Sparkles, Save, Copy, FileText, Loader2 } from 'lucide-vue-next'
+import { Sparkles, Save, Copy, FileText, Loader2, Download } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { aiChatSync } from '@/api/teacher'
+import { downloadText } from '@/utils/download'
 
 const { classes } = useClasses()
 
@@ -55,6 +56,14 @@ async function copyResult() {
   } catch {
     alert('复制失败，请手动选择')
   }
+}
+
+/** 下载期末总结为 Word 文档（.doc） */
+function downloadResult() {
+  if (!result.value) return
+  const cls = selectedClass.value
+  const name = `${cls?.name || ''}${form.value.type || '总结'}`.trim() || '期末总结'
+  downloadText(result.value, name, 'doc')
 }
 </script>
 
@@ -108,6 +117,9 @@ async function copyResult() {
         <div v-if="result && !generating" class="flex gap-2">
           <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="copyResult">
             <Copy class="w-3.5 h-3.5" /> 复制
+          </button>
+          <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-sky2-100 text-sky2-600 hover:bg-sky2-200" @click="downloadResult">
+            <Download class="w-3.5 h-3.5" /> 下载
           </button>
         </div>
       </div>

@@ -217,7 +217,7 @@ async function unbindWechat() {
                 <div class="text-xs text-cocoa-400">openid 尾号：{{ wechat.openidTail }}</div>
               </div>
             </div>
-            <div v-else class="text-sm text-cocoa-400">未绑定微信（请前往小程序端绑定）</div>
+            <div v-else class="text-sm text-cocoa-400">教师使用账号密码登录，无需绑定微信</div>
             <button
               v-if="wechat.bound"
               class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-sakura-50 text-sakura-600 hover:bg-sakura-100 disabled:opacity-60"

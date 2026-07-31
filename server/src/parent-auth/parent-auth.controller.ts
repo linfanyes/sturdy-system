@@ -105,6 +105,13 @@ export class ParentAuthController {
     return this.s.getCommunications(p)
   }
 
+  /** 孩子所在班级的科任老师信息（按 classId 隔离） */
+  @Get('teachers')
+  @UseGuards(JwtAuthGuard)
+  teachers(@CurrentParent() p: any) {
+    return this.s.getTeachers(p)
+  }
+
   /** 家长订阅微信通知（wx.login code → openId 落库） */
   @Post('subscribe')
   @UseGuards(JwtAuthGuard)

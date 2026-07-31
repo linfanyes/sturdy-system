@@ -161,6 +161,22 @@ export function getParentSchedule() {
   return request.get<any, ParentSchedule>('/parent-auth/schedule')
 }
 
+/** 家长端：班级科任老师信息（按 classId 隔离） */
+export interface ParentTeacher {
+  teacherId: string
+  name: string
+  role: string // head=班主任, subject=科任老师
+  roleLabel: string
+  subjects: string[]
+  subject: string
+  phone: string
+  avatar: string
+}
+
+export function getParentTeachers() {
+  return request.get<any, ParentTeacher[]>('/parent-auth/teachers')
+}
+
 /** 家长端：家校沟通记录（按 studentId 隔离） */
 export interface ParentCommunication {
   id: string

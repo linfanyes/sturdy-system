@@ -8,7 +8,7 @@
       <text class="loading-text">加载中…</text>
     </view>
     <view class="hd">
-      <view class="t">🏡 家长中心</view>
+      <view class="t">🏡 {{ me?.studentName ? me.studentName + '同学家长' : '家长中心' }}</view>
       <view class="hd-actions">
         <text class="out" @click="bindPhone">📱 绑定</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
@@ -124,9 +124,16 @@
         </view>
 
         <template v-if="exams.length">
-          <view class="exam-selector">
-            <picker :value="selectedExamIndex" :range="examOptions" @change="onExamChange">
-              <view class="picker">{{ examOptions[selectedExamIndex] || '— 请选择考试 —' }}</view>
+          <!-- 筛选下拉框：学期 / 考试名称 / 科目（均支持「全部」） -->
+          <view class="filter-row">
+            <picker v-if="termOptions.length" :range="['全部学期', ...termOptions]" @change="onTermChange">
+              <view class="filter-picker">{{ filterTerm || '全部学期' }}</view>
+            </picker>
+            <picker v-if="examNameOptions.length" :range="['全部考试', ...examNameOptions]" @change="onExamNameChange">
+              <view class="filter-picker">{{ filterExamName || '全部考试' }}</view>
+            </picker>
+            <picker v-if="subjectOptions.length" :range="['全部科目', ...subjectOptions]" @change="onSubjectChange">
+              <view class="filter-picker">{{ filterSubject || '全部科目' }}</view>
             </picker>
           </view>
 
@@ -352,6 +359,27 @@
         </view>
       </view>
 
+      <!-- 科任老师信息（按 classId 隔离，展示班主任 + 科任老师） -->
+      <view class="sec" v-if="teachers.length">
+        <view class="st">👨‍🏫 科任老师</view>
+        <view class="teacher-list">
+          <view v-for="t in teachers" :key="t.teacherId" class="teacher-card">
+            <view class="teacher-avatar">{{ t.name ? t.name.charAt(0) : '师' }}</view>
+            <view class="teacher-main">
+              <view class="teacher-name">
+                {{ t.name }}
+                <text class="teacher-role" :class="t.role === 'head' ? 'head' : 'subject'">{{ t.roleLabel }}</text>
+              </view>
+              <view class="teacher-sub">
+                <text v-if="t.subjects && t.subjects.length">任教：{{ t.subjects.join('、') }}</text>
+                <text v-else-if="t.subject">任教：{{ t.subject }}</text>
+                <text v-if="t.phone" class="teacher-phone"> · 📞 {{ t.phone }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
       <!-- 微信绑定信息（一学生可绑多个微信，如爸爸/妈妈） -->
       <view class="sec">
         <view class="st">💬 微信绑定</view>
@@ -536,6 +564,14 @@ const loading = ref(true)
 const loadError = ref(false)
 const selectedExamIndex = ref(0)
 
+// 成绩筛选：学期 / 考试名称 / 科目（均支持「全部」）
+const filterTerm = ref('')
+const filterExamName = ref('')
+const filterSubject = ref('')
+
+// 班级科任老师列表
+const teachers = ref([])
+
 // 微信绑定信息（/parent-auth/me 已含 wechat 概要；此处再拉详细绑定列表）
 const wechatBindings = ref({ parent: null, bindings: [] })
 async function loadWechatBindings() {
@@ -545,12 +581,46 @@ async function loadWechatBindings() {
   } catch (e) { /* 忽略：不影响主流程 */ }
 }
 
-const examOptions = computed(() => exams.value.map((e, i) => e.examName || ('考试' + (i + 1))))
-const selectedExam = computed(() => exams.value[selectedExamIndex.value] || null)
+// 学期 / 考试名称 / 科目 选项（由 exams 派生，去重）
+const termOptions = computed(() => {
+  const set = new Set()
+  for (const e of exams.value) { if (e.term) set.add(e.term) }
+  return Array.from(set)
+})
+const examNameOptions = computed(() => {
+  const set = new Set()
+  for (const e of exams.value) { if (e.examName) set.add(e.examName) }
+  return Array.from(set)
+})
+const subjectOptions = computed(() => {
+  const set = new Set()
+  for (const e of exams.value) {
+    for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) }
+  }
+  return Array.from(set)
+})
+
+// 按筛选条件过滤的考试列表
+const filteredExams = computed(() => {
+  return exams.value.filter(e => {
+    if (filterTerm.value && e.term !== filterTerm.value) return false
+    if (filterExamName.value && e.examName !== filterExamName.value) return false
+    return true
+  })
+})
+
+const examOptions = computed(() => filteredExams.value.map((e, i) => e.examName || ('考试' + (i + 1))))
+const selectedExam = computed(() => {
+  const list = filteredExams.value
+  if (!list.length) return null
+  const idx = Math.min(selectedExamIndex.value, list.length - 1)
+  return list[idx] || null
+})
 
 const SUBJECT_ORDER = ['语文', '数学', '英语', '科学', '品德']
 const orderedSubjects = computed(() => {
   const subs = (selectedExam.value?.subjects || []).slice()
+    .filter(s => !filterSubject.value || s.subject === filterSubject.value)
   subs.sort((a, b) => {
     const ai = SUBJECT_ORDER.indexOf(a.subject)
     const bi = SUBJECT_ORDER.indexOf(b.subject)
@@ -564,7 +634,7 @@ const orderedSubjects = computed(() => {
 
 const EXCELLENT_RATIO = 0.8
 const rankedSubjects = computed(() => {
-  const subs = selectedExam.value?.subjects || []
+  const subs = (selectedExam.value?.subjects || []).filter(s => !filterSubject.value || s.subject === filterSubject.value)
   return subs
     .filter(s => s.score != null && s.fullScore)
     .map(s => ({ subject: s.subject, score: s.score, fullScore: s.fullScore, pct: s.score / s.fullScore, raw: s }))
@@ -725,6 +795,20 @@ async function submitChangePwd() {
 }
 
 function onExamChange(e) { selectedExamIndex.value = e.detail.value }
+function onTermChange(e) {
+  const idx = e.detail.value
+  filterTerm.value = idx === 0 ? '' : termOptions.value[idx - 1]
+  selectedExamIndex.value = 0
+}
+function onExamNameChange(e) {
+  const idx = e.detail.value
+  filterExamName.value = idx === 0 ? '' : examNameOptions.value[idx - 1]
+  selectedExamIndex.value = 0
+}
+function onSubjectChange(e) {
+  const idx = e.detail.value
+  filterSubject.value = idx === 0 ? '' : subjectOptions.value[idx - 1]
+}
 
 // 学生信息查看 / 申请修改
 const studentInfo = computed(() => me.value && me.value.studentInfo)
@@ -867,7 +951,7 @@ async function load() {
   loading.value = true
   loadError.value = false
   // 并行发起所有请求，避免串行多轮网络往返（冷启动耗时近 N×RTT → 1×RTT）
-  const [meResult, edata, ns, hw, att, beh, sch, comm, wb] = await Promise.allSettled([
+  const [meResult, edata, ns, hw, att, beh, sch, comm, wb, tch] = await Promise.allSettled([
     parentApi.get('/parent-auth/me'),
     parentApi.get('/parent-auth/exams'),
     parentApi.get('/parent-auth/notices'),
@@ -877,8 +961,10 @@ async function load() {
     parentApi.get('/parent-auth/schedule'),
     parentApi.get('/parent-auth/communications'),
     parentApi.get('/parent-auth/bindings'),
+    parentApi.get('/parent-auth/teachers'),
   ])
   if (wb.status === 'fulfilled') wechatBindings.value = wb.value || { parent: null, bindings: [] }
+  if (tch.status === 'fulfilled') teachers.value = Array.isArray(tch.value) ? tch.value : []
   if (meResult.status === 'fulfilled') {
     me.value = meResult.value
     kids.value = (meResult.value && meResult.value.kids) || []
@@ -946,6 +1032,20 @@ onShow(() => {
 /* Exam Selector */
 .exam-selector { margin-bottom: 14rpx; }
 .picker { background: var(--c-card); border-radius: 12rpx; padding: 16rpx 24rpx; font-size: 26rpx; color: var(--c-title); font-weight: 600; text-align: center; }
+/* 成绩筛选下拉框行 */
+.filter-row { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 16rpx; }
+.filter-picker { background: var(--c-card); border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 12rpx 20rpx; font-size: 24rpx; color: var(--c-title); min-width: 160rpx; text-align: center; }
+/* 科任老师列表 */
+.teacher-list { display: flex; flex-direction: column; gap: 16rpx; }
+.teacher-card { display: flex; align-items: center; gap: 18rpx; background: var(--c-card); border-radius: 14rpx; padding: 20rpx; }
+.teacher-avatar { width: 72rpx; height: 72rpx; border-radius: 50%; background: #fdf6ec; color: #E6A23C; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: 600; flex-shrink: 0; }
+.teacher-main { flex: 1; min-width: 0; }
+.teacher-name { font-size: 28rpx; font-weight: 600; color: var(--c-title); display: flex; align-items: center; gap: 10rpx; flex-wrap: wrap; }
+.teacher-role { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 20rpx; }
+.teacher-role.head { background: #fdf6ec; color: #E6A23C; }
+.teacher-role.subject { background: #e8f4fd; color: #1C6FB3; }
+.teacher-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+.teacher-phone { color: var(--c-sub); }
 .exam-detail { background: var(--c-card); border-radius: 14rpx; padding: 20rpx; margin-bottom: 14rpx; }
 .exam-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12rpx; margin-bottom: 10rpx; }
 .exam-name { font-size: 30rpx; font-weight: 800; color: var(--c-title); }

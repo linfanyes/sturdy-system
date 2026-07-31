@@ -177,23 +177,22 @@ export class AuthService {
   }
 
   /**
-   * 微信登录：并行查教师 + 家长身份，支持双角色选择和多娃（跨班跨校）。
+   * 微信登录：仅支持家长身份登录。
    *
-   * 角色规则：
+   * 角色规则（产品决策：避免师兼家身份歧义）：
    * - 超级管理员/校管理员：无 openid 字段，永远不会被微信登录命中，只能用账号密码登录
-   * - 教师：User.openid 匹配
+   * - 教师：即使 openid 已绑定教师账号，微信登录也不会命中教师身份，教师必须用账号密码登录
    * - 家长：通过 StudentParent 关联表查 openid 绑定的所有学生（支持一娃多微信、一微信多娃）
+   *
+   * 若该 openid 仅绑定了教师账号而无家长身份，返回 needsBind 引导绑定家长身份。
    */
   async wechatLogin(code: string) {
     if (!code) throw new BadRequestException('缺少 code')
     const { openid, session_key } = await this.wechat.code2Session(code)
     if (!openid) throw new UnauthorizedException('登录失败')
 
-    // 并行查教师和家长身份
-    const [user, parent] = await Promise.all([
-      this.users.findByOpenid(openid).catch(() => null),
-      this.parentRepo.findOne({ where: { openId: openid } }),
-    ])
+    // 仅查家长身份（教师身份在微信登录中被忽略）
+    const parent = await this.parentRepo.findOne({ where: { openId: openid } })
 
     // 通过 StudentParent 关联表查该 openid 绑定的所有学生（支持跨班跨校多娃）
     const bindings = await this.studentParentSvc.listByOpenid(openid)
@@ -208,44 +207,12 @@ export class AuthService {
 
     // 确定是否存在家长身份
     const parentExists = !!parent || kids.length > 0
-    const parentId = parent?.id || (user?.parentId ?? '')
 
-    // 更新 sessionKey
-    if (user) {
-      await this.users.update(user.id, { sessionKey: session_key }).catch(() => {})
-    }
-
-    // 情况1：同时是教师和家长 → 双角色选择
-    if (user && parentExists) {
-      const p = parent || (parentId ? await this.parentRepo.findOne({ where: { id: parentId } }) : null)
-      const firstKid = kids[0]
-      let parentToken = ''
-      if (firstKid && p) {
-        const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: p.parentName })
-        parentToken = this.jwt.sign({ sub: pim, type: 'parent', parentId: p.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
-      }
-      const teacherToken = this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' })
-
-      return {
-        needsRoleChoice: true,
-        roles: ['teacher', 'parent'],
-        teacher: { role: 'teacher', token: teacherToken, user },
-          parent: {
-            role: 'parent',
-            parentId: p?.id || '',
-            kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })),
-            token: parentToken,
-            needsBind: false,
-            effectiveFeatures: firstKid ? await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }) : [],
-          },
-      }
-    }
-
-    // 情况2：仅家长
+    // 情况1：家长身份命中 → 直接以家长身份登录
     if (parentExists) {
       const firstKid = kids[0]
       if (!firstKid) throw new UnauthorizedException('未关联学生')
-      const p = parent || (parentId ? await this.parentRepo.findOne({ where: { id: parentId } }) : null)
+      const p = parent
       const pn = p?.parentName || '家长'
       const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: pn })
       const token = this.jwt.sign({
@@ -264,31 +231,17 @@ export class AuthService {
       }
     }
 
-    // 情况3：仅教师
-    if (user) {
-      if (user.enabled === false) throw new UnauthorizedException('账号已被学校管理员禁用，请联系学校')
-      return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user, effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }), needsBind: false }
-    }
-
-    // 情况4：皆无 → 需要绑定
+    // 情况2：无家长身份 → 需要绑定家长账号（即使 openid 已绑定教师账号，也引导绑定家长身份）
     return { needsBind: true, openid, sessionKey: session_key }
   }
 
-  /** 微信绑教师账号：用教师用户名+密码验证后绑定 openid（同时落库微信昵称） */
+  /**
+   * 微信绑教师账号：已禁用。
+   * 产品决策：教师不支持微信登录，必须用账号密码登录，避免师兼家身份歧义。
+   * 保留方法签名以兼容旧路由，但永远抛错。
+   */
   async bindWechatTeacher(code: string, username: string, password: string, nickName?: string) {
-    if (!code || !username || !password) throw new BadRequestException('参数不全')
-    const { openid } = await this.wechat.code2Session(code)
-    const user = await this.users.findByUsername(username)
-    if (!user || !user.passwordHash) throw new UnauthorizedException('教师账号不存在或未设密码')
-    const h = user.passwordHash
-    const { valid, newHash } = verifyAndUpgrade(password, h)
-    if (!valid) throw new UnauthorizedException('密码错误')
-    if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }
-    // 检查是否已有其他账号绑定此 openid
-    const exist = await this.users.findByOpenid(openid)
-    if (exist && exist.id !== user.id) throw new BadRequestException('该微信已绑定其他账号')
-    await this.users.update(user.id, { openid, wechatName: nickName || user.wechatName || '' })
-    return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user: { ...user, openid, wechatName: nickName || user.wechatName || '' } }
+    throw new BadRequestException('教师不支持微信登录，请使用账号密码登录')
   }
 
   /** 微信绑家长：用学号+可选家长密码绑定 openid（支持一学生多微信） */
@@ -369,7 +322,7 @@ export class AuthService {
     // 尝试按教师编号查找
     const user = await this.users.findByTeacherNo(number)
     if (user) {
-      throw new BadRequestException('请使用教师端-绑定微信功能')
+      throw new BadRequestException('教师不支持微信登录，请使用账号密码登录')
     }
     // 尝试按学号查找（家长绑定）
     const stu = await this.studentRepo.findOne({ where: { studentNo: number } })

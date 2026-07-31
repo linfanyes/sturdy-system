@@ -8,10 +8,11 @@
  * - 自动保存到学生信息（student.comment 字段，作为最新评语）
  */
 import { ref, computed, onMounted, watch } from 'vue'
-import { Sparkles, Save, Loader2, Users, FileText } from 'lucide-vue-next'
+import { Sparkles, Save, Loader2, Users, FileText, Download } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listClassStudents, aiChatSync, type TeacherStudent } from '@/api/teacher'
 import request from '@/api/request'
+import { downloadText } from '@/utils/download'
 
 const { classes } = useClasses()
 const classId = ref('')
@@ -247,6 +248,27 @@ async function saveCommentToStudent(studentId: string, comment: string) {
 function copyComment(text: string) {
   navigator.clipboard.writeText(text).then(() => alert('已复制')).catch(() => alert('复制失败'))
 }
+
+/** 下载单个学生评语为 Word 文档（.doc） */
+function downloadOne(r: { studentId: string; name: string; comment: string }) {
+  if (!r.comment) return
+  const cls = classes.value.find(c => c.id === classId.value)
+  const examPart = selectedExam.value ? `-${selectedExam.value.name}` : ''
+  const name = `${cls?.name || ''}-${r.name}${examPart}-评语`.replace(/^[-]+/, '')
+  downloadText(r.comment, name, 'doc')
+}
+
+/** 下载全部学生评语为单个 Word 文档（.doc），按学生分段 */
+function downloadAll() {
+  if (!results.value.length) return
+  const cls = classes.value.find(c => c.id === classId.value)
+  const examPart = selectedExam.value ? `《${selectedExam.value.name}》` : ''
+  const title = `${cls?.name || ''}${examPart}${commentType.value || '评语'}`.trim()
+  const body = results.value
+    .map(r => `${r.name}\n${r.comment}`)
+    .join('\n\n————————————————\n\n')
+  downloadText(body, title, 'doc')
+}
 </script>
 
 <template>
@@ -308,13 +330,21 @@ function copyComment(text: string) {
           <FileText class="w-4 h-4" />
           <span class="text-sm font-medium">生成结果（{{ results.length }} 条）</span>
         </div>
-        <button
-          class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/30 disabled:opacity-60"
-          :disabled="saving"
-          @click="saveAll"
-        >
-          <Save class="w-3.5 h-3.5" /> {{ saving ? '保存中…' : '全部保存到学生档案' }}
-        </button>
+        <div class="flex gap-2">
+          <button
+            class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-sky2-100 text-sky2-600 hover:bg-sky2-200"
+            @click="downloadAll"
+          >
+            <Download class="w-3.5 h-3.5" /> 下载全部
+          </button>
+          <button
+            class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/30 disabled:opacity-60"
+            :disabled="saving"
+            @click="saveAll"
+          >
+            <Save class="w-3.5 h-3.5" /> {{ saving ? '保存中…' : '全部保存到学生档案' }}
+          </button>
+        </div>
       </div>
       <div class="space-y-3">
         <div v-for="r in results" :key="r.studentId" class="border border-cream-200 rounded-xl p-4">
@@ -324,6 +354,9 @@ function copyComment(text: string) {
             </span>
             <div class="flex gap-2">
               <button class="text-xs px-2 py-1 rounded-lg bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="copyComment(r.comment)">复制</button>
+              <button class="flex items-center gap-0.5 text-xs px-2 py-1 rounded-lg bg-sky2-100 text-sky2-600 hover:bg-sky2-200" @click="downloadOne(r)">
+                <Download class="w-3 h-3" /> 下载
+              </button>
               <button class="text-xs px-2 py-1 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/30" @click="saveOne(r)">保存</button>
             </div>
           </div>

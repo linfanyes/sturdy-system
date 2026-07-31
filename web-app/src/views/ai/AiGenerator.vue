@@ -7,7 +7,8 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import request from '@/api/request'
-import { Sparkles, Save, Copy, FileText } from 'lucide-vue-next'
+import { Sparkles, Save, Copy, FileText, Download } from 'lucide-vue-next'
+import { downloadDoc } from '@/utils/download'
 
 const props = defineProps<{
   /** 'lesson' | 'knowledge' | 'paper' */
@@ -101,6 +102,19 @@ async function copyResult() {
     alert('复制失败，请手动选择文本')
   }
 }
+
+/** 下载生成结果为 Word 文档（.doc），含学科/年级/课题表头 */
+function downloadResult() {
+  if (!result.value) return
+  const fields: Record<string, string> = {}
+  for (const f of cfg.value.fields) {
+    const label = f.label
+    const val = form.value[f.key] || ''
+    if (val) fields[label] = val
+  }
+  const name = cfg.value.fields.map(f => form.value[f.key]).filter(Boolean).join('-') || cfg.value.title
+  downloadDoc(fields, result.value, name)
+}
 </script>
 
 <template>
@@ -138,6 +152,9 @@ async function copyResult() {
         <div class="flex gap-2" v-if="result && !generating">
           <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="copyResult">
             <Copy class="w-3.5 h-3.5" /> 复制
+          </button>
+          <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-sky2-100 text-sky2-600 hover:bg-sky2-200" @click="downloadResult">
+            <Download class="w-3.5 h-3.5" /> 下载
           </button>
           <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/30 disabled:opacity-60" :disabled="saving" @click="saveResult">
             <Save class="w-3.5 h-3.5" /> {{ saving ? '保存中…' : '保存' }}

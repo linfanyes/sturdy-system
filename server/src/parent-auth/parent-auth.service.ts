@@ -20,6 +20,7 @@ import { parentImUserId } from '../im/parent-im.util'
 import { WechatService } from '../auth/wechat.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 import { StudentParentService } from '../student-parent/student-parent.module'
+import { ClassMember } from '../class-members/class-member.entity'
 
 /**
  * 家长端：凭学生学号登录 → 查看孩子考试成绩+趋势分析 + IM 与老师对话。
@@ -44,6 +45,7 @@ export class ParentAuthService {
     @InjectRepository(ScheduleItem) private readonly scheduleRepo: Repository<ScheduleItem>,
     @InjectRepository(BehaviorRecord) private readonly behaviorRepo: Repository<BehaviorRecord>,
     @InjectRepository(DutyRoster) private readonly dutyRepo: Repository<DutyRoster>,
+    @InjectRepository(ClassMember) private readonly classMemberRepo: Repository<ClassMember>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
     private readonly config: ConfigService,
@@ -550,6 +552,37 @@ export class ParentAuthService {
       relation: c.relation,
     }))
     return { total: list.length, recent }
+  }
+
+  /**
+   * 孩子所在班级的科任老师信息（按 classId 隔离）。
+   * 返回班主任 + 科任老师列表，含姓名、任教学科、角色、联系方式（脱敏）。
+   */
+  async getTeachers(payload: any) {
+    const { classId } = payload
+    if (!classId) return []
+    const members = await this.classMemberRepo.find({
+      where: { classId },
+      order: { role: 'DESC', createdAt: 'ASC' },
+      take: 100,
+    })
+    if (!members.length) return []
+    const teacherIds = [...new Set(members.map(m => m.teacherId))]
+    const teachers = await this.usersRepo.find({ where: { id: In(teacherIds) } })
+    const teacherMap = new Map(teachers.map(t => [t.id, t]))
+    return members.map(m => {
+      const t = teacherMap.get(m.teacherId)
+      return {
+        teacherId: m.teacherId,
+        name: t?.name || '老师',
+        role: m.role, // head=班主任, subject=科任老师
+        roleLabel: m.role === 'head' ? '班主任' : '科任老师',
+        subjects: m.subjects || [],
+        subject: t?.subject || '',
+        phone: t?.phone || '',
+        avatar: t?.avatar || '',
+      }
+    })
   }
 
   /** 家长订阅微信通知：用前端 wx.login code 换取 openId，存入学生表 */

@@ -3,8 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, getParentBindings } from '@/api/parent'
-import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentWechatBindings } from '@/api/parent'
+import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, getParentBindings } from '@/api/parent'
+import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentWechatBindings, ParentTeacher } from '@/api/parent'
 import request from '@/api/request'
 import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 
@@ -23,7 +23,48 @@ const attendance = ref<ParentAttendance | null>(null)
 const behavior = ref<ParentBehavior | null>(null)
 const schedule = ref<ParentSchedule | null>(null)
 const communications = ref<ParentCommunications | null>(null)
+const teachers = ref<ParentTeacher[]>([])
 const selectedExamIndex = ref(0)
+
+// 成绩筛选：学期 / 考试名称 / 科目（均支持「全部」）
+const filterTerm = ref('')        // 空 = 全部学期
+const filterExamName = ref('')    // 空 = 全部考试
+const filterSubject = ref('')     // 空 = 全部科目
+
+// 学期 / 考试名称 / 科目 选项（由 exams 派生，去重）
+const termOptions = computed(() => {
+  const set = new Set<string>()
+  for (const e of exams.value) { if (e.term) set.add(e.term) }
+  return Array.from(set)
+})
+const examNameOptions = computed(() => {
+  const set = new Set<string>()
+  for (const e of exams.value) { if (e.examName) set.add(e.examName) }
+  return Array.from(set)
+})
+const subjectOptions = computed(() => {
+  const set = new Set<string>()
+  for (const e of exams.value) {
+    for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) }
+  }
+  return Array.from(set)
+})
+
+// 按筛选条件过滤的考试列表（用于成绩区展示）
+const filteredExams = computed(() => {
+  return exams.value.filter(e => {
+    if (filterTerm.value && e.term !== filterTerm.value) return false
+    if (filterExamName.value && e.examName !== filterExamName.value) return false
+    return true
+  })
+})
+
+// 当前选中的考试（成绩查询区）—— 取筛选后的最近一次
+const selectedExam = computed(() => {
+  if (!filteredExams.value.length) return null
+  const idx = Math.min(selectedExamIndex.value, filteredExams.value.length - 1)
+  return filteredExams.value[idx] || filteredExams.value[filteredExams.value.length - 1]
+})
 
 // 今日星期（1=周一 … 7=周日），与小程序端 dayOfWeek 约定一致
 const todayDow = ((new Date().getDay() + 6) % 7) + 1
@@ -100,20 +141,19 @@ const className = computed(() => me.value?.className || '')
 
 // 最近一次考试（用于概览卡「最新排名」）
 const latestExam = computed(() => exams.value.length ? exams.value[exams.value.length - 1] : null)
-// 当前选中的考试（成绩查询区）
-const selectedExam = computed(() => exams.value[selectedExamIndex.value] || null)
 
 // 待处理：未读通知 + 未完成作业
 const pendingNotices = computed(() => notices.value.filter(n => !n.ended).length)
 const pendingHomework = computed(() => homework.value.filter(h => h.status !== '已完成').length)
 
-// 优弱势学科（前端据所选考试各科得分率计算，与小程序端逻辑一致）
+// 优弱势学科（前端据所选考试各科得分率计算，与小程序端逻辑一致；支持科目筛选）
 const EXCELLENT_RATIO = 0.8
 interface RankedSubject { subject: string; score: number; fullScore: number; pct: number }
 const rankedSubjects = computed<RankedSubject[]>(() => {
   const subs = (selectedExam.value?.subjects || []) as Array<{ subject: string; score: number | null; fullScore: number }>
   return subs
     .filter((s) => s.score != null && s.fullScore)
+    .filter((s) => !filterSubject.value || s.subject === filterSubject.value)
     .map((s) => ({ subject: s.subject, score: s.score as number, fullScore: s.fullScore, pct: (s.score as number) / s.fullScore }))
     .sort((a, b) => b.pct - a.pct)
 })
@@ -126,9 +166,16 @@ const weaknesses = computed(() => {
 // 总分分布直方图（后端已带 isStudent 标记学生所在段）
 const histogram = computed(() => selectedExam.value?.distribution || [])
 
-// 历次考试总分趋势（mini 折线图，直观看到学生成绩走势）
+// 当前选中考试要展示的科目（支持科目筛选：选「全部」展示所有科目）
+const displayedSubjects = computed(() => {
+  const subs = (selectedExam.value?.subjects || []) as Array<{ subject: string; score: number | null; fullScore: number; classRank?: number | null }>
+  if (!filterSubject.value) return subs
+  return subs.filter(s => s.subject === filterSubject.value)
+})
+
+// 历次考试总分趋势（mini 折线图，直观看到学生成绩走势；遵循当前筛选）
 const gradeTrend = computed(() => {
-  const list = (exams.value || [])
+  const list = (filteredExams.value || [])
     .filter(e => e.totalScore != null)
     .slice()
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
@@ -217,6 +264,16 @@ function clickNoticeCard() { scrollToSection('parent-notices-section') }
 function clickHomeworkCard() { scrollToSection('parent-homework-section') }
 function clickExamCountCard() { showExamListModal.value = true }
 function clickRankCard() { scrollToSection('parent-grades-section') }
+/** 从考试列表弹窗选择某次考试：重置筛选并定位到该考试 */
+function pickExam(indexInAll: number) {
+  // 重置筛选，确保该考试出现在 filteredExams 中
+  filterTerm.value = ''
+  filterExamName.value = ''
+  filterSubject.value = ''
+  selectedExamIndex.value = indexInAll
+  showExamListModal.value = false
+  scrollToSection('parent-grades-section')
+}
 
 // 科任老师信息弹窗：家长端 JWT 不能调 /teachers 接口，
 // 仅用课表里已有的姓名/科目字符串展示基础信息。
@@ -348,7 +405,7 @@ async function openStudentRequests() {
 async function load() {
   loading.value = true
   try {
-    const [meData, noticeData, examData, hwData, attData, behData, schData, commData, wbData] = await Promise.allSettled([
+    const [meData, noticeData, examData, hwData, attData, behData, schData, commData, wbData, tchData] = await Promise.allSettled([
       getParentMe(),
       getParentNotices(),
       getParentExams(),
@@ -358,6 +415,7 @@ async function load() {
       getParentSchedule(),
       getParentCommunications(),
       getParentBindings(),
+      getParentTeachers(),
     ])
     if (meData.status === 'fulfilled') {
       me.value = meData.value
@@ -371,6 +429,7 @@ async function load() {
     if (schData.status === 'fulfilled') schedule.value = schData.value as ParentSchedule
     if (commData.status === 'fulfilled') communications.value = commData.value as ParentCommunications
     if (wbData.status === 'fulfilled') wechatBindings.value = wbData.value || { parent: null, bindings: [] }
+    if (tchData.status === 'fulfilled') teachers.value = Array.isArray(tchData.value) ? tchData.value : []
     // 身份/核心数据拉取失败 → 标记为可重试错误态（其余分项失败仅显示各自空态）
     loadError.value = meData.status !== 'fulfilled'
     // 默认选中最近一次考试
@@ -434,7 +493,8 @@ async function subscribeNotifications() {
         </div>
         <div class="flex-1">
           <div class="text-xl font-bold text-cocoa-900">
-            {{ studentName || '家长' }}<span class="text-sm text-cocoa-600/80 ml-1">的成长看板</span>
+            {{ studentName ? studentName + '同学家长' : '家长' }}
+            <span class="text-sm text-cocoa-600/80 ml-1">的成长看板</span>
           </div>
           <div class="text-sm text-cocoa-600/80 mt-0.5">
             <template v-if="className">班级：{{ className }}</template>
@@ -638,23 +698,38 @@ async function subscribeNotifications() {
       ✅ 订阅成功，将及时收到通知
     </div>
 
-    <!-- 成绩查询（历史切换 + 分布 + 优弱势，与小程序端对齐） -->
-    <div v-if="!loading && selectedExam" id="parent-grades-section">
-      <div class="flex items-center gap-2 mb-3">
+    <!-- 成绩查询（学期/考试名称/科目筛选 + 分布 + 优弱势，与小程序端对齐） -->
+    <div v-if="!loading && exams.length" id="parent-grades-section">
+      <div class="flex items-center gap-2 mb-3 flex-wrap">
         <BarChart3 class="w-5 h-5 text-mint-400" />
         <h2 class="text-lg font-semibold text-cocoa-900">成绩查询</h2>
-        <select
-          v-if="exams.length > 0"
-          v-model.number="selectedExamIndex"
-          class="ml-auto text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
-        >
-          <option v-for="(e, i) in exams" :key="e.examId || i" :value="i">
-            {{ e.examName }}（{{ e.date }}）
-          </option>
-        </select>
+        <!-- 筛选下拉框：学期 / 考试名称 / 科目（均支持「全部」） -->
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <select
+            v-model="filterTerm"
+            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+          >
+            <option value="">全部学期</option>
+            <option v-for="t in termOptions" :key="t" :value="t">{{ t }}</option>
+          </select>
+          <select
+            v-model="filterExamName"
+            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+          >
+            <option value="">全部考试</option>
+            <option v-for="n in examNameOptions" :key="n" :value="n">{{ n }}</option>
+          </select>
+          <select
+            v-model="filterSubject"
+            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+          >
+            <option value="">全部科目</option>
+            <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
       </div>
 
-      <div class="quick-card">
+      <div v-if="selectedExam" class="quick-card">
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="font-semibold text-cocoa-900 text-lg">{{ selectedExam.examName }}</div>
@@ -673,7 +748,7 @@ async function subscribeNotifications() {
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div v-for="s in selectedExam.subjects" :key="s.subject" class="bg-cocoa-50 rounded-lg p-3">
+          <div v-for="s in displayedSubjects" :key="s.subject" class="bg-cocoa-50 rounded-lg p-3">
             <div class="text-xs text-cocoa-500">{{ s.subject }}</div>
             <div class="text-lg font-bold text-cocoa-900 mt-1">{{ s.score ?? '--' }} <span class="text-xs font-normal text-cocoa-400">/ {{ s.fullScore }}</span></div>
             <div v-if="s.classRank" class="text-xs text-mint-600 mt-1">班级第 {{ s.classRank }} 名</div>
@@ -881,6 +956,33 @@ async function subscribeNotifications() {
       </div>
     </div>
 
+    <!-- 科任老师信息（按 classId 隔离，展示班主任 + 科任老师） -->
+    <div v-if="!loading && teachers.length">
+      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+        <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
+      </h2>
+      <div class="quick-card">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div v-for="t in teachers" :key="t.teacherId" class="flex items-center gap-3 p-3 rounded-xl bg-cream-50 border border-cream-100">
+            <div class="w-10 h-10 rounded-full bg-butter-100 flex items-center justify-center text-butter-600 font-semibold shrink-0">
+              {{ t.name ? t.name.charAt(0) : '师' }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
+                {{ t.name }}
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="t.role === 'head' ? 'bg-butter-100 text-butter-700' : 'bg-sky2-50 text-sky2-600'">{{ t.roleLabel }}</span>
+              </div>
+              <div class="text-xs text-cocoa-500 mt-0.5">
+                <span v-if="t.subjects && t.subjects.length">任教：{{ t.subjects.join('、') }}</span>
+                <span v-else-if="t.subject">任教：{{ t.subject }}</span>
+                <span v-if="t.phone" class="ml-2">📞 {{ t.phone }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 家校沟通（与小程序端对齐） -->
     <div v-if="!loading && communications">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
@@ -1007,7 +1109,7 @@ async function subscribeNotifications() {
             v-for="(e, i) in exams"
             :key="e.examId || i"
             class="border border-cream-200 rounded-xl p-3 cursor-pointer hover:border-butter-300 transition-colors"
-            @click="selectedExamIndex = i; showExamListModal = false; scrollToSection('parent-grades-section')"
+            @click="pickExam(i)"
           >
             <div class="flex items-center justify-between mb-2">
               <div class="font-semibold text-cocoa-900">{{ e.examName }}</div>

@@ -4,9 +4,10 @@
  * 适用于翻译、教育论文、黑板报、演讲稿、评语、期末总结等 AI 驱动工具。
  */
 import { ref, computed } from 'vue'
-import { Sparkles, Save, Copy, FileText, Loader2 } from 'lucide-vue-next'
+import { Sparkles, Save, Copy, FileText, Loader2, Download } from 'lucide-vue-next'
 import { aiChatSync } from '@/api/teacher'
 import request from '@/api/request'
+import { downloadText } from '@/utils/download'
 
 const props = defineProps<{
   /** 工具标题 */
@@ -65,6 +66,13 @@ async function copyResult() {
     alert('复制失败，请手动选择')
   }
 }
+
+/** 下载生成结果为 Word 文档（.doc） */
+function downloadResult() {
+  if (!result.value) return
+  const name = form.value.title || form.value.topic || props.title || 'AI生成内容'
+  downloadText(result.value, name, 'doc')
+}
 </script>
 
 <template>
@@ -122,6 +130,9 @@ async function copyResult() {
         <div v-if="result && !generating" class="flex gap-2">
           <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="copyResult">
             <Copy class="w-3.5 h-3.5" /> 复制
+          </button>
+          <button class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-sky2-100 text-sky2-600 hover:bg-sky2-200" @click="downloadResult">
+            <Download class="w-3.5 h-3.5" /> 下载
           </button>
           <button v-if="savePath" class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/30 disabled:opacity-60" :disabled="saving" @click="saveResult">
             <Save class="w-3.5 h-3.5" /> {{ saving ? '保存中…' : '保存' }}

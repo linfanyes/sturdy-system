@@ -11,6 +11,7 @@ import { BehaviorRecord } from '../growth/growth.entity'
 import { DutyRoster } from '../duty-roster/duty.entity'
 import { Parent } from '../parent/parent.entity'
 import { User } from '../users/user.entity'
+import { ClassMember } from '../class-members/class-member.entity'
 import { ImModule } from '../im/im.module'
 import { AuthModule } from '../auth/auth.module'
 import { StudentInfoUpdateModule } from '../student-info-update/student-info-update.module'
@@ -19,7 +20,7 @@ import { ParentAuthService } from './parent-auth.service'
 import { ParentAuthController } from './parent-auth.controller'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ParentContact, Student, User, Notice, Homework, ScheduleItem, Grade, Exam, ClassItem, Checkin, BehaviorRecord, DutyRoster, Parent]), ImModule, AuthModule, StudentInfoUpdateModule, StudentParentModule],
+  imports: [TypeOrmModule.forFeature([ParentContact, Student, User, Notice, Homework, ScheduleItem, Grade, Exam, ClassItem, Checkin, BehaviorRecord, DutyRoster, Parent, ClassMember]), ImModule, AuthModule, StudentInfoUpdateModule, StudentParentModule],
   providers: [ParentAuthService],
   controllers: [ParentAuthController],
   exports: [ParentAuthService],
