@@ -628,8 +628,10 @@ onShow(() => {
     return
   }
   loadSessions()
-  // 拉取 AI 配置用于模型提示徽章（失败静默，不影响主流程）
-  api.get('/config/ai').then((r) => { aiSettings.value = r }).catch(() => { aiSettings.value = null })
+  // 拉取教师个人 AI 配置用于模型提示徽章（失败静默，不影响主流程）
+  api.get('/config/ai-settings').then((r) => { aiSettings.value = r }).catch(() => {
+    api.get('/config/ai').then((r2) => { aiSettings.value = r2 }).catch(() => { aiSettings.value = null })
+  })
 })
 onUnload(() => saveSessions())
 </script>

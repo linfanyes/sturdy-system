@@ -240,11 +240,14 @@ async function exportData() {
   uni.showLoading({ title: '导出中' })
   try {
     const paths = ['/classes', '/students', '/grades', '/notes', '/teachers', '/schedules', '/homework', '/notices', '/resources', '/attendances', '/exams', '/award-records', '/todos', '/growth-entries', '/parent-contacts', '/behavior-records', '/duty-rosters', '/class-activities', '/class-expenses', '/class-galleries']
-    const out = { version: 1, user: me, exportedAt: Date.now() }
+    const out = { version: 2, user: me, exportedAt: Date.now() }
     await Promise.all(paths.map(async (p) => {
       const key = p.replace(/^\//, '').replace(/-/g, '_')
       try { out[key] = await api.get(p) } catch (e) { out[key] = [] }
     }))
+    try { out.ai_settings = await api.get('/config/ai-settings') } catch (e) { out.ai_settings = null }
+    try { out.app_config = await api.get('/config/app-config') } catch (e) { out.app_config = null }
+    try { out.ai_providers = await api.get('/config/ai-providers') } catch (e) { out.ai_providers = null }
     uni.setClipboardData({
       data: JSON.stringify(out),
       success: () => uni.showToast({ title: '已全部复制，可粘贴保存', icon: 'none' }),
@@ -299,7 +302,9 @@ async function doImport(data) {
   // 收集所有写入任务（每项是一个返回 Promise 的函数，便于按需触发）
   const tasks = []
   if (data.user) tasks.push(() => api.put('/users/me', data.user))
-  if (data.aiSettings) tasks.push(() => api.put('/config/ai', data.aiSettings))
+  if (data.aiSettings) tasks.push(() => api.patch('/config/ai-settings', data.aiSettings))
+  if (data.ai_settings) tasks.push(() => api.patch('/config/ai-settings', data.ai_settings))
+  if (data.app_config) tasks.push(() => api.patch('/config/app-config', data.app_config))
   if (Array.isArray(data.classes)) data.classes.forEach(c => tasks.push(() => api.post('/classes', c)))
   if (Array.isArray(data.students)) data.students.forEach(s => tasks.push(() => api.post('/students', s)))
   if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => api.post('/notes', n)))
@@ -307,13 +312,12 @@ async function doImport(data) {
   if (Array.isArray(data.exams)) data.exams.forEach(e => tasks.push(() => api.post('/exams', e)))
   if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => api.post('/award-records', a)))
   if (Array.isArray(data.todos)) data.todos.forEach(t => tasks.push(() => api.post('/todos', t)))
-  // 成绩使用 merge 接口合并写入
   if (Array.isArray(data.grades)) data.grades.forEach(g => tasks.push(() => api.post('/grades/merge', g)))
 
-  // 构建按类别统计的摘要文本
   const parts = []
   if (data.user) parts.push('用户资料')
-  if (data.aiSettings) parts.push('AI 配置')
+  if (data.aiSettings || data.ai_settings) parts.push('AI 配置')
+  if (data.app_config) parts.push('应用配置')
   if (Array.isArray(data.classes) && data.classes.length) parts.push(`${data.classes.length} 个班级`)
   if (Array.isArray(data.students) && data.students.length) parts.push(`${data.students.length} 个学生`)
   if (Array.isArray(data.grades) && data.grades.length) parts.push(`${data.grades.length} 条成绩`)
