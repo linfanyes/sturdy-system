@@ -3,10 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent } from '@/api/parent'
-import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe } from '@/api/parent'
+import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests } from '@/api/parent'
+import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest } from '@/api/parent'
 import request from '@/api/request'
-import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat } from 'lucide-vue-next'
+import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
@@ -120,6 +120,31 @@ const weaknesses = computed(() => {
 // 总分分布直方图（后端已带 isStudent 标记学生所在段）
 const histogram = computed(() => selectedExam.value?.distribution || [])
 
+// 历次考试总分趋势（mini 折线图，直观看到学生成绩走势）
+const gradeTrend = computed(() => {
+  const list = (exams.value || [])
+    .filter(e => e.totalScore != null)
+    .slice()
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+  if (list.length < 2) return { points: [], max: 0, min: 0, range: 1, lastRank: null as any }
+  const scores = list.map(e => Number(e.totalScore))
+  const max = Math.max(...scores)
+  const min = Math.min(...scores)
+  const range = max - min || 1
+  // mini 图尺寸：宽 240 高 56
+  const W = 240, H = 56, padX = 6, padY = 8
+  const innerW = W - padX * 2
+  const innerH = H - padY * 2
+  const points = list.map((e, i) => {
+    const x = padX + (list.length === 1 ? innerW / 2 : (i / (list.length - 1)) * innerW)
+    const y = padY + innerH - ((Number(e.totalScore) - min) / range) * innerH
+    return { x, y, score: Number(e.totalScore), label: e.examName, date: e.date, classRank: e.classRank, gradeRank: e.gradeRank }
+  })
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const lastRank = list[list.length - 1]?.classRank ?? null
+  return { points, path, max, min, range, W, H, padX, padY, lastRank }
+})
+
 // 考勤看板：打卡类型元信息 + 汇总卡片（与小程序端保持一致的类型/图标）
 const ATTENDANCE_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
   reading: { label: '阅读', icon: '📚', color: 'bg-sky2-50 text-sky2-700' },
@@ -187,6 +212,21 @@ function clickHomeworkCard() { scrollToSection('parent-homework-section') }
 function clickExamCountCard() { showExamListModal.value = true }
 function clickRankCard() { scrollToSection('parent-grades-section') }
 
+// 科任老师信息弹窗：家长端 JWT 不能调 /teachers 接口，
+// 仅用课表里已有的姓名/科目字符串展示基础信息。
+const showTeacherModal = ref(false)
+const teacherModalInfo = ref<{ name: string; subject?: string; section?: string; className?: string } | null>(null)
+function openTeacherModal(it: any) {
+  if (!it || !it.teacher) return
+  teacherModalInfo.value = {
+    name: it.teacher,
+    subject: it.subject,
+    section: it.section || ('第' + it.period + '节'),
+    className: className.value,
+  }
+  showTeacherModal.value = true
+}
+
 // 修改密码（后端 change-password 已存在，补 Web 入口）
 const showPwdModal = ref(false)
 const oldPwd = ref('')
@@ -229,6 +269,73 @@ async function submitChangePwd() {
     pwdError.value = e?.response?.data?.message || e?.message || '修改失败，请重试'
   } finally {
     pwdLoading.value = false
+  }
+}
+
+// 学生信息查看 / 申请修改
+const studentInfo = computed(() => me.value?.studentInfo)
+const showStudentInfoModal = ref(false)
+const showStudentRequestsModal = ref(false)
+const studentRequests = ref<StudentUpdateRequest[]>([])
+const studentRequestsLoading = ref(false)
+const editForm = ref({
+  parentPhone: '',
+  studentPhone: '',
+  address: '',
+  birthDate: '',
+  parentName: '',
+  note: '',
+})
+const editSubmitting = ref(false)
+const editError = ref('')
+const editOk = ref(false)
+
+const REQUEST_STATUS_META: Record<string, { label: string; cls: string }> = {
+  pending: { label: '待审核', cls: 'bg-butter-50 text-butter-700' },
+  approved: { label: '已通过', cls: 'bg-mint-50 text-mint-700' },
+  rejected: { label: '已拒绝', cls: 'bg-sakura-50 text-sakura-700' },
+}
+
+function openEditStudentInfo() {
+  const si = me.value?.studentInfo || {}
+  editForm.value = {
+    parentPhone: si.parentPhone || '',
+    studentPhone: si.studentPhone || '',
+    address: si.address || '',
+    birthDate: si.birthDate || '',
+    parentName: si.parentName || me.value?.parentName || '',
+    note: si.note || '',
+  }
+  editError.value = ''
+  editOk.value = false
+  showStudentInfoModal.value = true
+}
+
+async function submitStudentInfo() {
+  editError.value = ''
+  editOk.value = false
+  editSubmitting.value = true
+  try {
+    await submitStudentUpdateRequest({ ...editForm.value })
+    editOk.value = true
+    setTimeout(() => { showStudentInfoModal.value = false; editOk.value = false }, 1200)
+  } catch (e: any) {
+    editError.value = e?.message || '提交失败，请重试'
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
+async function openStudentRequests() {
+  showStudentRequestsModal.value = true
+  studentRequestsLoading.value = true
+  try {
+    const list = await listStudentUpdateRequests()
+    studentRequests.value = Array.isArray(list) ? list : []
+  } catch (e) {
+    studentRequests.value = []
+  } finally {
+    studentRequestsLoading.value = false
   }
 }
 
@@ -375,6 +482,50 @@ async function subscribeNotifications() {
       </div>
     </div>
 
+    <!-- 学生信息（查看 / 申请修改） -->
+    <div v-if="!loading && studentInfo" class="quick-card">
+      <div class="flex items-center gap-2 mb-3">
+        <UserCog class="w-5 h-5 text-mint-400" />
+        <h2 class="text-lg font-semibold text-cocoa-900">学生信息</h2>
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            class="text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
+            @click="openEditStudentInfo"
+          >修改信息</button>
+          <button
+            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-600 hover:bg-cocoa-50 transition-colors"
+            @click="openStudentRequests"
+          >查看申请记录</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+        <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+          <span class="text-cocoa-500">家长姓名</span>
+          <span class="font-medium text-cocoa-900">{{ studentInfo.parentName || '--' }}</span>
+        </div>
+        <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+          <span class="text-cocoa-500">家长电话</span>
+          <span class="font-medium text-cocoa-900">{{ studentInfo.parentPhone || '--' }}</span>
+        </div>
+        <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+          <span class="text-cocoa-500">学生电话</span>
+          <span class="font-medium text-cocoa-900">{{ studentInfo.studentPhone || '--' }}</span>
+        </div>
+        <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+          <span class="text-cocoa-500">出生日期</span>
+          <span class="font-medium text-cocoa-900">{{ studentInfo.birthDate || '--' }}</span>
+        </div>
+        <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2 sm:col-span-2">
+          <span class="text-cocoa-500">地址</span>
+          <span class="font-medium text-cocoa-900 text-right">{{ studentInfo.address || '--' }}</span>
+        </div>
+        <div v-if="studentInfo.note" class="flex items-start justify-between bg-cocoa-50 rounded-lg px-3 py-2 sm:col-span-2">
+          <span class="text-cocoa-500 shrink-0">备注</span>
+          <span class="font-medium text-cocoa-900 text-right">{{ studentInfo.note }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 概览卡片（点击跳转详情） -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
@@ -499,6 +650,32 @@ async function subscribeNotifications() {
               <div class="text-[10px] text-cocoa-400 mt-1 leading-none">{{ seg.label }}</div>
               <div class="text-[10px] text-cocoa-400 leading-none">{{ seg.count }}人</div>
             </div>
+          </div>
+        </div>
+
+        <!-- 历次考试总分趋势 mini 折线图（直观看到走势 + 最新班级排名） -->
+        <div v-if="gradeTrend.points.length >= 2" class="mt-4 bg-mint-50 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-1">
+            <div class="text-xs font-medium text-mint-700 flex items-center gap-1"><TrendingUp class="w-3.5 h-3.5" /> 历次考试总分趋势</div>
+            <div v-if="gradeTrend.lastRank" class="text-xs text-mint-700">最新班级第 {{ gradeTrend.lastRank }} 名</div>
+          </div>
+          <svg :viewBox="`0 0 ${gradeTrend.W} ${gradeTrend.H}`" class="w-full" style="max-height: 56px;" preserveAspectRatio="xMidYMid meet">
+            <path :d="gradeTrend.path" fill="none" stroke="#07c160" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+            <circle
+              v-for="(p, i) in gradeTrend.points"
+              :key="i"
+              :cx="p.x"
+              :cy="p.y"
+              :r="i === gradeTrend.points.length - 1 ? 3.5 : 2.5"
+              :fill="i === gradeTrend.points.length - 1 ? '#07c160' : '#a5d6a7'"
+            >
+              <title>{{ p.label }}（{{ p.date }}）：{{ p.score }} 分<span v-if="p.classRank"> · 班第{{ p.classRank }}名</span></title>
+            </circle>
+          </svg>
+          <div class="flex items-center justify-between mt-1 text-[10px] text-mint-600">
+            <span>{{ gradeTrend.points[0].date }}</span>
+            <span class="font-medium">{{ gradeTrend.points[gradeTrend.points.length - 1].score }} 分</span>
+            <span>{{ gradeTrend.points[gradeTrend.points.length - 1].date }}</span>
           </div>
         </div>
 
@@ -628,7 +805,11 @@ async function subscribeNotifications() {
               <div class="w-12 text-center text-xs font-semibold text-cocoa-700 shrink-0">{{ it.section || ('第' + it.period + '节') }}</div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm text-cocoa-900 font-medium">{{ it.subject }}</div>
-                <div v-if="it.teacher" class="text-xs text-cocoa-500">{{ it.teacher }}</div>
+                <button
+                  v-if="it.teacher"
+                  class="text-xs text-mint-600 hover:text-mint-700 hover:underline transition-colors"
+                  @click="openTeacherModal(it)"
+                >{{ it.teacher }}</button>
               </div>
             </div>
           </div>
@@ -813,6 +994,129 @@ async function subscribeNotifications() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 科任老师信息弹窗（家长端：仅展示课表中已有的姓名/科目/班级） -->
+    <div v-if="showTeacherModal && teacherModalInfo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showTeacherModal = false">
+      <div class="w-full max-w-sm bg-white rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-lg font-semibold text-cocoa-900">老师信息</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showTeacherModal = false">✕</button>
+        </div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-butter-100 text-butter-600 flex items-center justify-center text-xl font-bold">
+            {{ (teacherModalInfo.name || '?').slice(0, 1) }}
+          </div>
+          <div>
+            <div class="font-semibold text-cocoa-900">{{ teacherModalInfo.name }}</div>
+            <div v-if="teacherModalInfo.subject" class="text-xs text-cocoa-500 mt-0.5">任教学科：{{ teacherModalInfo.subject }}</div>
+          </div>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div v-if="teacherModalInfo.subject" class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+            <span class="text-cocoa-500">科目</span>
+            <span class="font-medium text-cocoa-900">{{ teacherModalInfo.subject }}</span>
+          </div>
+          <div v-if="teacherModalInfo.section" class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+            <span class="text-cocoa-500">节次</span>
+            <span class="font-medium text-cocoa-900">{{ teacherModalInfo.section }}</span>
+          </div>
+          <div v-if="teacherModalInfo.className" class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+            <span class="text-cocoa-500">班级</span>
+            <span class="font-medium text-cocoa-900">{{ teacherModalInfo.className }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-cocoa-400 mt-3">如需了解更多，请在「消息」中联系老师。</p>
+        <button
+          class="mt-4 w-full rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600"
+          @click="showTeacherModal = false"
+        >关闭</button>
+      </div>
+    </div>
+
+    <!-- 修改学生信息弹窗 -->
+    <div v-if="showStudentInfoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showStudentInfoModal = false">
+      <div class="w-full max-w-md bg-white rounded-2xl p-5 shadow-xl max-h-[85vh] overflow-auto">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-lg font-semibold text-cocoa-900">修改学生信息</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showStudentInfoModal = false">✕</button>
+        </div>
+        <div class="text-xs text-cocoa-400 mb-3">提交后需老师审核通过才会更新</div>
+        <div v-if="editOk" class="mb-3 text-sm text-mint-700 bg-mint-50 rounded-lg p-3">✅ 已提交，等待老师审核</div>
+        <div v-if="editError" class="mb-3 text-sm text-sakura-700 bg-sakura-50 rounded-lg p-3">{{ editError }}</div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">家长姓名</label>
+            <input v-model="editForm.parentName" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" placeholder="请输入家长姓名" />
+          </div>
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">家长电话</label>
+            <input v-model="editForm.parentPhone" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" placeholder="请输入家长电话" />
+          </div>
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">学生电话</label>
+            <input v-model="editForm.studentPhone" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" placeholder="请输入学生电话" />
+          </div>
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">出生日期</label>
+            <input v-model="editForm.birthDate" type="date" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" />
+          </div>
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">地址</label>
+            <input v-model="editForm.address" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" placeholder="请输入家庭住址" />
+          </div>
+          <div>
+            <label class="block text-sm text-cocoa-600 mb-1">备注</label>
+            <textarea v-model="editForm.note" rows="2" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400 resize-none" placeholder="如有其他说明请填写"></textarea>
+          </div>
+        </div>
+        <button
+          class="mt-4 w-full rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600 disabled:opacity-60"
+          :disabled="editSubmitting"
+          @click="submitStudentInfo"
+        >
+          <Loader2 v-if="editSubmitting" class="w-4 h-4 inline animate-spin" /> {{ editSubmitting ? '提交中…' : '提交申请' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 申请记录弹窗 -->
+    <div v-if="showStudentRequestsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showStudentRequestsModal = false">
+      <div class="w-full max-w-lg bg-white rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-lg font-semibold text-cocoa-900">申请记录</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showStudentRequestsModal = false">✕</button>
+        </div>
+        <div v-if="studentRequestsLoading" class="text-sm text-cocoa-400 text-center py-6 flex items-center justify-center gap-2">
+          <Loader2 class="w-4 h-4 animate-spin" /> 加载中…
+        </div>
+        <div v-else-if="!studentRequests.length" class="text-sm text-cocoa-400 text-center py-6">暂无申请记录</div>
+        <div v-else class="space-y-3">
+          <div v-for="r in studentRequests" :key="r.id" class="border border-cream-200 rounded-xl p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-cocoa-900 text-sm">{{ r.studentName || '学生' }}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full" :class="(REQUEST_STATUS_META[r.status] || {}).cls">
+                {{ (REQUEST_STATUS_META[r.status] || {}).label || r.status }}
+              </span>
+            </div>
+            <div class="text-xs text-cocoa-500 mb-2">提交于 {{ r.createdAt }}</div>
+            <div v-if="r.payload" class="text-xs text-cocoa-600 bg-cocoa-50 rounded-lg p-2 mb-2 space-y-0.5">
+              <div v-if="r.payload.parentName">家长姓名：{{ r.payload.parentName }}</div>
+              <div v-if="r.payload.parentPhone">家长电话：{{ r.payload.parentPhone }}</div>
+              <div v-if="r.payload.studentPhone">学生电话：{{ r.payload.studentPhone }}</div>
+              <div v-if="r.payload.birthDate">出生日期：{{ r.payload.birthDate }}</div>
+              <div v-if="r.payload.address">地址：{{ r.payload.address }}</div>
+              <div v-if="r.payload.note">备注：{{ r.payload.note }}</div>
+            </div>
+            <div v-if="r.reviewNote" class="text-xs text-sakura-700 bg-sakura-50 rounded-lg p-2 mt-2">审核备注：{{ r.reviewNote }}</div>
+            <div v-if="r.reviewedAt" class="text-xs text-cocoa-400 mt-1">审核于 {{ r.reviewedAt }}</div>
+          </div>
+        </div>
+        <button
+          class="mt-4 w-full rounded-xl bg-cocoa-100 text-cocoa-700 font-semibold py-2.5 hover:bg-cocoa-200"
+          @click="showStudentRequestsModal = false"
+        >关闭</button>
       </div>
     </div>
   </div>

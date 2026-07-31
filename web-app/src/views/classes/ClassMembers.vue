@@ -5,10 +5,13 @@
  * 数据来自后端 /classes/:id/members（按班级查询）。
  * 点击班主任 / 科任老师可查看教师详情（从 /teachers 同步）。
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listClassMembers, listTeachers, type ClassMember } from '@/api/teacher'
-import { Users, Crown, BookOpen, Phone, Mail, Calendar, Briefcase, X } from 'lucide-vue-next'
+import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { useAuthStore } from '@/stores/auth'
+import request from '@/api/request'
+import { Users, Crown, BookOpen, Phone, Mail, Calendar, Briefcase, X, Save } from 'lucide-vue-next'
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -65,6 +68,71 @@ function closeDetail() {
   detailVisible.value = false
   detailMember.value = null
 }
+
+/* ============ 本学期课程设置（班主任） ============ */
+const auth = useAuthStore()
+const activeClass = computed(() => classes.value.find(c => c.id === activeClassId.value))
+/** 当前用户是否为该班班主任（按 teacherId 或姓名匹配） */
+const isHeadTeacher = computed(() => {
+  const c = activeClass.value
+  if (!c || !auth.user) return false
+  return String(auth.user.id) === c.teacherId || auth.user.name === c.headTeacher
+})
+
+const subjectDraft = ref<string[]>([])
+const subjectTeacherDraft = ref<Record<string, string>>({})
+const subjectsSaving = ref(false)
+const subjectsMsg = ref('')
+const subjectsMsgType = ref<'ok' | 'err'>('ok')
+
+function syncSubjectDraft() {
+  const c = activeClass.value
+  if (!c) {
+    subjectDraft.value = []
+    subjectTeacherDraft.value = {}
+    return
+  }
+  subjectDraft.value = [...(c.subjects || [])]
+  subjectTeacherDraft.value = { ...(c.subjectTeachers || {}) }
+  subjectsMsg.value = ''
+}
+
+function toggleSubjectDraft(subj: string) {
+  const i = subjectDraft.value.indexOf(subj)
+  if (i >= 0) {
+    subjectDraft.value.splice(i, 1)
+    delete subjectTeacherDraft.value[subj]
+  } else {
+    subjectDraft.value.push(subj)
+  }
+}
+
+async function saveSubjects() {
+  if (!activeClassId.value) return
+  subjectsSaving.value = true
+  subjectsMsg.value = ''
+  try {
+    await request.patch(`/classes/${activeClassId.value}`, {
+      subjects: subjectDraft.value,
+      subjectTeachers: subjectTeacherDraft.value,
+    })
+    const c = activeClass.value
+    if (c) {
+      c.subjects = [...subjectDraft.value]
+      c.subjectTeachers = { ...subjectTeacherDraft.value }
+    }
+    subjectsMsgType.value = 'ok'
+    subjectsMsg.value = '已保存本学期课程设置'
+  } catch (e: any) {
+    subjectsMsgType.value = 'err'
+    subjectsMsg.value = e?.message || '保存失败'
+  } finally {
+    subjectsSaving.value = false
+    setTimeout(() => { subjectsMsg.value = '' }, 2500)
+  }
+}
+
+watch(activeClassId, syncSubjectDraft)
 </script>
 
 <template>
@@ -146,6 +214,73 @@ function closeDetail() {
             </div>
           </div>
         </div>
+      </div>
+      <!-- 本学期课程设置 -->
+      <div class="bg-white rounded-2xl p-5 shadow-softer">
+        <div class="flex items-center gap-2 mb-3">
+          <BookOpen class="w-5 h-5 text-butter-500" />
+          <h2 class="text-lg font-semibold text-cocoa-900">本学期课程设置</h2>
+          <span class="text-sm text-cocoa-400 ml-auto">{{ activeClassName }} · {{ subjectDraft.length }} 科</span>
+        </div>
+
+        <!-- 非班主任：只读展示 -->
+        <div v-if="!isHeadTeacher">
+          <div v-if="subjectDraft.length" class="flex flex-wrap gap-2">
+            <span
+              v-for="subj in subjectDraft"
+              :key="subj"
+              class="text-xs px-2.5 py-1 rounded-full bg-butter-100 text-butter-700"
+            >{{ subj }}<span v-if="subjectTeacherDraft[subj]" class="ml-1 text-butter-500">· {{ subjectTeacherDraft[subj] }}</span></span>
+          </div>
+          <div v-else class="text-xs text-cocoa-400">本班尚未设置本学期课程，仅班主任可设置。</div>
+        </div>
+
+        <!-- 班主任：可编辑 -->
+        <template v-else>
+          <div class="text-xs text-cocoa-500 mb-2">从科目库勾选本班本学期需要上的科目：</div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <button
+              v-for="s in SUBJECT_OPTIONS"
+              :key="s.value"
+              type="button"
+              :class="[
+                'text-xs px-2.5 py-1 rounded-full border transition-colors',
+                subjectDraft.includes(s.value)
+                  ? 'border-butter-400 bg-butter-100 text-butter-600'
+                  : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+              ]"
+              @click="toggleSubjectDraft(s.value)"
+            >{{ s.label }}</button>
+          </div>
+
+          <div v-if="subjectDraft.length" class="space-y-2">
+            <div class="text-xs text-cocoa-500">已选科目及任课老师（可编辑）：</div>
+            <div
+              v-for="subj in subjectDraft"
+              :key="subj"
+              class="flex items-center gap-2 p-2 rounded-xl bg-cream-50"
+            >
+              <span class="text-sm font-medium text-cocoa-800 w-20 shrink-0">{{ subj }}</span>
+              <input
+                v-model="subjectTeacherDraft[subj]"
+                placeholder="任课老师姓名"
+                class="flex-1 px-2.5 py-1.5 rounded-lg border border-cream-200 text-sm focus:outline-none focus:border-butter-400"
+              />
+            </div>
+          </div>
+          <div v-else class="text-xs text-cocoa-400">尚未选择任何科目。</div>
+
+          <div class="flex items-center gap-3 mt-4">
+            <button
+              class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm hover:bg-butter-600 disabled:opacity-60"
+              :disabled="subjectsSaving"
+              @click="saveSubjects"
+            >
+              <Save class="w-4 h-4" /> {{ subjectsSaving ? '保存中…' : '保存' }}
+            </button>
+            <span v-if="subjectsMsg" :class="['text-xs', subjectsMsgType === 'ok' ? 'text-mint-600' : 'text-sakura-600']">{{ subjectsMsg }}</span>
+          </div>
+        </template>
       </div>
     </template>
 

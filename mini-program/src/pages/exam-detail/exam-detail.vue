@@ -1,0 +1,400 @@
+<template>
+  <view class="page" :class="{ dark: theme.mode === 'dark' }">
+    <!-- 头部：考试名称 + 班级 + 日期 -->
+    <view class="hd">
+      <view class="hd-name">{{ exam?.name || '考试详情' }}</view>
+      <view class="hd-meta">
+        {{ className }} · {{ exam?.date || '-' }}<text v-if="exam?.term"> · {{ exam.term }}</text>
+      </view>
+    </view>
+
+    <view v-if="loading" class="loading">加载中…</view>
+
+    <template v-else>
+      <!-- 统计卡片 2x3 网格 -->
+      <view class="grid">
+        <view class="stat">
+          <text class="st-label">班级均分</text>
+          <text class="st-val">{{ fmt1(analysis?.classAvg) }}</text>
+        </view>
+        <view class="stat">
+          <text class="st-label">参考人数</text>
+          <text class="st-val">{{ analysis?.totalStudents ?? 0 }}</text>
+        </view>
+        <view class="stat">
+          <text class="st-label">及格率</text>
+          <text class="st-val">{{ pct(avgPassRate) }}</text>
+        </view>
+        <view class="stat">
+          <text class="st-label">优秀率</text>
+          <text class="st-val">{{ pct(avgExcellentRate) }}</text>
+        </view>
+        <view class="stat">
+          <text class="st-label">优势学科</text>
+          <view class="st-tags">
+            <text v-if="!strongNames.length" class="st-none">-</text>
+            <text v-for="s in strongNames" :key="'s' + s" class="tag strong">{{ s }}</text>
+          </view>
+        </view>
+        <view class="stat">
+          <text class="st-label">薄弱学科</text>
+          <view class="st-tags">
+            <text v-if="!weakNames.length" class="st-none">-</text>
+            <text v-for="s in weakNames" :key="'w' + s" class="tag weak">{{ s }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 各科统计列表 -->
+      <view class="sec-title">📊 各科统计</view>
+      <view v-if="!subjects.length" class="empty">暂无数据</view>
+      <view v-else class="list">
+        <view v-for="s in subjects" :key="s.subject" class="item">
+          <view class="it-top">
+            <text class="name">{{ s.subject }}</text>
+            <text class="avg">均分 {{ fmt1(s.avg) }}</text>
+          </view>
+          <view class="it-row">
+            <view class="cell"><text class="cl">最高</text><text class="cv max">{{ fmt1(s.max) }}</text></view>
+            <view class="cell"><text class="cl">最低</text><text class="cv min">{{ fmt1(s.min) }}</text></view>
+            <view class="cell"><text class="cl">及格率</text><text class="cv">{{ pct(s.passRate) }}</text></view>
+            <view class="cell"><text class="cl">优秀率</text><text class="cv">{{ pct(s.excellentRate) }}</text></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分数分布（view 柱状图） -->
+      <view class="sec-title">📈 分数分布</view>
+      <picker v-if="subjectNames.length" :range="subjectNames" :value="distIdx" @change="onDistChange">
+        <view class="picker">科目：{{ distSubject || '请选择' }}</view>
+      </picker>
+      <view v-if="!subjectNames.length" class="empty">暂无数据</view>
+      <view v-else-if="!distBars.length" class="empty">暂无数据</view>
+      <view v-else class="chart item">
+        <view class="bars">
+          <view class="bar-col" v-for="(b, i) in distBars" :key="i">
+            <text class="bv">{{ b.value }}</text>
+            <view class="bar" :style="{ height: b.h + 'rpx' }"></view>
+            <text class="bx">{{ b.label }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 排名表 -->
+      <view class="sec-title">
+        🏆 成绩排名<text v-if="ranks.length" class="sec-sub">共 {{ ranks.length }} 人</text>
+      </view>
+      <view v-if="!ranks.length" class="empty">暂无数据</view>
+      <view v-else class="tbl item">
+        <view class="tr th">
+          <text class="td rk">排名</text>
+          <text class="td nm">姓名</text>
+          <text class="td sc">分数</text>
+          <text class="td pc">百分位</text>
+        </view>
+        <view
+          class="tr"
+          v-for="(r, i) in ranks"
+          :key="(r.studentId || '') + (r.subject || '') + i"
+          :class="rankClass(r.rank)"
+        >
+          <text class="td rk">{{ r.rank }}</text>
+          <text class="td nm">{{ r.studentName || '—' }}</text>
+          <text class="td sc">{{ fmt1(r.score) }}</text>
+          <text class="td pc">{{ pctNum(r.percentile) }}</text>
+        </view>
+      </view>
+
+      <!-- 前5名 / 后5名 -->
+      <view class="dual">
+        <view class="item mini">
+          <view class="mini-t">🏆 前 5 名</view>
+          <view v-if="!top5.length" class="empty sm">暂无数据</view>
+          <view v-else class="mini-list">
+            <view class="mini-row" v-for="(r, i) in top5" :key="'t' + i">
+              <text class="mini-rk" :class="rankClass(r.rank)">{{ r.rank }}</text>
+              <text class="mini-nm">{{ r.studentName || '—' }}</text>
+              <text class="mini-sc">{{ fmt1(r.score) }}</text>
+            </view>
+          </view>
+        </view>
+        <view class="item mini">
+          <view class="mini-t">⚠️ 后 5 名</view>
+          <view v-if="!bottom5.length" class="empty sm">暂无数据</view>
+          <view v-else class="mini-list">
+            <view class="mini-row" v-for="(r, i) in bottom5" :key="'b' + i">
+              <text class="mini-rk">{{ r.rank }}</text>
+              <text class="mini-nm">{{ r.studentName || '—' }}</text>
+              <text class="mini-sc low">{{ fmt1(r.score) }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </template>
+  </view>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import api from '../../common/request'
+import { theme } from '../../common/store'
+
+const examId = ref('')
+const classId = ref('')
+const loading = ref(false)
+const exam = ref(null)
+const analysis = ref(null)
+const ranks = ref([])
+const classes = ref([])
+const distSubject = ref('')
+
+const subjects = computed(() => analysis.value?.subjects || [])
+const subjectNames = computed(() => subjects.value.map((s) => s.subject))
+const distIdx = computed(() => {
+  const i = subjectNames.value.indexOf(distSubject.value)
+  return i >= 0 ? i : 0
+})
+
+const className = computed(() => {
+  const c = classes.value.find((x) => x.id === classId.value)
+  return c?.name || classId.value || '-'
+})
+
+// weakSubjects / strongSubjects 兼容字符串数组与对象数组两种形式
+function toNames(arr) {
+  if (!Array.isArray(arr)) return []
+  return arr
+    .map((x) => (typeof x === 'string' ? x : x?.subject || x?.name || ''))
+    .filter(Boolean)
+}
+const strongNames = computed(() => toNames(analysis.value?.strongSubjects))
+const weakNames = computed(() => toNames(analysis.value?.weakSubjects))
+
+const avgPassRate = computed(() => {
+  const s = subjects.value
+  if (!s.length) return 0
+  return s.reduce((a, b) => a + (Number(b.passRate) || 0), 0) / s.length
+})
+const avgExcellentRate = computed(() => {
+  const s = subjects.value
+  if (!s.length) return 0
+  return s.reduce((a, b) => a + (Number(b.excellentRate) || 0), 0) / s.length
+})
+
+/* ============ 格式化 ============ */
+/** 数字保留 1 位小数，空值返回 - */
+function fmt1(n) {
+  if (n == null || n === '' || isNaN(Number(n))) return '-'
+  return Number(n).toFixed(1)
+}
+/** 小数(0.9) 或 百分数(90) → 百分比字符串，兼容两种格式 */
+function pct(n) {
+  if (n == null || n === '' || isNaN(Number(n))) return '-'
+  const v = Number(n)
+  const p = v > 1 ? v : v * 100
+  return p.toFixed(1) + '%'
+}
+/** 已是百分数数值(如 97.5) → 直接加 % 后缀 */
+function pctNum(n) {
+  if (n == null || n === '' || isNaN(Number(n))) return '-'
+  return Number(n).toFixed(1) + '%'
+}
+
+/* ============ 分数分布归一化：兼容对象 {"0-10":0} 与数组 [{label,count}] ============ */
+function parseLo(label) {
+  const m = String(label).match(/^\s*(\d+)\s*[-~]/)
+  return m ? parseInt(m[1], 10) : null
+}
+function normalizeDist(dist) {
+  if (!dist) return []
+  let arr = []
+  if (Array.isArray(dist)) {
+    arr = dist.map((d, i) => {
+      const o = d && typeof d === 'object' ? d : { count: d }
+      const label = o.label || o.range || o.name || o.key || String(i + 1)
+      const value = Number(o.count != null ? o.count : o.value != null ? o.value : 0) || 0
+      return { label, value, lo: parseLo(label), idx: i }
+    })
+  } else if (typeof dist === 'object') {
+    arr = Object.entries(dist).map(([k, v], i) => ({
+      label: k,
+      value: Number(v) || 0,
+      lo: parseLo(k),
+      idx: i,
+    }))
+  }
+  // 仅当所有标签都是 "X-Y" 数字区间时按低位排序，否则保留原序（后端数组已排好）
+  if (arr.length && arr.every((x) => x.lo !== null)) {
+    arr.sort((a, b) => a.lo - b.lo)
+  }
+  return arr
+}
+
+const curDist = computed(() => {
+  const subj = subjects.value.find((s) => s.subject === distSubject.value)
+  return normalizeDist(subj?.distribution)
+})
+
+const distBars = computed(() => {
+  const data = curDist.value
+  if (!data.length) return []
+  const max = Math.max(1, ...data.map((d) => d.value))
+  const MAX_H = 260
+  return data.map((d) => ({
+    label: d.label,
+    value: d.value,
+    h: Math.max(d.value > 0 ? 10 : 4, Math.round((d.value / max) * MAX_H)),
+  }))
+})
+
+/* ============ 排名 ============ */
+const top5 = computed(() => [...ranks.value].sort((a, b) => a.rank - b.rank).slice(0, 5))
+const bottom5 = computed(() => [...ranks.value].sort((a, b) => b.rank - a.rank).slice(0, 5))
+
+function rankClass(rank) {
+  if (rank === 1) return 'r1'
+  if (rank === 2) return 'r2'
+  if (rank === 3) return 'r3'
+  return ''
+}
+
+function onDistChange(e) {
+  distSubject.value = subjectNames.value[e.detail.value] || ''
+}
+
+/* ============ 数据加载 ============ */
+async function load() {
+  if (!examId.value) { loading.value = false; return }
+  loading.value = true
+  try {
+    // 若未传 classId，先取考试信息回填
+    if (!classId.value) {
+      const ex = await api.get('/exams/' + examId.value).catch(() => null)
+      exam.value = ex
+      if (ex?.classId) classId.value = ex.classId
+    }
+
+    const tasks = [
+      api.get('/exams/' + examId.value).catch(() => null),
+      api.get('/classes').catch(() => []),
+    ]
+    if (classId.value) {
+      tasks.push(
+        api.get('/grades/analysis/exam?classId=' + classId.value + '&examId=' + examId.value).catch(() => null),
+      )
+      tasks.push(
+        api.get('/grades/analysis/rank?classId=' + classId.value + '&examId=' + examId.value).catch(() => null),
+      )
+    } else {
+      tasks.push(Promise.resolve(null))
+      tasks.push(Promise.resolve(null))
+    }
+
+    const [ex, cls, an, rk] = await Promise.all(tasks)
+    exam.value = ex
+    analysis.value = an
+    ranks.value = (rk && rk.ranks) || []
+    classes.value = Array.isArray(cls) ? cls : cls?.items || []
+
+    if (!distSubject.value && subjectNames.value.length) {
+      distSubject.value = subjectNames.value[0]
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onLoad((options) => {
+  examId.value = options?.examId || ''
+  classId.value = options?.classId || ''
+  load()
+})
+
+onPullDownRefresh(async () => {
+  await load()
+  uni.stopPullDownRefresh()
+})
+</script>
+
+<style scoped>
+.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.loading, .empty { text-align: center; padding: 60rpx 0; font-size: 28rpx; color: var(--c-sub); }
+.empty.sm { padding: 30rpx 0; font-size: 24rpx; }
+
+/* 头部 */
+.hd { background: var(--c-card); border-radius: 20rpx; padding: 28rpx 30rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.hd-name { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
+.hd-meta { font-size: 26rpx; color: var(--c-sub); margin-top: 10rpx; }
+
+/* 统计卡片 2x3 */
+.grid { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 20rpx; }
+.stat { width: calc(50% - 8rpx); background: var(--c-card); border-radius: 16rpx; padding: 22rpx; box-sizing: border-box; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.st-label { font-size: 24rpx; color: var(--c-sub); }
+.st-val { display: block; font-size: 38rpx; font-weight: 800; color: var(--c-accent); margin-top: 8rpx; }
+.st-tags { margin-top: 10rpx; display: flex; flex-wrap: wrap; gap: 8rpx; align-items: center; }
+.st-none { font-size: 30rpx; color: var(--c-sub); }
+.tag { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
+.tag.strong { background: rgba(7, 193, 96, 0.14); color: var(--c-primary); }
+.tag.weak { background: rgba(230, 67, 64, 0.12); color: #e64340; }
+
+/* 区块标题 */
+.sec-title { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin: 10rpx 0 16rpx; }
+.sec-sub { font-size: 22rpx; color: var(--c-sub); font-weight: 400; margin-left: 10rpx; }
+
+/* 通用卡片 */
+.list { }
+.item { background: var(--c-card); border-radius: 16rpx; padding: 22rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+
+/* 各科统计 */
+.it-top { display: flex; justify-content: space-between; align-items: center; }
+.name { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
+.avg { font-size: 26rpx; color: var(--c-accent); font-weight: 600; }
+.it-row { display: flex; margin-top: 14rpx; }
+.cell { flex: 1; min-width: 0; }
+.cl { display: block; font-size: 22rpx; color: var(--c-sub); }
+.cv { display: block; font-size: 28rpx; font-weight: 600; color: var(--c-title); margin-top: 4rpx; }
+.cv.max { color: var(--c-primary); }
+.cv.min { color: #e64340; }
+
+/* picker */
+.picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 28rpx; color: var(--c-title); background: var(--c-input); margin-bottom: 16rpx; }
+
+/* 分数分布柱状图（view 绘制） */
+.chart { }
+.bars { display: flex; align-items: flex-end; gap: 12rpx; height: 320rpx; padding: 10rpx 4rpx; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.bar { width: 70%; border-radius: 8rpx 8rpx 0 0; min-height: 4rpx; background: var(--c-accent); }
+.bv { font-size: 22rpx; color: var(--c-title); margin-bottom: 6rpx; }
+.bx { font-size: 18rpx; color: var(--c-sub); margin-top: 8rpx; text-align: center; line-height: 1.3; max-width: 130rpx; word-break: break-all; }
+
+/* 排名表 */
+.tbl { padding: 6rpx 20rpx; }
+.tr { display: flex; padding: 16rpx 0; border-bottom: 1px solid var(--c-input-border); align-items: center; }
+.tr.th { color: var(--c-sub); font-weight: 700; font-size: 24rpx; border-bottom: 2rpx solid var(--c-accent); }
+.tr:last-child { border-bottom: none; }
+.td { font-size: 26rpx; color: var(--c-title); }
+.td.rk { width: 90rpx; text-align: center; }
+.td.nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td.sc { width: 120rpx; text-align: right; color: var(--c-accent); font-weight: 600; }
+.td.pc { width: 120rpx; text-align: right; color: var(--c-sub); }
+.tr.r1 .td.rk { color: #e6a23c; font-weight: 800; font-size: 30rpx; }
+.tr.r2 .td.rk { color: #9a9a9a; font-weight: 800; font-size: 30rpx; }
+.tr.r3 .td.rk { color: #cd7f32; font-weight: 700; font-size: 28rpx; }
+.tr.r1 .td.nm { font-weight: 700; }
+
+/* 前5 / 后5 */
+.dual { display: flex; gap: 16rpx; margin-bottom: 20rpx; }
+.mini { flex: 1; padding: 20rpx; min-width: 0; }
+.mini-t { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.mini-list { }
+.mini-row { display: flex; align-items: center; padding: 10rpx 0; border-bottom: 1px solid var(--c-input-border); }
+.mini-row:last-child { border-bottom: none; }
+.mini-rk { width: 60rpx; text-align: center; font-size: 24rpx; color: var(--c-sub); }
+.mini-nm { flex: 1; font-size: 26rpx; color: var(--c-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-sc { width: 90rpx; text-align: right; font-size: 26rpx; font-weight: 600; color: var(--c-accent); }
+.mini-sc.low { color: #e64340; }
+.mini-rk.r1 { color: #e6a23c; font-weight: 800; }
+.mini-rk.r2 { color: #9a9a9a; font-weight: 800; }
+.mini-rk.r3 { color: #cd7f32; font-weight: 700; }
+</style>

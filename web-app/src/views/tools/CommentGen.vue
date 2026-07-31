@@ -3,8 +3,9 @@
  * 评语生成：
  * - 下拉框选择班级（该老师任课的班级）
  * - 下拉框选择班级学生（包含"全部"）
+ * - 可选关联某次考试：生成评语时聚焦本次考试表现，保存时同步到学生该次考试情况（student.examComments[examId]）
  * - 生成个人或全部学生的评语，自动根据学生成绩、表现生成不同评语
- * - 自动保存到学生信息（student.comment 字段）
+ * - 自动保存到学生信息（student.comment 字段，作为最新评语）
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { Sparkles, Save, Loader2, Users, FileText } from 'lucide-vue-next'
@@ -20,6 +21,12 @@ const commentType = ref('期末评语')
 const generating = ref(false)
 const saving = ref(false)
 const progress = ref({ current: 0, total: 0, name: '' })
+
+/** 考试列表（关联本次考试时使用） */
+interface ExamOption { id: string; name: string; date: string }
+const exams = ref<ExamOption[]>([])
+const examId = ref('') // '' = 不关联考试
+const selectedExam = computed(() => exams.value.find(e => e.id === examId.value))
 
 /** 生成结果：{ studentId, name, comment }[] */
 const results = ref<{ studentId: string; name: string; comment: string }[]>([])
@@ -38,18 +45,31 @@ async function loadStudents(cid: string) {
   }
 }
 
+async function loadExams(cid: string) {
+  if (!cid) { exams.value = []; return }
+  try {
+    const res = await request.get('/exams', { params: { classId: cid, take: 100 } })
+    const list = Array.isArray(res) ? res : (res?.items || [])
+    exams.value = list.map((e: any) => ({ id: e.id, name: e.name, date: e.date || '' }))
+      .sort((a: ExamOption, b: ExamOption) => (b.date || '').localeCompare(a.date || ''))
+  } catch {
+    exams.value = []
+  }
+}
+
 onMounted(async () => {
   await loadClasses()
   if (classes.value[0]) {
     classId.value = classes.value[0].id
-    await loadStudents(classId.value)
+    await Promise.all([loadStudents(classId.value), loadExams(classId.value)])
   }
 })
 
 watch(classId, async (cid) => {
   studentId.value = ''
+  examId.value = ''
   results.value = []
-  await loadStudents(cid)
+  await Promise.all([loadStudents(cid), loadExams(cid)])
 })
 
 /** 拉取某学生的成绩与表现数据，拼成评语生成上下文 */
@@ -59,17 +79,48 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
     // 成绩数据
     const grades = await request.get('/grades', { params: { classId: classId.value, take: 500 } })
     const gradeList = Array.isArray(grades) ? grades : (grades?.items || [])
-    const myGrades = gradeList.filter((g: any) =>
+    let myGrades = gradeList.filter((g: any) =>
       g.scores?.some((s: any) => s.studentId === stu.id),
     )
-    if (myGrades.length) {
-      const subjectSummaries = myGrades.map((g: any) => {
-        const score = g.scores.find((s: any) => s.studentId === stu.id)?.score
-        return `${g.subject}: ${score ?? '缺考'}`
-      })
-      ctx.push(`最近考试成绩：${subjectSummaries.join('、')}`)
+    // 关联某次考试时，聚焦该考试
+    if (selectedExam.value) {
+      const examGrades = myGrades.filter((g: any) => g.examId === selectedExam.value!.id || g.examName === selectedExam.value!.name)
+      if (examGrades.length) {
+        const subjectSummaries = examGrades.map((g: any) => {
+          const score = g.scores.find((s: any) => s.studentId === stu.id)?.score
+          return `${g.subject}: ${score ?? '缺考'}`
+        })
+        ctx.push(`本次考试《${selectedExam.value.name}》（${selectedExam.value.date || '日期未填'}）成绩：${subjectSummaries.join('、')}`)
+        // 同时拉取班级排名上下文
+        try {
+          const rankRes = await request.get('/grades/analysis/rank', { params: { classId: classId.value, examId: selectedExam.value.id } })
+          const ranks = rankRes?.ranks || []
+          const myRank = ranks.find((r: any) => r.studentId === stu.id || r.id === stu.id)
+          if (myRank) {
+            ctx.push(`班级排名：第 ${myRank.rank || '?'} 名 / 共 ${ranks.length} 人，总分 ${myRank.total ?? myRank.score ?? '-'}`)
+          }
+        } catch { /* ignore */ }
+      } else {
+        ctx.push(`本次考试《${selectedExam.value.name}》暂无该生成绩记录`)
+      }
+      // 仍附带最近成绩作为参考
+      if (myGrades.length) {
+        const recent = myGrades.slice(0, 3).map((g: any) => {
+          const score = g.scores.find((s: any) => s.studentId === stu.id)?.score
+          return `${g.examName || '考试'}-${g.subject}: ${score ?? '缺考'}`
+        })
+        ctx.push(`近期其他考试成绩参考：${recent.join('、')}`)
+      }
     } else {
-      ctx.push('近期暂无考试成绩记录')
+      if (myGrades.length) {
+        const subjectSummaries = myGrades.map((g: any) => {
+          const score = g.scores.find((s: any) => s.studentId === stu.id)?.score
+          return `${g.subject}: ${score ?? '缺考'}`
+        })
+        ctx.push(`最近考试成绩：${subjectSummaries.join('、')}`)
+      } else {
+        ctx.push('近期暂无考试成绩记录')
+      }
     }
   } catch { /* ignore */ }
 
@@ -100,7 +151,10 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
 
 function buildPrompt(stu: TeacherStudent, context: string): string {
   const cls = classes.value.find(c => c.id === classId.value)
-  return `请为${cls?.name || ''}的学生${stu.name}写一段${commentType.value}。
+  const examPart = selectedExam.value
+    ? `本次评语需聚焦本次考试《${selectedExam.value.name}》（${selectedExam.value.date || '日期未填'}）的表现。`
+    : ''
+  return `请为${cls?.name || ''}的学生${stu.name}写一段${commentType.value}。${examPart}
 学生信息：${stu.gender === '男' ? '男生' : stu.gender === '女' ? '女生' : ''}，学号${stu.studentNo || '未设置'}。
 学生成绩与表现数据：
 ${context}
@@ -143,7 +197,7 @@ async function generate() {
   generating.value = false
 }
 
-/** 保存评语到学生信息（student.comment 字段） */
+/** 保存评语到学生信息：关联考试时写入 examComments[examId]（同时更新最新评语 comment 字段） */
 async function saveAll() {
   if (!results.value.length) return
   saving.value = true
@@ -151,7 +205,7 @@ async function saveAll() {
   let fail = 0
   for (const r of results.value) {
     try {
-      await request.patch(`/students/${r.studentId}`, { comment: r.comment })
+      await saveCommentToStudent(r.studentId, r.comment)
       ok++
     } catch {
       fail++
@@ -163,11 +217,31 @@ async function saveAll() {
 
 async function saveOne(r: { studentId: string; name: string; comment: string }) {
   try {
-    await request.patch(`/students/${r.studentId}`, { comment: r.comment })
-    alert(`已保存${r.name}的评语`)
+    await saveCommentToStudent(r.studentId, r.comment)
+    alert(`已保存${r.name}的评语${selectedExam.value ? `（已同步到《${selectedExam.value.name}》）` : ''}`)
   } catch (e: any) {
     alert(e?.message || '保存失败')
   }
+}
+
+/** 统一保存：关联考试时同步写入 examComments，并刷新最新评语 comment */
+async function saveCommentToStudent(studentId: string, comment: string) {
+  const patch: any = { comment }
+  if (selectedExam.value) {
+    // 先拉取学生现有 examComments，避免覆盖其他考试评语
+    try {
+      const stu = await request.get(`/students/${studentId}`)
+      const examComments: Record<string, any> = { ...(stu?.examComments || {}) }
+      examComments[selectedExam.value.id] = {
+        comment,
+        examName: selectedExam.value.name,
+        date: selectedExam.value.date,
+        generatedAt: new Date().toISOString(),
+      }
+      patch.examComments = examComments
+    } catch { /* ignore：拉取失败时仅更新 comment */ }
+  }
+  await request.patch(`/students/${studentId}`, patch)
 }
 
 function copyComment(text: string) {
@@ -183,7 +257,7 @@ function copyComment(text: string) {
 
     <!-- 选择区域 -->
     <div class="bg-white rounded-2xl p-6 shadow-softer">
-      <div class="grid grid-cols-3 gap-4 items-end">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
         <div>
           <label class="text-sm text-cocoa-500">班级</label>
           <select v-model="classId" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
@@ -199,11 +273,21 @@ function copyComment(text: string) {
           </select>
         </div>
         <div>
+          <label class="text-sm text-cocoa-500">关联考试（可选）</label>
+          <select v-model="examId" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+            <option value="">不关联考试</option>
+            <option v-for="e in exams" :key="e.id" :value="e.id">{{ e.name }}{{ e.date ? ` (${e.date})` : '' }}</option>
+          </select>
+        </div>
+        <div>
           <label class="text-sm text-cocoa-500">评语类型</label>
           <select v-model="commentType" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
             <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
           </select>
         </div>
+      </div>
+      <div v-if="selectedExam" class="mt-3 px-3 py-2 rounded-lg bg-butter-50 text-xs text-butter-700">
+        ℹ️ 已关联考试《{{ selectedExam.name }}》，生成评语将聚焦本次考试表现，保存时同步到学生该次考试情况中。
       </div>
       <div class="flex justify-end mt-4">
         <button

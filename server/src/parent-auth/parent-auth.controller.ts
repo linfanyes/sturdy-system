@@ -5,6 +5,7 @@ import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentParent } from './current-parent.decorator'
 import { ParentLoginDto, ChangePasswordDto, BindWechatDto, SubscribeDto } from './dto/parent-auth.dto'
+import { StudentInfoUpdateService } from '../student-info-update/student-info-update.module'
 
 // 家长登录防暴力破解：单 IP+学号 每分钟最多 10 次
 const ParentLoginRateLimit = createRateLimitGuard(60_000, 10)
@@ -12,7 +13,10 @@ const ParentLoginRateLimit = createRateLimitGuard(60_000, 10)
 @Controller('parent-auth')
 @Roles('parent')
 export class ParentAuthController {
-  constructor(private readonly s: ParentAuthService) {}
+  constructor(
+    private readonly s: ParentAuthService,
+    private readonly updateSvc: StudentInfoUpdateService,
+  ) {}
 
   /** 家长凭学生学号 + 密码登录 */
   @Post('login')
@@ -130,5 +134,20 @@ export class ParentAuthController {
     const userId = req.user?.sub || req.user?.id
     if (!userId) throw new UnauthorizedException('无效身份')
     return this.s.activateParent(userId)
+  }
+
+  /** 家长端：提交学生信息修改申请（需老师审核后入库） */
+  @Post('student-update-request')
+  @UseGuards(JwtAuthGuard)
+  async submitUpdateRequest(@CurrentParent() p: any, @Body() b: { payload: Record<string, any> }) {
+    if (!b?.payload || !Object.keys(b.payload).length) throw new BadRequestException('请填写需要修改的信息')
+    return this.updateSvc.submit(p, p.studentId, b.payload)
+  }
+
+  /** 家长端：查看自己提交的修改申请列表及审核状态 */
+  @Get('student-update-requests')
+  @UseGuards(JwtAuthGuard)
+  async listUpdateRequests(@CurrentParent() p: any) {
+    return this.updateSvc.listMine(p)
   }
 }

@@ -79,6 +79,15 @@
         <picker :range="autoModes" :value="autoModeIdx" @change="(e) => (autoModeIdx = +e.detail.value)">
           <view class="picker sm">模式：{{ autoModes[autoModeIdx] }}</view>
         </picker>
+        <picker
+          v-if="autoModeIdx === 4"
+          :range="examOpts"
+          :value="examIdx"
+          @change="(e) => (examIdx = +e.detail.value)"
+        >
+          <view class="picker sm">考试：{{ examOpts.length ? examOpts[examIdx] : '暂无考试' }}</view>
+        </picker>
+        <view v-if="autoModeIdx === 4 && !examOpts.length" class="hint" style="color: #e6a23c;">该班级暂无考试数据，请先在考试管理中录入成绩。</view>
         <view class="mode-desc">{{ autoModeDesc }}</view>
         <view class="sh-bar">
           <button class="btn del" @click="showAuto = false">取消</button>
@@ -148,7 +157,7 @@ const cur = ref({ r: 0, c: 0 })
 
 // 自动排座 / 调整尺寸 / 过道布局
 const showAuto = ref(false)
-const autoModes = ['顺序排座', 'S形排座', '分组排座', '男女交错']
+const autoModes = ['顺序排座', 'S形排座', '分组排座', '男女交错', '按成绩排名', '随机排座']
 const autoModeIdx = ref(0)
 const autoModeDesc = computed(() => {
   return [
@@ -156,8 +165,16 @@ const autoModeDesc = computed(() => {
     '蛇形走位：第 1 行从左到右，第 2 行从右到左，依次交替（便于左右互动）。',
     '按列分组：从左到右每列从上到下填充（适合小组讨论课堂）。',
     '男女交替：按学号排序后男女分两队，轮流填入每个座位（适合纪律管理）。',
+    '按成绩排名：选择一次考试，按各科总分从高到低依次填入（无成绩者按学号置后）。',
+    '随机排座：打乱全体学生顺序后依次填入（适合定期换座）。',
   ][autoModeIdx.value]
 })
+// 考试列表（按成绩排座时使用）；autoModeIdx===4 时显示考试选择
+const exams = ref([])
+const examIdx = ref(0)
+const examOpts = computed(() =>
+  exams.value.map((e) => e.name + (e.date ? `（${String(e.date).slice(0, 10)}）` : '')),
+)
 const showResize = ref(false)
 const resizeRows = ref('')
 const resizeCols = ref('')
@@ -196,6 +213,10 @@ async function load() {
     // 服务端按 classId 过滤，避免拉全量再前端 filter
     layouts.value = await api.getList('/seat-layouts?classId=' + encodeURIComponent(classId.value), { silent: true })
     students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+    // 按成绩排座需要考试列表：按日期倒序，便于选最近一次
+    const ex = await api.getList('/exams?classId=' + encodeURIComponent(classId.value), { silent: true }) || []
+    exams.value = ex.slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+    if (examIdx.value >= exams.value.length) examIdx.value = 0
   }
 }
 onShow(load)
@@ -292,8 +313,8 @@ async function saveSeats() {
   }
 }
 
-// 自动排座：4 种模式
-function doAutoArrange() {
+// 自动排座：6 种模式（顺序 / S形 / 分组 / 男女交错 / 按成绩排名 / 随机）
+async function doAutoArrange() {
   if (!editing.value || !students.value.length) {
     uni.showToast({ title: '该班级没有学生可排', icon: 'none' })
     return
@@ -306,6 +327,34 @@ function doAutoArrange() {
   // 全部清空后再填充
   const seats = Array.from({ length: rows }, () => Array(cols).fill(null))
   const mode = autoModeIdx.value
+
+  // 按成绩排名：拉 /grades/analysis/rank 汇总各科总分，按总分降序得到 ID 序列；无成绩者按学号置后
+  async function getGradeOrderedIds() {
+    const exam = exams.value[examIdx.value] || exams.value[0]
+    if (!exam) return null
+    try {
+      const res = await api.get(
+        '/grades/analysis/rank?classId=' +
+          encodeURIComponent(classId.value) +
+          '&examId=' +
+          encodeURIComponent(exam.id),
+      )
+      const ranks = (res && res.ranks) || []
+      const sumMap = {}
+      for (const r of ranks) {
+        if (!r.studentId) continue
+        sumMap[r.studentId] = (sumMap[r.studentId] || 0) + (Number(r.score) || 0)
+      }
+      const ranked = Object.keys(sumMap).sort((a, b) => sumMap[b] - sumMap[a])
+      const rankedSet = new Set(ranked)
+      const rest = sts.filter((s) => !rankedSet.has(s.id)).map((s) => s.id)
+      return [...ranked, ...rest]
+    } catch (e) {
+      uni.showToast({ title: '获取排名失败：' + (e.message || ''), icon: 'none' })
+      return null
+    }
+  }
+
   if (mode === 0) {
     // 顺序：行优先
     let i = 0
@@ -344,6 +393,31 @@ function doAutoArrange() {
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++) {
         if (i < queue.length) seats[r][c] = queue[i++].id
+      }
+  } else if (mode === 4) {
+    // 按成绩排名：需先选考试
+    if (!exams.value.length) {
+      uni.showToast({ title: '该班级暂无考试，无法按成绩排座', icon: 'none' })
+      return
+    }
+    const ids = await getGradeOrderedIds()
+    if (!ids) return
+    let i = 0
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        if (i < ids.length) seats[r][c] = ids[i++]
+      }
+  } else if (mode === 5) {
+    // 随机：Fisher–Yates 洗牌后行优先填入
+    const ids = sts.map((s) => s.id)
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[ids[i], ids[j]] = [ids[j], ids[i]]
+    }
+    let i = 0
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        if (i < ids.length) seats[r][c] = ids[i++]
       }
   }
   editing.value.seats = seats

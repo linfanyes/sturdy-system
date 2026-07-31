@@ -7,11 +7,14 @@
  * - 照片识别导入 / AI 识别导入
  */
 import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { listClassStudents, type TeacherStudent } from '@/api/teacher'
-import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2 } from 'lucide-vue-next'
+import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2, User, Download, ClipboardPaste } from 'lucide-vue-next'
+
+const router = useRouter()
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -108,12 +111,22 @@ function scoreSummary(g: any): string {
 const showEntryForm = ref(false)
 const entryLoading = ref(false)
 const entryScores = ref<Record<string, string>>({})  // studentId -> score string
+const entryMode = ref<'table' | 'paste'>('table')
+const pasteText = ref('')
+
+/** 录入进度：已填 / 总人数 */
+const entryProgress = computed(() => {
+  const filled = Object.values(entryScores.value).filter(v => v !== '' && v != null).length
+  return { filled, total: students.value.length }
+})
 
 function openEntry() {
   if (!selectedExamId.value) { alert('请先选择考试'); return }
   if (!selectedSubject.value) { alert('请先选择科目'); return }
   // 预填已有成绩
   entryScores.value = {}
+  entryMode.value = 'table'
+  pasteText.value = ''
   const existing = grades.value.find(g => g.examName === selectedExam.value?.name && g.subject === selectedSubject.value)
   if (existing) {
     for (const s of existing.scores) {
@@ -121,6 +134,29 @@ function openEntry() {
     }
   }
   showEntryForm.value = true
+}
+
+/** 解析批量粘贴文本：每行「学号,分数」或「姓名,分数」，自动匹配学生填入 */
+function parsePaste() {
+  if (!pasteText.value.trim()) { alert('请先粘贴成绩内容'); return }
+  const lines = pasteText.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+  let matched = 0
+  let unmatched = 0
+  for (const line of lines) {
+    const parts = line.split(/[,，\t\s]+/).filter(Boolean)
+    if (parts.length < 2) { unmatched++; continue }
+    const key = parts[0].trim()
+    const score = parts[1].trim()
+    // 优先按学号匹配，再按姓名匹配
+    const student = students.value.find(s => s.studentNo === key) || students.value.find(s => s.name === key)
+    if (student) {
+      entryScores.value[student.id] = score
+      matched++
+    } else {
+      unmatched++
+    }
+  }
+  alert(`解析完成：匹配 ${matched} 人，未匹配 ${unmatched} 行。可切换到「逐个录入」核对。`)
 }
 
 async function submitEntry() {
@@ -182,6 +218,24 @@ function openImport(mode: 'file' | 'ai') {
   showImport.value = true
 }
 
+/** 下载 CSV 导入模板（含表头 + 当前班级学生预填行） */
+function downloadTemplate() {
+  const header = '学号,姓名,分数'
+  const rows = students.value.length
+    ? students.value.map(s => `${s.studentNo || ''},${s.name || ''},`)
+    : []
+  const csv = '\ufeff' + [header, ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `成绩导入模板_${selectedSubject.value || '成绩'}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 async function onPickFile(e: Event) {
   const input = e.target as HTMLInputElement
   if (!input.files?.length) return
@@ -238,6 +292,32 @@ async function commitImport() {
     importLoading.value = false
   }
 }
+
+/* ============ 学生成绩矩阵（双击查看学生详情） ============ */
+const studentMatrix = computed(() => {
+  if (!classId.value || !selectedExamId.value || !students.value.length) return []
+  const examGrades = grades.value.filter(g => g.examName === selectedExam.value?.name || g.examId === selectedExamId.value)
+  const subjects = selectedExam.value?.subjects || [...new Set(examGrades.map(g => g.subject))]
+  return students.value.map(st => {
+    const scores: Record<string, number | null> = {}
+    let total = 0
+    let count = 0
+    for (const subj of subjects) {
+      const grade = examGrades.find(g => g.subject === subj)
+      const entry = grade?.scores?.find((s: any) => s.studentId === st.id)
+      scores[subj] = entry?.score ?? null
+      if (entry?.score != null) { total += entry.score; count++ }
+    }
+    return { student: st, scores, total, avg: count > 0 ? total / count : null, subjects }
+  })
+})
+
+const matrixSubjects = computed(() => selectedExam.value?.subjects || [])
+
+function onStudentDblClick(studentId: string) {
+  router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
+}
+
 </script>
 
 <template>
@@ -331,15 +411,95 @@ async function commitImport() {
         </tbody>
       </table>
     </div>
+
+    <!-- 学生成绩矩阵（双击查看学生详情） -->
+    <div v-if="classId && selectedExamId && studentMatrix.length" class="bg-white rounded-2xl p-4 shadow-softer">
+      <div class="flex items-center gap-2 mb-3">
+        <User class="w-4 h-4 text-butter-500" />
+        <h3 class="text-sm font-medium text-cocoa-700">学生成绩（双击行查看详情）</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-cream-100 text-cocoa-500 text-left">
+            <tr>
+              <th class="px-3 py-2 font-medium">姓名</th>
+              <th v-for="s in matrixSubjects" :key="s" class="px-3 py-2 font-medium text-center">{{ s }}</th>
+              <th class="px-3 py-2 font-medium text-center">总分</th>
+              <th class="px-3 py-2 font-medium text-center">均分</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-cream-100">
+            <tr
+              v-for="row in studentMatrix"
+              :key="row.student.id"
+              class="hover:bg-cream-50 transition-colors cursor-pointer"
+              @dblclick="onStudentDblClick(row.student.id)"
+            >
+              <td class="px-3 py-2 font-medium text-cocoa-900">{{ row.student.name }}</td>
+              <td v-for="s in matrixSubjects" :key="s" class="px-3 py-2 text-center" :class="row.scores[s] == null ? 'text-cocoa-300' : row.scores[s] >= 85 ? 'text-mint-500 font-medium' : row.scores[s] < 60 ? 'text-red-400' : 'text-cocoa-700'">
+                {{ row.scores[s] ?? '缺' }}
+              </td>
+              <td class="px-3 py-2 text-center font-medium text-cocoa-900">{{ row.total || '-' }}</td>
+              <td class="px-3 py-2 text-center text-cocoa-700">{{ row.avg != null ? row.avg.toFixed(1) : '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- 录入成绩弹窗 -->
   <Modal v-model="showEntryForm" :title="`录入成绩 · ${selectedExam?.name || ''} · ${selectedSubject}`" width="max-w-2xl">
-    <div class="space-y-2">
-      <div class="text-sm text-cocoa-400 bg-cream-50 rounded-xl px-3 py-2">
-        班级：{{ className(classId) }} · 共 {{ students.length }} 名学生。留空表示缺考。
+    <div class="space-y-3">
+      <div class="text-sm text-cocoa-400 bg-cream-50 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+        <span>班级：{{ className(classId) }} · 共 {{ students.length }} 名学生。留空表示缺考。</span>
+        <span class="text-xs whitespace-nowrap">
+          已填 <span class="text-butter-500 font-medium">{{ entryProgress.filled }}</span> / {{ entryProgress.total }} 人
+        </span>
       </div>
-      <div class="max-h-96 overflow-y-auto space-y-1">
+
+      <!-- 录入模式切换 -->
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="entryMode === 'table' ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-500 hover:bg-cream-200'"
+          @click="entryMode = 'table'"
+        >逐个录入</button>
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          :class="entryMode === 'paste' ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-500 hover:bg-cream-200'"
+          @click="entryMode = 'paste'"
+        >批量粘贴</button>
+      </div>
+
+      <!-- 批量粘贴模式 -->
+      <div v-if="entryMode === 'paste'" class="space-y-2">
+        <div class="text-xs text-cocoa-400 leading-relaxed">
+          每行一条，格式：「学号,分数」或「姓名,分数」（支持逗号、Tab、空格分隔）。点击「解析填充」自动匹配学生填入分数。
+        </div>
+        <textarea
+          v-model="pasteText"
+          rows="8"
+          class="w-full px-3 py-2 text-sm rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 font-mono"
+          placeholder="例如：&#10;20240001,95&#10;张三,88&#10;20240003,76"
+        />
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30"
+            @click="parsePaste"
+          >
+            <ClipboardPaste class="w-4 h-4" /> 解析填充
+          </button>
+          <button
+            class="px-3 py-1.5 rounded-lg text-cocoa-400 text-sm hover:bg-cream-100"
+            @click="pasteText = ''"
+          >清空</button>
+          <span class="text-xs text-cocoa-400">解析后可切换到「逐个录入」核对</span>
+        </div>
+      </div>
+
+      <!-- 逐个录入模式 -->
+      <div v-if="entryMode === 'table'" class="max-h-96 overflow-y-auto space-y-1">
         <div v-for="s in students" :key="s.id" class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-cream-50">
           <span class="flex-1 text-sm text-cocoa-900">{{ s.name }}</span>
           <span class="text-xs text-cocoa-400 w-20">{{ s.studentNo || '-' }}</span>
@@ -376,11 +536,20 @@ async function commitImport() {
         <div class="text-sm text-cocoa-500 mb-3">
           {{ importMode === 'ai' ? '支持成绩单图片（OCR识别）或 Excel/CSV 文件（AI结构化解析）' : '支持 Excel(.xlsx/.xls) 和 TXT/CSV 文件，格式：姓名/学号 + 分数' }}
         </div>
-        <label class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 cursor-pointer">
-          <Upload class="w-4 h-4" />
-          {{ importMode === 'ai' ? '选择文件识别' : '选择文件导入' }}
-          <input type="file" class="hidden" accept=".xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg" @change="onPickFile" />
-        </label>
+        <div class="flex items-center justify-center gap-2 flex-wrap">
+          <label class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 cursor-pointer">
+            <Upload class="w-4 h-4" />
+            {{ importMode === 'ai' ? '选择文件识别' : '选择文件导入' }}
+            <input type="file" class="hidden" accept=".xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg" @change="onPickFile" />
+          </label>
+          <button
+            v-if="importMode !== 'ai'"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30"
+            @click="downloadTemplate"
+          >
+            <Download class="w-4 h-4" /> 下载模板
+          </button>
+        </div>
         <div v-if="importLoading" class="mt-3 text-sm text-butter-500 flex items-center justify-center gap-1">
           <Loader2 class="w-4 h-4 animate-spin" /> {{ importMode === 'ai' ? 'AI 识别中…' : '解析中…' }}
         </div>

@@ -59,17 +59,19 @@ export const routes: RouteRecordRaw[] = [
     children: [
       { path: '', name: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue'), meta: { title: '教师工作台' } },
       { path: 'notifications', name: 'teacher-notifications', component: () => import('@/views/workspace/Notifications.vue'), meta: { title: '通知中心' } },
-      { path: 'messages', name: 'teacher-messages', component: () => import('@/views/workspace/Messages.vue'), meta: { title: '消息中心' } },
       // 个人空间
       { path: 'profile', name: 'teacher-profile', component: () => import('@/views/workspace/Profile.vue'), meta: { title: '个人资料' } },
       { path: 'config', name: 'teacher-config', component: () => import('@/views/workspace/Config.vue'), meta: { title: '设置' } },
       { path: 'todos', name: 'teacher-todos', component: () => import('@/views/workspace/Todos.vue'), meta: { title: '待办事项', feature: 'todos' } },
       { path: 'notes', name: 'teacher-notes', component: () => import('@/views/workspace/Notes.vue'), meta: { title: '笔记', feature: 'notes' } },
       { path: 'schedule', name: 'teacher-schedule', component: () => import('@/views/workspace/Schedule.vue'), meta: { title: '课表', feature: 'schedule' } },
+      { path: 'my-schedule', name: 'my-schedule', component: () => import('@/views/workspace/MySchedule.vue'), meta: { title: '我的课表', feature: 'schedule' } },
       { path: 'notices', name: 'teacher-notices', component: () => import('@/views/workspace/Notices.vue'), meta: { title: '公告', feature: 'notices' } },
+      { path: 'data', name: 'teacher-data', component: () => import('@/views/workspace/DataManager.vue'), meta: { title: '数据管理', feature: 'notices' } },
       // 班级与学生
       { path: 'classes', name: 'teacher-classes', component: () => import('@/views/classes/ClassMembers.vue'), meta: { title: '班级成员', feature: 'classes' } },
       { path: 'students', name: 'teacher-students', component: () => import('@/views/teacher/Students.vue'), meta: { title: '学生管理', feature: 'students' } },
+      { path: 'student-info-review', name: 'student-info-review', component: () => import('@/views/teacher/StudentInfoReview.vue'), meta: { title: '信息修改审核', feature: 'students' } },
       { path: 'duty-roster', name: 'teacher-duty-roster', component: () => import('@/views/classes/DutyRoster.vue'), meta: { title: '轮值表', feature: 'duty' } },
       { path: 'duty-config', name: 'teacher-duty-config', component: () => import('@/views/classes/DutyConfig.vue'), meta: { title: '值日配置', feature: 'duty' } },
       { path: 'class-finance', name: 'teacher-class-finance', component: () => import('@/views/classes/ClassFinance.vue'), meta: { title: '班费', feature: 'finance' } },
@@ -82,6 +84,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'exam-analysis', name: 'teacher-exam-analysis', component: () => import('@/views/exams/ExamAnalysis.vue'), meta: { title: '考试分析', feature: 'analysis' } },
       { path: 'data-dashboard', name: 'teacher-data-dashboard', component: () => import('@/views/exams/DataDashboard.vue'), meta: { title: '数据看板', feature: 'analysis' } },
       { path: 'radar', name: 'teacher-radar', component: () => import('@/views/exams/Radar.vue'), meta: { title: '雷达图', feature: 'analysis' } },
+      { path: 'exam-detail', name: 'teacher-exam-detail', component: () => import('@/views/exams/ExamDetail.vue'), meta: { title: '考试详情', feature: 'analysis' } },
+      { path: 'student-grades', name: 'teacher-student-grades', component: () => import('@/views/exams/StudentGrades.vue'), meta: { title: '学生成绩', feature: 'grades' } },
       { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/exams/Attendance.vue'), meta: { title: '考勤', feature: 'attendance' } },
       { path: 'homework', name: 'teacher-homework', component: () => import('@/views/exams/Homework.vue'), meta: { title: '作业', feature: 'homework' } },
       // 学生评价
@@ -97,7 +101,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'award-categories', name: 'teacher-award-categories', component: () => import('@/views/evaluation/AwardCategories.vue'), meta: { title: '奖项管理', feature: 'rewards' } },
       // 家校沟通
       { path: 'parent-contacts', name: 'teacher-parent-contacts', component: () => import('@/views/home/ParentContacts.vue'), meta: { title: '家长联系', feature: 'parents' } },
-      { path: 'im', name: 'teacher-im', component: () => import('@/views/home/Im.vue'), meta: { title: '家校沟通', feature: 'im' } },
+      { path: 'messages', name: 'teacher-message-board', component: () => import('@/views/workspace/MessageBoard.vue'), meta: { title: '留言板', feature: 'im' } },
       { path: 'notice-templates', name: 'teacher-notice-templates', component: () => import('@/views/home/NoticeTemplates.vue'), meta: { title: '通知模板', feature: 'notices' } },
       // AI 与备课
       { path: 'ai-chat', name: 'teacher-ai-chat', component: () => import('@/views/ai/AiChat.vue'), meta: { title: 'AI 对话', feature: 'ai' } },
@@ -116,6 +120,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'lesson-obs', name: 'teacher-lesson-obs', component: () => import('@/views/office/LessonObs.vue'), meta: { title: '听课记录', feature: 'observation' } },
       { path: 'teaching-calendar', name: 'teacher-teaching-calendar', component: () => import('@/views/office/TeachingCalendar.vue'), meta: { title: '教学日历', feature: 'calendar' } },
       { path: 'teacher-directory', name: 'teacher-directory', component: () => import('@/views/office/TeacherDirectory.vue'), meta: { title: '教师通讯录', feature: 'teachers' } },
+      { path: 'teacher-detail', name: 'teacher-detail', component: () => import('@/views/teacher/TeacherDetail.vue'), meta: { title: '教师详情', feature: 'teachers' } },
       { path: 'office-translate', name: 'teacher-office-translate', component: () => import('@/views/office/Translate.vue'), meta: { title: '翻译', feature: 'worklog' } },
       { path: 'office-paper', name: 'teacher-office-paper', component: () => import('@/views/office/Paper.vue'), meta: { title: '教育论文', feature: 'worklog' } },
       { path: 'office-blackboard', name: 'teacher-office-blackboard', component: () => import('@/views/office/Blackboard.vue'), meta: { title: '黑板报', feature: 'worklog' } },

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
-import { Repository, DataSource } from 'typeorm'
+import { Repository, DataSource, In } from 'typeorm'
 import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
@@ -24,13 +24,65 @@ import { Student } from '../students/student.entity'
 import { Parent } from '../parent/parent.entity'
 import { ClassItem } from '../classes/class.entity'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
+import { User } from '../users/user.entity'
 
 class ScheduleService extends CrudService<ScheduleItem> {
-  constructor(@InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>) {
+  constructor(
+    @InjectRepository(ScheduleItem) repo: Repository<ScheduleItem>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    memberSvc: ClassMemberService,
+  ) {
     super(repo)
+    this.withClassMemberService(memberSvc)
   }
 
   protected requiredCreateFields = ['classId']
+
+  /** 判断为班级维度实体（按班级集合过滤） */
+  protected isClassScopedEntity(): boolean {
+    return true
+  }
+
+  /**
+   * 我的课表：查询当前教师任教的所有班级课表，并按教师姓名匹配。
+   * 返回按班级分组的课表条目。
+   */
+  async getMySchedule(teacherId: string) {
+    const me = await this.userRepo.findOne({ where: { id: teacherId } as any })
+    if (!me) return { teacherName: '', classes: [] }
+    const teacherName = me.name
+    // 教师可访问的所有班级
+    const classIds = await this.classMemberSvc.getClassIdsByTeacher(teacherId)
+    if (!classIds.length) return { teacherName, classes: [] }
+    // 查询这些班级的所有课表
+    const items = await this.repo.find({
+      where: { classId: In(classIds) } as any,
+      order: { dayOfWeek: 'ASC', period: 'ASC' } as any,
+      take: 500,
+    })
+    // 按班级分组，过滤出该老师任教的课（teacher 字段存姓名，匹配 me.name）
+    const byClass = new Map<string, any[]>()
+    for (const it of items) {
+      if (it.teacher && it.teacher !== teacherName) continue
+      if (!byClass.has(it.classId)) byClass.set(it.classId, [])
+      byClass.get(it.classId)!.push(it)
+    }
+    // 查班级名
+    const classRepo = this.repo.manager.getRepository(ClassItem)
+    const classes = await classRepo.find({ where: { id: In(classIds) } as any })
+    const classMap = new Map(classes.map(c => [c.id, c]))
+    return {
+      teacherName,
+      classes: classIds
+        .filter(cid => byClass.has(cid))
+        .map(cid => ({
+          classId: cid,
+          className: classMap.get(cid)?.name || cid,
+          term: classMap.get(cid)?.term || '',
+          items: byClass.get(cid) || [],
+        })),
+    }
+  }
 }
 @Roles('teacher')
 @Feature('schedule')
@@ -39,6 +91,13 @@ class ScheduleService extends CrudService<ScheduleItem> {
 class ScheduleController extends CrudController<ScheduleItem> {
   constructor(s: ScheduleService) {
     super(s)
+  }
+
+  /** 我的课表：按教师姓名匹配的所有班级课表 */
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  mySchedule(@CurrentTeacher() t: any) {
+    return (this.service as ScheduleService).getMySchedule(t.sub)
   }
 }
 
@@ -394,7 +453,7 @@ class ScheduleImportController {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem, Parent]),
+    TypeOrmModule.forFeature([ScheduleItem, Attendance, Homework, Notice, Resource, Student, ClassItem, Parent, User]),
     AiModule,
     SecurityModule,
     ClassMembersModule,

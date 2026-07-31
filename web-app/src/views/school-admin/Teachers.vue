@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   listTeachers, createTeacher, updateTeacher, deleteTeacher,
   updateTeacherFeatures, resetTeacherPassword, exportTeachersCsv, exportTeachersXls,
@@ -14,6 +15,12 @@ import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer } from 'lucide-vue-next'
 
 const auth = useAuthStore()
+const router = useRouter()
+
+/** 跳转到教师详情页：用 teacher.id 作为 userId */
+function goDetail(t: TeacherItem) {
+  router.push({ path: '/teacher/teacher-detail', query: { userId: t.id } })
+}
 
 const loading = ref(false)
 const teachers = ref<TeacherItem[]>([])
@@ -310,7 +317,9 @@ function handlePrint() {
             <td colspan="8" class="py-8">暂无教师数据</td>
           </tr>
           <tr v-for="t in filtered" :key="t.id" class="hover:bg-cream-50 transition-colors">
-            <td class="px-4 py-3 font-medium text-cocoa-900">{{ t.name }}</td>
+            <td class="px-4 py-3 font-medium text-cocoa-900">
+              <button class="hover:text-butter-600 hover:underline transition-colors text-left" @click="goDetail(t)">{{ t.name }}</button>
+            </td>
             <td class="px-4 py-3 text-cocoa-700">{{ t.username || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ t.phone || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ t.gender || '-' }}</td>

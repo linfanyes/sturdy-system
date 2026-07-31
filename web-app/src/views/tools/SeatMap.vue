@@ -2,14 +2,22 @@
 /**
  * 座位表
  * - 班级选择（useClasses）
- * - 行数 × 列数网格编辑，点击格子填入学生名（listClassStudents）
+ * - 行数 × 列数网格编辑，点击格子填入学生（listClassStudents）
+ * - grid 存学生 ID（与后端 seat-layouts.seats 一致），显示时映射为姓名
  * - 交互：选中侧边学生 → 点击格子放置；或点击两个格子交换
- * - 讲台标识在顶部
- * - 保存：saveSeatLayout；加载历史布局：listSeatLayouts
+ * - 一键排座：按学号顺序 / 按成绩排名（需选考试）/ 随机 / 男女交替
+ * - 保存：saveSeatLayout；加载历史布局：listSeatLayouts；启用：activateSeatLayout
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useClasses } from '@/composables/useClasses'
-import { listClassStudents, saveSeatLayout, listSeatLayouts, type TeacherStudent } from '@/api/teacher'
+import {
+  listClassStudents,
+  saveSeatLayout,
+  listSeatLayouts,
+  activateSeatLayout,
+  type TeacherStudent,
+} from '@/api/teacher'
+import request from '@/api/request'
 import { LayoutGrid, Save, Download, Monitor, RefreshCw, Trash2 } from 'lucide-vue-next'
 
 const { classes, loadClasses } = useClasses()
@@ -18,39 +26,61 @@ loadClasses()
 const classId = ref('')
 const rows = ref(5)
 const cols = ref(6)
-const grid = ref<string[][]>([])
+/** 座位网格：存学生 ID（null 表示空位），与后端 seats 结构一致 */
+const grid = ref<(string | null)[][]>([])
 const students = ref<TeacherStudent[]>([])
 const layouts = ref<any[]>([])
 const selectedStudent = ref<string | null>(null)
 const selectedCell = ref<{ r: number; c: number } | null>(null)
 const saving = ref(false)
 const loadingLayout = ref(false)
+const activatingId = ref('')
 
-const assignedNames = computed(() => {
+/** 一键排座模式 */
+type ArrangeMode = 'studentNo' | 'grade' | 'random' | 'gender'
+const arrangeMode = ref<ArrangeMode>('studentNo')
+const arrangeModeOpts: { value: ArrangeMode; label: string }[] = [
+  { value: 'studentNo', label: '按学号顺序' },
+  { value: 'grade', label: '按成绩排名' },
+  { value: 'random', label: '随机排座' },
+  { value: 'gender', label: '男女交替' },
+]
+
+/** 考试列表（按成绩排座时使用） */
+interface ExamOption { id: string; name: string; date: string }
+const exams = ref<ExamOption[]>([])
+const examId = ref('')
+
+const assignedIds = computed(() => {
   const set = new Set<string>()
   for (const row of grid.value) for (const cell of row) if (cell) set.add(cell)
   return set
 })
 
 const unassignedStudents = computed(() =>
-  students.value.filter(s => !assignedNames.value.has(s.name)),
+  students.value.filter(s => !assignedIds.value.has(s.id)),
 )
 
+function studentName(id: string | null) {
+  if (!id) return ''
+  return students.value.find(s => s.id === id)?.name || ''
+}
+
 function initGrid() {
-  const g: string[][] = []
+  const g: (string | null)[][] = []
   for (let r = 0; r < rows.value; r++) {
-    g.push(new Array(cols.value).fill(''))
+    g.push(new Array(cols.value).fill(null))
   }
   grid.value = g
 }
 
 function resizeGrid() {
   const old = grid.value
-  const g: string[][] = []
+  const g: (string | null)[][] = []
   for (let r = 0; r < rows.value; r++) {
-    const row: string[] = []
+    const row: (string | null)[] = []
     for (let c = 0; c < cols.value; c++) {
-      row.push(old[r]?.[c] || '')
+      row.push(old[r]?.[c] || null)
     }
     g.push(row)
   }
@@ -73,6 +103,19 @@ async function loadStudents(cid: string) {
   }
 }
 
+async function loadExams(cid: string) {
+  if (!cid) { exams.value = []; return }
+  try {
+    const res = await request.get('/exams', { params: { classId: cid, take: 100 } })
+    const list = Array.isArray(res) ? res : ((res as any)?.items || [])
+    exams.value = list
+      .map((e: any) => ({ id: e.id, name: e.name, date: e.date || '' }))
+      .sort((a: ExamOption, b: ExamOption) => (b.date || '').localeCompare(a.date || ''))
+  } catch {
+    exams.value = []
+  }
+}
+
 async function loadLayouts(cid: string) {
   if (!cid) { layouts.value = []; return }
   try {
@@ -86,8 +129,10 @@ async function loadLayouts(cid: string) {
 function onClassChange() {
   selectedStudent.value = null
   selectedCell.value = null
+  examId.value = ''
   initGrid()
   loadStudents(classId.value)
+  loadExams(classId.value)
   loadLayouts(classId.value)
 }
 
@@ -95,7 +140,7 @@ function clickCell(r: number, c: number) {
   const cellVal = grid.value[r][c]
   // 模式 A：选中了学生 → 放置
   if (selectedStudent.value) {
-    // 若格子有人，把原占用者放回池子（即取消选中其对应状态，自然回到 unassigned）
+    // 若格子有人，原占用者自然回到未入座池子
     grid.value[r][c] = selectedStudent.value
     selectedStudent.value = null
     selectedCell.value = null
@@ -107,7 +152,6 @@ function clickCell(r: number, c: number) {
       selectedCell.value = { r, c }
       return
     }
-    // 已选中第一个格子，进行交换
     const a = selectedCell.value
     const tmp = grid.value[a.r][a.c]
     grid.value[a.r][a.c] = grid.value[r][c]
@@ -120,19 +164,86 @@ function clickCell(r: number, c: number) {
 }
 
 function clearCell(r: number, c: number) {
-  grid.value[r][c] = ''
+  grid.value[r][c] = null
 }
 
-function autoArrange() {
-  // 一键按学生顺序自动排入网格
+/** 把给定学生 ID 列表按行优先填入网格（多余学生忽略，空位留 null） */
+function fillGridByIds(ids: string[]) {
   initGrid()
-  const names = students.value.map(s => s.name)
   let i = 0
-  for (let r = 0; r < rows.value && i < names.length; r++) {
-    for (let c = 0; c < cols.value && i < names.length; c++) {
-      grid.value[r][c] = names[i++]
+  for (let r = 0; r < rows.value && i < ids.length; r++) {
+    for (let c = 0; c < cols.value && i < ids.length; c++) {
+      grid.value[r][c] = ids[i++]
     }
   }
+}
+
+function sortByStudentNo(list: TeacherStudent[]) {
+  return [...list].sort((a, b) =>
+    String(a.studentNo || '').localeCompare(String(b.studentNo || ''), 'zh'),
+  )
+}
+
+function arrangeByStudentNo() {
+  fillGridByIds(sortByStudentNo(students.value).map(s => s.id))
+}
+
+function arrangeRandom() {
+  const ids = students.value.map(s => s.id)
+  // Fisher–Yates 洗牌
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[ids[i], ids[j]] = [ids[j], ids[i]]
+  }
+  fillGridByIds(ids)
+}
+
+function arrangeAlternatingGender() {
+  const sorted = sortByStudentNo(students.value)
+  const males = sorted.filter(s => s.gender === '男').map(s => s.id)
+  const females = sorted.filter(s => s.gender === '女').map(s => s.id)
+  const ids: string[] = []
+  const max = Math.max(males.length, females.length)
+  for (let k = 0; k < max; k++) {
+    if (k < males.length) ids.push(males[k])
+    if (k < females.length) ids.push(females[k])
+  }
+  fillGridByIds(ids)
+}
+
+/** 按成绩排名：调 /grades/analysis/rank 取各科分数，按学生汇总总分降序；无成绩者按学号置后 */
+async function arrangeByGrade() {
+  if (!classId.value) { alert('请先选择班级'); return }
+  if (!examId.value) { alert('请先选择考试'); return }
+  try {
+    const res: any = await request.get('/grades/analysis/rank', {
+      params: { classId: classId.value, examId: examId.value },
+    })
+    const ranks = res?.ranks || []
+    const sumMap = new Map<string, number>()
+    for (const r of ranks) {
+      const sid = r.studentId
+      if (!sid) continue
+      const score = Number(r.score) || 0
+      sumMap.set(sid, (sumMap.get(sid) || 0) + score)
+    }
+    const rankedIds = [...sumMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([sid]) => sid)
+    const rankedSet = new Set(rankedIds)
+    const restIds = sortByStudentNo(students.value.filter(s => !rankedSet.has(s.id))).map(s => s.id)
+    fillGridByIds([...rankedIds, ...restIds])
+  } catch (e: any) {
+    alert('获取成绩排名失败：' + (e?.message || '请重试'))
+  }
+}
+
+async function autoArrange() {
+  if (!students.value.length) { alert('该班级暂无学生'); return }
+  if (arrangeMode.value === 'studentNo') arrangeByStudentNo()
+  else if (arrangeMode.value === 'random') arrangeRandom()
+  else if (arrangeMode.value === 'gender') arrangeAlternatingGender()
+  else if (arrangeMode.value === 'grade') await arrangeByGrade()
 }
 
 async function save() {
@@ -146,12 +257,26 @@ async function save() {
       seats: grid.value,
       name: `${rows.value}×${cols.value} 座位表`,
     })
-    alert('座位表已保存')
+    alert('座位表已保存，可在「加载历史」中启用')
     await loadLayouts(classId.value)
   } catch (e: any) {
     alert(e?.message || '保存失败')
   } finally {
     saving.value = false
+  }
+}
+
+async function activate(layout: any) {
+  if (!layout?.id) return
+  activatingId.value = layout.id
+  try {
+    await activateSeatLayout(layout.id)
+    alert(`已启用「${layout.name || ''}」，学生座位已回写`)
+    await loadLayouts(classId.value)
+  } catch (e: any) {
+    alert('启用失败：' + (e?.message || '请重试'))
+  } finally {
+    activatingId.value = ''
   }
 }
 
@@ -161,9 +286,9 @@ function applyLayout(layout: any) {
   cols.value = layout.cols || 6
   // 等 watch resize 后再写入 seats
   grid.value = JSON.parse(JSON.stringify(layout.seats || []))
-  while (grid.value.length < rows.value) grid.value.push(new Array(cols.value).fill(''))
+  while (grid.value.length < rows.value) grid.value.push(new Array(cols.value).fill(null))
   for (const row of grid.value) {
-    while (row.length < cols.value) row.push('')
+    while (row.length < cols.value) row.push(null)
   }
 }
 
@@ -211,6 +336,27 @@ onMounted(() => {
           class="w-20 mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
         />
       </div>
+      <div>
+        <label class="text-sm text-cocoa-500">排座模式</label>
+        <select
+          v-model="arrangeMode"
+          class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
+        >
+          <option v-for="o in arrangeModeOpts" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+      </div>
+      <div v-if="arrangeMode === 'grade'" class="min-w-[180px]">
+        <label class="text-sm text-cocoa-500">考试</label>
+        <select
+          v-model="examId"
+          class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
+        >
+          <option value="">请选择考试</option>
+          <option v-for="e in exams" :key="e.id" :value="e.id">
+            {{ e.name }}{{ e.date ? `（${e.date.slice(0, 10)}）` : '' }}
+          </option>
+        </select>
+      </div>
       <button
         class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cream-100 text-cocoa-500 text-sm hover:bg-cream-200"
         @click="autoArrange"
@@ -235,17 +381,29 @@ onMounted(() => {
 
     <!-- 历史布局列表 -->
     <div v-if="loadingLayout && layouts.length" class="bg-white rounded-2xl p-4 shadow-softer">
-      <div class="text-sm text-cocoa-500 mb-2">点击加载历史布局</div>
+      <div class="text-sm text-cocoa-500 mb-2">点击加载历史布局，或启用某布局把座位回写到学生记录</div>
       <div class="flex flex-wrap gap-2">
-        <button
+        <div
           v-for="l in layouts"
           :key="l.id"
-          class="px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-700 text-sm hover:bg-cream-200"
-          @click="applyLayout(l); loadingLayout = false"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cream-100"
         >
-          {{ l.name || `${l.rows}×${l.cols}` }}
-          <span class="text-cocoa-400 ml-1">{{ l.createdAt?.slice(0, 10) }}</span>
-        </button>
+          <button
+            class="text-cocoa-700 text-sm hover:text-butter-600"
+            @click="applyLayout(l); loadingLayout = false"
+          >
+            {{ l.name || `${l.rows}×${l.cols}` }}
+            <span class="text-cocoa-400 ml-1">{{ l.createdAt?.slice(0, 10) }}</span>
+            <span v-if="l.active" class="ml-1 text-green-600 font-medium">使用中</span>
+          </button>
+          <button
+            class="text-xs px-2 py-0.5 rounded-full bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
+            :disabled="activatingId === l.id || l.active"
+            @click="activate(l)"
+          >
+            {{ activatingId === l.id ? '启用中…' : (l.active ? '已启用' : '启用') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -266,8 +424,8 @@ onMounted(() => {
           <button
             v-for="s in unassignedStudents"
             :key="s.id"
-            :class="['text-sm px-3 py-1 rounded-full border transition', selectedStudent === s.name ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-700 hover:bg-cream-50']"
-            @click="selectedStudent = selectedStudent === s.name ? null : s.name"
+            :class="['text-sm px-3 py-1 rounded-full border transition', selectedStudent === s.id ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-700 hover:bg-cream-50']"
+            @click="selectedStudent = selectedStudent === s.id ? null : s.id"
           >{{ s.name }}</button>
           <span v-if="!unassignedStudents.length" class="text-sm text-cocoa-400">全部已入座 🎉</span>
         </div>
@@ -300,7 +458,7 @@ onMounted(() => {
                 ]"
                 @click="clickCell(r - 1, c - 1)"
               >
-                {{ grid[r - 1]?.[c - 1] || '' }}
+                {{ studentName(grid[r - 1]?.[c - 1]) }}
                 <button
                   v-if="grid[r - 1]?.[c - 1]"
                   class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200"

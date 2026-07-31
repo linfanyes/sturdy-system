@@ -56,7 +56,7 @@ export class FeatureService {
    */
   async resolveContextFromReq(user: any): Promise<FeatureContext> {
     const role = user?.role
-    if (role === 'super' || role === 'school_admin') return { role }
+    if (role === 'super' || role === 'school_admin') return { role, schoolId: user?.schoolId }
     if (role === 'teacher') {
       const u = await this.userRepo.findOne({ where: { id: user.sub } })
       return {
@@ -107,7 +107,7 @@ export class FeatureService {
     } else if (input.role === 'parent') {
       ctx = await this.resolveContextFromReq({ role: 'parent', studentId: input.studentId })
     } else {
-      ctx = { role: input.role }
+      ctx = { role: input.role, schoolId: input.schoolId }
     }
 
     const effectiveFeatures = await this.getEffectiveFeatures(ctx)

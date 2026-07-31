@@ -3,25 +3,25 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
   UseGuards,
 } from '@nestjs/common'
-import { Feature } from '../common/decorators/feature.decorator'
-import { FeatureGuard } from '../common/feature/feature.guard'
 import { MessageService } from './message.service'
 import { CreateMessageDto } from './dto/create-message.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { Roles } from '../common/decorators/roles.decorator'
 
 /**
- * 消息中心后端接口。
- * 守卫与取当前用户装饰器对齐项目现有 Notice/Notification 模块。
+ * 留言板（家校留言）——替代腾讯云 IM 的持久化消息系统。
+ * 教师和家长均可在各自端发送/查看留言，数据持久化到 MySQL，无需额外开通 IM 服务。
+ * 支持教师给家长留言、家长给教师留言、以及系统通知。
  * @CurrentTeacher 实际返回 req.user（含 sub=用户ID、role=角色），教师与家长令牌皆可解析。
  */
-@Feature('im')
-@UseGuards(JwtAuthGuard, FeatureGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('messages')
 export class MessageController {
   constructor(private readonly svc: MessageService) {}
@@ -36,7 +36,30 @@ export class MessageController {
     return this.svc.list(u.sub, u.role, Number(skip) || 0, Number(take) || 20)
   }
 
-  /** POST /api/messages 发送消息（body 校验，缺必填返回 400） */
+  /** GET /api/messages/sent?skip=&take= 当前用户发送的消息 */
+  @Get('sent')
+  listSent(
+    @CurrentTeacher() u: any,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.svc.listSent(u.sub, u.role, Number(skip) || 0, Number(take) || 20)
+  }
+
+  /** GET /api/messages/unread-count 当前用户未读消息数 */
+  @Get('unread-count')
+  unreadCount(@CurrentTeacher() u: any) {
+    return this.svc.unreadCount(u.sub, u.role)
+  }
+
+  /** GET /api/messages/recipients 获取教师可发消息的收件人列表（家长） */
+  @Roles('teacher')
+  @Get('recipients')
+  recipients(@CurrentTeacher() u: any) {
+    return this.svc.listRecipients(u.sub)
+  }
+
+  /** POST /api/messages 发送消息 */
   @Post()
   send(@CurrentTeacher() u: any, @Body() dto: CreateMessageDto) {
     return this.svc.send(u.sub, u.role, dto)
@@ -46,5 +69,17 @@ export class MessageController {
   @Patch(':id/read')
   markRead(@CurrentTeacher() u: any, @Param('id') id: string) {
     return this.svc.markRead(id, u.sub, u.role)
+  }
+
+  /** PATCH /api/messages/mark-all-read 一键全部已读 */
+  @Patch('mark-all-read')
+  markAllRead(@CurrentTeacher() u: any) {
+    return this.svc.markAllRead(u.sub, u.role)
+  }
+
+  /** DELETE /api/messages/:id 删除消息（仅收件人或发件人） */
+  @Delete(':id')
+  remove(@CurrentTeacher() u: any, @Param('id') id: string) {
+    return this.svc.remove(id, u.sub, u.role)
   }
 }

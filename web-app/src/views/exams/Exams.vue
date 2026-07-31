@@ -5,10 +5,13 @@
  * - 双击考试行查看本次考试的汇总信息（各科成绩统计）
  */
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
+
+const router = useRouter()
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -165,7 +168,7 @@ async function openSummary(row: any) {
 }
 
 function onRowDblClick(row: any) {
-  openSummary(row)
+  router.push({ path: '/teacher/exam-detail', query: { examId: row.id, classId: row.classId } })
 }
 </script>
 
@@ -239,7 +242,7 @@ function onRowDblClick(row: any) {
             </td>
             <td class="px-4 py-3 text-cocoa-700">{{ row.date || '-' }}</td>
             <td class="px-4 py-3 text-right space-x-1">
-              <button class="p-1.5 rounded-lg hover:bg-butter-100 text-butter-500" title="查看汇总" @click.stop="openSummary(row)">
+              <button class="p-1.5 rounded-lg hover:bg-butter-100 text-butter-500" title="查看详情" @click.stop="onRowDblClick(row)">
                 <BarChart3 class="w-4 h-4" />
               </button>
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click.stop="openEdit(row)">

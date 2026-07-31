@@ -54,6 +54,13 @@
       </view>
       <button v-if="existing" class="ana" @click="showAnalysis = true">📈 综合分析</button>
 
+      <view v-if="students.length" class="prog">
+        <text class="prog-txt">已录入 {{ filledCount }} / {{ students.length }}</text>
+        <view class="prog-bar">
+          <view class="prog-fill" :style="{ width: students.length ? (filledCount / students.length * 100) + '%' : '0%' }"></view>
+        </view>
+      </view>
+
       <view class="list">
         <view v-for="s in students" :key="s.id" class="item">
           <text class="name" @click="showScoreCard(s)">{{ s.name }}<text class="sno"> · {{ s.studentNo || '' }}</text></text>
@@ -74,7 +81,10 @@
 
       <view v-if="showImport" class="import-box">
         <view class="imp-tip">先选好上方「班级/考试/科目/日期」，再导入 Excel/TXT（列：学号或姓名, 分数）。</view>
-        <button class="pick" @click="pickFile">📂 选择文件</button>
+        <view class="imp-btns">
+          <button class="pick" @click="pickFile">📂 选择文件</button>
+          <button class="tpl" @click="downloadTemplate">📋 下载模板</button>
+        </view>
 
         <view v-if="preview" class="preview">
           <view class="pv-sum">
@@ -171,6 +181,7 @@
         </view>
         <view class="card-btns">
           <button class="card-copy" @click="copyScoreCard">📋 复制成绩单</button>
+          <button class="card-history" @click="goStudentGrades">📈 历次成绩</button>
           <button class="card-close" @click="scoreCard = null">关闭</button>
         </view>
       </view>
@@ -219,6 +230,16 @@ const aiResult = ref('')
 const aiTitle = ref('')
 const doneCount = ref(0)
 const scoreCard = ref(null)  // 学生成绩单弹窗
+
+/** 实时已录入人数（基于当前 scores 填写情况） */
+const filledCount = computed(() => {
+  let n = 0
+  for (const s of students.value) {
+    const v = (scores[s.id] || '').toString().trim()
+    if (v !== '') n++
+  }
+  return n
+})
 
 const showImport = ref(false)
 const preview = ref(null)
@@ -626,6 +647,20 @@ function exportRank() {
   exportXlsx(summaryHeader, [summaryRow1, summaryRow2, header, ...data], className + '_名次_' + subject.value, '名次表')
 }
 
+/** 下载/复制 CSV 导入模板到剪贴板（小程序文件下载受限，改用剪贴板） */
+function downloadTemplate() {
+  const header = '学号,姓名,分数'
+  const rows = students.value.length
+    ? students.value.map((s) => `${s.studentNo || ''},${s.name || ''},`)
+    : []
+  const csv = header + '\n' + rows.join('\n')
+  uni.setClipboardData({
+    data: csv,
+    success: () => uni.showToast({ title: '模板已复制到剪贴板，可粘贴到 Excel', icon: 'none' }),
+    fail: () => uni.showToast({ title: '复制失败', icon: 'none' }),
+  })
+}
+
 function pickFile() {
   if (!classId.value || !examName.value || !subject.value)
     return uni.showToast({ title: '请先选择班级/考试/科目', icon: 'none' })
@@ -727,6 +762,13 @@ function copyScoreCard() {
   const lines = c.subjects.map((r) => `  ${r.subject}：${r.score} 分（满分 ${r.fullScore}，${r.avg} 均分，第 ${r.rank}/${r.totalCount} 名）`)
   const text = `📚 ${c.className} · ${c.examName}\n学生：${c.studentName}${c.rank ? ' · 第' + c.rank + '名' : ''}\n${lines.join('\n')}\n总分：${c.totalScore} / ${c.totalFull}`
   uni.setClipboardData({ data: text, success: () => uni.showToast({ title: '成绩单已复制', icon: 'success' }), fail: () => uni.showToast({ title: '复制失败', icon: 'none' }) })
+}
+
+function goStudentGrades() {
+  const c = scoreCard.value
+  if (!c || !c.studentId) return
+  scoreCard.value = null
+  uni.navigateTo({ url: '/pages/student-grades/student-grades?studentId=' + encodeURIComponent(c.studentId) + '&classId=' + encodeURIComponent(classId.value || '') })
 }
 
 // 分享单个学生全部科目成绩到微信
@@ -842,6 +884,14 @@ async function aiDiagnose() {
 .imp { background: #409eff; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .import-box { margin-top: 16rpx; background: var(--c-card2); border-radius: 20rpx; padding: 24rpx; }
 .imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 14rpx; }
+.imp-btns { display: flex; gap: 16rpx; }
+.imp-btns .pick { flex: 1; }
+.tpl { flex: 1; background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
+.tpl:active { opacity: 0.6; }
+.prog { background: var(--c-card); border-radius: 16rpx; padding: 18rpx 26rpx; margin-bottom: 14rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.prog-txt { font-size: 26rpx; color: var(--c-sub); display: block; margin-bottom: 10rpx; }
+.prog-bar { height: 12rpx; background: var(--c-card2); border-radius: 6rpx; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, var(--c-accent), var(--c-primary)); border-radius: 6rpx; transition: width 0.3s; }
 .pick { background: #409eff; color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
 .preview { margin-top: 14rpx; border-top: 1px dashed var(--c-border); padding-top: 14rpx; }
 .pv-sum { font-size: 26rpx; color: var(--c-title); }

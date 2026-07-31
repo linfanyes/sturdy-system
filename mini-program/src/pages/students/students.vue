@@ -71,6 +71,8 @@
       <input v-model="form.studentNo" maxlength="32" placeholder="学号" />
       <input v-model="form.parentName" maxlength="50" placeholder="家长姓名" />
       <input v-model="form.parentPhone" maxlength="11" placeholder="家长电话" @blur="checkPhone" /><text v-if="phoneError" class="field-err">{{ phoneError }}</text>
+      <input v-model="form.studentPhone" maxlength="11" placeholder="学生电话（选填）" />
+      <input v-model="form.address" maxlength="100" placeholder="地址（选填，家庭住址）" />
       <input v-model="form.duty" maxlength="30" placeholder="班级职务（如 班长/课代表）" />
       <picker mode="date" :value="form.birthDate" @change="(e) => (form.birthDate = e.detail.value)">
         <view class="picker">🎂 生日：{{ form.birthDate || '请选择日期（可选）' }}</view>
@@ -183,7 +185,7 @@ const classOptions = computed(() => classList.value.map(c => c.name))
 const saving = ref(false)
 const phoneError = ref('')
 
-const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' })
+const form = ref({ name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', studentPhone: '', address: '', duty: '', birthDate: '', tags: '', note: '' })
 
 onLoad(() => {
   // 从 switchTabParams 读取班级参数（由 classes.vue 通过 switchTab 跳转时设置）
@@ -493,6 +495,8 @@ async function save() {
       studentNo: form.value.studentNo.trim(),
       parentName: form.value.parentName.trim(),
       parentPhone: form.value.parentPhone.trim(),
+      studentPhone: form.value.studentPhone.trim() || null,
+      address: form.value.address.trim() || null,
       duty: form.value.duty.trim() || null,
       birthDate: form.value.birthDate || null,
       note: form.value.note.trim() || null,
@@ -502,7 +506,7 @@ async function save() {
     await api.post('/students', payload)
     uni.showToast({ title: '已保存', icon: 'success' })
     showForm.value = false
-    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', duty: '', birthDate: '', tags: '', note: '' }
+    form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', studentPhone: '', address: '', duty: '', birthDate: '', tags: '', note: '' }
     load()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none', duration: 3000 })

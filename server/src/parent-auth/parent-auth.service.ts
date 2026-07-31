@@ -137,6 +137,17 @@ export class ParentAuthService {
       studentId: activeKid.id, studentName: activeKid.name, studentNo: activeKid.studentNo,
       classId: activeKid.classId, className,
       parentId: parent.id,
+      // 学生详细信息（供家长查看与提交修改申请时回填）
+      studentInfo: {
+        name: activeKid.name,
+        gender: activeKid.gender,
+        birthDate: activeKid.birthDate,
+        parentName: activeKid.parentName,
+        parentPhone: activeKid.parentPhone,
+        studentPhone: activeKid.studentPhone,
+        address: activeKid.address,
+        note: activeKid.note,
+      },
       kids: kids.map(k => ({
         studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId,
       })),

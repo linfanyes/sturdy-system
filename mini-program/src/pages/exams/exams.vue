@@ -13,7 +13,7 @@
 
     <view class="list">
       <view v-for="e in filtered" :key="e.id" class="item">
-        <view class="info">
+        <view class="info" @click="goDetail(e)">
           <view class="name">{{ e.name }}</view>
           <view class="meta">{{ e.date }} · {{ e.term || '未设学期' }}<text v-if="e.teacherName" class="creator"> · 创建者：{{ e.teacherName }}</text></view>
           <view class="subjects">
@@ -21,6 +21,7 @@
           </view>
         </view>
         <view class="ops">
+          <text class="op det" @click.stop="goDetail(e)">详情</text>
           <text class="op edt" @click.stop="edit(e)">编辑</text>
           <text class="op ana" @click.stop="analyze(e)">分析</text>
           <text class="op del" @click.stop="remove(e)">删除</text>
@@ -182,6 +183,10 @@ function analyze(e) {
   uni.navigateTo({ url: '/pages/ai/ai-exam?examId=' + encodeURIComponent(e.id) })
 }
 
+function goDetail(e) {
+  uni.navigateTo({ url: '/pages/exam-detail/exam-detail?examId=' + encodeURIComponent(e.id) + '&classId=' + encodeURIComponent(e.classId || '') })
+}
+
 async function save() {
   if (loading.value) return
   if (!isNonEmpty(form.value.name)) return uni.showToast({ title: '请完善考试信息', icon: 'none' })
@@ -237,11 +242,13 @@ function remove(e) {
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .item { background: var(--c-card); border-radius: 20rpx; padding: 26rpx 30rpx; margin-bottom: 16rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .info { flex: 1; }
+.info:active { opacity: 0.7; }
 .name { font-size: 32rpx; font-weight: 600; color: var(--c-title); }
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .creator { color: #3a8ee6; }
 .ops { display: flex; gap: 20rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
+.det { color: #67c23a; background: rgba(103, 194, 58, 0.12); }
 .edt { color: #3a8ee6; background: rgba(58, 142, 230, 0.12); }
 .ana { color: var(--c-accent); background: rgba(230, 162, 60, 0.14); }
 .del { color: #e64340; background: rgba(230, 67, 64, 0.12); }

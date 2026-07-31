@@ -15,6 +15,8 @@ export class Student extends BaseEntity {
   @Column({ type: 'int', nullable: true }) seatCol: number
   @Column({ default: '' }) parentName: string
   @Column({ default: '' }) parentPhone: string
+  @Column({ default: '' }) studentPhone: string
+  @Column({ default: '' }) address: string
   @Column({ nullable: true })
   parentId: string
   @Column({ default: '' }) parentNickName: string
@@ -24,4 +26,6 @@ export class Student extends BaseEntity {
   @Column('simple-json', { nullable: true }) tags: string[]
   @Column({ nullable: true }) duty: string
   @Column({ type: 'text', nullable: true }) comment: string
+  /** 每次考试的评语：{ [examId]: { comment, examName, date, generatedAt } } */
+  @Column('simple-json', { nullable: true }) examComments: Record<string, { comment: string; examName?: string; date?: string; generatedAt?: string }>
 }

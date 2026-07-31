@@ -10,6 +10,8 @@ export interface MyClass {
   headTeacher: string
   term: string
   subjects?: string[]
+  /** 科目 → 任课教师姓名 */
+  subjectTeachers?: Record<string, string>
   color?: string
   createdAt: string
 }

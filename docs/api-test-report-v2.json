@@ -1,0 +1,883 @@
+{
+  "startTime": "2026-07-31T05:23:27.275Z",
+  "results": [
+    {
+      "id": "AUTH-001",
+      "category": "AUTH",
+      "name": "超级管理员登录",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "AUTH-002",
+      "category": "AUTH",
+      "name": "学校管理员登录",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "AUTH-003",
+      "category": "AUTH",
+      "name": "教师统一登录",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "AUTH-004",
+      "category": "AUTH",
+      "name": "/auth/me 教师信息",
+      "status": "PASS",
+      "detail": "role=teacher"
+    },
+    {
+      "id": "AUTH-005",
+      "category": "AUTH",
+      "name": "/auth/me 包含有效功能包",
+      "status": "PASS",
+      "detail": "features=36"
+    },
+    {
+      "id": "AUTH-006",
+      "category": "AUTH",
+      "name": "/auth/me 教师包含科目",
+      "status": "PASS",
+      "detail": "subject=语文"
+    },
+    {
+      "id": "AUTH-007",
+      "category": "AUTH",
+      "name": "/auth/me 学校管理员 schoolId",
+      "status": "FAIL",
+      "detail": "schoolId=NULL"
+    },
+    {
+      "id": "AUTH-008",
+      "category": "AUTH",
+      "name": "无 token 访问被拒绝",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "AUTH-009",
+      "category": "AUTH",
+      "name": "无效 token 被拒绝",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "AUTH-010",
+      "category": "AUTH",
+      "name": "超级管理员错误密码",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "SYS-001",
+      "category": "SYS",
+      "name": "健康检查",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SCHL-001",
+      "category": "SCHL",
+      "name": "列出学校",
+      "status": "PASS",
+      "detail": "count=7"
+    },
+    {
+      "id": "SCHL-002",
+      "category": "SCHL",
+      "name": "创建学校",
+      "status": "PASS",
+      "detail": "id=d2d2da51-5be1-4ecc-ac81-b775e5aeb095"
+    },
+    {
+      "id": "SCHL-003",
+      "category": "SCHL",
+      "name": "获取学校详情",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SCHL-004",
+      "category": "SCHL",
+      "name": "更新学校",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SCHL-005",
+      "category": "SCHL",
+      "name": "删除学校",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SA-001",
+      "category": "SA",
+      "name": "列出学校管理员",
+      "status": "PASS",
+      "detail": "count=7"
+    },
+    {
+      "id": "SA-002",
+      "category": "SA",
+      "name": "创建学校管理员",
+      "status": "PASS",
+      "detail": "id=bef80bfe-4715-4b28-ba85-c3a2b38085b5"
+    },
+    {
+      "id": "SA-003",
+      "category": "SA",
+      "name": "更新学校管理员",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SA-004",
+      "category": "SA",
+      "name": "重置管理员密码",
+      "status": "FAIL",
+      "detail": "status=404"
+    },
+    {
+      "id": "SA-005",
+      "category": "SA",
+      "name": "启用/禁用管理员",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SA-006",
+      "category": "SA",
+      "name": "删除学校管理员",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCH-001",
+      "category": "TCH",
+      "name": "列出教师",
+      "status": "PASS",
+      "detail": "count=11"
+    },
+    {
+      "id": "TCH-002",
+      "category": "TCH",
+      "name": "创建教师",
+      "status": "PASS",
+      "detail": "id=5066eb40-f412-4e84-a586-5b7dcbac3dca"
+    },
+    {
+      "id": "TCH-003",
+      "category": "TCH",
+      "name": "更新教师",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCH-004",
+      "category": "TCH",
+      "name": "更新教师权限",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCH-005",
+      "category": "TCH",
+      "name": "重置教师密码",
+      "status": "FAIL",
+      "detail": "status=201"
+    },
+    {
+      "id": "TCH-006",
+      "category": "TCH",
+      "name": "删除教师",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCH-007",
+      "category": "TCH",
+      "name": "批量创建教师",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "TCH-008",
+      "category": "TCH",
+      "name": "教师导入预览",
+      "status": "FAIL",
+      "detail": "status=201"
+    },
+    {
+      "id": "TCH-009",
+      "category": "TCH",
+      "name": "导出教师 CSV",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCH-010",
+      "category": "TCH",
+      "name": "教师列表数量(≥10)",
+      "status": "PASS",
+      "detail": "count=13"
+    },
+    {
+      "id": "CLS-001",
+      "category": "CLS",
+      "name": "列出班级",
+      "status": "PASS",
+      "detail": "count=5"
+    },
+    {
+      "id": "CLS-002",
+      "category": "CLS",
+      "name": "创建班级",
+      "status": "PASS",
+      "detail": "id=d0baa440-ddf8-46d2-9606-003b8dd48c52"
+    },
+    {
+      "id": "CLS-003",
+      "category": "CLS",
+      "name": "更新班级",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "CLS-004",
+      "category": "CLS",
+      "name": "删除班级",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "CLS-005",
+      "category": "CLS",
+      "name": "班级升级",
+      "status": "FAIL",
+      "detail": "status=201"
+    },
+    {
+      "id": "CLS-006",
+      "category": "CLS",
+      "name": "批量创建班级",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "STD-001",
+      "category": "STD",
+      "name": "列出学生",
+      "status": "PASS",
+      "detail": "count=40"
+    },
+    {
+      "id": "STD-002",
+      "category": "STD",
+      "name": "批量创建学生",
+      "status": "PASS",
+      "detail": "status=201"
+    },
+    {
+      "id": "STD-003",
+      "category": "STD",
+      "name": "更新学生",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "STD-004",
+      "category": "STD",
+      "name": "删除学生",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "STD-005",
+      "category": "STD",
+      "name": "导入学生预览",
+      "status": "FAIL",
+      "detail": "status=201"
+    },
+    {
+      "id": "STD-006",
+      "category": "STD",
+      "name": "导出学生 CSV",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "NTC-001",
+      "category": "NTC",
+      "name": "列出公告",
+      "status": "PASS",
+      "detail": "count=4"
+    },
+    {
+      "id": "NTC-002",
+      "category": "NTC",
+      "name": "创建公告",
+      "status": "PASS",
+      "detail": "id=9cae4a57-7050-4552-a727-0b343ef79e33"
+    },
+    {
+      "id": "NTC-003",
+      "category": "NTC",
+      "name": "更新公告",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "NTC-004",
+      "category": "NTC",
+      "name": "删除公告",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "TCHR-001",
+      "category": "TCHR",
+      "name": "教师列出自己的班级",
+      "status": "FAIL",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCHR-002",
+      "category": "TCHR",
+      "name": "教师列出班级学生",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "TCHR-003",
+      "category": "TCHR",
+      "name": "教师列出考试",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCHR-004",
+      "category": "TCHR",
+      "name": "教师创建考试",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "TCHR-005",
+      "category": "TCHR",
+      "name": "教师更新考试",
+      "status": "FAIL",
+      "detail": "no id"
+    },
+    {
+      "id": "TCHR-006",
+      "category": "TCHR",
+      "name": "教师删除考试",
+      "status": "FAIL",
+      "detail": "no id"
+    },
+    {
+      "id": "TCHR-007",
+      "category": "TCHR",
+      "name": "教师列出成绩",
+      "status": "PASS",
+      "detail": "count=3"
+    },
+    {
+      "id": "TCHR-008",
+      "category": "TCHR",
+      "name": "教师创建成绩",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "ANLY-001",
+      "category": "ANLY",
+      "name": "AI 考试分析",
+      "status": "FAIL",
+      "detail": "no exams"
+    },
+    {
+      "id": "ANLY-002",
+      "category": "ANLY",
+      "name": "AI 学情诊断",
+      "status": "FAIL",
+      "detail": "status=400"
+    },
+    {
+      "id": "HW-001",
+      "category": "HW",
+      "name": "列出作业",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "HW-002",
+      "category": "HW",
+      "name": "创建作业",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "HW-003",
+      "category": "HW",
+      "name": "删除作业",
+      "status": "FAIL",
+      "detail": "no id"
+    },
+    {
+      "id": "TCR-001",
+      "category": "TCR",
+      "name": "列出考勤",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-002",
+      "category": "TCR",
+      "name": "列出奖励",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-003",
+      "category": "TCR",
+      "name": "列出加减分",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-004",
+      "category": "TCR",
+      "name": "列出小组评分",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-005",
+      "category": "TCR",
+      "name": "列出成长记录",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-006",
+      "category": "TCR",
+      "name": "列出行为记录",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-007",
+      "category": "TCR",
+      "name": "列出轮值表",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-008",
+      "category": "TCR",
+      "name": "列出工作日志",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-009",
+      "category": "TCR",
+      "name": "列出笔记",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-010",
+      "category": "TCR",
+      "name": "列出待办",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-011",
+      "category": "TCR",
+      "name": "列出教学日历",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-012",
+      "category": "TCR",
+      "name": "列出资源",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-013",
+      "category": "TCR",
+      "name": "列出阅读记录",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-014",
+      "category": "TCR",
+      "name": "列出座位表",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-015",
+      "category": "TCR",
+      "name": "列出学期",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-016",
+      "category": "TCR",
+      "name": "列出听课记录",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-017",
+      "category": "TCR",
+      "name": "列出班级相册",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-018",
+      "category": "TCR",
+      "name": "列出个人相册",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-019",
+      "category": "TCR",
+      "name": "列出打卡记录",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-020",
+      "category": "TCR",
+      "name": "列出家长联系",
+      "status": "PASS",
+      "detail": "count=8"
+    },
+    {
+      "id": "TCR-021",
+      "category": "TCR",
+      "name": "列出通知模板",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-022",
+      "category": "TCR",
+      "name": "列出班级活动",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-023",
+      "category": "TCR",
+      "name": "列出班费",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-024",
+      "category": "TCR",
+      "name": "列出值日配置",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-025",
+      "category": "TCR",
+      "name": "列出生成的试卷",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-026",
+      "category": "TCR",
+      "name": "列出生成的教案",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "TCR-027",
+      "category": "TCR",
+      "name": "列出抽签历史",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "CR-001",
+      "category": "CR",
+      "name": "创建考勤",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-002",
+      "category": "CR",
+      "name": "创建奖励",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-003",
+      "category": "CR",
+      "name": "创建成长记录",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-004",
+      "category": "CR",
+      "name": "创建轮值",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-005",
+      "category": "CR",
+      "name": "创建工作日志",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-006",
+      "category": "CR",
+      "name": "创建笔记",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-007",
+      "category": "CR",
+      "name": "创建待办",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "CR-008",
+      "category": "CR",
+      "name": "创建日历事件",
+      "status": "FAIL",
+      "detail": "no classes"
+    },
+    {
+      "id": "AI-001",
+      "category": "AI",
+      "name": "AI 同步对话",
+      "status": "FAIL",
+      "detail": "status=400"
+    },
+    {
+      "id": "AI-002",
+      "category": "AI",
+      "name": "AI 结构化解析",
+      "status": "FAIL",
+      "detail": "status=400"
+    },
+    {
+      "id": "SEC-001",
+      "category": "SEC",
+      "name": "文本安全审核",
+      "status": "FAIL",
+      "detail": "status=404"
+    },
+    {
+      "id": "SEC-002",
+      "category": "SEC",
+      "name": "图片安全审核",
+      "status": "FAIL",
+      "detail": "status=404"
+    },
+    {
+      "id": "PERM-001",
+      "category": "PERM",
+      "name": "教师无法访问超管接口",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "PERM-002",
+      "category": "PERM",
+      "name": "学校管理员无法访问超管接口",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "PERM-003",
+      "category": "PERM",
+      "name": "教师无法访问学校管理员接口",
+      "status": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "id": "PERM-004",
+      "category": "PERM",
+      "name": "跨校数据隔离",
+      "status": "PASS",
+      "detail": "sa1=13, sa2=10"
+    },
+    {
+      "id": "PERM-005",
+      "category": "PERM",
+      "name": "班主任和科任共享班级",
+      "status": "FAIL",
+      "detail": "head=0, subject=0"
+    },
+    {
+      "id": "SAMD-001",
+      "category": "SAMD",
+      "name": "获取平台配置",
+      "status": "FAIL",
+      "detail": "status=404"
+    },
+    {
+      "id": "SAMD-002",
+      "category": "SAMD",
+      "name": "AI 服务商列表",
+      "status": "PASS",
+      "detail": "count=3"
+    },
+    {
+      "id": "SAMD-003",
+      "category": "SAMD",
+      "name": "列出备份",
+      "status": "PASS",
+      "detail": "count=0"
+    },
+    {
+      "id": "SAMD-004",
+      "category": "SAMD",
+      "name": "审计日志查询",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SAMD-005",
+      "category": "SAMD",
+      "name": "学校管理员搜索",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SAMD-006",
+      "category": "SAMD",
+      "name": "学校仪表盘",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "id": "SAMD-007",
+      "category": "SAMD",
+      "name": "学校功能包获取",
+      "status": "PASS",
+      "detail": "status=200"
+    }
+  ],
+  "summary": {
+    "total": 112,
+    "passed": 82,
+    "failed": 30,
+    "errors": 0
+  },
+  "categories": {
+    "AUTH": {
+      "total": 10,
+      "passed": 9,
+      "failed": 1
+    },
+    "SYS": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "SCHL": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "SA": {
+      "total": 6,
+      "passed": 5,
+      "failed": 1
+    },
+    "TCH": {
+      "total": 10,
+      "passed": 8,
+      "failed": 2
+    },
+    "CLS": {
+      "total": 6,
+      "passed": 5,
+      "failed": 1
+    },
+    "STD": {
+      "total": 6,
+      "passed": 5,
+      "failed": 1
+    },
+    "NTC": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "TCHR": {
+      "total": 8,
+      "passed": 2,
+      "failed": 6
+    },
+    "ANLY": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2
+    },
+    "HW": {
+      "total": 3,
+      "passed": 1,
+      "failed": 2
+    },
+    "TCR": {
+      "total": 27,
+      "passed": 27,
+      "failed": 0
+    },
+    "CR": {
+      "total": 8,
+      "passed": 0,
+      "failed": 8
+    },
+    "AI": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2
+    },
+    "SEC": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2
+    },
+    "PERM": {
+      "total": 5,
+      "passed": 4,
+      "failed": 1
+    },
+    "SAMD": {
+      "total": 7,
+      "passed": 6,
+      "failed": 1
+    }
+  },
+  "endTime": "2026-07-31T05:23:31.535Z"
+}

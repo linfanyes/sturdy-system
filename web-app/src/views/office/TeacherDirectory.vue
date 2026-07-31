@@ -6,7 +6,9 @@
 import CrudTable, { type FieldDef } from '@/components/CrudTable.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const { classes } = useClasses()
 onMounted(() => loadClasses())
 
@@ -19,6 +21,16 @@ const classOptions = computed(() =>
 const subjectOptions = computed(() =>
   DEFAULT_SUBJECTS.map(s => ({ value: s, label: s })),
 )
+
+/** 跳转到教师详情页：优先用 teacherId 作为 userId，回退用 id */
+function goDetail(t: any) {
+  router.push({ path: '/teacher/teacher-detail', query: { userId: t.teacherId, id: t.id } })
+}
+
+/** 行内操作：详情入口 */
+const extraActions = (row: any) => [
+  { label: '详情', onClick: (r: any) => goDetail(r) },
+]
 
 const fields: FieldDef[] = [
   { key: 'name', label: '姓名', required: true, width: 'w-24' },
@@ -45,5 +57,5 @@ const fields: FieldDef[] = [
 </script>
 
 <template>
-  <CrudTable api-path="teachers" title="教师通讯录" :fields="fields" :class-filterable="false" />
+  <CrudTable api-path="teachers" title="教师通讯录" :fields="fields" :class-filterable="false" :extra-actions="extraActions" />
 </template>

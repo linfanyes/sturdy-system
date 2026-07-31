@@ -331,6 +331,27 @@
 
     <!-- ===== Tab 4：健康度总览 ===== -->
     <scroll-view scroll-y class="tab-body" v-if="tab === 'overview'">
+      <!-- 学生信息（查看 / 申请修改） -->
+      <view class="sec">
+        <view class="st">📝 学生信息</view>
+        <view v-if="studentInfo" class="info-card">
+          <view class="info-row"><text class="info-label">家长姓名</text><text class="info-val">{{ studentInfo.parentName || '--' }}</text></view>
+          <view class="info-row"><text class="info-label">家长电话</text><text class="info-val">{{ studentInfo.parentPhone || '--' }}</text></view>
+          <view class="info-row"><text class="info-label">学生电话</text><text class="info-val">{{ studentInfo.studentPhone || '--' }}</text></view>
+          <view class="info-row"><text class="info-label">出生日期</text><text class="info-val">{{ studentInfo.birthDate || '--' }}</text></view>
+          <view class="info-row"><text class="info-label">地址</text><text class="info-val">{{ studentInfo.address || '--' }}</text></view>
+          <view class="info-row" v-if="studentInfo.note"><text class="info-label">备注</text><text class="info-val">{{ studentInfo.note }}</text></view>
+          <view class="info-actions">
+            <view class="info-btn primary" @click="openEditStudentInfo">修改信息</view>
+            <view class="info-btn" @click="openStudentRequests">查看申请记录</view>
+          </view>
+        </view>
+        <view v-else class="empty-card">
+          <text class="empty-icon">📄</text>
+          <text class="empty-text">暂无学生信息</text>
+        </view>
+      </view>
+
       <view class="sec">
         <view class="st">💡 孩子在校健康度总览</view>
         <view class="health-grid">
@@ -372,6 +393,66 @@
         <text class="pwd-label">新密码（至少 8 位）</text>
         <input class="pwd-input" :password="true" placeholder="请输入新密码" v-model="newPwd" />
         <button class="pwd-btn" :disabled="pwdLoading" @click="submitChangePwd">{{ pwdLoading ? '提交中…' : '确认修改' }}</button>
+      </view>
+    </view>
+
+    <!-- 修改学生信息弹窗 -->
+    <view v-if="showStudentInfoModal" class="pwd-mask" @click="showStudentInfoModal = false">
+      <view class="pwd-box" @click.stop>
+        <view class="pwd-head">
+          <text class="pwd-title">修改学生信息</text>
+          <text class="pwd-close" @click="showStudentInfoModal = false">✕</text>
+        </view>
+        <text class="pwd-tip">提交后需老师审核通过才会更新</text>
+        <view v-if="editOk" class="pwd-ok">✅ 已提交，等待老师审核</view>
+        <view v-if="editError" class="pwd-err">{{ editError }}</view>
+        <text class="pwd-label">家长姓名</text>
+        <input class="pwd-input" placeholder="请输入家长姓名" v-model="editForm.parentName" />
+        <text class="pwd-label">家长电话</text>
+        <input class="pwd-input" placeholder="请输入家长电话" v-model="editForm.parentPhone" />
+        <text class="pwd-label">学生电话</text>
+        <input class="pwd-input" placeholder="请输入学生电话" v-model="editForm.studentPhone" />
+        <text class="pwd-label">出生日期</text>
+        <picker mode="date" :value="editForm.birthDate" @change="onBirthDateChange">
+          <view class="pwd-input">{{ editForm.birthDate || '请选择出生日期' }}</view>
+        </picker>
+        <text class="pwd-label">地址</text>
+        <input class="pwd-input" placeholder="请输入家庭住址" v-model="editForm.address" />
+        <text class="pwd-label">备注</text>
+        <textarea class="pwd-textarea" placeholder="如有其他说明请填写" v-model="editForm.note" />
+        <button class="pwd-btn" :disabled="editSubmitting" @click="submitStudentInfo">{{ editSubmitting ? '提交中…' : '提交申请' }}</button>
+      </view>
+    </view>
+
+    <!-- 申请记录弹窗 -->
+    <view v-if="showStudentRequestsModal" class="pwd-mask" @click="showStudentRequestsModal = false">
+      <view class="pwd-box req-box" @click.stop>
+        <view class="pwd-head">
+          <text class="pwd-title">申请记录</text>
+          <text class="pwd-close" @click="showStudentRequestsModal = false">✕</text>
+        </view>
+        <view v-if="studentRequestsLoading" class="req-empty">加载中…</view>
+        <view v-else-if="!studentRequests.length" class="req-empty">暂无申请记录</view>
+        <scroll-view scroll-y v-else class="req-list">
+          <view v-for="r in studentRequests" :key="r.id" class="req-item">
+            <view class="req-head">
+              <text class="req-name">{{ r.studentName || '学生' }}</text>
+              <text class="req-status" :class="'rs-' + r.status">{{ reqStatusLabel(r.status) }}</text>
+            </view>
+            <text class="req-date">提交于 {{ r.createdAt }}</text>
+            <view v-if="r.payload" class="req-payload">
+              <text v-if="r.payload.parentName" class="req-line">家长姓名：{{ r.payload.parentName }}</text>
+              <text v-if="r.payload.parentPhone" class="req-line">家长电话：{{ r.payload.parentPhone }}</text>
+              <text v-if="r.payload.studentPhone" class="req-line">学生电话：{{ r.payload.studentPhone }}</text>
+              <text v-if="r.payload.birthDate" class="req-line">出生日期：{{ r.payload.birthDate }}</text>
+              <text v-if="r.payload.address" class="req-line">地址：{{ r.payload.address }}</text>
+              <text v-if="r.payload.note" class="req-line">备注：{{ r.payload.note }}</text>
+            </view>
+            <text v-if="r.reviewNote" class="req-review">审核备注：{{ r.reviewNote }}</text>
+            <text v-if="r.reviewedAt" class="req-reviewed">审核于 {{ r.reviewedAt }}</text>
+          </view>
+        </scroll-view>
+        <button class="pwd-btn" @click="showStudentRequestsModal = false">关闭</button>
       </view>
     </view>
   </view>
@@ -597,6 +678,66 @@ async function submitChangePwd() {
 }
 
 function onExamChange(e) { selectedExamIndex.value = e.detail.value }
+
+// 学生信息查看 / 申请修改
+const studentInfo = computed(() => me.value && me.value.studentInfo)
+const showStudentInfoModal = ref(false)
+const showStudentRequestsModal = ref(false)
+const studentRequests = ref([])
+const studentRequestsLoading = ref(false)
+const editForm = ref({ parentPhone: '', studentPhone: '', address: '', birthDate: '', parentName: '', note: '' })
+const editSubmitting = ref(false)
+const editError = ref('')
+const editOk = ref(false)
+
+function openEditStudentInfo() {
+  const si = (me.value && me.value.studentInfo) || {}
+  editForm.value = {
+    parentPhone: si.parentPhone || '',
+    studentPhone: si.studentPhone || '',
+    address: si.address || '',
+    birthDate: si.birthDate || '',
+    parentName: si.parentName || (me.value && me.value.parentName) || '',
+    note: si.note || '',
+  }
+  editError.value = ''
+  editOk.value = false
+  showStudentInfoModal.value = true
+}
+
+function onBirthDateChange(e) { editForm.value.birthDate = e.detail.value }
+
+async function submitStudentInfo() {
+  editError.value = ''
+  editOk.value = false
+  editSubmitting.value = true
+  try {
+    await parentApi.post('/parent-auth/student-update-request', { payload: { ...editForm.value } })
+    editOk.value = true
+    setTimeout(() => { showStudentInfoModal.value = false; editOk.value = false }, 1200)
+  } catch (e) {
+    editError.value = (e && e.message) || '提交失败，请重试'
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
+function reqStatusLabel(s) {
+  return s === 'approved' ? '已通过' : s === 'rejected' ? '已拒绝' : '待审核'
+}
+
+async function openStudentRequests() {
+  showStudentRequestsModal.value = true
+  studentRequestsLoading.value = true
+  try {
+    const list = await parentApi.get('/parent-auth/student-update-requests')
+    studentRequests.value = Array.isArray(list) ? list : []
+  } catch (e) {
+    studentRequests.value = []
+  } finally {
+    studentRequestsLoading.value = false
+  }
+}
 
 function bindPhone() {
   uni.showLoading({ title: '绑定微信…', mask: true })
@@ -927,4 +1068,32 @@ onShow(() => {
   flex-shrink: 0;
 }
 .switch-role { text-align:center; padding:20rpx 0; font-size:26rpx; color:#07c160; border-top:1rpx solid #f0f0f0; margin-top:20rpx; }
+
+/* 学生信息卡 */
+.info-card { background: var(--c-card); border-radius: 14rpx; padding: 20rpx; }
+.info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
+.info-row:last-of-type { border-bottom: none; }
+.info-label { font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
+.info-val { font-size: 24rpx; color: var(--c-title); font-weight: 600; text-align: right; flex: 1; margin-left: 16rpx; }
+.info-actions { display: flex; gap: 14rpx; margin-top: 20rpx; }
+.info-btn { flex: 1; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 12rpx; background: var(--c-input); color: var(--c-title); font-weight: 600; }
+.info-btn.primary { background: #07c160; color: #fff; }
+.pwd-tip { font-size: 22rpx; color: #9aa0a6; margin-bottom: 16rpx; display: block; }
+.pwd-textarea { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; width: 100%; box-sizing: border-box; height: 120rpx; }
+/* 申请记录弹窗 */
+.req-box { max-height: 80vh; display: flex; flex-direction: column; }
+.req-list { max-height: 600rpx; margin-bottom: 16rpx; }
+.req-item { background: var(--c-input); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; }
+.req-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; }
+.req-name { font-size: 26rpx; font-weight: 700; color: var(--c-title); }
+.req-status { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
+.rs-pending { background: #fef3e0; color: #E6A23C; }
+.rs-approved { background: #e8f5e9; color: #07c160; }
+.rs-rejected { background: #fde8e8; color: #e06c75; }
+.req-date { font-size: 20rpx; color: var(--c-sub); display: block; margin-bottom: 8rpx; }
+.req-payload { background: var(--c-card); border-radius: 10rpx; padding: 12rpx; margin-bottom: 8rpx; }
+.req-line { font-size: 22rpx; color: var(--c-title); display: block; line-height: 1.6; }
+.req-review { font-size: 22rpx; color: #e06c75; background: #fde8e8; border-radius: 8rpx; padding: 8rpx 12rpx; display: block; margin-top: 6rpx; }
+.req-reviewed { font-size: 20rpx; color: #9aa0a6; display: block; margin-top: 6rpx; }
+.req-empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; }
 </style>

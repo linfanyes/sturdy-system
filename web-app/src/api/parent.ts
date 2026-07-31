@@ -92,6 +92,31 @@ export interface ParentMe {
     className: string
     nickName: string
   }>
+  /** 学生档案信息（家长可查看/申请修改） */
+  studentInfo?: ParentStudentInfo
+}
+
+/** 学生档案信息 */
+export interface ParentStudentInfo {
+  name?: string
+  gender?: string
+  birthDate?: string
+  parentName?: string
+  parentPhone?: string
+  studentPhone?: string
+  address?: string
+  note?: string
+}
+
+/** 学生信息修改申请 */
+export interface StudentUpdateRequest {
+  id: string
+  studentName: string
+  payload: Record<string, any>
+  status: 'pending' | 'approved' | 'rejected'
+  reviewNote?: string | null
+  reviewedAt?: string | null
+  createdAt: string
 }
 
 /** 切换孩子 */
@@ -154,4 +179,14 @@ export interface ParentCommunications {
 
 export function getParentCommunications() {
   return request.get<any, ParentCommunications>('/parent-auth/communications')
+}
+
+/** 家长端：提交学生信息修改申请（需老师审核） */
+export function submitStudentUpdateRequest(payload: Record<string, any>) {
+  return request.post<any, { ok: boolean }>('/parent-auth/student-update-request', { payload })
+}
+
+/** 家长端：查看自己提交的学生信息修改申请列表及审核状态 */
+export function listStudentUpdateRequests() {
+  return request.get<any, StudentUpdateRequest[]>('/parent-auth/student-update-requests')
 }

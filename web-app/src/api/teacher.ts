@@ -29,6 +29,8 @@ export interface TeacherStudent {
   studentNo: string
   parentName?: string
   parentPhone?: string
+  studentPhone?: string
+  address?: string
   parentLoginEnabled?: boolean
   createdAt: string
 }
@@ -68,6 +70,8 @@ export function createStudent(data: {
   studentNo?: string
   parentName?: string
   parentPhone?: string
+  studentPhone?: string
+  address?: string
   classId: string
 }) {
   return request.post<any, TeacherStudent>('/students', data)
@@ -80,6 +84,8 @@ export function updateStudent(id: string, data: Partial<{
   studentNo: string
   parentName: string
   parentPhone: string
+  studentPhone: string
+  address: string
   classId: string
 }>) {
   return request.patch<any, TeacherStudent>('/students/' + id, data)
@@ -208,6 +214,11 @@ export function updateSeatLayout(id: string, data: any) {
 }
 export function deleteSeatLayout(id: string) {
   return request.delete<any, void>('/seat-layouts/' + id)
+}
+
+/** 启用某座位布局：把行列回写到学生 seatRow/seatCol/seatNo */
+export function activateSeatLayout(id: string) {
+  return request.post<any, any>('/seat-layouts/' + id + '/activate', {})
 }
 
 /** 抽签历史 */

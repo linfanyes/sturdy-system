@@ -13,7 +13,8 @@ import {
 } from '@/api/teacher'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
-import { Plus, Search, Edit3, Trash2, Users, Phone, KeyRound, Download } from 'lucide-vue-next'
+import BatchImportDialog from '@/components/BatchImportDialog.vue'
+import { Plus, Search, Edit3, Trash2, Users, Phone, KeyRound, Download, Upload, FileDown } from 'lucide-vue-next'
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -65,7 +66,9 @@ const editing = ref<TeacherStudent | null>(null)
 const formLoading = ref(false)
 const form = ref({
   name: '', gender: '', studentNo: '',
-  parentName: '', parentPhone: '', classId: '',
+  parentName: '', parentPhone: '',
+  studentPhone: '', address: '',
+  classId: '',
 })
 
 function openCreate() {
@@ -73,6 +76,7 @@ function openCreate() {
   form.value = {
     name: '', gender: '', studentNo: '',
     parentName: '', parentPhone: '',
+    studentPhone: '', address: '',
     classId: classFilter.value || (classes.value[0]?.id || ''),
   }
   showForm.value = true
@@ -86,6 +90,8 @@ function openEdit(s: TeacherStudent) {
     studentNo: s.studentNo || '',
     parentName: s.parentName || '',
     parentPhone: s.parentPhone || '',
+    studentPhone: s.studentPhone || '',
+    address: s.address || '',
     classId: s.classId,
   }
   showForm.value = true
@@ -110,6 +116,8 @@ async function submitForm() {
       studentNo: form.value.studentNo,
       parentName: form.value.parentName,
       parentPhone: form.value.parentPhone,
+      studentPhone: form.value.studentPhone,
+      address: form.value.address,
       classId: form.value.classId,
     }
     if (editing.value) {
@@ -127,6 +135,9 @@ async function submitForm() {
     formLoading.value = false
   }
 }
+
+/* ============ 批量导入 ============ */
+const showImport = ref(false)
 
 /* ============ 删除 ============ */
 async function handleDelete(s: TeacherStudent) {
@@ -179,6 +190,29 @@ function exportCsv() {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+/* ============ 下载导入模板 ============ */
+function downloadTemplate() {
+  // 模板列序与 BatchImportDialog/student 一致：姓名,性别,学号,家长姓名,家长电话
+  const header = ['姓名', '性别', '学号', '家长姓名', '家长电话']
+  const lines = [header.join(',')]
+  // 预填当前班级学生（若已选班级且有学生），便于在原数据上追加/修改后重新导入
+  const preset = classFilter.value
+    ? students.value.filter(s => s.classId === classFilter.value)
+    : []
+  for (const s of preset) {
+    lines.push([s.name, s.gender, s.studentNo, s.parentName, s.parentPhone]
+      .map(v => `"${(v || '').replace(/"/g, '""')}"`).join(','))
+  }
+  const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  const clsName = classFilter.value ? className(classFilter.value) : '全部'
+  a.download = `学生导入模板_${clsName}_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -207,6 +241,18 @@ function exportCsv() {
           @click="exportCsv"
         >
           <Download class="w-4 h-4" /> 导出
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cream-200 text-cocoa-500 text-sm font-medium hover:bg-cream-50 transition-colors"
+          @click="downloadTemplate"
+        >
+          <FileDown class="w-4 h-4" /> 下载模板
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cream-200 text-cocoa-700 text-sm font-medium hover:bg-cream-300 transition-colors"
+          @click="showImport = true"
+        >
+          <Upload class="w-4 h-4" /> 批量导入
         </button>
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
@@ -328,6 +374,16 @@ function exportCsv() {
         />
         <p v-if="phoneError" class="text-xs text-red-500 mt-1">{{ phoneError }}</p>
       </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-cocoa-500">学生电话</label>
+          <input v-model="form.studentPhone" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="选填，学生本人手机号" />
+        </div>
+        <div>
+          <label class="text-sm text-cocoa-500">地址</label>
+          <input v-model="form.address" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="选填，家庭住址" />
+        </div>
+      </div>
     </div>
     <template #footer>
       <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
@@ -340,4 +396,7 @@ function exportCsv() {
       </button>
     </template>
   </Modal>
+
+  <!-- 批量导入：复用通用组件，导入完成后刷新列表 -->
+  <BatchImportDialog v-model="showImport" type="student" :classes="classes" @imported="loadStudents" />
 </template>
