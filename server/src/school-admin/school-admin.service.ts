@@ -111,7 +111,7 @@ export class SchoolAdminService {
       id: u.id, name: u.name, username: u.username, subject: u.subject,
       phone: u.phone, gender: u.gender, school: u.school, features: u.features || [],
       enabled: u.enabled !== false, createdAt: u.createdAt,
-      teacherNo: u.teacherNo || '',
+      teacherNo: u.teacherNo || '', position: u.position || '',
     }))
     return { items, total }
   }
@@ -154,7 +154,7 @@ export class SchoolAdminService {
   }
 
   /** 创建教师账号（自动生成教师编号 teacherNo；username 默认=teacherNo，autoPinyin 时改用中文名拼音；事务保护） */
-  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; enabled?: boolean; autoPinyin?: boolean }) {
+  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; position?: string; enabled?: boolean; autoPinyin?: boolean }) {
     if (!dto.name) throw new BadRequestException('姓名必填')
     return await this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User)
@@ -184,6 +184,7 @@ export class SchoolAdminService {
         username, passwordHash: hash, name: dto.name,
         schoolId, school: school?.name || '', phone: dto.phone || '',
         gender: dto.gender || '', subject: dto.subject || '语文',
+        position: dto.position || '',
         enabled: dto.enabled !== false, teacherNo,
       })
       const saved = await userRepo.save(user)
@@ -211,7 +212,7 @@ export class SchoolAdminService {
   }
 
   /** 更新教师基本信息（用户名唯一性校验，支持密码修改） */
-  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; enabled?: boolean; password?: string }) {
+  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; position?: string; enabled?: boolean; password?: string }) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     if (dto.username && dto.username !== user.username) {
@@ -223,6 +224,7 @@ export class SchoolAdminService {
     if (dto.phone !== undefined) user.phone = dto.phone
     if (dto.gender !== undefined) user.gender = dto.gender
     if (dto.subject !== undefined) user.subject = dto.subject
+    if (dto.position !== undefined) user.position = dto.position
     if (dto.enabled !== undefined) user.enabled = dto.enabled
     // 密码修改：长度 6-20 位
     if (dto.password) {

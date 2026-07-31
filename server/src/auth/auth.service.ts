@@ -105,7 +105,7 @@ export class AuthService {
         school: teacher.school, schoolId: teacher.schoolId, phone: teacher.phone,
         features: teacher.features, enabled: teacher.enabled,
         avatar: teacher.avatar, teacherNo: teacher.teacherNo,
-        position: teacherProfile?.position || '',
+        position: teacher.position || teacherProfile?.position || '',
       }
       // 检查教师是否关联了家长身份（使用 parentId 字段）
       let parentExists = false
@@ -425,6 +425,7 @@ export class AuthService {
         resultUser.enabled = teacher.enabled
         resultUser.subject = teacher.subject
         resultUser.subjects = teacher.subjects
+        resultUser.position = teacher.position || ''
         // 微信绑定信息（脱敏 openid，仅展示是否绑定+昵称）
         resultUser.wechatBound = !!teacher.openid
         resultUser.wechatName = teacher.wechatName || ''

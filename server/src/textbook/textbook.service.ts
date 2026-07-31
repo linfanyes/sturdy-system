@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, In, Like } from 'typeorm'
 import { Textbook, TextbookUnit, TextbookKnowledgePoint } from './textbook.entity'
@@ -6,10 +6,12 @@ import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { AiService } from '../ai/ai.service'
+import { SEED_TEXTBOOKS } from './textbook.seed-data'
 
 /**
  * 教材知识库服务。
  * - 校管：CRUD 教材/单元/知识点，触发 AI 批量生成
+ * - 学科组长：编辑对应学科/年级的教材内容
  * - 教师/家长：只读查询（按 schoolId 隔离）
  * 家长 JWT 无 schoolId，需通过 studentId → 班级 → 教师 → schoolId 反查。
  */
@@ -166,7 +168,7 @@ export class TextbookService {
       arr.push(p)
       pointMap.set(p.unitId, arr)
     }
-    const unitMap = new Map<string, TextbookUnit[]>()
+    const unitMap = new Map<string, any[]>()
     for (const u of units) {
       const arr = unitMap.get(u.textbookId) || []
       arr.push({ ...u, knowledgePoints: pointMap.get(u.id) || [] })
@@ -273,6 +275,52 @@ export class TextbookService {
     return { textbookId: tb.id, name: tb.name, unitCount, pointCount }
   }
 
+  // ============ 一键初始化种子教材 ============
+
+  /**
+   * 一键初始化本校教材：写入 32 本预置教材（人教版语文/数学 + 外研版英语）及其单元与知识点。
+   * 幂等：已存在的教材（相同 publisher+subject+grade+term）跳过，不覆盖已有内容。
+   * @returns { created, skipped, totalUnits, totalPoints }
+   */
+  async seedDefaults(schoolId: string) {
+    if (!schoolId) throw new BadRequestException('缺少学校ID')
+    let created = 0
+    let skipped = 0
+    let totalUnits = 0
+    let totalPoints = 0
+    for (const seed of SEED_TEXTBOOKS) {
+      // 幂等：同校同版本同学科同年级同册次已存在则跳过
+      const existing = await this.textbookRepo.findOne({
+        where: { schoolId, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
+      })
+      if (existing) { skipped++; continue }
+      // 创建教材
+      const tb = await this.textbookRepo.save(this.textbookRepo.create({
+        schoolId, publisher: seed.publisher, subject: seed.subject,
+        grade: seed.grade, term: seed.term, name: seed.name, status: 'published',
+      }))
+      created++
+      // 创建单元与知识点
+      for (let i = 0; i < seed.units.length; i++) {
+        const su = seed.units[i]
+        const unit = await this.unitRepo.save(this.unitRepo.create({
+          textbookId: tb.id, unitOrder: i + 1, title: su.title, summary: su.summary || '',
+        }))
+        totalUnits++
+        for (let j = 0; j < su.points.length; j++) {
+          const sp = su.points[j]
+          await this.kpRepo.save(this.kpRepo.create({
+            unitId: unit.id, pointOrder: j + 1,
+            title: sp.title, type: sp.type, content: sp.content,
+            difficulty: sp.difficulty, keywords: sp.keywords,
+          }))
+          totalPoints++
+        }
+      }
+    }
+    return { created, skipped, totalUnits, totalPoints }
+  }
+
   /** 容错解析 AI 返回的 JSON（可能带 ```json 代码块包裹） */
   private safeParseJson(raw: string): any {
     if (!raw) return null
@@ -284,6 +332,109 @@ export class TextbookService {
     const end = s.lastIndexOf('}')
     if (start >= 0 && end > start) s = s.slice(start, end + 1)
     try { return JSON.parse(s) } catch { return null }
+  }
+
+  // ============ 学科组长编辑权限 ============
+
+  /**
+   * 解析教师职务，判断是否为学科组长及管辖范围。
+   * @returns { subject?, grade? } 学科组长返回管辖学科和年级（grade 可空=全年级）
+   */
+  parseLeaderPosition(position: string): { subject?: string; grade?: string } {
+    if (!position) return {}
+    const subjects = ['语文', '数学', '英语', '科学', '音乐', '美术', '体育', '信息技术']
+    const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级',
+      '初一', '初二', '初三', '高一', '高二', '高三']
+    // 先匹配 "{年级}{学科}组长"
+    for (const g of grades) {
+      for (const s of subjects) {
+        if (position === `${g}${s}组长`) return { subject: s, grade: g }
+      }
+    }
+    // 再匹配 "{学科}组长"（全年级）
+    for (const s of subjects) {
+      if (position === `${s}组长`) return { subject: s }
+    }
+    return {}
+  }
+
+  /**
+   * 判断教师是否有权编辑某本教材。
+   * 校管：全部可编辑；学科组长：仅限管辖学科+年级。
+   */
+  async canEditTextbook(user: any, textbookId: string): Promise<boolean> {
+    // 校管/超管全权
+    if (user?.role === 'school_admin' || user?.role === 'super') return true
+    if (user?.role !== 'teacher') return false
+    const { subject: leadSubject, grade: leadGrade } = this.parseLeaderPosition(user?.position || '')
+    if (!leadSubject) return false
+    // 加载教材，校验 schoolId + 学科 + 年级
+    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    if (!teacher?.schoolId) return false
+    const tb = await this.textbookRepo.findOne({ where: { id: textbookId, schoolId: teacher.schoolId } })
+    if (!tb) return false
+    if (tb.subject !== leadSubject) return false
+    if (leadGrade && tb.grade !== leadGrade) return false
+    return true
+  }
+
+  /** 学科组长编辑教材（基础信息） */
+  async teacherUpdateTextbook(user: any, textbookId: string, data: Partial<Textbook>) {
+    const ok = await this.canEditTextbook(user, textbookId)
+    if (!ok) throw new ForbiddenException('无权编辑此教材（仅限管辖学科/年级的学科组长）')
+    const tb = await this.textbookRepo.findOne({ where: { id: textbookId } })
+    if (!tb) throw new NotFoundException('教材不存在')
+    // 学科组长仅可修改名称、状态，不可改学科/年级/版本
+    if (data.name !== undefined) tb.name = data.name
+    if (data.status !== undefined) tb.status = data.status
+    return this.textbookRepo.save(tb)
+  }
+
+  /** 学科组长编辑单元 */
+  async teacherUpdateUnit(user: any, unitId: string, data: Partial<TextbookUnit>) {
+    const u = await this.unitRepo.findOne({ where: { id: unitId } })
+    if (!u) throw new NotFoundException('单元不存在')
+    const ok = await this.canEditTextbook(user, u.textbookId)
+    if (!ok) throw new ForbiddenException('无权编辑此教材的单元')
+    if (data.title !== undefined) u.title = data.title
+    if (data.unitOrder !== undefined) u.unitOrder = data.unitOrder
+    if (data.summary !== undefined) u.summary = data.summary
+    return this.unitRepo.save(u)
+  }
+
+  /** 学科组长新增单元 */
+  async teacherCreateUnit(user: any, data: Partial<TextbookUnit>) {
+    const ok = await this.canEditTextbook(user, data.textbookId || '')
+    if (!ok) throw new ForbiddenException('无权编辑此教材')
+    const u = this.unitRepo.create(data)
+    return this.unitRepo.save(u)
+  }
+
+  /** 学科组长编辑知识点 */
+  async teacherUpdatePoint(user: any, pointId: string, data: Partial<TextbookKnowledgePoint>) {
+    const kp = await this.kpRepo.findOne({ where: { id: pointId } })
+    if (!kp) throw new NotFoundException('知识点不存在')
+    const u = await this.unitRepo.findOne({ where: { id: kp.unitId } })
+    if (!u) throw new NotFoundException('单元不存在')
+    const ok = await this.canEditTextbook(user, u.textbookId)
+    if (!ok) throw new ForbiddenException('无权编辑此教材的知识点')
+    if (data.title !== undefined) kp.title = data.title
+    if (data.type !== undefined) kp.type = data.type
+    if (data.content !== undefined) kp.content = data.content
+    if (data.difficulty !== undefined) kp.difficulty = data.difficulty
+    if (data.keywords !== undefined) kp.keywords = data.keywords
+    if (data.pointOrder !== undefined) kp.pointOrder = data.pointOrder
+    return this.kpRepo.save(kp)
+  }
+
+  /** 学科组长新增知识点 */
+  async teacherCreatePoint(user: any, data: Partial<TextbookKnowledgePoint>) {
+    const u = await this.unitRepo.findOne({ where: { id: data.unitId || '' } })
+    if (!u) throw new NotFoundException('单元不存在')
+    const ok = await this.canEditTextbook(user, u.textbookId)
+    if (!ok) throw new ForbiddenException('无权编辑此教材')
+    const kp = this.kpRepo.create(data)
+    return this.kpRepo.save(kp)
   }
 
   // ============ 内部校验 ============

@@ -4,12 +4,12 @@
  * 覆盖小学人教版语文、人教版数学、外研版三起英语三科
  */
 import { ref, computed, onMounted } from 'vue'
-import { BookOpen, Plus, Edit2, Trash2, ChevronRight, ChevronDown, Sparkles, Loader2, Download, X } from 'lucide-vue-next'
+import { BookOpen, Plus, Edit2, Trash2, ChevronRight, ChevronDown, Sparkles, Loader2, Download, X, Database } from 'lucide-vue-next'
 import {
   listTextbooks, createTextbook, updateTextbook, deleteTextbook,
   createUnit, updateUnit, deleteUnit,
   createPoint, updatePoint, deletePoint,
-  aiGenerateTextbook,
+  aiGenerateTextbook, seedDefaultTextbooks,
   type Textbook, type TextbookUnit, type TextbookKnowledgePoint,
 } from '@/api/textbook'
 import { downloadText } from '@/utils/download'
@@ -85,6 +85,23 @@ const aiSubjectOptions = SUBJECT_OPTIONS.filter(s => ['语文', '数学', '英�
 function openAiModal() {
   aiForm.value = { publisher: '人教版', subject: '语文', grade: '三年级', term: '上册', name: '' }
   showAiModal.value = true
+}
+
+// ============ 一键初始化预置教材 ============
+const seeding = ref(false)
+
+async function doSeedDefaults() {
+  if (!confirm('将为本校初始化 32 本预置教材（人教版语文/数学 1-6 年级 + 外研版英语 3-6 年级，含上下册）。已存在的同版本教材将自动跳过。是否继续？')) return
+  seeding.value = true
+  try {
+    const res = await seedDefaultTextbooks()
+    alert(`初始化完成：新增 ${res.created} 本教材${res.skipped ? `，跳过 ${res.skipped} 本已存在` : ''}；共 ${res.totalUnits} 个单元、${res.totalPoints} 个知识点。`)
+    await load()
+  } catch (e: any) {
+    alert(e?.message || '初始化失败')
+  } finally {
+    seeding.value = false
+  }
 }
 
 async function doAiGenerate() {
@@ -200,6 +217,15 @@ function exportTextbook(t: Textbook) {
         <BookOpen class="w-6 h-6 text-butter-500" /> 教材知识库
       </h1>
       <div class="flex gap-2">
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-600 hover:bg-mint-200 disabled:opacity-60"
+          :disabled="seeding"
+          title="一键初始化 32 本预置教材（人教版语文/数学 + 外研版英语），已存在的会自动跳过"
+          @click="doSeedDefaults"
+        >
+          <component :is="seeding ? Loader2 : Database" class="w-4 h-4" :class="seeding ? 'animate-spin' : ''" />
+          {{ seeding ? '初始化中…' : '初始化教材' }}
+        </button>
         <button class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky2-100 text-sky2-600 hover:bg-sky2-200" @click="openAiModal">
           <Sparkles class="w-4 h-4" /> AI 批量生成
         </button>
@@ -396,5 +422,3 @@ function exportTextbook(t: Textbook) {
     </div>
   </div>
 </template>
-</content>
-</invoke>

@@ -8,6 +8,7 @@ import {
 } from '@/api/school-admin'
 import { ALL_FEATURES } from '@/constants/features'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { ALL_POSITIONS } from '@gardener/shared/constants'
 import { useAuthStore } from '@/stores/auth'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
@@ -59,18 +60,18 @@ onMounted(async () => {
 /* ============ 新增/编辑教师 ============ */
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
-const form = ref({ name: '', phone: '', gender: '', subject: '', username: '', password: '' })
+const form = ref({ name: '', phone: '', gender: '', subject: '', position: '', username: '', password: '' })
 const formLoading = ref(false)
 
 function openCreate() {
   editingId.value = null
-  form.value = { name: '', phone: '', gender: '', subject: '', username: '', password: '' }
+  form.value = { name: '', phone: '', gender: '', subject: '', position: '', username: '', password: '' }
   showForm.value = true
 }
 
 function openEdit(t: TeacherItem) {
   editingId.value = t.id
-  form.value = { name: t.name, phone: t.phone || '', gender: t.gender || '', subject: t.subject || '', username: t.username || '', password: '' }
+  form.value = { name: t.name, phone: t.phone || '', gender: t.gender || '', subject: t.subject || '', position: (t as any).position || '', username: t.username || '', password: '' }
   showForm.value = true
 }
 
@@ -90,6 +91,7 @@ async function submitForm() {
       const dto: Record<string, any> = {
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
+        position: form.value.position,
       }
       // 支持修改账号：非空才提交，后端校验库中是否已存在
       if (form.value.username && form.value.username.trim()) {
@@ -100,6 +102,7 @@ async function submitForm() {
       await createTeacher({
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
+        position: form.value.position,
         username: form.value.username?.trim() || undefined,
         password: form.value.password || undefined,
       })
@@ -376,6 +379,18 @@ function handlePrint() {
             <option v-for="s in SUBJECT_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </select>
         </div>
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">职务</label>
+        <select v-model="form.position" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+          <option value="">无</option>
+          <optgroup label="基础职务">
+            <option v-for="p in ALL_POSITIONS.slice(0, 6)" :key="p" :value="p">{{ p }}</option>
+          </optgroup>
+          <optgroup label="学科组长（可编辑教材知识库）">
+            <option v-for="p in ALL_POSITIONS.slice(6)" :key="p" :value="p">{{ p }}</option>
+          </optgroup>
+        </select>
       </div>
       <div>
         <label class="text-sm text-cocoa-500">手机号</label>

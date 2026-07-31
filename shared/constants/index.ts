@@ -96,6 +96,56 @@ export const ROLE_OPTIONS: RoleOption[] = [
 export const ROLE_VALUES: Role[] = ROLE_OPTIONS.map((r) => r.value)
 
 /**
+ * 教师职务选项
+ * - 基础职务：班主任、教研组长、年级组长、教导主任、副校长、校长
+ * - 学科组长：{年级}{学科}组长（如"一年级语文组长"），用于教材知识库编辑权限
+ * 学科组长可编辑对应学科+年级的教材内容；"{学科}组长"（无年级）可编辑该学科所有年级。
+ */
+export const BASE_POSITIONS: string[] = [
+  '班主任', '教研组长', '年级组长', '教导主任', '副校长', '校长',
+]
+
+/** 生成学科组长职务选项（小学 6 个年级 × 3 主科） */
+function buildSubjectLeaderPositions(): string[] {
+  const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
+  const subjects = ['语文', '数学', '英语']
+  const list: string[] = []
+  // 各年级各学科组长
+  for (const g of grades) {
+    for (const s of subjects) {
+      list.push(`${g}${s}组长`)
+    }
+  }
+  // 各学科总组长（不限年级）
+  for (const s of subjects) {
+    list.push(`${s}组长`)
+  }
+  return list
+}
+
+export const SUBJECT_LEADER_POSITIONS: string[] = buildSubjectLeaderPositions()
+
+/** 全部职务选项（基础 + 学科组长），供前端下拉使用 */
+export const ALL_POSITIONS: string[] = [...BASE_POSITIONS, ...SUBJECT_LEADER_POSITIONS]
+
+/**
+ * 解析职务字符串，提取学科和年级（用于教材编辑权限判断）
+ * @returns { subject?, grade? } 学科组长职务返回对应学科和年级；否则返回空
+ */
+export function parseSubjectLeader(position: string): { subject?: string; grade?: string } {
+  if (!position) return {}
+  // 匹配 "{年级}{学科}组长" 或 "{学科}组长"
+  for (const subject of ['语文', '数学', '英语', '科学', '音乐', '美术', '体育', '信息技术']) {
+    if (position === `${subject}组长`) return { subject }
+    for (const grade of GRADE_OPTIONS) {
+      if (position === `${grade}${subject}组长`) return { subject, grade }
+    }
+  }
+  return {}
+}
+
+
+/**
  * 功能包标识（FEATURE_FLAGS）—— 双端 + 后端的「单一事实来源」。
  * - 以 Web 端 ALL_FEATURES（40 个）为基础，均为 camelCase「包级 key」，不做 games.2048 项级拆分。
  * - 旧 ['games'] 等价于「games 包开启」，迁移零兼容负担。

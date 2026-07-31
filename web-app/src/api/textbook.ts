@@ -99,6 +99,11 @@ export const deletePoint = (id: string) =>
 export const aiGenerateTextbook = (data: { publisher: string; subject: string; grade: string; term: string; name?: string }) =>
   request.post<any, { textbookId: string; name: string; unitCount: number; pointCount: number }>('/school-admin/textbooks/ai-generate', data)
 
+/** 一键初始化本校预置教材（32本：人教版语文/数学1-6年级 + 外研版英语3-6年级，含上下册）
+ *  幂等：已存在的同版本同学科同年级同册次教材自动跳过 */
+export const seedDefaultTextbooks = () =>
+  request.post<any, { created: number; skipped: number; totalUnits: number; totalPoints: number }>('/school-admin/textbooks/seed-defaults')
+
 // ============ 教师/家长 只读查询 ============
 
 /** 教材树（支持按学科/年级/册次筛选） */

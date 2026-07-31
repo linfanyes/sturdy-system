@@ -98,6 +98,13 @@ export class SchoolAdminTextbookController {
   generate(@CurrentSchoolAdmin() a: any, @Body() b: any) {
     return this.svc.generateByAi(a.schoolId, b)
   }
+
+  // ---- 一键初始化预置教材（32本：人教版语文/数学 + 外研版英语） ----
+  @Post('seed-defaults')
+  @UseGuards(JwtAuthGuard)
+  seedDefaults(@CurrentSchoolAdmin() a: any) {
+    return this.svc.seedDefaults(a.schoolId)
+  }
 }
 
 /**
@@ -137,5 +144,42 @@ export class TextbookController {
       return this.svc.resolveSchoolIdByStudent(user?.studentId || '')
     }
     return this.svc.fromJwtSchoolId(user)
+  }
+
+  // ============ 学科组长编辑接口（教师身份，基于 position 权限） ============
+
+  /** 学科组长编辑教材基础信息 */
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  async editTextbook(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.teacherUpdateTextbook(user, id, b)
+  }
+
+  /** 学科组长新增单元 */
+  @Post('units')
+  @UseGuards(JwtAuthGuard)
+  async createUnit(@CurrentTeacher() user: any, @Body() b: any) {
+    return this.svc.teacherCreateUnit(user, b)
+  }
+
+  /** 学科组长编辑单元 */
+  @Patch('units/:id')
+  @UseGuards(JwtAuthGuard)
+  async editUnit(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.teacherUpdateUnit(user, id, b)
+  }
+
+  /** 学科组长新增知识点 */
+  @Post('points')
+  @UseGuards(JwtAuthGuard)
+  async createPoint(@CurrentTeacher() user: any, @Body() b: any) {
+    return this.svc.teacherCreatePoint(user, b)
+  }
+
+  /** 学科组长编辑知识点 */
+  @Patch('points/:id')
+  @UseGuards(JwtAuthGuard)
+  async editPoint(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.teacherUpdatePoint(user, id, b)
   }
 }

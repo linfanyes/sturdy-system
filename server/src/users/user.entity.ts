@@ -44,6 +44,9 @@ export class User {
   @Column({ default: '', comment: '性别（男/女）' })
   gender: string
 
+  @Column({ default: '', comment: '职务（如：班主任、一年级语文组长）' })
+  position: string
+
   @Column({ default: '' })
   email: string
 
