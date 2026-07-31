@@ -48,6 +48,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'classes', name: 'school-admin-classes', component: () => import('@/views/school-admin/Classes.vue'), meta: { title: '班级管理' } },
       { path: 'students', name: 'school-admin-students', component: () => import('@/views/school-admin/Students.vue'), meta: { title: '学生管理' } },
       { path: 'notices', name: 'school-admin-notices', component: () => import('@/views/school-admin/Notices.vue'), meta: { title: '学校公告' } },
+      { path: 'textbooks', name: 'school-admin-textbooks', component: () => import('@/views/school-admin/Textbooks.vue'), meta: { title: '教材知识库' } },
       { path: 'features', name: 'school-admin-features', component: () => import('@/views/school-admin/FeatureFlags.vue'), meta: { title: '功能包开关' } },
     ],
   },
@@ -109,6 +110,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'ai-resources', name: 'teacher-ai-resources', component: () => import('@/views/ai/Resources.vue'), meta: { title: '教学资源', feature: 'ai' } },
       { path: 'lesson-plans', name: 'teacher-lesson-plans', component: () => import('@/views/ai/LessonPlans.vue'), meta: { title: '教案库', feature: 'ai' } },
       { path: 'knowledges', name: 'teacher-knowledges', component: () => import('@/views/ai/Knowledges.vue'), meta: { title: '知识点库', feature: 'ai' } },
+      { path: 'textbook', name: 'teacher-textbook', component: () => import('@/views/ai/Textbook.vue'), meta: { title: '教材知识库', feature: 'ai' } },
       { path: 'papers', name: 'teacher-papers', component: () => import('@/views/ai/Papers.vue'), meta: { title: '试卷库', feature: 'ai' } },
       { path: 'paper-queries', name: 'teacher-paper-queries', component: () => import('@/views/ai/PaperQueries.vue'), meta: { title: '试卷查询', feature: 'ai' } },
       { path: 'lesson-plan-templates', name: 'teacher-lesson-plan-templates', component: () => import('@/views/ai/LessonPlanTemplates.vue'), meta: { title: '教案模板', feature: 'ai' } },
@@ -227,6 +229,7 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['parent'] as Role[] },
     children: [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长中心' } },
+      { path: 'textbook', name: 'parent-textbook', component: () => import('@/views/parent/Textbook.vue'), meta: { title: '教材知识点' } },
       { path: 'compare', name: 'parent-compare', component: () => import('@/views/parent/KidsCompare.vue'), meta: { title: '跨娃比对' } },
     ],
   },

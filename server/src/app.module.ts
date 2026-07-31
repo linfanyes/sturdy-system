@@ -46,6 +46,7 @@ import { AuditModule } from './audit/audit.module'
 import { NotificationModule } from './notification/notification.module'
 import { MessagesModule } from './messages/messages.module'
 import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.module'
+import { TextbookModule } from './textbook/textbook.module'
 import { FeatureModule } from './common/feature/feature.module'
 import { HealthController } from './health.controller'
 
@@ -139,6 +140,7 @@ import { HealthController } from './health.controller'
     SecurityModule,
     ImModule,
     TeachingCalendarModule,
+    TextbookModule,
     FeatureModule,
   ],
   providers: [
