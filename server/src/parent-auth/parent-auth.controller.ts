@@ -42,6 +42,13 @@ export class ParentAuthController {
     return this.s.bindWechat((b && b.code) || '', p, (b && b.nickName) || '')
   }
 
+  /** 查询当前家长的微信绑定信息（含所有孩子的绑定列表） */
+  @Get('bindings')
+  @UseGuards(JwtAuthGuard)
+  bindings(@CurrentParent() p: any) {
+    return this.s.getBindings(p)
+  }
+
   /** 当前家长信息 + 孩子 */
   @Get('me')
   @UseGuards(JwtAuthGuard)

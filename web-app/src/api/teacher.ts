@@ -106,6 +106,32 @@ export function resetStudentParentPassword(id: string) {
   return request.post<any, { studentId: string; ok: boolean; defaultPassword: string }>('/students/' + id + '/reset-parent-password')
 }
 
+/** 学生家长微信绑定信息（脱敏：仅返回 openid 尾号） */
+export interface StudentParentBinding {
+  id: string
+  openIdTail: string
+  nickName?: string
+  avatar?: string
+  relation?: string
+  isPrimary?: boolean
+  createdAt?: string
+}
+
+/** 查看某学生绑定的所有家长微信 */
+export function listStudentParentBindings(studentId: string) {
+  return request.get<any, StudentParentBinding[]>('/students/' + studentId + '/parent-bindings')
+}
+
+/** 教师解绑某学生的某条家长微信 */
+export function unbindStudentParent(studentId: string, bindingId: string) {
+  return request.post<any, { ok: boolean }>(`/students/${studentId}/parent-bindings/${bindingId}/unbind`)
+}
+
+/** 教师设置某绑定为主家长 */
+export function setPrimaryStudentParent(studentId: string, bindingId: string) {
+  return request.post<any, { ok: boolean }>(`/students/${studentId}/parent-bindings/${bindingId}/set-primary`)
+}
+
 /** 获取班级成员（协作教师）
  * 注意：后端用 POST /classes/:id/members/list 查询（避免与基类 GET :id 路由冲突），
  * POST /classes/:id/members 是"添加科任老师"，GET /classes/:id/members 无对应路由会 404。

@@ -9,9 +9,15 @@ import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { Parent } from '../parent/parent.entity'
 import { AuditModule } from '../audit/audit.module'
+import { StudentParentModule } from '../student-parent/student-parent.module'
 
 @Module({
-  imports: [UsersModule, TypeOrmModule.forFeature([SchoolAdmin, Student, School, Parent]), AuditModule],
+  imports: [
+    UsersModule,
+    TypeOrmModule.forFeature([SchoolAdmin, Student, School, Parent]),
+    AuditModule,
+    StudentParentModule,
+  ],
   providers: [AuthService, WechatService],
   controllers: [AuthController],
   exports: [AuthService, WechatService],

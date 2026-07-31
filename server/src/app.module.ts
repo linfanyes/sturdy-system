@@ -41,6 +41,7 @@ import { ImModule } from './im/im.module'
 import { ParentAuthModule } from './parent-auth/parent-auth.module'
 import { SchoolAdminModule } from './school-admin/school-admin.module'
 import { StudentInfoUpdateModule } from './student-info-update/student-info-update.module'
+import { StudentParentModule } from './student-parent/student-parent.module'
 import { AuditModule } from './audit/audit.module'
 import { NotificationModule } from './notification/notification.module'
 import { MessagesModule } from './messages/messages.module'
@@ -112,6 +113,7 @@ import { HealthController } from './health.controller'
     ParentAuthModule,
     SchoolAdminModule,
     StudentInfoUpdateModule,
+    StudentParentModule,
     AuditModule,
     NotificationModule,
     MessagesModule,

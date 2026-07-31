@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
-import { Repository, EntityManager } from 'typeorm'
+import { Repository, EntityManager, In } from 'typeorm'
 import { UsersService } from '../users/users.service'
 import { User } from '../users/user.entity'
 import { Teacher } from '../teacher/teacher.entity'
@@ -15,6 +15,7 @@ import { verifyAndUpgrade } from '../common/utils/password.util'
 import { AuditService } from '../audit/audit.service'
 import { Parent } from '../parent/parent.entity'
 import { FeatureService } from '../common/feature/feature.service'
+import { StudentParentService } from '../student-parent/student-parent.module'
 
 @Injectable()
 export class AuthService {
@@ -30,6 +31,7 @@ export class AuthService {
     @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly auditService: AuditService,
     private readonly feature: FeatureService,
+    private readonly studentParentSvc: StudentParentService,
   ) {}
 
   /** 便捷：计算某角色的有效功能包（学校级 ∩ 教师级） */
@@ -174,27 +176,39 @@ export class AuthService {
     throw new UnauthorizedException('账号不存在')
   }
 
-  /** 微信登录：并行查教师 + 家长身份，支持双角色选择和多娃 */
+  /**
+   * 微信登录：并行查教师 + 家长身份，支持双角色选择和多娃（跨班跨校）。
+   *
+   * 角色规则：
+   * - 超级管理员/校管理员：无 openid 字段，永远不会被微信登录命中，只能用账号密码登录
+   * - 教师：User.openid 匹配
+   * - 家长：通过 StudentParent 关联表查 openid 绑定的所有学生（支持一娃多微信、一微信多娃）
+   */
   async wechatLogin(code: string) {
     if (!code) throw new BadRequestException('缺少 code')
     const { openid, session_key } = await this.wechat.code2Session(code)
     if (!openid) throw new UnauthorizedException('登录失败')
 
-    // 并行查教师和家长（通过 Parent 表）
+    // 并行查教师和家长身份
     const [user, parent] = await Promise.all([
       this.users.findByOpenid(openid).catch(() => null),
       this.parentRepo.findOne({ where: { openId: openid } }),
     ])
 
-    // 确定是否存在家长身份
-    let parentExists = !!parent
-    let parentId = parent?.id || null
-
-    // 如果用户有 parentId 关联但 openid 未直接匹配 Parent，也认为存在家长身份
-    if (user && !parentExists && user.parentId) {
-      parentExists = true
-      parentId = user.parentId
+    // 通过 StudentParent 关联表查该 openid 绑定的所有学生（支持跨班跨校多娃）
+    const bindings = await this.studentParentSvc.listByOpenid(openid)
+    let kids: Student[] = []
+    if (bindings.length) {
+      const studentIds = bindings.map(b => b.studentId)
+      kids = await this.studentRepo.find({ where: { id: In(studentIds) } })
+    } else if (parent) {
+      // 回退：旧数据未迁移到 StudentParent 表的，按 Parent.id 查 Student.parentId
+      kids = await this.studentRepo.find({ where: { parentId: parent.id } })
     }
+
+    // 确定是否存在家长身份
+    const parentExists = !!parent || kids.length > 0
+    const parentId = parent?.id || (user?.parentId ?? '')
 
     // 更新 sessionKey
     if (user) {
@@ -203,12 +217,10 @@ export class AuthService {
 
     // 情况1：同时是教师和家长 → 双角色选择
     if (user && parentExists) {
-      // 获取家长信息和 kids（通过 parentId）
-      const p = parent || await this.parentRepo.findOne({ where: { id: user.parentId } })
-      const kids = await this.studentRepo.find({ where: { parentId: p.id } })
+      const p = parent || (parentId ? await this.parentRepo.findOne({ where: { id: parentId } }) : null)
       const firstKid = kids[0]
       let parentToken = ''
-      if (firstKid) {
+      if (firstKid && p) {
         const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: p.parentName })
         parentToken = this.jwt.sign({ sub: pim, type: 'parent', parentId: p.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
       }
@@ -220,8 +232,8 @@ export class AuthService {
         teacher: { role: 'teacher', token: teacherToken, user },
           parent: {
             role: 'parent',
-            parentId: p.id,
-            kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
+            parentId: p?.id || '',
+            kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })),
             token: parentToken,
             needsBind: false,
             effectiveFeatures: firstKid ? await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }) : [],
@@ -231,13 +243,25 @@ export class AuthService {
 
     // 情况2：仅家长
     if (parentExists) {
-      const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
       const firstKid = kids[0]
       if (!firstKid) throw new UnauthorizedException('未关联学生')
-      const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
-      const token = this.jwt.sign({ sub: pim, type: 'parent', parentId: parent.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
-      const pn = parent.parentName || '家长'
-      return { role: 'parent', token, parentId: parent.id, effectiveFeatures: await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }), kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), parentName: pn, needsBind: false }
+      const p = parent || (parentId ? await this.parentRepo.findOne({ where: { id: parentId } }) : null)
+      const pn = p?.parentName || '家长'
+      const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: pn })
+      const token = this.jwt.sign({
+        sub: pim, type: 'parent',
+        parentId: p?.id || '',
+        studentId: firstKid.id, studentName: firstKid.name,
+        classId: firstKid.classId, studentNo: firstKid.studentNo,
+      })
+      return {
+        role: 'parent', token,
+        parentId: p?.id || '',
+        effectiveFeatures: await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }),
+        kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })),
+        parentName: pn,
+        needsBind: false,
+      }
     }
 
     // 情况3：仅教师
@@ -246,12 +270,12 @@ export class AuthService {
       return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user, effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }), needsBind: false }
     }
 
-    // 情况4：皆无
+    // 情况4：皆无 → 需要绑定
     return { needsBind: true, openid, sessionKey: session_key }
   }
 
-  /** 微信绑教师账号：用教师用户名+密码验证后绑定 openid */
-  async bindWechatTeacher(code: string, username: string, password: string) {
+  /** 微信绑教师账号：用教师用户名+密码验证后绑定 openid（同时落库微信昵称） */
+  async bindWechatTeacher(code: string, username: string, password: string, nickName?: string) {
     if (!code || !username || !password) throw new BadRequestException('参数不全')
     const { openid } = await this.wechat.code2Session(code)
     const user = await this.users.findByUsername(username)
@@ -263,12 +287,12 @@ export class AuthService {
     // 检查是否已有其他账号绑定此 openid
     const exist = await this.users.findByOpenid(openid)
     if (exist && exist.id !== user.id) throw new BadRequestException('该微信已绑定其他账号')
-    await this.users.update(user.id, { openid })
-    return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user }
+    await this.users.update(user.id, { openid, wechatName: nickName || user.wechatName || '' })
+    return { role: 'teacher', token: this.jwt.sign({ sub: user.id, openid, role: 'teacher', schoolId: user.schoolId || '' }), user: { ...user, openid, wechatName: nickName || user.wechatName || '' } }
   }
 
-  /** 微信绑家长：用学号+可选家长密码绑定 openid（创建或复用 Parent 记录） */
-  async bindWechatParent(code: string, studentNo: string, password?: string) {
+  /** 微信绑家长：用学号+可选家长密码绑定 openid（支持一学生多微信） */
+  async bindWechatParent(code: string, studentNo: string, password?: string, nickName?: string, avatar?: string, relation?: string) {
     if (!code || !studentNo) throw new BadRequestException('参数不全')
     const { openid } = await this.wechat.code2Session(code)
     if (!openid || !studentNo) throw new BadRequestException('参数不全')
@@ -277,7 +301,7 @@ export class AuthService {
     if (!stu) throw new BadRequestException('学号不存在')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
 
-    // 密码校验（Phase 1 已有）
+    // 密码校验
     if (stu.parentPasswordHash) {
       if (!password) throw new UnauthorizedException('绑定需要家长密码')
       const { valid, newHash } = verifyAndUpgrade(password, stu.parentPasswordHash)
@@ -285,34 +309,50 @@ export class AuthService {
       if (newHash) stu.parentPasswordHash = newHash
     }
 
-    // 查找或创建 Parent 记录
+    // 查找或创建 Parent 记录（同一 openid 对应同一 Parent）
     let parent = await this.parentRepo.findOne({ where: { openId: openid } })
     if (!parent) {
       parent = this.parentRepo.create({
         openId: openid,
         parentName: stu.parentName || '家长',
-        nickName: stu.parentNickName || '',
+        nickName: nickName || stu.parentNickName || '',
       })
       parent = await this.parentRepo.save(parent)
-    } else {
-      // 更新昵称
-      if (stu.parentNickName) {
-        parent.nickName = stu.parentNickName
-        await this.parentRepo.save(parent)
-      }
+    } else if (nickName && parent.nickName !== nickName) {
+      parent.nickName = nickName
+      await this.parentRepo.save(parent)
     }
 
-    // 设置学生 parentId
-    stu.parentId = parent.id
-    await this.studentRepo.save(stu)
+    // 写入 StudentParent 关联表（幂等，支持一学生多微信）
+    const { needsUpdateStudentParentId } = await this.studentParentSvc.bind({
+      studentId: stu.id,
+      parentId: parent.id,
+      openId: openid,
+      relation: relation || '',
+      nickName: nickName || '',
+      avatar: avatar || '',
+      schoolId: stu.teacherId || '', // teacherId 实为租户键，跨校家长仍以 StudentParent.schoolId 聚合
+      classId: stu.classId,
+    })
+
+    // 首次绑定时同步 Student.parentId（兼容旧逻辑）
+    if (needsUpdateStudentParentId && !stu.parentId) {
+      stu.parentId = parent.id
+      await this.studentRepo.save(stu)
+    }
 
     // 审计日志
     const teacher = await this.users.findById(stu.teacherId).catch(() => null)
     await this.auditService.log(teacher?.schoolId || stu.teacherId, 'bind_parent', openid, stu.studentNo, '绑定家长微信').catch(() => {})
 
+    // 返回该 openid 关联的所有学生（跨班跨校多娃）
+    const allBindings = await this.studentParentSvc.listByOpenid(openid)
+    const allStudentIds = allBindings.map(b => b.studentId)
+    const kids = allStudentIds.length
+      ? await this.studentRepo.find({ where: { id: In(allStudentIds) } })
+      : []
     const pn = parent.parentName || '家长'
     const pim = parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn })
-    const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
     return {
       role: 'parent',
       token: this.jwt.sign({ sub: pim, type: 'parent', parentId: parent.id, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo }),
@@ -322,8 +362,8 @@ export class AuthService {
     }
   }
 
-  /** 微信统一绑定：输入教师编号或学生学号，自动判别身份（事务保护） */
-  async bindByNumber(code: string, number: string, nickName?: string, password?: string) {
+  /** 微信统一绑定：输入教师编号或学生学号，自动判别身份 */
+  async bindByNumber(code: string, number: string, nickName?: string, password?: string, avatar?: string, relation?: string) {
     if (!code || !number) throw new BadRequestException('参数不全')
     const { openid } = await this.wechat.code2Session(code)
     // 尝试按教师编号查找
@@ -353,18 +393,35 @@ export class AuthService {
           nickName: nickName || stu.parentNickName || '',
         })
         parent = await this.parentRepo.save(parent)
-      } else if (nickName) {
+      } else if (nickName && parent.nickName !== nickName) {
         parent.nickName = nickName
         await this.parentRepo.save(parent)
       }
-      stu.parentId = parent.id
-      await this.studentRepo.save(stu)
+      // 写入 StudentParent 关联表
+      const { needsUpdateStudentParentId } = await this.studentParentSvc.bind({
+        studentId: stu.id,
+        parentId: parent.id,
+        openId: openid,
+        relation: relation || '',
+        nickName: nickName || '',
+        avatar: avatar || '',
+        schoolId: stu.teacherId || '',
+        classId: stu.classId,
+      })
+      if (needsUpdateStudentParentId && !stu.parentId) {
+        stu.parentId = parent.id
+        await this.studentRepo.save(stu)
+      }
       // 审计日志
       const t = await this.users.findById(stu.teacherId).catch(() => null)
       await this.auditService.log(t?.schoolId || stu.teacherId, 'bind_parent', openid, stu.studentNo, '绑定家长微信').catch(() => {})
       const pn = parent.parentName || '家长'
       const pim = parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn })
-      const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
+      const allBindings = await this.studentParentSvc.listByOpenid(openid)
+      const allStudentIds = allBindings.map(b => b.studentId)
+      const kids = allStudentIds.length
+        ? await this.studentRepo.find({ where: { id: In(allStudentIds) } })
+        : []
       return { role: 'parent', token: this.jwt.sign({ sub: pim, type: 'parent', parentId: parent.id, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: number }), parentId: parent.id, kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })), needsBind: false }
     }
     throw new BadRequestException('未找到对应的教师或学生信息，请确认编号是否正确')
@@ -403,7 +460,7 @@ export class AuthService {
       studentName: user.studentName,
     }
 
-    // 教师角色：补充 subject / subjects 信息
+    // 教师角色：补充 subject / subjects / 微信绑定信息
     if (user.role === 'teacher') {
       const teacher = await this.users.findById(user.sub).catch(() => null)
       if (teacher) {
@@ -415,6 +472,10 @@ export class AuthService {
         resultUser.enabled = teacher.enabled
         resultUser.subject = teacher.subject
         resultUser.subjects = teacher.subjects
+        // 微信绑定信息（脱敏 openid，仅展示是否绑定+昵称）
+        resultUser.wechatBound = !!teacher.openid
+        resultUser.wechatName = teacher.wechatName || ''
+        resultUser.wechatOpenidTail = teacher.openid ? teacher.openid.slice(-6) : ''
       }
     }
 

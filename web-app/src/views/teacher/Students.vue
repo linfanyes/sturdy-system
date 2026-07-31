@@ -9,12 +9,13 @@ import { loadClasses, useClasses, type MyClass } from '@/composables/useClasses'
 import {
   listAllStudents, createStudent, updateStudent, deleteStudent,
   toggleStudentParentLogin, resetStudentParentPassword,
-  type TeacherStudent,
+  listStudentParentBindings, unbindStudentParent, setPrimaryStudentParent,
+  type TeacherStudent, type StudentParentBinding,
 } from '@/api/teacher'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
-import { Plus, Search, Edit3, Trash2, Users, Phone, KeyRound, Download, Upload, FileDown } from 'lucide-vue-next'
+import { Plus, Search, Edit3, Trash2, Users, Phone, KeyRound, Download, Upload, FileDown, MessageCircle, Star } from 'lucide-vue-next'
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -173,6 +174,49 @@ async function handleResetParentPwd(s: TeacherStudent) {
   }
 }
 
+/* ============ 家长微信绑定列表 ============ */
+const showBindings = ref(false)
+const bindingsLoading = ref(false)
+const bindingsStudent = ref<TeacherStudent | null>(null)
+const bindings = ref<StudentParentBinding[]>([])
+
+async function openBindings(s: TeacherStudent) {
+  bindingsStudent.value = s
+  showBindings.value = true
+  bindingsLoading.value = true
+  bindings.value = []
+  try {
+    const res = await listStudentParentBindings(s.id)
+    bindings.value = Array.isArray(res) ? res : []
+  } catch (e: any) {
+    alert(e?.message || '加载绑定列表失败')
+  } finally {
+    bindingsLoading.value = false
+  }
+}
+
+async function handleUnbind(b: StudentParentBinding) {
+  if (!bindingsStudent.value) return
+  if (!confirm(`确定解绑「${b.nickName || '微信用户'}」？解绑后该微信将无法登录查看孩子情况。`)) return
+  try {
+    await unbindStudentParent(bindingsStudent.value.id, b.id)
+    bindings.value = bindings.value.filter(x => x.id !== b.id)
+  } catch (e: any) {
+    alert(e?.message || '解绑失败')
+  }
+}
+
+async function handleSetPrimary(b: StudentParentBinding) {
+  if (!bindingsStudent.value || b.isPrimary) return
+  if (!confirm(`确定将「${b.nickName || '微信用户'}」设为主家长？`)) return
+  try {
+    await setPrimaryStudentParent(bindingsStudent.value.id, b.id)
+    bindings.value = bindings.value.map(x => ({ ...x, isPrimary: x.id === b.id }))
+  } catch (e: any) {
+    alert(e?.message || '设置失败')
+  }
+}
+
 /* ============ 导出 CSV ============ */
 function exportCsv() {
   const rows = filtered.value
@@ -308,6 +352,9 @@ function downloadTemplate() {
               </div>
             </td>
             <td class="px-4 py-3 text-right space-x-1">
+              <button class="p-1.5 rounded-lg hover:bg-mint-50 text-mint-500" title="家长微信绑定" @click="openBindings(s)">
+                <MessageCircle class="w-4 h-4" />
+              </button>
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(s)">
                 <Edit3 class="w-4 h-4" />
               </button>
@@ -399,4 +446,49 @@ function downloadTemplate() {
 
   <!-- 批量导入：复用通用组件，导入完成后刷新列表 -->
   <BatchImportDialog v-model="showImport" type="student" :classes="classes" @imported="loadStudents" />
+
+  <!-- 家长微信绑定列表 -->
+  <Modal v-model="showBindings" :title="`家长微信绑定 · ${bindingsStudent?.name || ''}`">
+    <div v-if="bindingsLoading" class="py-8 text-center text-cocoa-400">加载中…</div>
+    <div v-else-if="!bindings.length" class="py-8 text-center text-cocoa-400">
+      该学生暂无家长微信绑定。
+      <div class="mt-2 text-xs text-cocoa-500">家长可在小程序「家长端」中绑定微信，或由校管理员开通家长登录后用学号登录。</div>
+    </div>
+    <div v-else class="space-y-2">
+      <div v-for="b in bindings" :key="b.id" class="flex items-center gap-3 p-3 rounded-xl border border-cream-200 bg-cream-50">
+        <div class="w-10 h-10 rounded-full bg-mint-100 flex items-center justify-center text-mint-600 text-sm font-semibold shrink-0">
+          {{ b.nickName ? b.nickName.charAt(0) : '微' }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
+            {{ b.nickName || '微信用户' }}
+            <span v-if="b.relation" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ b.relation }}</span>
+            <span v-if="b.isPrimary" class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">主家长</span>
+          </div>
+          <div class="text-xs text-cocoa-400 mt-0.5">openid 尾号：{{ b.openIdTail || '--' }}</div>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            v-if="!b.isPrimary"
+            class="p-1.5 rounded-lg hover:bg-butter-50 text-butter-500"
+            title="设为主家长"
+            @click="handleSetPrimary(b)"
+          >
+            <Star class="w-4 h-4" />
+          </button>
+          <button
+            class="p-1.5 rounded-lg hover:bg-red-50 text-red-500"
+            title="解绑"
+            @click="handleUnbind(b)"
+          >
+            <Trash2 class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div class="text-xs text-cocoa-400 pt-2 leading-relaxed">一个学生可绑定多个微信（如爸爸、妈妈），各家长均可微信登录查看孩子情况。仅当前学生绑定的微信会展示在此列表。</div>
+    </div>
+    <template #footer>
+      <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600" @click="showBindings = false">关闭</button>
+    </template>
+  </Modal>
 </template>

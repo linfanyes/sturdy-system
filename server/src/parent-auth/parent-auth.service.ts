@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, In } from 'typeorm'
 import { ConfigService } from '@nestjs/config'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { Student } from '../students/student.entity'
@@ -19,10 +19,14 @@ import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 import { WechatService } from '../auth/wechat.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
+import { StudentParentService } from '../student-parent/student-parent.module'
 
 /**
  * 家长端：凭学生学号登录 → 查看孩子考试成绩+趋势分析 + IM 与老师对话。
  * 家长 IM 账号由（studentId + parentName）规范派生，与教师花名册一致。
+ *
+ * 多娃支持：通过 StudentParent 关联表查询某 openid/parentId 绑定的所有学生，
+ * 支持跨班跨校。回退兼容旧数据（Student.parentId）。
  */
 @Injectable()
 export class ParentAuthService {
@@ -44,7 +48,24 @@ export class ParentAuthService {
     private readonly im: ImService,
     private readonly config: ConfigService,
     private readonly wechat: WechatService,
+    private readonly studentParentSvc: StudentParentService,
   ) {}
+
+  /**
+   * 查询家长关联的所有孩子（优先 StudentParent 关联表，回退 Student.parentId）。
+   * 支持跨班跨校多娃。
+   */
+  private async findKids(parentId: string): Promise<Student[]> {
+    if (!parentId) return []
+    // 优先从 StudentParent 关联表查
+    const bindings = await this.studentParentSvc.listByParent(parentId)
+    if (bindings.length) {
+      const studentIds = bindings.map(b => b.studentId)
+      return this.studentRepo.find({ where: { id: In(studentIds) } })
+    }
+    // 回退：旧数据按 Student.parentId
+    return this.studentRepo.find({ where: { parentId } })
+  }
 
   /** 学号 + 密码登录 */
   async login(studentNo: string, password: string) {
@@ -116,12 +137,12 @@ export class ParentAuthService {
     return { ok: true }
   }
 
-  /** 当前家长信息 + 全量 kids */
+  /** 当前家长信息 + 全量 kids（跨班跨校）+ 微信绑定信息 */
   async getMe(payload: any) {
     const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
     if (!parent) return null
 
-    const kids = await this.studentRepo.find({ where: { parentId: payload.parentId } })
+    const kids = await this.findKids(payload.parentId)
     // 当前激活娃
     const activeKid = kids.find(k => k.id === payload.studentId) || kids[0] || null
     if (!activeKid) return null
@@ -131,6 +152,11 @@ export class ParentAuthService {
       const cls = await this.classRepo.findOne({ where: { id: activeKid.classId } })
       if (cls) className = cls.name
     } catch {}
+
+    // 该家长（openid）对所有学生的绑定信息
+    const myBindings = parent.openId
+      ? await this.studentParentSvc.listByOpenid(parent.openId)
+      : []
 
     return {
       parentName: parent.parentName || '家长',
@@ -151,14 +177,21 @@ export class ParentAuthService {
       kids: kids.map(k => ({
         studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId,
       })),
+      // 微信绑定信息（脱敏 openid）
+      wechat: {
+        bound: !!parent.openId,
+        nickName: parent.nickName || '',
+        openIdTail: parent.openId ? parent.openId.slice(-6) : '',
+        bindingCount: myBindings.length,
+      },
     }
   }
 
-  /** 切换当前激活的孩子（多娃场景） */
+  /** 切换当前激活的孩子（多娃场景，支持跨班跨校） */
   async switchStudent(payload: any, targetStudentId: string) {
-    // D13 强化：校验目标学生是否属于该家长
     if (!payload.parentId) throw new ForbiddenException('无家长身份')
-    const target = await this.studentRepo.findOne({ where: { id: targetStudentId, parentId: payload.parentId } })
+    const kids = await this.findKids(payload.parentId)
+    const target = kids.find(k => k.id === targetStudentId)
     if (!target) throw new ForbiddenException('学生不属于该家长')
 
     const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
@@ -172,10 +205,10 @@ export class ParentAuthService {
     return { token, studentId: target.id, studentName: target.name, studentNo: target.studentNo, classId: target.classId }
   }
 
-  /** 多娃考试对比（仅 2 个以上孩子时启用） */
+  /** 多娃考试对比（仅 2 个以上孩子时启用，跨班跨校） */
   async getKidsComparison(payload: any) {
     if (!payload.parentId) throw new ForbiddenException('无家长身份')
-    const kids = await this.studentRepo.find({ where: { parentId: payload.parentId } })
+    const kids = await this.findKids(payload.parentId)
     if (kids.length < 2) return { kids: kids.map(k => ({ studentId: k.id, studentName: k.name, classId: k.classId })), exams: [] }
 
     // 对每个孩子班级别取考试数据
@@ -210,7 +243,7 @@ export class ParentAuthService {
     const parent = await this.parentRepo.findOne({ where: { id: user.parentId } })
     if (!parent) throw new ForbiddenException('家长身份不存在')
 
-    const kids = await this.studentRepo.find({ where: { parentId: parent.id } })
+    const kids = await this.findKids(parent.id)
     if (!kids.length) throw new ForbiddenException('家长身份未关联学生')
 
     const firstKid = kids[0]
@@ -246,15 +279,78 @@ export class ParentAuthService {
     }))
   }
 
-  /** 绑定微信 openid 到学生记录 */
+  /**
+   * 已登录家长绑定微信（修复版：真正落库 openid 到 StudentParent 关联表）。
+   * 用于家长在 App 内主动绑定微信（如订阅消息推送、多端登录）。
+   */
   async bindWechat(code: string, payload: any, nickName: string) {
     if (!code) throw new BadRequestException('缺少 code')
     const { openid } = await this.wechat.code2Session(code)
     const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
     if (!stu) throw new BadRequestException('学生不存在')
+
+    // 查找或创建 Parent 记录
+    let parent = await this.parentRepo.findOne({ where: { openId: openid } })
+    if (!parent) {
+      parent = this.parentRepo.create({
+        openId: openid,
+        parentName: stu.parentName || '家长',
+        nickName: nickName || stu.parentNickName || '',
+      })
+      parent = await this.parentRepo.save(parent)
+    } else if (nickName && parent.nickName !== nickName) {
+      parent.nickName = nickName
+      await this.parentRepo.save(parent)
+    }
+
+    // 写入 StudentParent 关联表（幂等，支持一学生多微信）
+    const { needsUpdateStudentParentId } = await this.studentParentSvc.bind({
+      studentId: stu.id,
+      parentId: parent.id,
+      openId: openid,
+      nickName: nickName || '',
+      schoolId: stu.teacherId || '',
+      classId: stu.classId,
+    })
+    if (needsUpdateStudentParentId && !stu.parentId) {
+      stu.parentId = parent.id
+    }
     if (nickName) stu.parentNickName = nickName
     await this.studentRepo.save(stu)
-    return { ok: true, nickName }
+
+    return {
+      ok: true,
+      nickName,
+      openIdTail: openid.slice(-6),
+      parentId: parent.id,
+    }
+  }
+
+  /** 查询当前家长的所有微信绑定信息 */
+  async getBindings(payload: any) {
+    if (!payload.parentId) return { bindings: [], parent: null }
+    const parent = await this.parentRepo.findOne({ where: { id: payload.parentId } })
+    if (!parent) return { bindings: [], parent: null }
+    const bindings = await this.studentParentSvc.listByParent(payload.parentId)
+    return {
+      parent: {
+        parentName: parent.parentName,
+        nickName: parent.nickName || '',
+        openIdTail: parent.openId ? parent.openId.slice(-6) : '',
+        bound: !!parent.openId,
+      },
+      bindings: bindings.map(b => ({
+        id: b.id,
+        studentId: b.studentId,
+        openIdTail: b.openId ? b.openId.slice(-6) : '',
+        nickName: b.nickName,
+        avatar: b.avatar,
+        relation: b.relation,
+        isPrimary: b.isPrimary,
+        classId: b.classId,
+        createdAt: b.createdAt,
+      })),
+    }
   }
 
   /** 考试成绩明细 + 排名 + 分布（带缓存，避免全量重复计算） */

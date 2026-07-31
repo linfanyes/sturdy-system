@@ -65,6 +65,45 @@
         </view>
       </view>
     </view>
+
+    <!-- 学期管理（仅看板 Tab 显示，避免占用其它 Tab 空间） -->
+    <view class="notice-section">
+      <view class="notice-hd">
+        <text class="notice-title">🗓️ 学期管理</text>
+        <text v-if="!showSemesterForm" class="act" @click="openCreateSemester">＋ 新增</text>
+        <text v-else class="act" @click="showSemesterForm=false">收起</text>
+      </view>
+      <view v-if="showSemesterForm" class="notice-form">
+        <input v-model="semesterForm.name" class="inp" placeholder="学期名称（如：2026春季学期）" />
+        <view class="semester-date-row">
+          <input v-model="semesterForm.startDate" class="inp sem-date" placeholder="开始日期 2026-02-17" />
+          <text class="sem-date-sep">~</text>
+          <input v-model="semesterForm.endDate" class="inp sem-date" placeholder="结束日期 2026-07-04" />
+        </view>
+        <button class="notice-send" :disabled="saving" @click="saveSemester">{{ saving ? '保存中…' : '创建学期' }}</button>
+      </view>
+      <view class="notice-list">
+        <div v-if="!semesters.length" class="empty" style="padding:20rpx 0">暂无学期，点击上方「新增」创建</div>
+        <view class="notice-item" v-for="s in semesters" :key="s.id">
+          <view class="notice-item-hd">
+            <text class="notice-item-title">{{ s.name }}</text>
+            <text v-if="s.current" class="badge on">当前</text>
+            <text class="ndate">{{ s.startDate }} ~ {{ s.endDate }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 演示模式（仅看板 Tab 显示） -->
+    <view class="demo-section">
+      <view class="demo-row">
+        <view class="demo-text">
+          <text class="demo-name">🛝 教师系统演示</text>
+          <text class="demo-sub">以教师身份预览所有功能，体验教师端完整流程</text>
+        </view>
+      </view>
+      <button class="demo-btn" @click="enterDemoMode">进入教师系统演示</button>
+    </view>
     </template>
 
     <!-- ====== 教师管理 Tab ====== -->
@@ -365,45 +404,6 @@
         <button class="btn" :disabled="saving" @click="doResetPwd">确认重置</button>
       </view>
     </view>
-
-    <!-- 学期管理 -->
-    <view class="notice-section">
-      <view class="notice-hd">
-        <text class="notice-title">🗓️ 学期管理</text>
-        <text v-if="!showSemesterForm" class="act" @click="openCreateSemester">＋ 新增</text>
-        <text v-else class="act" @click="showSemesterForm=false">收起</text>
-      </view>
-      <view v-if="showSemesterForm" class="notice-form">
-        <input v-model="semesterForm.name" class="inp" placeholder="学期名称（如：2026春季学期）" />
-        <view class="semester-date-row">
-          <input v-model="semesterForm.startDate" class="inp sem-date" placeholder="开始日期 2026-02-17" />
-          <text class="sem-date-sep">~</text>
-          <input v-model="semesterForm.endDate" class="inp sem-date" placeholder="结束日期 2026-07-04" />
-        </view>
-        <button class="notice-send" :disabled="saving" @click="saveSemester">{{ saving ? '保存中…' : '创建学期' }}</button>
-      </view>
-      <view class="notice-list">
-        <div v-if="!semesters.length" class="empty" style="padding:20rpx 0">暂无学期，点击上方「新增」创建</div>
-        <view class="notice-item" v-for="s in semesters" :key="s.id">
-          <view class="notice-item-hd">
-            <text class="notice-item-title">{{ s.name }}</text>
-            <text v-if="s.current" class="badge on">当前</text>
-            <text class="ndate">{{ s.startDate }} ~ {{ s.endDate }}</text>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 演示模式：以教师身份进入教师系统 -->
-    <view class="demo-section">
-      <view class="demo-row">
-        <view class="demo-text">
-          <text class="demo-name">🛝 教师系统演示</text>
-          <text class="demo-sub">以教师身份预览所有功能，体验教师端完整流程</text>
-        </view>
-      </view>
-      <button class="demo-btn" @click="enterDemoMode">进入教师系统演示</button>
-    </view>
   </view>
 </template>
 
@@ -509,7 +509,7 @@ async function loadTeachers() {
     teachers.value = r.items || r
     teacherTotal.value = r.total || teachers.value.length
     teacherPage.value = 1
-  } catch (e) { teachers.value = []; console.error('loadTeachers', e) }
+  } catch (e) { teachers.value = [] }
 }
 
 async function loadMoreTeachers() {
@@ -521,7 +521,7 @@ async function loadMoreTeachers() {
       teachers.value = [...teachers.value, ...more]
       teacherPage.value++
     }
-  } catch (e) { console.error('loadMoreTeachers', e) }
+  } catch (e) { /* 静默：加载更多失败不阻塞主流程 */ }
 }
 
 function openCreate() {
@@ -587,7 +587,6 @@ async function saveForm() {
       uni.showToast({ title: '已创建', icon: 'success' })
     }
   } catch (e) {
-    console.error('saveForm error', e)
     uni.showToast({ title: e.message || '操作失败', icon: 'none', duration: 3000 })
   }
   saving.value = false
@@ -607,7 +606,6 @@ async function delTeacher(u) {
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => { loadTeachers() }, 500)
       } catch (e) {
-        console.error('delTeacher', e)
         uni.showToast({ title: e.message || '删除失败', icon: 'none', duration: 3000 })
       }
     },

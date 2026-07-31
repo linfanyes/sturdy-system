@@ -14,11 +14,12 @@ import { User } from '../users/user.entity'
 import { ImModule } from '../im/im.module'
 import { AuthModule } from '../auth/auth.module'
 import { StudentInfoUpdateModule } from '../student-info-update/student-info-update.module'
+import { StudentParentModule } from '../student-parent/student-parent.module'
 import { ParentAuthService } from './parent-auth.service'
 import { ParentAuthController } from './parent-auth.controller'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ParentContact, Student, User, Notice, Homework, ScheduleItem, Grade, Exam, ClassItem, Checkin, BehaviorRecord, DutyRoster, Parent]), ImModule, AuthModule, StudentInfoUpdateModule],
+  imports: [TypeOrmModule.forFeature([ParentContact, Student, User, Notice, Homework, ScheduleItem, Grade, Exam, ClassItem, Checkin, BehaviorRecord, DutyRoster, Parent]), ImModule, AuthModule, StudentInfoUpdateModule, StudentParentModule],
   providers: [ParentAuthService],
   controllers: [ParentAuthController],
   exports: [ParentAuthService],

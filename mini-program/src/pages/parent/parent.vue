@@ -352,6 +352,44 @@
         </view>
       </view>
 
+      <!-- 微信绑定信息（一学生可绑多个微信，如爸爸/妈妈） -->
+      <view class="sec">
+        <view class="st">💬 微信绑定</view>
+        <view class="wechat-card">
+          <!-- 当前账号绑定概要 -->
+          <view class="wechat-summary">
+            <view class="wechat-avatar">{{ (wechatBindings.parent && wechatBindings.parent.nickName) ? wechatBindings.parent.nickName.charAt(0) : '微' }}</view>
+            <view class="wechat-summary-info">
+              <view v-if="wechatBindings.parent && wechatBindings.parent.bound" class="wechat-summary-name">{{ wechatBindings.parent.nickName || '已绑定微信' }}</view>
+              <view v-else class="wechat-summary-name unbound">未绑定微信</view>
+              <view class="wechat-summary-sub">
+                <text v-if="wechatBindings.parent && wechatBindings.parent.bound">openid 尾号：{{ wechatBindings.parent.openIdTail }}</text>
+                <text v-else>绑定后可用微信一键登录</text>
+                <text v-if="wechatBindings.bindings && wechatBindings.bindings.length" class="wechat-count"> · 共 {{ wechatBindings.bindings.length }} 个绑定</text>
+              </view>
+            </view>
+            <view class="wechat-bind-btn" @click="bindPhone">{{ (wechatBindings.parent && wechatBindings.parent.bound) ? '更新绑定' : '绑定微信' }}</view>
+          </view>
+
+          <!-- 该学生绑定的所有微信列表（多家长场景） -->
+          <view v-if="wechatBindings.bindings && wechatBindings.bindings.length" class="wechat-list">
+            <view class="wechat-list-title">该学生绑定的微信（{{ wechatBindings.bindings.length }}）</view>
+            <view v-for="b in wechatBindings.bindings" :key="b.id" class="wechat-item">
+              <view class="wechat-item-avatar">{{ b.nickName ? b.nickName.charAt(0) : '微' }}</view>
+              <view class="wechat-item-main">
+                <view class="wechat-item-name">
+                  {{ b.nickName || '微信用户' }}
+                  <text v-if="b.relation" class="wechat-item-relation">{{ b.relation }}</text>
+                  <text v-if="b.isPrimary" class="wechat-item-primary">主家长</text>
+                </view>
+                <view class="wechat-item-sub">openid 尾号：{{ b.openIdTail }}</view>
+              </view>
+            </view>
+          </view>
+          <view class="wechat-tip">一个学生可绑定多个微信（如爸爸、妈妈），绑定后各家长均可微信登录查看孩子情况。</view>
+        </view>
+      </view>
+
       <view class="sec">
         <view class="st">💡 孩子在校健康度总览</view>
         <view class="health-grid">
@@ -497,6 +535,15 @@ const communications = ref(null)
 const loading = ref(true)
 const loadError = ref(false)
 const selectedExamIndex = ref(0)
+
+// 微信绑定信息（/parent-auth/me 已含 wechat 概要；此处再拉详细绑定列表）
+const wechatBindings = ref({ parent: null, bindings: [] })
+async function loadWechatBindings() {
+  try {
+    const r = await parentApi.get('/parent-auth/bindings')
+    wechatBindings.value = r || { parent: null, bindings: [] }
+  } catch (e) { /* 忽略：不影响主流程 */ }
+}
 
 const examOptions = computed(() => exams.value.map((e, i) => e.examName || ('考试' + (i + 1))))
 const selectedExam = computed(() => exams.value[selectedExamIndex.value] || null)
@@ -750,9 +797,14 @@ function bindPhone() {
         await parentApi.post('/parent-auth/bind-wechat', { code, nickName })
         uni.hideLoading()
         uni.showToast({ title: '微信绑定成功' + (nickName ? '：' + nickName : ''), icon: 'success' })
-        const meData = await parentApi.get('/parent-auth/me')
+        // 刷新 me 与微信绑定列表
+        const [meData, wb] = await Promise.all([
+          parentApi.get('/parent-auth/me'),
+          parentApi.get('/parent-auth/bindings'),
+        ])
         me.value = meData
         kids.value = (meData && meData.kids) || []
+        wechatBindings.value = wb || { parent: null, bindings: [] }
       } catch (e) {
         uni.hideLoading()
         uni.showToast({ title: '绑定失败', icon: 'none' })
@@ -815,7 +867,7 @@ async function load() {
   loading.value = true
   loadError.value = false
   // 并行发起所有请求，避免串行多轮网络往返（冷启动耗时近 N×RTT → 1×RTT）
-  const [meResult, edata, ns, hw, att, beh, sch, comm] = await Promise.allSettled([
+  const [meResult, edata, ns, hw, att, beh, sch, comm, wb] = await Promise.allSettled([
     parentApi.get('/parent-auth/me'),
     parentApi.get('/parent-auth/exams'),
     parentApi.get('/parent-auth/notices'),
@@ -824,7 +876,9 @@ async function load() {
     parentApi.get('/parent-auth/behavior'),
     parentApi.get('/parent-auth/schedule'),
     parentApi.get('/parent-auth/communications'),
+    parentApi.get('/parent-auth/bindings'),
   ])
+  if (wb.status === 'fulfilled') wechatBindings.value = wb.value || { parent: null, bindings: [] }
   if (meResult.status === 'fulfilled') {
     me.value = meResult.value
     kids.value = (meResult.value && meResult.value.kids) || []
@@ -1078,6 +1132,27 @@ onShow(() => {
 .info-actions { display: flex; gap: 14rpx; margin-top: 20rpx; }
 .info-btn { flex: 1; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 12rpx; background: var(--c-input); color: var(--c-title); font-weight: 600; }
 .info-btn.primary { background: #07c160; color: #fff; }
+/* 微信绑定卡 */
+.wechat-card { background: var(--c-card); border-radius: 14rpx; padding: 20rpx; }
+.wechat-summary { display: flex; align-items: center; gap: 16rpx; }
+.wechat-avatar { width: 72rpx; height: 72rpx; border-radius: 50%; background: #e8f5e9; color: #07c160; display: flex; align-items: center; justify-content: center; font-size: 30rpx; font-weight: 700; flex-shrink: 0; }
+.wechat-summary-info { flex: 1; min-width: 0; }
+.wechat-summary-name { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
+.wechat-summary-name.unbound { color: var(--c-sub); font-weight: 500; }
+.wechat-summary-sub { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
+.wechat-count { color: #07c160; }
+.wechat-bind-btn { flex-shrink: 0; font-size: 24rpx; color: #fff; background: #07c160; padding: 12rpx 24rpx; border-radius: 30rpx; font-weight: 600; }
+.wechat-list { margin-top: 18rpx; padding-top: 16rpx; border-top: 1rpx solid var(--c-input-border); }
+.wechat-list-title { font-size: 24rpx; color: var(--c-sub); margin-bottom: 12rpx; }
+.wechat-item { display: flex; align-items: center; gap: 14rpx; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
+.wechat-item:last-child { border-bottom: none; }
+.wechat-item-avatar { width: 56rpx; height: 56rpx; border-radius: 50%; background: #e8f1fb; color: #409eff; display: flex; align-items: center; justify-content: center; font-size: 24rpx; font-weight: 600; flex-shrink: 0; }
+.wechat-item-main { flex: 1; min-width: 0; }
+.wechat-item-name { font-size: 26rpx; font-weight: 600; color: var(--c-title); display: flex; align-items: center; gap: 8rpx; flex-wrap: wrap; }
+.wechat-item-relation { font-size: 20rpx; color: #409eff; background: #e8f1fb; padding: 2rpx 10rpx; border-radius: 8rpx; }
+.wechat-item-primary { font-size: 20rpx; color: #E6A23C; background: #fef3e0; padding: 2rpx 10rpx; border-radius: 8rpx; }
+.wechat-item-sub { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.wechat-tip { font-size: 20rpx; color: var(--c-sub2, #9aa0a6); margin-top: 14rpx; line-height: 1.5; }
 .pwd-tip { font-size: 22rpx; color: #9aa0a6; margin-bottom: 16rpx; display: block; }
 .pwd-textarea { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; width: 100%; box-sizing: border-box; height: 120rpx; }
 /* 申请记录弹窗 */

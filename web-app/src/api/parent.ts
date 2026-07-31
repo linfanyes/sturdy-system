@@ -190,3 +190,31 @@ export function submitStudentUpdateRequest(payload: Record<string, any>) {
 export function listStudentUpdateRequests() {
   return request.get<any, StudentUpdateRequest[]>('/parent-auth/student-update-requests')
 }
+
+/** 微信绑定信息（脱敏：仅返回 openid 尾号） */
+export interface ParentWechatBinding {
+  id: string
+  openIdTail: string
+  nickName?: string
+  avatar?: string
+  relation?: string
+  isPrimary?: boolean
+  createdAt?: string
+}
+
+/** /parent-auth/bindings 返回结构：当前账号绑定概要 + 该学生全部绑定 */
+export interface ParentWechatBindings {
+  parent: {
+    bound: boolean
+    nickName?: string
+    openIdTail?: string
+    avatar?: string
+    relation?: string
+  } | null
+  bindings: ParentWechatBinding[]
+}
+
+/** 查询当前家长的微信绑定信息（含该学生所有绑定列表） */
+export function getParentBindings() {
+  return request.get<any, ParentWechatBindings>('/parent-auth/bindings')
+}

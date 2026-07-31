@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
-import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import { Student } from './student.entity'
@@ -21,6 +21,7 @@ import { hashPassword } from '../common/utils/password.util'
 import { AuditService } from '../audit/audit.service'
 import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
+import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -40,6 +41,7 @@ class StudentsService extends CrudService<Student> {
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     cmSvc: ClassMemberService,
     private readonly auditService: AuditService,
+    private readonly studentParentSvc: StudentParentService,
   ) {
     super(repo)
     this.withClassMemberService(cmSvc)
@@ -310,7 +312,7 @@ class StudentsService extends CrudService<Student> {
     return { studentId, ok: true, defaultPassword }
   }
 
-  /** 删除学生（级联清理：家长联系记录 + 业务数据） */
+  /** 删除学生（级联清理：家长联系记录 + 业务数据 + 家长微信绑定） */
   async remove(id: string, teacherId: string): Promise<{ id: string }> {
     const e = await this.findOne(id, teacherId)
     await this.dataSource.transaction(async (manager) => {
@@ -339,7 +341,40 @@ class StudentsService extends CrudService<Student> {
       // 最后删除学生
       await manager.getRepository(Student).remove(e)
     })
+    // 清理家长微信绑定关系（事务外，避免循环依赖）
+    await this.studentParentSvc.removeAllByStudent(id).catch(() => {})
     return { id }
+  }
+
+  /** 教师查看某学生绑定的所有家长微信 */
+  async listParentBindings(teacherId: string, studentId: string) {
+    const stu = await this.findOne(studentId, teacherId)
+    const bindings = await this.studentParentSvc.listByStudent(stu.id)
+    return bindings.map(b => ({
+      id: b.id,
+      openIdTail: b.openId ? b.openId.slice(-6) : '',
+      nickName: b.nickName,
+      avatar: b.avatar,
+      relation: b.relation,
+      isPrimary: b.isPrimary,
+      createdAt: b.createdAt,
+    }))
+  }
+
+  /** 教师解绑某学生的某条家长微信 */
+  async unbindParent(teacherId: string, studentId: string, bindingId: string) {
+    const stu = await this.findOne(studentId, teacherId)
+    const bindings = await this.studentParentSvc.listByStudent(stu.id)
+    const target = bindings.find(b => b.id === bindingId)
+    if (!target) throw new NotFoundException('绑定记录不存在')
+    await this.studentParentSvc.unbind(bindingId)
+    return { ok: true }
+  }
+
+  /** 教师设置某绑定为主家长 */
+  async setPrimaryParent(teacherId: string, _studentId: string, bindingId: string) {
+    await this.findOne(_studentId, teacherId)
+    return this.studentParentSvc.setPrimary(bindingId)
   }
 }
 
@@ -426,10 +461,31 @@ class StudentsController extends CrudController<Student> {
   async resetParentPassword(@Param('id') id: string, @CurrentTeacher() t: any) {
     return (this.service as StudentsService).resetParentPassword(t.sub, id)
   }
+
+  /** 教师查看某学生绑定的所有家长微信 */
+  @Get(':id/parent-bindings')
+  @UseGuards(JwtAuthGuard)
+  async listParentBindings(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return (this.service as StudentsService).listParentBindings(t.sub, id)
+  }
+
+  /** 教师解绑某学生的某条家长微信 */
+  @Post(':id/parent-bindings/:bindingId/unbind')
+  @UseGuards(JwtAuthGuard)
+  async unbindParent(@Param('id') id: string, @Param('bindingId') bindingId: string, @CurrentTeacher() t: any) {
+    return (this.service as StudentsService).unbindParent(t.sub, id, bindingId)
+  }
+
+  /** 教师设置某绑定为主家长 */
+  @Post(':id/parent-bindings/:bindingId/set-primary')
+  @UseGuards(JwtAuthGuard)
+  async setPrimaryParent(@Param('id') id: string, @Param('bindingId') bindingId: string, @CurrentTeacher() t: any) {
+    return (this.service as StudentsService).setPrimaryParent(t.sub, id, bindingId)
+  }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule, AuditModule],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule, AuditModule, StudentParentModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })

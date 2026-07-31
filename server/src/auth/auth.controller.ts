@@ -27,20 +27,20 @@ export class AuthController {
 
   /** 微信绑教师账号 */
   @Post('bind-teacher')
-  bindTeacher(@Body() b: { code?: string; username?: string; password?: string }) {
-    return this.auth.bindWechatTeacher(b?.code || '', b?.username || '', b?.password || '')
+  bindTeacher(@Body() b: { code?: string; username?: string; password?: string; nickName?: string }) {
+    return this.auth.bindWechatTeacher(b?.code || '', b?.username || '', b?.password || '', b?.nickName)
   }
 
   /** 微信绑家长（学号） */
   @Post('bind-parent')
-  bindParent(@Body() b: { code?: string; studentNo?: string; password?: string }) {
-    return this.auth.bindWechatParent(b?.code || '', b?.studentNo || '', b?.password)
+  bindParent(@Body() b: { code?: string; studentNo?: string; password?: string; nickName?: string; avatar?: string; relation?: string }) {
+    return this.auth.bindWechatParent(b?.code || '', b?.studentNo || '', b?.password, b?.nickName, b?.avatar, b?.relation)
   }
 
   /** 微信统一绑定：输入教师编号或学生学号，自动判别身份 */
   @Post('bind-by-number')
-  bindByNumber(@Body() b: { code?: string; number?: string; nickName?: string; password?: string }) {
-    return this.auth.bindByNumber(b?.code || '', b?.number || '', b?.nickName || '', b?.password)
+  bindByNumber(@Body() b: { code?: string; number?: string; nickName?: string; password?: string; avatar?: string; relation?: string }) {
+    return this.auth.bindByNumber(b?.code || '', b?.number || '', b?.nickName || '', b?.password, b?.avatar, b?.relation)
   }
 
   /** 教师密码登录（已由学校管理员绑定学校） */
