@@ -4,7 +4,12 @@ import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
 import {
   Controller,
+  Get,
   Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
   Body,
   UseGuards,
   BadRequestException,
@@ -14,6 +19,7 @@ import { FeatureGuard } from '../common/feature/feature.guard'
 import { Grade, GradeScore } from './grade.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
+import { Exam } from '../exams/exam.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -24,7 +30,6 @@ import { xlsxFirstSheetToRows } from '../common/excel.util'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 
-// 成绩 AI 识别指令：约束模型输出 [{name, studentNo, score}] 结构
 const GRADE_INSTRUCTION = `这是一份成绩单（图片 OCR 或文件提取后的文本），请识别其中每个学生及其分数并输出 JSON 数组。每个元素结构：
 { "name": "学生姓名", "studentNo": "学号(可选)", "score": "分数(数字或空字符串表示缺考)" }
 规则：
@@ -33,22 +38,38 @@ const GRADE_INSTRUCTION = `这是一份成绩单（图片 OCR 或文件提取后
 - 缺考/空值用空字符串表示；
 - 只返回 JSON 数组，不要任何解释或前后缀文字。`
 
+/** 一次考试一门学科的统计 */
+interface SubjectStat {
+  subject: string
+  count: number
+  total: number
+  avg: number
+  max: number
+  min: number
+  passRate: number
+  excellentRate: number
+  failCount: number
+  scoreRange: number
+  stdDev?: number
+  distribution: { label: string; count: number }[]
+}
+
+interface GradeWithExam extends Grade {
+  exam?: Exam
+}
+
 class GradesService extends CrudService<Grade> {
   constructor(
     @InjectRepository(Grade) repo: Repository<Grade>,
     @InjectRepository(Student) private stuRepo: Repository<Student>,
     @InjectRepository(ClassItem) private classRepo: Repository<ClassItem>,
+    @InjectRepository(Exam) private examRepo: Repository<Exam>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly ai: AiService,
   ) {
     super(repo)
   }
 
-  /**
-   * 成绩按班级共享：同班教师可互看。
-   * 安全约束：传入 classId 时必须先校验该班级归属当前教师，否则返回空，
-   * 杜绝用任意 classId 越权读取其他教师班级成绩；不传 classId 时按 teacherId 过滤。
-   */
   async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
     const where: any = {}
     if (classId) {
@@ -67,7 +88,6 @@ class GradesService extends CrudService<Grade> {
     return { items, total }
   }
 
-  /** 幂等导入：按 班级+考试名+科目 存在则更新分数，否则新建 */
   async mergeGrade(teacherId: string, dto: any) {
     const existing = await this.repo.findOne({
       where: {
@@ -88,7 +108,6 @@ class GradesService extends CrudService<Grade> {
     return { created: true, id: g.id }
   }
 
-  /** 解析成绩文件（Excel/TXT/CSV），返回原始行 */
   private async parseFile(filename: string, dataBase64: string): Promise<string[][]> {
     const ext = (filename.split('.').pop() || '').toLowerCase()
     const buf = Buffer.from(dataBase64, 'base64')
@@ -103,7 +122,6 @@ class GradesService extends CrudService<Grade> {
       .map((l) => l.split(/\t|,/).map((c) => c.trim()))
   }
 
-  /** 预览：解析+匹配学生+校验分数，不落库。学生由后端按班级查询以保证权限 */
   async importPreview(
     teacherId: string,
     classId: string,
@@ -155,7 +173,6 @@ class GradesService extends CrudService<Grade> {
     return { rows, validCount, errorCount, total: rawRows.length }
   }
 
-  /** 提交：事务 upsert 单条成绩记录（班级+考试+科目），任意失败整体回滚 */
   async importGrades(teacherId: string, dto: any) {
     return await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Grade)
@@ -193,10 +210,6 @@ class GradesService extends CrudService<Grade> {
     })
   }
 
-  /**
-   * AI 识别成绩单（图片 OCR / Excel / CSV 文本提取后交 AI 结构化）。
-   * 返回与 importPreview 一致的 { rows, validCount, errorCount }，前端可直接复用预览 UI 与 importCommit 落库。
-   */
   async importAi(
     teacherId: string,
     classId: string,
@@ -232,7 +245,6 @@ class GradesService extends CrudService<Grade> {
     }
     if (!Array.isArray(parsed)) parsed = []
 
-    // 查询班级学生并匹配
     const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
     const byNo = new Map(students.map((s) => [s.studentNo, s]))
     const byName = new Map(students.map((s) => [s.name, s]))
@@ -272,6 +284,273 @@ class GradesService extends CrudService<Grade> {
       })
     })
     return { rows, validCount, errorCount, total: parsed.length }
+  }
+
+  // ====== 成绩分析增强 ======
+
+  /** 计算一门学科的统计数据 */
+  private computeSubjectStat(grades: GradeScore[], fullScore = 100): SubjectStat {
+    const scores = grades.filter((s) => s.score != null).map((s) => Number(s.score!))
+    const count = scores.length
+    if (!count) {
+      return {
+        subject: '',
+        count: 0,
+        total: 0,
+        avg: 0,
+        max: 0,
+        min: 0,
+        passRate: 0,
+        excellentRate: 0,
+        failCount: 0,
+        scoreRange: 0,
+        distribution: [],
+      }
+    }
+    const total = scores.reduce((a, b) => a + b, 0)
+    const avg = total / count
+    const max = Math.max(...scores)
+    const min = Math.min(...scores)
+    const passLine = fullScore * 0.6
+    const excellentLine = fullScore * 0.85
+    const passCount = scores.filter((s) => s >= passLine).length
+    const excellentCount = scores.filter((s) => s >= excellentLine).length
+    const failCount = scores.filter((s) => s < passLine).length
+
+    // 分布 5 段：<60, 60-69, 70-79, 80-89, 90-100
+    const bins = [0, 0, 0, 0, 0]
+    for (const s of scores) {
+      if (s < 60) bins[0]++
+      else if (s < 70) bins[1]++
+      else if (s < 80) bins[2]++
+      else if (s < 90) bins[3]++
+      else bins[4]++
+    }
+    const distribution = [
+      { label: '不及格(<60)', count: bins[0] },
+      { label: '及格(60-69)', count: bins[1] },
+      { label: '中等(70-79)', count: bins[2] },
+      { label: '良好(80-89)', count: bins[3] },
+      { label: '优秀(90+)', count: bins[4] },
+    ]
+
+    // 标准差
+    const variance = scores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / count
+    const stdDev = Math.sqrt(variance)
+
+    return {
+      subject: '',
+      count,
+      total,
+      avg: Math.round(avg * 10) / 10,
+      max,
+      min,
+      passRate: Math.round((passCount / count) * 1000) / 10,
+      excellentRate: Math.round((excellentCount / count) * 1000) / 10,
+      failCount,
+      scoreRange: max - min,
+      stdDev: Math.round(stdDev * 10) / 10,
+      distribution,
+    }
+  }
+
+  /** 校验班级归属权限（teacherId 是否能访问该 classId 的成绩） */
+  private async assertClassAccess(teacherId: string, classId: string): Promise<void> {
+    const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
+    if (!owned) throw new BadRequestException('无权访问该班级成绩')
+  }
+
+  /**
+   * 单场考试统计：按班级+考试id聚合各学科指标
+   * - 支持 fullScoreMap（每科满分）
+   * - 返回各学科统计 + 班级总均分 + 薄弱学科 TopN + 优秀学科 TopN
+   */
+  async examStats(
+    teacherId: string,
+    classId: string,
+    examId: string,
+    fullScoreMap: Record<string, number> = {},
+  ) {
+    await this.assertClassAccess(teacherId, classId)
+    const grades = await this.repo.find({
+      where: { classId, teacherId } as any,
+      take: 500,
+    })
+    const byExam = grades.filter((g) => g.examId === examId)
+    const subjectsStats: SubjectStat[] = []
+    for (const g of byExam) {
+      const stat = this.computeSubjectStat(g.scores || [], fullScoreMap[g.subject] || 100)
+      stat.subject = g.subject
+      subjectsStats.push(stat)
+    }
+    const classAvg = subjectsStats.length
+      ? Math.round(
+          (subjectsStats.reduce((s, x) => s + x.avg * x.count, 0) /
+            subjectsStats.reduce((s, x) => s + x.count, 0)) *
+            10,
+        ) / 10
+      : 0
+    const weak = [...subjectsStats].sort((a, b) => a.avg - b.avg).slice(0, 3)
+    const strong = [...subjectsStats].sort((a, b) => b.avg - a.avg).slice(0, 3)
+    return {
+      classId,
+      examId,
+      classAvg,
+      totalStudents: subjectsStats.reduce((s, x) => s + x.count, 0),
+      subjects: subjectsStats,
+      weakSubjects: weak,
+      strongSubjects: strong,
+    }
+  }
+
+  /**
+   * 多场考试趋势：按班级+科目聚合多次考试的均分轨迹
+   */
+  async examTrend(teacherId: string, classId: string, subject?: string) {
+    await this.assertClassAccess(teacherId, classId)
+    const grades = await this.repo.find({
+      where: { classId, teacherId } as any,
+      order: { date: 'ASC' } as any,
+      take: 1000,
+    })
+    const filtered = subject ? grades.filter((g) => g.subject === subject) : grades
+    const trendBySubject: Record<string, { date: string; examName: string; avg: number; count: number }[]> = {}
+    for (const g of filtered) {
+      const scores = (g.scores || []).filter((s) => s.score != null).map((s) => Number(s.score!))
+      if (!scores.length) continue
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+      if (!trendBySubject[g.subject]) trendBySubject[g.subject] = []
+      trendBySubject[g.subject].push({
+        date: g.date,
+        examName: g.examName,
+        avg: Math.round(avg * 10) / 10,
+        count: scores.length,
+      })
+    }
+    return { classId, trend: trendBySubject }
+  }
+
+  /**
+   * 学生班级排名：按考试+科目，返回每个学生的分数、班级排名、百分位
+   */
+  async classRank(
+    teacherId: string,
+    classId: string,
+    examId: string,
+    subject?: string,
+  ) {
+    await this.assertClassAccess(teacherId, classId)
+    const grades = await this.repo.find({
+      where: { classId, teacherId } as any,
+      take: 500,
+    })
+    const byExam = grades.filter((g) => g.examId === examId)
+    const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
+    const studentMap = new Map(students.map((s) => [s.id, s]))
+    const result: any[] = []
+
+    for (const g of byExam) {
+      if (subject && g.subject !== subject) continue
+      const sorted = (g.scores || [])
+        .filter((s) => s.score != null)
+        .sort((a, b) => Number(b.score) - Number(a.score))
+      const total = sorted.length
+      sorted.forEach((entry, idx) => {
+        const stu = studentMap.get(entry.studentId)
+        result.push({
+          examId,
+          subject: g.subject,
+          studentId: entry.studentId,
+          studentName: stu?.name || '',
+          studentNo: stu?.studentNo || '',
+          score: entry.score,
+          rank: idx + 1,
+          total,
+          percentile: Math.round(((total - idx - 1) / total) * 1000) / 10,
+        })
+      })
+    }
+    return { examId, classId, ranks: result }
+  }
+
+  /**
+   * 学生个人历次考试成绩与趋势
+   */
+  async studentHistory(teacherId: string, studentId: string) {
+    const stu = await this.stuRepo.findOne({ where: { id: studentId } } as any)
+    if (!stu) throw new BadRequestException('学生不存在')
+    const owned = await this.classRepo.findOne({ where: { id: stu.classId, teacherId } } as any)
+    if (!owned) throw new BadRequestException('无权访问该学生成绩')
+    const grades = await this.repo.find({
+      where: { classId: stu.classId, teacherId } as any,
+      order: { date: 'DESC' } as any,
+      take: 1000,
+    })
+    const history: any[] = []
+    const subjectLatest: Record<string, number[]> = {}
+    for (const g of grades) {
+      const entry = (g.scores || []).find((s) => s.studentId === studentId)
+      if (!entry || entry.score == null) continue
+      history.push({
+        date: g.date,
+        examName: g.examName,
+        subject: g.subject,
+        score: entry.score,
+        examId: g.examId,
+      })
+      if (!subjectLatest[g.subject]) subjectLatest[g.subject] = []
+      subjectLatest[g.subject].push(entry.score)
+    }
+    const subjects: Record<string, { avg: number; trend: 'up' | 'down' | 'flat' }> = {}
+    for (const [sub, arr] of Object.entries(subjectLatest)) {
+      arr.sort((a, b) => a - b)
+      const avg = Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10
+      const first = arr[0]
+      const last = arr[arr.length - 1]
+      const trend: 'up' | 'down' | 'flat' = last > first + 3 ? 'up' : last < first - 3 ? 'down' : 'flat'
+      subjects[sub] = { avg, trend }
+    }
+    return { studentId, studentName: stu.name, history, subjects }
+  }
+
+  /**
+   * 薄弱知识点分析：按班级返回每门学科低于班级均分的学生
+   */
+  async weakStudents(teacherId: string, classId: string, examId?: string) {
+    await this.assertClassAccess(teacherId, classId)
+    const where: any = { classId, teacherId }
+    if (examId) where.examId = examId
+    const grades = await this.repo.find({ where, take: 500 })
+    const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
+    const studentMap = new Map(students.map((s) => [s.id, s]))
+    const result: any[] = []
+    for (const g of grades) {
+      const scores = (g.scores || []).filter((s) => s.score != null).map((s) => Number(s.score!))
+      if (!scores.length) continue
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+      const weakList = (g.scores || [])
+        .filter((s) => s.score != null && Number(s.score!) < avg)
+        .map((s) => {
+          const stu = studentMap.get(s.studentId)
+          return {
+            studentId: s.studentId,
+            studentName: stu?.name || '',
+            studentNo: stu?.studentNo || '',
+            score: s.score,
+            gap: Math.round((avg - Number(s.score!)) * 10) / 10,
+          }
+        })
+        .sort((a, b) => a.gap - b.gap)
+      result.push({
+        examId: g.examId,
+        examName: g.examName,
+        subject: g.subject,
+        classAvg: Math.round(avg * 10) / 10,
+        weakCount: weakList.length,
+        weakList: weakList.slice(0, 10),
+      })
+    }
+    return { classId, weakSubjects: result }
   }
 }
 
@@ -316,7 +595,6 @@ class GradesController extends CrudController<Grade> {
     return (this.service as GradesService).importGrades(t.sub, body)
   }
 
-  /** AI 识别成绩单：图片 OCR / Excel / CSV → AI 结构化 → 匹配学生 → 预览 */
   @Post('import-ai')
   @UseGuards(JwtAuthGuard)
   importAi(
@@ -333,10 +611,71 @@ class GradesController extends CrudController<Grade> {
       body.filename || '',
     )
   }
+
+  // ===== 成绩分析新端点 =====
+
+  @Get('analysis/exam')
+  @UseGuards(JwtAuthGuard)
+  examStats(
+    @Query('classId') classId: string,
+    @Query('examId') examId: string,
+    @Query('fullScoreMap') fullScoreMap: string = '',
+    @CurrentTeacher() t: any,
+  ) {
+    if (!classId || !examId) throw new BadRequestException('缺少 classId 或 examId')
+    let map: Record<string, number> = {}
+    try {
+      if (fullScoreMap) map = JSON.parse(fullScoreMap)
+    } catch { /* ignore */ }
+    return (this.service as GradesService).examStats(t.sub, classId, examId, map)
+  }
+
+  @Get('analysis/trend')
+  @UseGuards(JwtAuthGuard)
+  examTrend(
+    @Query('classId') classId: string,
+    @Query('subject') subject: string = '',
+    @CurrentTeacher() t: any,
+  ) {
+    if (!classId) throw new BadRequestException('缺少 classId')
+    return (this.service as GradesService).examTrend(t.sub, classId, subject || undefined)
+  }
+
+  @Get('analysis/rank')
+  @UseGuards(JwtAuthGuard)
+  classRank(
+    @Query('classId') classId: string,
+    @Query('examId') examId: string,
+    @Query('subject') subject: string = '',
+    @CurrentTeacher() t: any,
+  ) {
+    if (!classId || !examId) throw new BadRequestException('缺少 classId 或 examId')
+    return (this.service as GradesService).classRank(t.sub, classId, examId, subject || undefined)
+  }
+
+  @Get('analysis/student/:studentId')
+  @UseGuards(JwtAuthGuard)
+  studentHistory(
+    @Param('studentId') studentId: string,
+    @CurrentTeacher() t: any,
+  ) {
+    return (this.service as GradesService).studentHistory(t.sub, studentId)
+  }
+
+  @Get('analysis/weak')
+  @UseGuards(JwtAuthGuard)
+  weakStudents(
+    @Query('classId') classId: string,
+    @Query('examId') examId: string = '',
+    @CurrentTeacher() t: any,
+  ) {
+    if (!classId) throw new BadRequestException('缺少 classId')
+    return (this.service as GradesService).weakStudents(t.sub, classId, examId || undefined)
+  }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem]), ClassMembersModule, AiModule],
+  imports: [TypeOrmModule.forFeature([Grade, Student, ClassItem, Exam]), ClassMembersModule, AiModule],
   providers: [GradesService],
   controllers: [GradesController],
 })
