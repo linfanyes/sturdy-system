@@ -181,8 +181,8 @@ export class TextbookService {
   async searchKnowledgePoints(schoolId: string, keyword: string, limit = 50) {
     if (!keyword?.trim()) return []
     const kw = keyword.trim()
-    // 先查本校所有教材ID
-    const textbooks = await this.textbookRepo.find({ where: { schoolId, status: 'published' }, select: ['id'] })
+    // 先查本校所有教材（需 name/subject/grade 用于结果展示）
+    const textbooks = await this.textbookRepo.find({ where: { schoolId, status: 'published' }, select: ['id', 'name', 'subject', 'grade'] })
     if (!textbooks.length) return []
     const tbIds = textbooks.map(t => t.id)
     const units = await this.unitRepo.find({ where: { textbookId: In(tbIds) }, select: ['id', 'title', 'textbookId'] })
