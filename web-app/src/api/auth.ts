@@ -63,6 +63,9 @@ export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
       schoolName: u.school,
       features: u.features || [],
       effectiveFeatures: res.effectiveFeatures,
+      position: u.position || '',
+      subject: u.subject || '',
+      subjects: u.subjects || [],
     },
   }
 }
@@ -169,6 +172,9 @@ export async function unifiedLogin(username: string, password: string): Promise<
         schoolName: t.school,
         features: t.features || [],
         effectiveFeatures: res.effectiveFeatures,
+        position: t.position || '',
+        subject: t.subject || '',
+        subjects: t.subjects || [],
       }
       break
     }

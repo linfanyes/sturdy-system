@@ -71,6 +71,13 @@ export const useAuthStore = defineStore('auth', () => {
     if ('schoolFeatureFlags' in profile) {
       patch.schoolFeatureFlags = profile.schoolFeatureFlags ?? null
     }
+    // 教师：同步任教学科与职务（/auth/me 返回的 user 对象含 subject/subjects/position）
+    const me = profile.user
+    if (me && typeof me === 'object') {
+      if (me.position !== undefined) patch.position = me.position || ''
+      if (me.subject !== undefined) patch.subject = me.subject || ''
+      if (Array.isArray(me.subjects)) patch.subjects = me.subjects
+    }
     if (Object.keys(patch).length) updateUser(patch)
   }
 

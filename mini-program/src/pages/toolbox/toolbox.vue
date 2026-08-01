@@ -92,26 +92,29 @@ const sections = ref([
   {
     title: '学科工具',
     items: [
-      { label: '拼音标注', icon: '🔊', quicktool: 'pinyin' },
-      { label: '成语词典', icon: '🔤', quicktool: 'idiom' },
-      { label: '作文素材', icon: '✏️', quicktool: 'writingMaterials' },
-      { label: '古诗词', icon: '📜', quicktool: 'poetry' },
-      { label: '阅读理解', icon: '📖', quicktool: 'reading' },
-      { label: '汉字听写', icon: '🎯', quicktool: 'dictation' },
-      { label: '单词卡片', icon: '🃏', quicktool: 'wordCard' },
-      { label: '句型练习', icon: '💬', quicktool: 'sentencePractice' },
-      { label: '语法练习', icon: '📐', quicktool: 'grammar' },
-      { label: '英语听力', icon: '🎧', quicktool: 'listening' },
-      { label: '单词拼写', icon: '🔤', quicktool: 'spell' },
-      { label: '口语练习', icon: '🎤', quicktool: 'speaking' },
-      { label: '英语爽文', icon: '📚', quicktool: 'englishStory' },
-      { label: '情景对话', icon: '💬', quicktool: 'sceneDialogue' },
-      { label: '笔顺演示', icon: '✍️', path: '/pages/tools/strokeOrder' },
-      { label: '口算练习', icon: '🧮', path: '/pages/tools/math' },
-      { label: '竖式计算', icon: '📐', path: '/pages/tools/verticalCalc' },
-      { label: '乘法口诀', icon: '✖️', path: '/pages/tools/multiplicationTable' },
-      { label: '单位换算', icon: '📏', path: '/pages/tools/unitConversion' },
-      { label: '错题本', icon: '❌', path: '/pages/tools/mathMistakes' },
+      // 语文工具
+      { label: '拼音标注', icon: '🔊', quicktool: 'pinyin', subject: '语文' },
+      { label: '成语词典', icon: '🔤', quicktool: 'idiom', subject: '语文' },
+      { label: '作文素材', icon: '✏️', quicktool: 'writingMaterials', subject: '语文' },
+      { label: '古诗词', icon: '📜', quicktool: 'poetry', subject: '语文' },
+      { label: '阅读理解', icon: '📖', quicktool: 'reading', subject: '语文' },
+      { label: '汉字听写', icon: '🎯', quicktool: 'dictation', subject: '语文' },
+      { label: '笔顺演示', icon: '✍️', path: '/pages/tools/strokeOrder', subject: '语文' },
+      // 数学工具
+      { label: '口算练习', icon: '🧮', path: '/pages/tools/math', subject: '数学' },
+      { label: '竖式计算', icon: '📐', path: '/pages/tools/verticalCalc', subject: '数学' },
+      { label: '乘法口诀', icon: '✖️', path: '/pages/tools/multiplicationTable', subject: '数学' },
+      { label: '单位换算', icon: '📏', path: '/pages/tools/unitConversion', subject: '数学' },
+      { label: '错题本', icon: '❌', path: '/pages/tools/mathMistakes', subject: '数学' },
+      // 英语工具
+      { label: '单词卡片', icon: '🃏', quicktool: 'wordCard', subject: '英语' },
+      { label: '句型练习', icon: '💬', quicktool: 'sentencePractice', subject: '英语' },
+      { label: '语法练习', icon: '📐', quicktool: 'grammar', subject: '英语' },
+      { label: '英语听力', icon: '🎧', quicktool: 'listening', subject: '英语' },
+      { label: '单词拼写', icon: '🔤', quicktool: 'spell', subject: '英语' },
+      { label: '口语练习', icon: '🎤', quicktool: 'speaking', subject: '英语' },
+      { label: '英语爽文', icon: '📚', quicktool: 'englishStory', subject: '英语' },
+      { label: '情景对话', icon: '💬', quicktool: 'sceneDialogue', subject: '英语' },
     ],
   },
   {
@@ -293,6 +296,8 @@ const viewSections = computed(() => {
     ? auth.effectiveFeatures
     : auth.features
   if (ftrs && ftrs.length) {
+    // 教师主学科（语数外三科老师一般只任一科；多学科时 subjects 数组优先）
+    const teacherSubject = (auth.user && (auth.user.subjects && auth.user.subjects[0])) || (auth.user && auth.user.subject) || ''
     secs = secs.filter((sec) => {
       // 我的工作台+教师办公始终可见
       if (sec.title === '我的工作台' || sec.title === '教师办公') return true
@@ -301,8 +306,10 @@ const viewSections = computed(() => {
       // 过滤分区内的具体工具
       const filteredItems = sec.items.filter((it) => {
         const label = it.label
-        // subject/quicktool 工具不占用功能分区，始终保留（子页面单独处理权限）
-        if (it.subject || it.quicktool) return true
+        // 学科工具按教师 subject 过滤：仅本学科可见
+        if (it.subject && teacherSubject && it.subject !== teacherSubject) return false
+        // quicktool 工具不占用功能分区，始终保留（子页面单独处理权限）
+        if (it.quicktool) return true
         // subjectEntry 学科入口按学科名走 feature 过滤
         // （语文/英语/科学/道德归 ai，数学归 tools）
         for (const f of ftrs) {

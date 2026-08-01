@@ -11,9 +11,15 @@ import {
   listPoems, listFormulas, listWords, listWordCategories,
   type Poem, type MathFormula, type EnglishWord,
 } from '@/api/resource-library'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 type Tab = 'poems' | 'formulas' | 'words'
-const tab = ref<Tab>('poems')
+// 按教师主学科默认选中对应 tab：语文→古诗词，数学→公式，英语→单词
+const teacherSubject = auth.user?.subjects?.[0] || auth.user?.subject || ''
+const defaultTab: Tab = teacherSubject === '数学' ? 'formulas' : teacherSubject === '英语' ? 'words' : 'poems'
+const tab = ref<Tab>(defaultTab)
 const tabs: { key: Tab; label: string; icon: any }[] = [
   { key: 'poems', label: '古诗词', icon: BookOpen },
   { key: 'formulas', label: '数学公式', icon: Calculator },

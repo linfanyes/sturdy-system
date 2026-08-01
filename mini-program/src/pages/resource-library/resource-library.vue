@@ -157,14 +157,17 @@
 import { ref, reactive } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
-import { theme } from '../../common/store'
+import { theme, auth } from '../../common/store'
 
 const tabs = [
   { key: 'poems', label: '古诗词', icon: '📜' },
   { key: 'formulas', label: '数学公式', icon: '📐' },
   { key: 'words', label: '英语单词', icon: '🔤' },
 ]
-const tab = ref('poems')
+// 按教师主学科默认选中对应 tab：语文→古诗词，数学→公式，英语→单词
+const _teacherSubject = (auth.user && (auth.user.subjects && auth.user.subjects[0])) || (auth.user && auth.user.subject) || ''
+const _defaultTab = _teacherSubject === '数学' ? 'formulas' : _teacherSubject === '英语' ? 'words' : 'poems'
+const tab = ref(_defaultTab)
 
 // 枚举
 const gradeValues = ['', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '通用']

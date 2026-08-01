@@ -106,6 +106,9 @@ export class AuthService {
         features: teacher.features, enabled: teacher.enabled,
         avatar: teacher.avatar, teacherNo: teacher.teacherNo,
         position: teacher.position || teacherProfile?.position || '',
+        // 任教学科：用于前端按学科过滤菜单/工具（语数外老师一般只任一科）
+        subject: teacher.subject || teacherProfile?.subject || '',
+        subjects: teacher.subjects || teacherProfile?.subjects || [],
       }
       // 检查教师是否关联了家长身份（使用 parentId 字段）
       let parentExists = false

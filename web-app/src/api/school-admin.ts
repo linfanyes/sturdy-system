@@ -59,6 +59,7 @@ export function createTeacher(dto: {
   phone?: string
   gender?: string
   subject?: string
+  position?: string
   username?: string
   password?: string
 }) {

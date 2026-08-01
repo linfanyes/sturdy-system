@@ -40,4 +40,8 @@ export interface AuthUser {
   classId?: number
   position?: string
   teacherNo?: string
+  /** 教师主任教学科（如"语文"/"数学"/"英语"），用于按学科过滤菜单/工具 */
+  subject?: string
+  /** 教师任教学科列表（多数教师只任一科，subjects[0] 即主学科） */
+  subjects?: string[]
 }

@@ -57,6 +57,8 @@ interface MenuSubGroup {
   label: string
   /** 二级子项也展示为一级图标卡（has 多个 items 时显示） */
   asGrid?: boolean
+  /** 学科归属：标记后仅对应学科教师可见（如 '语文'/'数学'/'英语'），不标记则为公共 */
+  subject?: string
   items: MenuItem[]
 }
 
@@ -178,7 +180,7 @@ const teacherMenu: MenuCategory[] = [
         ],
       },
       {
-        label: '语文工具', asGrid: true,
+        label: '语文工具', asGrid: true, subject: '语文',
         items: [
           { name: 'toolStrokeOrder', label: '汉字笔顺', to: '/teacher/tools/strokeOrder', feature: 'tools', emoji: '✏️', color: 'cocoa' },
           { name: 'toolWritingMaterials', label: '作文素材', to: '/teacher/tools/writingMaterials', feature: 'tools', emoji: '📝', color: 'butter' },
@@ -191,7 +193,7 @@ const teacherMenu: MenuCategory[] = [
         ],
       },
       {
-        label: '数学工具', asGrid: true,
+        label: '数学工具', asGrid: true, subject: '数学',
         items: [
           { name: 'toolMath', label: '口算生成', to: '/teacher/tools/math', feature: 'tools', icon: Calculator, color: 'rose' },
           { name: 'toolVerticalCalc', label: '竖式计算', to: '/teacher/tools/verticalCalc', feature: 'tools', emoji: '📐', color: 'blue' },
@@ -202,7 +204,7 @@ const teacherMenu: MenuCategory[] = [
         ],
       },
       {
-        label: '英语工具', asGrid: true,
+        label: '英语工具', asGrid: true, subject: '英语',
         items: [
           { name: 'toolWordCard', label: '单词卡片', to: '/teacher/tools/wordCard', feature: 'tools', icon: LanguagesIcon, color: 'blue' },
           { name: 'toolSentencePractice', label: '句型练习', to: '/teacher/tools/sentencePractice', feature: 'tools', emoji: '📝', color: 'green' },
@@ -290,13 +292,21 @@ function hasFeature(feature?: string): boolean {
   return features.includes(feature)
 }
 
-/** 教师可见的三级菜单（按 feature 过滤） */
+/** 教师可见的三级菜单（按 feature + 学科过滤） */
 const visibleTeacherMenu = computed<MenuCategory[]>(() => {
+  // 教师主学科（语数外三科老师一般只任一科；多学科时 subjects 数组优先）
+  const teacherSubject = auth.user?.subjects?.[0] || auth.user?.subject || ''
   return teacherMenu
     .map((cat) => ({
       ...cat,
       groups: cat.groups
-        .map((g) => ({ ...g, items: g.items.filter((it) => hasFeature(it.feature)) }))
+        .map((g) => {
+          // 学科工具分组：仅本学科教师可见（校管/超管全可见）
+          if (g.subject && teacherSubject && g.subject !== teacherSubject) {
+            return { ...g, items: [] }
+          }
+          return { ...g, items: g.items.filter((it) => hasFeature(it.feature)) }
+        })
         .filter((g) => g.items.length > 0),
     }))
     .filter((cat) => cat.groups.length > 0)
