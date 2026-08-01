@@ -366,11 +366,12 @@ export class TextbookService {
     // 校管/超管全权
     if (user?.role === 'school_admin' || user?.role === 'super') return true
     if (user?.role !== 'teacher') return false
-    const { subject: leadSubject, grade: leadGrade } = this.parseLeaderPosition(user?.position || '')
-    if (!leadSubject) return false
-    // 加载教材，校验 schoolId + 学科 + 年级
+    // 加载教师记录（JWT payload 不含 position，需从 DB 读取最新职务）
     const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
     if (!teacher?.schoolId) return false
+    const { subject: leadSubject, grade: leadGrade } = this.parseLeaderPosition(teacher.position || user?.position || '')
+    if (!leadSubject) return false
+    // 加载教材，校验 schoolId + 学科 + 年级
     const tb = await this.textbookRepo.findOne({ where: { id: textbookId, schoolId: teacher.schoolId } })
     if (!tb) return false
     if (tb.subject !== leadSubject) return false
