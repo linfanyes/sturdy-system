@@ -24,11 +24,11 @@ export class Textbook {
   @Column({ type: 'varchar', length: 36, comment: '归属学校ID' })
   schoolId: string
 
-  @Column({ default: '' }) publisher: string   // 人教版 / 外研版
-  @Column({ default: '' }) subject: string     // 语文 / 数学 / 英语
-  @Column({ default: '' }) grade: string       // 三年级
-  @Column({ default: '' }) term: string        // 上册 / 下册
-  @Column() name: string                        // 教材名称
+  @Column({ length: 50, default: '' }) publisher: string   // 人教版 / 外研版
+  @Column({ length: 20, default: '' }) subject: string     // 语文 / 数学 / 英语
+  @Column({ length: 20, default: '' }) grade: string       // 三年级
+  @Column({ length: 20, default: '' }) term: string        // 上册 / 下册
+  @Column({ length: 200 }) name: string                        // 教材名称
   @Column({ type: 'text', nullable: true }) cover: string
   @Column({ default: 'published' }) status: string  // draft / published
 
