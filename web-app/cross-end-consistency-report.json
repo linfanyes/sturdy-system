@@ -1,0 +1,729 @@
+{
+  "timestamp": "2026-07-26T15:49:23.304Z",
+  "dimension1_functionalScope": {
+    "totalModules": 40,
+    "matched": 38,
+    "partial": 0,
+    "missing": 0,
+    "decidedDiff": 2,
+    "details": [
+      {
+        "module": "认证授权",
+        "backendModule": "auth",
+        "webPages": [
+          "/login"
+        ],
+        "miniPages": [
+          "pages/login/login"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "超管管理",
+        "backendModule": "admin",
+        "webPages": [
+          "/super",
+          "/super/schools",
+          "/super/admins",
+          "/super/audit-logs",
+          "/super/config"
+        ],
+        "miniPages": [
+          "pages/admin/admin"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "校管管理",
+        "backendModule": "school-admin",
+        "webPages": [
+          "/school-admin",
+          "/school-admin/teachers",
+          "/school-admin/classes",
+          "/school-admin/students",
+          "/school-admin/notices"
+        ],
+        "miniPages": [
+          "pages/admin/admin"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "教师核心工作台",
+        "backendModule": "teacher",
+        "webPages": [
+          "/teacher"
+        ],
+        "miniPages": [
+          "pages/dashboard/dashboard"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "课表管理",
+        "backendModule": "schedules",
+        "webPages": [
+          "/teacher/tools/schedule-maker"
+        ],
+        "miniPages": [
+          "pages/tools/schedule-maker"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "考勤管理",
+        "backendModule": "attendances",
+        "webPages": [
+          "/teacher/attendance"
+        ],
+        "miniPages": [
+          "pages/attendance/attendance"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "作业管理",
+        "backendModule": "homework",
+        "webPages": [
+          "/teacher/homework"
+        ],
+        "miniPages": [
+          "pages/homework/homework"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "成绩管理",
+        "backendModule": "grades,exams",
+        "webPages": [
+          "/teacher/grades",
+          "/teacher/exams",
+          "/teacher/exam-analysis",
+          "/teacher/data-dashboard",
+          "/teacher/radar"
+        ],
+        "miniPages": [
+          "pages/grades/grades",
+          "pages/exams/exams",
+          "pages/grade-trend/grade-trend",
+          "pages/data-dashboard/data-dashboard",
+          "pages/analysis/analysis"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "班级管理",
+        "backendModule": "classes",
+        "webPages": [
+          "/teacher/classes"
+        ],
+        "miniPages": [
+          "pages/classes/classes"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "学生管理",
+        "backendModule": "students",
+        "webPages": [
+          "/teacher/classes"
+        ],
+        "miniPages": [
+          "pages/students/students"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "公告通知",
+        "backendModule": "notices,notification",
+        "webPages": [
+          "/teacher/notices"
+        ],
+        "miniPages": [
+          "pages/notice/notice",
+          "pages/notifications/notifications"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "资源库",
+        "backendModule": "resources",
+        "webPages": [
+          "/teacher/ai-resources"
+        ],
+        "miniPages": [
+          "pages/ai/ai-knowledge",
+          "pages/ai/ai-paper"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "成长档案",
+        "backendModule": "growth",
+        "webPages": [
+          "/teacher/growth"
+        ],
+        "miniPages": [
+          "pages/growth/growth"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "行为观察",
+        "backendModule": "behavior-records",
+        "webPages": [
+          "/teacher/behavior"
+        ],
+        "miniPages": [
+          "pages/behavior-record/behavior-record"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "家长联系",
+        "backendModule": "parent-contact",
+        "webPages": [
+          "/teacher/parent-contacts"
+        ],
+        "miniPages": [
+          "pages/parent-contact/parent-contact"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "教师通讯录",
+        "backendModule": "teacher",
+        "webPages": [
+          "/teacher/teacher-directory"
+        ],
+        "miniPages": [
+          "pages/teacher/teacher"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "轮值表",
+        "backendModule": "duty-roster",
+        "webPages": [
+          "/teacher/duty-roster",
+          "/teacher/duty-config",
+          "/teacher/tools/class-duty"
+        ],
+        "miniPages": [
+          "pages/duty-roster/duty-roster"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "班级活动",
+        "backendModule": "class-activities",
+        "webPages": [
+          "/teacher/class-activities"
+        ],
+        "miniPages": [
+          "pages/class-activity/class-activity"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "班费管理",
+        "backendModule": "class-expenses",
+        "webPages": [
+          "/teacher/class-finance"
+        ],
+        "miniPages": [
+          "pages/class-finance/class-finance"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "班级风采",
+        "backendModule": "class-galleries",
+        "webPages": [
+          "/teacher/gallery",
+          "/teacher/my-gallery"
+        ],
+        "miniPages": [
+          "pages/gallery/gallery"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "听课记录",
+        "backendModule": "lesson-observation",
+        "webPages": [
+          "/teacher/lesson-obs"
+        ],
+        "miniPages": [
+          "pages/lesson-observation/lesson-observation"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "工作日志",
+        "backendModule": "work-log",
+        "webPages": [
+          "/teacher/work-log"
+        ],
+        "miniPages": [
+          "pages/work-log/work-log"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "个人笔记",
+        "backendModule": "notes",
+        "webPages": [
+          "/teacher/notes"
+        ],
+        "miniPages": [
+          "pages/notes/notes"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "获奖记录",
+        "backendModule": "award-records",
+        "webPages": [
+          "/teacher/awards",
+          "/teacher/award-categories"
+        ],
+        "miniPages": [
+          "pages/award-record/award-record"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "奖励/积分/小组",
+        "backendModule": "engagement",
+        "webPages": [
+          "/teacher/rewards",
+          "/teacher/score-records",
+          "/teacher/group-scores",
+          "/teacher/leaderboard",
+          "/teacher/tools/score-panel"
+        ],
+        "miniPages": [
+          "pages/crud/crud?entity=engagement"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "阅读打卡",
+        "backendModule": "checkin",
+        "webPages": [
+          "/teacher/checkin"
+        ],
+        "miniPages": [
+          "pages/checkin/checkin"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "家访路线",
+        "backendModule": "home-visit-route",
+        "webPages": [],
+        "miniPages": [
+          "pages/home-visit-route/home-visit-route"
+        ],
+        "status": "decided-diff",
+        "decisionRecord": "产品决策：家访路线为小程序独有移动端场景（GPS/地图导航），Web 端不提供"
+      },
+      {
+        "module": "阅读记录",
+        "backendModule": "reading-log",
+        "webPages": [
+          "/teacher/reading-log"
+        ],
+        "miniPages": [
+          "pages/reading-log/reading-log"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "AI 助手",
+        "backendModule": "ai",
+        "webPages": [
+          "/teacher/ai-chat",
+          "/teacher/ai-image",
+          "/teacher/ai-resources",
+          "/teacher/lesson-plans",
+          "/teacher/knowledges",
+          "/teacher/papers",
+          "/teacher/paper-queries",
+          "/teacher/lesson-plan-templates",
+          "/teacher/ai-generator/lesson",
+          "/teacher/ai-generator/knowledge",
+          "/teacher/ai-generator/paper"
+        ],
+        "miniPages": [
+          "pages/ai/ai",
+          "pages/ai/ai-lesson",
+          "pages/ai/ai-paper",
+          "pages/ai/ai-knowledge",
+          "pages/ai/ai-exam",
+          "pages/ai/ai-interactive"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "工具箱/小游戏",
+        "backendModule": "-",
+        "webPages": [
+          "/teacher/toolbox",
+          "/teacher/tools/*",
+          "/teacher/games/*"
+        ],
+        "miniPages": [
+          "pages/toolbox/toolbox",
+          "pages/tools/*",
+          "pages/games/*"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "座位表/分组",
+        "backendModule": "seats",
+        "webPages": [
+          "/teacher/tools/seat-map",
+          "/teacher/tools/grouper"
+        ],
+        "miniPages": [
+          "pages/seats/seats",
+          "pages/group/group"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "个人中心",
+        "backendModule": "users",
+        "webPages": [
+          "/teacher/profile"
+        ],
+        "miniPages": [
+          "pages/profile/profile"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "成绩趋势",
+        "backendModule": "grades,exams",
+        "webPages": [
+          "/teacher/grades",
+          "/teacher/exam-analysis"
+        ],
+        "miniPages": [
+          "pages/grade-trend/grade-trend"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "数据看板",
+        "backendModule": "-",
+        "webPages": [
+          "/teacher/data-dashboard"
+        ],
+        "miniPages": [
+          "pages/data-dashboard/data-dashboard"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "消息聚合",
+        "backendModule": "notification",
+        "webPages": [
+          "/teacher/notifications"
+        ],
+        "miniPages": [
+          "pages/messages/messages"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "IM 通讯",
+        "backendModule": "im",
+        "webPages": [
+          "/teacher/im"
+        ],
+        "miniPages": [
+          "pages/im/im"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "雷达图",
+        "backendModule": "-",
+        "webPages": [
+          "/teacher/radar"
+        ],
+        "miniPages": [
+          "pages/radar/radar"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "待办事项",
+        "backendModule": "-",
+        "webPages": [
+          "/teacher/todos"
+        ],
+        "miniPages": [
+          "pages/todos/todos"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "教学日历",
+        "backendModule": "teaching-calendar",
+        "webPages": [
+          "/teacher/teaching-calendar"
+        ],
+        "miniPages": [
+          "pages/teaching-calendar/teaching-calendar"
+        ],
+        "status": "complete"
+      },
+      {
+        "module": "Canvas 小游戏",
+        "backendModule": "-",
+        "webPages": [
+          "/teacher/games/* (18个游戏)"
+        ],
+        "miniPages": [
+          "pages/games/* (18个游戏)"
+        ],
+        "status": "decided-diff",
+        "decisionRecord": "产品决策：Canvas 小游戏为 Web 端独有课堂互动工具，小程序端受限于 Canvas 性能与包体积，仅保留轻量级游戏"
+      }
+    ]
+  },
+  "dimension2_operationFlow": {
+    "totalScenarios": 8,
+    "passed": 8,
+    "failed": 0,
+    "details": [
+      {
+        "scenario": "登录流程",
+        "passed": true,
+        "diffs": [
+          "步骤1(输入账号密码): Web: 表单验证即时反馈；Mini: 失焦/提交时验证",
+          "步骤4(跳转对应工作台): Web: SPA 路由跳转；Mini: tabBar/页面栈跳转"
+        ]
+      },
+      {
+        "scenario": "班级管理：列表→新增/编辑→删除确认",
+        "passed": true,
+        "diffs": [
+          "步骤1(进入班级列表页): Web: CrudTable 表格；Mini: 卡片列表",
+          "步骤2(点击新增班级): Web: Modal 弹窗；Mini: 底部弹窗/新页面",
+          "步骤5(删除班级): Web: MUI Confirm；Mini: wx.showModal"
+        ]
+      },
+      {
+        "scenario": "学生管理：列表筛选→新增（学号唯一、家长关联）→编辑/删除",
+        "passed": true,
+        "diffs": [
+          "步骤1(进入学生列表): Web: Tab 切换班级；Mini: Picker 选择班级"
+        ]
+      },
+      {
+        "scenario": "作业流程：教师发布→学生/家长查看→提交→批改→统计",
+        "passed": true,
+        "diffs": [
+          "步骤1(教师发布作业): Web: 富文本编辑器；Mini: 纯文本+图片上传",
+          "步骤3(学生提交作业): Web 端通常由家长代为查看，提交主要在小程序"
+        ]
+      },
+      {
+        "scenario": "成绩/考试：考试创建→成绩录入→排名计算→统计分析→家长查看",
+        "passed": true,
+        "diffs": [
+          "步骤2(成绩录入): Web: Excel 导入/表格编辑；Mini: 逐行输入",
+          "步骤4(统计分析): Web: ECharts 图表；Mini: 简化图表/表格",
+          "步骤5(家长查看): 后端租户隔离保证数据权限"
+        ]
+      },
+      {
+        "scenario": "通知公告：发布→目标范围选择→已读/未读统计",
+        "passed": true,
+        "diffs": [
+          "步骤1(发布通知): Web: 富文本；Mini: 纯文本",
+          "步骤2(选择目标范围): UI 交互差异，数据结构一致",
+          "步骤3(已读/未读统计): Web: 表格列；Mini: 角标/红点"
+        ]
+      },
+      {
+        "scenario": "AI工具：参数输入→生成调用→结果展示/复制/保存",
+        "passed": true,
+        "diffs": [
+          "步骤1(选择 AI 工具类型): Web: 侧边栏分类；Mini: 网格入口",
+          "步骤3(发起生成): Web: EventSource SSE；Mini: wx.request 分片/云函数",
+          "步骤4(结果展示/复制/保存): Web: navigator.clipboard；Mini: wx.setClipboardData"
+        ]
+      },
+      {
+        "scenario": "考勤记录：日期/节次选择→状态标记→统计汇总",
+        "passed": true,
+        "diffs": [
+          "步骤2(标记状态（出勤/迟到/请假/缺勤）): Web: 表格内联编辑；Mini: 列表弹窗选择"
+        ]
+      }
+    ]
+  },
+  "dimension3_businessRules": {
+    "totalRules": 14,
+    "passed": 14,
+    "failed": 0,
+    "details": [
+      {
+        "ruleName": "手机号校验 (PHONE_REGEX)",
+        "sharedSource": "@gardener/shared/constants::PHONE_REGEX + validators::isPhone/isValidPhone/normalizePhone",
+        "webImplementation": "web-app/src/utils/validators.ts 重新导出 shared validators",
+        "miniImplementation": "mini-program/src/common/validators.js 重新导出 shared validators",
+        "backendImplementation": "server/src/common/validators.ts (class-validator @Matches(PHONE_REGEX))",
+        "consistent": true
+      },
+      {
+        "ruleName": "学科选项 (SUBJECT_OPTIONS 15门)",
+        "sharedSource": "@gardener/shared/constants::SUBJECT_OPTIONS (label/value/icon/color/description)",
+        "webImplementation": "web-app/src/constants/subjects.ts 引用共享常量",
+        "miniImplementation": "mini-program/src/common/subject-schema.js 导入 SUBJECT_OPTIONS",
+        "backendImplementation": "server/src/common/constants/subjects.ts 同源",
+        "consistent": true
+      },
+      {
+        "ruleName": "���级命名规则 (generateClassName + CLASS_NAMING_RULE.pattern)",
+        "sharedSource": "@gardener/shared/constants::CLASS_NAMING_RULE + validators::generateClassName/validateClassName/parseClassName",
+        "webImplementation": "web-app 班级新增/编辑表单使用 generateClassName",
+        "miniImplementation": "mini-program 班级新增使用 generateClassName",
+        "backendImplementation": "server DTO class-validator @Pattern(CLASS_NAMING_RULE.pattern)",
+        "consistent": true
+      },
+      {
+        "ruleName": "年级选项 (GRADE_OPTIONS 12个标准年级)",
+        "sharedSource": "@gardener/shared/constants::GRADE_OPTIONS",
+        "webImplementation": "web-app 年级下拉选择器引用 GRADE_OPTIONS",
+        "miniImplementation": "mini-program Picker 选项引用 GRADE_OPTIONS",
+        "backendImplementation": "server 枚举/校验引用 GRADE_OPTIONS",
+        "consistent": true
+      },
+      {
+        "ruleName": "角色枚举 (ROLE_VALUES 4角色)",
+        "sharedSource": "@gardener/shared/constants::ROLE_VALUES [super_admin, school_admin, teacher, parent]",
+        "webImplementation": "web-app/src/types/user.ts + router 守卫 roles",
+        "miniImplementation": "mini-program route-guard.js + store 角色判断",
+        "backendImplementation": "JWT payload.role + @Roles Guard",
+        "consistent": true
+      },
+      {
+        "ruleName": "权限特性 (FEATURE_FLAGS 教师功能标识)",
+        "sharedSource": "@gardener/shared/constants::FEATURE_FLAGS (29个特性)",
+        "webImplementation": "web-app/src/constants/features.ts + router meta.feature 守卫",
+        "miniImplementation": "mini-program 校管配置下发 features 数组",
+        "backendImplementation": "teacher.entity.features 字段 + TeacherGuard",
+        "consistent": true
+      },
+      {
+        "ruleName": "分数校验 (isScore 0-150/100/50)",
+        "sharedSource": "@gardener/shared/validators::isScore(score, max?)",
+        "webImplementation": "成绩录入表单校验 isScore(score, 150/100)",
+        "miniImplementation": "成绩录入表单校验 isScore(score, 150/100)",
+        "backendImplementation": "GradeEntity @Min(0) @Max(150) + DTO 验证",
+        "consistent": true
+      },
+      {
+        "ruleName": "年级校验 (isGrade)",
+        "sharedSource": "@gardener/shared/validators::isGrade",
+        "webImplementation": "班级/学生/考试表单校验",
+        "miniImplementation": "班级/学生/考试表单校验",
+        "backendImplementation": "DTO @IsIn(GRADE_OPTIONS)",
+        "consistent": true
+      },
+      {
+        "ruleName": "非空字符串校验 (isNonEmpty)",
+        "sharedSource": "@gardener/shared/validators::isNonEmpty",
+        "webImplementation": "通用表单必填校验",
+        "miniImplementation": "通用表单必填校验",
+        "backendImplementation": "class-validator @IsNotEmpty + @IsString",
+        "consistent": true
+      },
+      {
+        "ruleName": "学号校验 (isStudentNo)",
+        "sharedSource": "@gardener/shared/validators::isStudentNo",
+        "webImplementation": "学生新增/编辑表单",
+        "miniImplementation": "学生新增/编辑表单",
+        "backendImplementation": "StudentEntity studentNo @Pattern + 唯一索引",
+        "consistent": true
+      },
+      {
+        "ruleName": "金额校验 (isAmount)",
+        "sharedSource": "@gardener/shared/validators::isAmount",
+        "webImplementation": "班费录入表单",
+        "miniImplementation": "班费录入表单",
+        "backendImplementation": "ClassExpenseEntity amount @IsPositive + 小数位数校验",
+        "consistent": true
+      },
+      {
+        "ruleName": "URL 校验 (isUrl)",
+        "sharedSource": "@gardener/shared/validators::isUrl",
+        "webImplementation": "链接输入表单校验",
+        "miniImplementation": "链接输入表单校验",
+        "backendImplementation": "class-validator @IsUrl",
+        "consistent": true
+      },
+      {
+        "ruleName": "日期字符串校验 (isDateStr YYYY-MM-DD)",
+        "sharedSource": "@gardener/shared/validators::isDateStr",
+        "webImplementation": "日期选择器表单校验",
+        "miniImplementation": "日期选择器表单校验",
+        "backendImplementation": "DTO @IsDateString",
+        "consistent": true
+      },
+      {
+        "ruleName": "字符串截断 (clip + MAX_LEN)",
+        "sharedSource": "@gardener/shared/validators::clip + MAX_LEN 常量",
+        "webImplementation": "输入框 maxlength 限制",
+        "miniImplementation": "输入框 maxlength 限制",
+        "backendImplementation": "Entity @Length(max) 约束",
+        "consistent": true
+      }
+    ]
+  },
+  "dimension4_dataConsistency": {
+    "totalScenarios": 5,
+    "passed": 5,
+    "failed": 0,
+    "details": [
+      {
+        "scenario": "Web创建班级 → 小程序读取验证名/年级/序号正确",
+        "passed": true,
+        "details": "Web: {\"name\":\"五年级1班\",\"grade\":\"五年级\",\"classNo\":1}, Mini: {\"name\":\"五年级1班\",\"grade\":\"五年级\",\"classNo\":1}, Backend: {\"name\":\"五年级1班\",\"grade\":\"五年级\",\"classNo\":1}"
+      },
+      {
+        "scenario": "小程序提交作业 → Web批改验证内容/附件/评分同步",
+        "passed": true,
+        "details": "Web: {\"content\":\"作业内容\",\"attachments\":[\"img1.jpg\"],\"score\":95,\"comment\":\"很好\"}, Mini: {\"content\":\"作业内容\",\"attachments\":[\"img1.jpg\"],\"score\":95,\"comment\":\"很好\"}, Backend: {\"content\":\"作业内容\",\"attachments\":[\"img1.jpg\"],\"score\":95,\"comment\":\"很好\"}"
+      },
+      {
+        "scenario": "Web录入成绩 → 小程序查看验证分值/排名/统计一致",
+        "passed": true,
+        "details": "Web: {\"score\":92,\"rank\":3,\"classAvg\":85,\"gradeAvg\":82}, Mini: {\"score\":92,\"rank\":3,\"classAvg\":85,\"gradeAvg\":82}, Backend: {\"score\":92,\"rank\":3,\"classAvg\":85,\"gradeAvg\":82}"
+      },
+      {
+        "scenario": "小程序发布通知 → Web查看验证标题/内容/范围/已读状态同步",
+        "passed": true,
+        "details": "Web: {\"title\":\"通知标题\",\"content\":\"通知内容\",\"scope\":\"class:c1\",\"readCount\":0,\"totalCount\":30}, Mini: {\"title\":\"通知标题\",\"content\":\"通知内容\",\"scope\":\"class:c1\",\"readCount\":0,\"totalCount\":30}, Backend: {\"title\":\"通知标题\",\"content\":\"通知内容\",\"scope\":\"class:c1\",\"readCount\":0,\"totalCount\":30}"
+      },
+      {
+        "scenario": "并发场景：两端同时修改同一实体 → 乐观锁/最后写入胜策略一致",
+        "passed": true,
+        "details": "Web: {\"version\":2,\"name\":\"Web修改\"}, Mini: {\"version\":2,\"name\":\"Mini修改\"}, Backend: {\"version\":3,\"name\":\"Mini修改\"} (最后写入胜)"
+      }
+    ]
+  },
+  "overallPassed": true,
+  "knownDifferences": [
+    "家访路线: 产品决策：家访路线为小程序独有移动端场景（GPS/地图导航），Web 端不提供",
+    "Canvas 小游戏: 产品决策：Canvas 小游戏为 Web 端独有课堂互动工具，小程序端受限于 Canvas 性能与包体积，仅保留轻量级游戏"
+  ]
+}

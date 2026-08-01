@@ -34,6 +34,13 @@
     <EmptyState v-if="!classId" icon="📊" text="请先选择班级" hint="选择一个班级后即可查看和录入成绩" />
 
     <block v-else>
+      <!-- 模式切换：单科录入 / 全部科目录入 -->
+      <view class="mode-tabs">
+        <view :class="['mtab', mode === 'single' ? 'on' : '']" @click="setMode('single')">单科录入</view>
+        <view :class="['mtab', mode === 'all' ? 'on' : '']" @click="setMode('all')">全部科目录入</view>
+      </view>
+
+      <template v-if="mode === 'single'">
       <view v-if="existing" class="exist">
         ✅ 已录入 {{ doneCount }} / {{ students.length }} 人（点击「保存」可更新）
         <text class="clear" @click="removeGrade">删除该成绩</text>
@@ -99,6 +106,61 @@
           <button class="confirm" :disabled="!preview.validCount" @click="commit">确认导入 {{ preview.validCount }} 条</button>
         </view>
       </view>
+      </template>
+
+      <!-- 全部科目录入 / 全部科目导入 -->
+      <template v-if="mode === 'all'">
+        <view v-if="!examId" class="exist">请先在上方选择「考试」（全部科目录入将按该考试的所有科目生成矩阵）</view>
+        <block v-else>
+          <view class="exist">
+            ✅ 已录入科目 {{ allFilledSubjects }} / {{ matrixSubjects.length }}（点击「保存全部」可更新）
+            <text class="clear" @click="clearAllGrades">清空全部</text>
+          </view>
+          <view class="prog">
+            <text class="prog-txt">总已录入 {{ allFilledCount }} / {{ matrixStudents.length * matrixSubjects.length }} 格</text>
+            <view class="prog-bar"><view class="prog-fill" :style="{ width: matrixStudents.length && matrixSubjects.length ? (allFilledCount / (matrixStudents.length * matrixSubjects.length) * 100) + '%' : '0%' }"></view></view>
+          </view>
+
+          <scroll-view scroll-x class="matrix-wrap">
+            <view class="matrix">
+              <view class="m-head">
+                <view class="m-cell m-name">学生</view>
+                <view v-for="s in matrixSubjects" :key="s" class="m-cell m-subject">{{ s }}</view>
+              </view>
+              <view v-for="stu in matrixStudents" :key="stu.id" class="m-row">
+                <view class="m-cell m-name">{{ stu.name }}<text class="sno"> · {{ stu.studentNo || '' }}</text></view>
+                <input
+                  v-for="s in matrixSubjects"
+                  :key="s"
+                  class="m-cell m-score"
+                  type="digit"
+                  :value="matrix[stu.id] ? (matrix[stu.id][s] || '') : ''"
+                  placeholder="0"
+                  @input="(e) => onMatrixInput(stu.id, s, e.detail.value)"
+                />
+              </view>
+            </view>
+          </scroll-view>
+
+          <button class="save" :disabled="savingAll" @click="saveAll">{{ savingAll ? '保存中…' : '💾 保存全部科目成绩' }}</button>
+          <button class="imp" @click="showAllImport = !showAllImport">{{ showAllImport ? '收起导入' : '📥 批量导入全部科目' }}</button>
+
+          <view v-if="showAllImport" class="import-box">
+            <view class="imp-tip">矩阵文件：首行表头为「学号,姓名,科目1,科目2,…」，每行一个学生。科目列名需与本次考试的科目一致。可先下载模板。</view>
+            <view class="imp-btns">
+              <button class="pick" @click="pickAllFile">📂 选择文件</button>
+              <button class="tpl" @click="downloadAllTemplate">📋 下载模板</button>
+            </view>
+            <view v-if="allPreview" class="preview">
+              <view class="pv-sum">校验：<text class="ok">有效 {{ allPreview.validCount }}</text> · <text class="bad">异常 {{ allPreview.errorCount }}</text> / 共 {{ allPreview.total }} 单元格</view>
+              <view v-if="allPreview.errorCount" class="pv-errs">
+                <view v-for="(r, i) in allPreview.errors.slice(0, 8)" :key="i" class="pv-err">{{ r }}</view>
+              </view>
+              <button class="confirm" :disabled="!allPreview.validCount" @click="commitAll">确认导入 {{ allPreview.validCount }} 条</button>
+            </view>
+          </view>
+        </block>
+      </template>
     </block>
 
     <view v-if="showAnalysis" class="mask" @click="showAnalysis = false">
@@ -245,6 +307,209 @@ const showImport = ref(false)
 const preview = ref(null)
 const showAnalysis = ref(false)
 const saving = ref(false)
+
+// ===== 全部科目录入 / 全部科目导入 =====
+const mode = ref('single') // 'single' | 'all'
+const matrixSubjects = ref([]) // 本次考试的科目列表（矩阵的列）
+const matrixStudents = ref([]) // 学生列表（矩阵的行）
+const matrix = reactive({}) // { [studentId]: { [subject]: scoreString } }
+const savingAll = ref(false)
+const showAllImport = ref(false)
+const allPreview = ref(null)
+
+function setMode(m) {
+  mode.value = m
+  if (m === 'all') buildMatrix()
+}
+
+/** 构建全部科目矩阵（行=学生，列=考试科目），并预填已有成绩 */
+function buildMatrix() {
+  if (!students.value.length || !examName.value) return
+  const exam = exams.value.find((e) => e.id === examId.value)
+  const subs = (exam && exam.subjects && exam.subjects.length ? exam.subjects : pubSubjects.value)
+  matrixSubjects.value = subs
+  matrixStudents.value = students.value
+  for (const k in matrix) delete matrix[k]
+  students.value.forEach((s) => { matrix[s.id] = {} })
+  // 预填：遍历本次考试该班所有科目的成绩记录
+  grades.value
+    .filter((g) => g.classId === classId.value && g.examName === examName.value)
+    .forEach((g) => {
+      ;(g.scores || []).forEach((x) => {
+        if (matrix[x.studentId]) matrix[x.studentId][g.subject] = String(x.score)
+      })
+    })
+}
+
+const allFilledCount = computed(() => {
+  let n = 0
+  matrixStudents.value.forEach((s) => {
+    matrixSubjects.value.forEach((sub) => {
+      const v = ((matrix[s.id] && matrix[s.id][sub]) || '').toString().trim()
+      if (v !== '') n++
+    })
+  })
+  return n
+})
+const allFilledSubjects = computed(() => {
+  let n = 0
+  matrixSubjects.value.forEach((sub) => {
+    const has = matrixStudents.value.some((s) => {
+      const v = ((matrix[s.id] && matrix[s.id][sub]) || '').toString().trim()
+      return v !== ''
+    })
+    if (has) n++
+  })
+  return n
+})
+
+function onMatrixInput(stuId, sub, val) {
+  if (!matrix[stuId]) matrix[stuId] = {}
+  matrix[stuId][sub] = val
+}
+
+function clearAllGrades() {
+  uni.showModal({
+    title: '清空全部',
+    content: '确定清空本次考试全部科目的录入内容？',
+    success: (r) => { if (r.confirm) matrixStudents.value.forEach((s) => { matrix[s.id] = {} }) },
+  })
+}
+
+/** 逐科保存：把矩阵按科目拆成 rows，分别调 import-commit（后端按 班级+考试+科目 upsert，安全可重导） */
+async function saveAll() {
+  if (savingAll.value) return
+  if (!matrixSubjects.value.length) return uni.showToast({ title: '没有可保存的科目', icon: 'none' })
+  const exam = exams.value.find((e) => e.id === examId.value)
+  const fullScore = (exam && exam.fullScore) || 100
+  for (const s of matrixStudents.value) {
+    for (const sub of matrixSubjects.value) {
+      const v = ((matrix[s.id] && matrix[s.id][sub]) || '').trim()
+      if (v === '') continue
+      const n = Number(v)
+      if (isNaN(n)) return uni.showToast({ title: `${s.name}·${sub} 分数不是数字`, icon: 'none' })
+      if (!isScore(n, fullScore)) return uni.showToast({ title: `${s.name}·${sub} 分数应为 0-${fullScore}`, icon: 'none' })
+    }
+  }
+  savingAll.value = true
+  uni.showLoading({ title: '保存中…', mask: true })
+  try {
+    let done = 0
+    for (const sub of matrixSubjects.value) {
+      const rows = []
+      matrixStudents.value.forEach((s) => {
+        const v = ((matrix[s.id] && matrix[s.id][sub]) || '').trim()
+        if (v !== '') rows.push({ studentId: s.id, score: Number(v) })
+      })
+      if (!rows.length) continue
+      await api.post('/grades/import-commit', {
+        classId: classId.value, examName: examName.value, examId: examId.value,
+        subject: sub, date: date.value, rows,
+      })
+      done++
+    }
+    uni.showToast({ title: `已保存 ${done} 个科目`, icon: 'success' })
+    grades.value = await api.get('/grades')
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    savingAll.value = false
+    uni.hideLoading()
+  }
+}
+
+function downloadAllTemplate() {
+  const header = ['学号', '姓名', ...matrixSubjects.value]
+  const rows = matrixStudents.value.length
+    ? matrixStudents.value.map((s) => [s.studentNo || '', s.name || '', ...matrixSubjects.value.map(() => '')])
+    : [['', '', ...matrixSubjects.value.map(() => '')]]
+  const csv = header.join(',') + '\n' + rows.map((r) => r.join(',')).join('\n')
+  uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: '模板已复制到剪贴板，可粘贴到 Excel', icon: 'none' }) })
+}
+
+/** 解析矩阵文件：表头 学号,姓名,科目1,科目2,...；按科目拆分并校验 */
+async function pickAllFile() {
+  if (!examId.value) return uni.showToast({ title: '请先选择考试', icon: 'none' })
+  uni.chooseMessageFile({
+    count: 1, type: 'file', extension: ['xlsx', 'xls', 'txt', 'csv'],
+    success: async (res) => {
+      const f = res.tempFiles[0]
+      if (f.size > 5 * 1024 * 1024) return uni.showToast({ title: '文件不能超过 5MB', icon: 'none' })
+      uni.showLoading({ title: '解析中…' })
+      try {
+        const data = await readAsBase64(f.path)
+        const parsed = parseMatrixCsv(data)
+        if (!parsed) return
+        allPreview.value = parsed
+        if (!parsed.validCount) uni.showToast({ title: '没有可导入的有效数据', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '解析失败：' + (e.message || '文件格式错误'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+    fail: () => {},
+  })
+}
+
+/** 解析矩阵 CSV（base64 文本），返回 { validCount, errorCount, total, errors, bySubject, subjectCols } */
+function parseMatrixCsv(base64) {
+  let text = ''
+  try { text = decodeURIComponent(escape(atob(base64))) } catch { return null }
+  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '')
+  if (lines.length < 2) { uni.showToast({ title: '文件为空或缺少数据行', icon: 'none' }); return null }
+  const header = lines[0].split(',').map((h) => h.trim())
+  const subjectCols = header.slice(2)
+  if (!subjectCols.length) { uni.showToast({ title: '表头缺少科目列', icon: 'none' }); return null }
+  const byNo = {}; const byName = {}
+  students.value.forEach((s) => { if (s.studentNo) byNo[s.studentNo] = s; if (s.name) byName[s.name] = s })
+  const bySubject = {}
+  subjectCols.forEach((sub) => { bySubject[sub] = [] })
+  let validCount = 0; let errorCount = 0; const errors = []; let total = 0
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',')
+    const no = (cols[0] || '').trim(); const name = (cols[1] || '').trim()
+    const stu = byNo[no] || byName[name]
+    if (!stu) { errors.push(`第${i + 1}行：${name || no || '(空)'} 未匹配到学生`); errorCount++; continue }
+    subjectCols.forEach((sub, idx) => {
+      const raw = (cols[idx + 2] || '').trim()
+      if (raw === '') return
+      total++
+      const n = Number(raw)
+      if (isNaN(n) || n < 0 || n > 1000) { errors.push(`${name}·${sub}：分数无效`); errorCount++; return }
+      bySubject[sub].push({ studentId: stu.id, score: n, valid: true }); validCount++
+    })
+  }
+  return { validCount, errorCount, total, errors, bySubject, subjectCols }
+}
+
+async function commitAll() {
+  const p = allPreview.value
+  if (!p || !p.validCount) return
+  const exam = exams.value.find((e) => e.id === examId.value)
+  uni.showLoading({ title: '导入中…' })
+  try {
+    let done = 0
+    for (const sub of p.subjectCols) {
+      const rows = (p.bySubject[sub] || []).filter((r) => r.valid)
+      if (!rows.length) continue
+      await api.post('/grades/import-commit', {
+        classId: classId.value, examName: examName.value, examId: examId.value,
+        subject: sub, date: date.value, rows,
+      })
+      done++
+    }
+    uni.showToast({ title: `成功导入 ${done} 个科目`, icon: 'success' })
+    allPreview.value = null
+    showAllImport.value = false
+    grades.value = await api.get('/grades')
+    buildMatrix()
+  } catch (e) {
+    uni.showToast({ title: '导入失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
 
 const analysis = computed(() => {
   const empty = { avg: '-', max: '-', min: '-', median: '-', passRate: 0, excellentRate: 0, segs: [], rank: [], dist: [], distMax: 1, count: 0 }
@@ -507,6 +772,7 @@ async function onExam(e) {
   subject.value = subjectOpts.value[0] || ''
   date.value = chosen.date || date.value
   await checkExisting()
+  if (mode.value === 'all') nextTick(buildMatrix)
 }
 
 function onSubject(e) {
@@ -971,4 +1237,19 @@ async function aiDiagnose() {
 .ait { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
 .aibody { max-height: 60vh; font-size: 28rpx; line-height: 1.7; color: var(--c-text); white-space: pre-wrap; }
 .aiclose { text-align: center; font-size: 28rpx; color: var(--c-accent); margin-top: 20rpx; padding: 14rpx 0; }
+/* 模式切换 */
+.mode-tabs { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
+.mtab { flex: 1; text-align: center; font-size: 28rpx; padding: 18rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-sub); border: 1px solid var(--c-border); }
+.mtab.on { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+/* 全部科目矩阵 */
+.matrix-wrap { margin-top: 16rpx; background: var(--c-card); border-radius: 16rpx; padding: 8rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.matrix { display: inline-block; min-width: 100%; }
+.m-head, .m-row { display: flex; align-items: stretch; }
+.m-head { background: var(--c-card2); border-radius: 10rpx 10rpx 0 0; }
+.m-cell { border: 1px solid var(--c-border); padding: 14rpx 10rpx; font-size: 24rpx; color: var(--c-title); box-sizing: border-box; }
+.m-name { width: 200rpx; flex-shrink: 0; position: sticky; left: 0; background: var(--c-card); z-index: 2; display: flex; align-items: center; }
+.m-subject { width: 150rpx; flex-shrink: 0; text-align: center; font-weight: 600; background: var(--c-card2); }
+.m-score { width: 150rpx; flex-shrink: 0; text-align: center; }
+.m-row .m-score { background: var(--c-input); }
+.m-row .m-name { background: var(--c-card); }
 </style>

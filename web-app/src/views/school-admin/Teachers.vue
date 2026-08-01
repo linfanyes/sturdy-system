@@ -60,19 +60,42 @@ onMounted(async () => {
 /* ============ 新增/编辑教师 ============ */
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
-const form = ref({ name: '', phone: '', gender: '', subject: '', position: '', username: '', password: '' })
+const form = ref({ name: '', phone: '', gender: '', subject: '', position: '', positions: [] as string[], grade: '', username: '', password: '' })
 const formLoading = ref(false)
+
+/** 年级选项（与班级管理保持一致） */
+const GRADE_OPTIONS = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三', '高一', '高二', '高三']
+
+/** 把教师现有职务归一化为多选数组（兼容旧单值 position 字段与逗号拼接） */
+function normalizePositions(t: TeacherItem): string[] {
+  const arr = (t as any).positions
+  if (Array.isArray(arr) && arr.length) return arr.filter(Boolean)
+  const p = ((t as any).position || '') as string
+  if (!p) return []
+  return p.split(/[,，]/).map((s) => s.trim()).filter(Boolean)
+}
 
 function openCreate() {
   editingId.value = null
-  form.value = { name: '', phone: '', gender: '', subject: '', position: '', username: '', password: '' }
+  form.value = { name: '', phone: '', gender: '', subject: '', position: '', positions: [], grade: '', username: '', password: '' }
   showForm.value = true
 }
 
 function openEdit(t: TeacherItem) {
   editingId.value = t.id
-  form.value = { name: t.name, phone: t.phone || '', gender: t.gender || '', subject: t.subject || '', position: (t as any).position || '', username: t.username || '', password: '' }
+  form.value = {
+    name: t.name, phone: t.phone || '', gender: t.gender || '', subject: t.subject || '',
+    position: (t as any).position || '', positions: normalizePositions(t), grade: (t as any).grade || '',
+    username: t.username || '', password: '',
+  }
   showForm.value = true
+}
+
+/** 职务多选：切换某个职务的勾选 */
+function togglePosition(p: string) {
+  const i = form.value.positions.indexOf(p)
+  if (i >= 0) form.value.positions.splice(i, 1)
+  else form.value.positions.push(p)
 }
 
 const phoneError = computed(() =>
@@ -91,7 +114,9 @@ async function submitForm() {
       const dto: Record<string, any> = {
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
-        position: form.value.position,
+        position: form.value.positions.length ? form.value.positions.join(',') : form.value.position,
+        positions: form.value.positions,
+        grade: form.value.grade,
       }
       // 支持修改账号：非空才提交，后端校验库中是否已存在
       if (form.value.username && form.value.username.trim()) {
@@ -102,7 +127,9 @@ async function submitForm() {
       await createTeacher({
         name: form.value.name, phone: form.value.phone,
         gender: form.value.gender, subject: form.value.subject,
-        position: form.value.position,
+        position: form.value.positions.length ? form.value.positions.join(',') : form.value.position,
+        positions: form.value.positions,
+        grade: form.value.grade,
         username: form.value.username?.trim() || undefined,
         password: form.value.password || undefined,
       })
@@ -307,6 +334,8 @@ function handlePrint() {
             <th class="px-4 py-3 font-medium">手机</th>
             <th class="px-4 py-3 font-medium">性别</th>
             <th class="px-4 py-3 font-medium">学科</th>
+            <th class="px-4 py-3 font-medium">职务</th>
+            <th class="px-4 py-3 font-medium">年级</th>
             <th class="px-4 py-3 font-medium">功能权限</th>
             <th class="px-4 py-3 font-medium">状态</th>
             <th class="px-4 py-3 font-medium text-right">操作</th>
@@ -327,6 +356,17 @@ function handlePrint() {
             <td class="px-4 py-3 text-cocoa-700">{{ t.phone || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ t.gender || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ t.subject || '-' }}</td>
+            <td class="px-4 py-3">
+              <span v-if="!t.positions || t.positions.length === 0" class="text-cocoa-400 text-xs">{{ (t as any).position || '-' }}</span>
+              <span v-else class="flex flex-wrap gap-1">
+                <span
+                  v-for="p in t.positions"
+                  :key="p"
+                  class="text-xs px-2 py-0.5 rounded-full bg-cream-100 text-cocoa-600"
+                >{{ p }}</span>
+              </span>
+            </td>
+            <td class="px-4 py-3 text-cocoa-700">{{ (t as any).grade || '-' }}</td>
             <td class="px-4 py-3">
               <span v-if="!t.features || t.features.length === 0" class="text-mint-500 text-xs">全部可用</span>
               <span v-else class="text-butter-600 text-xs">{{ t.features.length }} 项</span>
@@ -381,15 +421,28 @@ function handlePrint() {
         </div>
       </div>
       <div>
-        <label class="text-sm text-cocoa-500">职务</label>
-        <select v-model="form.position" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
-          <option value="">无</option>
-          <optgroup label="基础职务">
-            <option v-for="p in ALL_POSITIONS.slice(0, 6)" :key="p" :value="p">{{ p }}</option>
-          </optgroup>
-          <optgroup label="学科组长（可编辑教材知识库）">
-            <option v-for="p in ALL_POSITIONS.slice(6)" :key="p" :value="p">{{ p }}</option>
-          </optgroup>
+        <label class="text-sm text-cocoa-500">职务（可多选）</label>
+        <div class="flex flex-wrap gap-1.5 mt-1">
+          <button
+            v-for="p in ALL_POSITIONS"
+            :key="p"
+            type="button"
+            :class="[
+              'text-xs px-2.5 py-1 rounded-full border transition-colors',
+              form.positions.includes(p)
+                ? 'border-butter-400 bg-butter-100 text-butter-600'
+                : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+            ]"
+            @click="togglePosition(p)"
+          >{{ p }}</button>
+        </div>
+        <p v-if="form.positions.length" class="text-xs text-cocoa-400 mt-1">已选：{{ form.positions.join('、') }}</p>
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">年级</label>
+        <select v-model="form.grade" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400">
+          <option value="">未设置</option>
+          <option v-for="g in GRADE_OPTIONS" :key="g" :value="g">{{ g }}</option>
         </select>
       </div>
       <div>

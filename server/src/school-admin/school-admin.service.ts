@@ -112,6 +112,7 @@ export class SchoolAdminService {
       phone: u.phone, gender: u.gender, school: u.school, features: u.features || [],
       enabled: u.enabled !== false, createdAt: u.createdAt,
       teacherNo: u.teacherNo || '', position: u.position || '',
+      positions: u.positions || [], grade: u.grade || '',
     }))
     return { items, total }
   }
@@ -154,7 +155,7 @@ export class SchoolAdminService {
   }
 
   /** 创建教师账号（自动生成教师编号 teacherNo；username 默认=teacherNo，autoPinyin 时改用中文名拼音；事务保护） */
-  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; position?: string; enabled?: boolean; autoPinyin?: boolean }) {
+  async createTeacher(schoolId: string, dto: { username?: string; password?: string; name: string; phone?: string; gender?: string; subject?: string; position?: string; positions?: string[]; grade?: string; enabled?: boolean; autoPinyin?: boolean }) {
     if (!dto.name) throw new BadRequestException('姓名必填')
     return await this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User)
@@ -184,7 +185,9 @@ export class SchoolAdminService {
         username, passwordHash: hash, name: dto.name,
         schoolId, school: school?.name || '', phone: dto.phone || '',
         gender: dto.gender || '', subject: dto.subject || '语文',
-        position: dto.position || '',
+        position: dto.position || (dto.positions && dto.positions.length ? dto.positions[0] : ''),
+        positions: dto.positions || [],
+        grade: dto.grade || '',
         enabled: dto.enabled !== false, teacherNo,
       })
       const saved = await userRepo.save(user)
@@ -212,7 +215,7 @@ export class SchoolAdminService {
   }
 
   /** 更新教师基本信息（用户名唯一性校验，支持密码修改） */
-  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; position?: string; enabled?: boolean; password?: string }) {
+  async updateTeacher(schoolId: string, teacherId: string, dto: { username?: string; name?: string; phone?: string; gender?: string; subject?: string; position?: string; positions?: string[]; grade?: string; enabled?: boolean; password?: string }) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
     if (dto.username && dto.username !== user.username) {
@@ -225,6 +228,8 @@ export class SchoolAdminService {
     if (dto.gender !== undefined) user.gender = dto.gender
     if (dto.subject !== undefined) user.subject = dto.subject
     if (dto.position !== undefined) user.position = dto.position
+    if (dto.positions !== undefined) user.positions = dto.positions || []
+    if (dto.grade !== undefined) user.grade = dto.grade || ''
     if (dto.enabled !== undefined) user.enabled = dto.enabled
     // 密码修改：长度 6-20 位
     if (dto.password) {
@@ -343,6 +348,22 @@ export class SchoolAdminService {
       where: ids.map(id => ({ teacherId: id })),
       order: { createdAt: 'DESC' },
     })
+    // 从 class_members 回填科任老师（role='subject'），保证前端编辑下拉能显示已选科任；
+    // 实体 subjectTeachers 列可能为历史遗留的 Record 或空值，此处以 class_member 为准
+    if (items.length) {
+      const classIds = items.map(i => i.id)
+      const members = await this.classMemberRepo.find({
+        where: classIds.map(cid => ({ classId: cid, role: 'subject' })),
+      })
+      const byClass = new Map<string, { teacherId: string; subjects: string[] }[]>()
+      for (const m of members) {
+        if (!byClass.has(m.classId)) byClass.set(m.classId, [])
+        byClass.get(m.classId)!.push({ teacherId: m.teacherId, subjects: m.subjects || [] })
+      }
+      for (const item of items) {
+        ;(item as any).subjectTeachers = byClass.get(item.id) || []
+      }
+    }
     return { items, total }
   }
 
@@ -381,7 +402,7 @@ export class SchoolAdminService {
   }
 
   /** 更新班级信息（支持转交班主任） */
-  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string; headTeacherId: string; subjects?: string[] }>) {
+  async updateClass(schoolId: string, id: string, dto: Partial<{ name: string; grade: string; classNo: string; headTeacher: string; term: string; headTeacherId: string; subjects?: string[]; subjectTeachers?: { teacherId: string; subjects?: string[] }[] }>) {
     const cls = await this.classRepo.findOne({ where: { id } })
     if (!cls) throw new BadRequestException('班级不存在')
     // 验证班级属于本校
@@ -413,6 +434,20 @@ export class SchoolAdminService {
     }
     // 同步「班主任任教学科」到班级主表（列表展示依赖 ClassItem.subjects）
     if (dto.subjects !== undefined) cls.subjects = dto.subjects
+    // 同步科任老师（按科目下拉设置）：清除现有 role='subject' 成员后按 dto 重新写入（排除班主任本人）
+    if (dto.subjectTeachers !== undefined) {
+      const term = cls.term || ''
+      await this.classMemberRepo
+        .createQueryBuilder()
+        .delete()
+        .where('classId = :cid AND role = :role', { cid: id, role: 'subject' })
+        .execute()
+        .catch(() => {})
+      for (const st of dto.subjectTeachers) {
+        if (!st.teacherId || st.teacherId === cls.teacherId) continue
+        await this.classMemberSvc.addSubjectTeacher(st.teacherId, id, cls.name, st.subjects || [], term)
+      }
+    }
     return this.classRepo.save(cls)
   }
 

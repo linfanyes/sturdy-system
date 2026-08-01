@@ -18,6 +18,10 @@ export interface TeacherItem {
   phone: string
   gender: string
   subject: string
+  /** 职务列表（多选），兼容旧单值 position 字段 */
+  positions?: string[]
+  /** 任教学段/年级（如 一年级） */
+  grade?: string
   schoolId: string
   enabled: boolean
   features: string[]
@@ -60,6 +64,8 @@ export function createTeacher(dto: {
   gender?: string
   subject?: string
   position?: string
+  positions?: string[]
+  grade?: string
   username?: string
   password?: string
 }) {
@@ -105,7 +111,12 @@ export function createClass(dto: {
   return request.post('/school-admin/classes', dto)
 }
 
-export function updateClass(id: string, dto: Partial<Pick<ClassItem, 'name' | 'grade' | 'classNo' | 'headTeacher' | 'term'> & { headTeacherId: string }>) {
+export interface SubjectTeacherItem {
+  teacherId: string
+  subjects?: string[]
+}
+
+export function updateClass(id: string, dto: Partial<Omit<ClassItem, 'subjectTeachers'> & { headTeacherId: string; subjectTeachers?: SubjectTeacherItem[] }>) {
   return request.patch(`/school-admin/classes/${id}`, dto)
 }
 

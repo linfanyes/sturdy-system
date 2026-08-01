@@ -7,7 +7,7 @@
 //   1) 免重建：直接改下面这一行的值，重新部署 config.js 即可生效；
 //   2) 走 CI：改 .env.production 的 VITE_API_BASE 后重新打包。
 //
-// 本地联调（指向本地 server:3000）时，将下面这行注释掉即可回退到 .env.development。
-// window.__APP_CONFIG__ = {
-//   API_BASE_URL: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api',
-// }
+// 本地联调（指向本地 server:3000）时，将下面这一行注释掉即可回退到 .env.development。
+window.__APP_CONFIG__ = {
+  API_BASE_URL: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api',
+}

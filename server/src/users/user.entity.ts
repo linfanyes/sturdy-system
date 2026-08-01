@@ -44,8 +44,14 @@ export class User {
   @Column({ default: '', comment: '性别（男/女）' })
   gender: string
 
-  @Column({ default: '', comment: '职务（如：班主任、一年级语文组长）' })
+  @Column({ default: '', comment: '职务（如：班主任、一年级语文组长）；单选兼容字段' })
   position: string
+
+  @Column('simple-array', { nullable: true, comment: '教师职务列表（支持多选，如 班主任,语文组长）' })
+  positions: string[]
+
+  @Column({ default: '', comment: '教师任教学段/年级（如 一年级），便于教师管理中按年级查看' })
+  grade: string
 
   @Column({ default: '' })
   email: string

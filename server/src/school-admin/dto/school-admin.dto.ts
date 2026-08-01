@@ -36,6 +36,16 @@ export class TeacherItemDto {
   @IsString()
   @MaxLength(20, { message: '学科过长' })
   subject?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  positions?: string[]
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20, { message: '年级过长' })
+  grade?: string
 }
 
 /** 新增（单个）教师入参校验 */

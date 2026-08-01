@@ -81,8 +81,8 @@ const form = ref({
   term: '',
   headTeacherId: '',
   subjects: [] as string[],
-  // 科任老师 [{ teacherId, subjects }]
-  subjectTeachers: [] as { teacherId: string; subjects: string[] }[],
+  // 科任老师（按科目）：科目 -> 教师 ID
+  subjectTeacherMap: {} as Record<string, string>,
 })
 
 /** 班级名称由「年级 + 班级序号 + 班」自动拼接，例如 五年级 + 1 → 五年级1班（不可手动编辑） */
@@ -106,7 +106,7 @@ function openCreate() {
     term: defaultTerm(),
     headTeacherId: '',
     subjects: [],
-    subjectTeachers: [],
+    subjectTeacherMap: {},
   }
   showForm.value = true
 }
@@ -116,28 +116,44 @@ function openEdit(c: ClassItem) {
   // 兼容历史数据：旧 classNo 可能为「一班」(带「班」尾)，去掉尾部「班」还原为序号
   const rawNo = c.classNo || '1'
   const classNo = /班$/.test(rawNo) ? rawNo.slice(0, -1) : rawNo
+  // 兼容科任老师两种存储：Record<subject, teacherId> 或 [{ teacherId, subjects }]
+  const map: Record<string, string> = {}
+  const stRec = (c as any).subjectTeachers
+  if (stRec && !Array.isArray(stRec)) {
+    Object.entries(stRec as Record<string, string>).forEach(([k, v]) => { map[k] = v })
+  } else if (Array.isArray(stRec)) {
+    ;(stRec as Array<{ teacherId: string; subjects?: string[] }>).forEach((st) => {
+      ;(st.subjects || []).forEach((s) => { map[s] = st.teacherId })
+    })
+  }
   form.value = {
     grade: c.grade,
     classNo,
     term: c.term || defaultTerm(),
     headTeacherId: c.teacherId,
     subjects: [...(c.subjects || [])],
-    subjectTeachers: [],
+    subjectTeacherMap: map,
   }
   showForm.value = true
 }
 
-function addSubjectTeacher() {
-  form.value.subjectTeachers.push({ teacherId: '', subjects: [] })
-}
-function removeSubjectTeacher(idx: number) {
-  form.value.subjectTeachers.splice(idx, 1)
+/** 科任老师按科目下拉：切换某科目任教老师 */
+function setSubjectTeacher(subj: string, tid: string) {
+  if (tid) form.value.subjectTeacherMap[subj] = tid
+  else delete form.value.subjectTeacherMap[subj]
 }
 
 function toggleSubject(list: string[], subj: string) {
   const i = list.indexOf(subj)
   if (i >= 0) list.splice(i, 1)
   else list.push(subj)
+}
+
+/** 由「科目->教师」映射生成后端 subjectTeachers 数组（排除与班主任重复、空值） */
+function buildSubjectTeachers(): { teacherId: string; subjects: string[] }[] {
+  return Object.entries(form.value.subjectTeacherMap)
+    .filter(([subj, tid]) => tid && tid !== form.value.headTeacherId)
+    .map(([subj, tid]) => ({ teacherId: tid, subjects: [subj] }))
 }
 
 async function submitForm() {
@@ -161,13 +177,10 @@ async function submitForm() {
         headTeacherId: form.value.headTeacherId,
         headTeacher: teacherName(form.value.headTeacherId),
         subjects: form.value.subjects,
-        subjectTeachers: form.value.subjectTeachers
-          .filter(st => st.teacherId && st.teacherId !== form.value.headTeacherId)
-          .map(st => ({ teacherId: st.teacherId, subjects: st.subjects })),
+        subjectTeachers: buildSubjectTeachers(),
       })
     } else {
       // 新增：班级 + 班主任任教学科 + 科任老师
-      const validST = form.value.subjectTeachers.filter(st => st.teacherId && st.teacherId !== form.value.headTeacherId)
       await createClass({
         name: className.value,
         grade: form.value.grade,
@@ -176,7 +189,7 @@ async function submitForm() {
         headTeacherId: form.value.headTeacherId,
         term: form.value.term,
         subjects: form.value.subjects,
-        subjectTeachers: validST.map(st => ({ teacherId: st.teacherId, subjects: st.subjects })),
+        subjectTeachers: buildSubjectTeachers(),
       })
     }
     showForm.value = false
@@ -371,36 +384,21 @@ function handlePrint() {
         </div>
       </div>
 
-      <!-- 科任老师（仅新增时） -->
-      <div v-if="!editingId">
-        <div class="flex items-center justify-between">
-          <label class="text-sm text-cocoa-500">科任老师（可选，一次性加入）</label>
-          <button type="button" class="text-xs px-2 py-1 rounded-lg bg-mint-100 text-mint-500 hover:bg-mint-300/40" @click="addSubjectTeacher">+ 添加</button>
-        </div>
-        <div v-if="form.subjectTeachers.length === 0" class="text-xs text-cocoa-400 mt-1">暂未添加，可后续由班主任在班级内管理</div>
-        <div v-for="(st, idx) in form.subjectTeachers" :key="idx" class="flex items-start gap-2 mt-2 p-2 rounded-xl bg-cream-50">
-          <select v-model="st.teacherId" class="flex-1 px-2 py-1.5 rounded-lg border border-cream-200 text-sm focus:outline-none focus:border-butter-400">
-            <option value="">选择老师</option>
+      <!-- 科任老师（按科目下拉）：选定班主任任教学科后，为每科选择任教老师 -->
+      <div v-if="form.subjects.length">
+        <label class="text-sm text-cocoa-500">科任老师（按科目，下拉选择）</label>
+        <div v-for="s in form.subjects" :key="s" class="flex items-center gap-2 mt-2">
+          <span class="w-20 text-sm text-cocoa-700 shrink-0">{{ s }}</span>
+          <select
+            :value="form.subjectTeacherMap[s] || ''"
+            class="flex-1 px-2 py-1.5 rounded-lg border border-cream-200 text-sm focus:outline-none focus:border-butter-400"
+            @change="setSubjectTeacher(s, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">选择科任老师（默认班主任）</option>
             <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}（{{ t.username }}）</option>
           </select>
-          <div class="flex flex-wrap gap-1 max-w-xs">
-            <button
-              v-for="s in SUBJECT_OPTIONS.slice(0, 8)"
-              :key="s.value"
-              type="button"
-              :class="[
-                'text-xs px-2 py-0.5 rounded-full border',
-                st.subjects.includes(s.value)
-                  ? 'border-mint-400 bg-mint-100 text-mint-500'
-                  : 'border-cream-200 text-cocoa-400 hover:bg-cream-100',
-              ]"
-              @click="toggleSubject(st.subjects, s.value)"
-            >{{ s.label }}</button>
-          </div>
-          <button type="button" class="p-1 rounded-lg hover:bg-red-50 text-red-500" @click="removeSubjectTeacher(idx)">
-            <Trash2 class="w-4 h-4" />
-          </button>
         </div>
+        <p class="text-xs text-cocoa-400 mt-1">未选择的科目默认由班主任任教；同一老师可任教多科。班主任本人自动排除。</p>
       </div>
     </div>
     <template #footer>
