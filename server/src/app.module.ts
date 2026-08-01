@@ -47,6 +47,7 @@ import { NotificationModule } from './notification/notification.module'
 import { MessagesModule } from './messages/messages.module'
 import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.module'
 import { TextbookModule } from './textbook/textbook.module'
+import { ResourceLibraryModule } from './resource-library/resource-library.module'
 import { FeatureModule } from './common/feature/feature.module'
 import { HealthController } from './health.controller'
 
@@ -141,6 +142,7 @@ import { HealthController } from './health.controller'
     ImModule,
     TeachingCalendarModule,
     TextbookModule,
+    ResourceLibraryModule,
     FeatureModule,
   ],
   providers: [

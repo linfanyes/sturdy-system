@@ -61,6 +61,13 @@
       }
     },
     {
+      "path": "pages/parent/parent-resource-library",
+      "style": {
+        "navigationBarTitleText": "资源库",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/dashboard/dashboard",
       "style": {
         "navigationBarTitleText": "工作台",
@@ -397,6 +404,13 @@
       "path": "pages/resource/resource",
       "style": {
         "navigationBarTitleText": "教学资源",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/resource-library/resource-library",
+      "style": {
+        "navigationBarTitleText": "资源库",
         "enablePullDownRefresh": true
       }
     },
