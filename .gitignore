@@ -5,6 +5,9 @@ dist/
 app/dist/
 dist-electron/
 dist-electron-new/
+.seed-dist/
+server/.seed-dist/
+seed-manifest.json
 
 # 日志 / 运行时文件
 *.log
