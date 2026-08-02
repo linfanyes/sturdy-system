@@ -153,6 +153,7 @@ const teacherMenu: MenuCategory[] = [
           { name: 'teacher-lesson-plans', label: '教案库', to: '/teacher/lesson-plans', feature: 'ai', icon: BookMarked, color: 'blue' },
           { name: 'teacher-knowledges', label: '知识点库', to: '/teacher/knowledges', feature: 'ai', icon: GraduationCap, color: 'green' },
           { name: 'teacher-textbook', label: '教材知识库', to: '/teacher/textbook', feature: 'ai', icon: BookOpen, color: 'sky' },
+          { name: 'teacher-resource-library', label: '教学资源库', to: '/teacher/resource-library', feature: 'ai', icon: BookOpen, color: 'butter' },
           { name: 'teacher-papers', label: '试卷库', to: '/teacher/papers', feature: 'ai', icon: ScrollText, color: 'purple' },
           { name: 'teacher-ai-resources', label: '教学资源', to: '/teacher/ai-resources', feature: 'ai', icon: BookOpen, color: 'sky' },
           { name: 'teacher-schedule', label: '课表', to: '/teacher/schedule', feature: 'schedule', icon: CalendarCheck, color: 'butter' },
@@ -276,6 +277,7 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
     { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
     { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'purple' },
     { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
+    { name: 'school-admin-resource-library', label: '教学资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'butter' },
   ],
   parent: [
     { name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' },

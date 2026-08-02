@@ -19,7 +19,7 @@ export class NoteItem extends BaseEntity {
   @Column({ type: 'boolean', default: false }) pinned: boolean
   @Column({ type: 'boolean', default: false }) favorite: boolean
   /** 直接插入的图片（base64 data URL 数组，与 award-record 一致） */
-  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) images: string[]
+  @Column({ type: 'text', nullable: true, transformer: jsonArrayTransformer }) images: string[]
 }
 
 @Index('idx_todo_tch', ['teacherId'])

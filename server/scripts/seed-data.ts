@@ -9,6 +9,8 @@
  *   - 每班 6 次“全部科目”考试 + 3 次“仅语数外”考试，并生成每位学生的成绩（grades）
  *   - 每校 1 条学校公告 + 每班 1 条班级公告（notices）
  *   - 每班一份每周课表（schedules，5 天 × 7 节）
+ *   - 教学资源库种子数据（古诗词 30 首 + 数学公式 23 条 + 英语单词 120 个）
+ *   - 教材知识库种子数据（人教版语文/数学 + 外研版英语，共 32 本教材含单元与知识点）
  *
  * 运行：在 server/ 目录执行 `npm run seed`（或 `npx tsx scripts/seed-data.ts`）
  * 幂等：若已存在 seed-manifest.json，会先清除旧数据再重新生成。
@@ -28,6 +30,10 @@ import { StudentParent } from '../src/student-parent/student-parent.entity'
 import { Exam } from '../src/exams/exam.entity'
 import { Grade } from '../src/grades/grade.entity'
 import { Notice, ScheduleItem } from '../src/school/school.entity'
+import { Poem, MathFormula, EnglishWord } from '../src/resource-library/resource-library.entity'
+import { SEED_POEMS, SEED_MATH_FORMULAS, SEED_ENGLISH_WORDS } from '../src/resource-library/resource-library.seed-data'
+import { Textbook, TextbookUnit, TextbookKnowledgePoint } from '../src/textbook/textbook.entity'
+import { SEED_TEXTBOOKS } from '../src/textbook/textbook.seed-data'
 
 import {
   buildDataSource, SEED_CONFIG, ALL_SUBJECTS, CORE_SUBJECTS, GRADES, POSITIONS,
@@ -244,6 +250,55 @@ async function main() {
       content: `欢迎来到${school.name}，本学期正式开始。`, scope: 'school', pinned: true, ended: false,
     }))
     m.notices.push(sn.id)
+
+    // 教学资源库（古诗词 / 数学公式 / 英语单词）
+    for (const seed of SEED_POEMS) {
+      const p = await ds.getRepository(Poem).save(ds.getRepository(Poem).create({
+        schoolId: school.id, title: seed.title, dynasty: seed.dynasty, author: seed.author,
+        content: seed.content, translation: seed.translation || '', appreciation: seed.appreciation || '',
+        grade: seed.grade, keywords: seed.keywords, status: 'published',
+      }))
+    }
+    for (const seed of SEED_MATH_FORMULAS) {
+      const f = await ds.getRepository(MathFormula).save(ds.getRepository(MathFormula).create({
+        schoolId: school.id, title: seed.title, category: seed.category, formula: seed.formula,
+        explanation: seed.explanation || '', example: seed.example || '',
+        grade: seed.grade, keywords: seed.keywords, status: 'published',
+      }))
+    }
+    for (const seed of SEED_ENGLISH_WORDS) {
+      const w = await ds.getRepository(EnglishWord).save(ds.getRepository(EnglishWord).create({
+        schoolId: school.id, word: seed.word, phonetic: seed.phonetic, meaning: seed.meaning,
+        category: seed.category, example: seed.example || '', grade: seed.grade,
+        status: 'published',
+      }))
+    }
+
+    // 教材知识库（人教版语文/数学 + 外研版英语，共 32 本）
+    for (const seed of SEED_TEXTBOOKS) {
+      const existing = await ds.getRepository(Textbook).findOne({
+        where: { schoolId: school.id, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
+      })
+      if (existing) continue
+      const tb = await ds.getRepository(Textbook).save(ds.getRepository(Textbook).create({
+        schoolId: school.id, publisher: seed.publisher, subject: seed.subject,
+        grade: seed.grade, term: seed.term, name: seed.name, status: 'published',
+      }))
+      for (let i = 0; i < seed.units.length; i++) {
+        const su = seed.units[i]
+        const unit = await ds.getRepository(TextbookUnit).save(ds.getRepository(TextbookUnit).create({
+          textbookId: tb.id, unitOrder: i + 1, title: su.title, summary: su.summary || '',
+        }))
+        for (let j = 0; j < su.points.length; j++) {
+          const sp = su.points[j]
+          await ds.getRepository(TextbookKnowledgePoint).save(ds.getRepository(TextbookKnowledgePoint).create({
+            unitId: unit.id, pointOrder: j + 1,
+            title: sp.title, type: sp.type, content: sp.content,
+            difficulty: sp.difficulty, keywords: sp.keywords,
+          }))
+        }
+      }
+    }
 
     console.log(`  ✓ 学校[${school.name}] 完成：校管 sa${s + 1} / 教师 ${teachers.length} / 班级 ${SEED_CONFIG.classesPerSchool}`)
   }

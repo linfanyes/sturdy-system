@@ -30,6 +30,8 @@ import { StudentParent } from '../src/student-parent/student-parent.entity'
 import { Exam } from '../src/exams/exam.entity'
 import { Grade } from '../src/grades/grade.entity'
 import { Notice, ScheduleItem } from '../src/school/school.entity'
+import { Poem, MathFormula, EnglishWord } from '../src/resource-library/resource-library.entity'
+import { Textbook, TextbookUnit, TextbookKnowledgePoint } from '../src/textbook/textbook.entity'
 
 /* ===================== 配置 ===================== */
 export const SEED_CONFIG = {
@@ -111,6 +113,8 @@ export function buildDataSource(): DataSource {
     entities: [
       School, SchoolAdmin, User, ClassItem, ClassMember,
       Student, Parent, StudentParent, Exam, Grade, Notice, ScheduleItem,
+      Poem, MathFormula, EnglishWord,
+      Textbook, TextbookUnit, TextbookKnowledgePoint,
     ],
   })
 }

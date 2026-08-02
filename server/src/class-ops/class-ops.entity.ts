@@ -30,7 +30,7 @@ export class ClassActivity extends BaseEntity {
   @Column() date: string
   @Column({ type: 'text', nullable: true }) description: string
   // 图片以 base64 dataURL 数组直存，用 LONGTEXT(4GB) 容纳多张照片
-  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
+  @Column({ type: 'text', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }
 
 @Index('idx_dtc_tch_cls', ['teacherId', 'classId'])

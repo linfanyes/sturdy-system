@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-26T15:49:23.304Z",
+  "timestamp": "2026-08-02T11:06:02.045Z",
   "dimension1_functionalScope": {
     "totalModules": 40,
     "matched": 38,
@@ -609,7 +609,7 @@
       },
       {
         "ruleName": "角色枚举 (ROLE_VALUES 4角色)",
-        "sharedSource": "@gardener/shared/constants::ROLE_VALUES [super_admin, school_admin, teacher, parent]",
+        "sharedSource": "@gardener/shared/constants::ROLE_VALUES [super, school_admin, teacher, parent]",
         "webImplementation": "web-app/src/types/user.ts + router 守卫 roles",
         "miniImplementation": "mini-program route-guard.js + store 角色判断",
         "backendImplementation": "JWT payload.role + @Roles Guard",

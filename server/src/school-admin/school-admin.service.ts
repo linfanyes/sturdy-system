@@ -142,13 +142,13 @@ export class SchoolAdminService {
     if (!school) throw new BadRequestException('学校不存在')
     const prefix = 'JS' + (school.code || '')
     const repo = em ? em.getRepository(User) : this.userRepo
-    // 使用 SELECT ... FOR UPDATE 锁定行防止并发
-    const last = await repo
+    // 使用 SELECT ... FOR UPDATE 锁定行防止并发（仅 MySQL 支持；SQLite 等测试驱动跳过）
+    const qb = repo
       .createQueryBuilder('u')
       .where('u.teacherNo LIKE :prefix', { prefix: prefix + '%' })
       .orderBy('u.teacherNo', 'DESC')
-      .setLock('pessimistic_write')
-      .getOne()
+    if (repo.manager.connection.options.type === 'mysql') qb.setLock('pessimistic_write')
+    const last = await qb.getOne()
     let seq = 1
     if (last && last.teacherNo) {
       const lastSeq = parseInt(last.teacherNo.slice(prefix.length), 10)
