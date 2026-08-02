@@ -1,0 +1,825 @@
+{
+  "generatedAt": "2026-08-02T14:52:51.056Z",
+  "base": "http://localhost:3100/api",
+  "environment": "SQLite 内存库（QA 服务器 :3100，限流放宽）",
+  "summary": {
+    "total": 81,
+    "passed": 81,
+    "failed": 0,
+    "blocked": 0,
+    "defects": 0,
+    "passRate": "100.0%（含已确认缺陷）"
+  },
+  "results": [
+    {
+      "id": "GRD-01",
+      "name": "创建考试（期中-扩展测试）",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/exams",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"term\":\"2026春\",\"name\":\"QA扩展考试\",\"classId\":\"4d59dc7c-3468-4f",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-02",
+      "name": "成绩 merge（创建成绩）",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/grades/merge",
+      "expect": "201 + id",
+      "actual": "201 {\"created\":true,\"id\":\"b1930103-5e1b-4b7c-bcf5-b7cdc869beb0\"}",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-03",
+      "name": "成绩 merge（同键幂等更新）",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/grades/merge",
+      "expect": "200/201 + 同一 id",
+      "actual": "201 id=b1930103-5e1b-4b7c-bcf5-b7cdc869beb0 same=true",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-04",
+      "name": "成绩列表 subject 精确过滤",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades?classId=4d59dc7c-3468-4fff-bdbb-54fda70ea185&subject=语文",
+      "expect": "200 + items",
+      "actual": "200 items=8",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-05",
+      "name": "成绩分析：单场考试统计",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/exam?classId=&examId=",
+      "expect": "200 + subjects",
+      "actual": "200 subjects=3",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-06",
+      "name": "成绩分析：班级排名",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/rank?classId=&examId=",
+      "expect": "200 + ranks",
+      "actual": "200 ranks=1",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-07",
+      "name": "成绩分析：学生历次成绩",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/student/:studentId",
+      "expect": "200 + history",
+      "actual": "200 history=10",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-08",
+      "name": "成绩分析：趋势",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/trend?classId=",
+      "expect": "200 + trend",
+      "actual": "200 {\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"trend\":{\"",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-09",
+      "name": "成绩分析：薄弱学生",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/weak?classId=",
+      "expect": "200 + weakSubjects",
+      "actual": "200 {\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"weakSubje",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-10",
+      "name": "成绩导入预览（CSV 文本）",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/grades/import-preview",
+      "expect": "201 + validCount>0",
+      "actual": "201 valid=2",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-11",
+      "name": "成绩导入预览（非法分数被拒）",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/grades/import-preview",
+      "expect": "201 + errorCount>=1",
+      "actual": "201 errors=1",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-12",
+      "name": "成绩导入提交",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "POST",
+      "path": "/grades/import-commit",
+      "expect": "201 + count>=1",
+      "actual": "201 count=2",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-13",
+      "name": "越权：无关教师访问他人班级成绩被拒",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/trend?classId=",
+      "expect": "400/403",
+      "actual": "400",
+      "status": "PASS"
+    },
+    {
+      "id": "GRD-14",
+      "name": "成绩分析缺少 classId 参数被拒",
+      "group": "J. 成绩与考试（成绩录入/分析/导入）",
+      "method": "GET",
+      "path": "/grades/analysis/exam",
+      "expect": "400",
+      "actual": "400",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-01",
+      "name": "考勤创建（records 数组）",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/attendances",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"date\":\"2",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-02",
+      "name": "考勤列表",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "GET",
+      "path": "/attendances?take=5",
+      "expect": "200 + items",
+      "actual": "200 items=2",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-03",
+      "name": "作业创建",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/homework",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"subject\"",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-04",
+      "name": "班主任发布班级公告",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/notices",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"title\":\"",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-05",
+      "name": "非班主任发布班级公告被拒",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/notices",
+      "expect": "403",
+      "actual": "403 {\"message\":\"仅班主任可发布班级公告\",\"error\":\"Forbidden\",\"statusCode\":40",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-06",
+      "name": "学校公告发布 + scope=school 过滤",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/notices",
+      "expect": "201",
+      "actual": "201 | filter=200 items=1",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-07",
+      "name": "公告置顶 PATCH",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "PATCH",
+      "path": "/notices/:id",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-08",
+      "name": "公告推送（非本人班级安全降级）",
+      "group": "K. 考勤 / 作业 / 通知",
+      "method": "POST",
+      "path": "/notices/push",
+      "expect": "200 + pushed>=0",
+      "actual": "201 {\"pushed\":0,\"error\":\"班级不存在或无权访问\"}",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-01",
+      "name": "校管创建古诗词",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "POST",
+      "path": "/school-admin/resource-library/poems",
+      "expect": "201 + id",
+      "actual": "201 {\"schoolId\":\"1c502076-a7da-47f4-af8c-45d43fc52223\",\"title\":\"静夜思\",\"dynasty\":\"唐\",\"author\":\"李白\",\"content\":\"床前明月光\"",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-02",
+      "name": "教师查询古诗词列表",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "GET",
+      "path": "/resource-library/poems",
+      "expect": "200 + array",
+      "actual": "200 items=1",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-03",
+      "name": "教师搜索古诗词",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "GET",
+      "path": "/resource-library/poems/search?keyword=",
+      "expect": "200",
+      "actual": "200 [{\"id\":\"9412bc29-7044-4883-9024-16b358f9b1c0\",\"schoolId\":\"1c",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-04",
+      "name": "校管创建数学公式",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "POST",
+      "path": "/school-admin/resource-library/formulas",
+      "expect": "201 + id",
+      "actual": "201 {\"schoolId\":\"1c502076-a7da-47f4-af8c-45d43fc52223\",\"title\":\"加法交换律\",\"category\":\"运算定律\",\"formula\":\"a+b=b+a\",\"grad",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-05",
+      "name": "校管创建英语单词",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "POST",
+      "path": "/school-admin/resource-library/words",
+      "expect": "201 + id",
+      "actual": "201 {\"schoolId\":\"1c502076-a7da-47f4-af8c-45d43fc52223\",\"word\":\"apple\",\"phonetic\":\"/ˈæpl/\",\"meaning\":\"苹果\",\"category",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-06",
+      "name": "单词分类列表",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "GET",
+      "path": "/resource-library/words/categories",
+      "expect": "200",
+      "actual": "200 [\"水果\"]",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-07",
+      "name": "教师编辑古诗词",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "PATCH",
+      "path": "/resource-library/poems/:id",
+      "expect": "200（允许）或 403（拒绝）",
+      "actual": "403",
+      "status": "PASS"
+    },
+    {
+      "id": "RES-08",
+      "name": "教师无法删除资源（无写权限路由）",
+      "group": "L. 教学资源库（古诗词/公式/单词）",
+      "method": "DELETE",
+      "path": "/resource-library/poems/:id",
+      "expect": "404/403",
+      "actual": "404",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-01",
+      "name": "校管创建教材",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "POST",
+      "path": "/school-admin/textbooks",
+      "expect": "201 + id",
+      "actual": "201 {\"schoolId\":\"1c502076-a7da-47f4-af8c-45d43fc52223\",\"subject\":\"语文\",\"grade\":\"三年级\",\"name\":\"语文三年级上册\",\"cover\":null,",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-02",
+      "name": "教材树（教师只读）",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "GET",
+      "path": "/textbooks/tree",
+      "expect": "200",
+      "actual": "200 [{\"id\":\"13727dce-9b7c-429b-9438-f3ac79fc24bd\",\"schoolId\":\"1c",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-03",
+      "name": "教材搜索",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "GET",
+      "path": "/textbooks/search?keyword=",
+      "expect": "200",
+      "actual": "200 []",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-04",
+      "name": "教师创建教材单元被拒",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "POST",
+      "path": "/textbooks/units",
+      "expect": "403",
+      "actual": "403 {\"message\":\"无权编辑此教材\",\"error\":\"Forbidden\",\"statusCode\":403}",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-05",
+      "name": "校管创建教材单元",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "POST",
+      "path": "/school-admin/textbooks/units",
+      "expect": "201 + id",
+      "actual": "201 {\"textbookId\":\"13727dce-9b7c-429b-9438-f3ac79fc24bd\",\"unitOrder\":1,\"title\":\"第一单元\",\"summary\":null,\"id\":\"e1c300e",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-06",
+      "name": "校管创建教材知识点",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "POST",
+      "path": "/school-admin/textbooks/points",
+      "expect": "201 + id",
+      "actual": "201 {\"unitId\":\"e1c300e6-5923-4964-8bd6-fdfe76ec9b25\",\"pointOrder\":1,\"title\":\"生字词\",\"content\":\"重点生字\",\"id\":\"2a929a7a-",
+      "status": "PASS"
+    },
+    {
+      "id": "TB-07",
+      "name": "教材 seed-defaults 幂等",
+      "group": "M. 教材库（课本/单元/知识点）",
+      "method": "POST",
+      "path": "/school-admin/textbooks/seed-defaults",
+      "expect": "201/200",
+      "actual": "201 {\"created\":32,\"skipped\":0,\"totalUnits\":218,\"totalPoints\":406",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-05",
+      "name": "家长查看作业",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/homework",
+      "expect": "200",
+      "actual": "200 [{\"id\":\"131c827e-2621-4f1d-a4f1-06d02c128173\",\"subject\":\"语文\"",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-06",
+      "name": "家长查看考勤",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/attendance",
+      "expect": "200",
+      "actual": "200 {\"total\":0,\"summary\":{\"reading\":0,\"sport\":0,\"behavior\":0,\"ho",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-07",
+      "name": "家长查看行为记录",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/behavior",
+      "expect": "200",
+      "actual": "200 {\"total\":0,\"summary\":{\"praise\":0,\"violation\":0,\"other\":0},\"r",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-08",
+      "name": "家长查看课表",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/schedule",
+      "expect": "200",
+      "actual": "200 {\"week\":[{\"dayOfWeek\":1,\"items\":[{\"period\":1,\"section\":null,",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-09",
+      "name": "家长查看沟通记录",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/communications",
+      "expect": "200",
+      "actual": "200 {\"total\":1,\"recent\":[{\"id\":\"26860552-471c-4e1f-91d4-83ef746a",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-10",
+      "name": "家长查看班级教师",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/teachers",
+      "expect": "200",
+      "actual": "200 [{\"teacherId\":\"7888a455-5490-4ff4-aa16-564bd8667300\",\"name\":",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-11",
+      "name": "家长查看绑定关系",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/bindings",
+      "expect": "200",
+      "actual": "200 {\"parent\":{\"parentName\":\"张小明家长\",\"nickName\":\"\",\"openIdTail\":\"",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-12",
+      "name": "家长多娃对比",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/compare-kids",
+      "expect": "200",
+      "actual": "200 {\"kids\":[{\"studentId\":\"05c800fd-c5ae-4f1d-b6a6-32fdff815af5\"",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-13",
+      "name": "家长提交信息修改申请（合法字段）",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "POST",
+      "path": "/parent-auth/student-update-request",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"05c800fd-c5ae-4f1d-b6a6-32fdff815af5\",\"studentId\":\"05c800fd-c5ae-4f1d-b6a6-32fdff815af5\",\"classI",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-14",
+      "name": "家长提交非法字段被拒",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "POST",
+      "path": "/parent-auth/student-update-request",
+      "expect": "400",
+      "actual": "400 {\"message\":\"没有可修改的字段\",\"error\":\"Bad Request\",\"statusCode\":400",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-15",
+      "name": "家长查看申请列表",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/parent-auth/student-update-requests",
+      "expect": "200 + items",
+      "actual": "200 [{\"id\":\"2d2a4e5f-8566-4bbb-8ed8-0f3ec5b667ef\",\"teacherId\":\"0",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-16",
+      "name": "教师端信息修改申请列表",
+      "group": "N. 家长端扩展（作业/考勤/行为/课表/沟通/教师/多娃）",
+      "method": "GET",
+      "path": "/student-info-updates",
+      "expect": "200",
+      "actual": "200 [{\"id\":\"2d2a4e5f-8566-4bbb-8ed8-0f3ec5b667ef\",\"teacherId\":\"0",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-05",
+      "name": "教师发送消息（recipientId/role/title）",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "POST",
+      "path": "/messages",
+      "expect": "201 + id",
+      "actual": "201 {\"senderId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"senderRole\":\"teacher\",\"recipientId\":\"p_15ukxxe\",\"recipient",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-06",
+      "name": "消息缺少收件人被拒",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "POST",
+      "path": "/messages",
+      "expect": "400",
+      "actual": "400",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-07",
+      "name": "已发送消息列表",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "GET",
+      "path": "/messages/sent",
+      "expect": "200 + items",
+      "actual": "200 items=3",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-08",
+      "name": "家长标记教师消息已读",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "PATCH",
+      "path": "/messages/:id/read",
+      "expect": "200",
+      "actual": "200 {\"id\":\"60f2cd7b-4159-48ca-b901-39162d3372ed\",\"isRead\":true}",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-08b",
+      "name": "家长收件箱能看到教师消息",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "GET",
+      "path": "/messages",
+      "expect": "含教师消息",
+      "actual": "200 items=3 hit=true",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-09",
+      "name": "标记全部已读",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "PATCH",
+      "path": "/messages/mark-all-read",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-10",
+      "name": "未读消息数",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "GET",
+      "path": "/messages/unread-count",
+      "expect": "200",
+      "actual": "200 {\"count\":0}",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-11",
+      "name": "教师删除消息",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "DELETE",
+      "path": "/messages/:id",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-12",
+      "name": "通知未读数",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "GET",
+      "path": "/notifications/unread-count",
+      "expect": "200",
+      "actual": "200 {\"count\":0}",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-13",
+      "name": "通知全部已读",
+      "group": "O. 消息与通知扩展（已读/未读/全部已读/删除）",
+      "method": "POST",
+      "path": "/notifications/mark-all-read",
+      "expect": "201/200",
+      "actual": "201",
+      "status": "PASS"
+    },
+    {
+      "id": "BAK-01",
+      "name": "创建手动备份",
+      "group": "P. 备份（创建/列表/租户隔离）",
+      "method": "POST",
+      "path": "/backups",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"type\":\"manual\",\"label\":\"QA扩展备份\",\"payload\":\"{\\\"version\\\":1",
+      "status": "PASS"
+    },
+    {
+      "id": "BAK-02",
+      "name": "备份列表",
+      "group": "P. 备份（创建/列表/租户隔离）",
+      "method": "GET",
+      "path": "/backups",
+      "expect": "200 + array",
+      "actual": "200 items=1",
+      "status": "PASS"
+    },
+    {
+      "id": "BAK-03",
+      "name": "触发自动备份",
+      "group": "P. 备份（创建/列表/租户隔离）",
+      "method": "POST",
+      "path": "/backups/auto",
+      "expect": "201/200",
+      "actual": "201 {\"ok\":true}",
+      "status": "PASS"
+    },
+    {
+      "id": "BAK-04",
+      "name": "备份租户隔离（跨教师不可见）",
+      "group": "P. 备份（创建/列表/租户隔离）",
+      "method": "GET",
+      "path": "/backups",
+      "expect": "200 且不含他人备份",
+      "actual": "200 leak=false",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-01",
+      "name": "试卷列表/创建",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "GET",
+      "path": "/generated/papers",
+      "expect": "200",
+      "actual": "200 items=0",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-01b",
+      "name": "试卷列表/创建（POST）",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "POST",
+      "path": "/generated/papers",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA扩展试卷\",\"grade\":\"三年级\",\"subject\":\"语文\",\"content\":\"内",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-02",
+      "name": "教案列表/创建",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "GET",
+      "path": "/generated/lesson-plans",
+      "expect": "200",
+      "actual": "200 items=0",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-02b",
+      "name": "教案列表/创建（POST）",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "POST",
+      "path": "/generated/lesson-plans",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA扩展教案\",\"subject\":\"语文\",\"grade\":\"三年级\",\"content\":\"内",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-03",
+      "name": "知识点列表/创建",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "GET",
+      "path": "/generated/knowledges",
+      "expect": "200",
+      "actual": "200 items=0",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-03b",
+      "name": "知识点列表/创建（POST）",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "POST",
+      "path": "/generated/knowledges",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA扩展知识点\",\"grade\":\"三年级\",\"subject\":\"语文\",\"content\":\"",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-04",
+      "name": "试题查询列表/创建",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "GET",
+      "path": "/generated/queries",
+      "expect": "200",
+      "actual": "200 items=0",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-04b",
+      "name": "试题查询列表/创建（POST）",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "POST",
+      "path": "/generated/queries",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"keyword\":\"分数\",\"title\":\"QA扩展试题\",\"source\":\"题库\",\"year\":\"2026",
+      "status": "PASS"
+    },
+    {
+      "id": "GEN-09",
+      "name": "生成内容 seed-defaults 幂等",
+      "group": "Q. 生成内容（试卷/教案/知识点/试题查询）",
+      "method": "POST",
+      "path": "/generated/knowledges/seed-defaults",
+      "expect": "201/200",
+      "actual": "201 {\"seeded\":0,\"reason\":\"已存在知识点数据\"}",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-01",
+      "name": "文本安全检测（正常内容）",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "POST",
+      "path": "/security/msg-check",
+      "expect": "201 + pass=true",
+      "actual": "201 {\"pass\":true}",
+      "status": "PASS"
+    },
+    {
+      "id": "SEC-02",
+      "name": "图片安全检测（无图降级）",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "POST",
+      "path": "/security/img-check",
+      "expect": "201/200 或 4xx（非 500）",
+      "actual": "201 {\"pass\":true}",
+      "status": "PASS"
+    },
+    {
+      "id": "IM-01",
+      "name": "IM user-sig（未配置降级）",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "POST",
+      "path": "/im/user-sig",
+      "expect": "201/200",
+      "actual": "201 {\"sdkAppId\":\"\",\"userSig\":\"\"}",
+      "status": "PASS"
+    },
+    {
+      "id": "IM-02",
+      "name": "IM 班级家长列表",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "GET",
+      "path": "/im/parents?classId=",
+      "expect": "200 + array",
+      "actual": "200 items=6",
+      "status": "PASS"
+    },
+    {
+      "id": "IM-03",
+      "name": "IM 创建/获取班级群",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "POST",
+      "path": "/im/class-group",
+      "expect": "201/200",
+      "actual": "201 {\"id\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"teac",
+      "status": "PASS"
+    },
+    {
+      "id": "SCH-09",
+      "name": "我的课表（教师）",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "GET",
+      "path": "/schedules/my",
+      "expect": "200",
+      "actual": "200 classes=1",
+      "status": "PASS"
+    },
+    {
+      "id": "PICK-01",
+      "name": "选择历史记录创建",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "POST",
+      "path": "/picker-history",
+      "expect": "201 + id",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"studentI",
+      "status": "PASS"
+    },
+    {
+      "id": "PICK-02",
+      "name": "选择历史列表",
+      "group": "R. 安全 / IM / 课表 / 选择历史",
+      "method": "GET",
+      "path": "/picker-history",
+      "expect": "200",
+      "actual": "200 {\"items\":[{\"id\":\"a7ffd172-71d4-425b-b313-e0d2cb7e82e2\",\"teac",
+      "status": "PASS"
+    },
+    {
+      "id": "TCH-01",
+      "name": "教师详情（userId 聚合账号+班级）",
+      "group": "S. 教师模块（详情聚合）",
+      "method": "GET",
+      "path": "/teachers/:id/detail?userId=",
+      "expect": "200 或 404（取决于 ID 语义）",
+      "actual": "200 {\"id\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"teacherId\":\"15afae78-b002-4f1e-859",
+      "status": "PASS"
+    }
+  ]
+}

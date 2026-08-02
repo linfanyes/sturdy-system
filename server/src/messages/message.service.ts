@@ -6,6 +6,7 @@ import { CreateMessageDto } from './dto/create-message.dto'
 import { ParentContact } from '../parent-contact/parent-contact.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
+import { parentImUserId } from '../im/parent-im.util'
 
 @Injectable()
 export class MessageService {
@@ -65,8 +66,16 @@ export class MessageService {
     }) => {
       const key = `${item.studentId}|${item.parentName}`
       if (item.studentId && item.parentName && !map.has(key)) {
+        // 修复 P1-MSG-01：家长账号 id 必须用 parentImUserId 稳定派生（relation 固定 '家长'，
+        // 与家长登录 JWT sub 的生成算法完全一致），否则教师→家长消息的 recipientId
+        // 与家长端收件箱/已读/删除所用的 sub 不匹配，家长永远收不到站内信。
+        const imUserId = parentImUserId({
+          studentId: item.studentId,
+          relation: '家长',
+          parentName: item.parentName || '家长',
+        })
         map.set(key, {
-          id: `${item.studentId}_${item.parentName}`,
+          id: imUserId,
           name: item.parentName,
           role: 'parent',
           studentName: item.studentName,

@@ -1,0 +1,141 @@
+{
+  "base": "http://localhost:3100/api",
+  "password": "Test@2026",
+  "generatedAt": "2026-08-02T14:52:26.098Z",
+  "created": {
+    "suToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJzdXBlciIsImlhdCI6MTc4NTY4MjM0NiwiZXhwIjoxNzg4Mjc0MzQ2fQ.uByjVo6YlJpInKDyhc1dAKszDZSOGagW2NM28U7RCwo",
+    "schoolId": "1c502076-a7da-47f4-af8c-45d43fc52223",
+    "schoolName": "自动化测试学校-QA20260802",
+    "saId": "443cf37b-8634-4e64-bccf-a575b89b99ba",
+    "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NDNjZjM3Yi04NjM0LTRlNjQtYmNjZi1hNTc1Yjg5Yjk5YmEiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIxYzUwMjA3Ni1hN2RhLTQ3ZjQtYWY4Yy00NWQ0M2ZjNTIyMjMiLCJpYXQiOjE3ODU2ODIzNDYsImV4cCI6MTc4ODI3NDM0Nn0.wwDN7d1K891S0Ns_2RsskDcWPfXQNeiEURU7tl2kyP4",
+    "teacherIds": [
+      "15afae78-b002-4f1e-8590-073f69230b86",
+      "7888a455-5490-4ff4-aa16-564bd8667300",
+      "6882c95f-fb80-486d-83b6-072c860ce8b3",
+      "5e7adf95-0343-45fc-b45f-f43a40decd1a",
+      "597b94b6-8b52-499a-91c1-f0c1cf5a470f",
+      "6209522f-8f08-4c17-9fb0-b3dbd3763cba"
+    ],
+    "headToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNWFmYWU3OC1iMDAyLTRmMWUtODU5MC0wNzNmNjkyMzBiODYiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiMWM1MDIwNzYtYTdkYS00N2Y0LWFmOGMtNDVkNDNmYzUyMjIzIiwiaWF0IjoxNzg1NjgyMzQ2LCJleHAiOjE3ODgyNzQzNDZ9.YL-ci1DMIlbfdBLIyxONHXqFOSTskWtcAJKd2VmhQW4",
+    "isoTokens": {
+      "qa_t_iso": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1OTdiOTRiNi04YjUyLTQ5OWEtOTFjMS1mMGMxY2Y1YTQ3MGYiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiMWM1MDIwNzYtYTdkYS00N2Y0LWFmOGMtNDVkNDNmYzUyMjIzIiwiaWF0IjoxNzg1NjgyMzQ2LCJleHAiOjE3ODgyNzQzNDZ9._sIB9TfWVEh53pRyttq0NBnPCiASYnrJ2rd9RIwRq0o",
+      "qa_t_perf": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MjA5NTIyZi04ZjA4LTRjMTctOWZiMC1iM2RiZDM3NjNjYmEiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiMWM1MDIwNzYtYTdkYS00N2Y0LWFmOGMtNDVkNDNmYzUyMjIzIiwiaWF0IjoxNzg1NjgyMzQ3LCJleHAiOjE3ODgyNzQzNDd9.hu5DdHzNgWLETEAXrtiyoe1c7yHeCUPPke4fYmewkC8"
+    },
+    "classIds": [
+      "4d59dc7c-3468-4fff-bdbb-54fda70ea185",
+      "19328d02-7bf6-4196-af05-ebb5253048ea",
+      "8bf8a8b1-be0f-4242-9473-4daf9b56a9ee"
+    ],
+    "class1Id": "4d59dc7c-3468-4fff-bdbb-54fda70ea185",
+    "students": [
+      {
+        "id": "05c800fd-c5ae-4f1d-b6a6-32fdff815af5",
+        "name": "张小明",
+        "gender": "男",
+        "studentNo": "31001",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "cbc0f953-82fc-4286-90a6-3eee5c125fd9",
+        "name": "李思远",
+        "gender": "女",
+        "studentNo": "31002",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "591c8614-7684-42d3-b289-819c721f189e",
+        "name": "王欣怡",
+        "gender": "男",
+        "studentNo": "31003",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "e0c1e33a-7795-4218-bea8-346ba5f3f04c",
+        "name": "赵子轩",
+        "gender": "女",
+        "studentNo": "31004",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "f836e1bb-99f7-41f0-a248-4b9330636240",
+        "name": "刘雨桐",
+        "gender": "男",
+        "studentNo": "31005",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "4f678dde-cb52-4291-a393-c72f79d53dd4",
+        "name": "陈浩然",
+        "gender": "女",
+        "studentNo": "31006",
+        "classId": "4d59dc7c-3468-4fff-bdbb-54fda70ea185"
+      },
+      {
+        "id": "38fc959c-e092-40d4-9056-31a3cc8b7992",
+        "name": "杨若曦",
+        "gender": "男",
+        "studentNo": "31007",
+        "classId": "19328d02-7bf6-4196-af05-ebb5253048ea"
+      },
+      {
+        "id": "a4a483d9-3c96-4a96-8148-dbf253e81653",
+        "name": "黄一诺",
+        "gender": "女",
+        "studentNo": "31008",
+        "classId": "19328d02-7bf6-4196-af05-ebb5253048ea"
+      },
+      {
+        "id": "e1d02082-a37b-4aba-9087-87359e3df165",
+        "name": "周嘉懿",
+        "gender": "男",
+        "studentNo": "31009",
+        "classId": "19328d02-7bf6-4196-af05-ebb5253048ea"
+      },
+      {
+        "id": "bb50c4a7-78bd-4c06-857f-d655978b415f",
+        "name": "吴诗涵",
+        "gender": "女",
+        "studentNo": "31010",
+        "classId": "19328d02-7bf6-4196-af05-ebb5253048ea"
+      },
+      {
+        "id": "3360143d-c4fb-466b-a2f9-63c88a593e9e",
+        "name": "徐博文",
+        "gender": "男",
+        "studentNo": "31011",
+        "classId": "19328d02-7bf6-4196-af05-ebb5253048ea"
+      },
+      {
+        "id": "d0a33124-eca6-4d78-9a92-cc1bbb054a1e",
+        "name": "孙语嫣",
+        "gender": "女",
+        "studentNo": "31012",
+        "classId": "8bf8a8b1-be0f-4242-9473-4daf9b56a9ee"
+      },
+      {
+        "id": "1dc1fea4-7566-41f5-8ad7-f0e928b66c9d",
+        "name": "马泽宇",
+        "gender": "男",
+        "studentNo": "31013",
+        "classId": "8bf8a8b1-be0f-4242-9473-4daf9b56a9ee"
+      },
+      {
+        "id": "0f15a3dc-c63d-4a16-88a3-04f3067968bc",
+        "name": "朱紫萱",
+        "gender": "女",
+        "studentNo": "31014",
+        "classId": "8bf8a8b1-be0f-4242-9473-4daf9b56a9ee"
+      },
+      {
+        "id": "497e448d-0975-46e3-a93c-e8bc725fe014",
+        "name": "胡俊杰",
+        "gender": "男",
+        "studentNo": "31015",
+        "classId": "8bf8a8b1-be0f-4242-9473-4daf9b56a9ee"
+      }
+    ],
+    "student1Id": "05c800fd-c5ae-4f1d-b6a6-32fdff815af5",
+    "parentToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwXzE1dWt4eGUiLCJ0eXBlIjoicGFyZW50IiwicGFyZW50SWQiOiI2NDY5OWEyOS0wZDMwLTQ2YTEtYWMwNi1lMjhiMWRmMDNmZGEiLCJzdHVkZW50SWQiOiIwNWM4MDBmZC1jNWFlLTRmMWQtYjZhNi0zMmZkZmY4MTVhZjUiLCJzdHVkZW50TmFtZSI6IuW8oOWwj-aYjiIsImNsYXNzSWQiOiI0ZDU5ZGM3Yy0zNDY4LTRmZmYtYmRiYi01NGZkYTcwZWExODUiLCJzdHVkZW50Tm8iOiIzMTAwMSIsImlhdCI6MTc4NTY4MjM0OCwiZXhwIjoxNzg4Mjc0MzQ4fQ.4k_IAKB8RGDYve02RuVPdIE9CFZgh2NY0pc9WxYjn-w",
+    "parentPassword": "123456"
+  }
+}

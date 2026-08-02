@@ -1,0 +1,764 @@
+{
+  "generatedAt": "2026-08-02T14:52:50.191Z",
+  "base": "http://localhost:3100/api",
+  "environment": "SQLite 内存库（QA 服务器 :3100，限流放宽）",
+  "summary": {
+    "total": 75,
+    "passed": 75,
+    "failed": 0,
+    "blocked": 0,
+    "passRate": "100.0%"
+  },
+  "results": [
+    {
+      "id": "AUTH-01",
+      "name": "超管登录（admin/admin）",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/admin/login",
+      "expect": "201 + token(role=super)",
+      "actual": "201 {\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJzd",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-02",
+      "name": "校管登录（sa1）",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/school-admin/login",
+      "expect": "201 + token(role=school_admin)",
+      "actual": "201 {\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiZ",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-03",
+      "name": "教师统一登录（qa_t_head）",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/auth/unified-login",
+      "expect": "201 + token(role=teacher)",
+      "actual": "201 + token",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-04",
+      "name": "教师登录密码错误",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/auth/unified-login",
+      "expect": "401 + message",
+      "actual": "401 {\"message\":\"密码错误\",\"error\":\"Unauthorized\",\"statusCode\":401}",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-05",
+      "name": "无 token 访问受保护接口",
+      "group": "A. 认证与登录",
+      "method": "GET",
+      "path": "/users/me",
+      "expect": "401",
+      "actual": "401",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-06",
+      "name": "家长登录（学生学号）",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/parent-auth/login",
+      "expect": "201 + token",
+      "actual": "201 {\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwX",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-07",
+      "name": "家长登录密码错误",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/parent-auth/login",
+      "expect": "401",
+      "actual": "401",
+      "status": "PASS"
+    },
+    {
+      "id": "AUTH-08",
+      "name": "登录接口限流（>10 次/分钟返回 429）",
+      "group": "A. 认证与登录",
+      "method": "POST",
+      "path": "/auth/unified-login",
+      "expect": "第 11 次返回 429",
+      "actual": "429 限流生效",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-01",
+      "name": "学校列表",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/admin/schools",
+      "expect": "200 + array",
+      "actual": "200 items=3",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-02",
+      "name": "创建学校",
+      "group": "B. 超管模块",
+      "method": "POST",
+      "path": "/admin/schools",
+      "expect": "201 + id",
+      "actual": "201 {\"code\":\"QZ2C47GH\",\"name\":\"QA功能测试学校-1785682369382\",\"address\":\"\",\"contact\":\"\",\"ph",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-03",
+      "name": "编辑学校",
+      "group": "B. 超管模块",
+      "method": "PATCH",
+      "path": "/admin/schools/922ca860-a689-424a-a221-0eb6f813f3d3",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-04",
+      "name": "删除学校",
+      "group": "B. 超管模块",
+      "method": "DELETE",
+      "path": "/admin/schools/922ca860-a689-424a-a221-0eb6f813f3d3",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-05",
+      "name": "校管列表",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/admin/school-admins",
+      "expect": "200 + array",
+      "actual": "200 items=3",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-06",
+      "name": "审计日志列表",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-07",
+      "name": "平台配置读取",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/config/app",
+      "expect": "200 + 配置项",
+      "actual": "200 items=21",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-08",
+      "name": "平台配置写入（系统名称）",
+      "group": "B. 超管模块",
+      "method": "PUT",
+      "path": "/config/app",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-09",
+      "name": "AI 服务商列表",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/ai-providers",
+      "expect": "200 + array",
+      "actual": "200 items=3",
+      "status": "PASS"
+    },
+    {
+      "id": "SUP-10",
+      "name": "教师 token 访问超管接口被拒",
+      "group": "B. 超管模块",
+      "method": "GET",
+      "path": "/admin/schools",
+      "expect": "401/403",
+      "actual": "401",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-01",
+      "name": "校管 Dashboard 统计",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/dashboard",
+      "expect": "200 + stats",
+      "actual": "200 {\"totalTeachers\":4,\"activeTeachers\":4,\"inactiveTeachers\":0,\"totalClasses\":2,\"tot",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-02",
+      "name": "校管教师列表",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/teachers",
+      "expect": "200 + items",
+      "actual": "200 {\"items\":[{\"id\":\"f14bdfee-12b4-4af3-ac8c-03e540941662\",\"name",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-03",
+      "name": "校管创建教师",
+      "group": "C. 校管模块",
+      "method": "POST",
+      "path": "/school-admin/teachers",
+      "expect": "201 + id",
+      "actual": "201 {\"id\":\"adfd7f29-f7c6-40bf-9baf-e1ae2990abf6\",\"name\":\"QA校管建师\",\"username\":\"qa_sa_t",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-04",
+      "name": "校管编辑教师",
+      "group": "C. 校管模块",
+      "method": "PATCH",
+      "path": "/school-admin/teachers/adfd7f29-f7c6-40bf-9baf-e1ae2990abf6",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-05",
+      "name": "校管删除教师",
+      "group": "C. 校管模块",
+      "method": "DELETE",
+      "path": "/school-admin/teachers/adfd7f29-f7c6-40bf-9baf-e1ae2990abf6",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-06",
+      "name": "校管班级列表",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/classes",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-07",
+      "name": "校管学生列表",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/students",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-08",
+      "name": "校管公告列表",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/notices",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-09",
+      "name": "学校功能包读取",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/school-features",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "SA-10",
+      "name": "教材列表（校管）",
+      "group": "C. 校管模块",
+      "method": "GET",
+      "path": "/school-admin/textbooks",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-NOTES",
+      "name": "教师 CRUD: /notes",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/notes",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA笔记-测试\",\"content\":\"内容\",\"category\":\"其他\",\"images\":null,\"id\":\"da7f2747-d8a8-4862-",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-TODOS",
+      "name": "教师 CRUD: /todos",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/todos",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA待办-测试\",\"date\":\"2026-08-02\",\"note\":null,\"id\":\"a5596adc-8b79-46eb-a00f-83d38a90",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-CHECKINS",
+      "name": "教师 CRUD: /checkins",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/checkins",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"type\":\"reading\",\"date\":\"2026-08-02\",\"count\":1,\"not",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-WORK-LOGS",
+      "name": "教师 CRUD: /work-logs",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/work-logs",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"date\":\"2026-08-02\",\"classCount\":2,\"homeworkCount\":3,\"content\":null,\"note\":null,\"id\":\"12",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-READING-LOGS",
+      "name": "教师 CRUD: /reading-logs",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/reading-logs",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"bookTitle\":\"QA图书\",\"author\":\"QA作者\",\"pages\":30,\"minu",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-CLASS-EXPENSES",
+      "name": "教师 CRUD: /class-expenses",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/class-expenses",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"type\":\"收入\",\"category\":\"班费\",\"amount\":10",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-CLASS-ACTIVITIES",
+      "name": "教师 CRUD: /class-activities",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/class-activities",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"title\":\"QA活动\",\"date\":\"2026-08-02\",\"des",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-CLASS-DUTY-CONFIGS",
+      "name": "教师 CRUD: /class-duty-configs",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/class-duty-configs",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"duties\":[\"扫地\",\"擦黑板\"],\"assignments\":{\"扫",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-DUTY-ROSTERS",
+      "name": "教师 CRUD: /duty-rosters",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/duty-rosters",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"name\":\"QA值日表\",\"type\":\"周值日\",\"assignment",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-GROWTH-ENTRIES",
+      "name": "教师 CRUD: /growth-entries",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/growth-entries",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"type\":\"学习\",\"date\":\"2026-08-02\",\"title\":\"QA成长记录\",\"c",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-BEHAVIOR-RECORDS",
+      "name": "教师 CRUD: /behavior-records",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/behavior-records",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"date\":\"2026-08-02\",\"behavior\":\"积极发言\",\"note\":\"\",\"id",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-AWARD-RECORDS",
+      "name": "教师 CRUD: /award-records",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/award-records",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"name\":\"QA奖项\",\"date\":\"2026-08-02\",\"level\":\"校级\",\"image\":null,\"tags\":null,\"note\":null,\"rat",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-AWARD-CATEGORIES",
+      "name": "教师 CRUD: /award-categories",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/award-categories",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"name\":\"QA奖类\",\"id\":\"e59a5566-7785-48a4-8a6a-157a8805abd6\",\"createdAt\":\"2026-08-02T14:52:",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-REWARD-RECORDS",
+      "name": "教师 CRUD: /reward-records",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/reward-records",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"studentId\":\"x\",\"type\":\"表扬\",\"points\":5,",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-SCORE-RECORDS",
+      "name": "教师 CRUD: /score-records",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/score-records",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"d",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-GROUP-SCORES",
+      "name": "教师 CRUD: /group-scores",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/group-scores",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"name\":\"QA组\",\"points\":80,\"color\":\"red\",",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-HOME-VISITS",
+      "name": "教师 CRUD: /home-visits",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/home-visits",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"date\":\"2026-08-02\",\"content\":\"家访记录\",\"followUp\":nul",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-LESSON-OBSERVATIONS",
+      "name": "教师 CRUD: /lesson-observations",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/lesson-observations",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"className\":\"三年级一班\",\"teacherName\":\"QA教师",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-PARENT-CONTACTS",
+      "name": "教师 CRUD: /parent-contacts",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/parent-contacts",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"studentId\":\"x\",\"studentName\":\"QA学生\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"p",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-MY-GALLERIES",
+      "name": "教师 CRUD: /my-galleries",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/my-galleries",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA相册\",\"date\":\"2026-08-02\",\"description\":null,\"photos\":null,\"id\":\"214b1ddb-1c81-",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-TEACHING-CALENDAR",
+      "name": "教师 CRUD: /teaching-calendar",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/teaching-calendar",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA教学日历\",\"date\":\"2026-08-02\",\"note\":null,\"id\":\"6de9c76c-0802-4ce9-b5c6-9b5849127",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-SEAT-LAYOUTS",
+      "name": "教师 CRUD: /seat-layouts",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/seat-layouts",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"name\":\"QA座位表\",\"rows\":4,\"cols\":6,\"seats",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-SCHEDULES",
+      "name": "教师 CRUD: /schedules",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/schedules",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"classId\":\"4d59dc7c-3468-4fff-bdbb-54fda70ea185\",\"dayOfWeek\":1,\"period\":1,\"subject\":\"语文\"",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-SEMESTERS",
+      "name": "教师 CRUD: /semesters",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/semesters",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"name\":\"QA学期-2026秋\",\"startDate\":\"2026-09-01\",\"endDate\":\"2027-01-31\",\"id\":\"e23cd2f4-7f95-",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-LESSON-PLAN-TEMPLATES",
+      "name": "教师 CRUD: /lesson-plan-templates",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/lesson-plan-templates",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA教案模板\",\"subject\":\"语文\",\"grade\":\"三年级\",\"content\":null,\"id\":\"a50e04ab-b1b9-47e7-b8",
+      "status": "PASS"
+    },
+    {
+      "id": "CRUD-NOTICE-TEMPLATES",
+      "name": "教师 CRUD: /notice-templates",
+      "group": "D. 教师业务 CRUD（通用资源）",
+      "method": "POST",
+      "path": "/notice-templates",
+      "expect": "201 + id; GET/PATCH/DELETE 200",
+      "actual": "201 {\"teacherId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"title\":\"QA公告模板\",\"content\":\"模板内容\",\"category\":\"通知\",\"id\":\"a50d62af-ec4b-478a-b31e-048cd717",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-01",
+      "name": "班主任查看本班成员列表",
+      "group": "E. 业务规则与权限隔离",
+      "method": "POST",
+      "path": "/classes/4d59dc7c-3468-4fff-bdbb-54fda70ea185/members/list",
+      "expect": "200 + members",
+      "actual": "201 members=4",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-02",
+      "name": "无关教师查看他人班级成员被拒",
+      "group": "E. 业务规则与权限隔离",
+      "method": "POST",
+      "path": "/classes/8bf8a8b1-be0f-4242-9473-4daf9b56a9ee/members/list",
+      "expect": "403",
+      "actual": "403",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-03",
+      "name": "班主任查看班级数据看板",
+      "group": "E. 业务规则与权限隔离",
+      "method": "GET",
+      "path": "/classes/4d59dc7c-3468-4fff-bdbb-54fda70ea185/dashboard",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-04",
+      "name": "教师更新自己任教学科",
+      "group": "E. 业务规则与权限隔离",
+      "method": "PATCH",
+      "path": "/classes/4d59dc7c-3468-4fff-bdbb-54fda70ea185/my-subjects",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-05",
+      "name": "班主任为本班创建学生",
+      "group": "E. 业务规则与权限隔离",
+      "method": "POST",
+      "path": "/students",
+      "expect": "201 + id",
+      "actual": "201",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-06",
+      "name": "创建学生-非法家长手机号被拒",
+      "group": "E. 业务规则与权限隔离",
+      "method": "POST",
+      "path": "/students",
+      "expect": "400",
+      "actual": "400 {\"message\":\"家长手机号格式不正确（应为 1 开头的 11 位手机号）\",\"error\":\"Bad Reque",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-07",
+      "name": "分页 take 超限被截断到 500",
+      "group": "E. 业务规则与权限隔离",
+      "method": "GET",
+      "path": "/notes?take=99999",
+      "expect": "200 且不返回 500 条以上",
+      "actual": "200 items=1",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-08",
+      "name": "教师数据租户隔离（跨教师不可见）",
+      "group": "E. 业务规则与权限隔离",
+      "method": "GET",
+      "path": "/notes",
+      "expect": "200 + 仅本人数据",
+      "actual": "iso=200 head=200 leak=false",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-09",
+      "name": "家长 token 访问教师接口被拒",
+      "group": "E. 业务规则与权限隔离",
+      "method": "GET",
+      "path": "/notes",
+      "expect": "401/403",
+      "actual": "401",
+      "status": "PASS"
+    },
+    {
+      "id": "BIZ-10",
+      "name": "教师班级列表",
+      "group": "E. 业务规则与权限隔离",
+      "method": "GET",
+      "path": "/classes",
+      "expect": "200 + items",
+      "actual": "200 items=3",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-01",
+      "name": "教师获取可发消息收件人",
+      "group": "G. 消息与通知",
+      "method": "GET",
+      "path": "/messages/recipients",
+      "expect": "200 + array",
+      "actual": "200 items=6",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-02",
+      "name": "教师发送消息给家长",
+      "group": "G. 消息与通知",
+      "method": "POST",
+      "path": "/messages",
+      "expect": "201",
+      "actual": "201 {\"senderId\":\"15afae78-b002-4f1e-8590-073f69230b86\",\"senderRo",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-03",
+      "name": "未读消息数",
+      "group": "G. 消息与通知",
+      "method": "GET",
+      "path": "/messages/unread-count",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "MSG-04",
+      "name": "通知列表",
+      "group": "G. 消息与通知",
+      "method": "GET",
+      "path": "/notifications",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "AI-01",
+      "name": "AI 模型列表（无密钥环境）",
+      "group": "H. AI 模块",
+      "method": "POST",
+      "path": "/config/ai/models",
+      "expect": "200 或 4xx（非 500）",
+      "actual": "201",
+      "status": "PASS"
+    },
+    {
+      "id": "AI-02",
+      "name": "AI 对话接口（无密钥环境）",
+      "group": "H. AI 模块",
+      "method": "POST",
+      "path": "/ai/chat",
+      "expect": "4xx 优雅降级（非 500）",
+      "actual": "201",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-01",
+      "name": "家长信息 + 孩子列表",
+      "group": "F. 家长端",
+      "method": "GET",
+      "path": "/parent-auth/me",
+      "expect": "200",
+      "actual": "200 {\"parentName\":\"张小明家长\",\"studentId\":\"05c800fd-c5ae-4f1d-b6a6-32fdff815af5\",\"studen",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-02",
+      "name": "家长查看孩子成绩",
+      "group": "F. 家长端",
+      "method": "GET",
+      "path": "/parent-auth/exams",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-03",
+      "name": "家长修改密码（原密码错误）",
+      "group": "F. 家长端",
+      "method": "POST",
+      "path": "/parent-auth/change-password",
+      "expect": "400/401",
+      "actual": "401",
+      "status": "PASS"
+    },
+    {
+      "id": "PAR-04",
+      "name": "家长查看班级公告",
+      "group": "F. 家长端",
+      "method": "GET",
+      "path": "/parent-auth/notices",
+      "expect": "200",
+      "actual": "200",
+      "status": "PASS"
+    },
+    {
+      "id": "CTR-01",
+      "name": "前端 API 路径与后端路由一致性",
+      "group": "I. 三端契约一致性（前端引用路径 vs 后端路由）",
+      "method": "",
+      "path": "",
+      "expect": "前端引用的 /api/* 路径全部存在于后端",
+      "actual": "全部匹配",
+      "status": "PASS"
+    }
+  ]
+}
