@@ -173,7 +173,7 @@ const quickLinks = [
     </div>
 
     <div>
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <Sparkles class="w-5 h-5 text-butter-400" /> 快速管理
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

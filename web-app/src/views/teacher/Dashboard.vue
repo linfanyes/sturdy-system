@@ -83,7 +83,7 @@ const shortcutTools = [
 
     <!-- 快捷工具 -->
     <div>
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><Sparkles class="w-5 h-5 text-butter-400" /> 快捷工具</h2>
+      <h2 class="section-title"><Sparkles class="w-5 h-5 text-butter-400" /> 快捷工具</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button v-for="tool in shortcutTools" :key="tool.to" class="quick-card flex items-center gap-3 !p-4" @click="router.push(tool.to)">
           <span class="w-10 h-10 rounded-xl flex items-center justify-center text-lg" :style="{ background: tool.color }">{{ tool.icon }}</span>
@@ -94,7 +94,7 @@ const shortcutTools = [
 
     <!-- 班级列表 -->
     <div v-if="!loading && classes.length > 0">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><Users class="w-5 h-5 text-butter-400" /> 我的班级</h2>
+      <h2 class="section-title"><Users class="w-5 h-5 text-butter-400" /> 我的班级</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="c in classes" :key="c.id" class="quick-card" @click="router.push('/teacher/classes')">
           <div class="flex items-center justify-between mb-2">

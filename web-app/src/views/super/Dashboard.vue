@@ -267,7 +267,7 @@ function toast(msg: string) {
 
     <!-- 最近日志 -->
     <div class="bg-white rounded-2xl p-5 shadow-softer">
-      <div class="text-sm font-semibold text-cocoa-700 mb-3 flex items-center justify-between">
+      <div class="section-title justify-between">
         <span>📋 最近审计日志</span>
         <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="router.push('/super/audit-logs')">
           全部 →

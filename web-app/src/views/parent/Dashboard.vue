@@ -539,9 +539,9 @@ async function subscribeNotifications() {
 
     <!-- 微信绑定信息（一学生可绑多个微信，如爸爸/妈妈） -->
     <div class="quick-card">
-      <div class="flex items-center gap-2 mb-3">
+      <div class="section-title">
         <MessageCircle class="w-5 h-5 text-mint-400" />
-        <h2 class="text-lg font-semibold text-cocoa-900">微信绑定</h2>
+        <h2>微信绑定</h2>
         <span v-if="wechatBindings.bindings.length" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-mint-50 text-mint-600">共 {{ wechatBindings.bindings.length }} 个绑定</span>
       </div>
       <div class="p-3 rounded-xl bg-cream-50 border border-cream-100">
@@ -586,9 +586,9 @@ async function subscribeNotifications() {
 
     <!-- 学生信息（查看 / 申请修改） -->
     <div v-if="!loading && studentInfo" class="quick-card">
-      <div class="flex items-center gap-2 mb-3">
+      <div class="section-title">
         <UserCog class="w-5 h-5 text-mint-400" />
-        <h2 class="text-lg font-semibold text-cocoa-900">学生信息</h2>
+        <h2>学生信息</h2>
         <div class="ml-auto flex items-center gap-2">
           <button
             class="text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
@@ -658,9 +658,9 @@ async function subscribeNotifications() {
 
     <!-- 孩子在校健康度总览（5 维状态灯）+ 提醒中心 -->
     <div v-if="!loading && healthOverview.length" class="quick-card">
-      <div class="flex items-center gap-2 mb-3">
+      <div class="section-title">
         <Sparkles class="w-5 h-5 text-mint-400" />
-        <h2 class="text-lg font-semibold text-cocoa-900">孩子在校健康度总览</h2>
+        <h2>孩子在校健康度总览</h2>
       </div>
       <div class="grid grid-cols-5 gap-2">
         <div v-for="h in healthOverview" :key="h.key" class="flex flex-col items-center text-center gap-1">
@@ -694,9 +694,9 @@ async function subscribeNotifications() {
 
     <!-- 成绩查询（学期/考试名称/科目筛选 + 分布 + 优弱势，与小程序端对齐） -->
     <div v-if="!loading && exams.length" id="parent-grades-section">
-      <div class="flex items-center gap-2 mb-3 flex-wrap">
+      <div class="section-title flex-wrap">
         <BarChart3 class="w-5 h-5 text-mint-400" />
-        <h2 class="text-lg font-semibold text-cocoa-900">成绩查询</h2>
+        <h2>成绩查询</h2>
         <!-- 筛选下拉框：学期 / 考试名称 / 科目（均支持「全部」） -->
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <select
@@ -804,7 +804,7 @@ async function subscribeNotifications() {
 
     <!-- 考勤看板（打卡/考勤汇总，与小程序端对齐） -->
     <div v-if="!loading && attendance">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <CalendarCheck class="w-5 h-5 text-mint-400" /> 考勤看板
       </h2>
       <div class="quick-card">
@@ -852,7 +852,7 @@ async function subscribeNotifications() {
 
     <!-- 行为表现（与小程序端对齐） -->
     <div v-if="!loading && behavior">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <Scale class="w-5 h-5 text-mint-400" /> 行为表现
       </h2>
       <div class="quick-card">
@@ -898,7 +898,7 @@ async function subscribeNotifications() {
 
     <!-- 课表 & 值日（与小程序端对齐） -->
     <div v-if="!loading && schedule">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <CalendarCheck class="w-5 h-5 text-mint-400" /> 课表 &amp; 值日
       </h2>
       <div class="quick-card">
@@ -952,7 +952,7 @@ async function subscribeNotifications() {
 
     <!-- 科任老师信息（按 classId 隔离，展示班主任 + 科任老师） -->
     <div v-if="!loading && teachers.length">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
       </h2>
       <div class="quick-card">
@@ -979,7 +979,7 @@ async function subscribeNotifications() {
 
     <!-- 家校沟通（与小程序端对齐） -->
     <div v-if="!loading && communications">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+      <h2 class="section-title">
         <MessageCircle class="w-5 h-5 text-mint-400" /> 家校沟通
       </h2>
       <div class="quick-card">
@@ -1022,7 +1022,7 @@ async function subscribeNotifications() {
 
     <!-- 班级公告 -->
     <div v-if="!loading && notices.length > 0" id="parent-notices-section">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><Bell class="w-5 h-5 text-sakura-400" /> 班级公告</h2>
+      <h2 class="section-title"><Bell class="w-5 h-5 text-sakura-400" /> 班级公告</h2>
       <div class="space-y-3">
         <div v-for="n in visibleNotices" :key="n.id" class="quick-card">
           <div class="flex items-center justify-between mb-1">
@@ -1042,7 +1042,7 @@ async function subscribeNotifications() {
 
     <!-- 作业列表 -->
     <div v-if="!loading && homework.length > 0" id="parent-homework-section">
-      <h2 class="text-lg font-semibold text-cocoa-900 mb-3 flex items-center gap-2"><BookOpen class="w-5 h-5 text-butter-400" /> 作业</h2>
+      <h2 class="section-title"><BookOpen class="w-5 h-5 text-butter-400" /> 作业</h2>
       <div class="space-y-3">
         <div v-for="h in visibleHomework" :key="h.id" class="quick-card">
           <div class="flex items-center justify-between mb-1">

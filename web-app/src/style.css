@@ -127,6 +127,19 @@
     @apply text-sm text-cocoa-400 mt-0.5;
   }
 
+  /* 区块标题（旧版 app 编辑感：黄油→樱花渐变竖条） */
+  .section-title {
+    @apply flex items-center gap-2 text-lg font-semibold text-cocoa-900 mb-3;
+  }
+  .section-title::before {
+    content: '';
+    flex: 0 0 auto;
+    align-self: stretch;
+    width: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, #ffd479 0%, #ffb8cc 100%);
+  }
+
   /* 表单容器 */
   .form-card {
     @apply bg-white rounded-2xl p-6 shadow-softer space-y-4 border border-cream-100/60;
