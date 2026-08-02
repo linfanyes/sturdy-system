@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T14:52:51.056Z",
+  "generatedAt": "2026-08-02T14:54:31.545Z",
   "base": "http://localhost:3100/api",
   "environment": "SQLite 内存库（QA 服务器 :3100，限流放宽）",
   "summary": {
@@ -28,7 +28,7 @@
       "method": "POST",
       "path": "/grades/merge",
       "expect": "201 + id",
-      "actual": "201 {\"created\":true,\"id\":\"b1930103-5e1b-4b7c-bcf5-b7cdc869beb0\"}",
+      "actual": "201 {\"created\":true,\"id\":\"8f1b0e32-c65d-4687-86a6-d5216bb0a6f0\"}",
       "status": "PASS"
     },
     {
@@ -38,7 +38,7 @@
       "method": "POST",
       "path": "/grades/merge",
       "expect": "200/201 + 同一 id",
-      "actual": "201 id=b1930103-5e1b-4b7c-bcf5-b7cdc869beb0 same=true",
+      "actual": "201 id=8f1b0e32-c65d-4687-86a6-d5216bb0a6f0 same=true",
       "status": "PASS"
     },
     {
@@ -48,7 +48,7 @@
       "method": "GET",
       "path": "/grades?classId=4d59dc7c-3468-4fff-bdbb-54fda70ea185&subject=语文",
       "expect": "200 + items",
-      "actual": "200 items=8",
+      "actual": "200 items=10",
       "status": "PASS"
     },
     {
@@ -78,7 +78,7 @@
       "method": "GET",
       "path": "/grades/analysis/student/:studentId",
       "expect": "200 + history",
-      "actual": "200 history=10",
+      "actual": "200 history=12",
       "status": "PASS"
     },
     {
@@ -168,7 +168,7 @@
       "method": "GET",
       "path": "/attendances?take=5",
       "expect": "200 + items",
-      "actual": "200 items=2",
+      "actual": "200 items=3",
       "status": "PASS"
     },
     {
@@ -208,7 +208,7 @@
       "method": "POST",
       "path": "/notices",
       "expect": "201",
-      "actual": "201 | filter=200 items=1",
+      "actual": "201 | filter=200 items=2",
       "status": "PASS"
     },
     {
@@ -248,7 +248,7 @@
       "method": "GET",
       "path": "/resource-library/poems",
       "expect": "200 + array",
-      "actual": "200 items=1",
+      "actual": "200 items=2",
       "status": "PASS"
     },
     {
@@ -328,7 +328,7 @@
       "method": "GET",
       "path": "/textbooks/tree",
       "expect": "200",
-      "actual": "200 [{\"id\":\"13727dce-9b7c-429b-9438-f3ac79fc24bd\",\"schoolId\":\"1c",
+      "actual": "200 [{\"id\":\"576a41b7-45ae-41e7-9c72-691490951d0b\",\"schoolId\":\"1c",
       "status": "PASS"
     },
     {
@@ -358,7 +358,7 @@
       "method": "POST",
       "path": "/school-admin/textbooks/units",
       "expect": "201 + id",
-      "actual": "201 {\"textbookId\":\"13727dce-9b7c-429b-9438-f3ac79fc24bd\",\"unitOrder\":1,\"title\":\"第一单元\",\"summary\":null,\"id\":\"e1c300e",
+      "actual": "201 {\"textbookId\":\"084e7299-2e60-48d9-a76d-968d10db2d5b\",\"unitOrder\":1,\"title\":\"第一单元\",\"summary\":null,\"id\":\"37c25b4",
       "status": "PASS"
     },
     {
@@ -368,7 +368,7 @@
       "method": "POST",
       "path": "/school-admin/textbooks/points",
       "expect": "201 + id",
-      "actual": "201 {\"unitId\":\"e1c300e6-5923-4964-8bd6-fdfe76ec9b25\",\"pointOrder\":1,\"title\":\"生字词\",\"content\":\"重点生字\",\"id\":\"2a929a7a-",
+      "actual": "201 {\"unitId\":\"37c25b42-3dc1-4d8f-9738-a2415f864e2d\",\"pointOrder\":1,\"title\":\"生字词\",\"content\":\"重点生字\",\"id\":\"6559dc14-",
       "status": "PASS"
     },
     {
@@ -378,7 +378,7 @@
       "method": "POST",
       "path": "/school-admin/textbooks/seed-defaults",
       "expect": "201/200",
-      "actual": "201 {\"created\":32,\"skipped\":0,\"totalUnits\":218,\"totalPoints\":406",
+      "actual": "201 {\"created\":0,\"skipped\":32,\"totalUnits\":0,\"totalPoints\":0}",
       "status": "PASS"
     },
     {
@@ -388,7 +388,7 @@
       "method": "GET",
       "path": "/parent-auth/homework",
       "expect": "200",
-      "actual": "200 [{\"id\":\"131c827e-2621-4f1d-a4f1-06d02c128173\",\"subject\":\"语文\"",
+      "actual": "200 [{\"id\":\"051cbf85-1eb7-466f-850f-767a01450fe6\",\"subject\":\"语文\"",
       "status": "PASS"
     },
     {
@@ -488,7 +488,7 @@
       "method": "GET",
       "path": "/parent-auth/student-update-requests",
       "expect": "200 + items",
-      "actual": "200 [{\"id\":\"2d2a4e5f-8566-4bbb-8ed8-0f3ec5b667ef\",\"teacherId\":\"0",
+      "actual": "200 [{\"id\":\"92b53d89-0b42-4939-86be-c5c8a272eb4f\",\"teacherId\":\"0",
       "status": "PASS"
     },
     {
@@ -498,7 +498,7 @@
       "method": "GET",
       "path": "/student-info-updates",
       "expect": "200",
-      "actual": "200 [{\"id\":\"2d2a4e5f-8566-4bbb-8ed8-0f3ec5b667ef\",\"teacherId\":\"0",
+      "actual": "200 [{\"id\":\"92b53d89-0b42-4939-86be-c5c8a272eb4f\",\"teacherId\":\"0",
       "status": "PASS"
     },
     {
@@ -528,7 +528,7 @@
       "method": "GET",
       "path": "/messages/sent",
       "expect": "200 + items",
-      "actual": "200 items=3",
+      "actual": "200 items=4",
       "status": "PASS"
     },
     {
@@ -538,7 +538,7 @@
       "method": "PATCH",
       "path": "/messages/:id/read",
       "expect": "200",
-      "actual": "200 {\"id\":\"60f2cd7b-4159-48ca-b901-39162d3372ed\",\"isRead\":true}",
+      "actual": "200 {\"id\":\"656e740d-b6b7-4bb2-b885-8c2535863a41\",\"isRead\":true}",
       "status": "PASS"
     },
     {
@@ -548,7 +548,7 @@
       "method": "GET",
       "path": "/messages",
       "expect": "含教师消息",
-      "actual": "200 items=3 hit=true",
+      "actual": "200 items=4 hit=true",
       "status": "PASS"
     },
     {
@@ -618,7 +618,7 @@
       "method": "GET",
       "path": "/backups",
       "expect": "200 + array",
-      "actual": "200 items=1",
+      "actual": "200 items=3",
       "status": "PASS"
     },
     {
@@ -648,7 +648,7 @@
       "method": "GET",
       "path": "/generated/papers",
       "expect": "200",
-      "actual": "200 items=0",
+      "actual": "200 items=1",
       "status": "PASS"
     },
     {
@@ -668,7 +668,7 @@
       "method": "GET",
       "path": "/generated/lesson-plans",
       "expect": "200",
-      "actual": "200 items=0",
+      "actual": "200 items=1",
       "status": "PASS"
     },
     {
@@ -688,7 +688,7 @@
       "method": "GET",
       "path": "/generated/knowledges",
       "expect": "200",
-      "actual": "200 items=0",
+      "actual": "200 items=1",
       "status": "PASS"
     },
     {
@@ -708,7 +708,7 @@
       "method": "GET",
       "path": "/generated/queries",
       "expect": "200",
-      "actual": "200 items=0",
+      "actual": "200 items=1",
       "status": "PASS"
     },
     {
@@ -808,7 +808,7 @@
       "method": "GET",
       "path": "/picker-history",
       "expect": "200",
-      "actual": "200 {\"items\":[{\"id\":\"a7ffd172-71d4-425b-b313-e0d2cb7e82e2\",\"teac",
+      "actual": "200 {\"items\":[{\"id\":\"91ab8c29-5155-486f-a193-6adf0388a9c1\",\"teac",
       "status": "PASS"
     },
     {
