@@ -451,11 +451,12 @@ export class AdminService implements OnModuleInit {
           try { await em.query(`DELETE FROM \`${t}\` WHERE classId IN (?)`, [classIds]) } catch { /* skip */ }
         }
       }
-      await em.getRepository(Student).delete({})
-      await em.getRepository(ClassItem).delete({})
-      await em.getRepository(User).delete({})
-      await em.getRepository(SchoolAdmin).delete({})
-      await em.getRepository(School).delete({})
+      // TypeORM 新版禁止 .delete({})（"Empty criteria"），改用 QueryBuilder 全表删除
+      await em.getRepository(Student).createQueryBuilder().delete().execute()
+      await em.getRepository(ClassItem).createQueryBuilder().delete().execute()
+      await em.getRepository(User).createQueryBuilder().delete().execute()
+      await em.getRepository(SchoolAdmin).createQueryBuilder().delete().execute()
+      await em.getRepository(School).createQueryBuilder().delete().execute()
     })
     await this.audit.log('', 'system_reset_all', operator, '全系统', '一键全量重置：清除所有学校/教师/班级/学生/业务数据').catch(() => {})
     await this.seedDemoData()
