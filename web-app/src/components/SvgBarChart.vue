@@ -16,7 +16,8 @@ const colors = ['#e6a23c', '#67c23a', '#409eff', '#e06c75', '#8e7cc3', '#40c9c6'
 const bars = computed(() => props.data.map((d, i) => ({
   ...d,
   color: d.color || colors[i % colors.length],
-  pct: d.value > 0 ? Math.max((d.value / maxVal.value) * 100, 8) : 0,
+  // 小值不再被 8% 保底拉高：真实反映比例差异（仅保留 2.5% 最低可见高度）
+  pct: d.value > 0 ? Math.max((d.value / maxVal.value) * 100, 2.5) : 0,
 })))
 
 // Y 轴刻度线
@@ -45,7 +46,7 @@ const gridLines = computed(() => {
           <span class="text-xs text-cocoa-700 font-semibold">{{ b.value }}</span>
           <div
             class="w-full rounded-t-lg transition-all duration-500"
-            :style="{ background: b.color, height: b.pct + '%', minHeight: b.value > 0 ? '8px' : '0', opacity: b.value > 0 ? 0.85 : 0.2 }"
+            :style="{ background: b.color, height: b.pct + '%', minHeight: b.value > 0 ? '2px' : '0', opacity: b.value > 0 ? 0.95 : 0.2 }"
           />
           <span class="text-xs text-cocoa-500 truncate w-full text-center leading-tight">{{ b.label }}</span>
         </div>

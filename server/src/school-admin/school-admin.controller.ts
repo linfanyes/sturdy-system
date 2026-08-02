@@ -12,6 +12,12 @@ import {
 export class SchoolAdminController {
   constructor(private readonly svc: SchoolAdminService) {}
 
+  /** D9 修复：校验 base64 文件数据的合法性，非法数据直接 400（避免解析出乱码行） */
+  private assertValidBase64(data: string) {
+    const s = String(data || '').replace(/\s/g, '')
+    if (!s || !/^[A-Za-z0-9+/]*={0,2}$/.test(s)) throw new BadRequestException('文件数据不是有效的 base64 编码')
+  }
+
   @Post('login')
   login(@Body() b: { username?: string; password?: string }) {
     return this.svc.login(b?.username || '', b?.password || '')
@@ -65,6 +71,7 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importTeachersPreview(@Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    this.assertValidBase64(b.data)
     return await this.svc.parseTeacherFile(b.filename, b.data)
   }
 

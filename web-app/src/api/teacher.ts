@@ -254,6 +254,7 @@ export function listPickerHistory(classId?: string) {
 export function addPickerHistory(data: { classId?: string; mode: string; result: string[] }) {
   return request.post<any, any>('/picker-history', data)
 }
+/** 清空点名历史（后端 DELETE /picker-history 整表清空） */
 export function clearPickerHistory(classId?: string) {
   return request.delete<any, void>('/picker-history', { params: classId ? { classId } : {} })
 }
@@ -289,11 +290,6 @@ export function listGroupScores(classId: string) {
 }
 export function createGroupScore(data: any) {
   return request.post<any, any>('/group-scores', data)
-}
-
-/** 排行榜 */
-export function listLeaderboard(classId: string) {
-  return request.get<any, any[]>('/leaderboard', { params: { classId } })
 }
 
 /** 奖项管理 */

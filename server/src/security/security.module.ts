@@ -1,4 +1,4 @@
-import { Module, Injectable, Controller, Post, Body, UseGuards } from '@nestjs/common'
+import { Module, Injectable, Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common'
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import axios from 'axios'
@@ -168,7 +168,9 @@ export class SecurityController {
   @Post('msg-check')
   @UseGuards(JwtAuthGuard)
   msgCheck(@Body() b: { content?: string }, @CurrentTeacher() t: any) {
-    return this.sec.msgSecCheck(b?.content || '')
+    const content = (b?.content || '').trim()
+    if (!content) throw new BadRequestException('检测内容不能为空')
+    return this.sec.msgSecCheck(content)
   }
 
   /** 图片安全审核（教师+家长共用） */

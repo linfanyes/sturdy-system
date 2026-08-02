@@ -103,6 +103,8 @@ export class ParentAuthService {
     const token = this.jwt.sign({
       sub: imUserId,
       type: 'parent',
+      // D6 修复：携带 parentId（教师开启家长登录时已回填），支撑「切换孩子/跨娃对比」
+      parentId: stu.parentId || undefined,
       studentId: stu.id,
       studentName: stu.name,
       classId: stu.classId,

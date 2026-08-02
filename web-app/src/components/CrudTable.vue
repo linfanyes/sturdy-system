@@ -202,6 +202,9 @@ function fmtVal(row: any, f: FieldDef): string {
   if (f.type === 'select') return labelOf(f, v)
   return String(v)
 }
+
+/** 暴露刷新方法，供父页面在数据变化后（如懒初始化）主动重载列表 */
+defineExpose({ reload: loadList })
 </script>
 
 <template>

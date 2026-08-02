@@ -36,9 +36,9 @@ const ROLE_FILTER = (process.env.SMOKE_ROLES || '').split(',').map((s) => s.trim
 /** Web 端登录：走真实登录表单，确保守卫/存储/拦截器链路都被覆盖 */
 async function login(page, cfg) {
   await page.goto(`${BASE}/#/login`, { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await page.waitForSelector('input[placeholder="用户名"]', { timeout: 20000 })
-  await page.type('input[placeholder="用户名"]', cfg.user)
-  await page.type('input[placeholder="密码"]', cfg.pass)
+  await page.waitForSelector('input[placeholder*="用户名"]', { timeout: 20000 })
+  await page.type('input[placeholder*="用户名"]', cfg.user)
+  await page.type('input[placeholder*="密码"]', cfg.pass)
   await page.click('button[type="submit"]')
   // 等待跳出登录页；失败时抛错，避免后面 160 条路由白跑
   await page

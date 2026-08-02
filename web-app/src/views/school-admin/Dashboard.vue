@@ -36,12 +36,16 @@ const chartOverview = computed(() => [
   { label: '学生', value: stats.value.totalStudents, color: '#67c23a' }
 ])
 
-// 班级学科分布（条形）
+// 班级学科分布（条形）：后端返回 [{name, count}]，映射为 {label, value}
 const subjectChartData = computed(() => {
-  if (!stats.value.subjectDistribution || !stats.value.subjectDistribution.length) {
+  const dist = stats.value.subjectDistribution || []
+  if (!dist.length) {
     return [{ label: '暂无数据', value: 0 }]
   }
-  return stats.value.subjectDistribution.slice(0, 8)
+  return dist.slice(0, 8).map((d: any) => ({
+    label: d.name || d.label || '未设置',
+    value: Number(d.count ?? d.value ?? 0),
+  }))
 })
 
 // 30 天出勤率趋势（基于当前值模拟生成）

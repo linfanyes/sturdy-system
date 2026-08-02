@@ -365,8 +365,8 @@ function handlePrint() {
         <div v-if="editingId" class="text-xs text-butter-600 mt-1">提示：更换班主任将自动转交，原班主任降级为本班科任老师</div>
       </div>
 
-      <!-- 班主任任教学科 -->
-      <div v-if="!editingId">
+      <!-- 班主任任教学科（新增与编辑均可调整） -->
+      <div>
         <label class="text-sm text-cocoa-500">班主任任教学科（支持兼任本班多科）</label>
         <div class="flex flex-wrap gap-1.5 mt-1">
           <button

@@ -70,7 +70,7 @@ class GradesService extends CrudService<Grade> {
     super(repo)
   }
 
-  async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
     const where: any = {}
     if (classId) {
       const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
@@ -79,6 +79,9 @@ class GradesService extends CrudService<Grade> {
     } else {
       where.teacherId = teacherId
     }
+    // 按科目 / 考试名精确过滤（修复：此前 subject/examName 参数被忽略，成绩矩阵筛选失效）
+    if (subject) where.subject = subject
+    if (examName) where.examName = examName
     const [items, total] = await this.repo.findAndCount({
       where,
       order: { createdAt: 'DESC' } as any,
@@ -561,6 +564,31 @@ class GradesService extends CrudService<Grade> {
 class GradesController extends CrudController<Grade> {
   constructor(s: GradesService) {
     super(s)
+  }
+
+  /** 覆写 findAll：支持 subject/examName 精确过滤（成绩矩阵按考试/科目筛选） */
+  @Get()
+  findAll(
+    @CurrentTeacher() t: any,
+    @Query('classId') classId?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('term') term?: string,
+    @Query('date') date?: string,
+    @Query('subject') subject?: string,
+    @Query('examName') examName?: string,
+  ) {
+    const n = Number(take) || 0
+    return (this.service as GradesService).findAll(
+      t.sub,
+      classId,
+      Number(skip) || 0,
+      n > 0 ? Math.min(n, 500) : 500,
+      term,
+      date,
+      subject,
+      examName,
+    )
   }
 
   @Post('merge')

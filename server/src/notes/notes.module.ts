@@ -1,4 +1,4 @@
-import { Module, UseGuards } from '@nestjs/common'
+import { Module, UseGuards, Delete } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -10,6 +10,7 @@ import { NoteItem, TodoItem, PickerHistory } from './notes.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
+import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 
 class NoteService extends CrudService<NoteItem> {
   constructor(@InjectRepository(NoteItem) repo: Repository<NoteItem>) {
@@ -45,6 +46,12 @@ class PickerService extends CrudService<PickerHistory> {
   constructor(@InjectRepository(PickerHistory) repo: Repository<PickerHistory>) {
     super(repo)
   }
+
+  /** 清空当前教师的点名历史（按 teacherId 隔离） */
+  async clearAll(teacherId: string) {
+    const r = await this.repo.delete({ teacherId } as any)
+    return { deleted: r.affected || 0 }
+  }
 }
 @Roles('teacher')
 @Feature('picker_history')
@@ -53,6 +60,13 @@ class PickerService extends CrudService<PickerHistory> {
 class PickerController extends CrudController<PickerHistory> {
   constructor(s: PickerService) {
     super(s)
+  }
+
+  /** 清空点名历史（整表，当前教师） */
+  @Delete()
+  @UseGuards(JwtAuthGuard)
+  clearAll(@CurrentTeacher() t: any) {
+    return (this.service as PickerService).clearAll(t.sub)
   }
 }
 

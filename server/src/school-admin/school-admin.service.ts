@@ -99,7 +99,26 @@ export class SchoolAdminService {
       attendanceRate, pendingHomework, parentEnabled,
       todayDate: today,
       schoolId,
+      // 学科分布：聚合全校教师任教学科（subjects 数组优先，subject 单值兜底）
+      subjectDistribution: this.buildSubjectDistribution(allTeachers),
     }
+  }
+
+  /** 聚合教师任教学科分布 [{ name, count }]，按人数降序 */
+  private buildSubjectDistribution(teachers: User[]): { name: string; count: number }[] {
+    const map = new Map<string, number>()
+    for (const t of teachers) {
+      const subs = Array.isArray(t.subjects) && t.subjects.length
+        ? t.subjects
+        : t.subject ? [t.subject] : []
+      for (const s of subs) {
+        const key = String(s || '').trim()
+        if (key) map.set(key, (map.get(key) || 0) + 1)
+      }
+    }
+    return [...map.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
   }
 
   /** 本校教师列表 */
@@ -265,10 +284,11 @@ export class SchoolAdminService {
       const classes = await em.getRepository(ClassItem).find({ where: { teacherId } })
       const classIds = classes.map(c => c.id)
       // 先将学生 classId 置空（避免孤儿记录），再禁用家长登录
+      // 注意：classId 列 NOT NULL，置 null 会触发 ER_BAD_NULL_ERROR，用空串代替
       if (classIds.length) {
         await em.getRepository(Student).update(
           { classId: In(classIds) },
-          { classId: null, parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
+          { classId: '', parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
         )
       }
       // 删除班级
@@ -460,10 +480,10 @@ export class SchoolAdminService {
     await this.entityManager.transaction(async (em) => {
       // 1. 清理班级成员关系
       await em.getRepository(ClassMember).delete({ classId: id })
-      // 2. 学生 classId 置空并禁用家长登录
+      // 2. 学生 classId 置空并禁用家长登录（classId 列 NOT NULL，用空串代替 null）
       await em.getRepository(Student).update(
         { classId: id },
-        { classId: null, parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
+        { classId: '', parentLoginEnabled: false, parentNickName: '', parentPasswordHash: null }
       )
       // 3. 清理班级关联的业务数据（按 classId，使用共享常量）
       for (const t of CLASS_ID_TABLES) {

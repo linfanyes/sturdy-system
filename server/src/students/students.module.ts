@@ -22,6 +22,7 @@ import { AuditService } from '../audit/audit.service'
 import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
 import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
+import { Parent } from '../parent/parent.entity'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -45,6 +46,15 @@ class StudentsService extends CrudService<Student> {
   ) {
     super(repo)
     this.withClassMemberService(cmSvc)
+  }
+
+  /** D1 修复：创建学生时校验家长手机号格式（与前端 PHONE_REGEX 一致，防脏数据入库） */
+  override async create(teacherId: string, dto: any) {
+    const phone = String(dto?.parentPhone || '').trim()
+    if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+      throw new BadRequestException('家长手机号格式不正确（应为 1 开头的 11 位手机号）')
+    }
+    return super.create(teacherId, dto)
   }
 
   /** 校验当前教师是指定班级的班主任（批量导入/清空仅限班主任） */
@@ -285,6 +295,32 @@ class StudentsService extends CrudService<Student> {
       if (!no) throw new BadRequestException('该学生缺少学号，无法设置默认口令，请先补全学号')
       initialPassword = '123456'
       s.parentPasswordHash = hashPassword(initialPassword)
+      // D6 修复：开启家长登录时创建/复用 Parent 记录并回填 parentId，
+      // 使家长登录 JWT 携带 parentId，支撑「切换孩子」「跨娃对比」等功能。
+      const phone = (s.parentPhone || '').trim()
+      if (phone) {
+        try {
+          const parentRepo = this.dataSource.getRepository(Parent)
+          let parent = await parentRepo.findOne({ where: { phone } }).catch(() => null)
+          if (!parent) {
+            parent = await parentRepo.save(parentRepo.create({ phone, parentName: s.parentName || '家长' }))
+          }
+          s.parentId = parent.id
+          await this.studentParentSvc
+            .bind({
+              studentId: s.id,
+              parentId: parent.id,
+              openId: '',
+              relation: s.parentName ? '家长' : '',
+              nickName: s.parentName || '',
+              schoolId: '',
+              classId: s.classId,
+            })
+            .catch((e: any) => console.error('[toggleParentLogin] 绑定家长记录失败:', e?.message))
+        } catch (e) {
+          console.error('[toggleParentLogin] 创建家长记录失败(不影响主流程):', (e as Error)?.message)
+        }
+      }
     }
     await this.repo.save(s)
     // 审计日志

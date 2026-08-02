@@ -3,8 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listSchools, listSchoolAdmins, listAuditLogs, resetAll } from '@/api/admin'
-import { School, Users, FileText, Settings, ArrowRight, Loader2, TrendingUp, Clock, Activity, BarChart3, Trash2 } from 'lucide-vue-next'
-import SvgBarChart from '@/components/SvgBarChart.vue'
+import { School, Users, FileText, Settings, ArrowRight, Loader2, TrendingUp, Clock, Activity, Trash2 } from 'lucide-vue-next'
 import SvgPieChart from '@/components/SvgPieChart.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
 import SvgProgress from '@/components/SvgProgress.vue'
@@ -16,7 +15,6 @@ const loading = ref(false)
 const schoolTotal = ref(0); const adminTotal = ref(0)
 const todayLogCount = ref(0); const weekLogCount = ref(0)
 const schoolByStatus = ref<{label:string;value:number;color:string}[]>([])
-const recentLogs = ref<any[]>([])
 
 // 模拟 7 天趋势（实际应从后端聚合，未来可加 /api/admin/trend）
 function genLast7Days(counts: number[]): { label: string; value: number }[] {
@@ -29,31 +27,10 @@ function genLast7Days(counts: number[]): { label: string; value: number }[] {
   })
 }
 
-const logTrendData = ref<{ label: string; value: number }[]>([])
 const schoolCreateTrend = ref<{ label: string; value: number }[]>([])
-
-const logChartData = computed(() => [
-  { label: '今天', value: todayLogCount.value },
-  { label: '本周', value: weekLogCount.value }
-])
 
 // 学校状态占比 → 使用 SvgPieChart（需 name/value/color 结构）
 const schoolStatusPie = computed(() => schoolByStatus.value)
-
-// 学校启用率进度条
-const schoolEnabledRate = computed(() => {
-  const active = schoolByStatus.value.find(s => s.label === '活跃')?.value || 0
-  return schoolEnabledRate_list(active, schoolTotal.value)
-})
-function schoolEnabledRate_list(active: number, total: number) {
-  return { value: active, total: total || 0 }
-}
-
-// 学校学生容量（按总校均 30 学生估算）
-const studentCapacityList = ref<{ label: string; value: number; total: number }[]>([
-  { label: '当前学生', value: 0, total: 0 },
-  { label: '预估容量', value: 0, total: 0 }
-])
 
 async function load() {
   loading.value = true
@@ -80,9 +57,6 @@ async function load() {
       { label: '停用', value: inactive, color: '#e06c75' }
     ]
 
-    // 7 天日志趋势（模拟数据，无聚合端点）
-    logTrendData.value = genLast7Days([3, 5, 2, 7, 4, 6, todayLogCount.value])
-
     // 学校创建趋势（基于现有创建时间）
     const createBuckets = new Map<string, number>()
     for (const s of schools) {
@@ -101,13 +75,6 @@ async function load() {
       createBuckets.get(`${new Date(Date.now() - 1 * 86400000).getMonth() + 1}/${new Date(Date.now() - 1 * 86400000).getDate()}`) || 0,
       createBuckets.get(`${new Date().getMonth() + 1}/${new Date().getDate()}`) || 0
     ])
-
-    studentCapacityList.value = [
-      { label: '已启用教师', value: 0, total: adminTotal.value },
-      { label: '学校启用率', value: active, total: schools.length || 1 }
-    ]
-
-    recentLogs.value = logs.slice(0, 8)
   } catch { /* ignore */ }
   finally { loading.value = false }
 }
@@ -118,15 +85,6 @@ function isToday(t?: string): boolean {
   const d = new Date(t)
   const now = new Date()
   return d.toDateString() === now.toDateString()
-}
-function shortTime(t?: string): string {
-  if (!t) return ''
-  return new Date(t).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-
-const logIcon = (type?: string): string => {
-  const m: Record<string, string> = { login: '🔑', create: '✅', update: '✏️', delete: '🗑️', system_reset_all: '🔄' }
-  return m[type || ''] || '📋'
 }
 
 const resetting = ref(false)
@@ -221,21 +179,21 @@ function toast(msg: string) {
       </div>
     </div>
 
-    <!-- 趋势线 + 学校分布饼图 -->
+    <!-- 学校状态分布 + 新建学校趋势 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <SvgPieChart :data="schoolStatusPie" :size="200" :inner-radius="0.5" title="学校状态分布" />
       <div class="lg:col-span-2">
         <SvgLineChart
-          :data="logTrendData"
+          :data="schoolCreateTrend"
           :height="200"
-          title="最近 7 天审计日志趋势"
-          series1Name="日志数"
-          color="#e6a23c"
+          title="最近 7 天新建学校趋势"
+          series1Name="新建数"
+          color="#67c23a"
         />
       </div>
-      <SvgPieChart :data="schoolStatusPie" :size="180" :inner-radius="0.5" title="学校状态分布" />
     </div>
 
-    <!-- 关键指标进度 + 学校创建趋势 -->
+    <!-- 关键指标进度 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <SvgProgress
         :data="[
@@ -246,32 +204,6 @@ function toast(msg: string) {
         ]"
         title="平台核心指标"
       />
-      <SvgLineChart
-        :data="schoolCreateTrend"
-        :height="180"
-        title="最近 7 天新建学校趋势"
-        series1Name="新建数"
-        color="#67c23a"
-      />
-    </div>
-
-    <!-- 最近日志 -->
-    <div class="bg-white rounded-2xl p-5 shadow-softer">
-      <div class="section-title justify-between">
-        <span>📋 最近审计日志</span>
-        <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="router.push('/super/audit-logs')">
-          全部 →
-        </button>
-      </div>
-      <div v-if="loading" class="text-cocoa-400 text-sm text-center py-6">加载中…</div>
-      <div v-else-if="!recentLogs.length" class="text-cocoa-400 text-sm text-center py-6">暂无日志</div>
-      <div v-else class="space-y-1">
-        <div v-for="(l, i) in recentLogs" :key="i" class="flex items-center gap-3 py-2 border-b border-cream-100/50 last:border-0 text-sm">
-          <span class="text-base">{{ logIcon(l.action || l.type) }}</span>
-          <span class="text-cocoa-600 flex-1 truncate">{{ l.detail || l.message || '-' }}</span>
-          <span class="text-cocoa-400 text-xs whitespace-nowrap">{{ shortTime(l.createdAt) }}</span>
-        </div>
-      </div>
     </div>
 
     <!-- 危险操作区 -->
