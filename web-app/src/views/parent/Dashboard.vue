@@ -127,9 +127,6 @@ async function loadWechatBindings() {
     wechatBindings.value = r || { parent: null, bindings: [] }
   } catch (e) { /* 忽略：不影响主流程 */ }
 }
-function bindWechat() {
-  alert('请在微信小程序中打开"家长端"完成微信绑定。\n或使用教师端-学生管理-开通家长登录功能。')
-}
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -558,12 +555,9 @@ async function subscribeNotifications() {
             <div v-else class="text-sm font-medium text-cocoa-400">未绑定微信</div>
             <div class="text-xs text-cocoa-500 mt-0.5">
               <template v-if="wechatBindings.parent?.bound">openid 尾号：{{ wechatBindings.parent.openIdTail }}</template>
-              <template v-else>绑定后可用微信一键登录</template>
+              <template v-else>可在小程序「家长端」完成绑定</template>
             </div>
           </div>
-          <button @click="bindWechat" class="shrink-0 text-xs px-3 py-1.5 rounded-full bg-[#07c160] text-white hover:bg-[#06ad56] transition-colors">
-            {{ wechatBindings.parent?.bound ? '更新绑定' : '绑定微信' }}
-          </button>
         </div>
         <!-- 该学生绑定的所有微信列表（多家长场景） -->
         <div v-if="wechatBindings.bindings.length" class="mt-3 pt-3 border-t border-cream-200">

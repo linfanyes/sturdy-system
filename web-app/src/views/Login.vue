@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { unifiedLogin } from '@/api/auth'
 import type { UnifiedLoginResult } from '@/api/auth'
-import { Loader2, Sparkles } from 'lucide-vue-next'
+import { Loader2, Sparkles, RefreshCw } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
@@ -72,15 +72,18 @@ function fillRecent(val: string) {
   form.value.username = val
 }
 
-/* ============ 表情头像（本地选择，装饰用） ============ */
-const avatarOptions = ['🍎', '🌱', '🌈', '📚', '🌟', '🐣', '🍀', '☀️']
+/* ============ 表情头像（本地选择，装饰用；与旧版 app 一致，4×4 网格） ============ */
+const avatarOptions = [
+  '🍎', '📚', '✏️', '🌸', '🌈', '⭐', '🌻', '🐻',
+  '🦄', '🐥', '🍀', '🎈', '🎁', '🌷', '🐰', '🐼',
+]
 const selectedAvatar = ref(localStorage.getItem('g_login_avatar') || '🍎')
 function pickAvatar(a: string) {
   selectedAvatar.value = a
   localStorage.setItem('g_login_avatar', a)
 }
 
-/* ============ 教育格言（轮播） ============ */
+/* ============ 教育格言（轮播 + 手动刷新） ============ */
 const mottos = [
   '用爱浇灌每一颗小苗',
   '每个孩子都是一颗等待发芽的种子',
@@ -90,6 +93,10 @@ const mottos = [
 ]
 const mottoIdx = ref(0)
 let mottoTimer: ReturnType<typeof setInterval> | undefined
+
+function nextMotto() {
+  mottoIdx.value = (mottoIdx.value + 1) % mottos.length
+}
 
 onMounted(() => {
   loadRecent()
@@ -151,164 +158,255 @@ function selectRole(role: 'teacher' | 'parent') {
 </script>
 
 <template>
-  <div class="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
-    <!-- 浮动渐变光斑 -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-      <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-sakura-300/40 blur-3xl animate-floaty" />
+  <div
+    class="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8"
+    style="background: linear-gradient(135deg, #fff0e6 0%, #fff8f0 40%, #eafaf1 100%);"
+  >
+    <!-- 柔和光斑 -->
+    <div class="pointer-events-none absolute inset-0 -z-10">
       <div
-        class="absolute top-1/3 -right-20 w-96 h-96 rounded-full bg-mint-300/40 blur-3xl animate-floaty"
+        class="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-sakura-300/35 blur-[120px]"
+      />
+      <div
+        class="absolute top-1/3 -right-40 h-[32rem] w-[32rem] -translate-y-1/2 rounded-full bg-mint-300/30 blur-[120px]"
         style="animation-delay: -2s"
       />
       <div
-        class="absolute -bottom-20 left-1/4 w-80 h-80 rounded-full bg-butter-300/40 blur-3xl animate-floaty"
+        class="absolute -bottom-32 left-1/4 h-[26rem] w-[26rem] rounded-full bg-butter-300/35 blur-[120px]"
         style="animation-delay: -4s"
       />
     </div>
 
-    <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-14 max-w-5xl xl:max-w-6xl w-full items-center relative">
-      <!-- 左侧欢迎 -->
+    <!-- 右侧竖排装饰文字（复刻旧版 app） -->
+    <div
+      class="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 select-none lg:block"
+    >
+      <div
+        class="text-lg font-semibold tracking-[0.35em] text-cocoa-300/35"
+        style="writing-mode: vertical-rl"
+      >
+        我命由天不由我
+      </div>
+    </div>
+
+    <div
+      class="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] xl:max-w-6xl"
+    >
+      <!-- 左侧品牌/欢迎区 -->
       <div class="space-y-7 text-center lg:text-left">
-        <div class="inline-flex items-center gap-1.5 chip bg-white/80 text-cocoa-800 border border-white/80 shadow-softer px-4 py-1.5 text-sm font-semibold tracking-wide">
+        <div
+          class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-1.5 text-sm font-semibold text-cocoa-800 shadow-sm backdrop-blur"
+        >
           <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
 
-        <h1 class="title-display text-3xl sm:text-4xl lg:text-[2.75rem] leading-tight text-cocoa-900 mt-3">
-          {{ greeting }}，欢迎回来 <span class="inline-block animate-wiggle">👋</span>
+        <h1 class="text-3xl font-bold leading-tight text-cocoa-900 sm:text-4xl lg:text-[2.75rem]">
+          <div>{{ greeting }}，欢迎回来</div>
+          <div class="mt-2">
+            今天也要
+            <span class="relative inline-block px-1">
+              <span class="relative z-10">闪闪发光</span>
+              <span
+                class="absolute bottom-1 left-0 right-0 -z-0 h-3 rounded bg-butter-300/60"
+              />
+            </span>
+            哦
+          </div>
         </h1>
-        <p class="text-xl sm:text-2xl lg:text-[1.6rem] text-cocoa-600 font-medium mt-4 hidden sm:block">
-          用 <span class="scribble">爱</span> 浇灌每一颗小苗
+
+        <p
+          class="mx-auto max-w-md text-base text-cocoa-600 lg:mx-0 lg:text-lg"
+        >
+          只需输入用户名与密码，即可进入你的「工作台」。所有登录凭据由后端安全校验，请放心使用。
         </p>
 
-        <ul class="space-y-2.5 text-cocoa-700 text-sm hidden lg:block mt-6">
+        <!-- 三步引导（复刻旧版彩色编号圆圈） -->
+        <ul class="mx-auto inline-flex flex-col items-start gap-3 text-sm text-cocoa-700 lg:mx-0">
           <li class="flex items-center gap-3">
-            <span class="w-7 h-7 rounded-full bg-butter-300 flex items-center justify-center text-xs font-bold">1</span>
-            输入用户名与密码
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-butter-300 text-xs font-bold text-cocoa-800"
+            >1</span>
+            <span>输入用户名与密码</span>
           </li>
           <li class="flex items-center gap-3">
-            <span class="w-7 h-7 rounded-full bg-sakura-300 flex items-center justify-center text-xs font-bold">2</span>
-            系统自动识别您的角色
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sakura-300 text-xs font-bold text-cocoa-800"
+            >2</span>
+            <span>系统自动识别您的角色</span>
           </li>
           <li class="flex items-center gap-3">
-            <span class="w-7 h-7 rounded-full bg-mint-300 flex items-center justify-center text-xs font-bold">3</span>
-            进入专属工作台，开始今天的工作
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-mint-300 text-xs font-bold text-cocoa-800"
+            >3</span>
+            <span>进入专属工作台，开始今天的工作</span>
           </li>
         </ul>
 
-        <!-- 教育格言轮播 -->
-        <transition name="motto" mode="out-in">
-          <p :key="mottoIdx" class="text-cocoa-400 text-xs sm:text-sm italic hidden lg:block">
-            「{{ mottos[mottoIdx] }}」
-          </p>
-        </transition>
-
-        <div class="flex items-center justify-center lg:justify-start gap-3 pt-1">
-          <div class="text-3xl sm:text-4xl animate-wiggleSlow">📚</div>
-          <div class="text-2xl sm:text-3xl animate-floaty">✏️</div>
-          <div class="text-3xl sm:text-4xl animate-wiggle" style="animation-delay: -0.5s">🍎</div>
-          <div class="text-2xl sm:text-3xl animate-floaty" style="animation-delay: -1.5s">🌈</div>
+        <!-- 装饰 emoji -->
+        <div class="flex items-center justify-center gap-3 lg:justify-start">
+          <span class="text-3xl sm:text-4xl">📚</span>
+          <span class="text-2xl sm:text-3xl">✏️</span>
+          <span class="text-3xl sm:text-4xl">🍎</span>
+          <span class="text-2xl sm:text-3xl">🌈</span>
+          <span class="text-3xl sm:text-4xl">🌻</span>
         </div>
       </div>
 
       <!-- 右侧登录卡 -->
-      <div class="card-soft p-6 sm:p-8 relative animate-fadeIn flex flex-col">
-        <!-- 头像角标 -->
-        <div class="absolute -top-5 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-butter-300 to-butter-400 flex items-center justify-center text-2xl shadow-pop border-4 border-white">
-          {{ selectedAvatar }}
-        </div>
-
-        <div class="text-center mt-5 mb-6">
-          <h2 class="title-display text-xl sm:text-2xl mb-1">登录</h2>
-          <p class="text-xs sm:text-sm text-cocoa-500">请输入用户名和密码</p>
-        </div>
-
-        <!-- 头像选择（装饰） -->
-        <div class="flex items-center justify-center gap-1.5 mb-5">
-          <span class="text-xs text-cocoa-400 mr-1">头像</span>
-          <button
-            v-for="a in avatarOptions"
-            :key="a"
-            type="button"
-            @click="pickAvatar(a)"
-            :aria-label="`选择头像 ${a}`"
-            :class="[
-              'w-8 h-8 rounded-full text-base flex items-center justify-center transition',
-              selectedAvatar === a ? 'bg-butter-100 ring-2 ring-butter-400' : 'hover:bg-cream-100',
-            ]"
+      <div class="relative">
+        <!-- 顶部头像徽章（悬浮在卡片上方） -->
+        <div class="absolute -top-7 left-1/2 z-10 -translate-x-1/2">
+          <div
+            class="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-butter-300 to-butter-500 text-3xl shadow-xl"
           >
-            {{ a }}
-          </button>
+            {{ selectedAvatar }}
+          </div>
         </div>
 
-        <!-- 最近登录 -->
-        <div v-if="recent.length" class="mb-4">
-          <div class="text-xs text-cocoa-400 mb-1.5">最近登录</div>
-          <div class="flex flex-wrap gap-1.5">
-            <button
-              v-for="acc in recent"
-              :key="acc"
-              type="button"
-              @click="fillRecent(acc)"
-              class="chip text-xs bg-white/80 border border-cream-200 text-cocoa-600 px-2.5 py-1 hover:bg-butter-50"
+        <div
+          class="rounded-[2.25rem] bg-white/90 p-6 shadow-2xl shadow-cocoa-900/5 backdrop-blur sm:p-8"
+        >
+          <div class="mb-6 pt-6 text-center">
+            <h2 class="title-display text-2xl sm:text-[1.75rem]">一键登录</h2>
+            <p class="mt-1 text-sm text-cocoa-500">
+              只需要几秒，立即开始今天的工作 ✨
+            </p>
+          </div>
+
+          <!-- 最近登录 -->
+          <div v-if="recent.length" class="mb-4">
+            <div class="mb-2 text-xs text-cocoa-400">最近登录</div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="acc in recent"
+                :key="acc"
+                type="button"
+                @click="fillRecent(acc)"
+                class="rounded-full border border-cream-200 bg-cream-50 px-3 py-1 text-xs text-cocoa-600 transition hover:border-butter-300 hover:bg-butter-50"
+              >
+                {{ acc }}
+              </button>
+            </div>
+          </div>
+
+          <form class="space-y-4" @submit.prevent="handleLogin">
+            <div>
+              <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-cocoa-600">
+                <span>👤</span> 用户名
+              </label>
+              <input
+                v-model="form.username"
+                type="text"
+                autocomplete="username"
+                placeholder="请输入用户名"
+                class="input-soft"
+              />
+            </div>
+            <div>
+              <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-cocoa-600">
+                <span>🔒</span> 密码
+              </label>
+              <input
+                v-model="form.password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="请输入密码"
+                class="input-soft"
+              />
+            </div>
+
+            <!-- 错误提示 -->
+            <div
+              v-if="errMsg"
+              class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-500"
             >
-              {{ acc }}
+              {{ errMsg }}
+            </div>
+
+            <!-- 登录按钮（复刻旧版黄油渐变圆角胶囊） -->
+            <button
+              type="submit"
+              :disabled="loading"
+              class="w-full rounded-full bg-gradient-to-r from-butter-400 to-butter-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-butter-400/30 transition hover:from-butter-500 hover:to-butter-600 hover:shadow-xl disabled:opacity-70"
+            >
+              <Loader2 v-if="loading" class="mr-2 inline h-4 w-4 animate-spin" />
+              {{ loading ? '登录中…' : '开始工作 →' }}
             </button>
-          </div>
-        </div>
+          </form>
 
-        <!-- 统一表单 -->
-        <form class="space-y-3" @submit.prevent="handleLogin">
-          <div class="relative">
+          <!-- 头像选择（复刻 4×4 网格） -->
+          <div class="mt-6">
+            <div class="mb-2 text-xs font-medium text-cocoa-500">
+              选择一个表情头像
+            </div>
+            <div class="grid grid-cols-8 gap-2">
+              <button
+                v-for="a in avatarOptions"
+                :key="a"
+                type="button"
+                @click="pickAvatar(a)"
+                :aria-label="`选择头像 ${a}`"
+                :class="[
+                  'flex h-9 w-9 items-center justify-center rounded-full text-lg transition',
+                  selectedAvatar === a
+                    ? 'bg-butter-100 ring-2 ring-butter-400'
+                    : 'hover:bg-cream-100',
+                ]"
+              >
+                {{ a }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 教育格言（复刻输入框 + 刷新按钮） -->
+          <div class="mt-5">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-xs font-medium text-cocoa-500">教育格言（可选）</span>
+              <button
+                type="button"
+                @click="nextMotto"
+                class="rounded-full p-1 text-cocoa-400 transition hover:bg-cream-100 hover:text-cocoa-600"
+                title="换一句"
+              >
+                <RefreshCw class="h-3.5 w-3.5" />
+              </button>
+            </div>
             <input
-              v-model="form.username"
-              type="text"
-              autocomplete="username"
-              placeholder="用户名"
-              class="input-soft"
+              :value="mottos[mottoIdx] + ' 🌱'"
+              readonly
+              class="w-full cursor-default rounded-xl border border-cream-200 bg-cream-50/70 px-3 py-2 text-center text-sm text-cocoa-700 outline-none transition focus:border-butter-300"
             />
           </div>
-          <div class="relative">
-            <input
-              v-model="form.password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="密码"
-              class="input-soft"
-            />
+
+          <div class="mt-5 text-center text-xs leading-relaxed text-cocoa-400">
+            登录后 token 将持久化到本地，关闭浏览器后无需重新登录
           </div>
-
-          <!-- 错误提示 -->
-          <div v-if="errMsg" class="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{{ errMsg }}</div>
-
-          <!-- 登录按钮 -->
-          <button
-            type="submit"
-            :disabled="loading"
-            class="btn-primary w-full !py-3 !text-base mt-1"
-          >
-            <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
-            {{ loading ? '登录中…' : '开始工作' }}
-          </button>
-        </form>
-
-        <div class="mt-5 text-xs text-center text-cocoa-400 leading-relaxed">
-          登录后 token 将持久化到本地，关闭浏览器后无需重新登录
         </div>
       </div>
     </div>
   </div>
 
   <!-- 师兼家双角色选择弹层 -->
-  <div v-if="showRoleChoiceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-    <div class="bg-white rounded-2xl p-6 w-80 shadow-xl">
-      <h3 class="text-lg font-bold text-center mb-2">选择登录身份</h3>
-      <p class="text-sm text-gray-500 text-center mb-4">该微信账号同时关联了教师和家长身份</p>
+  <div
+    v-if="showRoleChoiceModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+  >
+    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="mb-2 text-center text-lg font-bold text-cocoa-900">选择登录身份</h3>
+      <p class="mb-5 text-center text-sm text-cocoa-500">
+        该账号同时关联了教师和家长身份
+      </p>
       <div class="space-y-3">
-        <button @click="selectRole('teacher')"
-          class="w-full py-3 rounded-xl border-2 border-[#07c160] text-[#07c160] font-medium hover:bg-[#07c160] hover:text-white transition-colors">
+        <button
+          @click="selectRole('teacher')"
+          class="w-full rounded-full bg-cream-50 py-3 text-sm font-semibold text-cocoa-800 ring-1 ring-cream-200 transition hover:bg-butter-50 hover:ring-butter-300"
+        >
           👨‍🏫 以老师身份进入
         </button>
-        <button @click="selectRole('parent')"
-          class="w-full py-3 rounded-xl border-2 border-[#E6A23C] text-[#E6A23C] font-medium hover:bg-[#E6A23C] hover:text-white transition-colors">
+        <button
+          @click="selectRole('parent')"
+          class="w-full rounded-full bg-cream-50 py-3 text-sm font-semibold text-cocoa-800 ring-1 ring-cream-200 transition hover:bg-butter-50 hover:ring-butter-300"
+        >
           👨‍👩‍👧‍👦 以家长身份进入
         </button>
       </div>

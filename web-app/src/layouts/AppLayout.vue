@@ -596,26 +596,28 @@ function navigateTo(to: string) {
       </div>
 
       <!-- 统一页头 -->
-      <header class="bg-white border-b border-cream-200 px-6 py-4 flex items-center justify-between shrink-0">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <h1 class="text-xl font-bold text-cocoa-900">{{ displayName }}</h1>
-            <span class="text-sm text-cocoa-500">{{ greeting }}</span>
+      <header class="shrink-0 border-b border-cream-100 bg-white/80 px-6 py-4 backdrop-blur">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-cocoa-900">{{ displayName }}</h1>
+              <span class="chip bg-butter-100 text-butter-700">{{ greeting }}</span>
+            </div>
+            <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
+              <Home class="h-3.5 w-3.5" />
+              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">园丁工作台</button>
+              <template v-if="activeCategory && auth.role === 'teacher'">
+                <ChevronRight class="h-3 w-3 text-cocoa-300" />
+                <span>{{ activeCategory }}</span>
+              </template>
+              <ChevronRight class="h-3 w-3 text-cocoa-300" />
+              <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
+            </nav>
           </div>
-          <nav aria-label="breadcrumb" class="flex items-center gap-1.5 text-xs text-cocoa-500">
-            <Home class="w-3.5 h-3.5" />
-            <button class="hover:text-cocoa-700 transition-colors" @click="backToDashboard">园丁工作台</button>
-            <template v-if="activeCategory && auth.role === 'teacher'">
-              <ChevronRight class="w-3 h-3 text-cocoa-300" />
-              <span>{{ activeCategory }}</span>
-            </template>
-            <ChevronRight class="w-3 h-3 text-cocoa-300" />
-            <span class="text-cocoa-700 font-medium">{{ pageTitle }}</span>
-          </nav>
-        </div>
-        <div class="text-sm text-cocoa-500 text-right">
-          <div>{{ roleDisplay }}</div>
-          <div class="text-xs text-cocoa-400 mt-0.5">{{ today }}</div>
+          <div class="text-right">
+            <div class="text-sm font-medium text-cocoa-700">{{ roleDisplay }}</div>
+            <div class="mt-0.5 text-xs text-cocoa-400">{{ today }}</div>
+          </div>
         </div>
       </header>
 
