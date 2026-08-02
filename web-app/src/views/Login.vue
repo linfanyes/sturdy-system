@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { unifiedLogin } from '@/api/auth'
+import { unifiedLogin, buildParentUser } from '@/api/auth'
 import type { UnifiedLoginResult } from '@/api/auth'
 import { Loader2, Sparkles, RefreshCw } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
@@ -148,7 +148,7 @@ function selectRole(role: 'teacher' | 'parent') {
     router.push('/teacher')
   } else if (role === 'parent' && data.parent) {
     roleSwitchStore.setTokens(data.teacher!.token, data.parent.token, data.parent)
-    auth.setAuth(data.parent.token, { role: 'parent', ...data.parent })
+    auth.setAuth(data.parent.token, buildParentUser(data.parent))
     router.push('/parent')
   }
 

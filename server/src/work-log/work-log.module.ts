@@ -2,7 +2,7 @@ import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Entity, Column } from 'typeorm'
+import { Entity, Column, Index } from 'typeorm'
 import { Controller } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Feature } from '../common/decorators/feature.decorator'
@@ -12,6 +12,8 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 
+// 工作日志实体：唯一权威定义（历史债 #2 修复后，admin.entity 不再重复定义）。
+@Index('idx_adm_tch', ['teacherId'])
 @Entity('work_logs')
 export class WorkLog extends BaseEntity {
   @Column() date: string

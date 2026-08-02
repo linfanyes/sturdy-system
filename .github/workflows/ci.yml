@@ -56,6 +56,37 @@ jobs:
           path: web-app/coverage
           retention-days: 14
 
+  backend-check:
+    name: 后端构建 + 共享一致性
+    runs-on: ubuntu-latest
+    # 历史债 #12：补 server/shared 的构建与一致性门禁（此前仅前端有流水线）
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 构建 shared
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: 安装后端依赖
+        working-directory: server
+        run: npm ci
+
+      - name: 后端类型检查
+        working-directory: server
+        run: npx tsc -p tsconfig.build.json --noEmit
+
+      - name: FEATURE_FLAGS 一致性校验（server 副本 vs shared 单一来源）
+        working-directory: server
+        run: node scripts/check-feature-sync.js
+
   e2e-smoke:
     name: 端到端冒烟 (Web + 小程序等价)
     runs-on: ubuntu-latest

@@ -11,6 +11,7 @@ import SvgBarChart from '@/components/SvgBarChart.vue'
 import SvgPieChart from '@/components/SvgPieChart.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
 import SvgProgress from '@/components/SvgProgress.vue'
+import WelcomeHero from '@/components/WelcomeHero.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -68,11 +69,6 @@ const coreMetrics = computed(() => [
   { label: '班级活跃率', value: stats.value.totalClasses, total: Math.max(stats.value.totalTeachers, 1), color: '#8e7cc3' }
 ])
 
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  return h < 6 ? '夜深了' : h < 9 ? '早上好' : h < 12 ? '上午好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'
-})
-
 async function load() {
   loading.value = true
   try {
@@ -92,21 +88,13 @@ const quickLinks = [
 
 <template>
   <div class="space-y-6">
-    <div class="welcome-banner">
-      <div class="relative z-10 flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-butter-500/30 backdrop-blur flex items-center justify-center">
-          <Sparkles class="w-7 h-7 text-cocoa-800" />
-        </div>
-        <div class="flex-1">
-          <div class="text-xl font-bold text-cocoa-900">
-            {{ greeting }}，<span class="text-butter-700">{{ auth.user?.name || '管理员' }}</span>
-          </div>
-          <div class="text-sm text-cocoa-600/80 mt-0.5">
-            {{ auth.user?.schoolName || '学校管理' }} · 数据看板
-          </div>
-        </div>
-      </div>
-    </div>
+    <WelcomeHero
+      :name="auth.user?.name || '管理员'"
+      role-label="管理后台"
+      :subtitle="`${auth.user?.schoolName || '学校管理'} · 数据看板`"
+      avatar="🏫"
+      accent="sky"
+    />
 
     <!-- 3 个关键指标（校管不需要待批改） -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

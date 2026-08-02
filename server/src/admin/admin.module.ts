@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Controller } from '@nestjs/common'
-import { LessonObservation, WorkLog, LessonPlanTemplate } from './admin.entity'
+import { LessonPlanTemplate } from './admin.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -16,21 +16,10 @@ import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { AuditModule } from '../audit/audit.module'
 
-// ... 已有的 Obs/Log/Plan 控制器们 ...
-
-class ObsService extends CrudService<LessonObservation> {
-  constructor(@InjectRepository(LessonObservation) repo: Repository<LessonObservation>) { super(repo) }
-}
-@Roles('teacher')
-@Controller('lesson-observations')
-class ObsController extends CrudController<LessonObservation> { constructor(s: ObsService) { super(s) } }
-
-class LogService extends CrudService<WorkLog> {
-  constructor(@InjectRepository(WorkLog) repo: Repository<WorkLog>) { super(repo) }
-}
-@Roles('teacher')
-@Controller('work-logs')
-class LogController extends CrudController<WorkLog> { constructor(s: LogService) { super(s) } }
+// 说明：LessonObservation(/lesson-observations) 与 WorkLog(/work-logs) 的路由与实体
+// 已收敛至 lesson-observation / work-log 模块（带 @Feature('observation'|'worklog') 守卫），
+// 历史债 #1/#2：AdminModule 不再重复注册同名路由（此前注册顺序靠后导致 AdminModule
+// 版本胜出且缺失功能包守卫，功能包开关实际失效）。
 
 class PlanService extends CrudService<LessonPlanTemplate> {
   constructor(@InjectRepository(LessonPlanTemplate) repo: Repository<LessonPlanTemplate>) { super(repo) }
@@ -40,9 +29,9 @@ class PlanService extends CrudService<LessonPlanTemplate> {
 class PlanController extends CrudController<LessonPlanTemplate> { constructor(s: PlanService) { super(s) } }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LessonObservation, WorkLog, LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student]), AuditModule],
-  providers: [ObsService, LogService, PlanService, AdminService],
-  controllers: [ObsController, LogController, PlanController, AdminController],
+  imports: [TypeOrmModule.forFeature([LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student]), AuditModule],
+  providers: [PlanService, AdminService],
+  controllers: [PlanController, AdminController],
   exports: [AdminService],
 })
 export class AdminModule {}

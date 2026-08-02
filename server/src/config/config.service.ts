@@ -32,8 +32,8 @@ export class ConfigService implements OnModuleInit {
         key: 'defaultSubjects',
         value:
           this.env.get('DEFAULT_SUBJECTS') ||
-          '语文,数学,英语,科学,品德,音乐,美术,体育,综合实践,信息技术',
-        description: '默认任教学科（逗号分隔）',
+          '语文,数学,英语,科学,物理,化学,生物,历史,地理,政治,音乐,美术,体育,信息技术,综合实践',
+        description: '默认任教学科（逗号分隔，与 shared/constants 的 SUBJECT_OPTIONS 15 门对齐）',
       },
       {
         key: 'loginCode',

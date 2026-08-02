@@ -68,8 +68,8 @@ const data = ref<any>(null)
 const loading = ref(true)
 const error = ref(false)
 
-function getName(studentId: string) {
-  return data.value?.kids?.find((k: any) => k.studentId === studentId)?.studentName || '未知'
+function getName(studentId: string | number) {
+  return data.value?.kids?.find((k: any) => k.studentId === String(studentId))?.studentName || '未知'
 }
 function hasSubjects(exam: any) {
   return Object.values(exam.rows || {}).some((r: any) => r.subjects?.length)

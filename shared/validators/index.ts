@@ -11,6 +11,7 @@ import {
   SUBJECT_VALUES,
   SUBJECT_OPTIONS,
   ROLE_VALUES,
+  FEATURE_FLAGS,
   FEATURE_FLAGS_SET,
   GRADE_OPTIONS,
 } from '../constants'
@@ -219,14 +220,14 @@ export function isRole(role: string): boolean {
 
 /**
  * 权限特性检查：判断 features 数组是否包含指定 feature
- * - 空数组 = 全放行（返回 true）
+ * - fail-closed：features 缺失 / 非数组 / 空数组 一律拒绝（不猜测、不放行）
  * - 非空数组 = 必须包含 feature 才放行
  * @param features 用户拥有的特性数组
  * @param feature 待检查的特性
  * @returns true = 有权限
  */
 export function hasFeature(features: string[], feature: string): boolean {
-  if (!Array.isArray(features) || features.length === 0) return true // 空数组 = 全放行
+  if (!Array.isArray(features) || features.length === 0) return false // fail-closed：空数组 = 拒绝
   return features.includes(feature)
 }
 
@@ -337,3 +338,45 @@ export const MAX_LEN = {
 // 重新导出常量供外部直接从 validators 导入
 export { PHONE_REGEX, PHONE_HINT, CLASS_NAMING_RULE, SUBJECT_VALUES, ROLE_VALUES, FEATURE_FLAGS_SET, GRADE_OPTIONS } from '../constants'
 export type { SubjectOption, RoleOption, Role } from '../constants'
+
+/* ==================== 功能包（Feature Flags）解析 ====================
+ * effective = 学校级 ∩ 教师级；某一级为 null / [] 时视为「该级全集」，不对结果做收窄。
+ * 统一收口在 shared：Web 端、小程序端、后端均可复用，消除三份实现漂移。
+ * 对齐语义：web-app（后端 effectiveFeatures 直出）、mini-program/src/common/feature.js。
+ */
+
+/**
+ * 归一化某一级的功能清单：null / 非数组 / 空数组 → 全集（FEATURE_FLAGS）。
+ * @param flags 某一级配置（学校级或教师级）
+ * @returns 归一化后的 key 列表
+ */
+export function normalizeLevel(flags: string[] | null | undefined): string[] {
+  if (!Array.isArray(flags) || flags.length === 0) return [...FEATURE_FLAGS]
+  return flags.filter((k) => FEATURE_FLAGS.includes(k))
+}
+
+/**
+ * 计算实际可用功能包：effective = 学校级 ∩ 教师级。
+ * @param schoolFlags 学校级 featureFlags
+ * @param teacherFeatures 教师级 features
+ * @returns 实际可用的 key 列表（保持 FEATURE_FLAGS 原始顺序）
+ */
+export function computeEffective(
+  schoolFlags: string[] | null | undefined,
+  teacherFeatures: string[] | null | undefined,
+): string[] {
+  const schoolSet = new Set(normalizeLevel(schoolFlags))
+  const teacherSet = new Set(normalizeLevel(teacherFeatures))
+  return FEATURE_FLAGS.filter((k) => schoolSet.has(k) && teacherSet.has(k))
+}
+
+/**
+ * 判断某 key 是否被「学校级」关闭（教师即使勾选也不可用）。
+ * @param key 功能包 key
+ * @param schoolFlags 学校级 featureFlags
+ * @returns true = 被学校级关闭
+ */
+export function isBlockedBySchool(key: string, schoolFlags: string[] | null | undefined): boolean {
+  if (!Array.isArray(schoolFlags) || schoolFlags.length === 0) return false
+  return !schoolFlags.includes(key)
+}

@@ -6,7 +6,8 @@ import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, getParentBindings } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentWechatBindings, ParentTeacher } from '@/api/parent'
 import request from '@/api/request'
-import { Sparkles, Heart, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
+import { Sparkles, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
+import WelcomeHero from '@/components/WelcomeHero.vue'
 
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
@@ -483,36 +484,27 @@ async function subscribeNotifications() {
       @click="load()"
     >⚠️ 数据加载失败，点击重试</div>
     <!-- 欢迎横幅 -->
-    <div class="welcome-banner">
-      <div class="relative z-10 flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-sakura-300/30 backdrop-blur flex items-center justify-center">
-          <Heart class="w-7 h-7 text-sakura-600" />
-        </div>
-        <div class="flex-1">
-          <div class="text-xl font-bold text-cocoa-900">
-            {{ studentName ? studentName + '同学家长' : '家长' }}
-            <span class="text-sm text-cocoa-600/80 ml-1">的成长看板</span>
-          </div>
-          <div class="text-sm text-cocoa-600/80 mt-0.5">
-            <template v-if="className">班级：{{ className }}</template>
-            <template v-else>家长中心</template>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            v-if="canSwitchToTeacher"
-            class="shrink-0 text-sm rounded-xl border border-[#07c160]/30 bg-[#07c160]/10 px-3 py-1.5 text-[#07c160] hover:bg-[#07c160] hover:text-white transition-colors flex items-center gap-1"
-            @click="switchToTeacher"
-          >
-            <Repeat class="w-3.5 h-3.5" /> 切换至教师端
-          </button>
-          <button
-            class="shrink-0 text-sm rounded-xl border border-white/40 bg-white/20 px-3 py-1.5 text-cocoa-800 hover:bg-white/30"
-            @click="showPwdModal = true"
-          >⚙️ 修改密码</button>
-        </div>
-      </div>
-    </div>
+    <WelcomeHero
+      :name="studentName ? studentName + '同学家长' : '家长'"
+      role-label="的成长看板"
+      :subtitle="className ? '班级：' + className : '家长中心'"
+      avatar="👪"
+      accent="sakura"
+    >
+      <template #actions>
+        <button
+          v-if="canSwitchToTeacher"
+          class="shrink-0 text-sm rounded-xl border border-[#07c160]/30 bg-[#07c160]/10 px-3 py-1.5 text-[#07c160] hover:bg-[#07c160] hover:text-white transition-colors flex items-center gap-1"
+          @click="switchToTeacher"
+        >
+          <Repeat class="w-3.5 h-3.5" /> 切换至教师端
+        </button>
+        <button
+          class="shrink-0 text-sm rounded-xl border border-white/40 bg-white/20 px-3 py-1.5 text-cocoa-800 hover:bg-white/30"
+          @click="showPwdModal = true"
+        >⚙️ 修改密码</button>
+      </template>
+    </WelcomeHero>
 
     <!-- 孩子卡片（与小程序端 kids 展示对齐） -->
     <div v-if="!loading && me?.kids?.length" class="flex flex-wrap gap-3">

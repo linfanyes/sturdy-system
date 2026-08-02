@@ -1,7 +1,14 @@
 import { api } from './request'
 import { FEATURE_FLAGS, FEATURE_FLAG_LIST, FEATURE_FLAG_LABELS } from '@gardener/shared/constants'
+import {
+  normalizeLevel,
+  computeEffective,
+  isBlockedBySchool,
+} from '@gardener/shared/validators'
 
 export { FEATURE_FLAGS, FEATURE_FLAG_LIST, FEATURE_FLAG_LABELS }
+// 功能包解析统一收敛进 @gardener/shared（eliminate 三处实现漂移），此处仅再导出保持调用方兼容
+export { normalizeLevel, computeEffective, isBlockedBySchool }
 
 /**
  * 功能包接口封装（与 web-app/src/api/feature.ts 对齐）。
@@ -30,45 +37,10 @@ export function getSchoolAdminFeatures() {
   return api.get('/school-admin/school-features')
 }
 
-/* ==================== effective 预览计算（与 Web 端/后端同公式） ====================
- * effective = 学校级 ∩ 教师级
- * 某一级为 null / [] 时视为「该级全集」，不对结果做收窄。
+/* ==================== effective 预览计算 ====================
+ * effective = 学校级 ∩ 教师级，公式已收敛进 @gardener/shared/validators
+ * （normalizeLevel / computeEffective / isBlockedBySchool），此处不再维护本地副本。
  */
-
-/**
- * 归一化某一级的功能清单：null / 非数组 / 空数组 → 全集（FEATURE_FLAGS）。
- * @param {string[]|null|undefined} flags 某一级配置
- * @returns {string[]} 归一化后的 key 列表
- */
-export function normalizeLevel(flags) {
-  if (!Array.isArray(flags) || flags.length === 0) return [...FEATURE_FLAGS]
-  return flags.filter((k) => FEATURE_FLAGS.indexOf(k) >= 0)
-}
-
-/**
- * 计算实际可用功能包：effective = 学校级 ∩ 教师级。
- * @param {string[]|null|undefined} schoolFlags 学校级 featureFlags
- * @param {string[]|null|undefined} teacherFeatures 教师级 features
- * @returns {string[]} 实际可用的 key 列表（保持 FEATURE_FLAGS 原始顺序）
- */
-export function computeEffective(schoolFlags, teacherFeatures) {
-  const school = normalizeLevel(schoolFlags)
-  const teacher = normalizeLevel(teacherFeatures)
-  const schoolSet = new Set(school)
-  const teacherSet = new Set(teacher)
-  return FEATURE_FLAGS.filter((k) => schoolSet.has(k) && teacherSet.has(k))
-}
-
-/**
- * 判断某 key 是否被「学校级」关闭（教师即使勾选也不可用）。
- * @param {string} key 功能包 key
- * @param {string[]|null|undefined} schoolFlags 学校级 featureFlags
- * @returns {boolean} true = 被学校级关闭
- */
-export function isBlockedBySchool(key, schoolFlags) {
-  if (!Array.isArray(schoolFlags) || schoolFlags.length === 0) return false
-  return schoolFlags.indexOf(key) < 0
-}
 
 /**
  * 本地 features 判定：优先使用 effectiveFeatures，缺失时回退旧 features（向后兼容）。

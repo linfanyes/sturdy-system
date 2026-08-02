@@ -95,12 +95,18 @@ import { HealthController } from './health.controller'
     }),
     // 全局速率限制：兜底 60 次/分钟/IP，防止 AI/文件解析等高成本接口被滥用（DoS/费用滥用）。
     // 具体接口可用 @Throttle(limit, ttl) 覆盖更严格配额（如 AI 接口）。
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 60,
-      },
-    ]),
+    // 参数可经 THROTTLE_TTL / THROTTLE_LIMIT 调整（默认 60000ms / 60 次）。
+    // ⚠️ 已知限制（历史债 #6）：存储为进程内存，云托管横向扩容后配额按实例数倍增；
+    // 如需严格全局配额，需外置 Redis 存储（@nestjs/throttler-storage-redis）——待基础设施就绪后接入。
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => [
+        {
+          ttl: +(c.get('THROTTLE_TTL') || 60000),
+          limit: +(c.get('THROTTLE_LIMIT') || 60),
+        },
+      ],
+    }),
     AuthModule,
     UsersModule,
     PlatformConfigModule,

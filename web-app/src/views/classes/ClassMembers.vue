@@ -37,7 +37,7 @@ async function loadMembers(classId: string) {
 async function loadTeachers() {
   try {
     const res = await listTeachers()
-    teachers.value = Array.isArray(res) ? res : (res?.items || [])
+    teachers.value = Array.isArray(res) ? res : ((res as any)?.items || [])
   } catch { teachers.value = [] }
 }
 

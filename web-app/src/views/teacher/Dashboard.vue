@@ -5,13 +5,13 @@ import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, type TeacherClass } from '@/api/teacher'
 import { getUnreadCount } from '@/api/notification'
 import { Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2, Calendar, Users, ClipboardList } from 'lucide-vue-next'
+import WelcomeHero from '@/components/WelcomeHero.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
 const loading = ref(true)
 const classes = ref<TeacherClass[]>([])
 const unreadCount = ref(0)
-const greeting = computed(() => { const h = new Date().getHours(); return h < 6 ? '夜深了，早点休息' : h < 9 ? '早上好' : h < 12 ? '上午好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好' })
 
 async function load() {
   loading.value = true
@@ -39,27 +39,20 @@ const shortcutTools = [
 <template>
   <div class="space-y-6">
     <!-- 欢迎横幅 -->
-    <div class="welcome-banner">
-      <div class="relative z-10 flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-butter-500/30 backdrop-blur flex items-center justify-center">
-          <Sparkles class="w-7 h-7 text-cocoa-800" />
-        </div>
-        <div class="flex-1">
-          <div class="text-xl font-bold text-cocoa-900">
-            {{ greeting }}，<span class="text-butter-700">{{ auth.user?.name || '老师' }}</span>
-            <span v-if="auth.user?.position" class="text-sm font-normal text-cocoa-600 ml-2">{{ auth.user.position }}</span>
-          </div>
-          <div class="text-sm text-cocoa-600/80 mt-0.5 flex items-center gap-2">
-            <School class="w-3.5 h-3.5" /> {{ auth.user?.schoolName || '学校' }}
-            <span v-if="auth.user?.teacherNo" class="text-cocoa-400">· 编号：{{ auth.user.teacherNo }}</span>
-          </div>
-        </div>
+    <WelcomeHero
+      :name="auth.user?.name || '老师'"
+      :badge="auth.user?.position || ''"
+      :subtitle="`${auth.user?.schoolName || '学校'}${auth.user?.teacherNo ? ' · 编号：' + auth.user.teacherNo : ''}`"
+      avatar="🍎"
+      accent="mint"
+    >
+      <template #actions>
         <button class="relative p-2 rounded-xl bg-white/60 hover:bg-white/90 transition-colors" @click="router.push('/teacher/notifications')">
           <Bell class="w-5 h-5 text-cocoa-600" />
           <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-sakura-500 text-white text-[10px] font-semibold flex items-center justify-center">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </button>
-      </div>
-    </div>
+      </template>
+    </WelcomeHero>
 
     <!-- 概览卡片（可点击跳转） -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -198,10 +198,7 @@ export const FEATURE_FLAGS_SET: Set<string> = new Set(FEATURE_FLAGS)
 export const FEATURE_FLAG_LIST: { key: string; label: string }[] = FEATURE_FLAGS.map(
   (k) => ({ key: k, label: FEATURE_FLAG_LABELS[k] || k }),
 )
-/**
- * ����ɫ������4ɫ��
- * ���룺mini-program/src/common/store.js::SCHEMES
- */
+/** 主题配色方案（4 色） */
 export interface ColorScheme {
   value: string
   label: string
@@ -209,18 +206,18 @@ export interface ColorScheme {
 }
 
 export const SCHEMES: ColorScheme[] = [
-  { value: 'butter', label: '�̻�', color: '#e6a23c' },
-  { value: 'mint', label: '����', color: '#07c160' },
-  { value: 'sakura', label: 'ӣ��', color: '#e06c75' },
-  { value: 'sky', label: '����', color: '#409eff' },
+  { value: 'butter', label: '奶黄', color: '#e6a23c' },
+  { value: 'mint', label: '薄荷', color: '#07c160' },
+  { value: 'sakura', label: '樱花', color: '#e06c75' },
+  { value: 'sky', label: '天蓝', color: '#409eff' },
 ]
 
-/** ����ɫֵ���� */
+/** 主题色值数组 */
 export const SCHEME_VALUES: string[] = SCHEMES.map((s) => s.value)
 
 /**
- * �����С��λ��3����
- * ���룺mini-program/src/common/store.js::FONT_SIZES
+ * 字体大小选项（3 档）
+ * 对齐：mini-program/src/common/store.js::FONT_SIZES
  */
 export interface FontSizeOption {
   value: string
@@ -229,7 +226,8 @@ export interface FontSizeOption {
 }
 
 export const FONT_SIZES: FontSizeOption[] = [
-  { value: 'sm', label: 'С', scale: 0.9 },
-  { value: 'md', label: '��׼', scale: 1 },
-  { value: 'lg', label: '��', scale: 1.15 },
+  { value: 'sm', label: '小', scale: 0.9 },
+  { value: 'md', label: '标准', scale: 1 },
+  { value: 'lg', label: '大', scale: 1.15 },
 ]
+

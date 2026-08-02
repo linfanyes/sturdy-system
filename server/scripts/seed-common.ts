@@ -42,8 +42,10 @@ export const SEED_CONFIG = {
   defaultPassword: process.env.SEED_PASSWORD || 'Test@2026', // 所有种子账号统一口令
 }
 
+// 与 shared/constants/index.ts::SUBJECT_OPTIONS 的 15 门标准学科对齐（历史债 #9 统一）
 export const ALL_SUBJECTS = [
-  '语文', '数学', '英语', '科学', '品德', '音乐', '美术', '体育', '综合实践', '信息技术',
+  '语文', '数学', '英语', '科学', '物理', '化学', '生物', '历史', '地理', '政治',
+  '音乐', '美术', '体育', '信息技术', '综合实践',
 ]
 export const CORE_SUBJECTS = ['语文', '数学', '英语']
 export const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']

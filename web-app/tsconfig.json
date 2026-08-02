@@ -5,10 +5,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@gardener/shared/*": ["../../shared/*"]
+      "@gardener/shared/*": ["../shared/*"]
     },
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "../shared/**/*.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

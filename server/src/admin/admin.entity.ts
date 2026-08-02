@@ -1,29 +1,9 @@
 import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
-@Index('idx_adm_tch_cls', ['teacherId', 'classId'])
-@Entity('lesson_observations')
-export class LessonObservation extends BaseEntity {
-  @Column() teacherName: string
-  @Column() classId: string
-  @Column({ default: '' }) className: string
-  @Column({ default: '' }) subject: string
-  @Column({ default: '' }) topic: string
-  @Column() date: string
-  @Column({ type: 'text', nullable: true }) strengths: string
-  @Column({ type: 'text', nullable: true }) suggestions: string
-  @Column({ default: '良好' }) overallRating: string
-}
-
-@Index('idx_adm_tch', ['teacherId'])
-@Entity('work_logs')
-export class WorkLog extends BaseEntity {
-  @Column() date: string
-  @Column({ type: 'text', nullable: true }) content: string
-  @Column({ type: 'int', default: 0 }) classCount: number
-  @Column({ type: 'int', default: 0 }) homeworkCount: number
-  @Column({ type: 'text', nullable: true }) note: string
-}
+// 说明：LessonObservation / WorkLog 实体已收敛至各自模块（lesson-observation / work-log），
+// 本文件不再重复定义（历史债 #2：重复定义曾导致同一表两套实体元数据分叉）。
+// 索引元数据（idx_adm_tch_cls / idx_adm_tch）已迁移至对应模块实体。
 
 @Index('idx_lpt_tch', ['teacherId'])
 @Entity('lesson_plan_templates')

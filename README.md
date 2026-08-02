@@ -56,7 +56,7 @@ workSystem/
 | ---------- | --------------------------------------- |
 | `dev`      | 开发模式（默认），含热更新，端口 5201    |
 | `preview`  | 先 `npm run build` 再启动 preview       |
-| `build`    | 仅构建生产版本，输出到 `app/dist/`      |
+| `build`    | 仅构建 Web 前端，输出到 `web-app/dist/` |
 | `install`  | 仅安装依赖，不启动服务                  |
 
 示例：

@@ -585,24 +585,14 @@ export class ParentAuthService {
     })
   }
 
-  /** 家长订阅微信通知：用前端 wx.login code 换取 openId，存入学生表 */
+  /** 家长订阅微信通知：用前端 wx.login code 换取 openId（复用 WechatService，统一 TLS 校验与配置名） */
   async subscribe(studentNo: string, code: string) {
     if (!code) return { ok: false, msg: '缺少 code' }
     const stu = await this.studentRepo.findOne({ where: { studentNo } })
     if (!stu) throw new BadRequestException('学生不存在')
-    const appId = this.config.get('WX_APPID')
-    const secret = this.config.get('WX_APP_SECRET')
-    if (!appId || !secret) return { ok: false, msg: '未配置微信 AppId/AppSecret，演示模式不支持订阅' }
     try {
-      const resp = await fetch(
-        `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${secret}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`,
-      )
-      const data = (await resp.json()) as any
-      const openId = (data && data.openid) || ''
-      if (openId) {
-        await this.studentRepo.save(stu)
-      }
-      return { ok: !!openId, openId }
+      const { openid: openId } = await this.wechat.code2Session(code)
+      return { ok: !!openId, openId: openId || '' }
     } catch (e) {
       return { ok: false, msg: '订阅请求失败' }
     }

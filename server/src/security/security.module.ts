@@ -97,9 +97,17 @@ export class SecurityService {
     }
   }
 
+  /** 从 app_config 读取订阅消息模板 ID（键：noticeTemplateId / homeworkTemplateId） */
+  private async getTemplateId(key: string): Promise<string | null> {
+    const row = await this.appRepo.findOne({ where: { key } })
+    const v = row?.value?.trim()
+    if (!v || v === 'NOTICE_TEMPLATE_ID' || v === 'HOMEWORK_TEMPLATE_ID') return null
+    return v
+  }
+
   /**
    * 发送微信订阅消息（免费）
-   * 未配置 credentials 时静默跳过，不阻塞业务。
+   * 未配置 credentials 或模板 ID 时静默跳过，不阻塞业务。
    */
   async sendSubscribe(openIds: string[], templateId: string, page: string, data: Record<string, { value: string }>): Promise<{ sent: number; total: number }> {
     const token = await this.getAccessToken()
@@ -120,11 +128,13 @@ export class SecurityService {
     return { sent, total: openIds.length }
   }
 
-  /** 推送通知给已订阅的家长 */
+  /** 推送通知给已订阅的家长（模板 ID 由超管在 app_config 配置，未配置则跳过） */
   async pushNotice(notice: { title: string; content?: string }, parentOpenIds: string[]) {
+    const templateId = await this.getTemplateId('noticeTemplateId')
+    if (!templateId) return { sent: 0, total: parentOpenIds.length, skipped: 'noticeTemplateId 未配置' }
     return this.sendSubscribe(
       parentOpenIds,
-      'NOTICE_TEMPLATE_ID', // 替换为微信公众平台申请的真实模板 ID
+      templateId,
       'pages/parent/parent',
       {
         thing1: { value: notice.title?.slice(0, 20) || '班级通知' },
@@ -133,11 +143,13 @@ export class SecurityService {
     )
   }
 
-  /** 推送作业提醒给已订阅的家长 */
+  /** 推送作业提醒给已订阅的家长（模板 ID 由超管在 app_config 配置，未配置则跳过） */
   async pushHomework(hw: { subject: string; title: string; content?: string }, parentOpenIds: string[]) {
+    const templateId = await this.getTemplateId('homeworkTemplateId')
+    if (!templateId) return { sent: 0, total: parentOpenIds.length, skipped: 'homeworkTemplateId 未配置' }
     return this.sendSubscribe(
       parentOpenIds,
-      'HOMEWORK_TEMPLATE_ID', // 替换为真实模板 ID
+      templateId,
       'pages/parent/parent',
       {
         thing1: { value: (hw.subject || '') + ' · ' + (hw.title || '').slice(0, 10) },

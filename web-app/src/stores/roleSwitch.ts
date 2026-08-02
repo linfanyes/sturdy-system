@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { buildParentUser } from '@/api/auth'
 
 /**
  * 师兼家双角色切换 store。
@@ -23,7 +24,7 @@ export const useRoleSwitchStore = defineStore('roleSwitch', () => {
       setAuth(teacherToken.value, { role: 'teacher', ...parentData.value?.user })
       currentRole.value = 'teacher'
     } else if (targetRole === 'parent' && parentToken.value) {
-      setAuth(parentToken.value, { role: 'parent', ...parentData.value })
+      setAuth(parentToken.value, buildParentUser(parentData.value))
       currentRole.value = 'parent'
     }
   }

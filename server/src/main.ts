@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { json, urlencoded } from 'express'
 import * as express from 'express'
 import { join } from 'path'
@@ -82,6 +83,24 @@ async function bootstrap() {
   )
   app.useGlobalFilters(new TypeOrmExceptionFilter())
   const port = config.get<number>('PORT') || 3000
+
+  // API 文档（历史债 #7）：@nestjs/swagger + CLI plugin 自动推断 DTO/实体。
+  // 默认生产关闭、本地/测试开启；SWAGGER_ENABLED=true / false 可显式强制。
+  const isProd = config.get('NODE_ENV') === 'production'
+  const swaggerEnv = (config.get('SWAGGER_ENABLED') || '').toLowerCase()
+  const swaggerEnabled = swaggerEnv === 'true' || (swaggerEnv !== 'false' && !isProd)
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('园丁工作台 API')
+      .setDescription('K12 校园管理工作台后端接口文档（NestJS + TypeORM + MySQL）')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build()
+    const document = SwaggerModule.createDocument(app, swaggerConfig)
+    SwaggerModule.setup('api-docs', app, document)
+    // eslint-disable-next-line no-console
+    console.log('📚 Swagger 文档已开启: /api-docs（生产环境默认关闭，可用 SWAGGER_ENABLED=true 强制开启）')
+  }
 
   // 托管 web-app 构建产物（新版 Vue3+Vite Web 管理端）
   const webAdminPath = join(__dirname, '..', '..', 'web-app', 'dist')
