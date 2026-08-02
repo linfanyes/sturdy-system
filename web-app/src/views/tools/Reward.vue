@@ -6,11 +6,11 @@ const selected = ref('')
 const points = ref('5')
 const reason = ref('')
 async function loadStudents() {
-  try { const d = await request.get('/api/students'); students.value = (d?.items || d || []).slice(0, 50) } catch (e) { console.error(e) }
+  try { const d = await request.get('/students'); students.value = (d?.items || d || []).slice(0, 50) } catch (e) { console.error(e) }
 }
 async function award() {
   if (!selected.value) return
-  try { await request.post('/api/reward-records', { studentId: selected.value, points: parseInt(points.value) || 1, reason: reason.value }); selected.value=''; reason.value=''; alert('已奖励！') } catch (e) { console.error(e) }
+  try { await request.post('/reward-records', { studentId: selected.value, points: parseInt(points.value) || 1, reason: reason.value }); selected.value=''; reason.value=''; alert('已奖励！') } catch (e) { console.error(e) }
 }
 loadStudents()
 </script>

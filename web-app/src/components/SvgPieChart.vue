@@ -39,6 +39,7 @@ function polarToCartesian(cx: number, cy: number, r: number, angle: number) {
 }
 
 function describeArc(cx: number, cy: number, r: number, sa: number, ea: number, ir: number = 0) {
+  if (!isFinite(sa) || !isFinite(ea) || !isFinite(r) || !isFinite(cx) || !isFinite(cy)) return ''
   const outerStart = polarToCartesian(cx, cy, r, sa)
   const outerEnd = polarToCartesian(cx, cy, r, ea)
   const largeArc = ea - sa > Math.PI ? 1 : 0
@@ -57,8 +58,11 @@ function describeArc(cx: number, cy: number, r: number, sa: number, ea: number, 
     <div v-if="title" class="text-sm font-semibold text-cocoa-700 mb-3">{{ title }}</div>
     <div class="flex items-center gap-4">
       <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" class="shrink-0">
-        <path v-for="(s, i) in slices" :key="i" :d="s.path" :fill="s.color" stroke="#fff" stroke-width="1.5" />
-        <text v-if="total > 0" :x="size/2" :y="size/2+5" text-anchor="middle" class="text-xs font-bold fill-cocoa-700">{{ total }}</text>
+        <template v-if="total > 0">
+          <path v-for="(s, i) in slices" :key="i" :d="s.path" :fill="s.color" stroke="#fff" stroke-width="1.5" />
+          <text :x="size/2" :y="size/2+5" text-anchor="middle" class="text-xs font-bold fill-cocoa-700">{{ total }}</text>
+        </template>
+        <circle v-else :cx="size/2" :cy="size/2" :r="size/2 - 2" fill="#f0e6d3" />
       </svg>
       <div class="flex-1 space-y-1.5 min-w-0">
         <div v-for="(s, i) in slices" :key="i" class="flex items-center gap-2 text-xs">

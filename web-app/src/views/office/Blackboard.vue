@@ -6,7 +6,7 @@ const content = ref('')
 const result = ref('')
 async function generate() {
   if (!topic.value.trim()) return
-  try { const d = await request.post('/api/ai/blackboard', { topic: topic.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
+  try { const d = await request.post('/ai/blackboard', { topic: topic.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
 }
 </script>
 <template>

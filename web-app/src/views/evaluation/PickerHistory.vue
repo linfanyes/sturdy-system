@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import request from '@/api/request'
 const history = ref<any[]>([])
 async function load() {
-  try { const d = await request.get('/api/picker-history'); history.value = d?.items || d || [] } catch (e) { console.error(e) }
+  try { const d = await request.get('/picker-history'); history.value = d?.items || d || [] } catch (e) { console.error(e) }
 }
 load()
 </script>

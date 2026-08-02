@@ -6,7 +6,7 @@ const role = ref('')
 const result = ref('')
 async function generate() {
   if (!topic.value.trim()) return
-  try { const d = await request.post('/api/ai/speech', { topic: topic.value, role: role.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
+  try { const d = await request.post('/ai/speech', { topic: topic.value, role: role.value }); result.value = d?.content || d?.result || '' } catch (e) { console.error(e) }
 }
 </script>
 <template>
