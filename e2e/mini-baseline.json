@@ -1,0 +1,17 @@
+{
+  "_comment": "小程序等价冒烟的已知失败基线。命中且确实失败的路由记为 '已隔离'(QUARANTINED)，不计入 CI 失败；若出现新的失败路由仍会判红。问题修复后请从本清单移除对应路由。",
+  "knownFails": [
+    {
+      "route": "pages/school-admin/classes",
+      "reason": "校管端调用 /classes 等数据接口返回 401 权限不足（同一 token 在 teacher 角色与 web 端校管页可用），疑似小程序端接口路径或后端校管权限配置问题"
+    },
+    {
+      "route": "pages/school-admin/school-admin",
+      "reason": "校管首页多个数据接口 401 权限不足（同上），触发 request.js 401 处理 → reLaunch 回登录页"
+    },
+    {
+      "route": "pages/games/plane",
+      "reason": "真实 JS 运行时错误：Cannot read properties of null (reading 'parentElement')，飞机小游戏 H5 渲染路径下 DOM 父节点取空"
+    }
+  ]
+}

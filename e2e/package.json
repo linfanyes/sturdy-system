@@ -1,0 +1,15 @@
+{
+  "name": "gardener-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "园丁工作台 · Web 与小程序端冒烟测试（CI 可复用）",
+  "type": "module",
+  "scripts": {
+    "smoke:web": "node web.smoke.mjs",
+    "smoke:mini": "node mini.smoke.mjs",
+    "smoke": "npm run smoke:web && npm run smoke:mini"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.10.0"
+  }
+}

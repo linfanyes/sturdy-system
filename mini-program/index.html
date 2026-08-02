@@ -6,6 +6,12 @@
     <title>园丁工作台</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app"><!--app-html--></div>
+    <!--
+      uni-app H5 构建的入口声明（本项目 vite root 为 mini-program/，故写 /src/main.js）。
+      mp-weixin 构建不读取本文件，加上它不影响小程序产物；
+      缺少该行时 `uni build -p h5` 只会产出空壳 index.html。
+    -->
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
