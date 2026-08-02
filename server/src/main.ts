@@ -132,6 +132,12 @@ async function bootstrap() {
   // 启动时自动执行未应用的 migration SQL（幂等，失败不阻塞）
   await runMigrations(app)
 
+  // 云托管/容器健康检查端点：微信云托管控制台将健康检查路径配置为 /health
+  // （生产镜像不托管 web-app 静态文件，默认路径 / 会 404 导致实例被判不健康）
+  app.getHttpAdapter().get('/health', (_req, res) =>
+    res.status(200).json({ status: 'ok', time: new Date().toISOString() }),
+  )
+
   // 云托管/容器环境必须监听 0.0.0.0，否则实例外部无法访问
   await app.listen(port, '0.0.0.0')
   // eslint-disable-next-line no-console
