@@ -482,6 +482,92 @@ export class AdminService implements OnModuleInit {
     return { items: list, total }
   }
 
+  /** 超管查看班级列表（支持按 schoolId 过滤） */
+  async listClasses(schoolId?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (schoolId) {
+      const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
+      if (!school) throw new NotFoundException('学校不存在')
+      // 通过班主任 teacherId 关联到学校
+      const teachers = await this.userRepo.find({ where: { schoolId } })
+      const teacherIds = teachers.map(t => t.id)
+      if (teacherIds.length) {
+        where.teacherId = In(teacherIds)
+      } else {
+        return { items: [], total: 0 }
+      }
+    }
+    const [items, total] = await this.classRepo.findAndCount({
+      where, order: { createdAt: 'DESC' }, skip, take,
+    })
+    // 关联班主任姓名和学校名称
+    const teacherIds = [...new Set(items.map(c => c.teacherId).filter(Boolean))]
+    const teachers = teacherIds.length ? await this.userRepo.find({ where: { id: In(teacherIds) } }) : []
+    const teacherMap = new Map(teachers.map(t => [t.id, t]))
+    const schoolIds2 = [...new Set(teachers.map(t => t.schoolId).filter(Boolean))]
+    const schools2 = schoolIds2.length ? await this.schoolRepo.find({ where: schoolIds2.map(id => ({ id })) }) : []
+    const schoolMap2 = new Map(schools2.map(s => [s.id, s.name]))
+    const list = items.map(c => {
+      const t = teacherMap.get(c.teacherId)
+      return {
+        id: c.id, name: c.name, grade: c.grade, classNo: c.classNo,
+        headTeacher: c.headTeacher || t?.name || '',
+        teacherId: c.teacherId,
+        schoolId: t?.schoolId || '',
+        schoolName: schoolMap2.get(t?.schoolId || '') || '',
+        term: c.term, subjects: c.subjects || [],
+        createdAt: c.createdAt,
+      }
+    })
+    return { items: list, total }
+  }
+
+  /** 超管查看学生列表（支持按 schoolId/classId 过滤） */
+  async listStudents(schoolId?: string, classId?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (classId) {
+      where.classId = classId
+    } else if (schoolId) {
+      const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
+      if (!school) throw new NotFoundException('学校不存在')
+      const teachers = await this.userRepo.find({ where: { schoolId } })
+      const teacherIds = teachers.map(t => t.id)
+      const classes = teacherIds.length ? await this.classRepo.find({ where: { teacherId: In(teacherIds) } }) : []
+      const classIds = classes.map(c => c.id)
+      if (classIds.length) {
+        where.classId = In(classIds)
+      } else {
+        return { items: [], total: 0 }
+      }
+    }
+    const [items, total] = await this.studentRepo.findAndCount({
+      where, order: { createdAt: 'DESC' }, skip, take,
+    })
+    // 关联班级和学校信息
+    const classIds = [...new Set(items.map(s => s.classId).filter(Boolean))]
+    const classes = classIds.length ? await this.classRepo.find({ where: { id: In(classIds) } }) : []
+    const classMap = new Map(classes.map(c => [c.id, c]))
+    const teacherIds = [...new Set(classes.map(c => c.teacherId).filter(Boolean))]
+    const teachers = teacherIds.length ? await this.userRepo.find({ where: { id: In(teacherIds) } }) : []
+    const teacherMap = new Map(teachers.map(t => [t.id, t]))
+    const schoolIds = [...new Set(teachers.map(t => t.schoolId).filter(Boolean))]
+    const schools = schoolIds.length ? await this.schoolRepo.find({ where: schoolIds.map(id => ({ id })) }) : []
+    const schoolMap = new Map(schools.map(s => [s.id, s.name]))
+    const list = items.map(s => {
+      const cls = classMap.get(s.classId)
+      const t = cls ? teacherMap.get(cls.teacherId) : null
+      return {
+        id: s.id, name: s.name, gender: s.gender, studentNo: s.studentNo,
+        classId: s.classId, className: cls?.name || '',
+        schoolId: t?.schoolId || '',
+        schoolName: schoolMap.get(t?.schoolId || '') || '',
+        parentName: s.parentName, parentPhone: s.parentPhone,
+        createdAt: s.createdAt,
+      }
+    })
+    return { items: list, total }
+  }
+
   /** 清除单个教师的业务数据（保留教师账号，仅清除其创建的记录） */
   async clearTeacherData(teacherId: string, operator = 'super') {
     const user = await this.userRepo.findOne({ where: { id: teacherId } })

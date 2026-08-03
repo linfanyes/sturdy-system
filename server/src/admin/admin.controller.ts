@@ -120,6 +120,20 @@ export class AdminController {
     return this.svc.listTeachers(Number(skip) || 0, Number(take) || 500)
   }
 
+  /* ===== 班级管理（超管审计视图：跨校查看班级） ===== */
+  @Get('classes')
+  @UseGuards(JwtAuthGuard)
+  listClasses(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listClasses(schoolId, Number(skip) || 0, Number(take) || 500)
+  }
+
+  /* ===== 学生管理（超管审计视图：跨校查看学生） ===== */
+  @Get('students')
+  @UseGuards(JwtAuthGuard)
+  listStudents(@Query('schoolId') schoolId?: string, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.svc.listStudents(schoolId, classId, Number(skip) || 0, Number(take) || 500)
+  }
+
   @Post('teachers/:id/clear-data')
   @UseGuards(JwtAuthGuard)
   clearTeacherData(@Param('id') id: string) { return this.svc.clearTeacherData(id) }
