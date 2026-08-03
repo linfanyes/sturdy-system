@@ -154,6 +154,10 @@ await t('TC-SA-107', '删除不存在班级', pA('DELETE', '/school-admin/classe
 // 重建 QA一班（删除测试后恢复）
 const rcls = await call('/school-admin/classes', { method: 'POST', token: sa.token, body: { name: 'QA一班', grade: '四年级', classNo: '1', headTeacher: 'QA测试教师', headTeacherId: T.teacherId, term: '2026-2027-1', subjects: ['语文', '数学', '英语'], subjectTeachers: [{ teacherId: T.teacherId, subjects: ['语文'] }, { teacherId: T.teacher2Id, subjects: ['数学', '英语'] }] } })
 if (rcls.ok) { T.classId = rcls.d.id } else { console.warn('重建班级失败:', JSON.stringify(rcls.d).slice(0, 120)) }
+// 兜底：从教师端同步实际班级 ID（处理重建失败/班级已被他处创建的情况）
+const myCls = await call('/classes', { token: T.teacherToken })
+const firstClass = Array.isArray(myCls.d?.items) ? myCls.d.items[0] : null
+if (firstClass?.id) { T.classId = firstClass.id }
 await t('TC-SA-108', '班级导入预览', pA('POST', '/school-admin/classes/import-preview', { filename: 'c.csv', data: Buffer.from('班级,年级\nQA三班,二年级').toString('base64') }, sa.token))
 await t('TC-SA-109', '导出班级 XLS', pA('GET', '/school-admin/export/classes-xls', null, sa.token))
 await t('TC-SA-201', '校管学生列表', pA('GET', '/school-admin/students', null, sa.token))
@@ -216,6 +220,7 @@ await t('TC-SA-311', '教师调校管', pA('GET', '/school-admin/teachers', null
 // ============ 4. 教师模块 ============
 console.log('\n[4] 教师模块')
 const T2 = { token: T.teacherToken }
+console.log('DEBUG: T2.token length=', T2.token?.length, 'T.classId=', T.classId)
 await t('TC-T-001', 'users/me', pA('GET', '/users/me', null, T2.token))
 await t('TC-T-002', '更新个人资料', pA('PATCH', '/users/me', { motto: 'QA测试格言', theme: 'default', fontSize: '14' }, T2.token))
 await t('TC-T-003', '越权字段被剔除', async () => {
@@ -227,6 +232,7 @@ await t('TC-T-005', '保存应用配置', pA('PATCH', '/config/app-config', { th
 await t('TC-T-006', 'AI 服务商列表', pA('GET', '/config/ai-providers', null, T2.token))
 await t('TC-T-101', '我的班级', pA('GET', '/classes', null, T2.token))
 await t('TC-T-102', '教师建班级 403', pA('POST', '/classes', { name: 'x' }, T2.token), 403)
+console.log('DEBUG before TC-T-103: T2.token length=', T2.token?.length, 'T.classId=', T.classId)
 await t('TC-T-103', '班级成员列表', pA('POST', `/classes/${T.classId}/members/list`, {}, T2.token))
 await t('TC-T-104', '添加科任', pA('POST', `/classes/${T.classId}/members`, { teacherId: T.teacher2Id, subjects: ['数学'] }, T2.token))
 await t('TC-T-105', '改科任学科', pA('PATCH', `/classes/${T.classId}/members/${T.teacher2Id}/subjects`, { subjects: ['数学', '英语'] }, T2.token))

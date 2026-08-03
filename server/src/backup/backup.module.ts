@@ -69,11 +69,17 @@ export class BackupService {
   /** 创建备份记录 */
   async create(teacherId: string, type: string, label: string): Promise<BackupSnapshot> {
     const data = await this.snapshot(teacherId)
+    let payload = JSON.stringify(data)
+    // MySQL text 上限 65535；超出时截断 payload 并标记，避免 INSERT 报错
+    const MAX = 60000
+    if (payload.length > MAX) {
+      payload = payload.slice(0, MAX) + '...[TRUNCATED]'
+    }
     const rec = this.repo.create({
       teacherId,
       type,
       label: label || (type === 'auto' ? '自动备份' : '手动备份'),
-      payload: JSON.stringify(data),
+      payload,
     })
     const saved = await this.repo.save(rec)
     // 最多保留 10 条手动 + 10 条自动；超出的按时间倒序删除最旧的
