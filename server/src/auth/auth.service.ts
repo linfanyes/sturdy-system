@@ -34,6 +34,13 @@ export class AuthService {
     private readonly studentParentSvc: StudentParentService,
   ) {}
 
+  /** 按学号查询学生用于家长登录/绑定：学号跨学校可能重复（历史残留），优先返回已开启家长登录的记录 */
+  private async findStudentByNoForLogin(studentNo: string) {
+    const all = await this.studentRepo.find({ where: { studentNo } })
+    if (!all.length) return null
+    return all.find((s) => s.parentLoginEnabled) || all[0]
+  }
+
   /** 便捷：计算某角色的有效功能包（学校级 ∩ 教师级） */
   private async effectiveFeaturesFor(
     role: 'super' | 'school_admin' | 'teacher' | 'parent',
@@ -156,7 +163,7 @@ export class AuthService {
     }
 
     // 4) 家长（用户名=学号，密码为老师开启家长登录时生成的随机密码，不再支持默认弱密码）
-    const stu = await this.studentRepo.findOne({ where: { studentNo: u } })
+    const stu = await this.findStudentByNoForLogin(u)
     if (stu) {
       if (!stu.parentLoginEnabled) throw new UnauthorizedException('该学生家长登录尚未被老师授权')
       if (!stu.parentPasswordHash)
@@ -253,7 +260,7 @@ export class AuthService {
     const { openid } = await this.wechat.code2Session(code)
     if (!openid || !studentNo) throw new BadRequestException('参数不全')
 
-    const stu = await this.studentRepo.findOne({ where: { studentNo } })
+    const stu = await this.findStudentByNoForLogin(studentNo)
     if (!stu) throw new BadRequestException('学号不存在')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
 
@@ -328,7 +335,7 @@ export class AuthService {
       throw new BadRequestException('教师不支持微信登录，请使用账号密码登录')
     }
     // 尝试按学号查找（家长绑定）
-    const stu = await this.studentRepo.findOne({ where: { studentNo: number } })
+    const stu = await this.findStudentByNoForLogin(number)
     if (stu) {
       if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
       // 校验家长密码（若已设）

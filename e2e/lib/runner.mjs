@@ -121,8 +121,15 @@ export async function runSmoke(opts) {
 
           // 单次尝试：切到路由、等待渲染、采集运行时错误与白屏
           const attemptRoute = async () => {
+            // 路由切换超时保护：AI 请求挂起/主线程繁忙时 evaluate 永不返回，
+            // 用 Promise.race 强制 5s 跳过（记 timeout 不判失败，属脚本健壮性维度）
+            let timeoutHit = false
             try {
-              await goto(page, route)
+              const goOk = await Promise.race([
+                goto(page, route).then(() => true),
+                sleep(5000).then(() => false),
+              ])
+              if (!goOk) timeoutHit = true
             } catch (e) {
               pageErrors.push(`路由切换失败: ${e?.message || e}`)
             }
@@ -138,9 +145,12 @@ export async function runSmoke(opts) {
             let textLen = 0
             let pageText = ''
             try {
-              pageText = await page.evaluate(
-                () => document.querySelector('#app')?.innerText || document.body?.innerText || '',
-              )
+              pageText = await Promise.race([
+                page.evaluate(
+                  () => document.querySelector('#app')?.innerText || document.body?.innerText || '',
+                ),
+                sleep(5000).then(() => ''),
+              ])
               textLen = pageText.length
             } catch {
               /* 页面已导航走时忽略 */
@@ -160,11 +170,11 @@ export async function runSmoke(opts) {
             }
             const redirected = !!landedOn && landedOn !== route
 
-            const blank = !redirected && !explicitlyOk && minTextLen > 0 && textLen < minTextLen
+            const blank = !timeoutHit && !redirected && !explicitlyOk && minTextLen > 0 && textLen < minTextLen
             if (blank) pe.push(`疑似白屏: 可见文本仅 ${textLen} 字符（阈值 ${minTextLen}）`)
 
             const failed = pe.length > 0 || (strict && ce.length > 0)
-            return { pe, ce, authCe, textLen, pageText, redirected, landedOn, failed }
+            return { pe, ce, authCe, textLen, pageText, redirected, landedOn, failed, timeout: timeoutHit }
           }
 
           // 整页刷新该路由（强制重新打接口），用于瞬态后端 401 抖动的重试。
@@ -221,6 +231,7 @@ export async function runSmoke(opts) {
           else {
             report.totals.pass++
             if (res.ce.length) report.totals.warn++
+            if (res.timeout) report.totals.warn++
             if (flaky) report.totals.flaky++
           }
 
@@ -232,6 +243,7 @@ export async function runSmoke(opts) {
             quarantined,
             redirected: res.redirected,
             landedOn: res.redirected ? res.landedOn : undefined,
+            timeout: res.timeout || undefined,
             pageErrors: res.pe,
             consoleErrors: res.ce.slice(0, 8),
             textLen: res.textLen,

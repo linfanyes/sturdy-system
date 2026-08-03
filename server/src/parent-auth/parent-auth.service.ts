@@ -69,13 +69,20 @@ export class ParentAuthService {
     return this.studentRepo.find({ where: { parentId } })
   }
 
+  /** 按学号查询学生用于家长登录：学号跨学校可能重复（历史残留），优先返回已开启家长登录的记录 */
+  private async findStudentByNoForLogin(studentNo: string) {
+    const all = await this.studentRepo.find({ where: { studentNo } })
+    if (!all.length) return null
+    return all.find((s) => s.parentLoginEnabled) || all[0]
+  }
+
   /** 学号 + 密码登录 */
   async login(studentNo: string, password: string) {
     if (!studentNo || !/^\d+$/.test(studentNo.trim()))
       throw new BadRequestException('请输入正确的学号')
     if (!password) throw new BadRequestException('请输入密码')
     const no = studentNo.trim()
-    const stu = await this.studentRepo.findOne({ where: { studentNo: no } })
+    const stu = await this.findStudentByNoForLogin(no)
     if (!stu) throw new BadRequestException('未找到该学号对应的学生，请检查学号是否正确')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权，请联系老师开启')
 
