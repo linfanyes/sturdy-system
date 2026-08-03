@@ -48,3 +48,15 @@ e2e/qa/qa-env.json
 .repair-tmp2/
 scripts/mini-sa.env
 scripts/mini-test-tokens.json
+# QA 测试脚本与结果产物（含生产地址/账号口令/令牌，勿入库）
+scripts/mini-api-test-results.json
+scripts/mini-api-test.mjs
+scripts/mini-healthcheck.mjs
+scripts/mini-login.mjs
+scripts/mini-page-extract.mjs
+scripts/mini-pages.json
+scripts/mini-provision.mjs
+scripts/gen-mini-report.mjs
+scripts/gen-test-case-doc.mjs
+scripts/gen-test-data.mjs
+scripts/repair-e2e.mjs
