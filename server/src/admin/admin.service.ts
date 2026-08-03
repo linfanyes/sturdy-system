@@ -457,6 +457,15 @@ export class AdminService implements OnModuleInit {
       await em.getRepository(User).createQueryBuilder().delete().execute()
       await em.getRepository(SchoolAdmin).createQueryBuilder().delete().execute()
       await em.getRepository(School).createQueryBuilder().delete().execute()
+      // 补充清理：家长/家长-学生关联/消息/学生信息修改申请/资源库/教材
+      // （此前遗漏：这些表不含 teacherId 或按 teacherId 清理无效，全量重置后残留）
+      for (const t of [
+        'parents', 'student_parents', 'messages', 'student_info_updates',
+        'resource_english_words', 'resource_math_formulas', 'resource_poems',
+        'textbook_knowledge_points', 'textbook_units', 'textbooks',
+      ]) {
+        try { await em.query(`DELETE FROM \`${t}\``) } catch { /* 表不存在则跳过 */ }
+      }
     })
     await this.audit.log('', 'system_reset_all', operator, '全系统', '一键全量重置：清除所有学校/教师/班级/学生/业务数据').catch(() => {})
     await this.seedDemoData()
