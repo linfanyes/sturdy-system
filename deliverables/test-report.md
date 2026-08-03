@@ -155,6 +155,7 @@ Web 冒烟脚本使用 `vite preview` 启动构建产物，但 `dist/` 目录下
 | D-PERM-001 | 成绩权限仅班主任可见 | P0 | ✅ 已修复 | `grades.module.ts` 改用 class_members 校验，班主任+科任老师均可访问；科任老师仅见自己科目 |
 | D-PERM-002 | 家长功能包仅继承班主任 features | P1 | ✅ 已修复 | `feature.service.ts` 改为孩子班级所有教师 features 并集 ∩ 学校 featureFlags |
 | D-PERM-003 | 考试删除权限不统一 | P2 | ✅ 已修复 | `exams.module.ts` 班主任可删同班任何考试，科任老师仅可删自己创建的考试 |
+| D-PERM-004 | 超管无班级/学生审计接口 | P3 | ✅ 已修复 | `admin.controller.ts` 新增 `GET /admin/classes` 和 `GET /admin/students` |
 
 ### 5.2 已关闭项
 
@@ -204,6 +205,11 @@ Web 冒烟脚本使用 `vite preview` 启动构建产物，但 `dist/` 目录下
 7. **D-PERM-003**：考试权限统一
    - `exams.module.ts`：`findAll` 允许同班科任老师查看班级考试
    - `remove`：班主任可删除同班任何考试，科任老师仅可删除自己创建的考试
+
+8. **D-PERM-004**：超管审计接口对齐
+   - `admin.controller.ts` + `admin.service.ts`：新增 `GET /admin/classes` 和 `GET /admin/students`
+   - 超管可跨校查看班级/学生列表（支持 schoolId/classId 过滤）
+   - 接口命名清晰分离：`/admin/*` = 超管审计视图，`/school-admin/*` = 校管运营视图
 
 ### 6.2 最终回归结果
 
