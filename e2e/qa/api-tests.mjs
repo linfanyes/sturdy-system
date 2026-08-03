@@ -146,8 +146,23 @@ await t('TC-SA-013', '导出教师 XLS', pA('GET', '/school-admin/export/teacher
 await t('TC-SA-014', '教师导入预览', pA('POST', '/school-admin/teachers/import-preview', { filename: 't.csv', data: Buffer.from('姓名,性别,学科\n导入教师,男,语文').toString('base64') }, sa.token))
 await t('TC-SA-015', '教师导入预览非法', pA('POST', '/school-admin/teachers/import-preview', { filename: 't.csv', data: '!!!not-base64!!!' }, sa.token), 400)
 await t('TC-SA-101', '班级列表', pA('GET', '/school-admin/classes', null, sa.token))
-await t('TC-SA-102', '建班级', pA('POST', '/school-admin/classes', { name: 'QA二班', grade: '三年级', classNo: '2', headTeacher: 'QA测试教师2', headTeacherId: T.teacher2Id, term: '2026-2027-1', subjects: ['语文', '数学'], subjectTeachers: [{ teacherId: T.teacher2Id, subjects: ['语文', '数学'] }] }, sa.token))
+// 清理 qa_teacher2 可能残留的班级（跨天/多轮运行数据污染）
+const t2ClsRes = await call('/classes', { token: T.teacher2Token })
+const t2Cls = Array.isArray(t2ClsRes.d?.items) ? t2ClsRes.d.items.find(c => c.teacherId === T.teacher2Id) : null
+if (t2Cls?.id) {
+  const delRes = await call(`/classes/${t2Cls.id}`, { method: 'DELETE', token: sa.token })
+  if (delRes.ok) {
+    console.log('[info] 清理 qa_teacher2 旧班级:', t2Cls.id)
+  } else {
+    console.warn('[warn] 清理旧班级失败:', JSON.stringify(delRes.d).slice(0, 80))
+  }
+}
+await t('TC-SA-102', '建班级-班主任已有班级冲突', pA('POST', '/school-admin/classes', { name: 'QA二班', grade: '三年级', classNo: '2', headTeacher: 'QA测试教师2', headTeacherId: T.teacher2Id, term: '2026-2027-1', subjects: ['语文', '数学'], subjectTeachers: [{ teacherId: T.teacher2Id, subjects: ['语文', '数学'] }] }, sa.token), 400)
 await t('TC-SA-103', '建班级缺必填', pA('POST', '/school-admin/classes', {}, sa.token), 400)
+// 同步 classId：处理跨天/多轮运行后班级ID失效问题
+const clsSync = await call('/classes', { token: T.teacherToken })
+const clsFirst = Array.isArray(clsSync.d?.items) ? clsSync.d.items[0] : null
+if (clsFirst?.id) { T.classId = clsFirst.id } else { console.warn('[warn] 教师无班级，后续班级相关用例可能失败') }
 await t('TC-SA-105', '班级升级', pA('POST', `/school-admin/classes/${T.classId}/promote`, { targetGrade: '四年级' }, sa.token))
 await t('TC-SA-106', '删除班级', pA('DELETE', `/school-admin/classes/${T.classId}`, null, sa.token), 200)
 await t('TC-SA-107', '删除不存在班级', pA('DELETE', '/school-admin/classes/nonexistent', null, sa.token), 400)
@@ -158,6 +173,21 @@ if (rcls.ok) { T.classId = rcls.d.id } else { console.warn('重建班级失败:'
 const myCls = await call('/classes', { token: T.teacherToken })
 const firstClass = Array.isArray(myCls.d?.items) ? myCls.d.items[0] : null
 if (firstClass?.id) { T.classId = firstClass.id }
+// 将已有学生迁移到新班级（处理删除重建场景下的 classId 失效）
+if (T.classId && T.students?.length) {
+  for (const s of T.students) {
+    await call(`/students/${s.id}`, { method: 'PATCH', token: T.teacherToken, body: { classId: T.classId } })
+  }
+  console.log('[info] 学生班级已同步到', T.classId)
+}
+// 确保家长登录开启（班级删除会关闭 parentLoginEnabled）
+for (const s of T.students || []) {
+  const cur = await call('/students/' + s.id, { token: T.teacherToken })
+  if (cur.ok && cur.d && !cur.d.parentLoginEnabled) {
+    await call('/students/' + s.id + '/toggle-parent-login', { method: 'POST', token: T.teacherToken })
+    await call('/students/' + s.id + '/reset-parent-password', { method: 'POST', token: T.teacherToken })
+  }
+}
 await t('TC-SA-108', '班级导入预览', pA('POST', '/school-admin/classes/import-preview', { filename: 'c.csv', data: Buffer.from('班级,年级\nQA三班,二年级').toString('base64') }, sa.token))
 await t('TC-SA-109', '导出班级 XLS', pA('GET', '/school-admin/export/classes-xls', null, sa.token))
 await t('TC-SA-201', '校管学生列表', pA('GET', '/school-admin/students', null, sa.token))
@@ -219,6 +249,9 @@ await t('TC-SA-311', '教师调校管', pA('GET', '/school-admin/teachers', null
 
 // ============ 4. 教师模块 ============
 console.log('\n[4] 教师模块')
+// 刷新教师 token 避免跨模块运行后过期/限流
+const freshT = await call('/auth/unified-login', { method: 'POST', body: { username: 'qa_teacher', password: env.password } })
+if (freshT.ok && freshT.d?.token) { T.teacherToken = freshT.d.token; console.log('[info] 教师 token 已刷新') }
 const T2 = { token: T.teacherToken }
 await t('TC-T-001', 'users/me', pA('GET', '/users/me', null, T2.token))
 await t('TC-T-002', '更新个人资料', pA('PATCH', '/users/me', { motto: 'QA测试格言', theme: 'default', fontSize: '14' }, T2.token))
