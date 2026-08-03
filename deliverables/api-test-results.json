@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03T08:09:05.214Z",
+  "generatedAt": "2026-08-03T08:44:15.579Z",
   "target": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
   "total": 178,
   "passed": 178,
@@ -273,7 +273,7 @@
       "id": "TC-SA-102",
       "title": "建班级(自适应: 班主任空闲=成功/已任他班=400冲突)",
       "status": "PASS",
-      "actual": 400
+      "actual": 201
     },
     {
       "id": "TC-SA-103",
