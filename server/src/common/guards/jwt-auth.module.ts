@@ -14,6 +14,8 @@ import { Student } from '../../students/student.entity'
 @Module({
   imports: [TypeOrmModule.forFeature([User, SchoolAdmin, Student])],
   providers: [JwtAuthGuard],
-  exports: [JwtAuthGuard],
+  // 导出守卫及其依赖的仓储，使在任意模块通过 @UseGuards(JwtAuthGuard) 实例化
+  // 守卫时（守卫构造依赖 User/SchoolAdmin/Student 仓储）都能从全局解析到这些仓储。
+  exports: [JwtAuthGuard, TypeOrmModule.forFeature([User, SchoolAdmin, Student])],
 })
 export class JwtAuthModule {}
