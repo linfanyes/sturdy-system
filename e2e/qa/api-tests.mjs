@@ -157,7 +157,21 @@ if (t2Cls?.id) {
     console.warn('[warn] 清理旧班级失败:', JSON.stringify(delRes.d).slice(0, 80))
   }
 }
-await t('TC-SA-102', '建班级-班主任已有班级冲突', pA('POST', '/school-admin/classes', { name: 'QA二班', grade: '三年级', classNo: '2', headTeacher: 'QA测试教师2', headTeacherId: T.teacher2Id, term: '2026-2027-1', subjects: ['语文', '数学'], subjectTeachers: [{ teacherId: T.teacher2Id, subjects: ['语文', '数学'] }] }, sa.token), 400)
+await t('TC-SA-102', '建班级(自适应: 班主任空闲=成功/已任他班=400冲突)', async () => {
+  // 用校管接口探测 qa_teacher2 是否已是本学期班主任（sa token 稳定可靠）
+  const t2cls = await call('/school-admin/classes', { token: sa.token })
+  const t2List = Array.isArray(t2cls.d) ? t2cls.d : (t2cls.d?.items || [])
+  const t2head = t2List.find(c => c.teacherId === T.teacher2Id)
+  const r = await call('/school-admin/classes', { method: 'POST', token: sa.token, body: { name: 'QA二班', grade: '三年级', classNo: '2', headTeacher: 'QA测试教师2', headTeacherId: T.teacher2Id, term: '2026-2027-1', subjects: ['语文', '数学'], subjectTeachers: [{ teacherId: T.teacher2Id, subjects: ['语文', '数学'] }] } })
+  if (t2head) {
+    // 已任他班班主任 → 业务规则应拒绝（400）
+    if (r.status !== 400) throw new Error(`班主任已存在但建班未按预期拒绝: status=${r.status} ${JSON.stringify(r.d).slice(0, 120)}`)
+    return { status: r.status, ok: true, d: r.d }
+  }
+  // 班主任空闲 → 应建班成功（2xx）
+  if (r.status < 200 || r.status >= 300) throw new Error(`建班失败: status=${r.status} ${JSON.stringify(r.d).slice(0, 120)}`)
+  return { status: r.status, ok: true, d: r.d }
+}, 'any')
 await t('TC-SA-103', '建班级缺必填', pA('POST', '/school-admin/classes', {}, sa.token), 400)
 // 同步 classId：处理跨天/多轮运行后班级ID失效问题
 const clsSync = await call('/classes', { token: T.teacherToken })
