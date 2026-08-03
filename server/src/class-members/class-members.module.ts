@@ -154,6 +154,23 @@ export class ClassMemberService {
     if (term !== undefined) where.term = term
     return this.repo.find({ where, order: { role: 'DESC', createdAt: 'ASC' } })
   }
+
+  /** 获取某教师在某班级的所有学科（班主任返回全班科目，科任返回自己科目） */
+  async getAllSubjects(teacherId: string, classId: string, term?: string): Promise<string[]> {
+    const row = await this.repo.findOne({ where: { teacherId, classId, ...(term !== undefined ? { term } : {}) } })
+    if (!row) return []
+    // 班主任：返回全班科目（需要查 class_members 中该班所有 head 记录的 subjects）
+    if (row.role === 'head') {
+      const heads = await this.repo.find({ where: { classId, role: 'head', ...(term !== undefined ? { term } : {}) } })
+      const subjects = new Set<string>()
+      for (const h of heads) {
+        for (const s of h.subjects || []) subjects.add(s)
+      }
+      return [...subjects]
+    }
+    // 科任老师：返回自己的 subjects
+    return [...(row.subjects || [])]
+  }
 }
 
 @Module({

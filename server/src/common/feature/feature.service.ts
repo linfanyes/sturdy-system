@@ -1,9 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, In } from 'typeorm'
 import { User } from '../../users/user.entity'
 import { Student } from '../../students/student.entity'
 import { School } from '../../school/school.entity'
+import { ClassMemberService } from '../../class-members/class-members.module'
 import { FEATURE_FLAGS } from './feature-flags.constants'
 import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
 
@@ -43,6 +44,7 @@ export class FeatureService {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @Inject(FEATURE_RESOLVERS) private readonly resolvers: FeatureLevelResolver[],
+    private readonly classMemberSvc: ClassMemberService,
   ) {
     this.allFeatures = FEATURE_FLAGS
     this.allSet = new Set(FEATURE_FLAGS)
@@ -67,12 +69,25 @@ export class FeatureService {
     }
     if (role === 'parent') {
       const stu = await this.studentRepo.findOne({ where: { id: user.studentId } })
-      if (!stu?.teacherId) return { role: 'parent' }
-      const teacher = await this.userRepo.findOne({ where: { id: stu.teacherId } })
+      if (!stu?.classId) return { role: 'parent' }
+      // 获取孩子所在班级所有教师的 features（班主任 + 科任老师并集）
+      const members = await this.classMemberSvc.listByClass(stu.classId)
+      const teacherIds = members.map(m => m.teacherId)
+      let schoolId: string | undefined
+      let teacherFeaturesUnion = new Set<string>()
+      if (teacherIds.length) {
+        const teachers = await this.userRepo.find({ where: { id: In(teacherIds) } })
+        schoolId = teachers[0]?.schoolId ?? undefined
+        for (const t of teachers) {
+          if (t.features?.length) {
+            for (const f of t.features) teacherFeaturesUnion.add(f)
+          }
+        }
+      }
       return {
         role: 'parent',
-        schoolId: teacher?.schoolId ?? undefined,
-        teacherFeatures: teacher?.features ?? null,
+        schoolId,
+        teacherFeatures: teacherFeaturesUnion.size ? [...teacherFeaturesUnion] : null,
       }
     }
     return { role: (role as FeatureContext['role']) ?? 'teacher' }

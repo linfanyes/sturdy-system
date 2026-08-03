@@ -38,8 +38,9 @@ class ExamsService extends CrudService<Exam> {
   async findAll(teacherId: string, classId?: string, skip = 0, take = 500) {
     const where: any = {}
     if (classId) {
-      const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
-      if (!owned) return { items: [], total: 0 }
+      // 班主任或同班科任老师均可查看该班级考试
+      const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
+      if (!canAccess) return { items: [], total: 0 }
       where.classId = classId
     } else {
       where.teacherId = teacherId
@@ -72,11 +73,13 @@ class ExamsService extends CrudService<Exam> {
     return exam
   }
 
-  /** 删除考试：仅创建者可操作 */
+  /** 删除考试：班主任可删除同班任何考试，科任老师仅可删除自己创建的考试 */
   async remove(id: string, teacherId: string) {
     const exam = await this.repo.findOne({ where: { id } as any })
     if (!exam) throw new NotFoundException('考试不存在')
-    if (exam.teacherId !== teacherId) throw new NotFoundException('只有创建者可以删除考试')
+    // 班主任可删除同班任何考试
+    const isHead = await this.classMemberSvc.getRole(teacherId, exam.classId) === 'head'
+    if (!isHead && exam.teacherId !== teacherId) throw new NotFoundException('无权删除此考试')
     await this.gradeRepo.delete({ examId: id } as any)
     return super.remove(id, teacherId)
   }

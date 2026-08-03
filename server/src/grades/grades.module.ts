@@ -66,20 +66,23 @@ class GradesService extends CrudService<Grade> {
     @InjectRepository(Exam) private examRepo: Repository<Exam>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly ai: AiService,
+    classMemberSvc: ClassMemberService,
   ) {
     super(repo)
+    this.withClassMemberService(classMemberSvc)
   }
 
   async findAll(teacherId: string, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
     const where: any = {}
     if (classId) {
-      const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
-      if (!owned) return { items: [], total: 0 }
+      // 班主任或同班科任老师均可访问该班级成绩
+      const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
+      if (!canAccess) return { items: [], total: 0 }
       where.classId = classId
     } else {
       where.teacherId = teacherId
     }
-    // 按科目 / 考试名精确过滤（修复：此前 subject/examName 参数被忽略，成绩矩阵筛选失效）
+    // 按科目 / 考试名精确过滤
     if (subject) where.subject = subject
     if (examName) where.examName = examName
     const [items, total] = await this.repo.findAndCount({
@@ -357,10 +360,10 @@ class GradesService extends CrudService<Grade> {
     }
   }
 
-  /** 校验班级归属权限（teacherId 是否能访问该 classId 的成绩） */
+  /** 校验班级访问权限（班主任或同班科任老师均可） */
   private async assertClassAccess(teacherId: string, classId: string): Promise<void> {
-    const owned = await this.classRepo.findOne({ where: { id: classId, teacherId } } as any)
-    if (!owned) throw new BadRequestException('无权访问该班级成绩')
+    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
+    if (!canAccess) throw new BadRequestException('无权访问该班级成绩')
   }
 
   /**
@@ -478,20 +481,28 @@ class GradesService extends CrudService<Grade> {
 
   /**
    * 学生个人历次考试成绩与趋势
+   * - 班主任：可看该学生全科目成绩
+   * - 科任老师：仅可看自己教授科目的成绩
    */
   async studentHistory(teacherId: string, studentId: string) {
     const stu = await this.stuRepo.findOne({ where: { id: studentId } } as any)
     if (!stu) throw new BadRequestException('学生不存在')
-    const owned = await this.classRepo.findOne({ where: { id: stu.classId, teacherId } } as any)
-    if (!owned) throw new BadRequestException('无权访问该学生成绩')
+    // 班主任或同班科任老师均可访问
+    const canAccess = await this.classMemberSvc.canAccess(teacherId, stu.classId)
+    if (!canAccess) throw new BadRequestException('无权访问该学生成绩')
+    // 获取教师在该班级的角色和学科（用于科任老师过滤）
+    const role = await this.classMemberSvc.getRole(teacherId, stu.classId)
+    const allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(teacherId, stu.classId)
     const grades = await this.repo.find({
-      where: { classId: stu.classId, teacherId } as any,
+      where: { classId: stu.classId } as any,
       order: { date: 'DESC' } as any,
       take: 1000,
     })
     const history: any[] = []
     const subjectLatest: Record<string, number[]> = {}
     for (const g of grades) {
+      // 科任老师只能看自己教的科目
+      if (allowedSubjects && !allowedSubjects.includes(g.subject)) continue
       const entry = (g.scores || []).find((s) => s.studentId === studentId)
       if (!entry || entry.score == null) continue
       history.push({
