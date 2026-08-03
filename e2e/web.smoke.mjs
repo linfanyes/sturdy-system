@@ -96,6 +96,7 @@ async function main() {
   ]
   if (ROLE_FILTER.length) roles = roles.filter((r) => ROLE_FILTER.includes(r.role))
 
+  console.error('[smoke] DEBUG: before runSmoke, roles=', roles.map(r=>r.role))
   let report
   try {
     report = await runSmoke({
@@ -109,11 +110,15 @@ async function main() {
       strict: STRICT,
       minTextLen: 20,
     })
+  } catch (e) {
+    console.error('[smoke] runSmoke threw:', e)
+    throw e
   } finally {
     await sa.cleanup()
     if (sa.created) console.log('[smoke] 临时校管账号已清理')
   }
 
+  console.error('[smoke] DEBUG report type:', typeof report, 'keys:', report ? Object.keys(report) : 'null')
   const files = writeReports(report, path.join(__dirname, 'reports'), 'web-smoke')
   console.log('\n' + renderText(report))
   console.log(`\n[smoke] 报告: ${files.txt}\n         ${files.json}\n         ${files.xml}`)

@@ -28,6 +28,7 @@ export default defineConfig({
   build: {
     sourcemap: false,
     outDir: 'dist',
+    emptyOutDir: false,
     // 关闭压缩体积统计：对 120+ chunk 逐个算 gzip 是纯耗时，无构建价值
     reportCompressedSize: false,
     cssCodeSplit: true,

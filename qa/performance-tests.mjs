@@ -21,8 +21,11 @@ async function login(username, password) {
   const d = await r.json().catch(() => null)
   return d?.token
 }
-const HEAD = await login('qa_t_head', PW)
-const SU = await login('admin', 'admin') // admin 登录接口不同
+// 优先使用 qa-env.json 中已有的 token（避免重复登录触发限流），缺失时回退到实时登录
+let HEAD = ENV.created?.teacherToken || null
+let SU = ENV.created?.suToken || null
+if (!HEAD) HEAD = await login('qa_t_head', PW)
+if (!SU) SU = await login('admin', 'admin') // admin 登录接口不同
 if (!HEAD) { console.error('❌ 教师 token 获取失败'); process.exit(1) }
 
 // ========== 压测引擎 ==========

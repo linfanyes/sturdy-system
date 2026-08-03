@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-02T07:35:12.782Z",
+  "generatedAt": "2026-08-03T03:19:05.317Z",
   "target": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
   "total": 178,
-  "passed": 170,
-  "failed": 8,
-  "passRate": 95.5,
+  "passed": 171,
+  "failed": 7,
+  "passRate": 96.1,
   "results": [
     {
       "id": "TC-AUTH-001",
@@ -260,10 +260,8 @@
     {
       "id": "TC-SA-015",
       "title": "教师导入预览非法",
-      "status": "FAIL",
-      "expect": 400,
-      "actual": 201,
-      "detail": "{\"rows\":[{\"name\":\"��~m�\\u001e�\",\"gender\":\"\",\"subject\":\"\",\"phone\":\"\",\"line\":1,\"valid\":true,\"error\":\"\"}],\"validCount\":1,\"errorCount\":0}"
+      "status": "PASS",
+      "actual": 400
     },
     {
       "id": "TC-SA-101",
@@ -294,10 +292,8 @@
     {
       "id": "TC-SA-106",
       "title": "删除班级",
-      "status": "FAIL",
-      "expect": 200,
-      "actual": 400,
-      "detail": "{\"statusCode\":400,\"code\":\"DB_ERROR\",\"message\":\"必填字段缺失或为空，请检查表单后重试\"}"
+      "status": "PASS",
+      "actual": 200
     },
     {
       "id": "TC-SA-107",
@@ -326,8 +322,10 @@
     {
       "id": "TC-SA-202",
       "title": "校管更新学生",
-      "status": "PASS",
-      "actual": 200
+      "status": "FAIL",
+      "expect": 200,
+      "actual": 400,
+      "detail": "{\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"班级不存在\"}"
     },
     {
       "id": "TC-SA-203",
@@ -536,10 +534,8 @@
     {
       "id": "TC-T-204",
       "title": "非法手机号",
-      "status": "FAIL",
-      "expect": 400,
-      "actual": 201,
-      "detail": "{\"teacherId\":\"24581198-e4e6-4601-ad8d-8b522f1bce4f\",\"classId\":\"1db2fea7-7d5b-4d93-988c-dc9d15109c53\",\"name\":\"QA坏号\",\"gender\":\"男\",\"studentNo\":\"QA201\",\"parentPhone"
+      "status": "PASS",
+      "actual": 400
     },
     {
       "id": "TC-T-205",
@@ -556,8 +552,10 @@
     {
       "id": "TC-T-207",
       "title": "重置家长密码",
-      "status": "PASS",
-      "actual": 201
+      "status": "FAIL",
+      "expect": 200,
+      "actual": 400,
+      "detail": "{\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"该学生家长登录尚未开启，无法重置\"}"
     },
     {
       "id": "TC-T-208",
@@ -575,7 +573,7 @@
       "id": "TC-T-210",
       "title": "越权删别班学生",
       "status": "PASS",
-      "actual": 404
+      "actual": 400
     },
     {
       "id": "TC-T-211",
@@ -652,8 +650,10 @@
     {
       "id": "TC-T-314",
       "title": "学生历次成绩",
-      "status": "PASS",
-      "actual": 200
+      "status": "FAIL",
+      "expect": 200,
+      "actual": 400,
+      "detail": "{\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"无权访问该学生成绩\"}"
     },
     {
       "id": "TC-T-315",
@@ -721,7 +721,7 @@
       "status": "FAIL",
       "expect": 200,
       "actual": 404,
-      "detail": "{\"statusCode\":404,\"code\":\"HTTP_404\",\"message\":\"Cannot GET /api/leaderboard?classId=1db2fea7-7d5b-4d93-988c-dc9d15109c53\"}"
+      "detail": "{\"statusCode\":404,\"code\":\"HTTP_404\",\"message\":\"Cannot GET /api/leaderboard?classId=11e626da-25ee-451c-821d-6547396a13f4\"}"
     },
     {
       "id": "TC-T-504",
@@ -870,10 +870,8 @@
     {
       "id": "TC-T-710",
       "title": "安全检测缺参",
-      "status": "FAIL",
-      "expect": 400,
-      "actual": 201,
-      "detail": "{\"pass\":true}"
+      "status": "PASS",
+      "actual": 400
     },
     {
       "id": "TC-T-801",
@@ -938,14 +936,18 @@
     {
       "id": "TC-P-001",
       "title": "家长登录",
-      "status": "PASS",
-      "actual": 201
+      "status": "FAIL",
+      "expect": 200,
+      "actual": 400,
+      "detail": "{\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"该学生家长登录尚未被老师授权，请联系老师开启\"}"
     },
     {
       "id": "TC-P-002",
       "title": "家长错误密码",
-      "status": "PASS",
-      "actual": 401
+      "status": "FAIL",
+      "expect": 401,
+      "actual": 400,
+      "detail": "{\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"该学生家长登录尚未被老师授权，请联系老师开启\"}"
     },
     {
       "id": "TC-P-003",
@@ -980,18 +982,14 @@
     {
       "id": "TC-P-008",
       "title": "切换孩子",
-      "status": "FAIL",
-      "expect": 200,
-      "actual": 403,
-      "detail": "{\"statusCode\":403,\"code\":\"HTTP_403\",\"message\":\"无家长身份\"}"
+      "status": "PASS",
+      "actual": 201
     },
     {
       "id": "TC-P-009",
       "title": "多孩对比",
-      "status": "FAIL",
-      "expect": 200,
-      "actual": 403,
-      "detail": "{\"statusCode\":403,\"code\":\"HTTP_403\",\"message\":\"无家长身份\"}"
+      "status": "PASS",
+      "actual": 200
     },
     {
       "id": "TC-P-010",
@@ -1027,7 +1025,7 @@
       "id": "TC-P-015",
       "title": "教师审核家长申请",
       "status": "PASS",
-      "actual": 201
+      "actual": 200
     },
     {
       "id": "TC-S-001",

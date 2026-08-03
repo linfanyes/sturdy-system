@@ -49,6 +49,7 @@ import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.mo
 import { TextbookModule } from './textbook/textbook.module'
 import { ResourceLibraryModule } from './resource-library/resource-library.module'
 import { FeatureModule } from './common/feature/feature.module'
+import { EvaluationModule } from './evaluation/evaluation.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -135,6 +136,7 @@ import { HealthController } from './health.controller'
     TeacherModule,
     AdminModule,
     EngagementModule,
+    EvaluationModule,
     GalleryModule,
     BackupModule,
     LessonObservationModule,
