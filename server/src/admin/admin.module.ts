@@ -15,6 +15,8 @@ import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { AuditModule } from '../audit/audit.module'
+import { ResourceLibraryModule } from '../resource-library/resource-library.module'
+import { TextbookModule } from '../textbook/textbook.module'
 
 // 说明：LessonObservation(/lesson-observations) 与 WorkLog(/work-logs) 的路由与实体
 // 已收敛至 lesson-observation / work-log 模块（带 @Feature('observation'|'worklog') 守卫），
@@ -29,7 +31,13 @@ class PlanService extends CrudService<LessonPlanTemplate> {
 class PlanController extends CrudController<LessonPlanTemplate> { constructor(s: PlanService) { super(s) } }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student]), AuditModule],
+  imports: [
+    TypeOrmModule.forFeature([LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student]),
+    AuditModule,
+    // 资源库/教材初始化数据在 seedDemoData 中按校生成
+    ResourceLibraryModule,
+    TextbookModule,
+  ],
   providers: [PlanService, AdminService],
   controllers: [PlanController, AdminController],
   exports: [AdminService],

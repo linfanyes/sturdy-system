@@ -14,6 +14,8 @@ import { BusinessException } from '../common/exceptions/business.exception'
 import { AuditService } from '../audit/audit.service'
 import { TEACHER_ID_TABLES, CLASS_ID_TABLES, ALL_BUSINESS_TABLES } from '../common/constants/tenant-tables'
 import { FEATURE_FLAGS } from '../common/feature/feature-flags.constants'
+import { ResourceLibraryService } from '../resource-library/resource-library.service'
+import { TextbookService } from '../textbook/textbook.service'
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -27,6 +29,8 @@ export class AdminService implements OnModuleInit {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly audit: AuditService,
+    private readonly resourceLibrarySvc: ResourceLibraryService,
+    private readonly textbookSvc: TextbookService,
   ) {}
 
   /** 启动时自动检测种子数据，核心账号不存在时自动重建 */
@@ -99,6 +103,21 @@ export class AdminService implements OnModuleInit {
       }
     }
     console.log('[Seed] 种子数据自动重建完成')
+    // 为每所学校生成资源库与教材初始化数据（幂等：已有数据自动跳过）
+    for (const s of schools) {
+      try {
+        const r = await this.resourceLibrarySvc.seedDefaults(s.id)
+        console.log(`[Seed] 学校「${s.name}」资源库初始化: 诗${r.poems.created}/式${r.formulas.created}/词${r.words.created}（跳过: ${r.poems.skipped + r.formulas.skipped + r.words.skipped}）`)
+      } catch (e) {
+        console.warn('[Seed] 资源库初始化失败（可忽略）:', (e as Error).message)
+      }
+      try {
+        const r = await this.textbookSvc.seedDefaults(s.id)
+        console.log(`[Seed] 学校「${s.name}」教材初始化: 新增${r.created} 跳过${r.skipped}（单元${r.totalUnits}/知识点${r.totalPoints}）`)
+      } catch (e) {
+        console.warn('[Seed] 教材初始化失败（可忽略）:', (e as Error).message)
+      }
+    }
   }
 
   /** 超管登录 → JWT */
@@ -457,12 +476,11 @@ export class AdminService implements OnModuleInit {
       await em.getRepository(User).createQueryBuilder().delete().execute()
       await em.getRepository(SchoolAdmin).createQueryBuilder().delete().execute()
       await em.getRepository(School).createQueryBuilder().delete().execute()
-      // 补充清理：家长/家长-学生关联/消息/学生信息修改申请/资源库/教材
+      // 补充清理：家长/家长-学生关联/消息/学生信息修改申请
       // （此前遗漏：这些表不含 teacherId 或按 teacherId 清理无效，全量重置后残留）
+      // 注意：resource_* / textbook_* 是初始化数据（与用户信息无关），重置后由 seedDemoData 按校重新生成，故不清
       for (const t of [
         'parents', 'student_parents', 'messages', 'student_info_updates',
-        'resource_english_words', 'resource_math_formulas', 'resource_poems',
-        'textbook_knowledge_points', 'textbook_units', 'textbooks',
       ]) {
         try { await em.query(`DELETE FROM \`${t}\``) } catch { /* 表不存在则跳过 */ }
       }
