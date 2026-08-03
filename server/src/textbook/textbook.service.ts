@@ -152,7 +152,7 @@ export class TextbookService {
    * @param filter 可按 subject/grade/textbookId 过滤
    */
   async getTextbookTree(schoolId: string, filter?: { subject?: string; grade?: string; term?: string; textbookId?: string }) {
-    const where: any = { schoolId, status: 'published' }
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
     if (filter?.subject) where.subject = filter.subject
     if (filter?.grade) where.grade = filter.grade
     if (filter?.term) where.term = filter.term
@@ -184,8 +184,8 @@ export class TextbookService {
   async searchKnowledgePoints(schoolId: string, keyword: string, limit = 50) {
     if (!keyword?.trim()) return []
     const kw = keyword.trim()
-    // 先查本校所有教材（需 name/subject/grade 用于结果展示）
-    const textbooks = await this.textbookRepo.find({ where: { schoolId, status: 'published' }, select: ['id', 'name', 'subject', 'grade'] })
+    // 先查教材（全局初始化 + 本校，需 name/subject/grade 用于结果展示）
+    const textbooks = await this.textbookRepo.find({ where: { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }, select: ['id', 'name', 'subject', 'grade'] })
     if (!textbooks.length) return []
     const tbIds = textbooks.map(t => t.id)
     const units = await this.unitRepo.find({ where: { textbookId: In(tbIds) }, select: ['id', 'title', 'textbookId'] })
