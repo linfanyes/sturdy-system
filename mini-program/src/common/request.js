@@ -100,8 +100,13 @@ export function request(path, method = 'GET', data = {}, token) {
         if (status === 401) {
           // 提取后端实际错误信息（密码错误/账号禁用等），而非固定显示"登录已过期"
           const msg = res.data && (res.data.message || res.data.error)
-          try { logout() } catch (e) {}
-          uni.reLaunch({ url: '/pages/login/login' })
+          // 登录/绑定类接口的 401 表示"凭据错误"，此时本就没有登录态：
+          // 不做登出/跳转，避免 reLaunch 打断错误提示，由调用方 toast 展示具体原因
+          const isAuthEndpoint = /\/auth\/|\/parent-auth\//.test(path)
+          if (!isAuthEndpoint) {
+            try { logout() } catch (e) {}
+            uni.reLaunch({ url: '/pages/login/login' })
+          }
           return reject(new Error(msg || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(res.data)
