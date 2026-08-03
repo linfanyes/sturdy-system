@@ -220,7 +220,6 @@ await t('TC-SA-311', '教师调校管', pA('GET', '/school-admin/teachers', null
 // ============ 4. 教师模块 ============
 console.log('\n[4] 教师模块')
 const T2 = { token: T.teacherToken }
-console.log('DEBUG: T2.token length=', T2.token?.length, 'T.classId=', T.classId)
 await t('TC-T-001', 'users/me', pA('GET', '/users/me', null, T2.token))
 await t('TC-T-002', '更新个人资料', pA('PATCH', '/users/me', { motto: 'QA测试格言', theme: 'default', fontSize: '14' }, T2.token))
 await t('TC-T-003', '越权字段被剔除', async () => {
@@ -232,7 +231,6 @@ await t('TC-T-005', '保存应用配置', pA('PATCH', '/config/app-config', { th
 await t('TC-T-006', 'AI 服务商列表', pA('GET', '/config/ai-providers', null, T2.token))
 await t('TC-T-101', '我的班级', pA('GET', '/classes', null, T2.token))
 await t('TC-T-102', '教师建班级 403', pA('POST', '/classes', { name: 'x' }, T2.token), 403)
-console.log('DEBUG before TC-T-103: T2.token length=', T2.token?.length, 'T.classId=', T.classId)
 await t('TC-T-103', '班级成员列表', pA('POST', `/classes/${T.classId}/members/list`, {}, T2.token))
 await t('TC-T-104', '添加科任', pA('POST', `/classes/${T.classId}/members`, { teacherId: T.teacher2Id, subjects: ['数学'] }, T2.token))
 await t('TC-T-105', '改科任学科', pA('PATCH', `/classes/${T.classId}/members/${T.teacher2Id}/subjects`, { subjects: ['数学', '英语'] }, T2.token))
