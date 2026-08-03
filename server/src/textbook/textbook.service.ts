@@ -7,12 +7,15 @@ import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { AiService } from '../ai/ai.service'
 import { SEED_TEXTBOOKS } from './textbook.seed-data'
+import { GLOBAL_SCHOOL_ID } from '../common/constants/global-school-id'
 
 /**
  * 教材知识库服务。
  * - 校管：CRUD 教材/单元/知识点，触发 AI 批量生成
  * - 学科组长：编辑对应学科/年级的教材内容
- * - 教师/家长：只读查询（按 schoolId 隔离）
+ * - 教师/家长：只读查询
+ * 数据范围：全局初始化教材（schoolId='global'）+ 本校教材（schoolId=当前校）均可见可读；
+ * 编辑类操作仅作用于本校数据。
  * 家长 JWT 无 schoolId，需通过 studentId → 班级 → 教师 → schoolId 反查。
  */
 @Injectable()
@@ -47,9 +50,9 @@ export class TextbookService {
 
   // ============ 校管 CRUD：教材 ============
 
-  /** 列出本校教材（支持按学科/年级筛选） */
+  /** 列出教材（全局初始化 + 本校，支持按学科/年级筛选） */
   async listTextbooks(schoolId: string, q?: { subject?: string; grade?: string; term?: string }) {
-    const where: any = { schoolId }
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]) }
     if (q?.subject) where.subject = q.subject
     if (q?.grade) where.grade = q.grade
     if (q?.term) where.term = q.term
@@ -278,25 +281,26 @@ export class TextbookService {
   // ============ 一键初始化种子教材 ============
 
   /**
-   * 一键初始化本校教材：写入 32 本预置教材（人教版语文/数学 + 外研版英语）及其单元与知识点。
+   * 一键初始化教材：写入 32 本预置教材（人教版语文/数学 + 外研版英语）及其单元与知识点（全局共享，schoolId='global'）。
    * 幂等：已存在的教材（相同 publisher+subject+grade+term）跳过，不覆盖已有内容。
+   * 兼容旧签名：仍接收 schoolId 参数但忽略，统一生成全局数据。
    * @returns { created, skipped, totalUnits, totalPoints }
    */
-  async seedDefaults(schoolId: string) {
-    if (!schoolId) throw new BadRequestException('缺少学校ID')
+  async seedDefaults(schoolId?: string) {
+    const scope = GLOBAL_SCHOOL_ID
     let created = 0
     let skipped = 0
     let totalUnits = 0
     let totalPoints = 0
     for (const seed of SEED_TEXTBOOKS) {
-      // 幂等：同校同版本同学科同年级同册次已存在则跳过
+      // 幂等：同版本同学科同年级同册次已存在则跳过
       const existing = await this.textbookRepo.findOne({
-        where: { schoolId, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
+        where: { schoolId: scope, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
       })
       if (existing) { skipped++; continue }
       // 创建教材
       const tb = await this.textbookRepo.save(this.textbookRepo.create({
-        schoolId, publisher: seed.publisher, subject: seed.subject,
+        schoolId: scope, publisher: seed.publisher, subject: seed.subject,
         grade: seed.grade, term: seed.term, name: seed.name, status: 'published',
       }))
       created++
@@ -442,7 +446,8 @@ export class TextbookService {
 
   private async assertTextbookInSchool(textbookId: string, schoolId: string) {
     if (!textbookId) throw new BadRequestException('缺少教材ID')
-    const tb = await this.textbookRepo.findOne({ where: { id: textbookId, schoolId } })
+    // 全局初始化教材（schoolId='global'）所有学校可读；编辑类仅允许操作本校数据由上层 schoolId 参数保证
+    const tb = await this.textbookRepo.findOne({ where: { id: textbookId, schoolId: In([GLOBAL_SCHOOL_ID, schoolId]) } })
     if (!tb) throw new NotFoundException('教材不存在或无权操作')
     return tb
   }

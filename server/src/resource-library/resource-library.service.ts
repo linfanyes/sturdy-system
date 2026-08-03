@@ -6,12 +6,14 @@ import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { SEED_POEMS, SEED_MATH_FORMULAS, SEED_ENGLISH_WORDS } from './resource-library.seed-data'
+import { GLOBAL_SCHOOL_ID } from '../common/constants/global-school-id'
 
 /**
  * 教学资源库服务。
  * - 校管：CRUD 三类资源 + 一键初始化种子数据
  * - 学科组长：编辑对应学科的资源（语文组长→古诗词，数学组长→公式，英语组长→单词）
- * - 教师/家长：只读查询（按 schoolId 隔离）
+ * - 教师/家长：只读查询
+ * 数据范围：全局初始化数据（schoolId='global'）+ 本校自定义数据（schoolId=当前校）均可见。
  */
 @Injectable()
 export class ResourceLibraryService {
@@ -43,7 +45,7 @@ export class ResourceLibraryService {
   // ============ 古诗词 ============
 
   async listPoems(schoolId: string, q?: { grade?: string; dynasty?: string; keyword?: string }) {
-    const where: any = { schoolId, status: 'published' }
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
     if (q?.grade && q.grade !== '通用') where.grade = q.grade
     if (q?.dynasty) where.dynasty = q.dynasty
     if (q?.keyword) {
@@ -55,12 +57,13 @@ export class ResourceLibraryService {
   async searchPoems(schoolId: string, keyword: string, limit = 50) {
     if (!keyword?.trim()) return []
     const kw = keyword.trim()
+    const scopes = In([GLOBAL_SCHOOL_ID, schoolId])
     const poems = await this.poemRepo.find({
       where: [
-        { schoolId, status: 'published', title: Like(`%${kw}%`) },
-        { schoolId, status: 'published', author: Like(`%${kw}%`) },
-        { schoolId, status: 'published', content: Like(`%${kw}%`) },
-        { schoolId, status: 'published', keywords: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', title: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', author: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', content: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', keywords: Like(`%${kw}%`) },
       ],
       take: limit,
       order: { sortOrder: 'ASC' },
@@ -71,7 +74,7 @@ export class ResourceLibraryService {
   // ============ 数学公式定理 ============
 
   async listFormulas(schoolId: string, q?: { grade?: string; category?: string; keyword?: string }) {
-    const where: any = { schoolId, status: 'published' }
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
     if (q?.grade && q.grade !== '通用') where.grade = q.grade
     if (q?.category) where.category = q.category
     if (q?.keyword) {
@@ -83,11 +86,12 @@ export class ResourceLibraryService {
   async searchFormulas(schoolId: string, keyword: string, limit = 50) {
     if (!keyword?.trim()) return []
     const kw = keyword.trim()
+    const scopes = In([GLOBAL_SCHOOL_ID, schoolId])
     return this.formulaRepo.find({
       where: [
-        { schoolId, status: 'published', title: Like(`%${kw}%`) },
-        { schoolId, status: 'published', formula: Like(`%${kw}%`) },
-        { schoolId, status: 'published', keywords: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', title: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', formula: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', keywords: Like(`%${kw}%`) },
       ],
       take: limit,
       order: { sortOrder: 'ASC' },
@@ -97,7 +101,7 @@ export class ResourceLibraryService {
   // ============ 英语分类单词 ============
 
   async listWords(schoolId: string, q?: { grade?: string; category?: string; keyword?: string }) {
-    const where: any = { schoolId, status: 'published' }
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
     if (q?.grade && q.grade !== '通用') where.grade = q.grade
     if (q?.category) where.category = q.category
     if (q?.keyword) {
@@ -109,11 +113,12 @@ export class ResourceLibraryService {
   async searchWords(schoolId: string, keyword: string, limit = 50) {
     if (!keyword?.trim()) return []
     const kw = keyword.trim()
+    const scopes = In([GLOBAL_SCHOOL_ID, schoolId])
     return this.wordRepo.find({
       where: [
-        { schoolId, status: 'published', word: Like(`%${kw}%`) },
-        { schoolId, status: 'published', meaning: Like(`%${kw}%`) },
-        { schoolId, status: 'published', category: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', word: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', meaning: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', category: Like(`%${kw}%`) },
       ],
       take: limit,
       order: { category: 'ASC', sortOrder: 'ASC' },
@@ -122,7 +127,7 @@ export class ResourceLibraryService {
 
   /** 获取单词的所有分类（用于前端分类筛选） */
   async listWordCategories(schoolId: string): Promise<string[]> {
-    const words = await this.wordRepo.find({ where: { schoolId, status: 'published' }, select: ['category'] })
+    const words = await this.wordRepo.find({ where: { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }, select: ['category'] })
     return [...new Set(words.map(w => w.category).filter(Boolean))]
   }
 
@@ -260,11 +265,12 @@ export class ResourceLibraryService {
   // ============ 一键初始化种子数据 ============
 
   /**
-   * 一键初始化本校资源库：写入古诗词、数学公式、英语单词种子数据。
+   * 一键初始化资源库：写入古诗词、数学公式、英语单词种子数据（全局共享，schoolId='global'）。
    * 幂等：已有数据时跳过（按 title/word 判重）。
+   * 兼容旧签名：仍接收 schoolId 参数但忽略，统一生成全局数据。
    */
-  async seedDefaults(schoolId: string) {
-    if (!schoolId) throw new BadRequestException('缺少学校ID')
+  async seedDefaults(schoolId?: string) {
+    const scope = GLOBAL_SCHOOL_ID
     let poemCreated = 0, poemSkipped = 0
     let formulaCreated = 0, formulaSkipped = 0
     let wordCreated = 0, wordSkipped = 0
@@ -272,10 +278,10 @@ export class ResourceLibraryService {
     // 古诗词
     for (let i = 0; i < SEED_POEMS.length; i++) {
       const seed = SEED_POEMS[i]
-      const existing = await this.poemRepo.findOne({ where: { schoolId, title: seed.title } })
+      const existing = await this.poemRepo.findOne({ where: { schoolId: scope, title: seed.title } })
       if (existing) { poemSkipped++; continue }
       await this.poemRepo.save(this.poemRepo.create({
-        schoolId, title: seed.title, dynasty: seed.dynasty, author: seed.author,
+        schoolId: scope, title: seed.title, dynasty: seed.dynasty, author: seed.author,
         content: seed.content, translation: seed.translation || '', appreciation: seed.appreciation || '',
         grade: seed.grade, keywords: seed.keywords, sortOrder: i + 1, status: 'published',
       }))
@@ -285,10 +291,10 @@ export class ResourceLibraryService {
     // 数学公式
     for (let i = 0; i < SEED_MATH_FORMULAS.length; i++) {
       const seed = SEED_MATH_FORMULAS[i]
-      const existing = await this.formulaRepo.findOne({ where: { schoolId, title: seed.title } })
+      const existing = await this.formulaRepo.findOne({ where: { schoolId: scope, title: seed.title } })
       if (existing) { formulaSkipped++; continue }
       await this.formulaRepo.save(this.formulaRepo.create({
-        schoolId, title: seed.title, category: seed.category, formula: seed.formula,
+        schoolId: scope, title: seed.title, category: seed.category, formula: seed.formula,
         explanation: seed.explanation || '', example: seed.example || '',
         grade: seed.grade, keywords: seed.keywords, sortOrder: i + 1, status: 'published',
       }))
@@ -298,10 +304,10 @@ export class ResourceLibraryService {
     // 英语单词
     for (let i = 0; i < SEED_ENGLISH_WORDS.length; i++) {
       const seed = SEED_ENGLISH_WORDS[i]
-      const existing = await this.wordRepo.findOne({ where: { schoolId, word: seed.word } })
+      const existing = await this.wordRepo.findOne({ where: { schoolId: scope, word: seed.word } })
       if (existing) { wordSkipped++; continue }
       await this.wordRepo.save(this.wordRepo.create({
-        schoolId, word: seed.word, phonetic: seed.phonetic, meaning: seed.meaning,
+        schoolId: scope, word: seed.word, phonetic: seed.phonetic, meaning: seed.meaning,
         category: seed.category, example: seed.example || '', grade: seed.grade,
         sortOrder: i + 1, status: 'published',
       }))
