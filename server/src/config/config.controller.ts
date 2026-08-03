@@ -8,20 +8,11 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common'
-import { ConfigService } from './config.service'
+import { ConfigService, SECRET_CONFIG_KEYS, maskSecretValue } from './config.service'
 import { AiProviderService } from './ai-provider.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
-
-// 明文下发存在泄露风险的密钥类配置项（仅做脱敏展示，写入时仍可接收明文）
-const SECRET_KEYS = new Set(['wxAppSecret', 'imSecretKey', 'aiApiKey'])
-
-function maskSecret(value: string): string {
-  if (!value) return ''
-  if (value.length <= 4) return '****'
-  return value.slice(0, 2) + '****' + value.slice(-2)
-}
 
 @Controller('config')
 export class ConfigController {
@@ -38,18 +29,19 @@ export class ConfigController {
   @Roles('super')
   @Get('app')
   @UseGuards(JwtAuthGuard)
-  listApp() {
+  async listApp() {
     // 仅超级管理员可读取平台级配置；密钥类字段脱敏下发，避免明文泄露到前端/日志。
-    const rows = this.cfg.listAppConfig()
-    return Array.isArray(rows)
-      ? rows.map((r) => ({ ...r, value: SECRET_KEYS.has(r.key) ? maskSecret(r.value) : r.value }))
-      : rows
+    const rows = await this.cfg.listAppConfig()
+    return (Array.isArray(rows) ? rows : []).map((r) => ({
+      ...r,
+      value: SECRET_CONFIG_KEYS.has(r.key) ? maskSecretValue(r.value) : r.value,
+    }))
   }
 
   /**
    * 批量保存平台配置（前端平台配置页一次性提交所有字段）。
-   * body: { items: [{ key, value }] }；密钥类字段若为空且前端标记为脱敏态，
-   * 由前端在调用前剔除，这里直接覆盖写入。
+   * body: { items: [{ key, value }] }；密钥类字段若回传脱敏占位（如 ab****cd），
+   * 服务端会跳过覆盖保留原值，避免密钥被误写成掩码。
    */
   @Roles('super')
   @Put('app')
@@ -68,8 +60,8 @@ export class ConfigController {
   @Roles('teacher')
   @Get('ai')
   @UseGuards(JwtAuthGuard)
-  getAi(@CurrentTeacher() t: any) {
-    return this.cfg.getAiSettings(t.sub)
+  async getAi(@CurrentTeacher() t: any) {
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
   }
 
   @Roles('teacher')
@@ -98,16 +90,21 @@ export class ConfigController {
   @Roles('teacher')
   @Get('teacher/ai-defaults')
   @UseGuards(JwtAuthGuard)
-  getTeacherAiDefaults(@CurrentTeacher() t: any) {
-    return this.cfg.getAiSettings(t.sub)
+  async getTeacherAiDefaults(@CurrentTeacher() t: any) {
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
   }
 
   /** 教师读取个人 AI 设置（无则回退平台默认值） */
   @Roles('teacher')
   @Get('ai-settings')
   @UseGuards(JwtAuthGuard)
-  getAiSettings(@CurrentTeacher() t: any) {
-    return this.cfg.getAiSettings(t.sub)
+  async getAiSettings(@CurrentTeacher() t: any) {
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
+  }
+
+  /** AI 配置下发：apiKey 仅以脱敏形式展示，明文只在服务端使用 */
+  private sanitizeAi(s: any) {
+    return { ...s, apiKey: s?.apiKey ? maskSecretValue(s.apiKey) : '' }
   }
 
   /** 教师保存个人 AI 设置（web 用 PATCH；保留原有 @Put('ai') 超管域不变） */

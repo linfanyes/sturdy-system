@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "puppeteer": "^24.10.0"
+  },
+  "dependencies": {
+    "proxy-agent": "^6.4.0"
   }
 }

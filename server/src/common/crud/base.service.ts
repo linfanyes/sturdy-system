@@ -1,5 +1,5 @@
 import { Repository, FindOptionsWhere, In } from 'typeorm'
-import { NotFoundException } from '@nestjs/common'
+import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { BusinessException } from '../exceptions/business.exception'
 
@@ -72,9 +72,9 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       })
       return { items, total }
     } catch (e) {
-      // 兜底：任何查询异常（如字段缺失/DB 抖动）均返回空结果，避免 500 导致端侧白屏
-      console.error('[CrudService.findAll] 查询失败，兜底返回空结果:', (e as Error)?.message)
-      return { items: [], total: 0 }
+      // 查询异常不应静默返回空列表（会把系统故障伪装成“没有数据”），抛 500 便于端侧感知与排障
+      console.error('[CrudService.findAll] 查询失败:', (e as Error)?.message)
+      throw new HttpException('查询失败，请稍后重试', HttpStatus.INTERNAL_SERVER_ERROR)
     }
   }
 
@@ -92,6 +92,9 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       if (recordClassId) {
         const canAccess = await this.classMemberSvc.canAccess(teacherId, recordClassId)
         if (!canAccess) throw new NotFoundException('记录不存在或无权访问')
+      } else if ((e as any).teacherId !== teacherId) {
+        // 记录缺失班级归属时回退为创建者校验，避免越权读取
+        throw new NotFoundException('记录不存在或无权访问')
       }
       return e
     }

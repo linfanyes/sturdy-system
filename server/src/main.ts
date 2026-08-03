@@ -7,7 +7,7 @@ import * as express from 'express'
 import { join } from 'path'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { DataSource } from 'typeorm'
+import * as mysql from 'mysql2/promise'
 import { AppModule } from './app.module'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
 
@@ -16,34 +16,50 @@ import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filte
  * - 用 _migrations_applied 表跟踪已执行文件名，幂等可重复运行。
  * - 失败不阻塞启动（synchronize=true 仍会同步 entity 表结构），
  *   仅打印错误供运维排查。
- * - 依赖连接配置 multipleStatements: true 以执行含预处理语句的多语句 SQL。
+ * - 使用独立的迁移连接（仅该连接开启 multipleStatements），
+ *   业务连接不再开启多语句，缩小 SQL 注入单点风险面。
  */
 async function runMigrations(app: any) {
+  const config = app.get(ConfigService)
+  let conn: mysql.Connection | null = null
   try {
-    const ds = app.get(DataSource)
     const migrationsDir = path.join(__dirname, '..', 'migrations')
     if (!fs.existsSync(migrationsDir)) {
       console.log('ℹ️  migrations 目录不存在，跳过自动迁移')
       return
     }
-    await ds.query(`CREATE TABLE IF NOT EXISTS _migrations_applied (
+    conn = await mysql.createConnection({
+      host: config.get('DB_HOST'),
+      port: +(config.get('DB_PORT') || 3306),
+      user: config.get('DB_USERNAME'),
+      password: config.get('DB_PASSWORD'),
+      database: config.get('DB_DATABASE'),
+      charset: 'utf8mb4',
+      // 迁移文件含多语句 SQL（PREPARE/EXECUTE 等），仅迁移连接开启
+      multipleStatements: true,
+      connectTimeout: 5000,
+      ...(config.get('DB_SSL') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
+    })
+    await conn.query(`CREATE TABLE IF NOT EXISTS _migrations_applied (
       id INT AUTO_INCREMENT PRIMARY KEY,
       filename VARCHAR(255) NOT NULL UNIQUE,
       applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
-    const applied: { filename: string }[] = await ds.query('SELECT filename FROM _migrations_applied')
-    const appliedSet = new Set(applied.map(r => r.filename))
+    const [appliedRows] = await conn.query<mysql.RowDataPacket[]>('SELECT filename FROM _migrations_applied')
+    const appliedSet = new Set(appliedRows.map(r => String(r.filename)))
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort()
     for (const file of files) {
       if (appliedSet.has(file)) continue
       const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8')
       console.log(`📦 执行迁移: ${file}`)
-      await ds.query(sql)
-      await ds.query('INSERT INTO _migrations_applied (filename) VALUES (?)', [file])
+      await conn.query(sql)
+      await conn.query('INSERT INTO _migrations_applied (filename) VALUES (?)', [file])
       console.log(`✅ 迁移完成: ${file}`)
     }
   } catch (e: any) {
     console.error('⚠️  自动迁移执行失败（不阻塞启动，synchronize 仍会同步表结构）:', e?.message || e)
+  } finally {
+    if (conn) await conn.end().catch(() => {})
   }
 }
 
@@ -127,6 +143,11 @@ async function bootstrap() {
     if (config.get('NODE_ENV') === 'production') {
       throw new Error('超级管理员仍为默认账号 admin/admin，生产环境拒绝启动，请修改 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 为强口令。')
     }
+  }
+  // 生产环境开启 DB_SYNCHRONIZE 会让实体变更隐式改表结构，存在数据损坏风险，仅警告不阻断
+  if (config.get('NODE_ENV') === 'production' && config.get('DB_SYNCHRONIZE') === 'true') {
+    // eslint-disable-next-line no-console
+    console.warn('⚠️  安全警告: 生产环境开启了 DB_SYNCHRONIZE=true，实体变更会隐式修改表结构，建议设置为 false 并仅通过迁移脚本管理表结构。')
   }
 
   // 启动时自动执行未应用的 migration SQL（幂等，失败不阻塞）

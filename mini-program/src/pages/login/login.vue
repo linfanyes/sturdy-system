@@ -93,7 +93,7 @@ function handleLoginResult(r) {
 }
 
 /* -------- 微信登录 -------- */
-const bindOpenid = ref(''), bindSessionKey = ref('')
+const bindOpenid = ref('')
 const bindNumber = ref(''), bindLoading = ref(false)
 let wechatNickName = ''  // 微信昵称（绑定教师时作默认称呼）
 
@@ -120,7 +120,6 @@ async function doWechatLogin() {
     }
     if (r.needsBind) {
       bindOpenid.value = r.openid || code
-      bindSessionKey.value = r.sessionKey || ''
       bindNumber.value = ''
     } else {
       handleLoginResult(r)

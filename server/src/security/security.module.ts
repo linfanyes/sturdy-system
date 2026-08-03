@@ -8,8 +8,10 @@ import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { AppConfig } from '../config/app-config.entity'
 
-// 微信接口在 TLS 拦截环境下可能报 self-signed，单独放宽证书校验
-const tlsAgent = new https.Agent({ rejectUnauthorized: false })
+// TLS 校验：默认严格校验；仅当显式设置 SECURITY_TLS_INSECURE=true
+// （如内网 TLS 拦截代理环境）时放宽证书校验
+const securityTlsInsecure = process.env.SECURITY_TLS_INSECURE === 'true'
+const tlsAgent = new https.Agent({ rejectUnauthorized: !securityTlsInsecure })
 
 /**
  * 微信内容安全：文本/图片违规检测 + 订阅消息推送。

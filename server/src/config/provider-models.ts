@@ -134,7 +134,7 @@ function isPrivateOrReservedIpv4(ip: string): boolean {
   return false
 }
 
-function isSafeHttpUrl(url?: string): boolean {
+export function isSafeHttpUrl(url?: string): boolean {
   if (!url) return false
   let u: URL
   try {

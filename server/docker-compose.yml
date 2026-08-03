@@ -16,8 +16,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-root}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE:-gardener}
-      # 生产环境建议改为 false，使用 migration 管理表结构
-      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      # 生产环境默认关闭实体自动同步，使用 migration 管理表结构（本地调试可显式设 true）
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
       JWT_SECRET: ${JWT_SECRET}
       WECHAT_APPID: ${WECHAT_APPID}
       WECHAT_SECRET: ${WECHAT_SECRET}

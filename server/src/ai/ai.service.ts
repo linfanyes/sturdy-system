@@ -16,6 +16,7 @@ import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { AwardRecord } from '../award/award.entity'
 import { NoteItem } from '../notes/notes.entity'
+import { isSafeHttpUrl } from '../config/provider-models'
 
 // pdfjs-dist 4.x 为 ESM 模块（main: build/pdf.mjs），用异步 import() 加载
 // 用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
@@ -49,12 +50,26 @@ if (typeof (Promise as any).withResolvers !== 'function') {
   }
 }
 
-// 与微信登录同理：AI 接口(baseUrl 多为内网/自签证书地址)在 TLS 拦截环境下也会报
-// "self-signed certificate"，这里仅为 AI 调用单独放宽证书校验。
-const tlsAgent = new https.Agent({ rejectUnauthorized: false })
+// TLS 校验：默认严格校验（防中间人窃取 AI 密钥）；
+// 仅当显式设置 AI_TLS_INSECURE=true（如内网自签证书网关）时放宽
+const aiTlsInsecure = process.env.AI_TLS_INSECURE === 'true'
+const tlsAgent = new https.Agent({ rejectUnauthorized: !aiTlsInsecure })
 
 // 出站请求不自动跟随重定向，避免 AI 网关返回重定向导致的 SSRF / Authorization 头泄露
 axios.defaults.maxRedirects = 0
+
+/**
+ * AI 出站地址校验：默认仅允许 HTTPS 公网地址，阻止服务端探测内网/云元数据（SSRF）。
+ * 若确实需要内网/自签 AI 网关，可显式设置 AI_ALLOW_PRIVATE_URLS=true 放宽。
+ */
+function assertAllowedAiUrl(baseUrl: string): void {
+  if (process.env.AI_ALLOW_PRIVATE_URLS === 'true') return
+  if (!isSafeHttpUrl(baseUrl)) {
+    throw new BadRequestException(
+      'AI 接口地址不合法：仅允许 HTTPS 公网地址。内网/自签环境请设置 AI_ALLOW_PRIVATE_URLS=true 后重试。',
+    )
+  }
+}
 
 // 上传文件大小上限（10MB），避免超大文件拖垮进程
 const MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -81,6 +96,8 @@ export class AiService {
     if (!s.baseUrl) {
       throw new BadRequestException('未配置 AI 接口地址')
     }
+    // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
+    assertAllowedAiUrl(s.baseUrl)
     return s
   }
 

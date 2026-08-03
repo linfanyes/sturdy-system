@@ -1,11 +1,8 @@
-# 园丁工作台 · 启动 / 迁移工具集
+# 园丁工作台（Gardener Work System）
 
-> Vue 3 + TypeScript + Vite + Pinia + Tailwind CSS
-> 教师专用一站式教学管理 Web 应用（PWA 离线可用）
+> 教师专用一站式教学管理系统：Web 管理端（Vue 3 + TypeScript + Vite + Pinia + Tailwind CSS）、NestJS 后端（MySQL）、微信小程序（uni-app）、共享类型包。
 
-**v3 优化版** — 本次更新修复了 5 项 P0 级 Bug、接入备份历史界面、修复内存泄漏、添加 Brotli 压缩与 vendor 拆分、优化 PWA 缓存策略、样式去重等共 11 项优化（详见文末更新日志）。
-
-本目录是项目的**可移植启动包**。所有项目文件均统一存放在 `app/` 子目录中，并使用相对路径，**整个文件夹可整体迁移到任意位置运行**，无需重新配置。
+本文档为仓库总览；架构与设计见 [Architecture-Design.md](./Architecture-Design.md)，产品说明见 [系统说明书.md](./系统说明书.md)，部署流程见 [微信小程序云托管部署手册.md](./微信小程序云托管部署手册.md)。
 
 ---
 
@@ -13,40 +10,32 @@
 
 ```
 workSystem/
-├── app/                        # 项目源代码（Vue 3 应用）
-│   ├── src/                    # 源代码
-│   ├── public/                 # 静态资源
-│   ├── docs/                   # 项目文档（PRD / 技术架构）
-│   ├── index.html              # 入口 HTML
-│   ├── package.json            # 依赖与脚本
-│   ├── package-lock.json       # 依赖锁定文件
-│   ├── tsconfig.json           # TypeScript 配置
-│   ├── vite.config.ts          # Vite 配置（已使用相对路径）
-│   ├── tailwind.config.js      # Tailwind 主题
-│   ├── postcss.config.js       # PostCSS 配置
-│   ├── .gitignore              # Git 忽略
-│   └── .vscode/                # VSCode 推荐扩展
-├── start.bat                  # 一键启动（Windows，双击即可）
-├── stop.bat                   # 一键停止（Windows）
-├── setup-hosts.bat            # 可选：配置 teacherWorkStation 本地域名
-├── app.log                     # 启动日志（运行后自动生成）
-├── app.pid                     # 进程 PID（运行后自动生成）
+├── web-app/                    # Web 管理端（Vue 3 + Vite，教师/校管/超管/家长）
+├── server/                     # 后端服务（NestJS + MySQL，云托管部署）
+├── mini-program/               # 微信小程序（uni-app）
+├── shared/                     # 跨端共享的类型 / 常量 / 校验器
+├── docs/                       # 项目文档（架构、测试、部署）
+├── e2e/                        # 端到端测试
+├── qa/                         # QA 测试用例与产物
+├── scripts/                    # 辅助脚本
+├── start.bat / stop.bat        # 一键启动 / 停止（Windows）
 └── README.md                   # 本文件
 ```
 
-> 💡 **相对路径说明**：`app/vite.config.ts` 已配置 `base: './'`、`outDir: 'dist'`，可在任意根目录下运行。
+> Web 端开发启动：`start-web-local.bat`（连本地后端）或 `start-web-cloud.bat`（连云托管后端）。
 
 ---
 
 ## 🚀 快速开始（Windows）
 
-1. 安装 **Node.js 18+**（https://nodejs.org）
-2. 双击 `start.bat`
-3. 等待几秒，浏览器自动打开 **http://localhost:5201**
-4. 输入称呼 + 登录码 `1314520` 登录
+1. 安装 **Node.js 18+**（https://nodejs.org）与 MySQL 8.0
+2. 配置 `server/.env`（数据库连接、JWT_SECRET、SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 等，参考 `server/.env.example`）
+3. 启动后端：进入 `server/` 执行 `npm install && npm run start:dev`
+4. 启动 Web 端：双击 `start-web-local.bat`，浏览器打开 **http://localhost:5201**
+5. 使用超管 / 校管 / 教师账号密码登录（登录账号由后端环境变量或校管创建，不再使用固定登录码）
 
-> 首次启动会自动 `npm install` 安装依赖（1-3 分钟），后续启动秒开。
-> 若想使用本地域名 `http://teacherWorkStation:5201`，可右键以管理员身份运行 `setup-hosts.bat`。
+> 小程序端：进入 `mini-program/` 执行 `npm run build:mp-weixin`，用微信开发者工具导入 `dist/build/mp-weixin`。
+> 完整部署流程（云托管、数据库、小程序发布）见 [微信小程序云托管部署手册.md](./微信小程序云托管部署手册.md)。
 
 ### 启动模式
 
@@ -81,42 +70,15 @@ $env:PORT=8080; .\start.bat
 
 ---
 
-## 🔑 登录与初始化
-
-- **登录码**：`1314520`（请勿修改）
-- **首次登录**：会弹出"首次设置"窗口，要求选择**任教学期**（如 2026 春季学期）和**任教学科**（多选，可在个人中心修改）
-- **任教学期**：默认根据当前日期推断 2026 春/秋，可在工作台右上角切换
-- **任教学科**：决定课表/作业/成绩等模块默认展示的科目范围
-
----
-
 ## 🛡️ 按登录人数据隔离
 
 每位老师登录后只会看到自己维护的班级 / 学生 / 成绩 / 作业 / 课表 / AI 配置 等所有信息。**不同老师在同一台电脑上轮换使用，系统数据互不共享、互不可见。**
 
-### 工作机制
+### 工作机制（当前版本）
 
-- 系统为每位老师生成独立的 `userId`（保存在 `trace-user` 中）
-- 所有业务数据使用 `trace.{userId}.{base}` 形式命名（`base` 为模块名）
+- 数据由后端按 `teacherId` / `schoolId` 隔离（JWT 鉴权 + 角色/功能守卫强制校验），前端仅做展示控制
 - 登出后该老师数据仍保留；下次再登录自动恢复
 - 支持多账号轮换：例如李老师登录 → 登出 → 王老师登录，**两人数据完全独立**
-
-### 已隔离的模块
-
-| 模块         | localStorage key                       |
-| ------------ | -------------------------------------- |
-| 班级 / 学生  | `trace.{userId}.classes`               |
-| 课表 / 作业 / 公告 / 资源 / 考勤 | `trace.{userId}.school`  |
-| 考试计划     | `trace.{userId}.exams`                 |
-| 成绩         | `trace.{userId}.grades`                |
-| 笔记         | `trace.{userId}.notes`                 |
-| 待办         | `trace.{userId}.todos`                 |
-| 奖惩         | `trace.{userId}.rewards`               |
-| 同事 / 通讯录 | `trace.{userId}.teachers`             |
-| AI 配置      | `trace.{userId}.ai-settings`           |
-| AI 对话      | `trace.{userId}.ai-chats`              |
-
-> 通用身份信息（当前登录人、登录历史）使用全局 key `trace-user` / `trace-user-history`。
 
 ---
 
@@ -303,38 +265,21 @@ $env:PORT=8080; .\start.bat
 
 ---
 
-## 📦 迁移到其他电脑
+## 📦 部署 / 迁移
 
-### 方式一：复制整个 `workSystem` 目录
-1. 将 `workSystem` 整个文件夹复制到目标机器
-2. 确保目标机器已安装 **Node.js 18+**（https://nodejs.org）
-3. 运行 `start.bat`，脚本会自动安装依赖并启动
+当前为多端架构，各端独立部署：
 
-### 方式二：使用 zip 压缩包
-压缩包位于 `workSystem.zip`，解压后操作同方式一。
+- **后端**：`server/` 构建 Docker 镜像部署到微信云托管（或自管服务器 + Nginx），依赖 MySQL 8.0；环境变量模板见 `server/.env.example`
+- **Web 端**：`web-app/` 构建产物可托管到任意静态服务器 / CDN，API 地址通过 `public/config.js` 或 `VITE_API_BASE` 配置
+- **小程序**：`mini-program/` 构建后经微信开发者工具上传发布，通过云托管私有链路访问后端
 
-### 方式三：仅迁移 `app/` 源码
-1. 复制 `app/` 到任意位置
-2. 在该目录执行：
-   ```bat
-   cd app
-   npm install
-   npm run dev
-   ```
-
-> ✅ **项目使用相对路径**，`app/` 可放在任何目录下、任何盘符下运行。
+> 完整部署流程（云托管、数据库、小程序发布、自检）见 [微信小程序云托管部署手册.md](./微信小程序云托管部署手册.md)。
 
 ---
 
 ## 📤 数据备份 / 恢复
 
-在「个人中心」可以：
-- **导出数据**：所有班级 / 学生 / 成绩 / 笔记 / 考试 / 获奖 / 待办 / AI 配置等打包为 JSON 文件（含版本号）
-- **导入数据**：从 JSON 文件恢复（会覆盖当前账号数据，含字段缺失保护）
-- **备份历史**：系统每 30 分钟自动备份一次，最多保留 10 个版本。可在「个人中心 → 备份历史」中查看、恢复、下载、删除备份
-- **清空数据**：仅清除当前登录人的数据，不影响其他老师
-
-> 数据是**按登录人隔离**的，导出的 JSON 不应给其他账号导入。
+当前版本数据存储在 MySQL（后端），备份通过数据库备份 / 后端备份模块进行；各端具体入口以实际页面为准，详见 [系统说明书.md](./系统说明书.md)。
 
 ---
 
@@ -347,16 +292,13 @@ A: 请先安装 Node.js 18+ ：https://nodejs.org/zh-cn/download/
 A: 使用环境变量 `PORT=xxxx` 指定其他端口（见上文）。
 
 **Q: 依赖安装失败？**
-A: 删除 `app/node_modules` 后重新运行 `start.bat`，或检查网络代理。
-
-**Q: 想彻底重装依赖？**
-A: 删除 `app/node_modules` 与 `app/package-lock.json` 后重新运行 `start.bat`。
+A: 删除对应目录（`server/node_modules` 或 `web-app/node_modules`）后重新安装，或检查网络代理。
 
 **Q: 浏览器打开是空白？**
 A: 查看 `app.log` 是否有错误。常见原因：Node 版本过低 / 端口冲突 / 依赖未装完。
 
 **Q: AI 提示「请先配置 API Key」？**
-A: 打开 AI 对话 → 右上角「设置」→ 填入 API Key（推荐 deepseek，便宜好用）。Key 仅保存在本地浏览器，不会上传。
+A: 打开 AI 对话 → 右上角「设置」→ 填入 API Key（推荐 deepseek，便宜好用）。Key 加密保存于后端数据库，前端仅显示脱敏值。
 
 **Q: 不同老师的数据会串吗？**
 A: 不会。本系统按登录人**完全隔离**所有数据，详见上文"按登录人数据隔离"章节。
@@ -374,17 +316,11 @@ A: 脚本会用系统默认浏览器打开 `http://localhost:5201/`。如果浏�
 
 ## 📜 技术栈
 
-- **Vue 3.4** + `<script setup lang="ts">`
-- **TypeScript 5.5**
-- **Vite 6**（使用相对路径配置）
-- **Pinia 2** + localStorage 持久化（按登录人隔离）
-- **Vue Router 4**（hash history，游戏页 keepAlive 缓存）
-- **Tailwind CSS 3** + 自定义主题（CSS 变量驱动，支持暗色模式 + 4 套主题色）
-- **PWA**（vite-plugin-pwa，离线可用，Google Fonts 运行时缓存）
-- **Brotli + Gzip 双压缩**
-- **lucide-vue-next** 图标
-- **dayjs** / **xlsx 0.20.3**（已修复 CVE-2023-30533）/ **nanoid**
-- **OpenAI 兼容 API**（默认 deepseek，支持图片多模态）
+- **Web 端**：Vue 3 + TypeScript + Vite + Pinia + Vue Router + Tailwind CSS
+- **后端**：NestJS + TypeORM + MySQL 8.0 + JWT（+ bcrypt / class-validator / Swagger）
+- **小程序**：uni-app（Vue 3），云托管私有链路（wx.cloud.callContainer）
+- **共享包**：`shared/`（跨端类型 / 常量 / 校验器）
+- **AI**：OpenAI 兼容 API（默认阿里通义千问 / DeepSeek，支持多模态与文件解析）
 
 ---
 

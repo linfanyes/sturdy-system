@@ -2,10 +2,65 @@ import { Injectable, OnModuleInit } from '@nestjs/common'
 import { ConfigService as EnvConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import * as crypto from 'node:crypto'
 import { AppConfig } from './app-config.entity'
 import { AiSettings } from './ai-settings.entity'
 import { AiProvider } from './ai-provider.entity'
 import { fetchProviderModels, type ProviderModelsResult } from './provider-models'
+
+/**
+ * 密钥类配置项：写入时加密落库，读取时解密（超管页面仅展示脱敏值）。
+ * 未配置 ENCRYPTION_KEY（32 字节 hex）时保持明文并告警，向后兼容旧数据。
+ */
+export const SECRET_CONFIG_KEYS = new Set(['wxAppSecret', 'imSecretKey', 'aiApiKey'])
+
+function getEncryptionKey(): Buffer | null {
+  const hex = (process.env.ENCRYPTION_KEY || '').trim()
+  if (!hex) return null
+  const buf = Buffer.from(hex, 'hex')
+  return buf.length === 32 ? buf : null
+}
+
+/** 与控制器共用：脱敏展示（保留首尾 2 位） */
+export function maskSecretValue(value: string): string {
+  if (!value) return ''
+  if (value.length <= 4) return '****'
+  return value.slice(0, 2) + '****' + value.slice(-2)
+}
+
+function encryptSecret(plain: string): string {
+  const key = getEncryptionKey()
+  if (!key) return plain
+  const iv = crypto.randomBytes(12)
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  const enc = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return `enc:v1:${iv.toString('hex')}:${tag.toString('hex')}:${enc.toString('hex')}`
+}
+
+function decryptSecret(stored: string): string {
+  if (!stored || !stored.startsWith('enc:v1:')) return stored
+  const parts = stored.split(':')
+  if (parts.length !== 5) return stored
+  try {
+    const key = getEncryptionKey()
+    if (!key) return stored
+    const [, , ivHex, tagHex, dataHex] = parts
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'))
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'))
+    return Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]).toString('utf8')
+  } catch {
+    console.warn('[ConfigService] 密钥解密失败，可能 ENCRYPTION_KEY 已变更，请检查配置')
+    return stored
+  }
+}
+
+/** 判断提交值是否为“脱敏占位”形态（前端回传掩码时跳过覆盖，避免密钥被写成 ****） */
+function isMaskedSubmission(key: string, incoming: string, current: string): boolean {
+  if (!current || !incoming) return false
+  if (incoming === '****') return true
+  return maskSecretValue(decryptSecret(current)) === incoming
+}
 
 @Injectable()
 export class ConfigService implements OnModuleInit {
@@ -20,6 +75,9 @@ export class ConfigService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    if (!getEncryptionKey()) {
+      console.warn('⚠️  未配置 ENCRYPTION_KEY（32 字节 hex），密钥类配置（wxAppSecret/imSecretKey/aiApiKey）将以明文落库，生产环境建议配置。')
+    }
     await this.seed()
     await this.migrateModelDefaults()
     await this.migrateImDefaults()
@@ -162,19 +220,28 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  listAppConfig() {
-    return this.appRepo.find({ order: { key: 'ASC' } })
+  async listAppConfig() {
+    const rows = await this.appRepo.find({ order: { key: 'ASC' } })
+    return rows.map((r) =>
+      SECRET_CONFIG_KEYS.has(r.key) ? { ...r, value: decryptSecret(r.value) } : r,
+    )
   }
 
   async getAppConfigValue(key: string): Promise<string | undefined> {
     const c = await this.appRepo.findOne({ where: { key } })
-    return c?.value
+    if (!c) return undefined
+    return SECRET_CONFIG_KEYS.has(key) ? decryptSecret(c.value) : c.value
   }
 
   async setAppConfig(key: string, value: string, description?: string) {
     let c = await this.appRepo.findOne({ where: { key } })
     if (!c) c = this.appRepo.create({ key })
-    c.value = value
+    // 密钥类配置：前端回传脱敏占位时保留原值，避免密钥被写成 ****
+    if (SECRET_CONFIG_KEYS.has(key) && isMaskedSubmission(key, value, c.value)) {
+      if (description) c.description = description
+      return this.appRepo.save(c)
+    }
+    c.value = SECRET_CONFIG_KEYS.has(key) ? encryptSecret(value) : value
     if (description) c.description = description
     return this.appRepo.save(c)
   }
@@ -248,6 +315,8 @@ export class ConfigService implements OnModuleInit {
         if (!s.videoModel) s.videoModel = prov.videoModels?.[0] || ''
       }
     }
+    // apiKey 为密文时解密，供 AI 调用与控制器脱敏展示使用
+    if (s.apiKey) s.apiKey = decryptSecret(s.apiKey)
     return s
   }
 
@@ -264,6 +333,18 @@ export class ConfigService implements OnModuleInit {
         if (!dto.imageModel) dto.imageModel = prov.imageModels?.[0] || ''
         if (!dto.videoModel) dto.videoModel = prov.videoModels?.[0] || ''
       }
+    }
+    // 密钥处理：留空或回传脱敏占位时保留原值；否则加密落库
+    const existingKey = s.apiKey ? decryptSecret(s.apiKey) : ''
+    const incomingKey = dto.apiKey === undefined || dto.apiKey === null ? '' : String(dto.apiKey)
+    if (
+      incomingKey === '' ||
+      incomingKey === '****' ||
+      (existingKey && maskSecretValue(existingKey) === incomingKey)
+    ) {
+      delete dto.apiKey
+    } else if (incomingKey) {
+      dto.apiKey = encryptSecret(incomingKey)
     }
     Object.assign(s, dto, { teacherId })
     return this.aiRepo.save(s)

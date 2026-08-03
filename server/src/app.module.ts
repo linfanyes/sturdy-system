@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 
 import { AuthModule } from './auth/auth.module'
+import { JwtAuthModule } from './common/guards/jwt-auth.module'
 import { UsersModule } from './users/users.module'
 import { ConfigModule as PlatformConfigModule } from './config/config.module'
 import { AiModule } from './ai/ai.module'
@@ -80,12 +81,13 @@ import { HealthController } from './health.controller'
             connectionLimit: 10,
             // 初始 TCP/TLS 握手 5 秒不成就放弃，避免挂死
             connectTimeout: 5000,
-            // 供启动时 migration runner 执行多语句 SQL（业务层仍用参数化查询，无注入风险）
-            multipleStatements: true,
+            // 业务连接不开启 multipleStatements，缩小 SQL 注入单点风险面；
+            // 多语句迁移 SQL 由 main.ts 中独立的迁移连接执行
           },
         }
       },
     }),
+    JwtAuthModule,
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],

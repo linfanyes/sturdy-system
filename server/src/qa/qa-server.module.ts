@@ -12,6 +12,7 @@ import { JwtModule } from '@nestjs/jwt'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 
 import { AuthModule } from '../auth/auth.module'
+import { JwtAuthModule } from '../common/guards/jwt-auth.module'
 import { UsersModule } from '../users/users.module'
 import { ConfigModule as PlatformConfigModule } from '../config/config.module'
 import { AiModule } from '../ai/ai.module'
@@ -74,6 +75,7 @@ import { HealthController } from '../health.controller'
     }),
     // QA 限流放宽：100000 次/分钟，性能测试不误触
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100000 }]),
+    JwtAuthModule,
     AuthModule,
     UsersModule,
     PlatformConfigModule,

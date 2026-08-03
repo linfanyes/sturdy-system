@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "generatedAt": "2026-08-03T16:42:49.036Z",
+    "backend": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
+    "description": "园丁工作台小程序全量测试数据：五角色账号 + 种子实体 + 边界/异常数据集。测试数据前缀 qa_mp_，执行后 teardown 清理。",
+    "schoolId": "f6fbcd69-f1fc-46fd-831e-a9f07221ed04"
+  },
+  "roles": {
+    "super": {
+      "username": "admin",
+      "password": "admin",
+      "role": "super",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzdXBlciIsInJvbGUiOiJzdXBlciIsImlhdCI6MTc4NTc3NTAzNCwiZXhwIjoxNzg4MzY3MDM0fQ.Q9Lr5FedD9-1-X_4wxYPPBuJYpoDZokuFaik3lAit98"
+    },
+    "school_admin": {
+      "username": "qa_sa_MSDGCIUN",
+      "password": "Test@2026",
+      "role": "school_admin",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NjVjN2ZkOC1hZTJiLTQxMGYtYjliYS02ZDA1MWNkOGVmNzkiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiJmNmZiY2Q2OS1mMWZjLTQ2ZmQtODMxZS1hOWYwNzIyMWVkMDQiLCJpYXQiOjE3ODU3NzUwMzUsImV4cCI6MTc4ODM2NzAzNX0.oujD_w5mEb1BayqUHNM37dJpuwDKe6amzP4yXvQ820s"
+    },
+    "teacher": {
+      "username": "qa_teacher1_MSDGCIUN",
+      "password": "Test@2026",
+      "role": "teacher",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYWY3OTI5OC1lYjdiLTQyZTktYjVkOC1kZTcwYjFjMTE0ZGMiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiZjZmYmNkNjktZjFmYy00NmZkLTgzMWUtYTlmMDcyMjFlZDA0IiwiaWF0IjoxNzg1Nzc1MDM3LCJleHAiOjE3ODgzNjcwMzd9.FgaTQj-qrHT6A2PI4B1ICHAZXEjYpnD03kUedGDE7gI",
+      "classId": "cecdc391-6fc9-4168-b195-efe291212053"
+    },
+    "teacher2": {
+      "username": "qa_teacher2_MSDGCIUN",
+      "password": "Test@2026",
+      "role": "teacher",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NmM1OGJhYi05NDcwLTQzYjEtOThjNi05M2RiNjA3OWFlNjYiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiZjZmYmNkNjktZjFmYy00NmZkLTgzMWUtYTlmMDcyMjFlZDA0IiwiaWF0IjoxNzg1Nzc1MDM3LCJleHAiOjE3ODgzNjcwMzd9.AsXl2bTj7rhuyYcYPhW4-ANWClGbiAKd8myplDQhlKU"
+    },
+    "parent": {
+      "studentNo": "8803619508",
+      "password": "123456",
+      "role": "parent",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwXzEwemx1OXgiLCJ0eXBlIjoicGFyZW50IiwicGFyZW50SWQiOiIwMTJjNjU2My1iMDU1LTRiMDktODU0NS1kYzkyYmQwNDQxOWUiLCJzdHVkZW50SWQiOiIzOGUyMDIwYy1iNDY4LTQ3ZTItYmE2MC04NTJhNThjZTlhODQiLCJzdHVkZW50TmFtZSI6IuWwj-eHlSIsImNsYXNzSWQiOiJjZWNkYzM5MS02ZmM5LTQxNjgtYjE5NS1lZmUyOTEyMTIwNTMiLCJzdHVkZW50Tm8iOiI4ODAzNjE5NTA4IiwiaWF0IjoxNzg1Nzc1MDM4LCJleHAiOjE3ODgzNjcwMzh9.QJMmD90E0HNDYIBWwLtutdu1nKk2PaGlAMNIQG3XEew",
+      "studentId": "38e2020c-b468-47e2-ba60-852a58ce9a84"
+    }
+  },
+  "seed": {
+    "schoolId": "f6fbcd69-f1fc-46fd-831e-a9f07221ed04",
+    "classId": "cecdc391-6fc9-4168-b195-efe291212053",
+    "teacherIds": [
+      "aaf79298-eb7b-42e9-b5d8-de70b1c114dc",
+      "76c58bab-9470-43b1-98c6-93db6079ae66"
+    ],
+    "studentNos": [
+      "8803619501",
+      "8803619502",
+      "8803619503",
+      "8803619504",
+      "8803619505",
+      "8803619506",
+      "8803619507",
+      "8803619508"
+    ],
+    "className": "一年级1班",
+    "studentCount": 8
+  },
+  "boundary": {
+    "emptyList": {
+      "desc": "GET 列表接口在无数据时返回 []",
+      "example": "GET /students?classId=<空班级>"
+    },
+    "notExistId": {
+      "desc": "对不存在的 ID 操作，预期 404/400 而非 500",
+      "example": "GET /students/__not_exist_id__"
+    },
+    "oversizedTake": {
+      "desc": "分页 take 超过 500 被截断防护",
+      "examples": [
+        "GET /classes?take=9999",
+        "GET /students?take=100000"
+      ]
+    },
+    "missingFields": {
+      "desc": "创建实体缺必填字段，预期 400",
+      "example": "POST /students { name: 'x' }"
+    },
+    "aiNotConfigured": {
+      "desc": "AI 接口在未配置密钥时应优雅返回（非 500）",
+      "example": "POST /ai/chat"
+    },
+    "networkUnreachable": {
+      "desc": "后端不可达时前端统一错误并 toast",
+      "example": "断网发起请求"
+    },
+    "longField": {
+      "desc": "超长字段（如 1000 字姓名）被校验/截断或 400",
+      "example": "POST /students { name: 'x'.repeat(1000) }"
+    },
+    "concurrentBind": {
+      "desc": "同一教师编号并发绑定，仅一人成功（悲观锁）",
+      "example": "并发 bind-by-number"
+    }
+  },
+  "notes": [
+    "toggle-parent-login -> 201 pw=123456"
+  ]
+}

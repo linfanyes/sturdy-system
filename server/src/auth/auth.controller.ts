@@ -7,6 +7,8 @@ import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 
 // 密码登录类接口：每分钟最多 10 次（按 IP + 用户名 防暴力破解）
 const LoginRateLimit = createRateLimitGuard(60_000, 10)
+// 微信登录/绑定类接口：每分钟最多 30 次（防枚举学号与滥用）
+const WechatRateLimit = createRateLimitGuard(60_000, 30)
 
 @Controller('auth')
 export class AuthController {
@@ -21,24 +23,28 @@ export class AuthController {
 
   /** 微信登录 → 若未绑定则返回 needsBind=true + openid */
   @Post('wechat-login')
+  @UseGuards(WechatRateLimit)
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.auth.wechatLogin(dto.code)
   }
 
   /** 微信绑教师账号 */
   @Post('bind-teacher')
+  @UseGuards(WechatRateLimit)
   bindTeacher(@Body() b: { code?: string; username?: string; password?: string; nickName?: string }) {
     return this.auth.bindWechatTeacher(b?.code || '', b?.username || '', b?.password || '', b?.nickName)
   }
 
   /** 微信绑家长（学号） */
   @Post('bind-parent')
+  @UseGuards(WechatRateLimit)
   bindParent(@Body() b: { code?: string; studentNo?: string; password?: string; nickName?: string; avatar?: string; relation?: string }) {
     return this.auth.bindWechatParent(b?.code || '', b?.studentNo || '', b?.password, b?.nickName, b?.avatar, b?.relation)
   }
 
   /** 微信统一绑定：输入教师编号或学生学号，自动判别身份 */
   @Post('bind-by-number')
+  @UseGuards(WechatRateLimit)
   bindByNumber(@Body() b: { code?: string; number?: string; nickName?: string; password?: string; avatar?: string; relation?: string }) {
     return this.auth.bindByNumber(b?.code || '', b?.number || '', b?.nickName || '', b?.password, b?.avatar, b?.relation)
   }

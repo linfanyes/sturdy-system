@@ -198,7 +198,8 @@ export class AuthService {
    */
   async wechatLogin(code: string) {
     if (!code) throw new BadRequestException('缺少 code')
-    const { openid, session_key } = await this.wechat.code2Session(code)
+    // session_key 仅用于服务端换取身份信息，不回传客户端，避免泄露后被滥用
+    const { openid } = await this.wechat.code2Session(code)
     if (!openid) throw new UnauthorizedException('登录失败')
 
     // 仅查家长身份（教师身份在微信登录中被忽略）
@@ -242,7 +243,7 @@ export class AuthService {
     }
 
     // 情况2：无家长身份 → 需要绑定家长账号（即使 openid 已绑定教师账号，也引导绑定家长身份）
-    return { needsBind: true, openid, sessionKey: session_key }
+    return { needsBind: true, openid }
   }
 
   /**
@@ -264,13 +265,14 @@ export class AuthService {
     if (!stu) throw new BadRequestException('学号不存在')
     if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
 
-    // 密码校验
-    if (stu.parentPasswordHash) {
-      if (!password) throw new UnauthorizedException('绑定需要家长密码')
-      const { valid, newHash } = verifyAndUpgrade(password, stu.parentPasswordHash)
-      if (!valid) throw new UnauthorizedException('家长密码错误')
-      if (newHash) stu.parentPasswordHash = newHash
+    // 密码校验：家长密码未初始化时禁止绑定，避免仅凭学号接管家长身份
+    if (!stu.parentPasswordHash) {
+      throw new BadRequestException('家长密码尚未初始化，请联系老师重新开启家长登录以设置密码')
     }
+    if (!password) throw new UnauthorizedException('绑定需要家长密码')
+    const { valid, newHash } = verifyAndUpgrade(password, stu.parentPasswordHash)
+    if (!valid) throw new UnauthorizedException('家长密码错误')
+    if (newHash) stu.parentPasswordHash = newHash
 
     // 查找或创建 Parent 记录（同一 openid 对应同一 Parent）
     let parent = await this.parentRepo.findOne({ where: { openId: openid } })
@@ -338,14 +340,15 @@ export class AuthService {
     const stu = await this.findStudentByNoForLogin(number)
     if (stu) {
       if (!stu.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未被老师授权')
-      // 校验家长密码（若已设）
-      if (stu.parentPasswordHash) {
-        if (!password) throw new UnauthorizedException('绑定需要家长密码')
-        const { valid, newHash } = verifyAndUpgrade(password, stu.parentPasswordHash)
-        if (!valid) throw new UnauthorizedException('家长密码错误')
-        if (newHash) {
-          stu.parentPasswordHash = newHash
-        }
+      // 校验家长密码：未初始化时禁止绑定，避免仅凭学号接管家长身份
+      if (!stu.parentPasswordHash) {
+        throw new BadRequestException('家长密码尚未初始化，请联系老师重新开启家长登录以设置密码')
+      }
+      if (!password) throw new UnauthorizedException('绑定需要家长密码')
+      const { valid, newHash } = verifyAndUpgrade(password, stu.parentPasswordHash)
+      if (!valid) throw new UnauthorizedException('家长密码错误')
+      if (newHash) {
+        stu.parentPasswordHash = newHash
       }
       // 查找或创建 Parent 记录
       let parent = await this.parentRepo.findOne({ where: { openId: openid } })
@@ -394,6 +397,7 @@ export class AuthService {
   async passwordLogin(username: string, password: string) {
     const user = await this.users.findByUsername(username)
     if (!user || !user.passwordHash) throw new UnauthorizedException('账号不存在或未设密码')
+    if (user.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
     const { valid, newHash } = verifyAndUpgrade(password, user.passwordHash)
     if (!valid) throw new UnauthorizedException('密码错误')
     if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }

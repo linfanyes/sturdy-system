@@ -82,6 +82,7 @@ function classifyPages(pages) {
  * 新建校管账号可能因后端多实例复制延迟在浏览器跨域链路短暂 401，故登录整体重试。
  */
 async function login(page, cfg, base) {
+  if (cfg.role === 'parent') return parentLogin(page, cfg, base)
   const MAX = 5
   let lastErr = ''
   for (let attempt = 1; attempt <= MAX; attempt++) {
@@ -134,6 +135,70 @@ async function login(page, cfg, base) {
   throw new Error(`登录失败（已重试 ${MAX} 次）: ${lastErr}`)
 }
 
+/**
+ * 家长端登录：走 pages/parent-login 的「用学号登录」表单。
+ * 与教师/校管的账号密码登录页不同：第一个输入是 type=number（学号），
+ * 登录按钮文案为「用学号登录」，登录成功 redirectTo('/pages/parent/parent')。
+ * 家长账号同样可能因后端多实例复制延迟在首登时 401，故整体重试。
+ */
+async function parentLogin(page, cfg, base) {
+  const MAX = 5
+  let lastErr = ''
+  for (let attempt = 1; attempt <= MAX; attempt++) {
+    try {
+      await page.goto(`${base}/#/pages/parent-login/parent-login`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      })
+      await page.waitForSelector('input', { timeout: 20000 })
+      await sleep(600)
+
+      const inputs = await page.$$('input')
+      let no, pwd
+      for (const el of inputs) {
+        const type = await page.evaluate((e) => e.type, el)
+        if (type === 'password') pwd = el
+        else no = no || el // 第一个非密码框即学号
+      }
+      if (!no || !pwd) throw new Error('家长登录页未找到学号/密码输入框')
+
+      // 直接 type（内部自动 focus），规避 number 输入框在 H5 里 click 中心被遮挡导致的
+      // "Node is either not clickable" 问题；type 走真实键盘事件，uni v-model 正常同步。
+      await no.type(cfg.user, { delay: 25 }) // cfg.user = 学号
+      await pwd.type(cfg.pass, { delay: 25 })
+
+      const typed = await page.evaluate(() =>
+        [...document.querySelectorAll('input')].map((e) => e.value).join('|'),
+      )
+      console.log(`[mini-smoke] 家长已键入(${attempt}): ${typed}`)
+
+      const clicked = await page.evaluate(() => {
+        const btns = [...document.querySelectorAll('uni-button, button')]
+        const target = btns.find((b) => /用学号登录/.test(b.innerText || ''))
+        if (!target) return false
+        target.click()
+        return true
+      })
+      if (!clicked) throw new Error('家长登录页未找到「用学号登录」按钮')
+
+      await page
+        .waitForFunction(() => !location.hash.includes('/pages/parent-login/'), { timeout: 25000 })
+        .catch(() => {
+          throw new Error(`家长登录未跳转，学号 ${cfg.user} 可能不可用或接口失败`)
+        })
+      await sleep(1200)
+      return // 登录成功
+    } catch (e) {
+      lastErr = e.message
+      console.log(
+        `[mini-smoke] 家长登录尝试 ${attempt} 失败: ${e.message}，${attempt < MAX ? '2.5s 后重试' : '放弃'}`,
+      )
+      if (attempt < MAX) await sleep(2500)
+    }
+  }
+  throw new Error(`家长登录失败（已重试 ${MAX} 次）: ${lastErr}`)
+}
+
 const goto = async (page, route) => {
   await page.evaluate((r) => {
     window.location.hash = `/${r}`
@@ -174,7 +239,7 @@ async function main() {
   const byRole = classifyPages(readMiniPages())
   console.log(
     `[mini-smoke] 页面清单: super=${byRole.super.length} school_admin=${byRole.school_admin.length} ` +
-      `teacher=${byRole.teacher.length} parent=${byRole.parent.length}(未跑，需家长账号)`,
+      `teacher=${byRole.teacher.length} parent=${byRole.parent.length}`,
   )
 
   let roles = [
@@ -197,6 +262,13 @@ async function main() {
       user: process.env.SMOKE_TEACHER_USER || 'teacher1',
       pass: process.env.SMOKE_TEACHER_PASS || '123456',
       routes: byRole.teacher,
+      viewport: { width: 390, height: 844 },
+    },
+    {
+      role: 'parent',
+      user: process.env.SMOKE_PARENT_NO || '8803619508',
+      pass: process.env.SMOKE_PARENT_PASS || '123456',
+      routes: byRole.parent,
       viewport: { width: 390, height: 844 },
     },
   ]

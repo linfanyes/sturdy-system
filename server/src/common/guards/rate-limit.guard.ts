@@ -20,6 +20,19 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>()
 
+// 定期清理过期计数条目，避免长期运行导致内存缓慢增长
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000
+const cleanupTimer = setInterval(() => {
+  const now = Date.now()
+  for (const [k, v] of store) {
+    if (now >= v.resetAt) store.delete(k)
+  }
+}, CLEANUP_INTERVAL_MS)
+// 不阻止进程退出
+if (typeof (cleanupTimer as any).unref === 'function') {
+  ;(cleanupTimer as any).unref()
+}
+
 /**
  * 工厂函数：创建限速守卫实例
  * @param windowMs  窗口时长（毫秒），默认 60_000（1 分钟）

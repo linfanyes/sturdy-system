@@ -1,0 +1,1216 @@
+{
+  "base": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
+  "generatedAt": "2026-08-03T23:20:00.062Z",
+  "total": 241,
+  "passed": 241,
+  "failed": 0,
+  "errors": 0,
+  "passRate": "100.0",
+  "results": [
+    {
+      "name": "unified-login(admin) 返回超级管理员",
+      "ok": true,
+      "detail": "status=201 role=super"
+    },
+    {
+      "name": "unified-login(校管) 返回学校管理员",
+      "ok": true,
+      "detail": "status=201 role=school_admin"
+    },
+    {
+      "name": "unified-login(教师) 返回教师",
+      "ok": true,
+      "detail": "status=201 role=teacher"
+    },
+    {
+      "name": "admin/login(admin) 返回 token",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "unified-login 错误密码 → 401",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "unified-login 空参数 → 400",
+      "ok": true,
+      "detail": "status=400"
+    },
+    {
+      "name": "无 token 访问 /classes → 401",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "无效 token 访问 /classes → 401",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "parent-auth/login(家长) 返回 token",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "教师访问超管接口 /admin/schools → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "校管访问超管接口 /admin/schools → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "超管访问 /admin/schools → 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师访问 /config/app → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "超管访问 /config/app → 200(密钥脱敏)",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师访问 /school-admin/dashboard → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "校管访问 /school-admin/dashboard → 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师访问 /parent-auth/me → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "教师访问 /classes → 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师读取 /ai-providers → 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师写入 /ai-providers → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "学生-创建",
+      "ok": true,
+      "detail": "id=619a121b"
+    },
+    {
+      "name": "学生-列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "学生-读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "学生-更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notes] 创建",
+      "ok": true,
+      "detail": "id=0134c626"
+    },
+    {
+      "name": "[notes] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notes] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notes] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notes] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[todos] 创建",
+      "ok": true,
+      "detail": "id=a8c233fb"
+    },
+    {
+      "name": "[todos] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[todos] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[todos] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[todos] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[picker-history] 创建",
+      "ok": true,
+      "detail": "id=c77fc7b8"
+    },
+    {
+      "name": "[picker-history] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[picker-history] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[picker-history] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[picker-history] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-categories] 创建",
+      "ok": true,
+      "detail": "id=8f782642"
+    },
+    {
+      "name": "[award-categories] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-categories] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-categories] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-categories] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-records] 创建",
+      "ok": true,
+      "detail": "id=5360a630"
+    },
+    {
+      "name": "[award-records] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-records] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-records] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[award-records] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[duty-rosters] 创建",
+      "ok": true,
+      "detail": "id=c4ca011c"
+    },
+    {
+      "name": "[duty-rosters] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[duty-rosters] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[duty-rosters] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[duty-rosters] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[teaching-calendar] 创建",
+      "ok": true,
+      "detail": "id=791e327f"
+    },
+    {
+      "name": "[teaching-calendar] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[teaching-calendar] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[teaching-calendar] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[teaching-calendar] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/papers] 创建",
+      "ok": true,
+      "detail": "id=8ec2996c"
+    },
+    {
+      "name": "[generated/papers] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/papers] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/papers] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/papers] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/lesson-plans] 创建",
+      "ok": true,
+      "detail": "id=fdcfaadf"
+    },
+    {
+      "name": "[generated/lesson-plans] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/lesson-plans] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/lesson-plans] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/lesson-plans] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/knowledges] 创建",
+      "ok": true,
+      "detail": "id=d92e952b"
+    },
+    {
+      "name": "[generated/knowledges] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/knowledges] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/knowledges] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/knowledges] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/queries] 创建",
+      "ok": true,
+      "detail": "id=35003f17"
+    },
+    {
+      "name": "[generated/queries] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/queries] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/queries] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[generated/queries] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reward-records] 创建",
+      "ok": true,
+      "detail": "id=e31e675b"
+    },
+    {
+      "name": "[reward-records] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reward-records] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reward-records] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reward-records] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[score-records] 创建",
+      "ok": true,
+      "detail": "id=ede58c9d"
+    },
+    {
+      "name": "[score-records] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[score-records] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[score-records] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[score-records] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[group-scores] 创建",
+      "ok": true,
+      "detail": "id=e4fc7aba"
+    },
+    {
+      "name": "[group-scores] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[group-scores] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[group-scores] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[group-scores] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[checkins] 创建",
+      "ok": true,
+      "detail": "id=4f11478a"
+    },
+    {
+      "name": "[checkins] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[checkins] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[checkins] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[checkins] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reading-logs] 创建",
+      "ok": true,
+      "detail": "id=3a220f8a"
+    },
+    {
+      "name": "[reading-logs] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reading-logs] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reading-logs] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[reading-logs] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[home-visits] 创建",
+      "ok": true,
+      "detail": "id=13db796e"
+    },
+    {
+      "name": "[home-visits] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[home-visits] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[home-visits] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[home-visits] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[parent-contacts] 创建",
+      "ok": true,
+      "detail": "id=85511274"
+    },
+    {
+      "name": "[parent-contacts] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[parent-contacts] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[parent-contacts] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[parent-contacts] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notice-templates] 创建",
+      "ok": true,
+      "detail": "id=cc599806"
+    },
+    {
+      "name": "[notice-templates] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notice-templates] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notice-templates] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notice-templates] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-expenses] 创建",
+      "ok": true,
+      "detail": "id=093c947c"
+    },
+    {
+      "name": "[class-expenses] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-expenses] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-expenses] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-expenses] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-activities] 创建",
+      "ok": true,
+      "detail": "id=4d9ec7d1"
+    },
+    {
+      "name": "[class-activities] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-activities] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-activities] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-activities] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-duty-configs] 创建",
+      "ok": true,
+      "detail": "id=232daa22"
+    },
+    {
+      "name": "[class-duty-configs] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-duty-configs] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-duty-configs] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-duty-configs] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-galleries] 创建",
+      "ok": true,
+      "detail": "id=897e30ea"
+    },
+    {
+      "name": "[class-galleries] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-galleries] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-galleries] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[class-galleries] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[my-galleries] 创建",
+      "ok": true,
+      "detail": "id=e90a5ec6"
+    },
+    {
+      "name": "[my-galleries] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[my-galleries] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[my-galleries] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[my-galleries] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[seat-layouts] 创建",
+      "ok": true,
+      "detail": "id=79506c85"
+    },
+    {
+      "name": "[seat-layouts] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[seat-layouts] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[seat-layouts] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[seat-layouts] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[growth-entries] 创建",
+      "ok": true,
+      "detail": "id=78f2f1f0"
+    },
+    {
+      "name": "[growth-entries] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[growth-entries] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[growth-entries] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[growth-entries] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[behavior-records] 创建",
+      "ok": true,
+      "detail": "id=7110f9e7"
+    },
+    {
+      "name": "[behavior-records] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[behavior-records] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[behavior-records] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[behavior-records] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[attendances] 创建",
+      "ok": true,
+      "detail": "id=49100c1c"
+    },
+    {
+      "name": "[attendances] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[attendances] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[attendances] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[attendances] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[homework] 创建",
+      "ok": true,
+      "detail": "id=a2e83334"
+    },
+    {
+      "name": "[homework] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[homework] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[homework] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[homework] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[resources] 创建",
+      "ok": true,
+      "detail": "id=a380afcd"
+    },
+    {
+      "name": "[resources] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[resources] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[resources] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[resources] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[schedules] 创建",
+      "ok": true,
+      "detail": "id=a3c7eb31"
+    },
+    {
+      "name": "[schedules] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[schedules] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[schedules] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[schedules] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notices] 创建",
+      "ok": true,
+      "detail": "id=361229e7"
+    },
+    {
+      "name": "[notices] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notices] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notices] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[notices] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[semesters] 创建",
+      "ok": true,
+      "detail": "id=96ed038c"
+    },
+    {
+      "name": "[semesters] 列表返回",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[semesters] 读取单个",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[semesters] 更新",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "[semesters] 删除",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "班级看板 GET /classes/:id/dashboard",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "成绩-合并导入 POST /grades/merge",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "考试-创建 POST /exams",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "备份-创建 POST /backups",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "备份-列表 GET /backups",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "通知-列表 GET /notifications",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "通知-全部已读",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "IM-UserSig POST /im/user-sig",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "IM-家长花名册 GET /im/parents",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "安全-文本审核 POST /security/msg-check",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "教学日历-按月查询",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "用户-个人资料 GET /users/me",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "配置-教师 AI 设置 GET /config/ai",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-学校列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-校管列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-教师列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-审计日志",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-创建校管",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "超管-更新校管",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "超管-创建 AI 服务商",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "超管-更新 AI 服务商",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "校管-数据看板",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "校管-教师列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "校管-班级列表",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "校管-创建教师",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "校管-更新教师",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/me",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/notices",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/exams",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/homework",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/attendance",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/schedule",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "家长-/parent-auth/communications",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "教师访问 /parent-auth/me → 401/403",
+      "ok": true,
+      "detail": "status=401"
+    },
+    {
+      "name": "AI /ai/chat",
+      "ok": true,
+      "detail": "status=201 \"data: {\\\"error\\\":\\\"未配置 AI 密钥，请到「后端配置」中填写\\\"}\\n\\ndata: [DONE]\\n\\n\""
+    },
+    {
+      "name": "AI /ai/parse",
+      "ok": true,
+      "detail": "status=400 {\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"未配置 AI 密钥，请到「后端配置」中填写\"}"
+    },
+    {
+      "name": "AI /ai/chat-sync",
+      "ok": true,
+      "detail": "status=400 {\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"未配置 AI 密钥，请到「后端配置」中填写\"}"
+    },
+    {
+      "name": "AI /ai/analyze-exam",
+      "ok": true,
+      "detail": "status=201 {\"content\":\"考试不存在或无权限\"}"
+    },
+    {
+      "name": "AI /ai/diagnose",
+      "ok": true,
+      "detail": "status=201 {\"content\":\"学生不存在或无权限\"}"
+    },
+    {
+      "name": "AI /ai/gen-image",
+      "ok": true,
+      "detail": "status=400 {\"statusCode\":400,\"code\":\"VALIDATION_ERROR\",\"message\":\"未配置 AI 密钥，请到「后端配置」中填写\"}"
+    },
+    {
+      "name": "AI /ai/asr",
+      "ok": true,
+      "detail": "status=201 {\"text\":\"\"}"
+    },
+    {
+      "name": "AI /ai/ocr",
+      "ok": true,
+      "detail": "status=201 {\"text\":\"\"}"
+    },
+    {
+      "name": "AI-考试分析越权隔离（非 200 即受控）",
+      "ok": true,
+      "detail": "status=201"
+    },
+    {
+      "name": "校验-空学生创建 → 400",
+      "ok": true,
+      "detail": "status=400"
+    },
+    {
+      "name": "校验-缺字段学生 → 400",
+      "ok": true,
+      "detail": "status=400"
+    },
+    {
+      "name": "边界-不存在学生ID",
+      "ok": true,
+      "detail": "status=404"
+    },
+    {
+      "name": "边界-删除不存在学生 → 404",
+      "ok": true,
+      "detail": "status=404"
+    },
+    {
+      "name": "分页-take=9999 不报错",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "分页-take 截断≤500",
+      "ok": true,
+      "detail": "返回 1"
+    },
+    {
+      "name": "分页-take=100000 被限制",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "健康检查 GET /health",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "公开配置 GET /config/public",
+      "ok": true,
+      "detail": "status=200"
+    }
+  ]
+}

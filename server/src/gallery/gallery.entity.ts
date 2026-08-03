@@ -17,6 +17,6 @@ export class ClassGallery extends BaseEntity {
   @Column() title: string
   @Column({ type: 'text', nullable: true }) description: string
   @Column({ default: '' }) date: string
-  // 图片以 base64 dataURL 数组直存，用 LONGTEXT(4GB) 容纳多张照片
-  @Column({ type: 'text', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
+  // 图片以 base64 dataURL 数组直存，用 LONGTEXT 容纳多张照片（TEXT 仅 64KB 会溢出）
+  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }
