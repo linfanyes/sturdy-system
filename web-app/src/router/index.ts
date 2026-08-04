@@ -32,6 +32,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'schools', name: 'super-schools', component: () => import('@/views/super/Schools.vue'), meta: { title: '学校管理' } },
       { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '校管理员' } },
       { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },
+      { path: 'account-clear', name: 'super-account-clear', component: () => import('@/views/super/AccountClear.vue'), meta: { title: '清除业务数据' } },
       { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
       { path: 'ai-providers', name: 'super-ai-providers', component: () => import('@/views/super/AiProviders.vue'), meta: { title: 'AI 服务商' } },
       { path: 'school-features', name: 'super-school-features', component: () => import('@/views/super/SchoolFeatures.vue'), meta: { title: '学校功能包' } },

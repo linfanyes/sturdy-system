@@ -11,7 +11,7 @@ import {
   GraduationCap, Sparkles, FileText, FileQuestion,
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
-  Gamepad2, LanguagesIcon, ScrollText, Mail,
+  Gamepad2, LanguagesIcon, ScrollText, Mail, Trash2,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -276,6 +276,7 @@ const superMenu: MenuCategory[] = [
       { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
       { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
       { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
+      { name: 'super-account-clear', label: '清除业务数据', to: '/super/account-clear', icon: Trash2, color: 'cocoa' },
     ] }],
   },
   {
@@ -548,36 +549,36 @@ function navigateTo(to: string) {
         </template>
         <!-- 超管：仪表盘直达 + 账户管理/设置 可展开分类 -->
         <template v-else-if="auth.role === 'super'">
-          <router-link
-            v-for="cat in superMenu.filter((c) => c.direct)"
-            :key="cat.label"
-            :to="(cat.groups[0]?.items[0]?.to) || '#'"
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
-          >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+          <template v-for="cat in superMenu" :key="cat.label">
+            <router-link
+              v-if="cat.direct"
+              :to="(cat.groups[0]?.items[0]?.to) || '#'"
+              class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             >
-              <component :is="cat.icon" class="w-5 h-5" />
-            </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
-          </router-link>
-          <button
-            v-for="cat in superCats"
-            :key="cat.label"
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
-            @click="toggleCat(cat.label)"
-          >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+              <div
+                class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+                :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+              >
+                <component :is="cat.icon" class="w-5 h-5" />
+              </div>
+              <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            </router-link>
+            <button
+              v-else
+              class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+              :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              @click="toggleCat(cat.label)"
             >
-              <component :is="cat.icon" class="w-5 h-5" />
-            </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
-          </button>
+              <div
+                class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+                :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+              >
+                <component :is="cat.icon" class="w-5 h-5" />
+              </div>
+              <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            </button>
+          </template>
         </template>
         <!-- 其他非教师扁平菜单（校管/家长） -->
         <template v-else>
