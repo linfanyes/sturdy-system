@@ -60,3 +60,5 @@ scripts/gen-mini-report.mjs
 scripts/gen-test-case-doc.mjs
 scripts/gen-test-data.mjs
 scripts/repair-e2e.mjs
+# 本机 H5 重建时的旧产物备份目录（rename 大法绕过 safe-delete 用）
+.h5-old-*/

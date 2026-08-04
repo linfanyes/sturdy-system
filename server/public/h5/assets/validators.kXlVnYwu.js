@@ -1,0 +1,1 @@
+import"./index-DPN-RHWH.js";function n(n){return null!=n&&""!==n&&/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/.test(String(n))}function r(n,r,t){const u=Number(n);return!Number.isNaN(u)&&(!(null!=r&&u<r)&&!(null!=t&&u>t))}function t(n,t,u){const e=Number(n);return!!Number.isInteger(e)&&r(e,t,u)}export{r as a,n as b,t as i};

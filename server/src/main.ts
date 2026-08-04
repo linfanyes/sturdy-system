@@ -126,6 +126,13 @@ async function bootstrap() {
   }
   app.use(express.static(webAdminPath))
 
+  // 托管小程序 H5 构建产物（uni-app build:h5），随容器部署，访问 /h5
+  const h5Path = join(__dirname, '..', 'public', 'h5')
+  if (!fs.existsSync(h5Path)) {
+    console.warn('⚠️ server/public/h5 不存在，/h5 静态托管将跳过（请先 build:h5 并同步到 server/public/h5）')
+  }
+  app.use('/h5', express.static(h5Path))
+
   // —— 安全启动自检 ——
   const jwtSecret = config.get<string>('JWT_SECRET')
   if (!jwtSecret || jwtSecret === 'change_me_to_a_long_random_secret') {
