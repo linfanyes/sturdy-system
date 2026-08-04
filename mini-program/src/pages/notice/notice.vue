@@ -212,7 +212,7 @@ async function save() {
     if (r && r.pass === false) {
       return uni.showToast({ title: '内容未通过安全审核：' + (r.reason || ''), icon: 'none' })
     }
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
   saving.value = true
   try {
     if (editing.value) {

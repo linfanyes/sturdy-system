@@ -90,7 +90,7 @@ const rejectTarget = ref<InfoUpdate | null>(null)
 const rejectNote = ref('')
 
 async function handleApprove(item: InfoUpdate) {
-  if (!confirm(`确定通过「${item.studentName}」的信息修改申请？通过后将直接更新学生信息。`)) return
+  if (!await confirm(`确定通过「${item.studentName}」的信息修改申请？通过后将直接更新学生信息。`)) return
   reviewing.value = true
   try {
     await request.post(`/student-info-updates/${item.id}/review`, { action: 'approve' })

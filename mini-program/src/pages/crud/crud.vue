@@ -327,14 +327,19 @@ function chooseImage() {
       } finally {
         uni.hideLoading()
       }
-      readBase64(finalPath).then((b) =>
-        (picked.value = {
-          name: (finalPath || '').split('/').pop() || 'image.jpg',
-          size: finalSize,
-          data: b,
-          mode: 'image',
-        }),
-      )
+      readBase64(finalPath)
+        .then((b) =>
+          (picked.value = {
+            name: (finalPath || '').split('/').pop() || 'image.jpg',
+            size: finalSize,
+            data: b,
+            mode: 'image',
+          }),
+        )
+        .catch((e) => {
+          console.error('[mini catch]', e)
+          uni.showToast({ title: '图片读取失败', icon: 'none' })
+        })
       uni.showToast({ title: '已压缩 ' + Math.round(finalSize / 1024) + 'KB', icon: 'none' })
     },
     fail: () => {},
@@ -350,14 +355,19 @@ function chooseFile() {
       const f = res.tempFiles[0]
       if (f.size > 4 * 1024 * 1024)
         return uni.showToast({ title: '文件过大（>4MB）', icon: 'none' })
-      readBase64(f.path).then((b) =>
-        (picked.value = {
-          name: f.name,
-          size: f.size,
-          data: b,
-          mode: f.name.toLowerCase().endsWith('.csv') ? 'csv' : 'xlsx',
-        }),
-      )
+      readBase64(f.path)
+        .then((b) =>
+          (picked.value = {
+            name: f.name,
+            size: f.size,
+            data: b,
+            mode: f.name.toLowerCase().endsWith('.csv') ? 'csv' : 'xlsx',
+          }),
+        )
+        .catch((e) => {
+          console.error('[mini catch]', e)
+          uni.showToast({ title: '文件读取失败', icon: 'none' })
+        })
     },
     fail: () => {},
   })

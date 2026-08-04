@@ -203,7 +203,7 @@ async function submitForm() {
 
 /* ============ 删除 ============ */
 async function handleDelete(c: ClassItem) {
-  if (!confirm(`确定删除班级「${c.name}」？此操作不可恢复。`)) return
+  if (!await confirm(`确定删除班级「${c.name}」？此操作不可恢复。`)) return
   try {
     await deleteClass(c.id)
     await loadClasses()

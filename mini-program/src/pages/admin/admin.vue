@@ -28,7 +28,10 @@
 
       <!-- 顶部 Tab 切换 -->
       <view class="tabs">
+        <text class="tab" :class="{ on: tab === 'dashboard' }" @click="switchTab('dashboard')">📊 仪表盘</text>
         <text class="tab" :class="{ on: tab === 'school' }" @click="switchTab('school')">🏫 学校</text>
+        <text class="tab" :class="{ on: tab === 'teachers' }" @click="switchTab('teachers')">👩‍🏫 教师</text>
+        <text class="tab" :class="{ on: tab === 'students' }" @click="switchTab('students')">👨‍🎓 学生</text>
         <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 校管理员</text>
         <text class="tab" :class="{ on: tab === 'config' }" @click="switchTab('config')">⚙️ 配置</text>
         <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI厂商</text>
@@ -471,6 +474,18 @@ async function loadAdmins() {
 
 // Tab 切换：按页签按需加载，避免「配置」页签误加载并展示学校管理员列表
 function switchTab(t) {
+  if (t === 'dashboard') {
+    uni.redirectTo({ url: '/pages/admin/dashboard' })
+    return
+  }
+  if (t === 'teachers') {
+    uni.redirectTo({ url: '/pages/admin/teachers' })
+    return
+  }
+  if (t === 'students') {
+    uni.redirectTo({ url: '/pages/admin/students' })
+    return
+  }
   tab.value = t
   if (t === 'school') loadSchools()
   if (t === 'admin') loadAdmins()

@@ -48,7 +48,7 @@ export async function ensureSchoolAdmin(apiBase, { superUser, superPass, preferU
 
   // 2) 用超管身份新建临时账号
   const su = await login(apiBase, superUser, superPass)
-  const schools = await callApi(apiBase, '/admin/schools?skip=0&take=1', { token: su.token })
+  const schools = await callApi(apiBase, '/admin/schools?skip=0&take=10', { token: su.token })
   const list = Array.isArray(schools) ? schools : schools?.items || []
   if (!list.length) throw new Error('平台内没有任何学校，无法创建校管测试账号')
 

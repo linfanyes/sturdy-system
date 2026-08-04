@@ -156,7 +156,7 @@ async function submitForm() {
 
 /** 删除笔记 */
 async function deleteNote(note: Note) {
-  if (!confirm('确定删除该笔记？')) return
+  if (!await confirm('确定删除该笔记？')) return
   try {
     await request.delete(`/notes/${note.id}`)
     notes.value = notes.value.filter(n => n.id !== note.id)

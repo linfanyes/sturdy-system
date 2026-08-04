@@ -264,7 +264,7 @@ async function saveAi() {
 
 /** 恢复平台默认：重新加载平台配置但不保存教师个人覆盖 */
 async function resetAiDefaults() {
-  if (!confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
+  if (!await confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
   saving.value = true
   try {
     const res = await request.get('/config/teacher/ai-defaults').catch(() => null)

@@ -107,7 +107,7 @@ async function submit() {
 }
 
 async function del(row: any) {
-  if (!confirm('确定删除该值日配置？')) return
+  if (!await confirm('确定删除该值日配置？')) return
   try {
     await request.delete(`/class-duty-configs/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)

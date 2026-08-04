@@ -102,7 +102,7 @@ async function submit() {
 }
 
 async function remove(row: any) {
-  if (!confirm(`确定删除「${row.dutyName}」职务？`)) return
+  if (!await confirm(`确定删除「${row.dutyName}」职务？`)) return
   try {
     await deleteClassDutyConfig(row.id)
     items.value = items.value.filter(x => x.id !== row.id)

@@ -146,7 +146,7 @@ async function submitForm() {
 }
 
 async function handleDelete(n: NoticeItem) {
-  if (!confirm('确定删除？')) return
+  if (!await confirm('确定删除？')) return
   try {
     await request.delete('/notices/' + n.id)
     notices.value = notices.value.filter(x => x.id !== n.id)
@@ -178,7 +178,7 @@ async function setEnded(n: NoticeItem, ended: boolean) {
 const pushing = ref<Record<string, boolean>>({})
 async function pushToParents(n: NoticeItem) {
   if (pushing.value[n.id]) return
-  if (!confirm(`确定将公告「${n.title}」推送给家长？`)) return
+  if (!await confirm(`确定将公告「${n.title}」推送给家长？`)) return
   pushing.value[n.id] = true
   try {
     await request.post('/security/push-notice', { noticeId: n.id })

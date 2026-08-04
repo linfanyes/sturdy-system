@@ -75,7 +75,7 @@ async function submit() {
 }
 
 async function remove(row: any) {
-  if (!confirm('确定删除该错题？')) return
+  if (!await confirm('确定删除该错题？')) return
   try {
     await deleteMathMistake(row.id)
     items.value = items.value.filter(x => x.id !== row.id)

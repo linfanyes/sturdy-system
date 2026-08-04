@@ -158,7 +158,7 @@ function qs(params) {
 
 async function fetchList(path, loadingText) {
   loading.value = true
-  try { uni.showLoading({ title: loadingText || '加载中', mask: false }) } catch (e) {}
+  try { uni.showLoading({ title: loadingText || '加载中', mask: false }) } catch (e) { console.error('[mini catch]', e) }
   try {
     const data = await parentApi.get(path)
     if (Array.isArray(data)) return data
@@ -169,7 +169,7 @@ async function fetchList(path, loadingText) {
     uni.showToast({ title: e.message || '加载失败', icon: 'none' })
     return []
   } finally {
-    try { uni.hideLoading() } catch (e) {}
+    try { uni.hideLoading() } catch (e) { console.error('[mini catch]', e) }
     loading.value = false
   }
 }

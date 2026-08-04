@@ -103,7 +103,7 @@ async function submit() {
 }
 
 async function del(row: any) {
-  if (!confirm(`确定删除「${row.name}」？`)) return
+  if (!await confirm(`确定删除「${row.name}」？`)) return
   try {
     await request.delete(`/duty-rosters/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)

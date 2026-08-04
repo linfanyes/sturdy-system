@@ -35,6 +35,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
       { path: 'ai-providers', name: 'super-ai-providers', component: () => import('@/views/super/AiProviders.vue'), meta: { title: 'AI 服务商' } },
       { path: 'school-features', name: 'super-school-features', component: () => import('@/views/super/SchoolFeatures.vue'), meta: { title: '学校功能包' } },
+      { path: 'teachers', name: 'super-teachers', component: () => import('@/views/super/Teachers.vue'), meta: { title: '教师管理' } },
+      { path: 'students', name: 'super-students', component: () => import('@/views/super/Students.vue'), meta: { title: '学生管理' } },
     ],
   },
   // 校管

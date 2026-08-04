@@ -127,7 +127,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
 
   try {
     // 行为/表现记录
-    const behaviors = await request.get('/behaviors', { params: { classId: classId.value, take: 100 } })
+    const behaviors = await request.get('/behavior-records', { params: { classId: classId.value, take: 100 } })
     const behaviorList = Array.isArray(behaviors) ? behaviors : (behaviors?.items || [])
     const myBehaviors = behaviorList.filter((b: any) => b.studentId === stu.id || b.studentName === stu.name)
     if (myBehaviors.length) {
@@ -138,7 +138,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
 
   try {
     // 奖惩记录
-    const rewards = await request.get('/rewards', { params: { classId: classId.value, take: 100 } })
+    const rewards = await request.get('/reward-records', { params: { classId: classId.value, take: 100 } })
     const rewardList = Array.isArray(rewards) ? rewards : (rewards?.items || [])
     const myRewards = rewardList.filter((r: any) => r.studentId === stu.id || r.studentName === stu.name)
     if (myRewards.length) {

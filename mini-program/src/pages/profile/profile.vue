@@ -371,7 +371,7 @@ function resetData() {
               for (const item of (list || [])) {
                 if (item && item.id) tasks.push(api.del(p + '/' + item.id))
               }
-            } catch (e) {}
+            } catch (e) { console.error('[mini catch]', e) }
           }
           const { success, failed } = await batchRun(tasks)
           uni.hideLoading()

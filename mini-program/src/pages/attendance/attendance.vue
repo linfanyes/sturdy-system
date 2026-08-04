@@ -173,7 +173,7 @@ async function loadAtt() {
     try {
       const arr = safeParse(rec.records, [])
       for (const r of arr) map.value[r.studentId] = normalizeStatus(r.status)
-    } catch (e) {}
+    } catch (e) { console.error('[mini catch]', e) }
   }
   for (const s of students.value) if (!map.value[s.id]) map.value[s.id] = '出勤'
 }

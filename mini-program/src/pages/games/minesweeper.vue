@@ -123,7 +123,7 @@ function readBest(i) {
   try { return uni.getStorageSync('game_best_minesweeper_' + i) || 0 } catch (e) { return 0 }
 }
 function writeBest(i, v) {
-  try { uni.setStorageSync('game_best_minesweeper_' + i, v) } catch (e) {}
+  try { uni.setStorageSync('game_best_minesweeper_' + i, v) } catch (e) { console.error('[mini catch]', e) }
 }
 
 function makeEmpty() {

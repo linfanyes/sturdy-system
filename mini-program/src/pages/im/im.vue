@@ -256,7 +256,7 @@ async function initTim(sdkAppId, userSig) {
     if (sdkReady && !connected.value) {
       try {
         await tim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
-      } catch (e) {}
+      } catch (e) { console.error('[mini catch]', e) }
     }
     return
   }
@@ -296,10 +296,10 @@ async function openConv(id) {
   try {
     const res = await tim.getMessageList({ conversationID: id })
     conv.messages = res.data.messageList.map(normMsg)
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
   try {
     await tim.setMessageRead({ conversationID: id })
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
   scrollToBottom()
 }
 
@@ -314,14 +314,14 @@ async function openByTo(to, name, type, sub = '') {
   if (!demoMode.value) {
     try {
       await tim.getConversationProfile({ conversationID: id })
-    } catch (e) {}
+    } catch (e) { console.error('[mini catch]', e) }
     try {
       const res = await tim.getMessageList({ conversationID: id })
       conv.messages = res.data.messageList.map(normMsg)
-    } catch (e) {}
+    } catch (e) { console.error('[mini catch]', e) }
     try {
       await tim.setMessageRead({ conversationID: id })
-    } catch (e) {}
+    } catch (e) { console.error('[mini catch]', e) }
   }
   scrollToBottom()
 }
@@ -419,18 +419,20 @@ function classLabel(c) {
 
 function pickClass() {
   return new Promise((resolve) => {
-    loadClasses().then((list) => {
-      if (!list.length) {
-        uni.showToast({ title: '暂无班级', icon: 'none' })
-        return resolve(null)
-      }
-      if (list.length === 1) return resolve(list[0])
-      uni.showActionSheet({
-        itemList: list.map(classLabel),
-        success: (r) => resolve(list[r.tapIndex]),
-        fail: () => resolve(null),
+    loadClasses()
+      .then((list) => {
+        if (!list.length) {
+          uni.showToast({ title: '暂无班级', icon: 'none' })
+          return resolve(null)
+        }
+        if (list.length === 1) return resolve(list[0])
+        uni.showActionSheet({
+          itemList: list.map(classLabel),
+          success: (r) => resolve(list[r.tapIndex]),
+          fail: () => resolve(null),
+        })
       })
-    })
+      .catch(() => resolve(null))
   })
 }
 
@@ -485,7 +487,7 @@ async function createClassGroup() {
     uni.showToast({ title: '班级群已创建', icon: 'success' })
     try {
       await api.post('/im/class-group', { classId: cls.id, groupId: gid })
-    } catch (e) {}
+    } catch (e) { console.error('[mini catch]', e) }
     const idx = classes.value.findIndex((c) => c.id === cls.id)
     if (idx >= 0) classes.value[idx].imGroupId = gid
     openByTo(gid, classLabel(cls), 'GROUP')
@@ -617,7 +619,7 @@ onShow(async () => {
 .img { width: 280rpx; border-radius: 14rpx; }
 .row.me .bubble { background: #07c160; color: #fff; }
 .read { font-size: 18rpx; color: #9aa0a6; margin-top: 4rpx; }
-.inputbar { display: flex; gap: 14rpx; align-items: center; }
+.inputbar { display: flex; gap: 14rpx; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
 .imgbtn { font-size: 40rpx; padding: 0 6rpx; color: var(--c-sub); }
 .inp { flex: 1; background: var(--c-card); border: 1px solid var(--c-input-border); border-radius: 40rpx; padding: 18rpx 28rpx; font-size: 28rpx; color: var(--c-text); }
 .send { background: #07c160; color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; height: 72rpx; }

@@ -183,7 +183,7 @@ const sections = ref([
       { label: '轮值表', icon: '📋', path: '/pages/duty-roster/duty-roster' },
       { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
       { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
-      { label: '班级活动', icon: '🎉', path: '/pages/class-activity/class-activity' },
+      { label: '班级活动', icon: '🎉', path: '/pages/class-activities/class-activities' },
       { label: '班级风采', icon: '🖼️', path: '/pages/gallery/gallery' },
       { label: '我的相册', icon: '📷', path: '/pages/my-gallery/my-gallery' },
     ],

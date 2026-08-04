@@ -133,7 +133,7 @@ function loadBest() {
 function saveBest(steps) {
   const prev = loadBest()
   if (prev === 0 || steps < prev) {
-    try { uni.setStorageSync(bestKey(), steps); bestSteps.value = steps; return true } catch (e) {}
+    try { uni.setStorageSync(bestKey(), steps); bestSteps.value = steps; return true } catch (e) { console.error('[mini catch]', e) }
   }
   return false
 }

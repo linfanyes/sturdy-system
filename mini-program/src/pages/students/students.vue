@@ -45,7 +45,7 @@
         <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
       </view>
       <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
-      <view v-if="!loading && hasMore" class="load-more" @click="page++">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
+      <view v-if="!loading && hasMore" class="load-more" @click="loadMore">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
     </view>
 
     <view v-if="batchMode && selected.size" class="batchbar">
@@ -217,6 +217,7 @@ const selected = ref(new Set())
 // 长列表分页：避免大班级一次渲染几十上百项卡顿
 const PAGE_SIZE = 20
 const page = ref(1)
+const loadingMore = ref(false)
 const shownAll = computed(() => {
   // list 已由服务端按 classId 过滤，此处仅做搜索/性别/排序
   let arr = list.value
@@ -236,6 +237,12 @@ const shown = computed(() => shownAll.value.slice(0, page.value * PAGE_SIZE))
 const hasMore = computed(() => shown.value.length < shownAll.value.length)
 // 筛选/搜索/排序变化时重置分页
 function resetPage() { page.value = 1 }
+function loadMore() {
+  if (loadingMore.value) return
+  loadingMore.value = true
+  page.value++
+  setTimeout(() => { loadingMore.value = false }, 300)
+}
 const showForm = ref(false)
 const showImport = ref(false)
 const showTpl = ref(false)

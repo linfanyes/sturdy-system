@@ -110,7 +110,7 @@ async function submitForm() {
 }
 
 async function handleDelete(row: any) {
-  if (!confirm(`确定删除考试「${row.name}」？`)) return
+  if (!await confirm(`确定删除考试「${row.name}」？`)) return
   try {
     await request.delete(`/exams/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)

@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import request from '@/api/request'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
-import { User, School, Phone, BookOpen, Calendar, Save, MessageCircle, Unlink } from 'lucide-vue-next'
+import { User, School, Phone, BookOpen, Calendar, Save } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -17,12 +17,6 @@ const form = ref({
   school: '',
 })
 
-/** 微信绑定信息 */
-const wechat = ref<{ bound: boolean; wechatName: string; openidTail: string }>({
-  bound: false, wechatName: '', openidTail: '',
-})
-const unbinding = ref(false)
-
 /** 平台预设学科列表（从超管配置加载） */
 const platformSubjects = ref<string[]>([])
 const DEFAULT_SUBJECTS = ['语文', '数学', '英语', '科学', '体育', '音乐', '美术', '道法', '劳动', '信息']
@@ -34,7 +28,7 @@ const subjectOptions = computed(() =>
 async function loadProfile() {
   loading.value = true
   try {
-    // 同时加载用户信息、平台配置的学科、auth/me（含微信绑定信息）
+    // 同时加载用户信息、平台配置的学科、auth/me
     const [res, appCfg, authMe] = await Promise.all([
       request.get('/users/me'),
       request.get('/config/app-config').catch(() => null),
@@ -62,21 +56,6 @@ async function loadProfile() {
       subjects: Array.isArray(res.subjects) ? res.subjects : [],
       gender: res.gender || '',
       school: res.school || '',
-    }
-    // 微信绑定信息：优先取 auth/me（脱敏 openid 末 6 位）
-    if (authMe?.user) {
-      wechat.value = {
-        bound: !!authMe.user.wechatBound,
-        wechatName: authMe.user.wechatName || '',
-        openidTail: authMe.user.wechatOpenidTail || '',
-      }
-    } else {
-      // 回退：/users/me 直接含 openid（旧逻辑）
-      wechat.value = {
-        bound: !!res.openid,
-        wechatName: res.wechatName || '',
-        openidTail: res.openid ? String(res.openid).slice(-6) : '',
-      }
     }
   } catch (e: any) {
     alert(e?.message || '加载失败')
@@ -122,21 +101,6 @@ async function save() {
   }
 }
 
-/** 解绑微信（清除 User.openid / wechatName） */
-async function unbindWechat() {
-  if (!wechat.value.bound) return
-  if (!confirm('确定解绑当前微信？解绑后需要重新绑定才能用微信登录。')) return
-  unbinding.value = true
-  try {
-    await request.patch('/users/me', { openid: '', wechatName: '' })
-    wechat.value = { bound: false, wechatName: '', openidTail: '' }
-    alert('已解绑')
-  } catch (e: any) {
-    alert(e?.message || '解绑失败')
-  } finally {
-    unbinding.value = false
-  }
-}
 </script>
 
 <template>
@@ -202,31 +166,6 @@ async function unbindWechat() {
             >{{ subj }}</button>
           </div>
           <p v-if="!subjectOptions.length" class="text-xs text-cocoa-300 mt-1">暂无可选学科</p>
-        </div>
-
-        <!-- 微信绑定信息 -->
-        <div class="pt-4 border-t border-cream-200">
-          <label class="text-sm text-cocoa-500 flex items-center gap-1"><MessageCircle class="w-3.5 h-3.5" />微信绑定</label>
-          <div class="mt-2 p-3 rounded-xl bg-cream-50 border border-cream-100 flex items-center justify-between">
-            <div v-if="wechat.bound" class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full bg-mint-100 flex items-center justify-center text-mint-600 font-semibold text-sm">
-                {{ wechat.wechatName ? wechat.wechatName.charAt(0) : '微' }}
-              </div>
-              <div>
-                <div class="text-sm font-medium text-cocoa-900">{{ wechat.wechatName || '已绑定微信' }}</div>
-                <div class="text-xs text-cocoa-400">openid 尾号：{{ wechat.openidTail }}</div>
-              </div>
-            </div>
-            <div v-else class="text-sm text-cocoa-400">教师使用账号密码登录，无需绑定微信</div>
-            <button
-              v-if="wechat.bound"
-              class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-sakura-50 text-sakura-600 hover:bg-sakura-100 disabled:opacity-60"
-              :disabled="unbinding"
-              @click="unbindWechat"
-            >
-              <Unlink class="w-3 h-3" /> {{ unbinding ? '解绑中…' : '解绑' }}
-            </button>
-          </div>
         </div>
 
         <div class="flex justify-end pt-2">

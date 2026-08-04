@@ -93,7 +93,14 @@ export function canAccess(url) {
   const role = getCurrentRole()
   const allowedRoles = PAGE_ROLES[path]
   if (!allowedRoles) {
-    // 未在 PAGE_ROLES 声明的业务页默认仅教师可访问
+    // 未在 PAGE_ROLES 中逐页声明的页面，按前缀白名单放行：
+    // - 超管可访问 admin/ 与 school-admin/（后端再控制数据权限）
+    // - 校管可访问 school-admin/
+    // - 家长可访问 parent/
+    // 其余未声明页面默认仅教师可访问
+    if (role === ROLE.SUPER && (path.startsWith('pages/admin/') || path.startsWith('pages/school-admin/'))) return true
+    if (role === ROLE.SCHOOL_ADMIN && path.startsWith('pages/school-admin/')) return true
+    if (role === ROLE.PARENT && path.startsWith('pages/parent/')) return true
     if (role !== ROLE.TEACHER) return false
     // 教师身份额外校验功能包
     return checkFeatureAccess(path)

@@ -160,7 +160,7 @@ async function markAllRead() {
 
 // ===== 删除消息 =====
 async function deleteMessage(msg: Message) {
-  if (!confirm('确定删除该留言？')) return
+  if (!await confirm('确定删除该留言？')) return
   try {
     await request.delete(`/messages/${msg.id}`)
     messages.value = messages.value.filter(m => m.id !== msg.id)

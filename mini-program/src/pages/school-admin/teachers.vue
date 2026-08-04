@@ -7,6 +7,8 @@
       <view class="bar-acts">
         <text class="act" @click="openCreate">＋ 新增</text>
         <text class="act" @click="showBatchImport = true">📋 批量导入</text>
+        <text class="act" @click="exportCsv('teachers')">📄 导出CSV</text>
+        <text class="act" @click="exportXls('teachers')">📊 导出XLS</text>
       </view>
     </view>
 
@@ -107,6 +109,18 @@
       </view>
     </view>
   </view>
+
+  <!-- CSV 预览 -->
+  <view v-if="showCsvModal" class="mask" @click="showCsvModal = false">
+    <view class="sheet" @click.stop>
+      <view class="sh-t">CSV 预览</view>
+      <scroll-view scroll-y class="csv-box"><text class="csv-text">{{ csvContent }}</text></scroll-view>
+      <view class="btn-row">
+        <button class="btn cancel" @click="showCsvModal = false">关闭</button>
+        <button class="btn save" @click="copyCsv">复制</button>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup>
@@ -135,9 +149,13 @@ const showBatchImport = ref(false)
 const batchText = ref('')
 const batchResult = ref([])
 
+const showCsvModal = ref(false)
+const csvContent = ref('')
+const exportSaving = ref(false)
+
 function getToken() { return uni.getStorageSync('sa_token') }
 
-function apiCall(method, path, data) {
+function apiCall(method, path, data, extraOpts = {}) {
   const token = getToken()
   if (!token) { uni.reLaunch({ url: '/pages/login/login' }); throw new Error('未登录') }
   return new Promise((resolve, reject) => {
@@ -167,6 +185,7 @@ function apiCall(method, path, data) {
       },
       fail: (e) => reject(new Error((e && (e.errMsg || e.message)) || '网络异常')),
     }
+    if (extraOpts.responseType) opts.responseType = extraOpts.responseType
     if (data !== undefined && method !== 'GET' && method !== 'DELETE') opts.data = data
     cloud.callContainer(opts)
   })
@@ -188,7 +207,7 @@ async function loadMore() {
     const r = await apiCall('GET', '/school-admin/teachers?skip=' + skip + '&take=' + TEACHER_PAGE_SIZE) || { items: [], total: 0 }
     const more = r.items || r
     if (more.length) { teachers.value = [...teachers.value, ...more]; teacherPage.value++ }
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
 }
 
 function openCreate() {
@@ -276,6 +295,64 @@ async function doBatchImport() {
   saving.value = false
 }
 
+/* ============ 导出 ============ */
+
+async function exportCsv(type) {
+  exportSaving.value = true
+  try {
+    const r = await apiCall('GET', '/school-admin/export/' + type, undefined, { responseType: 'base64' })
+    const text = decodeURIComponent(escape(atob(r)))
+    csvContent.value = text
+    showCsvModal.value = true
+  } catch (e) {
+    uni.showToast({ title: e.message || '导出失败', icon: 'none' })
+  }
+  exportSaving.value = false
+}
+
+async function exportXls(type) {
+  exportSaving.value = true
+  try {
+    const r = await apiCall('GET', '/school-admin/export/' + type + '-xls', undefined, { responseType: 'base64' })
+    const buf = base64ToArrayBuffer(r)
+    const fs = uni.getFileSystemManager()
+    const filePath = uni.env.USER_DATA_PATH + '/export_' + type + '.xlsx'
+    fs.writeFile({
+      filePath: filePath,
+      data: buf,
+      encoding: 'binary',
+      success: () => {
+        uni.openDocument({
+          filePath: filePath,
+          showMenu: true,
+          success: () => {},
+          fail: () => uni.showToast({ title: '打开文件失败', icon: 'none' }),
+        })
+      },
+      fail: () => uni.showToast({ title: '保存文件失败', icon: 'none' }),
+    })
+  } catch (e) {
+    uni.showToast({ title: e.message || '导出失败', icon: 'none' })
+  }
+  exportSaving.value = false
+}
+
+function base64ToArrayBuffer(b64) {
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+async function copyCsv() {
+  try {
+    await uni.setClipboardData({ data: csvContent.value })
+    uni.showToast({ title: '已复制', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '复制失败', icon: 'none' })
+  }
+}
+
 onShow(loadTeachers)
 </script>
 
@@ -321,4 +398,6 @@ onShow(loadTeachers)
 .batch-item.ok { color: #07c160; }
 .batch-item.fail { color: #e64340; }
 .batch-err { display: block; font-size: 20rpx; color: var(--c-sub); margin-left: 16rpx; }
+.csv-box { max-height: 60vh; margin: 16rpx 0; padding: 16rpx; border: 1px solid var(--c-border); border-radius: 12rpx; background: var(--c-bg); }
+.csv-text { font-size: 20rpx; color: var(--c-text); white-space: pre; word-break: break-all; }
 </style>

@@ -28,7 +28,7 @@ const WORD_CATEGORIES = ['季节', '食物', '水果', '数字', '颜色', '动�
 // ============ 一键初始化 ============
 const seeding = ref(false)
 async function doSeedDefaults() {
-  if (!confirm('将初始化预置资源库（含古诗词、数学公式、英语分类单词）。已存在的同标题条目将自动跳过。是否继续？')) return
+  if (!await confirm('将初始化预置资源库（含古诗词、数学公式、英语分类单词）。已存在的同标题条目将自动跳过。是否继续？')) return
   seeding.value = true
   try {
     const res = await seedDefaultResources()
@@ -150,17 +150,17 @@ async function saveEdit() {
 }
 
 async function removePoem(id: string) {
-  if (!confirm('确定删除该诗词？')) return
+  if (!await confirm('确定删除该诗词？')) return
   try { await adminDeletePoem(id); await loadPoems() }
   catch (e: any) { alert(e?.message || '删除失败') }
 }
 async function removeFormula(id: string) {
-  if (!confirm('确定删除该公式？')) return
+  if (!await confirm('确定删除该公式？')) return
   try { await adminDeleteFormula(id); await loadFormulas() }
   catch (e: any) { alert(e?.message || '删除失败') }
 }
 async function removeWord(id: string) {
-  if (!confirm('确定删除该单词？')) return
+  if (!await confirm('确定删除该单词？')) return
   try { await adminDeleteWord(id); await loadWords() }
   catch (e: any) { alert(e?.message || '删除失败') }
 }

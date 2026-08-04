@@ -95,9 +95,14 @@ function pickBatchClass(e) {
   const c = classList.value[e.detail.value]
   batchClassName.value = c.name
   batchSel.value = new Set()
-  api.get('/students?classId=' + encodeURIComponent(c.id)).then((arr) => {
-    batchStudents.value = (arr || []).filter((s) => s.parentPhone)
-  })
+  api.get('/students?classId=' + encodeURIComponent(c.id))
+    .then((arr) => {
+      batchStudents.value = (arr || []).filter((s) => s.parentPhone)
+    })
+    .catch((e) => {
+      console.error('[mini catch]', e)
+      batchStudents.value = []
+    })
 }
 function toggleAll() {
   if (allSelected.value) batchSel.value = new Set()
@@ -127,7 +132,10 @@ function sendBatch() {
           phone: s.parentPhone || '', method: '通知', date: new Date().toISOString().slice(0, 10),
           content: batchMsg.value.replace(/{{name}}/g, s.name).replace(/{{parent}}/g, s.parentName || '家长'),
         }).catch(() => {}),
-      )).then(() => load())
+      )).then(() => load()).catch((e) => {
+        console.error('[mini catch]', e)
+        load()
+      })
     },
   })
 }

@@ -158,7 +158,7 @@ async function loadHistory() {
 }
 
 async function onClearHistory() {
-  if (!confirm('确定清空历史记录？')) return
+  if (!await confirm('确定清空历史记录？')) return
   try {
     await clearPickerHistory(classId.value || undefined)
   } catch {

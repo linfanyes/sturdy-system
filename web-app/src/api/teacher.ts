@@ -106,32 +106,6 @@ export function resetStudentParentPassword(id: string) {
   return request.post<any, { studentId: string; ok: boolean; defaultPassword: string }>('/students/' + id + '/reset-parent-password')
 }
 
-/** 学生家长微信绑定信息（脱敏：仅返回 openid 尾号） */
-export interface StudentParentBinding {
-  id: string
-  openIdTail: string
-  nickName?: string
-  avatar?: string
-  relation?: string
-  isPrimary?: boolean
-  createdAt?: string
-}
-
-/** 查看某学生绑定的所有家长微信 */
-export function listStudentParentBindings(studentId: string) {
-  return request.get<any, StudentParentBinding[]>('/students/' + studentId + '/parent-bindings')
-}
-
-/** 教师解绑某学生的某条家长微信 */
-export function unbindStudentParent(studentId: string, bindingId: string) {
-  return request.post<any, { ok: boolean }>(`/students/${studentId}/parent-bindings/${bindingId}/unbind`)
-}
-
-/** 教师设置某绑定为主家长 */
-export function setPrimaryStudentParent(studentId: string, bindingId: string) {
-  return request.post<any, { ok: boolean }>(`/students/${studentId}/parent-bindings/${bindingId}/set-primary`)
-}
-
 /** 获取班级成员（协作教师）
  * 注意：后端用 POST /classes/:id/members/list 查询（避免与基类 GET :id 路由冲突），
  * POST /classes/:id/members 是"添加科任老师"，GET /classes/:id/members 无对应路由会 404。
@@ -259,18 +233,18 @@ export function clearPickerHistory(classId?: string) {
   return request.delete<any, void>('/picker-history', { params: classId ? { classId } : {} })
 }
 
-/** 奖惩记录 */
+/** 奖惩记录（后端表 reward_records，路径 /reward-records） */
 export function listRewards(classId?: string) {
-  return request.get<any, any[]>('/rewards', { params: classId ? { classId } : {} })
+  return request.get<any, any[]>('/reward-records', { params: classId ? { classId } : {} })
 }
 export function createReward(data: any) {
-  return request.post<any, any>('/rewards', data)
+  return request.post<any, any>('/reward-records', data)
 }
 export function updateReward(id: string, data: any) {
-  return request.patch<any, any>('/rewards/' + id, data)
+  return request.patch<any, any>('/reward-records/' + id, data)
 }
 export function deleteReward(id: string) {
-  return request.delete<any, void>('/rewards/' + id)
+  return request.delete<any, void>('/reward-records/' + id)
 }
 
 /** 加减分记录 */
@@ -292,7 +266,7 @@ export function createGroupScore(data: any) {
   return request.post<any, any>('/group-scores', data)
 }
 
-/** 奖项管理 */
+/** 奖项管理（后端表 award_records / award_categories） */
 export function listAwardCategories(classId?: string) {
   return request.get<any, any[]>('/award-categories', { params: classId ? { classId } : {} })
 }
@@ -300,10 +274,10 @@ export function createAwardCategory(data: any) {
   return request.post<any, any>('/award-categories', data)
 }
 export function listAwards(classId?: string) {
-  return request.get<any, any[]>('/awards', { params: classId ? { classId } : {} })
+  return request.get<any, any[]>('/award-records', { params: classId ? { classId } : {} })
 }
 export function createAward(data: any) {
-  return request.post<any, any>('/awards', data)
+  return request.post<any, any>('/award-records', data)
 }
 
 /** 班级职务配置 */
@@ -320,20 +294,20 @@ export function deleteClassDutyConfig(id: string) {
   return request.delete<any, void>('/class-duty-configs/' + id)
 }
 
-/** 成长记录 */
+/** 成长记录（后端表 growth_entries，路径 /growth-entries） */
 export function listGrowthRecords(classId?: string) {
-  return request.get<any, any[]>('/growth-records', { params: classId ? { classId } : {} })
+  return request.get<any, any[]>('/growth-entries', { params: classId ? { classId } : {} })
 }
 export function createGrowthRecord(data: any) {
-  return request.post<any, any>('/growth-records', data)
+  return request.post<any, any>('/growth-entries', data)
 }
 
-/** 行为记录 */
+/** 行为记录（后端表 behavior_records，路径 /behavior-records） */
 export function listBehaviors(classId?: string) {
-  return request.get<any, any[]>('/behaviors', { params: classId ? { classId } : {} })
+  return request.get<any, any[]>('/behavior-records', { params: classId ? { classId } : {} })
 }
 export function createBehavior(data: any) {
-  return request.post<any, any>('/behaviors', data)
+  return request.post<any, any>('/behavior-records', data)
 }
 
 /** 课外阅读 */
@@ -381,6 +355,13 @@ export async function aiChatStream(
     },
     body: JSON.stringify({ messages }),
   })
+  // 与 request.ts 拦截器保持一致的 401 策略（ai/chat 非登录接口，失效即清登录态跳转）
+  if (resp.status === 401) {
+    localStorage.removeItem('trace_web_token')
+    localStorage.removeItem('trace_web_user')
+    if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+    throw new Error('登录已失效，请重新登录')
+  }
   if (!resp.body) throw new Error('当前浏览器不支持流式响应')
   const reader = resp.body.getReader()
   const decoder = new TextDecoder()

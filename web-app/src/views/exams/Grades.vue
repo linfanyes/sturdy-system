@@ -196,7 +196,7 @@ async function submitEntry() {
 
 /* ============ 删除 ============ */
 async function handleDelete(g: any) {
-  if (!confirm(`确定删除「${g.examName} - ${g.subject}」的成绩记录？`)) return
+  if (!await confirm(`确定删除「${g.examName} - ${g.subject}」的成绩记录？`)) return
   try {
     await request.delete(`/grades/${g.id}`)
     grades.value = grades.value.filter(x => x.id !== g.id)
@@ -351,7 +351,7 @@ async function submitMatrix() {
   if (!selectedExam.value) return
   const subjects = examSubjects.value
   if (!subjects.length) { alert('该考试未设置科目'); return }
-  if (matrixUnmatched.value.length && !confirm(`有 ${matrixUnmatched.value.length} 行学生未匹配，将不会被导入。仍要继续？`)) return
+  if (matrixUnmatched.value.length && !await confirm(`有 ${matrixUnmatched.value.length} 行学生未匹配，将不会被导入。仍要继续？`)) return
   entryLoading.value = true
   let committed = 0
   const failed: string[] = []

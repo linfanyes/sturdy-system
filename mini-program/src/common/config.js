@@ -16,5 +16,5 @@ export const API_PREFIX = '/api'
 // 说明：uni-app(vite) 在构建时会将 process.env.NODE_ENV 静态替换为字面量；
 // 小程序运行时不保证存在 process，故用 try/catch 兜底，未识别时一律按生产（禁用）处理。
 let _nodeEnv = 'production'
-try { _nodeEnv = (process.env && process.env.NODE_ENV) || 'production' } catch (e) {}
+try { _nodeEnv = (process.env && process.env.NODE_ENV) || 'production' } catch (e) { console.error('[mini catch]', e) }
 export const DEMO_MODE_ENABLED = _nodeEnv !== 'production'

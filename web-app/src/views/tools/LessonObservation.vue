@@ -76,8 +76,8 @@ function save() {
   show.value = false
 }
 
-function remove(rec: LessonRecord) {
-  if (!confirm(`确认删除「${rec.topic}」这条听课记录？`)) return
+async function remove(rec: LessonRecord) {
+  if (!await confirm(`确认删除「${rec.topic}」这条听课记录？`)) return
   list.value = list.value.filter((i) => i.id !== rec.id)
   persist()
 }

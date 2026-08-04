@@ -75,7 +75,7 @@ async function toggleParentLogin(s: StudentItem) {
 }
 
 async function resetParentPwd(s: StudentItem) {
-  if (!confirm(`确定将「${s.name}」的家长登录口令重置为默认密码 123456？`)) return
+  if (!await confirm(`确定将「${s.name}」的家长登录口令重置为默认密码 123456？`)) return
   try {
     const res = await resetParentPassword(s.id)
     alert(`已重置为默认密码：${res.defaultPassword}`)
@@ -169,7 +169,7 @@ function handlePrint() {
 
 /* ============ 删除学生 ============ */
 async function handleDelete(s: StudentItem) {
-  if (!confirm(`确定删除学生「${s.name}」（${s.studentNo || '无学号'}）？\n该操作将同时清理其家长联系记录，不可恢复。`)) return
+  if (!await confirm(`确定删除学生「${s.name}」（${s.studentNo || '无学号'}）？\n该操作将同时清理其家长联系记录，不可恢复。`)) return
   try {
     await deleteStudent(s.id)
     students.value = students.value.filter(x => x.id !== s.id)

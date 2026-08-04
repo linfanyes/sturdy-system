@@ -220,7 +220,7 @@ function toggleFeature(key: string) {
 
 /* ============ 重置密码 ============ */
 async function handleResetPassword(t: TeacherItem) {
-  if (!confirm(`确定重置 ${t.name} 的密码为默认密码？`)) return
+  if (!await confirm(`确定重置 ${t.name} 的密码为默认密码？`)) return
   try {
     const r = await resetTeacherPassword(t.id)
     const pwd = r?.defaultPassword
@@ -232,7 +232,7 @@ async function handleResetPassword(t: TeacherItem) {
 
 /* ============ 删除 ============ */
 async function handleDelete(t: TeacherItem) {
-  if (!confirm(`确定删除教师「${t.name}」？此操作不可恢复。`)) return
+  if (!await confirm(`确定删除教师「${t.name}」？此操作不可恢复。`)) return
   try {
     await deleteTeacher(t.id)
     await loadTeachers()

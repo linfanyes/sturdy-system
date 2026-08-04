@@ -75,6 +75,16 @@ export function listTeachers(skip = 0, take = 500) {
   return request.get<any, { items: any[]; total: number }>('/admin/teachers', { params: { skip, take } })
 }
 
+/** 超管：获取所有班级列表（可按 schoolId 过滤） */
+export function listClasses(schoolId?: string, skip = 0, take = 500) {
+  return request.get<any, { items: any[]; total: number }>('/admin/classes', { params: { schoolId, skip, take } })
+}
+
+/** 超管：获取所有学生列表（可按 schoolId/classId 过滤） */
+export function listStudents(schoolId?: string, classId?: string, skip = 0, take = 500) {
+  return request.get<any, { items: any[]; total: number }>('/admin/students', { params: { schoolId, classId, skip, take } })
+}
+
 /** 超管：清除单个教师业务数据 */
 export function clearTeacherData(teacherId: string) {
   return request.post(`/admin/teachers/${teacherId}/clear-data`)

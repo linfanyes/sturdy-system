@@ -3,8 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, getParentBindings } from '@/api/parent'
-import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentWechatBindings, ParentTeacher } from '@/api/parent'
+import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests } from '@/api/parent'
+import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentTeacher } from '@/api/parent'
 import request from '@/api/request'
 import { Sparkles, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
@@ -114,19 +114,10 @@ function contactTeacher() {
 
 /** 师兼家：切换到教师端（仅当 roleSwitchStore 有 parentToken 时启用） */
 const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
-function switchToTeacher() {
-  if (!window.confirm('确定切换到教师端？')) return
+async function switchToTeacher() {
+  if (!await confirm('确定切换到教师端？')) return
   roleSwitchStore.switchTo('teacher', auth.setAuth)
   router.push('/teacher')
-}
-
-// 微信绑定：当前账号绑定概要 + 该学生所有绑定列表（支持多家长：爸爸/妈妈等）
-const wechatBindings = ref<ParentWechatBindings>({ parent: null, bindings: [] })
-async function loadWechatBindings() {
-  try {
-    const r = await getParentBindings()
-    wechatBindings.value = r || { parent: null, bindings: [] }
-  } catch (e) { /* 忽略：不影响主流程 */ }
 }
 
 const greeting = computed(() => {
@@ -403,7 +394,7 @@ async function openStudentRequests() {
 async function load() {
   loading.value = true
   try {
-    const [meData, noticeData, examData, hwData, attData, behData, schData, commData, wbData, tchData] = await Promise.allSettled([
+    const [meData, noticeData, examData, hwData, attData, behData, schData, commData, tchData] = await Promise.allSettled([
       getParentMe(),
       getParentNotices(),
       getParentExams(),
@@ -412,7 +403,6 @@ async function load() {
       getParentBehavior(),
       getParentSchedule(),
       getParentCommunications(),
-      getParentBindings(),
       getParentTeachers(),
     ])
     if (meData.status === 'fulfilled') {
@@ -426,7 +416,6 @@ async function load() {
     if (behData.status === 'fulfilled') behavior.value = behData.value as ParentBehavior
     if (schData.status === 'fulfilled') schedule.value = schData.value as ParentSchedule
     if (commData.status === 'fulfilled') communications.value = commData.value as ParentCommunications
-    if (wbData.status === 'fulfilled') wechatBindings.value = wbData.value || { parent: null, bindings: [] }
     if (tchData.status === 'fulfilled') teachers.value = Array.isArray(tchData.value) ? tchData.value : []
     // 身份/核心数据拉取失败 → 标记为可重试错误态（其余分项失败仅显示各自空态）
     loadError.value = meData.status !== 'fulfilled'
@@ -523,56 +512,8 @@ async function subscribeNotifications() {
           </div>
           <div class="text-xs text-cocoa-500 mt-0.5 flex items-center gap-2">
             <span>{{ k.className || ('班级 ' + k.classId) }}</span>
-            <span v-if="k.nickName" class="text-mint-600 bg-mint-50 px-2 py-0.5 rounded-full">已微信绑 {{ k.nickName }}</span>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- 微信绑定信息（一学生可绑多个微信，如爸爸/妈妈） -->
-    <div class="quick-card">
-      <div class="section-title">
-        <MessageCircle class="w-5 h-5 text-mint-400" />
-        <h2>微信绑定</h2>
-        <span v-if="wechatBindings.bindings.length" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-mint-50 text-mint-600">共 {{ wechatBindings.bindings.length }} 个绑定</span>
-      </div>
-      <div class="p-3 rounded-xl bg-cream-50 border border-cream-100">
-        <!-- 当前账号绑定概要 -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-mint-100 flex items-center justify-center text-mint-600 text-sm font-semibold">
-            {{ wechatBindings.parent?.nickName ? wechatBindings.parent.nickName.charAt(0) : '微' }}
-          </div>
-          <div class="flex-1 min-w-0">
-            <div v-if="wechatBindings.parent?.bound" class="text-sm font-medium text-cocoa-900">{{ wechatBindings.parent.nickName || '已绑定微信' }}</div>
-            <div v-else class="text-sm font-medium text-cocoa-400">未绑定微信</div>
-            <div class="text-xs text-cocoa-500 mt-0.5">
-              <template v-if="wechatBindings.parent?.bound">openid 尾号：{{ wechatBindings.parent.openIdTail }}</template>
-              <template v-else>可在小程序「家长端」完成绑定</template>
-            </div>
-          </div>
-        </div>
-        <!-- 该学生绑定的所有微信列表（多家长场景） -->
-        <div v-if="wechatBindings.bindings.length" class="mt-3 pt-3 border-t border-cream-200">
-          <div class="text-xs text-cocoa-500 mb-2">该学生绑定的微信（{{ wechatBindings.bindings.length }}）</div>
-          <div class="space-y-2">
-            <div v-for="b in wechatBindings.bindings" :key="b.id" class="flex items-center justify-between py-1.5">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-8 h-8 rounded-full bg-mint-100 flex items-center justify-center text-mint-600 text-xs">
-                  {{ b.nickName ? b.nickName.charAt(0) : '微' }}
-                </div>
-                <div class="min-w-0">
-                  <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
-                    {{ b.nickName || '微信用户' }}
-                    <span v-if="b.relation" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ b.relation }}</span>
-                    <span v-if="b.isPrimary" class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">主家长</span>
-                  </div>
-                  <div class="text-xs text-cocoa-400">openid 尾号：{{ b.openIdTail }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="mt-3 text-xs text-cocoa-400 leading-relaxed">一个学生可绑定多个微信（如爸爸、妈妈），绑定后各家长均可微信登录查看孩子情况。</div>
       </div>
     </div>
 

@@ -212,7 +212,7 @@ async function createBackup() {
 }
 
 async function restoreBackup(backup: BackupItem) {
-  if (!confirm(`确定恢复备份「${backup.label}」？当前数据将被覆盖。`)) return
+  if (!await confirm(`确定恢复备份「${backup.label}」？当前数据将被覆盖。`)) return
   restoringId.value = backup.id
   errorMsg.value = ''
   successMsg.value = ''

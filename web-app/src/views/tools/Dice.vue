@@ -104,8 +104,8 @@ function recordHistory(result: string) {
   }
 }
 
-function clearHistory() {
-  if (!confirm('确定清空历史？')) return
+async function clearHistory() {
+  if (!await confirm('确定清空历史？')) return
   history.value = []
   localStorage.removeItem(STORAGE_KEY)
 }

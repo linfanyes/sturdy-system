@@ -830,8 +830,8 @@ function switchToParent() {
 .notif-body { flex: 1; min-width: 0; }
 .notif-title-text { font-size: 26rpx; font-weight: 600; color: var(--c-title); display: block; }
 .notif-content { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; display: block; }
-.quick-actions { display: flex; gap: 12rpx; overflow-x: auto; padding: 0 0 14rpx; }
-.qa-item { display: flex; flex-direction: column; align-items: center; gap: 6rpx; flex-shrink: 0; width: 100rpx; }
+.quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(100rpx, 1fr)); gap: 12rpx; padding: 0 0 14rpx; }
+.qa-item { display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
 .qa-ic { width: 60rpx; height: 60rpx; border-radius: 30rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
 .qa-lb { font-size: 20rpx; color: var(--c-sub); text-align: center; }
 /* 未读徽标 */

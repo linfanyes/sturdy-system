@@ -28,7 +28,7 @@ export function vibrate(type = 'short') {
   try {
     if (type === 'long') uni.vibrateLong({})
     else uni.vibrateShort({ type: 'light' })
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
 }
 
 // ========== 音效（统一单例，避免泄漏） ==========
@@ -57,7 +57,7 @@ export function playSound(type) {
   if (!url) return
   try {
     if (audioCtx) {
-      try { audioCtx.destroy() } catch (e) {}
+      try { audioCtx.destroy() } catch (e) { console.error('[mini catch]', e) }
     }
     audioCtx = uni.createInnerAudioContext()
     audioCtx.src = url
@@ -65,12 +65,12 @@ export function playSound(type) {
     audioCtx.onError(() => {
       // 静默失败：小程序对 data: URI 兼容性差，不影响游戏
     })
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
 }
 
 export function destroySound() {
   if (audioCtx) {
-    try { audioCtx.destroy() } catch (e) {}
+    try { audioCtx.destroy() } catch (e) { console.error('[mini catch]', e) }
     audioCtx = null
   }
 }

@@ -210,13 +210,13 @@ export function applyAppearance(mode) {
       backgroundColorTop: dark ? '#15171c' : '#fff7e6',
       backgroundColorBottom: dark ? '#15171c' : '#fff7e6',
     })
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
   try {
     uni.setNavigationBarColor({
       frontColor: dark ? '#ffffff' : '#000000',
       backgroundColor: dark ? '#1f232b' : '#fff7e6',
     })
-  } catch (e) {}
+  } catch (e) { console.error('[mini catch]', e) }
   // setTabBarStyle 仅允许在 tabBar 页面调用：非 tabBar 页面时仅缓存，待进入 tabBar 页落地
   updateTabBarStyle({
     color: dark ? '#8a909a' : '#9aa0a6',

@@ -107,7 +107,7 @@ async function toggleStatus(row: any) {
 
 /* ============ 删除 ============ */
 async function handleDelete(row: any) {
-  if (!confirm(`确定删除学校「${row.name}」？此操作不可恢复。`)) return
+  if (!await confirm(`确定删除学校「${row.name}」？此操作不可恢复。`)) return
   try {
     await deleteSchool(row.id)
     await load()

@@ -104,7 +104,7 @@ async function batchDel() {
       uni.showLoading({ title: '删除中…', mask: true })
       const ids = [...selectedIds.value]
       for (const id of ids) {
-        try { await api.del('/resources/' + id) } catch (e) {}
+        try { await api.del('/resources/' + id) } catch (e) { console.error('[mini catch]', e) }
       }
       selectedIds.value = new Set()
       uni.hideLoading()

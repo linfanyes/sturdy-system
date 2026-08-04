@@ -226,14 +226,14 @@ function onAccel(res) {
 }
 
 onLoad(() => {
-  try { uni.startAccelerometer({ interval: 'normal' }) } catch (e) {}
-  try { uni.onAccelerometerChange(onAccel) } catch (e) {}
+  try { uni.startAccelerometer({ interval: 'normal' }) } catch (e) { console.error('[mini catch]', e) }
+  try { uni.onAccelerometerChange(onAccel) } catch (e) { console.error('[mini catch]', e) }
 })
 
 onUnload(() => {
   if (rollTimer) clearInterval(rollTimer)
-  try { uni.stopAccelerometer() } catch (e) {}
-  try { uni.offAccelerometerChange && uni.offAccelerometerChange(onAccel) } catch (e) {}
+  try { uni.stopAccelerometer() } catch (e) { console.error('[mini catch]', e) }
+  try { uni.offAccelerometerChange && uni.offAccelerometerChange(onAccel) } catch (e) { console.error('[mini catch]', e) }
   destroySound()
 })
 

@@ -37,10 +37,22 @@ instance.interceptors.response.use(
     const status = err.response?.status
     const msg = err.response?.data?.message || err.message || '请求失败'
     if (status === 401) {
-      // token 失效：清除登录态，跳转登录（通过 hash 改变触发路由守卫，避免循环依赖）
-      localStorage.removeItem('trace_web_token')
-      localStorage.removeItem('trace_web_user')
-      if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+      // token 失效：仅「非登录类接口」才清除登录态并跳转登录。
+      // 登录类接口（密码/统一登录等）的 401 是"账号密码错误"业务提示，
+      // 应交给登录页 errMsg 展示，避免误删用户正在输入的表单并强制跳登录。
+      const url = (err.config?.url as string) || ''
+      const isLoginApi = [
+        '/admin/login',
+        '/school-admin/login',
+        '/auth/password-login',
+        '/auth/unified-login',
+        '/parent-auth/login',
+      ].some((p) => url.includes(p))
+      if (!isLoginApi) {
+        localStorage.removeItem('trace_web_token')
+        localStorage.removeItem('trace_web_user')
+        if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+      }
     }
     // 抛出业务错误（组件层 try/catch 捕获）
     return Promise.reject(new Error(typeof msg === 'string' ? msg : JSON.stringify(msg)))

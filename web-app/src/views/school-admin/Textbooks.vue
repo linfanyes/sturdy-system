@@ -91,7 +91,7 @@ function openAiModal() {
 const seeding = ref(false)
 
 async function doSeedDefaults() {
-  if (!confirm('将为本校初始化 32 本预置教材（人教版语文/数学 1-6 年级 + 外研版英语 3-6 年级，含上下册）。已存在的同版本教材将自动跳过。是否继续？')) return
+  if (!await confirm('将为本校初始化 32 本预置教材（人教版语文/数学 1-6 年级 + 外研版英语 3-6 年级，含上下册）。已存在的同版本教材将自动跳过。是否继续？')) return
   seeding.value = true
   try {
     const res = await seedDefaultTextbooks()
@@ -176,7 +176,7 @@ async function saveEdit() {
 }
 
 async function remove(kind: 'textbook' | 'unit' | 'point', id: string, parentId?: string) {
-  if (!confirm('确定删除？子内容将一并删除。')) return
+  if (!await confirm('确定删除？子内容将一并删除。')) return
   try {
     if (kind === 'textbook') {
       await deleteTextbook(id)

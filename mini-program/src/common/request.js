@@ -104,7 +104,7 @@ export function request(path, method = 'GET', data = {}, token) {
           // 不做登出/跳转，避免 reLaunch 打断错误提示，由调用方 toast 展示具体原因
           const isAuthEndpoint = /\/auth\/|\/parent-auth\//.test(path)
           if (!isAuthEndpoint) {
-            try { logout() } catch (e) {}
+            try { logout() } catch (e) { console.error('[mini catch]', e) }
             uni.reLaunch({ url: '/pages/login/login' })
           }
           return reject(new Error(msg || '登录已过期'))
@@ -154,7 +154,7 @@ export const api = {
   async getList(p, opts = {}) {
     const { loading = false, loadingText = '加载中', silent = false } = opts
     if (loading) {
-      try { uni.showLoading({ title: loadingText, mask: false }) } catch (e) {}
+      try { uni.showLoading({ title: loadingText, mask: false }) } catch (e) { console.error('[mini catch]', e) }
     }
     try {
       const data = await request(p)
@@ -165,7 +165,7 @@ export const api = {
       return []
     } finally {
       if (loading) {
-        try { uni.hideLoading() } catch (e) {}
+        try { uni.hideLoading() } catch (e) { console.error('[mini catch]', e) }
       }
     }
   },
@@ -298,7 +298,7 @@ export function streamChat(path, data, onDelta, opts = {}) {
       opts.onTask({
         abort: () => {
           aborted = true
-          try { task && task.abort && task.abort() } catch (e) {}
+          try { task && task.abort && task.abort() } catch (e) { console.error('[mini catch]', e) }
         },
       })
     }

@@ -63,15 +63,13 @@
     {
       "path": "pages/parent/parent-resource-library",
       "style": {
-        "navigationBarTitleText": "资源库",
-        "enablePullDownRefresh": true
+        "navigationBarTitleText": "资源库"
       }
     },
     {
       "path": "pages/dashboard/dashboard",
       "style": {
-        "navigationBarTitleText": "工作台",
-        "enablePullDownRefresh": true
+        "navigationBarTitleText": "工作台"
       }
     },
     {
@@ -168,6 +166,24 @@
       "path": "pages/admin/admin",
       "style": {
         "navigationBarTitleText": "管理员面板"
+      }
+    },
+    {
+      "path": "pages/admin/dashboard",
+      "style": {
+        "navigationBarTitleText": "超管仪表盘"
+      }
+    },
+    {
+      "path": "pages/admin/teachers",
+      "style": {
+        "navigationBarTitleText": "教师管理（超管）"
+      }
+    },
+    {
+      "path": "pages/admin/students",
+      "style": {
+        "navigationBarTitleText": "学生管理（超管）"
       }
     },
     {
@@ -436,16 +452,23 @@
       }
     },
     {
-      "path": "pages/duty-roster/duty-roster",
+      "path": "pages/teacher/textbook",
       "style": {
-        "navigationBarTitleText": "轮值表",
+        "navigationBarTitleText": "教材知识库",
         "enablePullDownRefresh": true
       }
     },
     {
-      "path": "pages/class-activity/class-activity",
+      "path": "pages/student-info-review/student-info-review",
       "style": {
-        "navigationBarTitleText": "班级活动",
+        "navigationBarTitleText": "信息修改审核",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/duty-roster/duty-roster",
+      "style": {
+        "navigationBarTitleText": "轮值表",
         "enablePullDownRefresh": true
       }
     },
@@ -808,12 +831,24 @@
         {
           "path": "slidingPuzzle"
         },
-        { "path": "idiom" },
-        { "path": "speedMath" },
-        { "path": "spelling" },
-        { "path": "scienceQuiz" },
-        { "path": "geoQuiz" },
-        { "path": "storyChain" }
+        {
+          "path": "idiom"
+        },
+        {
+          "path": "speedMath"
+        },
+        {
+          "path": "spelling"
+        },
+        {
+          "path": "scienceQuiz"
+        },
+        {
+          "path": "geoQuiz"
+        },
+        {
+          "path": "storyChain"
+        }
       ]
     },
     {
@@ -873,27 +908,39 @@
       "pages": [
         {
           "path": "ai",
-          "style": { "navigationBarTitleText": "AI 助手" }
+          "style": {
+            "navigationBarTitleText": "AI 助手"
+          }
         },
         {
           "path": "ai-knowledge",
-          "style": { "navigationBarTitleText": "知识点生成" }
+          "style": {
+            "navigationBarTitleText": "知识点生成"
+          }
         },
         {
           "path": "ai-paper",
-          "style": { "navigationBarTitleText": "智能组卷" }
+          "style": {
+            "navigationBarTitleText": "智能组卷"
+          }
         },
         {
           "path": "ai-exam",
-          "style": { "navigationBarTitleText": "考试分析" }
+          "style": {
+            "navigationBarTitleText": "考试分析"
+          }
         },
         {
           "path": "ai-interactive",
-          "style": { "navigationBarTitleText": "互动答疑" }
+          "style": {
+            "navigationBarTitleText": "互动答疑"
+          }
         },
         {
           "path": "ai-lesson",
-          "style": { "navigationBarTitleText": "智能教案" }
+          "style": {
+            "navigationBarTitleText": "智能教案"
+          }
         }
       ]
     }

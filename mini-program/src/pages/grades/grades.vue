@@ -32,6 +32,7 @@
     </view>
 
     <EmptyState v-if="!classId" icon="📊" text="请先选择班级" hint="选择一个班级后即可查看和录入成绩" />
+    <view v-else-if="loadError" class="load-err" @tap="load">⚠️ 数据加载失败，点击重试</view>
 
     <block v-else>
       <!-- 模式切换：单科录入 / 全部科目录入 -->
@@ -117,8 +118,8 @@
             <text class="clear" @click="clearAllGrades">清空全部</text>
           </view>
           <view class="prog">
-            <text class="prog-txt">总已录入 {{ allFilledCount }} / {{ matrixStudents.length * matrixSubjects.length }} 格</text>
-            <view class="prog-bar"><view class="prog-fill" :style="{ width: matrixStudents.length && matrixSubjects.length ? (allFilledCount / (matrixStudents.length * matrixSubjects.length) * 100) + '%' : '0%' }"></view></view>
+            <text class="prog-txt">总已录入 {{ allFilledCount }} / {{ matrixSlice.length * matrixSubjects.length }} 格（当前页）</text>
+            <view class="prog-bar"><view class="prog-fill" :style="{ width: matrixSlice.length && matrixSubjects.length ? (allFilledCount / (matrixSlice.length * matrixSubjects.length) * 100) + '%' : '0%' }"></view></view>
           </view>
 
           <scroll-view scroll-x class="matrix-wrap">
@@ -127,7 +128,7 @@
                 <view class="m-cell m-name">学生</view>
                 <view v-for="s in matrixSubjects" :key="s" class="m-cell m-subject">{{ s }}</view>
               </view>
-              <view v-for="stu in matrixStudents" :key="stu.id" class="m-row">
+              <view v-for="stu in matrixSlice" :key="stu.id" class="m-row">
                 <view class="m-cell m-name">{{ stu.name }}<text class="sno"> · {{ stu.studentNo || '' }}</text></view>
                 <input
                   v-for="s in matrixSubjects"
@@ -141,6 +142,12 @@
               </view>
             </view>
           </scroll-view>
+
+          <view class="matrix-page" v-if="matrixStudents.length > MATRIX_PAGE_SIZE">
+            <button class="pg-btn" :disabled="!matrixHasPrev" @click="matrixPrev">上一页</button>
+            <text class="pg-info">{{ matrixPage + 1 }} / {{ Math.ceil(matrixStudents.length / MATRIX_PAGE_SIZE) }}（共 {{ matrixStudents.length }} 人）</text>
+            <button class="pg-btn" :disabled="!matrixHasNext" @click="matrixNext">下一页</button>
+          </view>
 
           <button class="save" :disabled="savingAll" @click="saveAll">{{ savingAll ? '保存中…' : '💾 保存全部科目成绩' }}</button>
           <button class="imp" @click="showAllImport = !showAllImport">{{ showAllImport ? '收起导入' : '📥 批量导入全部科目' }}</button>
@@ -307,20 +314,32 @@ const showImport = ref(false)
 const preview = ref(null)
 const showAnalysis = ref(false)
 const saving = ref(false)
+const loadError = ref(false)
 
 // ===== 全部科目录入 / 全部科目导入 =====
 const mode = ref('single') // 'single' | 'all'
 const matrixSubjects = ref([]) // 本次考试的科目列表（矩阵的列）
 const matrixStudents = ref([]) // 学生列表（矩阵的行）
+const matrixPage = ref(0) // 当前录入页（每页 20 行）
+const MATRIX_PAGE_SIZE = 20
 const matrix = reactive({}) // { [studentId]: { [subject]: scoreString } }
 const savingAll = ref(false)
 const showAllImport = ref(false)
 const allPreview = ref(null)
+const matrixSlice = computed(() => {
+  const start = matrixPage.value * MATRIX_PAGE_SIZE
+  return matrixStudents.value.slice(start, start + MATRIX_PAGE_SIZE)
+})
+const matrixHasPrev = computed(() => matrixPage.value > 0)
+const matrixHasNext = computed(() => (matrixPage.value + 1) * MATRIX_PAGE_SIZE < matrixStudents.value.length)
 
 function setMode(m) {
   mode.value = m
+  matrixPage.value = 0
   if (m === 'all') buildMatrix()
 }
+function matrixPrev() { if (matrixHasPrev.value) matrixPage.value-- }
+function matrixNext() { if (matrixHasNext.value) matrixPage.value++ }
 
 /** 构建全部科目矩阵（行=学生，列=考试科目），并预填已有成绩 */
 function buildMatrix() {
@@ -343,7 +362,7 @@ function buildMatrix() {
 
 const allFilledCount = computed(() => {
   let n = 0
-  matrixStudents.value.forEach((s) => {
+  matrixSlice.value.forEach((s) => {
     matrixSubjects.value.forEach((sub) => {
       const v = ((matrix[s.id] && matrix[s.id][sub]) || '').toString().trim()
       if (v !== '') n++
@@ -354,7 +373,7 @@ const allFilledCount = computed(() => {
 const allFilledSubjects = computed(() => {
   let n = 0
   matrixSubjects.value.forEach((sub) => {
-    const has = matrixStudents.value.some((s) => {
+    const has = matrixSlice.value.some((s) => {
       const v = ((matrix[s.id] && matrix[s.id][sub]) || '').toString().trim()
       return v !== ''
     })
@@ -382,7 +401,8 @@ async function saveAll() {
   if (!matrixSubjects.value.length) return uni.showToast({ title: '没有可保存的科目', icon: 'none' })
   const exam = exams.value.find((e) => e.id === examId.value)
   const fullScore = (exam && exam.fullScore) || 100
-  for (const s of matrixStudents.value) {
+  const slice = matrixSlice.value
+  for (const s of slice) {
     for (const sub of matrixSubjects.value) {
       const v = ((matrix[s.id] && matrix[s.id][sub]) || '').trim()
       if (v === '') continue
@@ -397,7 +417,7 @@ async function saveAll() {
     let done = 0
     for (const sub of matrixSubjects.value) {
       const rows = []
-      matrixStudents.value.forEach((s) => {
+      slice.forEach((s) => {
         const v = ((matrix[s.id] && matrix[s.id][sub]) || '').trim()
         if (v !== '') rows.push({ studentId: s.id, score: Number(v) })
       })
@@ -707,20 +727,25 @@ const isHomeroom = ref(false)
 const sharedClass = ref(false)
 
 async function load() {
-  const [cs, es, pub, gs, semesters] = await Promise.all([
-    api.getList('/classes', { silent: true }),
-    api.getList('/exams', { silent: true }),
-    api.get('/config/public'),
-    api.getList('/grades', { loading: true, loadingText: '加载成绩' }),
-    api.get('/semesters').catch(() => []),
-  ])
-  classes.value = cs
-  exams.value = es
-  pubSubjects.value = (pub && pub.defaultSubjects) || []
-  grades.value = gs
-  semesterList.value = Array.isArray(semesters) ? semesters : (semesters?.items || [])
-  classOpts.value = cs.map((c) => c.name)
-  rebuildExamOpts()
+  loadError.value = false
+  try {
+    const [cs, es, pub, gs, semesters] = await Promise.all([
+      api.getList('/classes', { silent: true }),
+      api.getList('/exams', { silent: true }),
+      api.get('/config/public'),
+      api.getList('/grades', { loading: true, loadingText: '加载成绩' }),
+      api.get('/semesters').catch(() => []),
+    ])
+    classes.value = cs
+    exams.value = es
+    pubSubjects.value = (pub && pub.defaultSubjects) || []
+    grades.value = gs
+    semesterList.value = Array.isArray(semesters) ? semesters : (semesters?.items || [])
+    classOpts.value = cs.map((c) => c.name)
+    rebuildExamOpts()
+  } catch (e) {
+    loadError.value = true
+  }
 }
 
 onShow(load)
@@ -1228,7 +1253,7 @@ async function aiDiagnose() {
 .m-close { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 24rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 /* P1-3: 各科雷达图 */
 .radar { margin-top: 22rpx; padding-top: 14rpx; border-top: 1px dashed var(--c-border); }
-.radar-cv { width: 600rpx; height: 600rpx; margin: 0 auto; display: block; }
+.radar-cv { width: 100%; height: 520rpx; margin: 0 auto; display: block; }
 .radar-legend { display: flex; flex-wrap: wrap; gap: 10rpx 18rpx; justify-content: center; margin-top: 6rpx; }
 .rl-item { display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; color: var(--c-sub); }
 .rl-c { width: 18rpx; height: 18rpx; border-radius: 4rpx; }
@@ -1249,7 +1274,7 @@ async function aiDiagnose() {
 .m-cell { border: 1px solid var(--c-border); padding: 14rpx 10rpx; font-size: 24rpx; color: var(--c-title); box-sizing: border-box; }
 .m-name { width: 200rpx; flex-shrink: 0; position: sticky; left: 0; background: var(--c-card); z-index: 2; display: flex; align-items: center; }
 .m-subject { width: 150rpx; flex-shrink: 0; text-align: center; font-weight: 600; background: var(--c-card2); }
-.m-score { width: 150rpx; flex-shrink: 0; text-align: center; }
+.m-score { width: 180rpx; flex-shrink: 0; text-align: center; }
 .m-row .m-score { background: var(--c-input); }
 .m-row .m-name { background: var(--c-card); }
 </style>

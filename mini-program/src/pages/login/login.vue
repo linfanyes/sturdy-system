@@ -1,5 +1,5 @@
 <template>
-  <view class="login" :class="{ dark }">
+  <view class="login">
     <view class="logo">🌻</view>
     <view class="title">园丁工作台</view>
 
@@ -68,28 +68,4 @@ function handleLoginResult(r) {
 .inp2 { border:1px solid var(--c-input-border); border-radius:14rpx; padding:24rpx; margin-bottom:20rpx; font-size:32rpx; width:100%; max-width:620rpx; min-height:96rpx; box-sizing:border-box; background:var(--c-input); color:var(--c-text); flex-shrink:0; }
 .btn { width:100%; max-width:620rpx; background:#07c160; color:#fff; border-radius:50rpx; font-size:34rpx; height:96rpx; line-height:96rpx; margin-top:10rpx; flex-shrink:0; }
 .btn[disabled] { opacity:.6; }
-.mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:60; }
-.sheet { width:100%; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:36rpx 32rpx calc(36rpx + env(safe-area-inset-bottom)); box-sizing:border-box; }
-.sh-t { font-size:34rpx; font-weight:700; color:var(--c-title); }
-.sh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; }
-.sh-close { font-size: 36rpx; color: var(--c-sub); padding: 0 8rpx; }
-.sh-sub { font-size:26rpx; color:var(--c-sub); margin:8rpx 0 20rpx; line-height:1.5; }
-.roles2 { display:flex; gap:14rpx; margin-bottom:18rpx; }
-.r2 { flex:1; text-align:center; font-size:28rpx; padding:18rpx 0; border-radius:14rpx; background:var(--c-card2); color:var(--c-sub); min-width:0; }
-.r2.on { background:var(--c-accent); color:#fff; font-weight:700; }
-.inp { border:1px solid var(--c-input-border); border-radius:12rpx; padding:22rpx 20rpx; margin-bottom:14rpx; font-size:30rpx; background:var(--c-input); color:var(--c-text); width:100%; box-sizing:border-box; min-height:88rpx; }
-.ok { width:100%; background:#07c160; color:#fff; border-radius:50rpx; font-size:32rpx; height:96rpx; line-height:96rpx; margin-top:10rpx; }
-.ok[disabled] { opacity:.6; }
-.ok::after { border:none; }
-.dark .inp2, .dark .inp { background:var(--c-input); }
-.dark .r2 { background:var(--c-card2); color:var(--c-sub); }
-/* 角色选择弹层 */
-.role-mask { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; display:flex; align-items:center; justify-content:center; }
-.role-modal { background:#fff; border-radius:32rpx; padding:48rpx; width:600rpx; text-align:center; }
-.role-title { font-size:36rpx; font-weight:bold; margin-bottom:16rpx; }
-.role-desc { font-size:26rpx; color:#999; margin-bottom:40rpx; }
-.role-buttons { display:flex; flex-direction:column; gap:24rpx; }
-.role-btn { padding:24rpx; border-radius:20rpx; font-size:30rpx; font-weight:500; }
-.role-btn.teacher { border:2rpx solid #07c160; color:#07c160; }
-.role-btn.parent { border:2rpx solid #E6A23C; color:#E6A23C; }
 </style>

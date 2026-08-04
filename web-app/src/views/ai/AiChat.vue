@@ -41,6 +41,13 @@ async function send() {
       },
       body: JSON.stringify({ messages: messages.value.filter(m => m.role !== 'system').slice(0, -1).map(m => ({ role: m.role, content: m.content })) }),
     })
+    // 与 request.ts 拦截器保持一致的 401 策略（ai/chat 非登录接口，失效即清登录态跳转）
+    if (resp.status === 401) {
+      localStorage.removeItem('trace_web_token')
+      localStorage.removeItem('trace_web_user')
+      if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+      throw new Error('登录已失效，请重新登录')
+    }
     if (!resp.body) throw new Error('无响应流')
     const reader = resp.body.getReader()
     const decoder = new TextDecoder()

@@ -60,7 +60,7 @@ async function submitForm() {
 
 /* ============ 删除 ============ */
 async function handleDelete(n: NoticeItem) {
-  if (!confirm(`确定删除公告「${n.title}」？`)) return
+  if (!await confirm(`确定删除公告「${n.title}」？`)) return
   try {
     await deleteSchoolNotice(n.id)
     await loadNotices()

@@ -52,8 +52,8 @@ function save() {
   editing.value = false
 }
 
-function remove(t: Template) {
-  if (!confirm(`确认删除「${t.name}」？`)) return
+async function remove(t: Template) {
+  if (!await confirm(`确认删除「${t.name}」？`)) return
   list.value = list.value.filter((i) => i.id !== t.id)
   persist()
 }

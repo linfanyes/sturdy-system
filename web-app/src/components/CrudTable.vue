@@ -171,7 +171,7 @@ async function submitForm() {
 }
 
 async function handleDelete(row: any) {
-  if (!confirm(`确定删除该「${props.title}」？`)) return
+  if (!await confirm(`确定删除该「${props.title}」？`)) return
   try {
     const request = (await import('@/api/request')).default
     await request.delete(`${props.apiPath}/${row.id}`)

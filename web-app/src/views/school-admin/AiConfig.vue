@@ -224,7 +224,7 @@ async function saveAi() {
 
 /** 恢复平台默认：清空自定义，重新加载默认配置（不立即保存） */
 async function resetAiDefaults() {
-  if (!confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
+  if (!await confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
   saving.value = true
   try {
     const res = await request.get('/config/ai-settings').catch(() => null)

@@ -123,7 +123,7 @@ async function submit() {
 }
 
 async function del(item: any) {
-  if (!confirm(`确定删除「${item.title}」？`)) return
+  if (!await confirm(`确定删除「${item.title}」？`)) return
   try {
     await request.delete(`/teaching-calendar/${item.id}`)
     items.value = items.value.filter(x => x.id !== item.id)

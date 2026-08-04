@@ -184,8 +184,8 @@ function deleteEdit() {
   editVisible.value = false
 }
 
-function clearAll() {
-  if (!confirm('确定清空当前课表？清空后请点击「保存到服务器」以同步到后端。')) return
+async function clearAll() {
+  if (!await confirm('确定清空当前课表？清空后请点击「保存到服务器」以同步到后端。')) return
   initGrid()
 }
 

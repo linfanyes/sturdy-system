@@ -268,6 +268,8 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
     { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
     { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
     { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
+    { name: 'super-teachers', label: '教师管理', to: '/super/teachers', icon: Users, color: 'blue' },
+    { name: 'super-students', label: '学生管理', to: '/super/students', icon: GraduationCap, color: 'rose' },
     { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ClipboardList, color: 'cocoa' },
   ],
   school_admin: [
@@ -375,8 +377,8 @@ function backToDashboard() {
   }
 }
 
-function handleLogout() {
-  if (!confirm('确定要退出登录吗？')) return
+async function handleLogout() {
+  if (!await confirm('确定要退出登录吗？')) return
   auth.logout()
   router.push({ name: 'login' })
 }

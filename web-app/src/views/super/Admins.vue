@@ -139,7 +139,7 @@ async function toggleEnabled(row: any) {
 
 /* ============ 删除 ============ */
 async function handleDelete(row: any) {
-  if (!confirm('确定删除？')) return
+  if (!await confirm('确定删除？')) return
   try {
     await deleteSchoolAdmin(row.id)
     await load()

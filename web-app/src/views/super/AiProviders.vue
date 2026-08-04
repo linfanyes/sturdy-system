@@ -109,7 +109,7 @@ async function save() {
 }
 
 async function remove(p: Provider) {
-  if (!confirm(`确认删除「${p.name}」吗？此操作不可恢复。`)) return
+  if (!await confirm(`确认删除「${p.name}」吗？此操作不可恢复。`)) return
   try {
     await request.delete(`/ai-providers/${p.code}`)
     await load()
