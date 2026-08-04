@@ -241,7 +241,7 @@ export class TextbookService {
 2. 每个单元下列出 3-6 个核心知识点，包含：标题、类型(概念/例题/易错点/拓展/重点)、详细内容(50-150字)、难度(简单/中等/困难)、关键词(逗号分隔)
 3. 只返回 JSON，不要任何解释文字，格式如下：
 {"units":[{"title":"第一单元 xxx","summary":"单元概述","points":[{"title":"知识点标题","type":"重点","content":"详细内容","difficulty":"中等","keywords":"关键词1,关键词2"}]}]}`
-    const raw = await this.ai.chatSync(teacher.id, { messages: [{ role: 'user', content: prompt }] })
+    const raw = await this.ai.chatSync('teacher', teacher.id, { messages: [{ role: 'user', content: prompt }] })
     const parsed = this.safeParseJson(raw)
     if (!parsed?.units?.length) throw new BadRequestException('AI 生成失败或返回格式错误，请检查 AI 配置后重试')
 

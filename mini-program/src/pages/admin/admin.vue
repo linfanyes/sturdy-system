@@ -29,7 +29,7 @@
       <!-- 顶部 Tab 切换 -->
       <view class="tabs">
         <text class="tab" :class="{ on: tab === 'school' }" @click="switchTab('school')">🏫 学校</text>
-        <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 管理员</text>
+        <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 校管理员</text>
         <text class="tab" :class="{ on: tab === 'config' }" @click="switchTab('config')">⚙️ 配置</text>
         <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI厂商</text>
       </view>

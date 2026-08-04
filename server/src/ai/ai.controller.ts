@@ -29,6 +29,7 @@ export class AiController {
 
   /** 流式对话（SSE）。前端用 wx.request 监听分片 data: {...} */
   @Post('chat')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   async chat(
     @Body() body: any,
@@ -40,7 +41,7 @@ export class AiController {
     res.setHeader('Connection', 'keep-alive')
     res.flushHeaders?.()
     try {
-      await this.ai.chatStream(t.sub, body, (delta: string) => {
+      await this.ai.chatStream(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body, (delta: string) => {
         res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
@@ -56,44 +57,50 @@ export class AiController {
 
   /** 结构化解析（导入学生/成绩时把自由文本转为对象数组） */
   @Post('parse')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   parse(@Body() body: { text: string; instruction?: string }, @CurrentTeacher() t: any) {
-    return this.ai.parse(t.sub, body)
+    return this.ai.parse(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 同步对话（微信小程序用，非流式） */
   @Post('chat-sync')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   chatSync(@Body() body: any, @CurrentTeacher() t: any) {
-    return this.ai.chatSync(t.sub, body).then((content) => ({ content }))
+    return this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body).then((content) => ({ content }))
   }
 
   /** AI 文生图（调用服务商图片生成模型） */
   @Post('gen-image')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   genImage(@Body() body: any, @CurrentTeacher() t: any) {
-    return this.ai.genImage(t.sub, body)
+    return this.ai.genImage(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** AI 文生视频（调用服务商视频生成模型） */
   @Post('gen-video')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   genVideo(@Body() body: any, @CurrentTeacher() t: any) {
-    return this.ai.genVideo(t.sub, body)
+    return this.ai.genVideo(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 语音识别 ASR：接收 base64 音频，调用配置的 AI 服务商多模态模型转文字 */
   @Post('asr')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   asr(@Body() body: { audio: string; format?: string }, @CurrentTeacher() t: any) {
-    return this.ai.asr(t.sub, body)
+    return this.ai.asr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 图片 OCR：接收 base64 图片，调用多模态模型识别文字 */
   @Post('ocr')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   ocr(@Body() body: { image: string }, @CurrentTeacher() t: any) {
-    return this.ai.ocr(t.sub, body)
+    return this.ai.ocr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /**
@@ -103,9 +110,10 @@ export class AiController {
    * @returns { text: string } 解析后的纯文本
    */
   @Post('parse-file')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   parseFile(@Body() body: { fileName: string; fileData: string }, @CurrentTeacher() t: any) {
-    return this.ai.parseFile(t.sub, body)
+    return this.ai.parseFile(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成分析报告 */
@@ -138,7 +146,7 @@ export class AiController {
 2) 各学科亮点与薄弱点
 3) 改进建议（具体、可操作）
 \n${lines.join('\n')}`
-    const content = await this.ai.chatSync(t.sub, { messages: [{ role: 'user', content: prompt }] })
+    const content = await this.ai.chatSync('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] })
     return { content }
   }
 
@@ -161,7 +169,7 @@ export class AiController {
 2) 优势学科与薄弱学科
 3) 针对性提升建议（具体、可操练）
 \n${lines.join('\n')}`
-    const content = await this.ai.chatSync(t.sub, { messages: [{ role: 'user', content: prompt }] })
+    const content = await this.ai.chatSync('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] })
     return { content }
   }
 }

@@ -267,9 +267,15 @@ export class SchoolAdminService {
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
-    const pwd = newPassword && newPassword.length >= 6 && newPassword.length <= 20
-      ? newPassword
-      : '1314521'
+    // 提供密码时强制校验 6-20 位，避免静默回退到隐藏默认口令导致重置后无法登录
+    const raw = (newPassword || '').trim()
+    let pwd: string
+    if (raw) {
+      if (raw.length < 6 || raw.length > 20) throw new BadRequestException('密码长度须为 6-20 位')
+      pwd = raw
+    } else {
+      pwd = '1314521' // 未提供则使用默认口令，并随响应返回以便告知
+    }
     user.passwordHash = hashPassword(pwd)
     await this.userRepo.save(user)
     return { ok: true, defaultPassword: pwd }
@@ -949,11 +955,11 @@ export class SchoolAdminService {
    * 返回与 parseTeacherFile 同构的预览行（含校验状态）。
    */
   async aiRecognizeTeachers(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
-    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const { text } = await this.ai.parseFile('teacher', teacherId, { fileName: filename, fileData: dataBase64 })
     const instruction =
       '从下列文本中提取教师名单，每行/每位教师一行。只返回 JSON 数组，不要解释或前后缀。' +
       '元素字段：name(姓名,必填字符串), gender(性别,仅"男"或"女",可空), subject(任教学科,可空), phone(手机号,可空)。'
-    const res = await this.ai.parse(teacherId, { text, instruction })
+    const res = await this.ai.parse('teacher', teacherId, { text, instruction })
     const rows: any[] = []
     let validCount = 0
     let errorCount = 0
@@ -978,12 +984,12 @@ export class SchoolAdminService {
    * AI 识别学生文件：文本解析后交给大模型结构化，返回与 parseStudentFile 同构的预览行。
    */
   async aiRecognizeStudents(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
-    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const { text } = await this.ai.parseFile('teacher', teacherId, { fileName: filename, fileData: dataBase64 })
     const instruction =
       '从下列文本中提取学生名单，每行/每位学生一行。只返回 JSON 数组，不要解释或前后缀。' +
       '元素字段：name(姓名,必填字符串), gender(性别,仅"男"或"女",必填), studentNo(学号,可空), ' +
       'parentName(家长姓名,可空), parentPhone(家长电话,可空数字)。'
-    const res = await this.ai.parse(teacherId, { text, instruction })
+    const res = await this.ai.parse('teacher', teacherId, { text, instruction })
     const rows: any[] = []
     let validCount = 0
     let errorCount = 0
@@ -1010,12 +1016,12 @@ export class SchoolAdminService {
    * AI 识别班级文件：文本解析后交给大模型结构化，返回与 parseClassFile 同构的预览行。
    */
   async aiRecognizeClasses(teacherId: string, filename: string, dataBase64: string): Promise<{ rows: any[]; validCount: number; errorCount: number }> {
-    const { text } = await this.ai.parseFile(teacherId, { fileName: filename, fileData: dataBase64 })
+    const { text } = await this.ai.parseFile('teacher', teacherId, { fileName: filename, fileData: dataBase64 })
     const instruction =
       '从下列文本中提取班级名单，每行/每个班级一行。只返回 JSON 数组，不要解释或前后缀。' +
       '元素字段：name(班级名称,必填), grade(年级,必填), classNo(班级序号,可空), ' +
       'headTeacher(班主任姓名,必填), term(学期,可空)。'
-    const res = await this.ai.parse(teacherId, { text, instruction })
+    const res = await this.ai.parse('teacher', teacherId, { text, instruction })
     const rows: any[] = []
     let validCount = 0
     let errorCount = 0

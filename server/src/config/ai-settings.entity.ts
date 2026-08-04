@@ -8,7 +8,15 @@ import { BaseEntity } from '../common/entities/base.entity'
  */
 @Entity('ai_settings')
 export class AiSettings extends BaseEntity {
-  /** 关联服务商 code（如 'ali-qwen'、'deepseek'），由教师选择 */
+  /** 配置所有者类型：teacher（老师）| school_admin（校管）。校管由超管配置的供应商中选择并自填 Key。 */
+  @Column({ default: 'teacher' })
+  ownerType: string
+
+  /** 配置所有者 ID（teacherId 或 schoolAdminId），与 ownerType 联合确定一条配置 */
+  @Column({ default: '' })
+  ownerId: string
+
+  /** 关联服务商 code（如 'ali-qwen'、'deepseek'），由教师/校管从超管配置的清单中选择 */
   @Column({ default: '' })
   providerCode: string
 

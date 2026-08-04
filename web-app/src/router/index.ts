@@ -30,7 +30,7 @@ export const routes: RouteRecordRaw[] = [
     children: [
       { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '超管工作台' } },
       { path: 'schools', name: 'super-schools', component: () => import('@/views/super/Schools.vue'), meta: { title: '学校管理' } },
-      { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '管理员管理' } },
+      { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '校管理员' } },
       { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },
       { path: 'config', name: 'super-config', component: () => import('@/views/super/PlatformConfig.vue'), meta: { title: '平台配置' } },
       { path: 'ai-providers', name: 'super-ai-providers', component: () => import('@/views/super/AiProviders.vue'), meta: { title: 'AI 服务商' } },
@@ -51,6 +51,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'textbooks', name: 'school-admin-textbooks', component: () => import('@/views/school-admin/Textbooks.vue'), meta: { title: '教材知识库' } },
       { path: 'resource-library', name: 'school-admin-resource-library', component: () => import('@/views/school-admin/ResourceLibrary.vue'), meta: { title: '教学资源库' } },
       { path: 'features', name: 'school-admin-features', component: () => import('@/views/school-admin/FeatureFlags.vue'), meta: { title: '功能包开关' } },
+      { path: 'ai-config', name: 'school-admin-ai-config', component: () => import('@/views/school-admin/AiConfig.vue'), meta: { title: 'AI 配置' } },
     ],
   },
   // 教师：全部子路由，meta.feature 控制可见性

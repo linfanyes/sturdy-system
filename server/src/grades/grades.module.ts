@@ -233,7 +233,7 @@ class GradesService extends CrudService<Grade> {
         : /jpe?g/i.test(ext)
           ? 'image/jpeg'
           : 'image/png'
-      text = await this.ai.recognizeImage(teacherId, `data:${mime};base64,${data}`)
+      text = await this.ai.recognizeImage('teacher', teacherId, `data:${mime};base64,${data}`)
     } else {
       const buf = Buffer.from(data, 'base64')
       if (/xlsx?/i.test(ext)) {
@@ -245,7 +245,7 @@ class GradesService extends CrudService<Grade> {
 
     let parsed: any[] = []
     try {
-      parsed = await this.ai.parse(teacherId, { text, instruction: GRADE_INSTRUCTION })
+      parsed = await this.ai.parse('teacher', teacherId, { text, instruction: GRADE_INSTRUCTION })
     } catch (e: any) {
       throw new BadRequestException('AI 解析失败：' + (e?.message || e))
     }

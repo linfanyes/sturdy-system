@@ -88,8 +88,8 @@ export class AiService {
     @InjectRepository(NoteItem) private readonly noteRepo: Repository<NoteItem>,
   ) {}
 
-  private async buildSettings(teacherId: string) {
-    const s = await this.cfg.getAiSettings(teacherId)
+  private async buildSettings(ownerType: string, ownerId: string) {
+    const s = await this.cfg.getAiSettings(ownerType, ownerId)
     if (!s.apiKey) {
       throw new BadRequestException('未配置 AI 密钥，请到「后端配置」中填写')
     }
@@ -266,8 +266,8 @@ export class AiService {
   }
 
   /** 对外封装：传入图片 data URL，自动鉴权后调用多模态模型做 OCR 文字识别 */
-  async recognizeImage(teacherId: string, dataUrl: string): Promise<string> {
-    const s = await this.buildSettings(teacherId)
+  async recognizeImage(ownerType: string, ownerId: string, dataUrl: string): Promise<string> {
+    const s = await this.buildSettings(ownerType, ownerId)
     return this.ocrImage(s, dataUrl)
   }
 
@@ -320,13 +320,13 @@ export class AiService {
    * 2) 若本次携带 files，把解析后的文本作为一条 text 部分追加到最后一条用户消息（没有则新建一条）。
    * 图片以 OpenAI 视觉格式（image_url）原样保留，模型选择逻辑不变。
    */
-  private async buildMessages(body: any, s: any, teacherId?: string): Promise<any[]> {
+  private async buildMessages(body: any, s: any, ownerType?: string, ownerId?: string): Promise<any[]> {
     const sysParts: string[] = []
     if (s.systemPrompt) sysParts.push(s.systemPrompt)
     // 自动注入本地上下文（对齐 web buildContext，由后端构造）
-    if (teacherId) {
+    if (ownerType) {
       try {
-        const ctx = await this.buildLocalContext(teacherId)
+        const ctx = await this.buildLocalContext(ownerType, ownerId)
         if (ctx) sysParts.push(ctx)
       } catch {
         /* 上下文构造失败不影响主流程 */
@@ -363,7 +363,10 @@ export class AiService {
    * 数据量上限做了控制，避免 token 过大。
    * 8 路并行查询，降低冷启动延迟（从 ~8×RTT 降为 ~1×RTT）。
    */
-  private async buildLocalContext(teacherId: string): Promise<string> {
+  private async buildLocalContext(ownerType: string, ownerId: string): Promise<string> {
+    // 校管无教师本地数据，跳过上下文注入，避免按 teacherId 查不到数据而报错
+    if (ownerType !== 'teacher') return ''
+    const teacherId = ownerId
     const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
     const [u, classes, students, teachers, grades, exams, awards, notes] = await Promise.all([
       this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null),
@@ -416,13 +419,14 @@ export class AiService {
    * onDelta 每收到一段文本回调一次（用于 SSE 推送给前端）。
    */
   async chatStream(
-    teacherId: string,
+    ownerType: string,
+    ownerId: string,
     body: any,
     onDelta: (text: string) => void,
   ): Promise<void> {
-    const s = await this.buildSettings(teacherId)
+    const s = await this.buildSettings(ownerType, ownerId)
     const model = this.resolveModel(body, s)
-    const messages = await this.buildMessages(body, s, teacherId)
+    const messages = await this.buildMessages(body, s, ownerType, ownerId)
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
@@ -475,10 +479,10 @@ export class AiService {
    * 同步对话：一次性返回完整文本。
    * 微信小程序 wx.request 不支持 SSE 流式，前端用此接口。
    */
-  async chatSync(teacherId: string, body: any): Promise<string> {
-    const s = await this.buildSettings(teacherId)
+  async chatSync(ownerType: string, ownerId: string, body: any): Promise<string> {
+    const s = await this.buildSettings(ownerType, ownerId)
     const model = this.resolveModel(body, s)
-    const messages = await this.buildMessages(body, s, teacherId)
+    const messages = await this.buildMessages(body, s, ownerType, ownerId)
     const fallback = '未连接到远端大模型，请在设置中检查AI配置后重试。'
     try {
       const resp = await axios.post(
@@ -508,10 +512,11 @@ export class AiService {
 
   /** 非流式结构化解析：把非结构化文本交给 AI 解析为 JSON 数组 */
   async parse(
-    teacherId: string,
+    ownerType: string,
+    ownerId: string,
     body: { text: string; instruction?: string },
   ): Promise<any> {
-    const s = await this.buildSettings(teacherId)
+    const s = await this.buildSettings(ownerType, ownerId)
     const sys =
       (body.instruction ||
         '请把下面的内容解析为 JSON 数组，每个元素是一个对象，只返回 JSON，不要解释。') +
@@ -549,8 +554,8 @@ export class AiService {
   }
 
   /** AI 文生图：调用服务商图片生成接口，返回图片 URL 数组 */
-  async genImage(teacherId: string, body: any): Promise<{ urls: string[] }> {
-    const s = await this.buildSettings(teacherId)
+  async genImage(ownerType: string, ownerId: string, body: any): Promise<{ urls: string[] }> {
+    const s = await this.buildSettings(ownerType, ownerId)
     const model = body.imageModel || s.imageModel || s.textModel
     const prompt = body.prompt
     if (!prompt) throw new BadRequestException('请输入图片描述')
@@ -589,8 +594,8 @@ export class AiService {
   }
 
   /** AI 文生视频：调用服务商视频生成接口，返回任务ID或文件URL */
-  async genVideo(teacherId: string, body: any): Promise<{ taskId?: string; url?: string }> {
-    const s = await this.buildSettings(teacherId)
+  async genVideo(ownerType: string, ownerId: string, body: any): Promise<{ taskId?: string; url?: string }> {
+    const s = await this.buildSettings(ownerType, ownerId)
     const model = body.videoModel || s.videoModel || ''
     const prompt = body.prompt
     if (!prompt) throw new BadRequestException('请输入视频描述')
@@ -613,10 +618,10 @@ export class AiService {
   }
 
   /** 语音识别 ASR：用多模态模型处理音频数据 */
-  async asr(teacherId: string, body: { audio: string; format?: string }): Promise<{ text: string }> {
+  async asr(ownerType: string, ownerId: string, body: { audio: string; format?: string }): Promise<{ text: string }> {
     if (!body.audio) return { text: '' }
     try {
-      const s = await this.buildSettings(teacherId)
+      const s = await this.buildSettings(ownerType, ownerId)
       const resp = await axios.post(
         `${s.baseUrl}/chat/completions`,
         {
@@ -644,7 +649,8 @@ export class AiService {
    * 前端传 { fileName, fileData(base64) }，返回解析后的纯文本。
    */
   async parseFile(
-    teacherId: string,
+    ownerType: string,
+    ownerId: string,
     body: { fileName: string; fileData: string },
   ): Promise<{ text: string }> {
     if (!body.fileData) return { text: '' }
@@ -663,7 +669,7 @@ export class AiService {
         let text = await this.extractPdfText(buf)
         // 文本极少 → 疑似扫描件，尝试用多模态 OCR
         if (text.trim().length < 30) {
-          const s = await this.buildSettings(teacherId)
+          const s = await this.buildSettings(ownerType, ownerId)
           if (s?.visionModel && s?.apiKey) {
             try {
               const ocrText = await this.ocrPdf(buf, s)
@@ -688,7 +694,7 @@ export class AiService {
       }
       const mime = mimeMap[ext] || 'jpeg'
       const dataUrl = `data:image/${mime};base64,${body.fileData}`
-      const s = await this.buildSettings(teacherId)
+      const s = await this.buildSettings(ownerType, ownerId)
       const text = await this.ocrImage(s, dataUrl)
       return { text: text || '未识别到文字' }
     }
@@ -697,10 +703,10 @@ export class AiService {
   }
 
   /** 图片 OCR：用多模态模型识别图片中的文字 */
-  async ocr(teacherId: string, body: { image: string }): Promise<{ text: string }> {
+  async ocr(ownerType: string, ownerId: string, body: { image: string }): Promise<{ text: string }> {
     if (!body.image) return { text: '' }
     try {
-      const s = await this.buildSettings(teacherId)
+      const s = await this.buildSettings(ownerType, ownerId)
       const resp = await axios.post(
         `${s.baseUrl}/chat/completions`,
         {

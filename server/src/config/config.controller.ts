@@ -57,18 +57,18 @@ export class ConfigController {
     return this.cfg.setAppConfig(key, body.value)
   }
 
-  @Roles('teacher')
+  @Roles('teacher', 'school_admin')
   @Get('ai')
   @UseGuards(JwtAuthGuard)
   async getAi(@CurrentTeacher() t: any) {
-    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub))
   }
 
-  @Roles('teacher')
+  @Roles('teacher', 'school_admin')
   @Put('ai')
   @UseGuards(JwtAuthGuard)
   saveAi(@CurrentTeacher() t: any, @Body() dto: any) {
-    return this.cfg.saveAiSettings(t.sub, dto)
+    return this.cfg.saveAiSettings(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, dto)
   }
 
   /**
@@ -76,7 +76,7 @@ export class ConfigController {
    * 任意已登录用户均可调用；baseUrl / apiKey 由客户端传入（不泄露平台密钥）。
    * 支持传入 providerCode 自动从 ai_providers 表解析 baseUrl。
    */
-  @Roles('teacher', 'super')
+  @Roles('teacher', 'super', 'school_admin')
   @Post('ai/models')
   @UseGuards(JwtAuthGuard)
   listProviderModels(@Body() dto: { provider?: string; providerCode?: string; baseUrl?: string; apiKey?: string }) {
@@ -87,19 +87,19 @@ export class ConfigController {
    * 教师读取平台 AI 默认配置（作为教师个人 AI 设置的兜底默认值）。
    * 复用 getAiSettings：无教师个人设置时回退平台默认值。
    */
-  @Roles('teacher')
+  @Roles('teacher', 'school_admin')
   @Get('teacher/ai-defaults')
   @UseGuards(JwtAuthGuard)
   async getTeacherAiDefaults(@CurrentTeacher() t: any) {
-    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub))
   }
 
-  /** 教师读取个人 AI 设置（无则回退平台默认值） */
-  @Roles('teacher')
+  /** 教师/校管读取个人 AI 设置（无则回退平台默认值） */
+  @Roles('teacher', 'school_admin')
   @Get('ai-settings')
   @UseGuards(JwtAuthGuard)
   async getAiSettings(@CurrentTeacher() t: any) {
-    return this.sanitizeAi(await this.cfg.getAiSettings(t.sub))
+    return this.sanitizeAi(await this.cfg.getAiSettings(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub))
   }
 
   /** AI 配置下发：apiKey 仅以脱敏形式展示，明文只在服务端使用 */
@@ -108,11 +108,11 @@ export class ConfigController {
   }
 
   /** 教师保存个人 AI 设置（web 用 PATCH；保留原有 @Put('ai') 超管域不变） */
-  @Roles('teacher')
+  @Roles('teacher', 'school_admin')
   @Patch('ai-settings')
   @UseGuards(JwtAuthGuard)
   saveAiSettings(@CurrentTeacher() t: any, @Body() dto: any) {
-    return this.cfg.saveAiSettings(t.sub, dto)
+    return this.cfg.saveAiSettings(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, dto)
   }
 
   /**
@@ -148,7 +148,7 @@ export class ConfigController {
    * 教师读取已启用的 AI 服务商列表（小程序配置页/教师配置页共用）。
    * 与 GET /ai-providers 不同：此处仅返回启用项，且剔除内部字段（teacherId 等）。
    */
-  @Roles('teacher')
+  @Roles('teacher', 'school_admin')
   @Get('ai-providers')
   @UseGuards(JwtAuthGuard)
   async listPublicProviders() {

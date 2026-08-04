@@ -264,7 +264,7 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
   super: [
     { name: 'super-dashboard', label: '工作台', to: '/super', icon: LayoutDashboard, color: 'butter' },
     { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
-    { name: 'super-admins', label: '管理员管理', to: '/super/admins', icon: Users, color: 'purple' },
+    { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
     { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
     { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
     { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
@@ -278,6 +278,7 @@ const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
     { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'purple' },
     { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
     { name: 'school-admin-resource-library', label: '教学资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'butter' },
+    { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'green' },
   ],
   parent: [
     { name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' },

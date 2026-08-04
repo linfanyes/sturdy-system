@@ -283,15 +283,16 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  /** 取教师的 AI 设置；无则回退平台默认值 + 默认服务商 */
-  async getAiSettings(teacherId: string): Promise<AiSettings> {
-    let s = await this.aiRepo.findOne({ where: { teacherId } })
+  /** 取教师/校管的 AI 设置；无则回退平台默认值 + 默认服务商 */
+  async getAiSettings(ownerType: string, ownerId: string): Promise<AiSettings> {
+    let s = await this.aiRepo.findOne({ where: { ownerType, ownerId } })
     if (!s) {
       const defaultProv = await this.providerRepo.findOne({ where: { isDefault: true, enabled: true } })
         || await this.providerRepo.findOne({ where: { enabled: true }, order: { sortOrder: 'ASC' } })
       const env = (key: string, fallback = '') => this.env.get(key) || fallback
       s = this.aiRepo.create({
-        teacherId,
+        ownerType,
+        ownerId,
         providerCode: defaultProv?.code || '',
         baseUrl: defaultProv?.baseUrl || env('aiBaseUrl'),
         apiKey: '', // 密钥必须由教师自行填写，平台不下发
@@ -320,9 +321,9 @@ export class ConfigService implements OnModuleInit {
     return s
   }
 
-  async saveAiSettings(teacherId: string, dto: Partial<AiSettings>) {
-    let s = await this.aiRepo.findOne({ where: { teacherId } })
-    if (!s) s = this.aiRepo.create({ teacherId })
+  async saveAiSettings(ownerType: string, ownerId: string, dto: Partial<AiSettings>) {
+    let s = await this.aiRepo.findOne({ where: { ownerType, ownerId } })
+    if (!s) s = this.aiRepo.create({ ownerType, ownerId })
     // 若切换了 providerCode 且 apiKey 为空，自动从 ai_providers 填充 baseUrl + 默认模型
     if (dto.providerCode && dto.providerCode !== s.providerCode && !dto.apiKey) {
       const prov = await this.providerRepo.findOne({ where: { code: dto.providerCode } })
@@ -346,7 +347,7 @@ export class ConfigService implements OnModuleInit {
     } else if (incomingKey) {
       dto.apiKey = encryptSecret(incomingKey)
     }
-    Object.assign(s, dto, { teacherId })
+    Object.assign(s, dto, { ownerType, ownerId })
     return this.aiRepo.save(s)
   }
 
