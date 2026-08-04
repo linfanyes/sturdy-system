@@ -25,11 +25,8 @@ export default {
         return _preloadAssets.call(wx, opts)
       }
     }
-    // 初始化微信云托管私有链路：必须先 wx.cloud.init 才能调用 wx.cloud.callContainer，
-    // 否则请求会一直挂起无回调（表现为登录超时 / Error: timeout）。
-    if (typeof wx !== 'undefined' && wx.cloud && typeof wx.cloud.init === 'function') {
-      wx.cloud.init({ env: CLOUDRUN_ENV, traceUser: true })
-    }
+    // 微信云托管私有链路初始化已统一收敛到 main.js（仅调用一次，避免重复 init 触发
+    // SystemError: Cannot read property 'errMsg' of undefined）。此处不再重复调用。
     // 演示模式：启动时自动恢复（仅开发/预览构建；生产构建 DEMO_MODE_ENABLED=false，不会进入）
     if (DEMO_MODE_ENABLED && uni.getStorageSync('g_mock_mode') === 'true') {
       mockMode.enabled = true
