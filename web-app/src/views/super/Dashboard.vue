@@ -125,7 +125,7 @@ function toast(msg: string) {
     <!-- 欢迎横幅 -->
     <WelcomeHero
       :name="auth.user?.name || '超级管理员'"
-      role-label="工作台"
+      role-label="仪表盘"
       subtitle="全局概览"
       avatar="👑"
       accent="butter"

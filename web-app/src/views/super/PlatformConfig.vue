@@ -96,7 +96,6 @@ const form = reactive({
   imSdkAppId: '',
   imSecretKey: '',
   defaultSubjects: '',
-  parentLoginCode: '',
   jwtExpiresIn: '',
 })
 
@@ -121,7 +120,6 @@ const keyMap: Record<string, string> = {
   imSdkAppId: 'imSdkAppId',
   imSecretKey: 'imSecretKey',
   defaultSubjects: 'defaultSubjects',
-  parentLoginCode: 'parentLoginCode',
   jwtExpiresIn: 'jwtExpiresIn',
 }
 
@@ -592,10 +590,6 @@ function removeCustomSubject(name: string) {
               </div>
             </div>
             <p class="text-xs text-cocoa-400 mt-2">已选 {{ selectedSubjects.length }} 个学科：{{ selectedSubjects.join('、') || '无' }}</p>
-          </div>
-          <div>
-            <label :class="labelCls">家长登录码</label>
-            <input v-model="form.parentLoginCode" :class="inputCls" class="mt-1" placeholder="家长登录码" />
           </div>
           <div>
             <label :class="labelCls">JWT 过期时间</label>

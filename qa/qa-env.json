@@ -1,32 +1,8 @@
 {
   "base": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
-  "password": "Test@2026",
-  "created": {
-    "schoolId": "59df1b26-850d-43f9-8b9f-baf7f905272f",
-    "schoolName": "QA-代码审查测试学校20260802",
-    "saId": "e4c89628-eedd-461b-b5cb-12857a0d156b",
-    "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNGM4OTYyOC1lZWRkLTQ2MWItYjVjYi0xMjg1N2EwZDE1NmIiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiI1OWRmMWIyNi04NTBkLTQzZjktOGI5Zi1iYWY3ZjkwNTI3MmYiLCJpYXQiOjE3ODU2NTU1MTYsImV4cCI6MTc4ODI0NzUxNn0.EwqpSXjixvcjzUqCGA5Xk4C9voQ4IdDR_utnvLaMXvM",
-    "teacherId": "24581198-e4e6-4601-ad8d-8b522f1bce4f",
-    "teacher2Id": "c1dd4932-7b7d-4d9f-a957-afa74dfe7e4c",
-    "teacherToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNDU4MTE5OC1lNGU2LTQ2MDEtYWQ4ZC04YjUyMmYxYmNlNGYiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiNTlkZjFiMjYtODUwZC00M2Y5LThiOWYtYmFmN2Y5MDUyNzJmIiwiaWF0IjoxNzg1NjU1NTE2LCJleHAiOjE3ODgyNDc1MTZ9.VFL3c60raeKAZWK3FqUiFca0JyggN3qBSkVRluoEuck",
-    "teacher2Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMWRkNDkzMi03YjdkLTRkOWYtYTk1Ny1hZmE3NGRmZTdlNGMiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiNTlkZjFiMjYtODUwZC00M2Y5LThiOWYtYmFmN2Y5MDUyNzJmIiwiaWF0IjoxNzg1NjU1NTE2LCJleHAiOjE3ODgyNDc1MTZ9.1tiz-86HxQZJmPWj-frc8jeuei2j48kKffygJP0ntqU",
-    "classId": "11e626da-25ee-451c-821d-6547396a13f4",
-    "students": [
-      {
-        "id": "e3e82a6d-ce73-46ab-a396-811a39e72a4b",
-        "name": "QA学生甲",
-        "studentNo": "12101"
-      },
-      {
-        "id": "d3fe90a3-f32f-42a9-9a0a-da8952f41d33",
-        "name": "QA学生乙",
-        "studentNo": "12104"
-      },
-      {
-        "id": "e1fcfa2e-f962-4c7a-ae3b-47ac7bbb870b",
-        "name": "QA学生丙",
-        "studentNo": "12103"
-      }
-    ]
-  }
+  "sa_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmOGJkMDhkOC04YzM3LTQ5ODEtYTk2OS0yNDE3ZmRkY2JkNWUiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiI5YjQwZjRhNS00OGZmLTRlMWQtYmFhNy05N2Y5OGY0YWI5NmEiLCJpYXQiOjE3ODU4NjA1MDcsImV4cCI6MTc4ODQ1MjUwN30.WmQbkXVJxbjrQkL54dkMOUc_kbSX9kc826a5zQ_Fz34",
+  "school_id": "9b40f4a5-48ff-4e1d-baa7-97f98f4ab96a",
+  "teacher_id": "fec24d68-1946-4fd3-8298-05c9265b1549",
+  "class_id": "ba875018-7593-48df-bf3e-18bf63a7e431",
+  "teacher_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmZWMyNGQ2OC0xOTQ2LTRmZDMtODI5OC0wNWM5MjY1YjE1NDkiLCJyb2xlIjoidGVhY2hlciIsInNjaG9vbElkIjoiOWI0MGY0YTUtNDhmZi00ZTFkLWJhYTctOTdmOThmNGFiOTZhIiwiaWF0IjoxNzg1ODYwNjI5LCJleHAiOjE3ODg0NTI2Mjl9.O-dHDrGnLmmZFtOuVRhAFxkK9oFZO7OwcovJ6RJWeko"
 }

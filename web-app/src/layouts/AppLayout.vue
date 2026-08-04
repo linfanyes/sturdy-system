@@ -68,6 +68,8 @@ interface MenuCategory {
   color: ColorTone
   emoji?: string
   groups: MenuSubGroup[]
+  /** 直达分类：点击直接跳转其首个子项，不在内容区展开二级瓷砖（如超管「仪表盘」） */
+  direct?: boolean
 }
 
 /* ============ 配色辅助 ============ */
@@ -259,19 +261,43 @@ const teacherMenu: MenuCategory[] = [
   },
 ]
 
-/* 非教师角色扁平菜单（保留原结构） */
+/* 超管菜单：仪表盘（直达）/ 账户管理（学校管理·校管理员·学校功能包）/ 设置（平台配置·AI 服务商）
+   复用「侧边栏图标分类 + 内容区二级瓷砖」模式；教师/学生/审计日志按需求从菜单移除（页面与路由保留）。 */
+const superMenu: MenuCategory[] = [
+  {
+    label: '仪表盘', color: 'butter', icon: LayoutDashboard, direct: true,
+    groups: [{ label: '', items: [
+      { name: 'super-dashboard', label: '仪表盘', to: '/super', icon: LayoutDashboard, color: 'butter' },
+    ] }],
+  },
+  {
+    label: '账户管理', color: 'blue', icon: Users,
+    groups: [{ label: '', items: [
+      { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
+      { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
+      { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
+    ] }],
+  },
+  {
+    label: '审计日志', color: 'cocoa', icon: ScrollText, direct: true,
+    groups: [{ label: '', items: [
+      { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ScrollText, color: 'cocoa' },
+    ] }],
+  },
+  {
+    label: '设置', color: 'cream', icon: Settings,
+    groups: [{ label: '', items: [
+      { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
+      { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
+    ] }],
+  },
+]
+/** 超管侧边栏中的可展开分类（排除直达的「仪表盘」） */
+const superCats = computed(() => superMenu.filter((c) => !c.direct))
+
+/* 非教师角色扁平菜单（保留原结构；super 已迁至 superMenu） */
 const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
-  super: [
-    { name: 'super-dashboard', label: '工作台', to: '/super', icon: LayoutDashboard, color: 'butter' },
-    { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
-    { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
-    { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
-    { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
-    { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
-    { name: 'super-teachers', label: '教师管理', to: '/super/teachers', icon: Users, color: 'blue' },
-    { name: 'super-students', label: '学生管理', to: '/super/students', icon: GraduationCap, color: 'rose' },
-    { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ClipboardList, color: 'cocoa' },
-  ],
+  super: [],
   school_admin: [
     { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin', icon: LayoutDashboard, color: 'butter' },
     { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
@@ -326,6 +352,13 @@ const openCats = ref<string[]>([])
 /** 自动展开当前路由对应的分类 */
 function findCategoryForRoute(targetName: any) {
   for (const cat of visibleTeacherMenu.value) {
+    if (cat.direct) continue
+    for (const g of cat.groups) {
+      if (g.items.some((it) => it.name === targetName)) return cat.label
+    }
+  }
+  for (const cat of superMenu) {
+    if (cat.direct) continue
     for (const g of cat.groups) {
       if (g.items.some((it) => it.name === targetName)) return cat.label
     }
@@ -333,25 +366,34 @@ function findCategoryForRoute(targetName: any) {
   return ''
 }
 
-onMounted(() => {
-  activeCategory.value = findCategoryForRoute(route.name)
-  if (activeCategory.value) openCats.value = [activeCategory.value]
-})
-watch(() => route.name, () => {
+function syncActiveCat() {
   const c = findCategoryForRoute(route.name)
-  if (c) {
-    activeCategory.value = c
-    if (!openCats.value.includes(c)) openCats.value = [...openCats.value, c]
-  }
-})
+  // 关键：路由进入直达项（仪表盘/审计日志）或无匹配分类时，必须清空 activeCategory，
+  // 否则之前选中的分类（如「设置」）会残留在面包屑路径中（如「仪表盘 / 设置 / 审计日志」）。
+  activeCategory.value = c
+  if (c && !openCats.value.includes(c)) openCats.value = [...openCats.value, c]
+}
+onMounted(syncActiveCat)
+watch(() => route.name, syncActiveCat)
 
 function toggleCat(label: string) {
-  const onSubPage = route.name !== 'teacher-dashboard'
-  // 从子页面点击分类：始终回到工作台并展示该分类的二级菜单（不 toggle off）
+  const role = auth.role
+  const rootName = role === 'super' ? 'super-dashboard' : 'teacher-dashboard'
+  const onSubPage = (role === 'teacher' || role === 'super') && route.name !== rootName
+  // 直达分类（如超管「仪表盘」）：点击直接跳转首个子项，不展开瓷砖
+  const menu = role === 'super' ? superMenu : visibleTeacherMenu.value
+  const cat = menu.find((c) => c.label === label)
+  if (cat?.direct) {
+    activeCategory.value = ''
+    openCats.value = []
+    router.push(cat.groups[0]?.items[0]?.to || '/')
+    return
+  }
+  // 从子页面点击分类：始终回到工作台根并展开该分类的二级菜单
   if (onSubPage) {
     activeCategory.value = label
     openCats.value = [label]
-    router.push('/teacher')
+    router.push(role === 'super' ? '/super' : '/teacher')
     return
   }
   // 在工作台页面：切换/折叠分类
@@ -363,18 +405,18 @@ function toggleCat(label: string) {
   openCats.value = activeCategory.value ? [activeCategory.value] : []
 }
 
-/** 是否在内容区展示二级菜单瓷砖（仅教师 + 已选分类 + 工作台根页面） */
+/** 是否在内容区展示二级菜单瓷砖（教师/超管 + 已选分类 + 工作台根页面） */
 const showTilesPanel = computed(() =>
-  auth.role === 'teacher' && !!activeCategory.value && route.name === 'teacher-dashboard'
+  ((auth.role === 'teacher' && !!activeCategory.value && route.name === 'teacher-dashboard') ||
+   (auth.role === 'super' && !!activeCategory.value && route.name === 'super-dashboard'))
 )
 
-/** 返回工作台首页（清除分类选择，展示工作台内容） */
+/** 返回首页（清除分类选择，展示仪表盘内容）。按角色跳转，避免超管误跳到教师页 */
 function backToDashboard() {
   activeCategory.value = ''
   openCats.value = []
-  if (route.name !== 'teacher-dashboard') {
-    router.push('/teacher')
-  }
+  if (auth.role === 'super' && route.name !== 'super-dashboard') router.push('/super')
+  else if (auth.role === 'teacher' && route.name !== 'teacher-dashboard') router.push('/teacher')
 }
 
 async function handleLogout() {
@@ -431,6 +473,8 @@ const hasResults = computed(() => {
 })
 
 const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
+/** 是否处于仪表盘首页根路由（首页不重复渲染 pageTitle，避免「仪表盘 / 仪表盘」） */
+const isHome = computed(() => route.name === 'super-dashboard' || route.name === 'teacher-dashboard')
 
 const today = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
@@ -460,6 +504,10 @@ const displayName = computed(() => {
 /** 当前激活分类的二级组 */
 const activeGroups = computed(() => {
   if (!activeCategory.value) return []
+  if (auth.role === 'super') {
+    const cat = superMenu.find((c) => c.label === activeCategory.value)
+    return cat?.groups || []
+  }
   const cat = visibleTeacherMenu.value.find((c) => c.label === activeCategory.value)
   return cat?.groups || []
 })
@@ -498,7 +546,40 @@ function navigateTo(to: string) {
             <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
           </button>
         </template>
-        <!-- 非教师扁平菜单 -->
+        <!-- 超管：仪表盘直达 + 账户管理/设置 可展开分类 -->
+        <template v-else-if="auth.role === 'super'">
+          <router-link
+            v-for="cat in superMenu.filter((c) => c.direct)"
+            :key="cat.label"
+            :to="(cat.groups[0]?.items[0]?.to) || '#'"
+            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+            :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+          >
+            <div
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+              :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+            >
+              <component :is="cat.icon" class="w-5 h-5" />
+            </div>
+            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+          </router-link>
+          <button
+            v-for="cat in superCats"
+            :key="cat.label"
+            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+            :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            @click="toggleCat(cat.label)"
+          >
+            <div
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+              :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+            >
+              <component :is="cat.icon" class="w-5 h-5" />
+            </div>
+            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+          </button>
+        </template>
+        <!-- 其他非教师扁平菜单（校管/家长） -->
         <template v-else>
           <router-link
             v-for="item in flatItems"
@@ -610,13 +691,15 @@ function navigateTo(to: string) {
             </div>
             <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
               <Home class="h-3.5 w-3.5" />
-              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">园丁工作台</button>
-              <template v-if="activeCategory && auth.role === 'teacher'">
+              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '仪表盘' : '园丁工作台' }}</button>
+              <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super')">
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />
                 <span>{{ activeCategory }}</span>
               </template>
-              <ChevronRight class="h-3 w-3 text-cocoa-300" />
-              <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
+              <template v-if="!isHome">
+                <ChevronRight class="h-3 w-3 text-cocoa-300" />
+                <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
+              </template>
             </nav>
           </div>
           <div class="text-right">
@@ -632,7 +715,7 @@ function navigateTo(to: string) {
           <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
           <template v-if="showTilesPanel">
             <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-4">
-              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回工作台</button>
+              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回{{ auth.role === 'super' ? '仪表盘' : '工作台' }}</button>
               <ChevronRight class="w-4 h-4" />
               <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
             </div>

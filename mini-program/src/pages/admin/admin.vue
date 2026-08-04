@@ -26,19 +26,15 @@
         <text class="logout" @click="logout">退出</text>
       </view>
 
-      <!-- 顶部 Tab 切换 -->
-      <view class="tabs">
-        <text class="tab" :class="{ on: tab === 'dashboard' }" @click="switchTab('dashboard')">📊 仪表盘</text>
-        <text class="tab" :class="{ on: tab === 'school' }" @click="switchTab('school')">🏫 学校</text>
-        <text class="tab" :class="{ on: tab === 'teachers' }" @click="switchTab('teachers')">👩‍🏫 教师</text>
-        <text class="tab" :class="{ on: tab === 'students' }" @click="switchTab('students')">👨‍🎓 学生</text>
-        <text class="tab" :class="{ on: tab === 'admin' }" @click="switchTab('admin')">👤 校管理员</text>
-        <text class="tab" :class="{ on: tab === 'config' }" @click="switchTab('config')">⚙️ 配置</text>
-        <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI厂商</text>
-      </view>
+      <!-- 二级功能面板：带返回头 -->
+      <template v-if="subView">
+        <view class="sub-head">
+          <text class="sub-back" @click="back">← 返回</text>
+          <text class="sub-title">{{ subTitle }}</text>
+        </view>
 
       <!-- ===== 学校管理 ===== -->
-      <template v-if="tab === 'school'">
+      <view v-if="subView === 'school'">
         <view class="stats">
           <text class="sc">共 {{ schools.length }} 所学校</text>
           <text class="act" @click="openCreateSchool">＋ 新增学校</text>
@@ -73,10 +69,10 @@
             </view>
           </view>
         </view>
-      </template>
+      </view>
 
-      <!-- ===== 学校管理员管理（仅「管理员」页签展示，避免出现在配置/日志中） ===== -->
-      <template v-else-if="tab === 'admin'">
+      <!-- ===== 学校管理员管理 ===== -->
+      <view v-else-if="subView === 'schoolAdmin'">
         <view class="stats">
           <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
           <text class="act" @click="openCreate">＋ 新增</text>
@@ -101,10 +97,10 @@
             </view>
           </view>
         </view>
-      </template>
+      </view>
 
       <!-- ===== 平台配置 ===== -->
-      <template v-if="tab === 'config'">
+      <view v-else-if="subView === 'config'">
         <view class="stats"><text class="sc">平台全局配置（修改后即时生效）</text></view>
         <scroll-view scroll-y class="config-scroll">
           <view class="config-group" v-for="(group, gidx) in configGroups" :key="gidx">
@@ -151,10 +147,10 @@
             </view>
           </view>
         </scroll-view>
-      </template>
+      </view>
 
       <!-- ===== AI 服务商管理 ===== -->
-      <template v-if="tab === 'ai'">
+      <view v-else-if="subView === 'ai'">
         <view class="stats">
           <text class="sc">共 {{ providers.length }} 个厂商</text>
           <text class="act" @click="openCreateProvider">＋ 新增厂商</text>
@@ -177,7 +173,92 @@
             </view>
           </view>
         </view>
+      </view>
       </template>
+
+      <!-- 一级列表态 -->
+      <template v-else>
+        <!-- 仪表盘 -->
+        <view v-if="bottomTab === 'dashboard'" class="dash">
+          <view class="dash-welcome">
+            <text class="dash-hi">👋 欢迎回来</text>
+            <text class="dash-sub">系统全局概览与快捷入口</text>
+          </view>
+          <view class="dash-stats">
+            <view class="dstat"><text class="dstat-num">{{ schools.length }}</text><text class="dstat-label">学校</text></view>
+            <view class="dstat"><text class="dstat-num">{{ schoolAdmins.length }}</text><text class="dstat-label">校管理员</text></view>
+            <view class="dstat"><text class="dstat-num">{{ providers.length }}</text><text class="dstat-label">AI 厂商</text></view>
+            <view class="dstat"><text class="dstat-num">{{ todayLogCount }}</text><text class="dstat-label">今日日志</text></view>
+            <view class="dstat"><text class="dstat-num">{{ weekLogCount }}</text><text class="dstat-label">本周日志</text></view>
+          </view>
+          <view class="dash-menu">
+            <view class="dm" @click="quickOpen('account','school')"><text class="dm-ico">🏫</text><text class="dm-txt">学校管理</text></view>
+            <view class="dm" @click="quickOpen('account','schoolAdmin')"><text class="dm-ico">👤</text><text class="dm-txt">校管理员</text></view>
+            <view class="dm" @click="quickOpen('settings','config')"><text class="dm-ico">⚙️</text><text class="dm-txt">平台配置</text></view>
+            <view class="dm" @click="quickOpen('settings','ai')"><text class="dm-ico">🤖</text><text class="dm-txt">AI 服务商</text></view>
+          </view>
+        </view>
+
+        <!-- 账户管理二级列表 -->
+        <template v-else-if="bottomTab === 'account'">
+          <view class="menu-list">
+            <view class="menu-row" @click="openSub('school')">
+              <text class="menu-icon">🏫</text>
+              <view class="menu-info">
+                <text class="menu-name">学校管理</text>
+                <text class="menu-sub">{{ schools.length }} 所学校</text>
+              </view>
+              <text class="menu-arrow">›</text>
+            </view>
+            <view class="menu-row" @click="openSub('schoolAdmin')">
+              <text class="menu-icon">👤</text>
+              <view class="menu-info">
+                <text class="menu-name">校管理员</text>
+                <text class="menu-sub">{{ schoolAdmins.length }} 个管理员</text>
+              </view>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
+        </template>
+
+        <!-- 设置二级列表 -->
+        <template v-else-if="bottomTab === 'settings'">
+          <view class="menu-list">
+            <view class="menu-row" @click="openSub('config')">
+              <text class="menu-icon">⚙️</text>
+              <view class="menu-info">
+                <text class="menu-name">平台配置</text>
+                <text class="menu-sub">全局配置项即时生效</text>
+              </view>
+              <text class="menu-arrow">›</text>
+            </view>
+            <view class="menu-row" @click="openSub('ai')">
+              <text class="menu-icon">🤖</text>
+              <view class="menu-info">
+                <text class="menu-name">AI 服务商</text>
+                <text class="menu-sub">{{ providers.length }} 个厂商</text>
+              </view>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
+        </template>
+      </template>
+
+      <!-- 底部 3-tab 导航 -->
+      <view class="tabbar">
+        <view class="tab-item" :class="{ on: bottomTab === 'dashboard' }" @click="selectBottomTab('dashboard')">
+          <text class="tab-ico">📊</text>
+          <text class="tab-txt">仪表盘</text>
+        </view>
+        <view class="tab-item" :class="{ on: bottomTab === 'account' }" @click="selectBottomTab('account')">
+          <text class="tab-ico">👥</text>
+          <text class="tab-txt">账户管理</text>
+        </view>
+        <view class="tab-item" :class="{ on: bottomTab === 'settings' }" @click="selectBottomTab('settings')">
+          <text class="tab-ico">⚙️</text>
+          <text class="tab-txt">设置</text>
+        </view>
+      </view>
 
       <!-- 新增/编辑 AI 厂商（全屏） -->
       <view v-if="showProviderForm" class="full-mask">
@@ -344,8 +425,11 @@ const adminUser = ref('')
 const adminPwd = ref('')
 const saving = ref(false)
 
-// 当前 Tab：school=学校管理 / admin=学校管理员
-const tab = ref('school')
+// 底部 3-tab 导航：dashboard=仪表盘 / account=账户管理 / settings=设置
+const bottomTab = ref('dashboard')
+// 二级功能视图：''=列表态，'school'|'schoolAdmin'|'config'|'ai'=进入对应功能面板
+const subView = ref('')
+const subTitle = ref('')
 
 /* ===== 学校管理 ===== */
 const schools = ref([])
@@ -453,13 +537,24 @@ onMounted(() => {
   if (adminToken.value) loadAll()
 })
 
-// 进入页面加载学校列表 + 管理员列表（错误显式暴露，便于排查后端/链路问题）
+// 进入页面加载学校/管理员/AI 厂商（错误显式暴露，便于排查后端/链路问题）
 async function loadAll() {
   try {
-    await Promise.all([loadSchools(), loadAdmins()])
+    await Promise.all([
+      loadSchools(),
+      loadAdmins(),
+      loadProviders(),
+      loadAuditLogs().catch(() => {}),
+    ])
   } catch (e) {
     uni.showToast({ title: String(e?.message || '加载失败').slice(0, 40), icon: 'none' })
   }
+}
+
+// 仪表盘快捷入口：切换底部 tab 并直接进入对应二级功能
+function quickOpen(tab, sub) {
+  selectBottomTab(tab)
+  openSub(sub)
 }
 
 async function loadSchools() {
@@ -472,38 +567,57 @@ async function loadAdmins() {
   schoolAdmins.value = Array.isArray(r) ? r : (r.items || [])
 }
 
-// Tab 切换：按页签按需加载，避免「配置」页签误加载并展示学校管理员列表
-function switchTab(t) {
-  if (t === 'dashboard') {
-    uni.redirectTo({ url: '/pages/admin/dashboard' })
-    return
-  }
-  if (t === 'teachers') {
-    uni.redirectTo({ url: '/pages/admin/teachers' })
-    return
-  }
-  if (t === 'students') {
-    uni.redirectTo({ url: '/pages/admin/students' })
-    return
-  }
-  tab.value = t
-  if (t === 'school') loadSchools()
-  if (t === 'admin') loadAdmins()
-  if (t === 'config') loadConfigs()
-  if (t === 'ai') loadProviders()
+// 底部 tab 切换：切换一级菜单并回到二级列表态
+function selectBottomTab(t) {
+  bottomTab.value = t
+  subView.value = ''
 }
+// 进入二级功能面板（按需加载数据）
+function openSub(v) {
+  subView.value = v
+  if (v === 'school') { subTitle.value = '学校管理'; loadSchools() }
+  else if (v === 'schoolAdmin') { subTitle.value = '校管理员'; loadAdmins() }
+  else if (v === 'config') { subTitle.value = '平台配置'; loadConfigs() }
+  else if (v === 'ai') { subTitle.value = 'AI 服务商'; loadProviders() }
+}
+// 返回二级列表
+function back() { subView.value = '' }
 
 // ===== AI 服务商管理 =====
 const providers = ref([])
 const showProviderForm = ref(false)
 const editingProviderCode = ref('')
 const providerForm = ref({ name: '', code: '', baseUrl: '', enabled: true, isDefault: false, sortOrder: 0 })
+// 仪表盘审计统计（与 Web 端 Dashboard 对齐）
+const auditLogs = ref([])
+const todayLogCount = ref(0)
+const weekLogCount = ref(0)
 
 async function loadProviders() {
   try {
     const r = await apiCall('GET', '/ai-providers') || { items: [] }
     providers.value = r.items || r || []
   } catch (e) { providers.value = [] }
+}
+
+// 仪表盘审计统计：加载最近审计日志并计算今日/本周条数
+async function loadAuditLogs() {
+  const r = await apiCall('GET', '/admin/audit-logs') || { items: [] }
+  const logs = r.items || r || []
+  auditLogs.value = logs
+  const now = new Date()
+  const todayStr = now.toDateString()
+  const weekAgo = new Date(now.getTime() - 7 * 86400000)
+  let today = 0
+  let week = 0
+  for (const l of logs) {
+    const d = new Date(l.createdAt || l.created_at)
+    if (isNaN(d.getTime())) continue
+    if (d.toDateString() === todayStr) today++
+    if (d >= weekAgo) week++
+  }
+  todayLogCount.value = today
+  weekLogCount.value = week
 }
 
 function openCreateProvider() {
@@ -565,7 +679,6 @@ const newSubject = ref('')
 
 const CONFIG_SCHEMA = [
   { key: 'defaultSubjects', label: '默认学科', desc: '勾选/新增/删除，教师端注册时可选', placeholder: '语文,数学,英语', secret: false, type: 'subjects' },
-  { key: 'loginCode', label: '小程序登录码', desc: '教师首次进入小程序的验证码', placeholder: '自定义4-8位', secret: false },
   { key: 'aiTextModel', label: 'AI 文本模型', desc: '对话/备课/出题等文本生成', placeholder: 'qwen-plus', secret: false },
   { key: 'aiVisionModel', label: 'AI 视觉模型', desc: '图片识别/OCR等视觉任务', placeholder: 'qwen-vl-plus', secret: false },
   { key: 'aiTemperature', label: 'AI 温度', desc: '输出随机性(0-2)，越低越严谨', placeholder: '0.7', secret: false },
@@ -589,7 +702,7 @@ async function loadConfigs() {
     })
     // 分组
     configGroups.value = [
-      { label: '📚 学科与登录', items: filled.filter(x => ['defaultSubjects', 'loginCode'].includes(x.key)) },
+      { label: '📚 学科配置', items: filled.filter(x => ['defaultSubjects'].includes(x.key)) },
       { label: '🤖 AI 模型配置', items: filled.filter(x => x.key.startsWith('ai')) },
       { label: '🔐 微信与 IM 配置', items: filled.filter(x => ['wxAppId', 'wxAppSecret', 'imSdkAppId', 'imSecretKey'].includes(x.key)) },
     ].filter(g => g.items.length > 0)
@@ -889,7 +1002,7 @@ function confirmResetAll() {
 </script>
 
 <style scoped>
-.page { padding: 24rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
+.page { padding: 24rpx; padding-bottom: calc(150rpx + env(safe-area-inset-bottom)); background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .login-card { background: var(--c-card); border-radius: 28rpx; padding: 48rpx 36rpx; width: 560rpx; max-width: 90vw; margin: 120rpx auto 0; box-sizing: border-box; box-shadow: 0 10rpx 36rpx var(--c-shadow); border: 1px solid var(--c-border); }
 .login-title { font-size: 36rpx; font-weight: 800; color: var(--c-title); text-align: center; margin-bottom: 30rpx; }
 .login-field { margin-bottom: 20rpx; }
@@ -901,10 +1014,37 @@ function confirmResetAll() {
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24rpx; padding-top: 8rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .logout { font-size: 24rpx; color: var(--c-primary); font-weight: 600; padding: 10rpx 28rpx; border-radius: 32rpx; background: rgba(7,193,96,.1); }
-/* Tab 切换 */
-.tabs { display: flex; gap: 8rpx; margin-bottom: 24rpx; padding: 10rpx; background: var(--c-card2); border-radius: 26rpx; }
-.tab { flex: 1; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 18rpx; background: transparent; color: var(--c-sub); font-weight: 600; }
-.tab.on { background: var(--c-primary); color: #fff; box-shadow: 0 4rpx 14rpx rgba(7,193,96,.28); }
+/* 底部 3-tab 导航 */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: stretch; background: var(--c-card); border-top: 1px solid var(--c-border); padding-bottom: env(safe-area-inset-bottom); z-index: 50; box-shadow: 0 -6rpx 24rpx var(--c-shadow); }
+.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4rpx; padding: 14rpx 0 12rpx; color: var(--c-sub); }
+.tab-item.on { color: var(--c-primary); }
+.tab-ico { font-size: 38rpx; line-height: 1; }
+.tab-txt { font-size: 22rpx; font-weight: 600; }
+/* 二级功能面板头部（返回） */
+.sub-head { display: flex; align-items: center; gap: 16rpx; padding: 8rpx 4rpx 20rpx; }
+.sub-back { font-size: 28rpx; color: var(--c-accent); font-weight: 600; padding: 8rpx 12rpx; background: rgba(7,193,96,.08); border-radius: 24rpx; }
+.sub-title { font-size: 32rpx; font-weight: 800; color: var(--c-title); }
+/* 二级列表菜单 */
+.menu-list { display: flex; flex-direction: column; gap: 16rpx; }
+.menu-row { display: flex; align-items: center; gap: 20rpx; padding: 28rpx 24rpx; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
+.menu-icon { font-size: 44rpx; width: 64rpx; text-align: center; }
+.menu-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.menu-name { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
+.menu-sub { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
+.menu-arrow { font-size: 40rpx; color: var(--c-sub); font-weight: 700; }
+/* 仪表盘 */
+.dash { padding-top: 8rpx; }
+.dash-welcome { display: flex; flex-direction: column; margin-bottom: 24rpx; }
+.dash-hi { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
+.dash-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
+.dash-stats { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 28rpx; }
+.dstat { flex: 1 1 30%; min-width: 30%; display: flex; flex-direction: column; align-items: center; padding: 28rpx 0; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
+.dstat-num { font-size: 44rpx; font-weight: 800; color: var(--c-primary); }
+.dstat-label { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
+.dash-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; }
+.dm { display: flex; flex-direction: column; align-items: center; gap: 12rpx; padding: 32rpx 0; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
+.dm-ico { font-size: 48rpx; }
+.dm-txt { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
 .stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18rpx; }
 .sc { font-size: 26rpx; color: var(--c-sub); font-weight: 500; }
 .act { display: inline-flex; align-items: center; font-size: 23rpx; color: var(--c-blue); font-weight: 600; padding: 10rpx 22rpx; border-radius: 30rpx; background: rgba(28,111,179,.08); line-height: 1.4; }
