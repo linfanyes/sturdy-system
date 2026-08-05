@@ -504,15 +504,17 @@ class StudentsController extends CrudController<Student> {
     )
   }
 
-  /** 教师开启/关闭该学生的家长登录权限 */
+  /** 教师/校管开启/关闭该学生的家长登录权限（校管列表已按学校过滤，仅能操作本校学生） */
   @Post(':id/toggle-parent-login')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   async toggleParentLogin(@Param('id') id: string, @CurrentTeacher() t: any) {
     return (this.service as StudentsService).toggleParentLogin(t.sub, id)
   }
 
-  /** 教师/校管将该学生的家长登录口令重置为默认口令（123456）或自定义密码 */
+  /** 教师/校管将该学生的家长登录口令重置为默认口令（123456）或自定义密码（校管列表已按学校过滤，仅能操作本校学生） */
   @Post(':id/reset-parent-password')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   async resetParentPassword(@Param('id') id: string, @CurrentTeacher() t: any, @Body() b: any) {
     return (this.service as StudentsService).resetParentPassword(t, id, b?.password || '')

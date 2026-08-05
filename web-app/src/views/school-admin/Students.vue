@@ -281,7 +281,7 @@ async function handleDelete(s: StudentItem) {
                 </span>
                 <template v-if="s.parentLoginEnabled">
                   <span class="text-xs text-cocoa-400">默认口令：123456</span>
-                  <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="resetParentPwd(s)">重置密码</button>
+                  <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="openReset(s)">重置密码</button>
                 </template>
                 <button
                   class="text-xs underline"
