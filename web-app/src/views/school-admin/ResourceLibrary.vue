@@ -275,10 +275,10 @@ function printWord(w: EnglishWord) {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <div class="font-medium text-cocoa-900">{{ p.title }}</div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-50 text-butter-700 border border-butter-100">{{ p.dynasty }}</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-50 text-butter-700 border border-butter-100">{{ p.dynasty }}</span>
               <span class="text-xs text-cocoa-500">{{ p.author }}</span>
-              <span v-if="p.grade" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ p.grade }}</span>
-              <span v-if="p.status !== 'published'" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ p.status }}</span>
+              <span v-if="p.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ p.grade }}</span>
+              <span v-if="p.status !== 'published'" class="text-xs px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ p.status }}</span>
             </div>
             <div class="text-sm text-cocoa-700 mt-1 line-clamp-2 whitespace-pre-line">{{ p.content }}</div>
             <div v-if="p.translation" class="text-xs text-cocoa-500 mt-1 line-clamp-1">📖 {{ p.translation }}</div>
@@ -314,9 +314,9 @@ function printWord(w: EnglishWord) {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <div class="font-medium text-cocoa-900">{{ f.title }}</div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600 border border-sky2-100">{{ f.category }}</span>
-              <span v-if="f.grade" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ f.grade }}</span>
-              <span v-if="f.status !== 'published'" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ f.status }}</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600 border border-sky2-100">{{ f.category }}</span>
+              <span v-if="f.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ f.grade }}</span>
+              <span v-if="f.status !== 'published'" class="text-xs px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ f.status }}</span>
             </div>
             <div class="mt-1.5 px-2.5 py-1 rounded-lg bg-cream-50 border border-cream-100 text-cocoa-900 font-mono text-sm inline-block">{{ f.formula }}</div>
             <div v-if="f.explanation" class="text-xs text-cocoa-600 mt-1.5 leading-relaxed">{{ f.explanation }}</div>
@@ -353,9 +353,9 @@ function printWord(w: EnglishWord) {
             <div class="flex items-center gap-2 flex-wrap">
               <div class="font-medium text-cocoa-900">{{ w.word }}</div>
               <span v-if="w.phonetic" class="text-xs text-mint-600 font-mono">/{{ w.phonetic }}/</span>
-              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-50 text-butter-700 border border-butter-100">{{ w.category }}</span>
-              <span v-if="w.grade" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ w.grade }}</span>
-              <span v-if="w.status !== 'published'" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ w.status }}</span>
+              <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-50 text-butter-700 border border-butter-100">{{ w.category }}</span>
+              <span v-if="w.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ w.grade }}</span>
+              <span v-if="w.status !== 'published'" class="text-xs px-1.5 py-0.5 rounded-full bg-sakura-50 text-sakura-500">{{ w.status }}</span>
             </div>
             <div class="text-sm text-cocoa-700 mt-0.5">{{ w.meaning }}</div>
             <div v-if="w.example" class="text-xs text-cocoa-500 mt-0.5 italic">e.g. {{ w.example }}</div>

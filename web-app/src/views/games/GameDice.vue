@@ -192,7 +192,7 @@ onMounted(() => {
               @click="setBetType('big')"
             >
               <div class="text-sm font-bold">大</div>
-              <div class="text-[10px] opacity-80">总点 ≥ 11 · 2×</div>
+              <div class="text-xs opacity-80">总点 ≥ 11 · 2×</div>
             </button>
             <button
               class="py-2.5 rounded-xl text-center transition-all"
@@ -202,7 +202,7 @@ onMounted(() => {
               @click="setBetType('small')"
             >
               <div class="text-sm font-bold">小</div>
-              <div class="text-[10px] opacity-80">总点 &lt; 11 · 2×</div>
+              <div class="text-xs opacity-80">总点 &lt; 11 · 2×</div>
             </button>
             <button
               class="py-2.5 rounded-xl text-center transition-all"
@@ -212,7 +212,7 @@ onMounted(() => {
               @click="setBetType('leopard')"
             >
               <div class="text-sm font-bold">豹子</div>
-              <div class="text-[10px] opacity-80">三颗相同 · 6×</div>
+              <div class="text-xs opacity-80">三颗相同 · 6×</div>
             </button>
           </div>
         </div>
@@ -362,7 +362,7 @@ onMounted(() => {
             :class="h.win ? 'bg-mint-50 text-mint-600' : 'bg-sakura-50 text-sakura-600'"
           >
             <span class="font-bold">{{ h.outcome }}</span>
-            <span class="text-[10px] mt-0.5 opacity-80">{{ h.win ? '+' : '-' }}{{ h.delta }}</span>
+            <span class="text-xs mt-0.5 opacity-80">{{ h.win ? '+' : '-' }}{{ h.delta }}</span>
           </div>
         </div>
       </div>

@@ -216,13 +216,13 @@ onMounted(async () => {
                     </div>
                     <div
                       v-if="scheduleGrid[`${dIdx + 1}-${row.period}`]!.teacher"
-                      class="text-[10px] mt-0.5 opacity-70 truncate"
+                      class="text-xs mt-0.5 opacity-70 truncate"
                     >
                       {{ scheduleGrid[`${dIdx + 1}-${row.period}`]!.teacher }}
                     </div>
                     <div
                       v-if="scheduleGrid[`${dIdx + 1}-${row.period}`]!.note"
-                      class="text-[10px] mt-0.5 opacity-60 truncate"
+                      class="text-xs mt-0.5 opacity-60 truncate"
                     >
                       {{ scheduleGrid[`${dIdx + 1}-${row.period}`]!.note }}
                     </div>

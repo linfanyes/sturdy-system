@@ -428,8 +428,8 @@ onMounted(async () => {
                     <span class="truncate">{{ grid[r.key][di]!.subject }}</span>
                     <span v-if="weekTypeBadge(grid[r.key][di]!.weekType)" class="shrink-0 text-[9px] px-1 rounded bg-black/10">{{ weekTypeBadge(grid[r.key][di]!.weekType) }}</span>
                   </span>
-                  <span v-if="grid[r.key][di]!.teacher" class="text-[10px] opacity-70 truncate">{{ grid[r.key][di]!.teacher }}</span>
-                  <span v-if="grid[r.key][di]!.note" class="text-[10px] opacity-60 truncate">{{ grid[r.key][di]!.note }}</span>
+                  <span v-if="grid[r.key][di]!.teacher" class="text-xs opacity-70 truncate">{{ grid[r.key][di]!.teacher }}</span>
+                  <span v-if="grid[r.key][di]!.note" class="text-xs opacity-60 truncate">{{ grid[r.key][di]!.note }}</span>
                 </template>
                 <template v-else>
                   <span class="text-center text-cocoa-300 text-xs flex items-center justify-center gap-1">

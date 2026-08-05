@@ -194,7 +194,7 @@ watch(activeClassId, syncSubjectDraft)
         </div>
         <div v-if="loading" class="text-cocoa-400 text-sm">加载中…</div>
         <div v-else-if="!subjectTeachers.length" class="text-cocoa-400 text-sm">暂无科任老师</div>
-        <div v-else class="grid grid-cols-3 gap-3">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div
             v-for="m in subjectTeachers"
             :key="m.id"

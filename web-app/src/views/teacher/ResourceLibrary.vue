@@ -275,7 +275,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-cocoa-900 text-lg leading-tight">{{ p.title }}</div>
                 <div class="text-xs text-cocoa-500 mt-1 flex items-center gap-2">
-                  <span :class="['px-1.5 py-0.5 rounded-full text-[10px] border', dynastyTag(p.dynasty)]">{{ p.dynasty }}</span>
+                  <span :class="['px-1.5 py-0.5 rounded-full text-xs border', dynastyTag(p.dynasty)]">{{ p.dynasty }}</span>
                   <span>{{ p.author }}</span>
                   <span v-if="p.grade" class="text-cocoa-400">· {{ p.grade }}</span>
                 </div>
@@ -286,14 +286,14 @@ function printCategory(cat: string, list: EnglishWord[]) {
           </div>
           <div v-if="expandedPoems.has(p.id)" class="border-t border-cream-100 bg-cream-50/40 px-4 py-3 space-y-2">
             <div v-if="p.translation">
-              <div class="text-[11px] font-medium text-mint-600 mb-0.5">📖 译文</div>
+              <div class="text-xs font-medium text-mint-600 mb-0.5">📖 译文</div>
               <div class="text-sm text-cocoa-700 leading-relaxed whitespace-pre-line">{{ p.translation }}</div>
             </div>
             <div v-if="p.appreciation">
-              <div class="text-[11px] font-medium text-butter-600 mb-0.5">💡 赏析</div>
+              <div class="text-xs font-medium text-butter-600 mb-0.5">💡 赏析</div>
               <div class="text-sm text-cocoa-600 leading-relaxed whitespace-pre-line">{{ p.appreciation }}</div>
             </div>
-            <div v-if="p.keywords" class="text-[10px] text-cocoa-400 pt-1">🏷 {{ p.keywords }}</div>
+            <div v-if="p.keywords" class="text-xs text-cocoa-400 pt-1">🏷 {{ p.keywords }}</div>
           </div>
           <div class="flex items-center gap-4 px-4 py-2 border-t border-cream-100 bg-cream-50/40">
             <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click.stop="copyPoem(p)"><Copy class="w-3.5 h-3.5" /> 复制</button>
@@ -331,15 +331,15 @@ function printCategory(cat: string, list: EnglishWord[]) {
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <div class="font-medium text-cocoa-900">{{ f.title }}</div>
-                <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600 border border-sky2-100">{{ f.category }}</span>
-                <span v-if="f.grade" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ f.grade }}</span>
+                <span class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600 border border-sky2-100">{{ f.category }}</span>
+                <span v-if="f.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ f.grade }}</span>
               </div>
               <div class="mt-2 px-3 py-2 rounded-xl bg-cream-50 border border-cream-100 text-cocoa-900 font-mono text-base tracking-wide">{{ f.formula }}</div>
               <div v-if="f.explanation" class="mt-2 text-sm text-cocoa-600 leading-relaxed">{{ f.explanation }}</div>
               <div v-if="f.example" class="mt-1.5 text-xs text-cocoa-500 leading-relaxed">📝 例：{{ f.example }}</div>
             </div>
           </div>
-          <div v-if="f.keywords" class="text-[10px] text-cocoa-400 mt-2">🏷 {{ f.keywords }}</div>
+          <div v-if="f.keywords" class="text-xs text-cocoa-400 mt-2">🏷 {{ f.keywords }}</div>
           <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
             <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyFormula(f)"><Copy class="w-3.5 h-3.5" /> 复制</button>
             <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printFormula(f)"><Printer class="w-3.5 h-3.5" /> 打印</button>
@@ -390,7 +390,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
                 <div v-if="w.phonetic" class="text-xs text-mint-600 font-mono">/{{ w.phonetic }}/</div>
               </div>
               <div class="text-sm text-cocoa-600 mt-0.5">{{ w.meaning }}</div>
-              <div v-if="w.example" class="text-[11px] text-cocoa-400 mt-1 italic leading-relaxed">e.g. {{ w.example }}</div>
+              <div v-if="w.example" class="text-xs text-cocoa-400 mt-1 italic leading-relaxed">e.g. {{ w.example }}</div>
             </div>
           </div>
         </div>

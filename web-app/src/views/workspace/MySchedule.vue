@@ -190,11 +190,11 @@ onMounted(load)
                       </div>
                       <div
                         v-if="g.grid[`${dIdx + 1}-${row.period}`]!.teacher"
-                        class="text-[10px] mt-0.5 opacity-70 truncate"
+                        class="text-xs mt-0.5 opacity-70 truncate"
                       >{{ g.grid[`${dIdx + 1}-${row.period}`]!.teacher }}</div>
                       <div
                         v-if="g.grid[`${dIdx + 1}-${row.period}`]!.note"
-                        class="text-[10px] mt-0.5 opacity-60 truncate"
+                        class="text-xs mt-0.5 opacity-60 truncate"
                       >{{ g.grid[`${dIdx + 1}-${row.period}`]!.note }}</div>
                     </div>
                   </template>

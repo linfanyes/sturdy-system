@@ -601,7 +601,7 @@ async function subscribeNotifications() {
           <span class="w-3 h-3 rounded-full" :style="{ background: h.status === 'green' ? '#07c160' : h.status === 'yellow' ? '#E6A23C' : '#f56c6c' }"></span>
           <span class="text-lg leading-none">{{ h.icon }}</span>
           <span class="text-xs font-semibold text-cocoa-900">{{ h.label }}</span>
-          <span class="text-[10px] text-cocoa-500 leading-tight">{{ h.hint }}</span>
+          <span class="text-xs text-cocoa-500 leading-tight">{{ h.hint }}</span>
         </div>
       </div>
       <div v-if="reminders.length" class="mt-4 pt-3 border-t border-cream-200">
@@ -698,8 +698,8 @@ async function subscribeNotifications() {
                 class="w-full rounded-t-md transition-all"
                 :style="{ height: Math.max(4, seg.pct) + '%', background: seg.isStudent ? '#07c160' : '#c8e6c9' }"
               ></div>
-              <div class="text-[10px] text-cocoa-400 mt-1 leading-none">{{ seg.label }}</div>
-              <div class="text-[10px] text-cocoa-400 leading-none">{{ seg.count }}人</div>
+              <div class="text-xs text-cocoa-400 mt-1 leading-none">{{ seg.label }}</div>
+              <div class="text-xs text-cocoa-400 leading-none">{{ seg.count }}人</div>
             </div>
           </div>
         </div>
@@ -723,7 +723,7 @@ async function subscribeNotifications() {
               <title>{{ p.label }}（{{ p.date }}）：{{ p.score }} 分<span v-if="p.classRank"> · 班第{{ p.classRank }}名</span></title>
             </circle>
           </svg>
-          <div class="flex items-center justify-between mt-1 text-[10px] text-mint-600">
+          <div class="flex items-center justify-between mt-1 text-xs text-mint-600">
             <span>{{ gradeTrend.points[0].date }}</span>
             <span class="font-medium">{{ gradeTrend.points[gradeTrend.points.length - 1].score }} 分</span>
             <span>{{ gradeTrend.points[gradeTrend.points.length - 1].date }}</span>
@@ -755,11 +755,11 @@ async function subscribeNotifications() {
           <div class="text-xs text-cocoa-500 mb-2">近 6 个月打卡趋势</div>
           <div class="space-y-1.5">
             <div v-for="m in attendanceByMonth" :key="m.month" class="flex items-center gap-2">
-              <div class="text-[11px] text-cocoa-500 w-14 shrink-0">{{ m.month }}</div>
+              <div class="text-xs text-cocoa-500 w-14 shrink-0">{{ m.month }}</div>
               <div class="flex-1 h-3 bg-cocoa-50 rounded-full overflow-hidden">
                 <div class="h-full rounded-full" :style="{ width: Math.max(4, m.pct) + '%', background: '#07c160' }"></div>
               </div>
-              <div class="text-[11px] text-cocoa-500 w-10 text-right shrink-0">{{ m.count }}次</div>
+              <div class="text-xs text-cocoa-500 w-10 text-right shrink-0">{{ m.count }}次</div>
             </div>
           </div>
         </div>
@@ -803,11 +803,11 @@ async function subscribeNotifications() {
           <div class="text-xs text-cocoa-500 mb-2">近 6 月趋势</div>
           <div class="space-y-1.5">
             <div v-for="m in behaviorByMonth" :key="m.month" class="flex items-center gap-2">
-              <div class="text-[11px] text-cocoa-500 w-14 shrink-0">{{ m.month }}</div>
+              <div class="text-xs text-cocoa-500 w-14 shrink-0">{{ m.month }}</div>
               <div class="flex-1 h-3 bg-cocoa-50 rounded-full overflow-hidden">
                 <div class="h-full rounded-full" :style="{ width: Math.max(4, m.pct) + '%', background: m.isMax ? COLOR.green : '#c8e6c9' }"></div>
               </div>
-              <div class="text-[11px] text-cocoa-500 w-10 text-right shrink-0">{{ m.count }}次</div>
+              <div class="text-xs text-cocoa-500 w-10 text-right shrink-0">{{ m.count }}次</div>
             </div>
           </div>
         </div>
@@ -898,7 +898,7 @@ async function subscribeNotifications() {
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
                 {{ t.name }}
-                <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="t.role === 'head' ? 'bg-butter-100 text-butter-700' : 'bg-sky2-50 text-sky2-600'">{{ t.roleLabel }}</span>
+                <span class="text-xs px-1.5 py-0.5 rounded-full" :class="t.role === 'head' ? 'bg-butter-100 text-butter-700' : 'bg-sky2-50 text-sky2-600'">{{ t.roleLabel }}</span>
               </div>
               <div class="text-xs text-cocoa-500 mt-0.5">
                 <span v-if="t.subjects && t.subjects.length">任教：{{ t.subjects.join('、') }}</span>
@@ -930,7 +930,7 @@ async function subscribeNotifications() {
           <div class="space-y-3">
             <div v-for="r in commRecent.slice(0, 8)" :key="r.id" class="border-b border-cream-100 pb-3 last:border-0 last:pb-0">
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-[11px] px-2 py-0.5 rounded-full bg-sky2-50 text-sky2-700">{{ r.method }}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-sky2-50 text-sky2-700">{{ r.method }}</span>
                 <span class="text-xs text-cocoa-400">{{ r.date }}</span>
               </div>
               <div v-if="r.content" class="text-sm text-cocoa-800">{{ r.content }}</div>

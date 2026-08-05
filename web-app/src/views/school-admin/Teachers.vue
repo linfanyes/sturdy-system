@@ -550,7 +550,7 @@ function handlePrint() {
             @change="toggleFeature(f.key)"
           />
           <span class="truncate">{{ f.label }}</span>
-          <span v-if="isBlockedBySchool(f.key)" class="ml-auto text-[10px] text-cocoa-400 whitespace-nowrap">被学校级关闭</span>
+          <span v-if="isBlockedBySchool(f.key)" class="ml-auto text-xs text-cocoa-400 whitespace-nowrap">被学校级关闭</span>
         </label>
       </div>
     </div>

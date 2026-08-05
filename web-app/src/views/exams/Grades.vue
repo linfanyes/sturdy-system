@@ -864,7 +864,7 @@ function onStudentDblClick(studentId: string) {
             <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50/60">
               <td class="sticky left-0 bg-surface px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
                 <div>{{ s.name }}</div>
-                <div class="text-[11px] text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
+                <div class="text-xs text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
               </td>
               <td v-for="sub in examSubjects" :key="sub" class="px-1.5 py-1 text-center">
                 <input
@@ -961,7 +961,7 @@ function onStudentDblClick(studentId: string) {
               <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50/60">
                 <td class="sticky left-0 bg-surface px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
                   <div>{{ s.name }}</div>
-                  <div class="text-[11px] text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
+                  <div class="text-xs text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
                 </td>
                 <td v-for="sub in examSubjects" :key="sub" class="px-1.5 py-1 text-center">
                   <input

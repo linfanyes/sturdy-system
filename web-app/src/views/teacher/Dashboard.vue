@@ -49,7 +49,7 @@ const shortcutTools = [
       <template #actions>
         <button class="relative p-2 rounded-xl bg-surface/60 hover:bg-surface/90 transition-colors" @click="router.push('/teacher/notifications')">
           <Bell class="w-5 h-5 text-cocoa-600" />
-          <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-sakura-500 text-white text-[10px] font-semibold flex items-center justify-center">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-sakura-500 text-white text-xs font-semibold flex items-center justify-center">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </button>
       </template>
     </WelcomeHero>

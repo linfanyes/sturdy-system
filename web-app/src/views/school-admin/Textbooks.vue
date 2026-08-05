@@ -280,8 +280,8 @@ function exportTextbook(t: Textbook) {
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
                       {{ p.title }}
-                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
-                      <span v-if="p.difficulty" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
+                      <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
+                      <span v-if="p.difficulty" class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
                     </div>
                     <div class="text-xs text-cocoa-600 mt-1 whitespace-pre-wrap">{{ p.content }}</div>
                   </div>
@@ -395,7 +395,7 @@ function exportTextbook(t: Textbook) {
           <template v-else>
             <div><label class="text-sm text-cocoa-500">知识点标题</label>
               <input v-model="editing.data.title" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200" /></div>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div><label class="text-sm text-cocoa-500">类型</label>
                 <select v-model="editing.data.type" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200">
                   <option v-for="t in POINT_TYPES" :key="t" :value="t">{{ t }}</option>

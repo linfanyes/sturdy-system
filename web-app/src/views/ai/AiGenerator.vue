@@ -124,7 +124,7 @@ function downloadResult() {
     </h1>
 
     <div class="bg-surface rounded-2xl p-6 shadow-softer">
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div v-for="f in cfg.fields" :key="f.key">
           <label class="text-sm text-cocoa-500">{{ f.label }}</label>
           <input v-model="form[f.key]" :placeholder="f.placeholder" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />

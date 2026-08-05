@@ -92,9 +92,9 @@ const studentName = computed(() => auth.user?.studentName || '')
         <div v-for="r in searchResults" :key="r.id" class="border border-cream-200 rounded-xl p-3">
           <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
             {{ r.title }}
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ r.type }}</span>
-            <span v-if="r.difficulty" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ r.difficulty }}</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ r.textbookName }}</span>
+            <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ r.type }}</span>
+            <span v-if="r.difficulty" class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ r.difficulty }}</span>
+            <span class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ r.textbookName }}</span>
           </div>
           <div class="text-xs text-cocoa-600 mt-1 whitespace-pre-wrap">{{ r.content }}</div>
         </div>
@@ -143,11 +143,11 @@ const studentName = computed(() => auth.user?.studentName || '')
                 <div v-for="p in u.knowledgePoints" :key="p.id" class="p-3 rounded-lg bg-surface border border-cream-100">
                   <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
                     {{ p.title }}
-                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
-                    <span v-if="p.difficulty" class="text-[10px] px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
+                    <span v-if="p.difficulty" class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
                   </div>
                   <div class="text-xs text-cocoa-600 mt-1 whitespace-pre-wrap leading-relaxed">{{ p.content }}</div>
-                  <div v-if="p.keywords" class="text-[10px] text-cocoa-400 mt-1.5">🏷 {{ p.keywords }}</div>
+                  <div v-if="p.keywords" class="text-xs text-cocoa-400 mt-1.5">🏷 {{ p.keywords }}</div>
                 </div>
               </div>
             </div>

@@ -132,7 +132,7 @@ async function handleDelete(row: any) {
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">学校总数</div>
         <div class="text-2xl font-bold text-cocoa-900 mt-1">{{ total }}</div>
