@@ -42,6 +42,17 @@
       </view>
     </view>
 
+    <!-- 学校功能包（与 Web 端 /school-admin/features 对齐，校管可编辑本校开关） -->
+    <view class="notice-section">
+      <view class="notice-hd">
+        <text class="notice-title">⚙️ 学校功能包</text>
+        <text class="act" @click="goSchoolFeatures">配置</text>
+      </view>
+      <view class="notice-list">
+        <text class="notice-item-content">关闭某功能包后，该校教师与家长访问该功能将被后端拦截；默认全部开启。</text>
+      </view>
+    </view>
+
     <!-- 学校公告 -->
     <view class="notice-section">
       <view class="notice-hd">
@@ -64,6 +75,17 @@
           <text class="notice-item-content" v-if="n.content">{{ n.content }}</text>
           <text class="notice-item-time">{{ n.createdAt ? n.createdAt.slice(0, 10) : '' }}</text>
         </view>
+      </view>
+    </view>
+
+    <!-- 智慧中小学（与 Web 端 /school-admin/zhzx 对齐，校管可查看国家平台在线课程） -->
+    <view class="notice-section">
+      <view class="notice-hd">
+        <text class="notice-title">🎓 智慧中小学</text>
+        <text class="act" @click="goZhzx">进入</text>
+      </view>
+      <view class="notice-list">
+        <text class="notice-item-content">国家中小学智慧教育平台 · 在线观看官方课程，与教师端资源中心一致。</text>
       </view>
     </view>
 
@@ -814,6 +836,16 @@ async function enterDemoMode() {
 // ===== Tab 切换 =====
 const tab = ref('dashboard')
 function switchTab(t) { tab.value = t; if (t === 'classes') loadClasses(); if (t === 'students') loadStudents(); if (t === 'ai') loadAi() }
+
+/** 进入本校功能包配置页（与 Web 端 /school-admin/features 对齐） */
+function goSchoolFeatures() {
+  uni.navigateTo({ url: '/pages/school-admin/school-features' })
+}
+
+/** 进入智慧中小学课程（与 Web 端 /school-admin/zhzx 对齐） */
+function goZhzx() {
+  uni.navigateTo({ url: '/pages/resource/resource' })
+}
 
 // ===== 批量导入教师 =====
 const showBatchImport = ref(false)

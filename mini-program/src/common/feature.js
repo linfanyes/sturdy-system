@@ -13,7 +13,7 @@ export { normalizeLevel, computeEffective, isBlockedBySchool }
 /**
  * 功能包接口封装（与 web-app/src/api/feature.ts 对齐）。
  * - 超管：GET/PATCH /admin/schools/:id/features（学校级开关，超管独占）
- * - 校管：GET /school-admin/school-features（用于教师有效权限预览）
+ * - 校管：GET /school-admin/school-features（读取本校开关）；PATCH /school-admin/school-features（更新本校开关）
  * - 全角色：GET /auth/me（返回 effectiveFeatures / schoolFeatureFlags）
  */
 
@@ -35,6 +35,11 @@ export function updateSchoolFeatures(id, featureFlags) {
 /** 校管：获取本校功能包开关（用于教师有效权限预览）：GET /school-admin/school-features */
 export function getSchoolAdminFeatures() {
   return api.get('/school-admin/school-features')
+}
+
+/** 校管：更新本校功能包开关：PATCH /school-admin/school-features */
+export function updateSchoolAdminFeatures(featureFlags) {
+  return api.patch('/school-admin/school-features', { featureFlags })
 }
 
 /* ==================== effective 预览计算 ====================

@@ -35,18 +35,20 @@ function handleLoginResult(r) {
   // 各登录路径响应均含 effectiveFeatures（= 学校级 ∩ 教师级），统一写入登录态
   setFeatureProfile(r)
   switch (r.role) {
+    // 注意：超管/校管不再写 g_token（教师 token key）。
+    // 通用 api 层的 Bearer 由 auth.token 提供，冷启动则由 store.js readToken()
+    // 按 admin_token > sa_token > g_token 优先级恢复，避免角色被降级误识别为教师。
     case 'super':
       uni.setStorageSync('admin_token', r.token)
-      // 同时写入共享 token，使通用 API 层（request.js 的 api）在管理员页面也能携带 Bearer
-      uni.setStorageSync('g_token', r.token)
       auth.token = r.token
+      auth.user = r.user || null
       uni.redirectTo({ url:'/pages/admin/admin' })
       break
     case 'school_admin':
       uni.setStorageSync('sa_token', r.token)
       uni.setStorageSync('sa_user', JSON.stringify(r.user))
-      uni.setStorageSync('g_token', r.token)
       auth.token = r.token
+      auth.user = r.user || null
       uni.redirectTo({ url:'/pages/school-admin/school-admin' })
       break
     case 'teacher':

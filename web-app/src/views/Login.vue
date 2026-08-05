@@ -141,14 +141,32 @@ async function handleLogin() {
 /* ============ 双角色选择 ============ */
 function selectRole(role: 'teacher' | 'parent') {
   const data = roleChoiceData.value
-  if (!data) return
+  if (!data?.teacher || !data.parent) return
 
-  if (role === 'teacher' && data.teacher) {
-    auth.setAuth(data.teacher.token, { role: 'teacher', ...data.teacher.user })
+  // 预构建两端 user 对象（teacher 来自登录响应 user，parent 由后端 parent 分支构造）
+  const teacherUser = { role: 'teacher', ...data.teacher.user }
+  const parentUser = buildParentUser(data.parent)
+
+  // 无论先选哪个身份，都写入双 token + 双 user，保证两端切换按钮都可出现
+  if (role === 'teacher') {
+    roleSwitchStore.setTokens({
+      teacherToken: data.teacher.token,
+      parentToken: data.parent.token,
+      teacherUser,
+      parentUser,
+      initialRole: 'teacher',
+    })
+    auth.setAuth(data.teacher.token, teacherUser)
     router.push('/teacher')
-  } else if (role === 'parent' && data.parent) {
-    roleSwitchStore.setTokens(data.teacher!.token, data.parent.token, data.parent)
-    auth.setAuth(data.parent.token, buildParentUser(data.parent))
+  } else {
+    roleSwitchStore.setTokens({
+      teacherToken: data.teacher.token,
+      parentToken: data.parent.token,
+      teacherUser,
+      parentUser,
+      initialRole: 'parent',
+    })
+    auth.setAuth(data.parent.token, parentUser)
     router.push('/parent')
   }
 

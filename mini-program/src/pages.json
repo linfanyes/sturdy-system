@@ -19,36 +19,6 @@
       }
     },
     {
-      "path": "pages/school-admin/ai-config",
-      "style": {
-        "navigationBarTitleText": "AI 配置"
-      }
-    },
-    {
-      "path": "pages/school-admin/teachers",
-      "style": {
-        "navigationBarTitleText": "教师管理"
-      }
-    },
-    {
-      "path": "pages/school-admin/classes",
-      "style": {
-        "navigationBarTitleText": "班级管理"
-      }
-    },
-    {
-      "path": "pages/school-admin/students",
-      "style": {
-        "navigationBarTitleText": "学生管理"
-      }
-    },
-    {
-      "path": "pages/school-admin/notices",
-      "style": {
-        "navigationBarTitleText": "公告管理"
-      }
-    },
-    {
       "path": "pages/parent-login/parent-login",
       "style": {
         "navigationBarTitleText": "家长登录"
@@ -172,24 +142,6 @@
       "path": "pages/admin/admin",
       "style": {
         "navigationBarTitleText": "管理员面板"
-      }
-    },
-    {
-      "path": "pages/admin/dashboard",
-      "style": {
-        "navigationBarTitleText": "超管工作台"
-      }
-    },
-    {
-      "path": "pages/admin/teachers",
-      "style": {
-        "navigationBarTitleText": "教师管理（超管）"
-      }
-    },
-    {
-      "path": "pages/admin/students",
-      "style": {
-        "navigationBarTitleText": "学生管理（超管）"
       }
     },
     {
@@ -958,6 +910,14 @@
     }
   ],
   "preloadRule": {
+    "pages/dashboard/dashboard": {
+      "network": "all",
+      "packages": [
+        "ai-features",
+        "games",
+        "tools"
+      ]
+    },
     "pages/toolbox/toolbox": {
       "network": "all",
       "packages": [

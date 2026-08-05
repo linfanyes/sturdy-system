@@ -72,13 +72,7 @@ function goBack() {
 
 function go(url, tab) {
   if (tab) {
-    uni.redirectTo({ url, success: () => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1]
-      if (page && page.$vm && page.$vm.switchTab) {
-        page.$vm.switchTab(tab)
-      }
-    }})
+    uni.redirectTo({ url: url + '?open=' + encodeURIComponent(tab) })
   } else {
     uni.redirectTo({ url })
   }

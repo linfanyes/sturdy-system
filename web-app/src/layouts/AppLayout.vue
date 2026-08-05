@@ -11,7 +11,7 @@ import {
   GraduationCap, Sparkles, FileText, FileQuestion,
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
-  Gamepad2, LanguagesIcon, ScrollText, Mail, Trash2,
+  Gamepad2, LanguagesIcon, ScrollText, Trash2,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -136,7 +136,7 @@ const teacherMenu: MenuCategory[] = [
         label: '家校沟通', asGrid: true,
         items: [
           { name: 'teacher-parent-contacts', label: '家长联系', to: '/teacher/parent-contacts', feature: 'parents', icon: Phone, color: 'green' },
-          { name: 'teacher-im', label: '家校沟通', to: '/teacher/im', feature: 'im', icon: MessageSquare, color: 'blue' },
+          { name: 'teacher-message-board', label: '留言板', to: '/teacher/messages', feature: 'im', icon: MessageSquare, color: 'blue' },
           { name: 'teacher-notices', label: '公告', to: '/teacher/notices', feature: 'notices', icon: Megaphone, color: 'butter' },
           { name: 'teacher-notice-templates', label: '通知模板', to: '/teacher/notice-templates', feature: 'notices', icon: ScrollText, color: 'cocoa' },
         ],
@@ -256,7 +256,6 @@ const teacherMenu: MenuCategory[] = [
     label: '个人空间', color: 'cocoa', icon: User,
     groups: [{
       label: '', items: [
-        { name: 'teacher-messages', label: '消息中心', to: '/teacher/messages', icon: Mail, color: 'blue' },
         { name: 'teacher-notifications', label: '通知中心', to: '/teacher/notifications', icon: Bell, color: 'butter' },
         { name: 'teacher-todos', label: '待办事项', to: '/teacher/todos', feature: 'todos', icon: ListTodo, color: 'rose' },
         { name: 'teacher-notes', label: '笔记', to: '/teacher/notes', feature: 'notes', icon: BookOpen, color: 'green' },
@@ -314,7 +313,7 @@ const schoolAdminMenu: MenuCategory[] = [
     ] }],
   },
   {
-    label: '人员管理', color: 'blue', icon: Users, direct: true, to: '/school-admin',
+    label: '人员管理', color: 'blue', icon: Users,
     groups: [{ label: '', items: [
       { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
       { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
@@ -323,7 +322,7 @@ const schoolAdminMenu: MenuCategory[] = [
     ] }],
   },
   {
-    label: '资源与设置', color: 'cream', icon: Settings, direct: true, to: '/school-admin',
+    label: '资源与设置', color: 'cream', icon: Settings,
     groups: [{ label: '', items: [
       { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
@@ -478,8 +477,9 @@ async function handleLogout() {
 /** 切换到家长端（仅当 roleSwitchStore 有 teacherToken 时启用） */
 const canSwitchToParent = computed(() => !!roleSwitchStore.teacherToken && auth.role === 'teacher')
 
-function switchToParent() {
+async function switchToParent() {
   roleSwitchStore.switchTo('parent', auth.setAuth)
+  await auth.fetchMe()
   router.push('/parent')
 }
 

@@ -130,7 +130,7 @@ const webLeafRoutes = [
   '/teacher/classes', '/teacher/duty-roster', '/teacher/duty-config', '/teacher/class-finance', '/teacher/class-activities', '/teacher/gallery', '/teacher/my-gallery',
   '/teacher/exams', '/teacher/grades', '/teacher/exam-analysis', '/teacher/data-dashboard', '/teacher/radar', '/teacher/attendance', '/teacher/homework',
   '/teacher/rewards', '/teacher/score-records', '/teacher/group-scores', '/teacher/leaderboard', '/teacher/growth', '/teacher/behavior', '/teacher/reading-log', '/teacher/checkin', '/teacher/awards', '/teacher/award-categories',
-  '/teacher/parent-contacts', '/teacher/im', '/teacher/notice-templates',
+  '/teacher/parent-contacts', '/teacher/notice-templates',
   '/teacher/ai-chat', '/teacher/ai-image', '/teacher/ai-resources', '/teacher/lesson-plans', '/teacher/knowledges', '/teacher/papers', '/teacher/paper-queries', '/teacher/lesson-plan-templates',
   '/teacher/ai-generator/lesson', '/teacher/ai-generator/knowledge', '/teacher/ai-generator/paper',
   '/teacher/work-log', '/teacher/lesson-obs', '/teacher/teaching-calendar', '/teacher/teacher-directory',
@@ -441,7 +441,7 @@ const FUNCTIONAL_MATRIX: FeatureMatrixEntry[] = [
   {
     module: 'IM 通讯',
     backendModule: 'im',
-    webPages: ['/teacher/im'],
+    webPages: ['/teacher/messages'],
     miniPages: ['pages/im/im'],
     status: 'complete',
   },

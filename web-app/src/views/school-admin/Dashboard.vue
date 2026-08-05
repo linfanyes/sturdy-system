@@ -101,6 +101,7 @@ const entryGroups = [
       { label: '学校公告', desc: '发布与维护公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { label: '教材知识库', desc: '教材与知识点', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
       { label: '在线资源库', desc: '在线资源沉淀', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { label: '智慧中小学', desc: '国家平台在线课程', to: '/school-admin/zhzx', icon: GraduationCap, color: 'blue' },
       { label: 'AI 配置', desc: 'AI 服务商设置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
     ],
   },

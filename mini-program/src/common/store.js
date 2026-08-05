@@ -18,6 +18,38 @@ const PARENT_ROLE_KEY = 'g_parent_role'
 const PARENT_DATA_KEY = 'g_parent_data'
 const EFFECTIVE_FEATURES_KEY = 'g_effective_features'
 const SCHOOL_FEATURE_FLAGS_KEY = 'g_school_feature_flags'
+const ADMIN_TOKEN_KEY = 'admin_token'
+const SA_TOKEN_KEY = 'sa_token'
+const SA_USER_KEY = 'sa_user'
+
+/**
+ * 冷启动恢复登录令牌：按角色优先级读取，与 route-guard.js 的角色判定链一致
+ * （admin_token > sa_token > g_token）。
+ *
+ * 修复历史隐患：超管/校管登录曾把令牌「同时」写入 g_token（教师 token key），
+ * 目的仅是让通用 api 层冷启动后还能带上 Bearer。副作用是角色靠 token 存在性反推时，
+ * 一旦 admin_token / sa_token 被单独清除，用户会被降级误识别为教师。
+ * 现改由本函数按优先级恢复，超管/校管不再污染 g_token。
+ */
+function readToken() {
+  return uni.getStorageSync(ADMIN_TOKEN_KEY)
+    || uni.getStorageSync(SA_TOKEN_KEY)
+    || uni.getStorageSync(TOKEN_KEY)
+    || ''
+}
+
+/** 冷启动恢复用户信息：教师 g_user 优先，回退校管 sa_user（登录时以 JSON 字符串写入） */
+function readUser() {
+  const u = uni.getStorageSync(USER_KEY)
+  if (u) return u
+  const sa = uni.getStorageSync(SA_USER_KEY)
+  if (!sa) return null
+  try {
+    return typeof sa === 'string' ? JSON.parse(sa) : sa
+  } catch (e) {
+    return null
+  }
+}
 
 /** 冷启动恢复：实际可用功能包（非数组一律回退空数组 = 未加载） */
 function readEffectiveFeatures() {
@@ -32,8 +64,8 @@ function readSchoolFeatureFlags() {
 }
 
 export const auth = reactive({
-  token: uni.getStorageSync(TOKEN_KEY) || '',
-  user: uni.getStorageSync(USER_KEY) || null,
+  token: readToken(),
+  user: readUser(),
   features: [], // 管理员配置的功能列表,空数组=全部可用
   // 后端下发的实际可用功能包（effective = 学校级 ∩ 教师级），空数组=未加载，显隐回退 features
   effectiveFeatures: readEffectiveFeatures(),
@@ -322,8 +354,9 @@ export function logout() {
   uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
   uni.removeStorageSync(PARENT_ROLE_KEY)
   uni.removeStorageSync(PARENT_DATA_KEY)
-  uni.removeStorageSync('admin_token')
-  uni.removeStorageSync('sa_token')
+  uni.removeStorageSync(ADMIN_TOKEN_KEY)
+  uni.removeStorageSync(SA_TOKEN_KEY)
+  uni.removeStorageSync(SA_USER_KEY)
   // 清除演示模式标记，防止登出后冷启动时 App.vue 误读恢复演示数据
   uni.removeStorageSync(MOCK_KEY)
 }

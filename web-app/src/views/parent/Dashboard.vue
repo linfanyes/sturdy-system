@@ -117,6 +117,7 @@ const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
 async function switchToTeacher() {
   if (!await confirm('确定切换到教师端？')) return
   roleSwitchStore.switchTo('teacher', auth.setAuth)
+  await auth.fetchMe()
   router.push('/teacher')
 }
 

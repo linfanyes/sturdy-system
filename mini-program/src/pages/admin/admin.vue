@@ -413,6 +413,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { isPhone } from '../../common/validators'
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
@@ -537,6 +538,11 @@ onMounted(() => {
   if (adminToken.value) loadAll()
 })
 
+// 从超管仪表盘快捷入口跳转进来时，按 ?open= 参数直接定位到对应功能面板
+onLoad((options) => {
+  if (options && options.open) switchTab(options.open)
+})
+
 // 进入页面加载学校/管理员/AI 厂商（错误显式暴露，便于排查后端/链路问题）
 async function loadAll() {
   try {
@@ -555,6 +561,14 @@ async function loadAll() {
 function quickOpen(tab, sub) {
   selectBottomTab(tab)
   openSub(sub)
+}
+
+// 兼容 admin/dashboard.vue 快捷入口：将 'school'|'admin'|'config'|'ai' 映射到底部 tab + 二级面板
+function switchTab(t) {
+  if (t === 'school') quickOpen('account', 'school')
+  else if (t === 'admin') quickOpen('account', 'schoolAdmin')
+  else if (t === 'config') quickOpen('settings', 'config')
+  else if (t === 'ai') quickOpen('settings', 'ai')
 }
 
 async function loadSchools() {

@@ -10,11 +10,11 @@
     <!-- 说明（与 Web 端 SchoolFeatures.vue 同文案） -->
     <view class="tip">
       <text class="tip-t">学校级关闭后，该校教师即使勾选也不可用。</text>
-      <text class="tip-s">学校级功能包开关为超管独占配置：关闭某包后，该校教师与家长访问该功能将被后端拦截（403「当前功能未开放：&lt;key&gt;」）。默认全部开启（featureFlags 为 null/空数组）。超管与学校管理员不受学校级影响，始终拥有全部功能。</text>
+      <text class="tip-s">关闭某功能包后，该校教师与家长访问该功能将被后端拦截（403「当前功能未开放：&lt;key&gt;」）。默认全部开启（featureFlags 为 null/空数组）。超管与学校管理员不受学校级影响，始终拥有全部功能。</text>
     </view>
 
-    <!-- 学校选择 -->
-    <view class="bar">
+    <!-- 学校选择（仅超管需选择学校；校管操作本校，不显示选择器） -->
+    <view class="bar" v-if="!isSa">
       <text class="bar-label">选择学校</text>
       <picker
         mode="selector"
@@ -60,7 +60,7 @@
     </scroll-view>
 
     <view class="foot">
-      <button class="btn" :disabled="saving || loading || !selectedSchoolId" @click="save">
+      <button class="btn" :disabled="saving || loading || (!isSa && !selectedSchoolId)" @click="save">
         {{ saving ? '保存中…' : (dirty ? '保存修改' : '保存') }}
       </button>
     </view>
@@ -75,11 +75,17 @@ import { api } from '../../common/request'
 import {
   getSchoolFeatures,
   updateSchoolFeatures,
+  getSchoolAdminFeatures,
+  updateSchoolAdminFeatures,
   FEATURE_FLAGS,
   FEATURE_FLAG_LABELS,
 } from '../../common/feature'
+import { getCurrentRole, ROLE } from '../../common/route-guard'
 
 const dark = computed(() => theme.mode === 'dark')
+
+/** 是否为校管角色：校管无学校选择器，直接操作本校功能包（与 Web 端 FeatureFlags.vue 对齐） */
+const isSa = ref(getCurrentRole() === ROLE.SCHOOL_ADMIN)
 
 /** 全量功能包 key（单一事实来源：shared/constants，与 Web 端 40 项一致） */
 const allKeys = FEATURE_FLAGS
@@ -123,12 +129,17 @@ const currentSchoolLabel = computed(() => schoolLabels.value[schoolIndex.value] 
 const enabledCount = computed(() => allKeys.filter((k) => selected[k]).length)
 
 function goBack() {
+  if (isSa.value) {
+    uni.redirectTo({ url: '/pages/school-admin/school-admin' })
+    return
+  }
   const pages = getCurrentPages()
   if (pages && pages.length > 1) uni.navigateBack()
   else uni.redirectTo({ url: '/pages/admin/admin' })
 }
 
 async function loadSchools(preferId) {
+  if (isSa.value) return
   loadingSchools.value = true
   try {
     const r = await api.get('/admin/schools')
@@ -155,10 +166,12 @@ function applyFlags(featureFlags) {
 }
 
 async function loadFeatures() {
-  if (!selectedSchoolId.value) return
+  if (!isSa.value && !selectedSchoolId.value) return
   loading.value = true
   try {
-    const res = await getSchoolFeatures(selectedSchoolId.value)
+    const res = isSa.value
+      ? await getSchoolAdminFeatures()
+      : await getSchoolFeatures(selectedSchoolId.value)
     applyFlags(res && res.featureFlags)
   } catch (e) {
     uni.showToast({ title: String((e && e.message) || '加载功能包开关失败').slice(0, 40), icon: 'none' })
@@ -190,11 +203,15 @@ function setAll(on) {
 }
 
 async function save() {
-  if (!selectedSchoolId.value) return
+  if (!isSa.value && !selectedSchoolId.value) return
   saving.value = true
   try {
     const enabled = allKeys.filter((k) => selected[k])
-    await updateSchoolFeatures(selectedSchoolId.value, enabled)
+    if (isSa.value) {
+      await updateSchoolAdminFeatures(enabled)
+    } else {
+      await updateSchoolFeatures(selectedSchoolId.value, enabled)
+    }
     dirty.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
   } catch (e) {

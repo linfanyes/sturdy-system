@@ -308,7 +308,7 @@
         <view v-if="!chosenWidgets.length" class="empty">点「管理」添加常用工具</view>
       </view>
       <view v-else class="wgrid">
-        <view v-for="w in widgetCands" :key="w.label" class="wcell" :class="selKeys.includes(w.label) && 'on'" @click="toggleWidget(w)">
+        <view v-for="w in visibleWidgetCands" :key="w.label" class="wcell" :class="selKeys.includes(w.label) && 'on'" @click="toggleWidget(w)">
           <view class="wic">{{ w.icon }}</view>
           <view class="wlb">{{ w.label }}</view>
         </view>
@@ -319,7 +319,7 @@
     <!-- 功能入口 -->
     <view class="sec-title">功能入口</view>
     <view class="grid">
-      <view v-for="f in features" :key="f.path" class="cell" @click="go(f)">
+      <view v-for="f in visibleFeatures" :key="f.path" class="cell" @click="go(f)">
         <view class="ic">{{ f.icon }}</view>
         <view class="lb">{{ f.label }}</view>
       </view>
@@ -339,6 +339,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh, onHide } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { auth, theme, flushTabBarStyle, parent, switchRole } from '../../common/store'
+import { hasFeature } from '../../common/feature'
 import { copyText } from '../../common/print'
 
 // 生日卡片
@@ -360,31 +361,46 @@ function catKey(cat) {
   return catKeyMap[cat] || 'other'
 }
 
+// feature 字段 = 功能包 key（取值见 shared/constants FEATURE_FLAGS），
+// 与 Web 端 AppLayout.vue teacherMenu 的 feature 标记保持一致；无 feature 视为常驻入口。
 const features = [
-  { label: '班级管理', icon: '🏫', path: '/pages/classes/classes', tab: true },
-  { label: '学生管理', icon: '👧', path: '/pages/students/students', tab: true },
-  { label: '考试管理', icon: '📝', path: '/pages/exams/exams' },
-  { label: '成绩管理', icon: '📊', path: '/pages/grades/grades' },
-  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap' },
-  { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai' },
-  { label: '工具箱', icon: '🧰', path: '/pages/toolbox/toolbox', tab: true },
-  { label: '消息中心', icon: '📥', path: '/pages/messages/messages' },
+  { label: '班级管理', icon: '🏫', path: '/pages/classes/classes', tab: true, feature: 'classes' },
+  { label: '学生管理', icon: '👧', path: '/pages/students/students', tab: true, feature: 'students' },
+  { label: '考试管理', icon: '📝', path: '/pages/exams/exams', feature: 'exams' },
+  { label: '成绩管理', icon: '📊', path: '/pages/grades/grades', feature: 'grades' },
+  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap', feature: 'seats' },
+  { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai', feature: 'ai' },
+  { label: '工具箱', icon: '🧰', path: '/pages/toolbox/toolbox', tab: true, feature: 'tools' },
+  { label: '留言板', icon: '📥', path: '/pages/messages/messages', feature: 'im' },
   { label: '设置', icon: '⚙️', path: '/pages/config/config', tab: true },
 ]
 
+/**
+ * 按功能包过滤功能入口。
+ * 对齐 Web 端 AppLayout.vue 的 visibleTeacherMenu：未开通的功能包不展示入口，
+ * 避免「看得到点不进」（route-guard 会拦 pages/ai|tools|games 并弹「无权访问该页面」）。
+ */
+const visibleFeatures = computed(() =>
+  features.filter((f) => !f.feature || hasFeature(f.feature, auth.effectiveFeatures, auth.features)),
+)
+
 const widgetCands = [
-  { label: '计时器', icon: '⏱️', path: '/pages/tools/timer' },
-  { label: '抽签', icon: '🎲', path: '/pages/tools/picker' },
-  { label: '计算器', icon: '🧮', path: '/pages/tools/calc' },
-  { label: '口算', icon: '➗', path: '/pages/tools/math' },
-  { label: '错题本', icon: '📕', path: '/pages/tools/mathMistakes' },
-  { label: '决策器', icon: '🔀', path: '/pages/tools/decider' },
+  { label: '计时器', icon: '⏱️', path: '/pages/tools/timer', feature: 'tools' },
+  { label: '抽签', icon: '🎲', path: '/pages/tools/picker', feature: 'tools' },
+  { label: '计算器', icon: '🧮', path: '/pages/tools/calc', feature: 'tools' },
+  { label: '口算', icon: '➗', path: '/pages/tools/math', feature: 'tools' },
+  { label: '错题本', icon: '📕', path: '/pages/tools/mathMistakes', feature: 'tools' },
+  { label: '决策器', icon: '🔀', path: '/pages/tools/decider', feature: 'tools' },
   { label: '随机分组', icon: '👥', path: '/pages/grouper/grouper' },
-  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap' },
+  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap', feature: 'seats' },
 ]
+// 小组件同样过滤：否则历史已选的工具类组件在功能包关闭后仍显示且点击被拦
+const visibleWidgetCands = computed(() =>
+  widgetCands.filter((w) => !w.feature || hasFeature(w.feature, auth.effectiveFeatures, auth.features)),
+)
 const selKeys = ref([])
 const managing = ref(false)
-const chosenWidgets = computed(() => widgetCands.filter((w) => selKeys.value.includes(w.label)))
+const chosenWidgets = computed(() => visibleWidgetCands.value.filter((w) => selKeys.value.includes(w.label)))
 function toggleWidget(w) {
   const i = selKeys.value.indexOf(w.label)
   if (i >= 0) selKeys.value.splice(i, 1)
