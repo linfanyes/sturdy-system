@@ -14,7 +14,7 @@ import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
-import { CreateExamDto, UpdateExamDto } from '../dto/exams.dto'
+import { CreateExamDto, UpdateExamDto } from './dto/exams.dto'
 
 class ExamsService extends CrudService<Exam> {
   constructor(

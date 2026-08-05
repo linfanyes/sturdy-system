@@ -23,7 +23,7 @@ import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
 import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
 import { Parent } from '../parent/parent.entity'
-import { CreateStudentDto, UpdateStudentDto } from '../dto/students.dto'
+import { CreateStudentDto, UpdateStudentDto } from './dto/students.dto'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：

@@ -25,8 +25,8 @@ import { Parent } from '../parent/parent.entity'
 import { ClassItem } from '../classes/class.entity'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { User } from '../users/user.entity'
-import { CreateHomeworkDto, UpdateHomeworkDto } from '../dto/homework.dto'
-import { CreateAttendanceDto, UpdateAttendanceDto } from '../dto/attendances.dto'
+import { CreateHomeworkDto, UpdateHomeworkDto } from './dto/homework.dto'
+import { CreateAttendanceDto, UpdateAttendanceDto } from './dto/attendances.dto'
 
 class ScheduleService extends CrudService<ScheduleItem> {
   constructor(

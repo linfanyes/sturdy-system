@@ -11,8 +11,8 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
-import { CreateNoteDto, UpdateNoteDto } from '../dto/notes.dto'
-import { CreateTodoDto, UpdateTodoDto } from '../dto/todos.dto'
+import { CreateNoteDto, UpdateNoteDto } from './dto/notes.dto'
+import { CreateTodoDto, UpdateTodoDto } from './dto/todos.dto'
 
 class NoteService extends CrudService<NoteItem> {
   constructor(@InjectRepository(NoteItem) repo: Repository<NoteItem>) {
