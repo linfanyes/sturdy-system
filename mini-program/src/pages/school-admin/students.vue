@@ -1,6 +1,10 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view class="hd">🧑‍🎓 学生管理</view>
+    <view class="hd">
+      <text style="font-size:28rpx;color:#b8894a;min-width:96rpx;" @click="uni.navigateBack()">← 返回</text>
+      <text style="font-size:32rpx;font-weight:600;color:#4a3b2a;">🧑‍🎓 学生管理</text>
+      <text style="min-width:96rpx;"></text>
+    </view>
 
     <view class="bar">
       <text class="sc">共 {{ schoolStudents.length }} 名学生</text>

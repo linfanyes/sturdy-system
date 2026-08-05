@@ -19,6 +19,12 @@
       }
     },
     {
+      "path": "pages/school-admin/ai-config",
+      "style": {
+        "navigationBarTitleText": "AI 配置"
+      }
+    },
+    {
       "path": "pages/school-admin/teachers",
       "style": {
         "navigationBarTitleText": "教师管理"

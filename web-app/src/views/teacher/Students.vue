@@ -398,3 +398,5 @@ function downloadTemplate() {
   </Modal>
 
   <!-- 批量导入：复用通用组件，导入完成后刷新列表 -->
+  <BatchImportDialog v-model="showImport" type="student" :classes="classes" @imported="loadStudents" />
+</template>

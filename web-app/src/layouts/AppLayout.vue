@@ -296,19 +296,42 @@ const superMenu: MenuCategory[] = [
 /** 超管侧边栏中的可展开分类（排除直达的「仪表盘」） */
 const superCats = computed(() => superMenu.filter((c) => !c.direct))
 
+/* 校管菜单：工作台（直达）/ 人员管理 / 资源与设置（均展开二级瓷砖）
+   与超管 superMenu 同构，一级≤3，二级为页面入口，对齐超管菜单风格。 */
+const schoolAdminMenu: MenuCategory[] = [
+  {
+    label: '工作台', color: 'butter', icon: LayoutDashboard, direct: true,
+    groups: [{ label: '', items: [
+      { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin', icon: LayoutDashboard, color: 'butter' },
+    ] }],
+  },
+  {
+    label: '人员管理', color: 'blue', icon: Users,
+    groups: [{ label: '', items: [
+      { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
+      { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
+      { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
+      { name: 'school-admin-features', label: '学校功能包', to: '/school-admin/features', icon: ToggleLeft, color: 'purple' },
+    ] }],
+  },
+  {
+    label: '资源与设置', color: 'cream', icon: Settings,
+    groups: [{ label: '', items: [
+      { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
+      { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
+      { name: 'school-admin-resource-library', label: '教学资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
+    ] }],
+  },
+]
+/** 校管侧边栏中的可展开分类（排除直达的「工作台」） */
+const schoolAdminCats = computed(() => schoolAdminMenu.filter((c) => !c.direct))
+
 /* 非教师角色扁平菜单（保留原结构；super 已迁至 superMenu） */
 const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
   super: [],
-  school_admin: [
-    { name: 'school-admin-dashboard', label: '工作台', to: '/school-admin', icon: LayoutDashboard, color: 'butter' },
-    { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
-    { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
-    { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
-    { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'purple' },
-    { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
-    { name: 'school-admin-resource-library', label: '教学资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'butter' },
-    { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'green' },
-  ],
+  // 校管一级/二级菜单已迁至 schoolAdminMenu（对齐超管菜单风格），此处置空避免歧义
+  school_admin: [],
   parent: [
     { name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' },
     { name: 'parent-textbook', label: '教材知识点', to: '/parent/textbook', icon: BookOpen, color: 'green' },
@@ -364,6 +387,12 @@ function findCategoryForRoute(targetName: any) {
       if (g.items.some((it) => it.name === targetName)) return cat.label
     }
   }
+  for (const cat of schoolAdminMenu) {
+    if (cat.direct) continue
+    for (const g of cat.groups) {
+      if (g.items.some((it) => it.name === targetName)) return cat.label
+    }
+  }
   return ''
 }
 
@@ -379,10 +408,10 @@ watch(() => route.name, syncActiveCat)
 
 function toggleCat(label: string) {
   const role = auth.role
-  const rootName = role === 'super' ? 'super-dashboard' : 'teacher-dashboard'
-  const onSubPage = (role === 'teacher' || role === 'super') && route.name !== rootName
-  // 直达分类（如超管「仪表盘」）：点击直接跳转首个子项，不展开瓷砖
-  const menu = role === 'super' ? superMenu : visibleTeacherMenu.value
+  const rootName = role === 'super' ? 'super-dashboard' : role === 'school_admin' ? 'school-admin-dashboard' : 'teacher-dashboard'
+  const onSubPage = (role === 'teacher' || role === 'super' || role === 'school_admin') && route.name !== rootName
+  // 直达分类（如超管「仪表盘」/校管「工作台」）：点击直接跳转首个子项，不展开瓷砖
+  const menu = role === 'super' ? superMenu : role === 'school_admin' ? schoolAdminMenu : visibleTeacherMenu.value
   const cat = menu.find((c) => c.label === label)
   if (cat?.direct) {
     activeCategory.value = ''
@@ -394,7 +423,7 @@ function toggleCat(label: string) {
   if (onSubPage) {
     activeCategory.value = label
     openCats.value = [label]
-    router.push(role === 'super' ? '/super' : '/teacher')
+    router.push(role === 'super' ? '/super' : role === 'school_admin' ? '/school-admin' : '/teacher')
     return
   }
   // 在工作台页面：切换/折叠分类
@@ -406,17 +435,19 @@ function toggleCat(label: string) {
   openCats.value = activeCategory.value ? [activeCategory.value] : []
 }
 
-/** 是否在内容区展示二级菜单瓷砖（教师/超管 + 已选分类 + 工作台根页面） */
+/** 是否在内容区展示二级菜单瓷砖（教师/超管/校管 + 已选分类 + 工作台根页面） */
 const showTilesPanel = computed(() =>
   ((auth.role === 'teacher' && !!activeCategory.value && route.name === 'teacher-dashboard') ||
-   (auth.role === 'super' && !!activeCategory.value && route.name === 'super-dashboard'))
+   (auth.role === 'super' && !!activeCategory.value && route.name === 'super-dashboard') ||
+   (auth.role === 'school_admin' && !!activeCategory.value && route.name === 'school-admin-dashboard'))
 )
 
-/** 返回首页（清除分类选择，展示仪表盘内容）。按角色跳转，避免超管误跳到教师页 */
+/** 返回首页（清除分类选择，展示仪表盘内容）。按角色跳转，避免跨角色误跳 */
 function backToDashboard() {
   activeCategory.value = ''
   openCats.value = []
   if (auth.role === 'super' && route.name !== 'super-dashboard') router.push('/super')
+  else if (auth.role === 'school_admin' && route.name !== 'school-admin-dashboard') router.push('/school-admin')
   else if (auth.role === 'teacher' && route.name !== 'teacher-dashboard') router.push('/teacher')
 }
 
@@ -475,7 +506,7 @@ const hasResults = computed(() => {
 
 const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
 /** 是否处于仪表盘首页根路由（首页不重复渲染 pageTitle，避免「仪表盘 / 仪表盘」） */
-const isHome = computed(() => route.name === 'super-dashboard' || route.name === 'teacher-dashboard')
+const isHome = computed(() => route.name === 'super-dashboard' || route.name === 'school-admin-dashboard' || route.name === 'teacher-dashboard')
 
 const today = computed(() =>
   new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
@@ -507,6 +538,10 @@ const activeGroups = computed(() => {
   if (!activeCategory.value) return []
   if (auth.role === 'super') {
     const cat = superMenu.find((c) => c.label === activeCategory.value)
+    return cat?.groups || []
+  }
+  if (auth.role === 'school_admin') {
+    const cat = schoolAdminMenu.find((c) => c.label === activeCategory.value)
     return cat?.groups || []
   }
   const cat = visibleTeacherMenu.value.find((c) => c.label === activeCategory.value)
@@ -580,7 +615,40 @@ function navigateTo(to: string) {
             </button>
           </template>
         </template>
-        <!-- 其他非教师扁平菜单（校管/家长） -->
+        <!-- 校管：工作台直达 + 人员管理/资源与设置 可展开分类（对齐超管菜单风格） -->
+        <template v-else-if="auth.role === 'school_admin'">
+          <template v-for="cat in schoolAdminMenu" :key="cat.label">
+            <router-link
+              v-if="cat.direct"
+              :to="(cat.groups[0]?.items[0]?.to) || '#'"
+              class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            >
+              <div
+                class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+                :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+              >
+                <component :is="cat.icon" class="w-5 h-5" />
+              </div>
+              <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            </router-link>
+            <button
+              v-else
+              class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
+              :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              @click="toggleCat(cat.label)"
+            >
+              <div
+                class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+                :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
+              >
+                <component :is="cat.icon" class="w-5 h-5" />
+              </div>
+              <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            </button>
+          </template>
+        </template>
+        <!-- 其他非教师扁平菜单（家长） -->
         <template v-else>
           <router-link
             v-for="item in flatItems"
@@ -692,7 +760,7 @@ function navigateTo(to: string) {
             </div>
             <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
               <Home class="h-3.5 w-3.5" />
-              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '仪表盘' : '园丁工作台' }}</button>
+              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '仪表盘' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
               <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super')">
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />
                 <span>{{ activeCategory }}</span>
