@@ -1,0 +1,437 @@
+{
+  "generatedAt": "2026-08-05T19:18:16.219Z",
+  "base": "https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api",
+  "schools": [
+    {
+      "prefix": "QA",
+      "name": "测试阳光小学",
+      "address": "云城阳光路1号",
+      "id": "cec4b848-c333-4986-999d-353252290b56",
+      "reused": false,
+      "saUser": "qa_sa_qa",
+      "saPass": "Qa@2026",
+      "saId": "103600e6-ecaf-40e3-a1e5-2f5078c185cf",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMDM2MDBlNi1lY2FmLTQwZTMtYTFlNS0yZjUwNzhjMTg1Y2YiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiJlOTE5NGRlOS1mNmZmLTQ4NDAtODdkMy0wYWMwODBjZjczOTYiLCJpYXQiOjE3ODU5NTc0OTgsImV4cCI6MTc4ODU0OTQ5OH0.SxXc4Dfl-j36TY2RLIyeQzQkgq8a8Y7FbE3l5PPlr0U",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QB",
+      "name": "测试育才小学",
+      "address": "云城育才路2号",
+      "id": "52ed54f5-9f74-41bc-be2f-b3a7130877e7",
+      "reused": false,
+      "saUser": "qa_sa_qb",
+      "saPass": "Qa@2026",
+      "saId": "3f7ea1c3-0591-41ba-8211-39da68e5f459",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZjdlYTFjMy0wNTkxLTQxYmEtODIxMS0zOWRhNjhlNWY0NTkiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiJjYzliYzBlNi1jZTRmLTQ4ZTUtYjJhZC0wOWZkNGIyMzlkMDgiLCJpYXQiOjE3ODU5NTc1MDUsImV4cCI6MTc4ODU0OTUwNX0.EBQXptKR1l0abWF2l-INNiR3Se6EFDvDHNIJLbJGEro",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QC",
+      "name": "测试实验小学",
+      "address": "云城实验路3号",
+      "id": "a4ac12ab-55b7-4607-8846-eca9f1148bba",
+      "reused": false,
+      "saUser": "qa_sa_qc",
+      "saPass": "Qa@2026",
+      "saId": "64ad2847-9826-436d-90ac-a7de9a50bcf1",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGFkMjg0Ny05ODI2LTQzNmQtOTBhYy1hN2RlOWE1MGJjZjEiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiJlNGY0ZTdhYS1hZGI1LTRjZTAtOTczYy02NWZlNDQ4NWY1MGYiLCJpYXQiOjE3ODU5NTc1MTMsImV4cCI6MTc4ODU0OTUxM30.sVEuBX7DTn0un4Ie6FxncPNMdBXTPbWT-rJitRYA8vM",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QD",
+      "name": "测试第一小学",
+      "address": "云城一环路4号",
+      "id": "73a4f46b-1beb-418a-8ea4-461706d945c3",
+      "reused": false,
+      "saUser": "qa_sa_qd",
+      "saPass": "Qa@2026",
+      "saId": "5a6290e6-9db6-4f0e-be26-de592279494e",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTYyOTBlNi05ZGI2LTRmMGUtYmUyNi1kZTU5MjI3OTQ5NGUiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIzN2YwOWQ3NS0zMGE3LTRjMTAtYWE3NS0zZDAxMTg1YWMzMjEiLCJpYXQiOjE3ODU5NTc1MjAsImV4cCI6MTc4ODU0OTUyMH0.197XWz1ZJf8jyVSQ4A_kwqN2Vdls87ax9UUCc6ukDYc",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QE",
+      "name": "测试新世纪小学",
+      "address": "云城二环路5号",
+      "id": "fa59d83d-4905-408f-b78b-011f4efcb71b",
+      "reused": false,
+      "saUser": "qa_sa_qe",
+      "saPass": "Qa@2026",
+      "saId": "2398addc-dabb-4ee7-beeb-5d13d252d820",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMzk4YWRkYy1kYWJiLTRlZTctYmVlYi01ZDEzZDI1MmQ4MjAiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIxNzA4ZDc3Mi01YjVlLTQ5MjUtOGQ3Yy0xY2FhMDFiNzRlOTciLCJpYXQiOjE3ODU5NTc1MjgsImV4cCI6MTc4ODU0OTUyOH0.JhX6LC8VsbWfiSbxZDxtuBbYi9BDZH0ipZW0gvxZRAA",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QF",
+      "name": "测试红领巾小学",
+      "address": "云城三环路6号",
+      "id": "45fd1592-6efa-475f-9f83-0ef8a532516e",
+      "reused": false,
+      "saUser": "qa_sa_qf",
+      "saPass": "Qa@2026",
+      "saId": "2e97359d-e8f2-47eb-882a-22443acb4593",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyZTk3MzU5ZC1lOGYyLTQ3ZWItODgyYS0yMjQ0M2FjYjQ1OTMiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIyM2VlYTNmNS01YWMzLTQ5MGYtYTk2NS00N2RjZWJmNWRkNDQiLCJpYXQiOjE3ODU5NTc1MzUsImV4cCI6MTc4ODU0OTUzNX0.dZBaTWU-hGu53iwg0slF3HADVhOemdPL3tOhD4ErExs",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QG",
+      "name": "测试晨曦小学",
+      "address": "云城四环路7号",
+      "id": "050ac881-842c-4cfb-9804-c073537fa5aa",
+      "reused": false,
+      "saUser": "qa_sa_qg",
+      "saPass": "Qa@2026",
+      "saId": "9d19bb2b-0cab-4a3f-b1a5-966ddfbfc473",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5ZDE5YmIyYi0wY2FiLTRhM2YtYjFhNS05NjZkZGZiZmM0NzMiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIwMjNiZTdhOS01Nzg5LTQ3NWEtYWEzYy1mOGY3ZDk3OWUxODAiLCJpYXQiOjE3ODU5NTc1NDMsImV4cCI6MTc4ODU0OTU0M30.yBbS--a3Ictx6QBBWaeICJ2jAoSlsQQ1_JK4R96kbHU",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QH",
+      "name": "测试星火小学",
+      "address": "云城五环路8号",
+      "id": "242573c8-4e0f-4497-bf8e-dace673ed7d0",
+      "reused": false,
+      "saUser": "qa_sa_qh",
+      "saPass": "Qa@2026",
+      "saId": "f34f10f2-1c19-4d12-a7c4-f97c9aae8126",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmMzRmMTBmMi0xYzE5LTRkMTItYTdjNC1mOTdjOWFhZTgxMjYiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiI1YTEzYWMwYy1kMzUxLTRhODAtYTZiOS1jY2QxZjg0MTliZTMiLCJpYXQiOjE3ODU5NTc1NTAsImV4cCI6MTc4ODU0OTU1MH0.i29fnqpaBVObLPXFCzWSLgwNPcdEle-ODVGyuaon5ag",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QI",
+      "name": "测试博雅小学",
+      "address": "云城六环路9号",
+      "id": "3093e078-a826-4862-9e53-267e98b45829",
+      "reused": false,
+      "saUser": "qa_sa_qi",
+      "saPass": "Qa@2026",
+      "saId": "a5cec270-0c9f-4467-ae30-3a61802ff378",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNWNlYzI3MC0wYzlmLTQ0NjctYWUzMC0zYTYxODAyZmYzNzgiLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiIwYzFmZjY5Ni0yNzE1LTRlZWMtOGY4OS0zNTNjNTZmYTc2MWQiLCJpYXQiOjE3ODU5NTc1NTgsImV4cCI6MTc4ODU0OTU1OH0.2xzjCAQ7rInJMDOptJBikrJfC5gi-x6SjyXVlosvxE4",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    },
+    {
+      "prefix": "QJ",
+      "name": "测试梧桐小学",
+      "address": "云城七环路10号",
+      "id": "6c5c6da9-5528-4e1c-81be-882d9958aeef",
+      "reused": false,
+      "saUser": "qa_sa_qj",
+      "saPass": "Qa@2026",
+      "saId": "1d84056e-2ddc-4051-bd5d-2b6053284037",
+      "saToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZDg0MDU2ZS0yZGRjLTQwNTEtYmQ1ZC0yYjYwNTMyODQwMzciLCJyb2xlIjoic2Nob29sX2FkbWluIiwic2Nob29sSWQiOiI3MGQ4YzVlMS01NWE1LTRiYTItOGNhYy1kYjZiMGUyMTFhMzkiLCJpYXQiOjE3ODU5NTc1NjUsImV4cCI6MTc4ODU0OTU2NX0._8GIjuwt-SV1YSYOOLKITHMFQxnBULGYTWy88LkUBJQ",
+      "classes": [
+        {
+          "name": "一年级1班",
+          "grade": "一年级",
+          "reused": true
+        },
+        {
+          "name": "二年级2班",
+          "grade": "二年级",
+          "reused": true
+        },
+        {
+          "name": "三年级3班",
+          "grade": "三年级",
+          "reused": true
+        },
+        {
+          "name": "四年级4班",
+          "grade": "四年级",
+          "reused": true
+        },
+        {
+          "name": "五年级5班",
+          "grade": "五年级",
+          "reused": true
+        },
+        {
+          "name": "六年级6班",
+          "grade": "六年级",
+          "reused": true
+        }
+      ]
+    }
+  ],
+  "accounts": {}
+}

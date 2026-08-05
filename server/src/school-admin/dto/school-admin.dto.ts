@@ -151,6 +151,11 @@ export class UpdateStudentDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(20)
+  studentNo?: string
+
+  @IsOptional()
+  @IsString()
   @Matches(/^1[3-9]\d{9}$|^$/, { message: '家长手机号格式不正确（应为 11 位手机号，可留空）' })
   parentPhone?: string
 }

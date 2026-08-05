@@ -283,8 +283,12 @@ class StudentsService extends CrudService<Student> {
   }
 
   /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时默认口令为随机 hex 并随响应返回） */
-  async toggleParentLogin(teacherId: string, studentId: string) {
-    const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
+  async toggleParentLogin(user: any, studentId: string) {
+    // 校管按 id 查（其学生列表已按学校过滤，仅能操作本校学生），教师按 teacherId 归属过滤
+    const role = user?.role
+    const s = role === 'school_admin'
+      ? await this.repo.findOne({ where: { id: studentId } })
+      : await this.repo.findOne({ where: { id: studentId, teacherId: user?.sub } })
     if (!s) throw new BadRequestException('学生不存在')
     s.parentLoginEnabled = !s.parentLoginEnabled
     let initialPassword: string | undefined
@@ -531,7 +535,7 @@ class StudentsController extends CrudController<Student> {
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   async toggleParentLogin(@Param('id') id: string, @CurrentTeacher() t: any) {
-    return (this.service as StudentsService).toggleParentLogin(t.sub, id)
+    return (this.service as StudentsService).toggleParentLogin(t, id)
   }
 
   /** 教师/校管将该学生的家长登录口令重置为默认口令（123456）或自定义密码（校管列表已按学校过滤，仅能操作本校学生） */
