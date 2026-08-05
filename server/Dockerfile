@@ -1,4 +1,4 @@
-# cache-bust-1: 2026-07-29 强制刷新构建缓存（清除旧版 default: [] 等残留）
+# cache-bust-2: 2026-08-05 强制刷新构建缓存（规避云构建镜像层 commit 校验和错误）
 # ---- 构建阶段（含 devDeps，用于编译） ----
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY . .
 RUN npm run build
 
 # ---- 生产依赖阶段（仅安装运行时依赖） ----
-# cache-bust-pd-1: 2026-07-29 强制刷新生产依赖缓存
+# cache-bust-pd-2: 2026-08-05 强制刷新生产依赖缓存
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package*.json ./

@@ -6,3 +6,20 @@ dist
 *.md
 !package.json
 !README.md
+
+# 以下为构建/运行时不需要的内容，排除以缩小构建上下文、避免打进镜像
+coverage
+.nyc_output
+.seed-dist
+*.tsbuildinfo
+test
+tests
+spec
+*.spec.ts
+*.e2e-spec.ts
+scripts
+docker-compose*.yml
+docker-compose*.yaml
+cloudbaserc.json
+.DS_Store
+Thumbs.db
