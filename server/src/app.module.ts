@@ -49,6 +49,7 @@ import { MessagesModule } from './messages/messages.module'
 import { TeachingCalendarModule } from './teaching-calendar/teaching-calendar.module'
 import { TextbookModule } from './textbook/textbook.module'
 import { ResourceLibraryModule } from './resource-library/resource-library.module'
+import { OnlineResourcesModule } from './online-resources/online-resources.module'
 import { FeatureModule } from './common/feature/feature.module'
 import { EvaluationModule } from './evaluation/evaluation.module'
 import { HealthController } from './health.controller'
@@ -153,6 +154,7 @@ import { HealthController } from './health.controller'
     TeachingCalendarModule,
     TextbookModule,
     ResourceLibraryModule,
+    OnlineResourcesModule,
     FeatureModule,
   ],
   providers: [

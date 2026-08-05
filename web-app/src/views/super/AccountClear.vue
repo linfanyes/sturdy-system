@@ -59,7 +59,7 @@ async function doResetAll() {
           <ul class="text-sm text-cocoa-600 list-disc pl-5 space-y-1 mb-3">
             <li>清除所有考试、成绩、作业、考勤、课表</li>
             <li>清除所有通知、公告、班级活动、班级风采、值日</li>
-            <li>清除所有 AI 生成内容、教学资源、教学日志</li>
+            <li>清除所有 AI 生成内容、在线资源、教学日志</li>
             <li>清除所有学生奖惩、成长记录、家长联系记录</li>
             <li><b>保留</b>：学校、校管、教师、班级、学生等演示数据</li>
             <li><b>保留</b>：超管账号、平台配置</li>

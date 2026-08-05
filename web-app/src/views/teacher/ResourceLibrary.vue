@@ -6,25 +6,37 @@
  * - 英语单词：按分类分组展示，每个单词显示音标与释义
  */
 import { ref, computed, onMounted } from 'vue'
-import { BookOpen, Calculator, Languages, Search, Loader2, X, ChevronDown, Filter } from 'lucide-vue-next'
+import { BookOpen, Calculator, Languages, Search, Loader2, X, ChevronDown, Filter, Copy, Printer } from 'lucide-vue-next'
 import {
   listPoems, listFormulas, listWords, listWordCategories,
   type Poem, type MathFormula, type EnglishWord,
 } from '@/api/resource-library'
 import { useAuthStore } from '@/stores/auth'
+import BackBar from '@/components/BackBar.vue'
+import { copyText, printHtml, notify, escapeHtml } from '@/utils/copyPrint'
 
 const auth = useAuthStore()
 
 type Tab = 'poems' | 'formulas' | 'words'
-// 按教师主学科默认选中对应 tab：语文→古诗词，数学→公式，英语→单词
-const teacherSubject = auth.user?.subjects?.[0] || auth.user?.subject || ''
-const defaultTab: Tab = teacherSubject === '数学' ? 'formulas' : teacherSubject === '英语' ? 'words' : 'poems'
-const tab = ref<Tab>(defaultTab)
 const tabs: { key: Tab; label: string; icon: any }[] = [
   { key: 'poems', label: '古诗词', icon: BookOpen },
   { key: 'formulas', label: '数学公式', icon: Calculator },
   { key: 'words', label: '英语单词', icon: Languages },
 ]
+// 按教师任课学科过滤可见 tab：语文→古诗词，数学→公式，英语→单词；
+// 多学科教师显示多个对应 tab；未匹配语数外的教师展示全部（兼容）。
+const teacherSubjects: string[] = Array.isArray(auth.user?.subjects) && auth.user.subjects.length
+  ? auth.user.subjects
+  : auth.user?.subject ? [auth.user.subject] : []
+const SUBJECT_TAB: Record<string, Tab> = { 语文: 'poems', 数学: 'formulas', 英语: 'words' }
+const visibleTabs = computed(() => {
+  if (!teacherSubjects.length) return tabs
+  const matched = teacherSubjects.map((s) => SUBJECT_TAB[s]).filter(Boolean) as Tab[]
+  const ordered = tabs.filter((t) => matched.includes(t.key))
+  return ordered.length ? ordered : tabs
+})
+// 默认选中第一个可见 tab（即教师主学科对应的资源）
+const tab = ref<Tab>(visibleTabs.value[0]?.key || 'poems')
 
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const DYNASTIES = ['唐', '宋', '元', '明', '清', '汉', '南北朝', '魏晋', '先秦', '近现代']
@@ -127,7 +139,13 @@ async function switchTab(t: Tab) {
   else await loadWords()
 }
 
-onMounted(() => { loadedTabs.value.add('poems'); loadPoems() })
+onMounted(() => {
+  const t = tab.value
+  loadedTabs.value.add(t)
+  if (t === 'poems') loadPoems()
+  else if (t === 'formulas') loadFormulas()
+  else loadWords()
+})
 
 // 朝代颜色映射，让卡片更有诗意
 const dynastyColor: Record<string, string> = {
@@ -140,18 +158,80 @@ const dynastyColor: Record<string, string> = {
 function dynastyTag(d: string) {
   return dynastyColor[d] || 'bg-cream-100 border-cream-200'
 }
+
+// ============ 复制 / 打印 ============
+// 古诗词
+function poemText(p: Poem) {
+  let t = `《${p.title}》[${p.dynasty}] ${p.author}${p.grade ? ' · ' + p.grade : ''}\n\n${p.content}`
+  if (p.translation) t += `\n\n译文：\n${p.translation}`
+  if (p.appreciation) t += `\n\n赏析：\n${p.appreciation}`
+  return t
+}
+function poemHtml(p: Poem) {
+  const br = (s: string) => escapeHtml(s).replace(/\n/g, '<br>')
+  return `<div class="item"><div class="poem"><strong>《${escapeHtml(p.title)}》</strong> [${escapeHtml(p.dynasty)}] ${escapeHtml(p.author)}${p.grade ? ' · ' + escapeHtml(p.grade) : ''}<br>${br(p.content)}</div>${p.translation ? `<div class="ex">译文：${br(p.translation)}</div>` : ''}${p.appreciation ? `<div class="ex">赏析：${br(p.appreciation)}</div>` : ''}</div>`
+}
+async function copyPoem(p: Poem) {
+  const ok = await copyText(poemText(p))
+  notify(ok ? '已复制该诗词' : '复制失败', ok ? 'success' : 'error')
+}
+function printPoem(p: Poem) {
+  printHtml(`古诗词 · ${p.title}`, poemHtml(p))
+}
+
+// 数学公式
+function formulaText(f: MathFormula) {
+  let t = `${f.title}（${f.category}）\n${f.formula}`
+  if (f.explanation) t += `\n说明：${f.explanation}`
+  if (f.example) t += `\n例：${f.example}`
+  return t
+}
+function formulaHtml(f: MathFormula) {
+  return `<div class="item"><div><strong>${escapeHtml(f.title)}</strong> <span class="meta">${escapeHtml(f.category)}</span></div><div class="formula">${escapeHtml(f.formula)}</div>${f.explanation ? `<div class="ex">${escapeHtml(f.explanation)}</div>` : ''}${f.example ? `<div class="meta">例：${escapeHtml(f.example)}</div>` : ''}</div>`
+}
+async function copyFormula(f: MathFormula) {
+  const ok = await copyText(formulaText(f))
+  notify(ok ? '已复制该公式' : '复制失败', ok ? 'success' : 'error')
+}
+function printFormula(f: MathFormula) {
+  printHtml(`数学公式 · ${f.title}`, formulaHtml(f))
+}
+
+// 英语单词（按分类小类，如「交通」）
+function categoryText(cat: string, list: EnglishWord[]) {
+  let t = `英语单词 · ${cat}\n`
+  for (const w of list) {
+    t += `\n${w.word}${w.phonetic ? ' /' + w.phonetic + '/' : ''}  ${w.meaning}`
+    if (w.example) t += `\n  e.g. ${w.example}`
+  }
+  return t
+}
+function categoryHtml(cat: string, list: EnglishWord[]) {
+  const items = list
+    .map((w) => `<div class="item"><span class="word">${escapeHtml(w.word)}</span>${w.phonetic ? `<span class="ph">/${escapeHtml(w.phonetic)}/</span>` : ''}<div class="mean">${escapeHtml(w.meaning)}</div>${w.example ? `<div class="ex">e.g. ${escapeHtml(w.example)}</div>` : ''}</div>`)
+    .join('')
+  return `<h1>英语单词 · ${escapeHtml(cat)}</h1><div class="grp">${items}</div>`
+}
+async function copyCategory(cat: string, list: EnglishWord[]) {
+  const ok = await copyText(categoryText(cat, list))
+  notify(ok ? `已复制「${cat}」全部单词` : '复制失败', ok ? 'success' : 'error')
+}
+function printCategory(cat: string, list: EnglishWord[]) {
+  printHtml(`英语单词 · ${cat}`, categoryHtml(cat, list))
+}
 </script>
 
 <template>
-  <div class="space-y-4 max-w-5xl mx-auto">
+  <div class="space-y-4">
+    <BackBar fallback="/teacher" />
     <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-      <BookOpen class="w-6 h-6 text-butter-500" /> 教学资源库
+      <BookOpen class="w-6 h-6 text-butter-500" /> 在线资源库
     </h1>
 
     <!-- 标签页 -->
     <div class="flex gap-2 border-b border-cream-200">
       <button
-        v-for="t in tabs" :key="t.key"
+        v-for="t in visibleTabs" :key="t.key"
         :class="['flex items-center gap-1.5 px-4 py-2.5 -mb-px border-b-2 transition-colors', tab === t.key ? 'border-butter-500 text-butter-600 font-medium' : 'border-transparent text-cocoa-500 hover:text-cocoa-700']"
         @click="switchTab(t.key)"
       >
@@ -187,7 +267,7 @@ function dynastyTag(d: string) {
         <p>暂无古诗词</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div v-for="p in poems" :key="p.id"
           class="bg-gradient-to-br from-cream-50 to-white rounded-2xl border border-cream-200 shadow-softer overflow-hidden hover:shadow-md transition-shadow">
           <div class="p-4 cursor-pointer" @click="togglePoem(p.id)">
@@ -214,6 +294,10 @@ function dynastyTag(d: string) {
               <div class="text-sm text-cocoa-600 leading-relaxed whitespace-pre-line">{{ p.appreciation }}</div>
             </div>
             <div v-if="p.keywords" class="text-[10px] text-cocoa-400 pt-1">🏷 {{ p.keywords }}</div>
+          </div>
+          <div class="flex items-center gap-4 px-4 py-2 border-t border-cream-100 bg-cream-50/40">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click.stop="copyPoem(p)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click.stop="printPoem(p)"><Printer class="w-3.5 h-3.5" /> 打印</button>
           </div>
         </div>
       </div>
@@ -256,6 +340,10 @@ function dynastyTag(d: string) {
             </div>
           </div>
           <div v-if="f.keywords" class="text-[10px] text-cocoa-400 mt-2">🏷 {{ f.keywords }}</div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyFormula(f)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printFormula(f)"><Printer class="w-3.5 h-3.5" /> 打印</button>
+          </div>
         </div>
       </div>
     </template>
@@ -289,7 +377,11 @@ function dynastyTag(d: string) {
               <span class="w-1.5 h-1.5 rounded-full bg-butter-400"></span>
               {{ cat }}
             </div>
-            <span class="text-xs text-cocoa-400">{{ list.length }} 词</span>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-cocoa-400">{{ list.length }} 词</span>
+              <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyCategory(cat, list)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+              <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printCategory(cat, list)"><Printer class="w-3.5 h-3.5" /> 打印</button>
+            </div>
           </div>
           <div class="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             <div v-for="w in list" :key="w.id" class="px-3 py-2 rounded-xl border border-cream-100 hover:bg-cream-50 transition-colors">

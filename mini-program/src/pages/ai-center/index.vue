@@ -39,7 +39,7 @@
       <view class="grid">
         <view class="cell" @click="go('/pages/resource/resource')">
           <view class="ic">📚</view>
-          <view class="lb">教学资源</view>
+          <view class="lb">在线资源</view>
         </view>
         <view class="cell" @click="go('/pages/crud/crud?type=lesson-plan-templates')">
           <view class="ic">📋</view>

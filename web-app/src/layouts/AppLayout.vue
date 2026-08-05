@@ -162,9 +162,10 @@ const teacherMenu: MenuCategory[] = [
           { name: 'teacher-lesson-plans', label: '教案库', to: '/teacher/lesson-plans', feature: 'ai', icon: BookMarked, color: 'blue' },
           { name: 'teacher-knowledges', label: '知识点库', to: '/teacher/knowledges', feature: 'ai', icon: GraduationCap, color: 'green' },
           { name: 'teacher-textbook', label: '教材知识库', to: '/teacher/textbook', feature: 'ai', icon: BookOpen, color: 'sky' },
-          { name: 'teacher-resource-library', label: '教学资源库', to: '/teacher/resource-library', feature: 'ai', icon: BookOpen, color: 'butter' },
+          { name: 'teacher-resource-library', label: '在线资源库', to: '/teacher/resource-library', feature: 'ai', icon: BookOpen, color: 'butter' },
           { name: 'teacher-papers', label: '试卷库', to: '/teacher/papers', feature: 'ai', icon: ScrollText, color: 'purple' },
-          { name: 'teacher-ai-resources', label: '教学资源', to: '/teacher/ai-resources', feature: 'ai', icon: BookOpen, color: 'sky' },
+          { name: 'teacher-ai-resources', label: '在线资源', to: '/teacher/ai-resources', feature: 'ai', icon: BookOpen, color: 'sky' },
+          { name: 'teacher-zhxue', label: '智慧中小学', to: '/teacher/zhzx', feature: 'ai', icon: GraduationCap, color: 'green' },
           { name: 'teacher-schedule', label: '课表', to: '/teacher/schedule', feature: 'schedule', icon: CalendarCheck, color: 'butter' },
         ],
       },
@@ -326,7 +327,8 @@ const schoolAdminMenu: MenuCategory[] = [
     groups: [{ label: '', items: [
       { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
-      { name: 'school-admin-resource-library', label: '教学资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { name: 'school-admin-resource-library', label: '在线资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { name: 'school-admin-zhxue', label: '智慧中小学', to: '/school-admin/zhzx', icon: GraduationCap, color: 'blue' },
       { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
     ] }],
   },
@@ -456,6 +458,15 @@ function backToDashboard() {
   if (auth.role === 'super' && route.name !== 'super-dashboard') router.push('/super')
   else if (auth.role === 'school_admin' && route.name !== 'school-admin-dashboard') router.push('/school-admin')
   else if (auth.role === 'teacher' && route.name !== 'teacher-dashboard') router.push('/teacher')
+}
+
+/** 点击面包屑「二级分类」返回该分类的二级菜单（瓷砖面板）。
+ *  保留 activeCategory，仅跳回对应角色的工作台根，showTilesPanel 随即展示该分类瓷砖，
+ *  从而满足「从路径显示点击返回二级菜单」。 */
+function backToTiles() {
+  if (auth.role === 'super') router.push('/super')
+  else if (auth.role === 'school_admin') router.push('/school-admin')
+  else router.push('/teacher')
 }
 
 async function handleLogout() {
@@ -768,9 +779,9 @@ function navigateTo(to: string) {
             <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
               <Home class="h-3.5 w-3.5" />
               <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
-              <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super')">
+              <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')">
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />
-                <span>{{ activeCategory }}</span>
+                <button class="transition-colors hover:text-cocoa-700" @click="backToTiles">{{ activeCategory }}</button>
               </template>
               <template v-if="!isHome">
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />

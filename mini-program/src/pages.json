@@ -425,8 +425,14 @@
     {
       "path": "pages/resource/resource",
       "style": {
-        "navigationBarTitleText": "教学资源",
+        "navigationBarTitleText": "在线资源",
         "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/webview/webview",
+      "style": {
+        "navigationBarTitleText": "在线观看"
       }
     },
     {

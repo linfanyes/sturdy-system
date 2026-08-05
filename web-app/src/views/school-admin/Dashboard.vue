@@ -100,7 +100,7 @@ const entryGroups = [
     items: [
       { label: '学校公告', desc: '发布与维护公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { label: '教材知识库', desc: '教材与知识点', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
-      { label: '教学资源库', desc: '教学资源沉淀', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { label: '在线资源库', desc: '在线资源沉淀', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
       { label: 'AI 配置', desc: 'AI 服务商设置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
     ],
   },

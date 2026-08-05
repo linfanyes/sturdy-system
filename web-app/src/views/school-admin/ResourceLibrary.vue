@@ -3,7 +3,7 @@
  * 校管教学资源库管理：古诗词 / 数学公式 / 英语单词 三类 CRUD + 一键初始化
  */
 import { ref, onMounted } from 'vue'
-import { BookOpen, Calculator, Languages, Plus, Edit2, Trash2, Search, Loader2, X, Database } from 'lucide-vue-next'
+import { BookOpen, Calculator, Languages, Plus, Edit2, Trash2, Search, Loader2, X, Database, Copy, Printer } from 'lucide-vue-next'
 import {
   adminListPoems, adminCreatePoem, adminUpdatePoem, adminDeletePoem,
   adminListFormulas, adminCreateFormula, adminUpdateFormula, adminDeleteFormula,
@@ -11,6 +11,7 @@ import {
   seedDefaultResources,
   type Poem, type MathFormula, type EnglishWord,
 } from '@/api/resource-library'
+import { copyText, printHtml, notify, escapeHtml } from '@/utils/copyPrint'
 
 type Tab = 'poems' | 'formulas' | 'words'
 const tab = ref<Tab>('poems')
@@ -166,13 +167,65 @@ async function removeWord(id: string) {
 }
 
 const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400'
+
+// ============ 复制 / 打印 ============
+function poemText(p: Poem) {
+  let t = `《${p.title}》[${p.dynasty}] ${p.author}${p.grade ? ' · ' + p.grade : ''}\n\n${p.content}`
+  if (p.translation) t += `\n\n译文：\n${p.translation}`
+  if (p.appreciation) t += `\n\n赏析：\n${p.appreciation}`
+  return t
+}
+function poemHtml(p: Poem) {
+  const br = (s: string) => escapeHtml(s).replace(/\n/g, '<br>')
+  return `<div class="item"><div class="poem"><strong>《${escapeHtml(p.title)}》</strong> [${escapeHtml(p.dynasty)}] ${escapeHtml(p.author)}${p.grade ? ' · ' + escapeHtml(p.grade) : ''}<br>${br(p.content)}</div>${p.translation ? `<div class="ex">译文：${br(p.translation)}</div>` : ''}${p.appreciation ? `<div class="ex">赏析：${br(p.appreciation)}</div>` : ''}</div>`
+}
+async function copyPoem(p: Poem) {
+  const ok = await copyText(poemText(p))
+  notify(ok ? '已复制该诗词' : '复制失败', ok ? 'success' : 'error')
+}
+function printPoem(p: Poem) {
+  printHtml(`古诗词 · ${p.title}`, poemHtml(p))
+}
+
+function formulaText(f: MathFormula) {
+  let t = `${f.title}（${f.category}）\n${f.formula}`
+  if (f.explanation) t += `\n说明：${f.explanation}`
+  if (f.example) t += `\n例：${f.example}`
+  return t
+}
+function formulaHtml(f: MathFormula) {
+  return `<div class="item"><div><strong>${escapeHtml(f.title)}</strong> <span class="meta">${escapeHtml(f.category)}</span></div><div class="formula">${escapeHtml(f.formula)}</div>${f.explanation ? `<div class="ex">${escapeHtml(f.explanation)}</div>` : ''}${f.example ? `<div class="meta">例：${escapeHtml(f.example)}</div>` : ''}</div>`
+}
+async function copyFormula(f: MathFormula) {
+  const ok = await copyText(formulaText(f))
+  notify(ok ? '已复制该公式' : '复制失败', ok ? 'success' : 'error')
+}
+function printFormula(f: MathFormula) {
+  printHtml(`数学公式 · ${f.title}`, formulaHtml(f))
+}
+
+function wordText(w: EnglishWord) {
+  let t = `${w.word}${w.phonetic ? ' /' + w.phonetic + '/' : ''}  ${w.meaning}`
+  if (w.example) t += `\n  e.g. ${w.example}`
+  return t
+}
+function wordHtml(w: EnglishWord) {
+  return `<div class="item"><span class="word">${escapeHtml(w.word)}</span>${w.phonetic ? `<span class="ph">/${escapeHtml(w.phonetic)}/</span>` : ''}<div class="mean">${escapeHtml(w.meaning)}</div>${w.example ? `<div class="ex">e.g. ${escapeHtml(w.example)}</div>` : ''}</div>`
+}
+async function copyWord(w: EnglishWord) {
+  const ok = await copyText(wordText(w))
+  notify(ok ? '已复制该单词' : '复制失败', ok ? 'success' : 'error')
+}
+function printWord(w: EnglishWord) {
+  printHtml(`英语单词 · ${w.word}`, wordHtml(w))
+}
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-        <BookOpen class="w-6 h-6 text-butter-500" /> 教学资源库
+        <BookOpen class="w-6 h-6 text-butter-500" /> 在线资源库
       </h1>
       <button
         class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-600 hover:bg-mint-200 disabled:opacity-60"
@@ -230,6 +283,8 @@ const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus
             <div class="text-sm text-cocoa-700 mt-1 line-clamp-2 whitespace-pre-line">{{ p.content }}</div>
             <div v-if="p.translation" class="text-xs text-cocoa-500 mt-1 line-clamp-1">📖 {{ p.translation }}</div>
           </div>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="复制" @click="copyPoem(p)"><Copy class="w-4 h-4" /></button>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="打印" @click="printPoem(p)"><Printer class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="编辑" @click="editPoem(p)"><Edit2 class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-sakura-50 text-sakura-500 shrink-0" title="删除" @click="removePoem(p.id)"><Trash2 class="w-4 h-4" /></button>
         </div>
@@ -266,6 +321,8 @@ const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus
             <div class="mt-1.5 px-2.5 py-1 rounded-lg bg-cream-50 border border-cream-100 text-cocoa-900 font-mono text-sm inline-block">{{ f.formula }}</div>
             <div v-if="f.explanation" class="text-xs text-cocoa-600 mt-1.5 leading-relaxed">{{ f.explanation }}</div>
           </div>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="复制" @click="copyFormula(f)"><Copy class="w-4 h-4" /></button>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="打印" @click="printFormula(f)"><Printer class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="编辑" @click="editFormula(f)"><Edit2 class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-sakura-50 text-sakura-500 shrink-0" title="删除" @click="removeFormula(f.id)"><Trash2 class="w-4 h-4" /></button>
         </div>
@@ -303,6 +360,8 @@ const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus
             <div class="text-sm text-cocoa-700 mt-0.5">{{ w.meaning }}</div>
             <div v-if="w.example" class="text-xs text-cocoa-500 mt-0.5 italic">e.g. {{ w.example }}</div>
           </div>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="复制" @click="copyWord(w)"><Copy class="w-4 h-4" /></button>
+          <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="打印" @click="printWord(w)"><Printer class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="编辑" @click="editWord(w)"><Edit2 class="w-4 h-4" /></button>
           <button class="p-1.5 rounded-lg hover:bg-sakura-50 text-sakura-500 shrink-0" title="删除" @click="removeWord(w.id)"><Trash2 class="w-4 h-4" /></button>
         </div>

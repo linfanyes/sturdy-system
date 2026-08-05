@@ -12,6 +12,32 @@
       <text v-if="selectedIds.size" class="batch-del-btn" @click="batchDel">🗑 删除({{ selectedIds.size }})</text>
     </view>
 
+    <!-- 智慧中小学课程 -->
+    <view class="zhzx">
+      <view class="zhzx-h">
+        <text class="zhzx-t">🎓 智慧中小学课程</text>
+        <text class="zhzx-sub">国家中小学智慧教育平台 · 在线观看官方课程</text>
+      </view>
+      <view class="zhzx-subs">
+        <text v-for="s in zhzxSubs" :key="s" :class="['zhzx-chip', zhzxSub === s && 'on']" @click="zhzxSub = s">{{ s }}</text>
+      </view>
+      <view v-if="zhzxLoading" class="zhzx-loading">加载中…</view>
+      <view v-else class="zhzx-list">
+        <view v-for="c in zhzxShown" :key="c.id" class="zhzx-card">
+          <view class="zhzx-row">
+            <text class="zhzx-name">{{ c.title }}</text>
+            <text class="zhzx-tag" :style="zhzxSubStyle(c.subject)">{{ c.subject }}</text>
+          </view>
+          <text class="zhzx-desc">{{ c.description }}</text>
+          <view class="zhzx-acts">
+            <text class="zhzx-play" @click="playZhzx(c)">▶ 在线观看</text>
+            <text class="zhzx-copy" @click="copyZhzx(c)">复制链接</text>
+          </view>
+        </view>
+        <view v-if="!zhzxShown.length" class="zhzx-empty">暂无匹配课程</view>
+      </view>
+    </view>
+
     <view class="grid">
       <view class="card" v-for="r in shown" :key="r.id">
         <view class="card-chk" @click.stop="toggleSel(r.id)">
@@ -29,7 +55,7 @@
           <text class="a del" @click="del(r)">删除</text>
         </view>
       </view>
-      <EmptyState v-if="!shown.length" icon="📦" text="暂无资源" hint="点击下方按钮上传教学资源" />
+      <EmptyState v-if="!shown.length" icon="📦" text="暂无资源" hint="点击下方按钮上传在线资源" />
     </view>
 
     <view class="sheet" v-if="showAdd">
@@ -65,9 +91,9 @@ import { isNonEmpty, isUrl, clip, MAX_LEN } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
 
 const presetResources = [
-  { title: '国家中小学智慧教育平台', url: 'https://basic.smartedu.cn/', description: '教育部官方中小学智慧教育平台，汇聚优质教学资源', category: '官方平台', tags: ['教学资源'] },
-  { title: '学科网', url: 'https://www.zxxk.com/', description: '中小学校教学资源网站，提供教案、课件、试题等资源', category: '官方平台', tags: ['教学资源'] },
-  { title: '一师一优课', url: 'https://1s1k.eduyun.cn/', description: '国家教育资源公共服务平台，汇集部级优课资源', category: '官方平台', tags: ['教学资源'] },
+  { title: '国家中小学智慧教育平台', url: 'https://basic.smartedu.cn/', description: '教育部官方中小学智慧教育平台，汇聚优质在线教学资源', category: '官方平台', tags: ['在线资源'] },
+  { title: '学科网', url: 'https://www.zxxk.com/', description: '中小学校教学资源网站，提供教案、课件、试题等资源', category: '官方平台', tags: ['在线资源'] },
+  { title: '一师一优课', url: 'https://1s1k.eduyun.cn/', description: '国家教育资源公共服务平台，汇集部级优课资源', category: '官方平台', tags: ['在线资源'] },
 ]
 const list = ref([])
 const showAdd = ref(false)
@@ -149,7 +175,37 @@ async function load() {
   const apiList = await api.getList('/resources', { loading: true, loadingText: '加载资源' })
   list.value = [...presetResources, ...apiList]
 }
-onShow(load)
+
+// ============ 智慧中小学课程（后端代理聚合国家中小学智慧教育平台） ============
+const zhzx = ref([])
+const zhzxLoading = ref(false)
+const zhzxSub = ref('全部')
+const zhzxSubs = ['全部', '语文', '数学', '英语', '综合']
+const zhzxShown = computed(() => (zhzxSub.value === '全部' ? zhzx.value : zhzx.value.filter((c) => c.subject === zhzxSub.value)))
+async function loadZhzx() {
+  zhzxLoading.value = true
+  try {
+    zhzx.value = await api.get('/online-resources/zhzx/courses')
+  } catch (e) {
+    zhzx.value = []
+  } finally {
+    zhzxLoading.value = false
+  }
+}
+function playZhzx(c) {
+  uni.navigateTo({ url: '/pages/webview/webview?url=' + encodeURIComponent(c.playUrl) })
+}
+function copyZhzx(c) {
+  uni.setClipboardData({ data: c.playUrl, success: () => uni.showToast({ title: '链接已复制', icon: 'none' }) })
+}
+function zhzxSubStyle(s) {
+  const col = { 语文: '#e6a23c', 数学: '#07c160', 英语: '#409eff', 综合: '#999' }[s] || '#999'
+  return `background:${col}1a;color:${col}`
+}
+onShow(() => {
+  load()
+  loadZhzx()
+})
 onPullDownRefresh(async () => {
   await load()
   uni.stopPullDownRefresh()
@@ -253,6 +309,25 @@ async function del(r) {
 .tags { display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 14rpx; }
 .ok { background: #07c160; color: #fff; border-radius: 50rpx; }
 .cancel { background: #f3f3f3; color: #666; border-radius: 50rpx; margin-top: 14rpx; }
+/* 智慧中小学课程区 */
+.zhx { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.zhx-h { display: flex; flex-direction: column; gap: 4rpx; margin-bottom: 14rpx; }
+.zhx-t { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.zhx-sub { font-size: 22rpx; color: #9aa0a6; }
+.zhx-subs { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 14rpx; }
+.zhx-chip { font-size: 22rpx; padding: 8rpx 22rpx; border-radius: 30rpx; background: #f3f3f3; color: #666; }
+.zhx-chip.on { background: #07c160; color: #fff; }
+.zhx-list { display: flex; flex-direction: column; gap: 14rpx; }
+.zhx-card { border: 1px solid #eee; border-radius: 14rpx; padding: 18rpx; }
+.zhx-row { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.zhx-name { font-size: 28rpx; font-weight: 700; color: #4a3f35; flex: 1; }
+.zhx-tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 16rpx; flex-shrink: 0; }
+.zhx-desc { display: block; font-size: 22rpx; color: #9aa0a6; margin: 10rpx 0; line-height: 1.5; }
+.zhx-acts { display: flex; gap: 20rpx; }
+.zhx-play { font-size: 24rpx; color: #07c160; font-weight: 600; }
+.zhx-copy { font-size: 24rpx; color: #409eff; }
+.zhx-loading, .zhzx-empty { font-size: 24rpx; color: #9aa0a6; text-align: center; padding: 20rpx 0; }
+
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .card, .dark .sheet, .dark .search, .dark .picker.sm { background: var(--c-card); border-color: var(--c-input-border); }
