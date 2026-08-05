@@ -282,7 +282,7 @@ function goBack() {
         <div
           v-for="card in cards"
           :key="card.key"
-          class="bg-white rounded-2xl p-4 shadow-softer flex items-center gap-3"
+          class="bg-surface rounded-2xl p-4 shadow-softer flex items-center gap-3"
         >
           <div :class="['w-11 h-11 rounded-xl flex items-center justify-center shrink-0', card.bg]">
             <component :is="card.icon" :class="['w-5 h-5', card.text]" />
@@ -308,7 +308,7 @@ function goBack() {
       </div>
 
       <!-- 各科统计表 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
           <BarChart3 class="w-4 h-4 text-butter-500" /> 各科统计
         </div>
@@ -344,7 +344,7 @@ function goBack() {
       <!-- 分数分布 + 各科均分对比 -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- 分数分布柱状图 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div class="font-medium text-cocoa-700 flex items-center gap-2">
               <BarChart3 class="w-4 h-4 text-butter-500" /> 分数分布
@@ -352,7 +352,7 @@ function goBack() {
             <select
               v-if="subjectNames.length"
               v-model="distSubject"
-              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
             >
               <option v-for="s in subjectNames" :key="s" :value="s">{{ s }}</option>
             </select>
@@ -422,7 +422,7 @@ function goBack() {
         </div>
 
         <!-- 各科均分对比（横向） -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
             <BarChart3 class="w-4 h-4 text-butter-500" /> 各科均分对比
           </div>
@@ -464,7 +464,7 @@ function goBack() {
       </div>
 
       <!-- 排名表 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
           <div class="font-medium text-cocoa-700 flex items-center gap-2">
             <Trophy class="w-4 h-4 text-butter-500" /> 成绩排名
@@ -473,7 +473,7 @@ function goBack() {
           <select
             v-if="subjectNames.length"
             v-model="rankSubject"
-            class="px-3 py-1.5 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+            class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           >
             <option value="">全部科目</option>
             <option v-for="s in subjectNames" :key="s" :value="s">{{ s }}</option>
@@ -518,7 +518,7 @@ function goBack() {
       <!-- 前10名 / 后10名 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- 前10名 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="font-medium text-cocoa-700 mb-3 flex items-center gap-2">
             <Trophy class="w-4 h-4 text-butter-500" /> 前 10 名
           </div>
@@ -544,7 +544,7 @@ function goBack() {
         </div>
 
         <!-- 后10名 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="font-medium text-cocoa-700 mb-3 flex items-center gap-2">
             <AlertTriangle class="w-4 h-4 text-red-400" /> 后 10 名
           </div>

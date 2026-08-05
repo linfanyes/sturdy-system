@@ -169,11 +169,11 @@ function formatTime(t?: string) {
 
     <!-- 统计 -->
     <div class="grid grid-cols-2 gap-4">
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">管理员总数</div>
         <div class="text-2xl font-bold text-cocoa-900 mt-1">{{ total }}</div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">启用数</div>
         <div class="text-2xl font-bold text-mint-500 mt-1">{{ activeCount }}</div>
       </div>

@@ -108,7 +108,7 @@ onUnmounted(() => {
 
     <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">🚗 汽车躲避</h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full">
         <span class="text-cocoa-700 font-semibold">分数：{{ score }}</span>
         <span class="text-cocoa-500 text-sm">最高：{{ best }}</span>

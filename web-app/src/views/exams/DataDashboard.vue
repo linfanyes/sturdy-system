@@ -490,7 +490,7 @@ onMounted(() => {
         <select
           v-model="semesterId"
           @change="onSemesterChange"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400 max-w-xs"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 max-w-xs"
         >
           <option value="">全部学期</option>
           <option v-for="s in semesterList" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -525,7 +525,7 @@ onMounted(() => {
         <div
           v-for="card in cards"
           :key="card.key"
-          class="bg-white rounded-2xl p-5 shadow-softer flex items-center gap-4"
+          class="bg-surface rounded-2xl p-5 shadow-softer flex items-center gap-4"
         >
           <div
             :class="[
@@ -555,7 +555,7 @@ onMounted(() => {
       </div>
 
       <!-- 各班级学生数柱图 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="font-medium text-cocoa-700 mb-4">各班级学生数</div>
         <div v-if="!barChart" class="text-cocoa-400 text-sm py-8 text-center">暂无班级数据</div>
         <div v-else class="w-full overflow-x-auto">
@@ -611,7 +611,7 @@ onMounted(() => {
       </div>
 
       <!-- 考试均分趋势折线图 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="font-medium text-cocoa-700 mb-4">考试均分趋势（最近 12 次）</div>
         <div v-if="!lineChart" class="text-cocoa-400 text-sm py-8 text-center">数据不足，至少需要 2 次考试</div>
         <div v-else class="w-full overflow-x-auto">
@@ -665,7 +665,7 @@ onMounted(() => {
       <!-- 各科均分横向条形图 + 成绩等级分布环形图 -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- 各科均分横向条形图 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
             <BarChart3 class="w-4 h-4 text-butter-500" /> 各科均分对比
           </div>
@@ -687,7 +687,7 @@ onMounted(() => {
         </div>
 
         <!-- 成绩等级分布环形图 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
             <PieChart class="w-4 h-4 text-butter-500" /> 成绩等级分布
           </div>
@@ -699,7 +699,7 @@ onMounted(() => {
                 class="w-full h-full rounded-full"
                 :style="{ background: donutGradient }"
               ></div>
-              <div class="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center">
+              <div class="absolute inset-4 bg-surface rounded-full flex flex-col items-center justify-center">
                 <div class="text-2xl font-bold text-cocoa-900">{{ donutTotal }}</div>
                 <div class="text-xs text-cocoa-500">总人次</div>
               </div>
@@ -718,7 +718,7 @@ onMounted(() => {
       </div>
 
       <!-- 各班均分对比柱图 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
           <School class="w-4 h-4 text-butter-500" /> 各班均分对比
         </div>
@@ -777,7 +777,7 @@ onMounted(() => {
       </div>
 
       <!-- Top 10 学生榜单 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="font-medium text-cocoa-700 mb-4 flex items-center gap-2">
           <Trophy class="w-4 h-4 text-butter-500" /> 学生成绩榜 Top 10
           <span class="text-xs text-cocoa-400 font-normal">（按均分降序）</span>

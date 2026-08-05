@@ -63,7 +63,7 @@ const status = computed(() => winner.value === 0 ? `${current.value === 1 ? '黑
       <Circle class="w-6 h-6 text-cocoa-900" /> 五子棋
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full">
         <span class="text-cocoa-700 font-semibold">{{ status }}</span>
         <span class="text-cocoa-500 text-sm">黑方胜场：{{ wins }}</span>
@@ -78,7 +78,7 @@ const status = computed(() => winner.value === 0 ? `${current.value === 1 ? '黑
             @click="place(Math.floor(idx / SIZE), idx % SIZE)"
           >
             <span v-if="cell === 1" class="w-5 h-5 rounded-full bg-cocoa-900"></span>
-            <span v-else-if="cell === 2" class="w-5 h-5 rounded-full bg-white border border-cocoa-300"></span>
+            <span v-else-if="cell === 2" class="w-5 h-5 rounded-full bg-surface border border-cocoa-300"></span>
           </button>
         </div>
       </div>

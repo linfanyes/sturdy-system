@@ -213,7 +213,7 @@ function goExamDetail() {
     </h1>
 
     <!-- 班级选择 -->
-    <div class="bg-white rounded-2xl p-4 shadow-softer">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer">
       <div class="flex items-center gap-3 flex-wrap">
         <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 text-sm focus:outline-none focus:border-butter-400">
           <option value="">选择班级</option>
@@ -230,7 +230,7 @@ function goExamDetail() {
     </div>
 
     <!-- Tab 切换 -->
-    <div class="flex gap-2 bg-white rounded-2xl p-1 shadow-softer w-fit">
+    <div class="flex gap-2 bg-surface rounded-2xl p-1 shadow-softer w-fit">
       <button class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" :class="activeTab === 'exam' ? 'bg-butter-500 text-white' : 'text-cocoa-500 hover:bg-cream-50'" @click="activeTab = 'exam'">本次分析</button>
       <button class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" :class="activeTab === 'trend' ? 'bg-butter-500 text-white' : 'text-cocoa-500 hover:bg-cream-50'" @click="activeTab = 'trend'">历来趋势</button>
       <button class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" :class="activeTab === 'ai' ? 'bg-butter-500 text-white' : 'text-cocoa-500 hover:bg-cream-50'" @click="activeTab = 'ai'">AI 分析</button>
@@ -274,7 +274,7 @@ function goExamDetail() {
         </div>
 
         <!-- 各科统计表 -->
-        <div class="bg-white rounded-2xl p-4 shadow-softer">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer">
           <h3 class="text-sm font-medium text-cocoa-700 mb-3 flex items-center gap-1"><BarChart3 class="w-4 h-4" /> 各科统计</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -307,7 +307,7 @@ function goExamDetail() {
         <!-- 图表区 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- 分数分布 -->
-          <div class="bg-white rounded-2xl p-4 shadow-softer">
+          <div class="bg-surface rounded-2xl p-4 shadow-softer">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-sm font-medium text-cocoa-700">分数分布</h3>
               <select v-model="distSubject" class="px-2 py-1 rounded-lg border border-cream-200 text-xs">
@@ -345,7 +345,7 @@ function goExamDetail() {
           </div>
 
           <!-- 各科均分对比 -->
-          <div class="bg-white rounded-2xl p-4 shadow-softer">
+          <div class="bg-surface rounded-2xl p-4 shadow-softer">
             <h3 class="text-sm font-medium text-cocoa-700 mb-3">各科均分对比</h3>
             <div class="space-y-3">
               <div v-for="s in subjectBars" :key="s.subject" class="flex items-center gap-3">
@@ -361,7 +361,7 @@ function goExamDetail() {
         </div>
 
         <!-- 排名表 -->
-        <div class="bg-white rounded-2xl p-4 shadow-softer">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-medium text-cocoa-700 flex items-center gap-1"><Trophy class="w-4 h-4 text-butter-500" /> 班级排名</h3>
             <select v-model="rankSubject" class="px-2 py-1 rounded-lg border border-cream-200 text-xs">
@@ -397,7 +397,7 @@ function goExamDetail() {
 
     <!-- Tab 2: 历来趋势 -->
     <template v-if="activeTab === 'trend'">
-      <div class="bg-white rounded-2xl p-4 shadow-softer">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer">
         <div class="flex items-center gap-3 mb-3">
           <TrendingUp class="w-4 h-4 text-butter-500" />
           <span class="text-sm font-medium text-cocoa-700">科目筛选</span>
@@ -413,7 +413,7 @@ function goExamDetail() {
       <div v-else-if="!trendChartPoints.length" class="text-center py-12 text-cocoa-400">暂无趋势数据</div>
       <div v-else class="space-y-4">
         <!-- 趋势折线图 -->
-        <div class="bg-white rounded-2xl p-4 shadow-softer">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer">
           <h3 class="text-sm font-medium text-cocoa-700 mb-3">均分趋势</h3>
           <svg :viewBox="`0 0 ${CHART_W} ${CHART_H}`" class="w-full">
             <!-- Y 轴刻度 -->
@@ -450,7 +450,7 @@ function goExamDetail() {
         </div>
 
         <!-- 趋势数据表 -->
-        <div class="bg-white rounded-2xl p-4 shadow-softer">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer">
           <h3 class="text-sm font-medium text-cocoa-700 mb-3">详细数据</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -478,7 +478,7 @@ function goExamDetail() {
 
     <!-- Tab 3: AI 分析 -->
     <template v-if="activeTab === 'ai'">
-      <div class="bg-white rounded-2xl p-4 shadow-softer">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer">
         <div class="flex items-center justify-between">
           <div class="text-sm text-cocoa-500">选择考试后点击 AI 分析，生成智能分析报告</div>
           <button class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 disabled:opacity-60" :disabled="aiLoading || !selectedExamId" @click="aiAnalyze">
@@ -486,7 +486,7 @@ function goExamDetail() {
           </button>
         </div>
       </div>
-      <div v-if="aiResult || aiLoading" class="bg-white rounded-2xl p-6 shadow-softer">
+      <div v-if="aiResult || aiLoading" class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="flex items-center gap-2 mb-3 text-cocoa-700">
           <FileText class="w-4 h-4" />
           <span class="text-sm font-medium">分析报告</span>

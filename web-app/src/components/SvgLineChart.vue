@@ -105,7 +105,7 @@ const gradId = computed(() => `line1-grad-${Math.random().toString(36).slice(2, 
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl p-5 shadow-softer">
+  <div class="bg-surface rounded-2xl p-5 shadow-softer">
     <div v-if="title" class="flex items-center justify-between mb-3">
       <div class="text-sm font-semibold text-cocoa-700">{{ title }}</div>
       <div v-if="data[0]?.value2 !== undefined" class="flex items-center gap-3 text-xs text-cocoa-500">

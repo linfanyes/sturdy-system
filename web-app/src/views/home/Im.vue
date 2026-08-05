@@ -74,14 +74,14 @@ onMounted(async () => {
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl font-bold text-cocoa-900">家校沟通</h1>
-      <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400" @change="loadParents">
+      <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="loadParents">
         <option value="">请选择班级</option>
         <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
     </div>
 
     <!-- IM 配置状态 -->
-    <div class="bg-white rounded-2xl p-5 shadow-softer">
+    <div class="bg-surface rounded-2xl p-5 shadow-softer">
       <div class="flex items-center gap-2 mb-3">
         <MessageCircle class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">IM 配置</h2>
@@ -121,7 +121,7 @@ onMounted(async () => {
     </div>
 
     <!-- 家长花名册 -->
-    <div class="bg-white rounded-2xl p-5 shadow-softer">
+    <div class="bg-surface rounded-2xl p-5 shadow-softer">
       <div class="flex items-center gap-2 mb-3">
         <Phone class="w-5 h-5 text-mint-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">家长花名册</h2>

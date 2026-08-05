@@ -101,7 +101,7 @@ onMounted(load)
     </div>
 
     <!-- 功能包列表 -->
-    <div v-else class="bg-white rounded-2xl border border-cocoa-200 divide-y divide-cocoa-100">
+    <div v-else class="bg-surface rounded-2xl border border-cocoa-200 divide-y divide-cocoa-100">
       <div class="px-5 py-3 flex items-center gap-2 bg-cocoa-50 rounded-t-2xl">
         <span class="text-sm font-medium text-cocoa-600">
           {{ featureFlags === null ? '全部开放' : `已选 ${featureFlags?.length || 0} / ${ALL_FEATURES.length}` }}

@@ -133,15 +133,15 @@ async function handleDelete(row: any) {
 
     <!-- 统计卡片 -->
     <div class="grid grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">学校总数</div>
         <div class="text-2xl font-bold text-cocoa-900 mt-1">{{ total }}</div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">启用数</div>
         <div class="text-2xl font-bold text-mint-500 mt-1">{{ activeCount }}</div>
       </div>
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="text-sm text-cocoa-500">停用数</div>
         <div class="text-2xl font-bold text-sakura-500 mt-1">{{ inactiveCount }}</div>
       </div>

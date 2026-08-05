@@ -96,7 +96,7 @@ const formatted = computed(() => {
       <Ruler class="w-6 h-6 text-butter-500" /> 单位换算
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
         <div>
           <label class="text-sm text-cocoa-500">类别</label>
@@ -137,7 +137,7 @@ const formatted = computed(() => {
     </div>
 
     <!-- 换算因子表 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="text-sm font-medium text-cocoa-700 mb-3">{{ category }}换算因子表（以基础单位为基准）</div>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
         <div v-for="u in units[category]" :key="u.label" class="flex items-center justify-between px-3 py-2 rounded-xl bg-cream-50 text-sm">

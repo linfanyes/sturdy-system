@@ -74,7 +74,7 @@ const avatarText = computed(() => {
     <!-- 顶部标题栏 -->
     <div class="flex items-center justify-between gap-4 flex-wrap">
       <div class="flex items-center gap-3">
-        <button class="p-2 rounded-xl bg-white border border-cream-200 hover:bg-cream-50 text-cocoa-600" @click="goBack">
+        <button class="p-2 rounded-xl bg-surface border border-cream-200 hover:bg-cream-50 text-cocoa-600" @click="goBack">
           <ArrowLeft class="w-5 h-5" />
         </button>
         <div>
@@ -92,18 +92,18 @@ const avatarText = computed(() => {
       </div>
     </div>
 
-    <div v-if="loading" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       加载中…
     </div>
 
     <template v-else>
-      <div v-if="!detail" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+      <div v-if="!detail" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
         暂无数据
       </div>
 
       <template v-else>
         <!-- 教师基本信息卡片 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center gap-5 flex-wrap">
             <!-- 头像 -->
             <div class="shrink-0">
@@ -152,7 +152,7 @@ const avatarText = computed(() => {
         <!-- 联系方式 + 任教学科 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- 联系方式卡片 -->
-          <div class="bg-white rounded-2xl p-6 shadow-softer">
+          <div class="bg-surface rounded-2xl p-6 shadow-softer">
             <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
               <Phone class="w-5 h-5 text-butter-500" /> 联系方式
             </h2>
@@ -199,7 +199,7 @@ const avatarText = computed(() => {
           </div>
 
           <!-- 任教学科 -->
-          <div class="bg-white rounded-2xl p-6 shadow-softer">
+          <div class="bg-surface rounded-2xl p-6 shadow-softer">
             <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
               <BookOpen class="w-5 h-5 text-butter-500" /> 任教学科
             </h2>
@@ -217,7 +217,7 @@ const avatarText = computed(() => {
         </div>
 
         <!-- 任课班级表格 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
             <BookOpen class="w-5 h-5 text-butter-500" /> 任课班级
           </h2>
@@ -247,7 +247,7 @@ const avatarText = computed(() => {
         </div>
 
         <!-- 班主任身份 -->
-        <div v-if="headClasses.length" class="bg-white rounded-2xl p-6 shadow-softer">
+        <div v-if="headClasses.length" class="bg-surface rounded-2xl p-6 shadow-softer">
           <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
             <Users class="w-5 h-5 text-butter-500" /> 班主任身份
           </h2>
@@ -265,7 +265,7 @@ const avatarText = computed(() => {
         </div>
 
         <!-- 个人简介 / 座右铭 -->
-        <div v-if="detail.motto" class="bg-white rounded-2xl p-6 shadow-softer">
+        <div v-if="detail.motto" class="bg-surface rounded-2xl p-6 shadow-softer">
           <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
             <Quote class="w-5 h-5 text-butter-500" /> 座右铭
           </h2>
@@ -273,7 +273,7 @@ const avatarText = computed(() => {
         </div>
 
         <!-- 备注 -->
-        <div v-if="detail.remark" class="bg-white rounded-2xl p-6 shadow-softer">
+        <div v-if="detail.remark" class="bg-surface rounded-2xl p-6 shadow-softer">
           <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
             <Briefcase class="w-5 h-5 text-butter-500" /> 备注
           </h2>

@@ -95,7 +95,7 @@ function go(route: string) {
         <button
           v-for="(g, i) in gamesByCategory(cat.label)"
           :key="g.route"
-          class="bg-white rounded-2xl p-5 shadow-softer text-left transition-colors hover:shadow-soft"
+          class="bg-surface rounded-2xl p-5 shadow-softer text-left transition-colors hover:shadow-soft"
           @click="go(g.route)"
         >
           <div

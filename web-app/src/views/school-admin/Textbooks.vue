@@ -237,13 +237,13 @@ function exportTextbook(t: Textbook) {
 
     <!-- 教材列表 -->
     <div v-if="loading" class="text-cocoa-400 py-8 text-center">加载中…</div>
-    <div v-else-if="!textbooks.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+    <div v-else-if="!textbooks.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
       <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
       <p>暂无教材，点击「AI 批量生成」快速生成三科教材知识点</p>
     </div>
 
     <div v-else class="space-y-2">
-      <div v-for="t in textbooks" :key="t.id" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div v-for="t in textbooks" :key="t.id" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
         <!-- 教材行 -->
         <div class="flex items-center gap-3 p-4 hover:bg-cream-50">
           <button class="text-cocoa-400" @click="toggleTextbook(t)">
@@ -276,7 +276,7 @@ function exportTextbook(t: Textbook) {
               <!-- 知识点列表 -->
               <div v-if="expandedUnits.has(u.id)" class="pl-12 pr-6 pb-2 space-y-1.5">
                 <div v-if="!pointsMap[u.id]?.length" class="text-xs text-cocoa-400 py-1">暂无知识点</div>
-                <div v-for="p in pointsMap[u.id]" :key="p.id" class="flex items-start gap-2 p-2.5 rounded-lg bg-white border border-cream-100">
+                <div v-for="p in pointsMap[u.id]" :key="p.id" class="flex items-start gap-2 p-2.5 rounded-lg bg-surface border border-cream-100">
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
                       {{ p.title }}
@@ -300,7 +300,7 @@ function exportTextbook(t: Textbook) {
 
     <!-- AI 生成弹窗 -->
     <div v-if="showAiModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="showAiModal = false">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+      <div class="bg-surface rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-cocoa-900 flex items-center gap-2"><Sparkles class="w-5 h-5 text-butter-500" /> AI 批量生成教材</h3>
           <button @click="showAiModal = false"><X class="w-5 h-5 text-cocoa-400" /></button>
@@ -351,7 +351,7 @@ function exportTextbook(t: Textbook) {
 
     <!-- 编辑弹窗 -->
     <div v-if="editing" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="editing = null">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-lg mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="bg-surface rounded-2xl p-6 w-full max-w-lg mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-cocoa-900">
             {{ editing.mode === 'create' ? '新建' : '编辑' }}{{ editing.kind === 'textbook' ? '教材' : editing.kind === 'unit' ? '单元' : '知识点' }}

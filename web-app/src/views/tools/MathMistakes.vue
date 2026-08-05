@@ -97,11 +97,11 @@ const filtered = () => {
         <BookX class="w-6 h-6 text-butter-500" /> 错题本
       </h1>
       <div class="flex items-center gap-2">
-        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400">
+        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
           <option value="">请选择班级</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <select v-model="studentName" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400">
+        <select v-model="studentName" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
           <option value="">全部学生</option>
           <option v-for="s in students" :key="s.id" :value="s.name">{{ s.name }}</option>
         </select>
@@ -111,14 +111,14 @@ const filtered = () => {
       </div>
     </div>
 
-    <div v-if="loading" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <Loader2 class="w-6 h-6 mx-auto mb-2 animate-spin" /> 加载中…
     </div>
-    <div v-else-if="!filtered().length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else-if="!filtered().length" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       暂无错题记录，点击「添加错题」创建
     </div>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div v-for="row in filtered()" :key="row.id" class="bg-white rounded-2xl p-5 shadow-softer">
+      <div v-for="row in filtered()" :key="row.id" class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="flex items-start justify-between gap-2 mb-2">
           <div class="flex items-center gap-2">
             <span class="text-sm font-semibold text-cocoa-900">{{ row.studentName }}</span>

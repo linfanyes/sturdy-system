@@ -148,7 +148,7 @@ function cancel() {
     </div>
 
     <!-- 编辑表单 -->
-    <div v-if="editing !== null || editing === null && form.code === '' && form.name === '' && list.length >= 0" class="bg-white rounded-2xl shadow-softer p-6 space-y-4">
+    <div v-if="editing !== null || editing === null && form.code === '' && form.name === '' && list.length >= 0" class="bg-surface rounded-2xl shadow-softer p-6 space-y-4">
       <h2 class="font-semibold text-cocoa-900">{{ editing ? '编辑服务商' : '新增服务商' }}</h2>
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -195,7 +195,7 @@ function cancel() {
     <!-- 列表 -->
     <div v-if="loading" class="text-center text-cocoa-400 py-8"><Loader2 class="w-5 h-5 animate-spin inline mr-2" /> 加载中…</div>
 
-    <div v-else class="bg-white rounded-2xl shadow-softer divide-y divide-cream-100">
+    <div v-else class="bg-surface rounded-2xl shadow-softer divide-y divide-cream-100">
       <div v-for="p in list" :key="p.code" class="p-4 flex items-center gap-4">
         <div class="flex-1">
           <div class="flex items-center gap-2">

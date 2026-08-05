@@ -250,7 +250,7 @@ onUnmounted(stop)
     </div>
 
     <!-- Game board -->
-    <div v-else class="bg-white rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
+    <div v-else class="bg-surface rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
       <div class="flex items-center justify-between w-full text-sm">
         <span class="text-cocoa-700 font-semibold">得分：{{ score }}</span>
         <span class="text-cocoa-500">连击 {{ combo }}</span>

@@ -77,7 +77,7 @@ const SUBJECT_COLORS: Record<string, string> = {
 const COMMON_SUBJECTS: string[] = SUBJECT_OPTIONS.map((s: { value: string }) => s.value)
 
 function subjectClass(subj: string): string {
-  if (!subj) return 'bg-white text-cocoa-300 border-cream-200 hover:bg-cream-50'
+  if (!subj) return 'bg-surface text-cocoa-300 border-cream-200 hover:bg-cream-50'
   for (const [key, cls] of Object.entries(SUBJECT_COLORS)) {
     if (subj.includes(key)) return cls
   }
@@ -356,11 +356,11 @@ onMounted(async () => {
         <CalendarDays class="w-6 h-6 text-butter-500" /> 课表排版
       </h1>
       <div class="flex items-center gap-2 flex-wrap print:hidden">
-        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400">
+        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
           <option value="">请选择班级</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <select v-model.number="dayCount" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400">
+        <select v-model.number="dayCount" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
           <option :value="5">周一到周五</option>
           <option :value="6">周一到周六</option>
           <option :value="7">周一到周日</option>
@@ -403,7 +403,7 @@ onMounted(async () => {
     </div>
 
     <!-- 课表网格 -->
-    <div v-if="!loading" class="bg-white rounded-2xl p-6 shadow-softer overflow-x-auto">
+    <div v-if="!loading" class="bg-surface rounded-2xl p-6 shadow-softer overflow-x-auto">
       <table class="w-full border-collapse min-w-[640px]">
         <thead>
           <tr>
@@ -444,7 +444,7 @@ onMounted(async () => {
     </div>
 
     <!-- 科目图例 -->
-    <div class="bg-white rounded-2xl p-4 shadow-softer no-print">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer no-print">
       <div class="text-xs text-cocoa-500 mb-2">科目颜色图例</div>
       <div class="flex flex-wrap gap-2">
         <span v-for="s in COMMON_SUBJECTS" :key="s" :class="['text-xs px-2.5 py-1 rounded-full border', subjectClass(s)]">{{ s }}</span>

@@ -76,7 +76,7 @@ reset()
       <Grid3x3 class="w-6 h-6 text-butter-500" /> 数独
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full">
         <span v-if="complete" class="text-mint-500 font-semibold">🎉 完成！</span>
         <span v-else class="text-cocoa-700 font-semibold">点击格子输入数字</span>
@@ -90,7 +90,7 @@ reset()
             :key="idx"
             class="w-9 h-9 flex items-center justify-center text-base font-semibold transition-colors"
             :class="[
-              cell.fixed ? 'bg-cream-100 text-cocoa-900' : 'bg-white text-butter-500 hover:bg-cream-50',
+              cell.fixed ? 'bg-cream-100 text-cocoa-900' : 'bg-surface text-butter-500 hover:bg-cream-50',
               cell.error ? 'bg-sakura-500 text-white' : '',
               selected && selected[0] === Math.floor(idx/9) && selected[1] === idx%9 ? 'ring-2 ring-butter-400' : '',
               (Math.floor(idx/9) % 3 === 2 && Math.floor(idx/9) !== 8) || (idx%3 === 2 && idx%9 !== 8) ? '' : ''

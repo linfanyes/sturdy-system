@@ -546,14 +546,14 @@ function onStudentDblClick(studentId: string) {
       <div class="flex items-center gap-2 flex-wrap">
         <select
           v-model="classId"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         >
           <option value="">选择班级</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
         <select
           v-model="selectedExamId"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           :disabled="!classId"
         >
           <option value="">选择考试</option>
@@ -561,7 +561,7 @@ function onStudentDblClick(studentId: string) {
         </select>
         <select
           v-model="selectedSubject"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           :disabled="!selectedExamId"
         >
           <option value="">选择科目</option>
@@ -651,7 +651,7 @@ function onStudentDblClick(studentId: string) {
     </div>
 
     <!-- 学生成绩矩阵（双击查看学生详情） -->
-    <div v-if="classId && selectedExamId && studentMatrix.length" class="bg-white rounded-2xl p-4 shadow-softer">
+    <div v-if="classId && selectedExamId && studentMatrix.length" class="bg-surface rounded-2xl p-4 shadow-softer">
       <div class="flex items-center gap-2 mb-3">
         <User class="w-4 h-4 text-butter-500" />
         <h3 class="text-sm font-medium text-cocoa-700">学生成绩（双击行查看详情）</h3>
@@ -862,7 +862,7 @@ function onStudentDblClick(studentId: string) {
           </thead>
           <tbody class="divide-y divide-cream-100">
             <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50/60">
-              <td class="sticky left-0 bg-white px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
+              <td class="sticky left-0 bg-surface px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
                 <div>{{ s.name }}</div>
                 <div class="text-[11px] text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
               </td>
@@ -959,7 +959,7 @@ function onStudentDblClick(studentId: string) {
             </thead>
             <tbody class="divide-y divide-cream-100">
               <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50/60">
-                <td class="sticky left-0 bg-white px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
+                <td class="sticky left-0 bg-surface px-3 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
                   <div>{{ s.name }}</div>
                   <div class="text-[11px] text-cocoa-400 font-normal">{{ s.studentNo || '-' }}</div>
                 </td>

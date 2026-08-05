@@ -102,7 +102,7 @@ function onKeydown(e: KeyboardEvent) {
     </div>
 
     <!-- 消息列表 -->
-    <div ref="listEl" class="flex-1 overflow-y-auto bg-white rounded-2xl shadow-softer p-4 space-y-3">
+    <div ref="listEl" class="flex-1 overflow-y-auto bg-surface rounded-2xl shadow-softer p-4 space-y-3">
       <div
         v-for="(m, i) in messages"
         :key="i"
@@ -127,7 +127,7 @@ function onKeydown(e: KeyboardEvent) {
         v-model="input"
         rows="2"
         placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-        class="flex-1 px-4 py-3 rounded-2xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400 resize-none"
+        class="flex-1 px-4 py-3 rounded-2xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 resize-none"
         @keydown="onKeydown"
       />
       <button

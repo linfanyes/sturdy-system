@@ -143,7 +143,7 @@ const visibleSections = computed<ToolSection[]>(() => {
     <section
       v-for="sec in visibleSections"
       :key="sec.title"
-      class="bg-white rounded-2xl p-6 shadow-softer"
+      class="bg-surface rounded-2xl p-6 shadow-softer"
     >
       <div class="flex items-center gap-2 mb-4">
         <component :is="sec.icon" class="w-5 h-5 text-butter-500" />
@@ -157,7 +157,7 @@ const visibleSections = computed<ToolSection[]>(() => {
           :to="t.to"
           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-50 hover:bg-cream-100 hover:shadow-softer transition-all"
         >
-          <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-softer">
+          <div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center shadow-softer">
             <component :is="t.icon" class="w-5 h-5 text-butter-600" />
           </div>
           <span class="text-sm text-cocoa-700 text-center">{{ t.label }}</span>

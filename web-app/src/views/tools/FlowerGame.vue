@@ -61,7 +61,7 @@ const petalAngles = Array.from({ length: 8 }, (_, i) => i * 45)
       <Flower2 class="w-6 h-6 text-butter-500" /> 笑口常开
     </h1>
 
-    <div class="bg-white rounded-2xl p-8 shadow-softer text-center">
+    <div class="bg-surface rounded-2xl p-8 shadow-softer text-center">
       <!-- 花朵 SVG -->
       <div class="relative inline-block cursor-pointer select-none" @click="click">
         <svg width="320" height="320" viewBox="-160 -160 320 320">
@@ -157,7 +157,7 @@ const petalAngles = Array.from({ length: 8 }, (_, i) => i * 45)
     </div>
 
     <!-- 说明 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-2">玩法</h2>
       <ul class="text-sm text-cocoa-500 space-y-1 list-disc list-inside">
         <li>点击花朵，每次花瓣都会展开一些</li>

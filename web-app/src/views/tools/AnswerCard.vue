@@ -95,7 +95,7 @@ onMounted(() => {
     </h1>
 
     <!-- 配置 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer print:hidden">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer print:hidden">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label class="text-sm text-cocoa-500">运算类型</label>
@@ -135,7 +135,7 @@ onMounted(() => {
     </div>
 
     <!-- 答题卡 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
         <div v-for="(q, i) in questions" :key="i" class="flex items-baseline gap-2 border-b border-dashed border-cream-200 pb-1">
           <span class="text-cocoa-400 text-sm w-8 shrink-0">{{ i + 1 }}.</span>

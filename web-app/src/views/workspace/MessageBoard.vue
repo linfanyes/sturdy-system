@@ -274,20 +274,20 @@ onMounted(() => {
     </div>
 
     <!-- 发送表单 -->
-    <div v-if="showSendForm" class="bg-white rounded-2xl p-5 shadow-softer border border-cream-200 space-y-3">
+    <div v-if="showSendForm" class="bg-surface rounded-2xl p-5 shadow-softer border border-cream-200 space-y-3">
       <div class="flex items-center gap-2 text-cocoa-700 font-semibold">
         <Send class="w-4 h-4 text-butter-500" /> 新留言
       </div>
       <input
         v-model="sendTitle"
         placeholder="留言标题"
-        class="w-full px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors"
+        class="w-full px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors"
       />
       <textarea
         v-model="sendContent"
         rows="4"
         placeholder="留言内容…"
-        class="w-full px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors resize-none"
+        class="w-full px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors resize-none"
       />
       <!-- 收件人选择 -->
       <div class="relative">
@@ -299,7 +299,7 @@ onMounted(() => {
             class="flex-1 px-0 py-2 text-sm bg-transparent focus:outline-none"
           />
         </div>
-        <div v-if="sendRecipientSearch" class="absolute z-10 left-0 right-0 mt-1 bg-white border border-cream-200 rounded-xl shadow-soft max-h-48 overflow-y-auto">
+        <div v-if="sendRecipientSearch" class="absolute z-10 left-0 right-0 mt-1 bg-surface border border-cream-200 rounded-xl shadow-soft max-h-48 overflow-y-auto">
           <div
             v-for="r in sendFilteredRecipients"
             :key="r.id"
@@ -353,7 +353,7 @@ onMounted(() => {
           'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors',
           activeTab === 'inbox'
             ? 'bg-butter-500 text-white shadow-sm'
-            : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+            : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
         ]"
         @click="switchTab('inbox')"
       >
@@ -368,7 +368,7 @@ onMounted(() => {
           'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors',
           activeTab === 'sent'
             ? 'bg-butter-500 text-white shadow-sm'
-            : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+            : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
         ]"
         @click="switchTab('sent')"
       >
@@ -380,7 +380,7 @@ onMounted(() => {
     <div class="flex gap-4">
       <!-- 左侧：收件人列表 -->
       <div class="w-56 shrink-0">
-        <div class="bg-white rounded-2xl p-4 shadow-softer border border-cream-200 sticky top-4">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer border border-cream-200 sticky top-4">
           <div class="flex items-center gap-2 mb-3">
             <User class="w-4 h-4 text-cocoa-400" />
             <h3 class="text-sm font-semibold text-cocoa-700">联系人</h3>
@@ -443,7 +443,7 @@ onMounted(() => {
             :class="[
               'rounded-xl p-4 shadow-softer border transition-all cursor-pointer',
               (msg.isRead ?? msg.read)
-                ? 'bg-white border-cream-200 hover:shadow-soft'
+                ? 'bg-surface border-cream-200 hover:shadow-soft'
                 : 'bg-butter-50 border-l-4 border-l-butter-400 hover:shadow-soft',
             ]"
             @click="markRead(msg)"
@@ -489,7 +489,7 @@ onMounted(() => {
           <!-- 分页 -->
           <div v-if="total > PAGE_SIZE" class="flex items-center justify-between pt-2">
             <button
-              class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+              class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
               :disabled="skip === 0"
               @click="prevPage"
             >
@@ -497,7 +497,7 @@ onMounted(() => {
             </button>
             <div class="text-sm text-cocoa-500">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</div>
             <button
-              class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+              class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
               :disabled="skip + PAGE_SIZE >= total"
               @click="nextPage"
             >

@@ -185,7 +185,7 @@ onUnmounted(stop)
       <Palette class="w-6 h-6 text-butter-500" /> 颜色匹配
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-5">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-5">
       <!-- 状态栏 -->
       <div class="flex items-center justify-between w-full text-sm">
         <span class="text-cocoa-700 font-semibold">得分：{{ score }}</span>

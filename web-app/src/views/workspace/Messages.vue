@@ -142,7 +142,7 @@ onMounted(() => {
           'px-3 py-1.5 rounded-xl text-sm flex items-center gap-1.5 transition-colors',
           activeTab === tab.value
             ? 'bg-butter-500 text-white font-semibold'
-            : 'bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-100',
+            : 'bg-surface text-cocoa-700 border border-cream-200 hover:bg-cream-100',
         ]"
         @click="switchTab(tab.value)"
       >
@@ -151,7 +151,7 @@ onMounted(() => {
           v-if="unreadByCategory[tab.value || '']"
           :class="[
             'px-1.5 py-0.5 rounded-full text-xs',
-            activeTab === tab.value ? 'bg-white/30 text-white' : badgeClass(tab.value),
+            activeTab === tab.value ? 'bg-surface/30 text-white' : badgeClass(tab.value),
           ]"
         >
           {{ unreadByCategory[tab.value || ''] }}
@@ -181,7 +181,7 @@ onMounted(() => {
           :key="item.id"
           :class="[
             'rounded-xl p-4 shadow-softer border border-cream-200 cursor-pointer transition-colors hover:shadow-soft',
-            item.read ? 'bg-white' : 'bg-butter-50 border-l-4 border-l-butter-400',
+            item.read ? 'bg-surface' : 'bg-butter-50 border-l-4 border-l-butter-400',
           ]"
           @click="handleMarkRead(item)"
         >
@@ -205,7 +205,7 @@ onMounted(() => {
         <!-- 分页 -->
         <div v-if="total > PAGE_SIZE" class="flex items-center justify-between pt-2">
           <button
-            class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+            class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
             :disabled="skip === 0"
             @click="prevPage"
           >
@@ -213,7 +213,7 @@ onMounted(() => {
           </button>
           <div class="text-sm text-cocoa-500">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</div>
           <button
-            class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+            class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
             :disabled="skip + PAGE_SIZE >= total"
             @click="nextPage"
           >

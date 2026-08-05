@@ -271,7 +271,7 @@ onMounted(load)
       <Loader2 class="w-4 h-4 animate-spin" /> 加载中…
     </div>
 
-    <div v-else class="bg-white rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
+    <div v-else class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
       <div class="text-xs text-butter-600 bg-butter-100/50 rounded-lg px-3 py-2">
         ⚠️ 校管 AI 配置：从超级管理员预先配置的 AI 服务商中选择，并填写你自己的 API Key。
         仅校管本账号使用，不影响教师配置；非超管不可新增服务商。默认继承平台默认配置，可在此按需自定义。

@@ -12,7 +12,7 @@ const state = useConfirmState()
     aria-modal="true"
     @click.self="resolveConfirm(false)"
   >
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+    <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-5">
       <h3 class="text-lg font-semibold text-slate-800">{{ state.title }}</h3>
       <p class="mt-2 text-sm text-slate-600 whitespace-pre-line">{{ state.message }}</p>
       <div class="mt-5 flex justify-end gap-3">

@@ -207,6 +207,7 @@ function del(b) {
 .b-bad { background: #fde8ea; color: #e06c75; }
 .b-etc { background: #f3f3f3; color: #999; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
 .modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 90vh; overflow-y: auto; }
 .mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .lab2 { font-size: 24rpx; color: var(--c-sub); margin: 10rpx 0; }

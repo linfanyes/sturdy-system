@@ -171,7 +171,7 @@ function statusBadge(s?: string) {
           <button
             :class="[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-              view === 'teaching' ? 'bg-white text-cocoa-900 shadow-softer' : 'text-cocoa-500 hover:text-cocoa-700',
+              view === 'teaching' ? 'bg-surface text-cocoa-900 shadow-softer' : 'text-cocoa-500 hover:text-cocoa-700',
             ]"
             @click="view = 'teaching'"
           >
@@ -180,7 +180,7 @@ function statusBadge(s?: string) {
           <button
             :class="[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-              view === 'list' ? 'bg-white text-cocoa-900 shadow-softer' : 'text-cocoa-500 hover:text-cocoa-700',
+              view === 'list' ? 'bg-surface text-cocoa-900 shadow-softer' : 'text-cocoa-500 hover:text-cocoa-700',
             ]"
             @click="view = 'list'"
           >
@@ -196,7 +196,7 @@ function statusBadge(s?: string) {
     <!-- 教学视图 -->
     <div v-else class="space-y-4">
       <!-- 工具栏 -->
-      <div class="flex items-center justify-between gap-3 flex-wrap bg-white rounded-2xl p-3 shadow-softer">
+      <div class="flex items-center justify-between gap-3 flex-wrap bg-surface rounded-2xl p-3 shadow-softer">
         <label class="flex items-center gap-2 text-sm text-cocoa-700 cursor-pointer select-none">
           <Filter class="w-4 h-4 text-cocoa-500" />
           <input type="checkbox" v-model="onlyMySubject" class="accent-butter-500 w-4 h-4" />
@@ -213,12 +213,12 @@ function statusBadge(s?: string) {
       </div>
 
       <!-- 加载中 -->
-      <div v-if="loading" class="bg-white rounded-2xl p-8 shadow-softer flex items-center justify-center text-cocoa-400">
+      <div v-if="loading" class="bg-surface rounded-2xl p-8 shadow-softer flex items-center justify-center text-cocoa-400">
         <Loader2 class="w-5 h-5 animate-spin mr-2" /> 加载中…
       </div>
 
       <!-- 空数据 -->
-      <div v-else-if="filteredHomework.length === 0" class="bg-white rounded-2xl p-8 shadow-softer text-center text-cocoa-400">
+      <div v-else-if="filteredHomework.length === 0" class="bg-surface rounded-2xl p-8 shadow-softer text-center text-cocoa-400">
         暂无作业数据
       </div>
 
@@ -233,7 +233,7 @@ function statusBadge(s?: string) {
             <li
               v-for="item in overdueList"
               :key="item.hw.id"
-              class="flex items-center justify-between gap-3 bg-white rounded-xl px-3 py-2 text-sm"
+              class="flex items-center justify-between gap-3 bg-surface rounded-xl px-3 py-2 text-sm"
             >
               <div class="flex items-center gap-2 min-w-0 flex-1">
                 <span class="font-medium text-cocoa-900 truncate">{{ item.hw.title || '未命名作业' }}</span>

@@ -107,7 +107,7 @@ async function save() {
   <div class="space-y-6">
     <h1 class="text-2xl font-bold text-cocoa-900">个人中心</h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer max-w-4xl">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl">
       <div v-if="loading" class="text-cocoa-400 text-sm py-4">加载中…</div>
       <div v-else class="space-y-4">
         <div class="flex items-center gap-3 pb-4 border-b border-cream-200">

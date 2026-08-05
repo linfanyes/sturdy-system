@@ -39,7 +39,7 @@ function isCell(row: number, col: number) {
     </h1>
 
     <!-- 模式切换 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center gap-2 flex-wrap">
         <span class="text-sm text-cocoa-500">阶段：</span>
         <button
@@ -59,7 +59,7 @@ function isCell(row: number, col: number) {
     </div>
 
     <!-- 乘法表 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="overflow-x-auto">
         <table class="border-collapse mx-auto">
           <thead>

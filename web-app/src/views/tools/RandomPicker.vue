@@ -187,7 +187,7 @@ onBeforeUnmount(stopTimer)
     </h1>
 
     <!-- 班级选择 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-wrap items-end gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-wrap items-end gap-4">
       <div class="flex-1 min-w-[200px]">
         <label class="text-sm text-cocoa-500">班级</label>
         <select
@@ -207,7 +207,7 @@ onBeforeUnmount(stopTimer)
     </div>
 
     <!-- 名单输入 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center gap-2 mb-2">
         <Users class="w-5 h-5 text-cocoa-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">学生名单</h2>
@@ -222,14 +222,14 @@ onBeforeUnmount(stopTimer)
     </div>
 
     <!-- 抽取模式 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3">抽取模式</h2>
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex rounded-xl bg-cream-100 p-1">
           <button
             v-for="m in (['single','multi','unique'] as Mode[])"
             :key="m"
-            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === m ? 'bg-white text-butter-600 shadow-softer' : 'text-cocoa-500']"
+            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === m ? 'bg-surface text-butter-600 shadow-softer' : 'text-cocoa-500']"
             @click="mode = m"
           >{{ modeLabel(m) }}</button>
         </div>
@@ -250,7 +250,7 @@ onBeforeUnmount(stopTimer)
     </div>
 
     <!-- 结果展示 -->
-    <div class="bg-white rounded-2xl p-8 shadow-softer text-center">
+    <div class="bg-surface rounded-2xl p-8 shadow-softer text-center">
       <div
         :class="['text-5xl font-bold tracking-wider transition-colors min-h-[2em] flex items-center justify-center', rolling ? 'text-butter-500' : finalResult.length ? 'text-cocoa-900' : 'text-cocoa-300']"
       >
@@ -265,7 +265,7 @@ onBeforeUnmount(stopTimer)
     </div>
 
     <!-- 历史记录 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center gap-2 mb-3">
         <History class="w-5 h-5 text-cocoa-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">历史记录</h2>

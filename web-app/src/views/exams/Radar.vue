@@ -86,7 +86,7 @@ const classAvgPoly = computed(() => {
       <RadarIcon class="w-6 h-6 text-butter-500" /> 成绩雷达图
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-sm text-cocoa-500">班级</label>
@@ -107,7 +107,7 @@ const classAvgPoly = computed(() => {
 
     <div v-if="loading" class="text-cocoa-400 text-sm py-4 text-center">加载中…</div>
 
-    <div v-else-if="radarData" class="bg-white rounded-2xl p-6 shadow-softer">
+    <div v-else-if="radarData" class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="text-center text-cocoa-700 mb-2">{{ radarData.examName }} · {{ students.find(s => s.id === selectedStudentId)?.name }}</div>
       <div class="flex justify-center">
         <svg :width="svgSize" :height="svgSize">

@@ -162,7 +162,7 @@ onUnmounted(() => stopTimer())
       <Grid3X3 class="w-6 h-6 text-butter-500" /> 数字推盘
     </h1>
 
-    <div class="bg-white rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
       <!-- 控制区 -->
       <div class="flex flex-wrap gap-4 w-full text-sm">
         <div>

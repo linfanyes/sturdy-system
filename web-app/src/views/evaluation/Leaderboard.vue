@@ -52,7 +52,7 @@ const medalColor = (i: number) => i === 0 ? 'text-butter-500' : i === 1 ? 'text-
       <Trophy class="w-6 h-6 text-butter-500" /> 积分排行榜
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <label class="text-sm text-cocoa-500">班级</label>
       <select v-model="classId" @change="loadData" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 max-w-xs">
         <option value="">请选择</option>

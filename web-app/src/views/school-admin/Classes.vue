@@ -245,7 +245,7 @@ function handlePrint() {
           <input
             v-model="keyword"
             placeholder="搜索班级/年级/班主任"
-            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-64 focus:outline-none focus:border-butter-400"
+            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm w-64 focus:outline-none focus:border-butter-400"
           />
         </div>
         <button

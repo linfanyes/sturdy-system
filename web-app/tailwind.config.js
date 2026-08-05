@@ -5,6 +5,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 表面色（surface）：亮=白 / 暗=暖棕卡色，供 bg-surface 等内联类在暗色下自动适配
+        surface: 'rgb(var(--surface) / <alpha-value>)',
         cream: {
           50: 'rgb(var(--cream-50) / <alpha-value>)',
           100: 'rgb(var(--cream-100) / <alpha-value>)',

@@ -106,7 +106,7 @@ onMounted(() => {
       </button>
     </div>
 
-    <div class="bg-white rounded-2xl p-5 shadow-softer border border-cream-200">
+    <div class="bg-surface rounded-2xl p-5 shadow-softer border border-cream-200">
       <div class="flex flex-wrap items-center gap-3 mb-4">
         <select v-model="schoolFilter" class="px-3 py-2 rounded-xl border border-cream-200 text-sm focus:outline-none focus:border-butter-400">
           <option v-for="opt in schoolOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -116,7 +116,7 @@ onMounted(() => {
           <input
             v-model="searchQuery"
             placeholder="搜索姓名 / 用户名 / 学科"
-            class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors"
+            class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors"
           />
         </div>
         <div class="text-sm text-cocoa-500">共 {{ total }} 位教师</div>
@@ -164,7 +164,7 @@ onMounted(() => {
 
       <div v-if="total > PAGE_SIZE" class="flex items-center justify-between pt-4">
         <button
-          class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+          class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
           :disabled="page === 0"
           @click="prevPage"
         >
@@ -172,7 +172,7 @@ onMounted(() => {
         </button>
         <div class="text-sm text-cocoa-500">第 {{ page + 1 }} / {{ totalPages }} 页</div>
         <button
-          class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+          class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
           :disabled="page + 1 >= totalPages"
           @click="nextPage"
         >

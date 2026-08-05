@@ -264,12 +264,12 @@ function printWord(w: EnglishWord) {
       </div>
 
       <div v-if="poemsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!poems.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!poems.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无古诗词，点击「新建」或「初始化资源库」开始</p>
       </div>
 
-      <div v-else class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div v-else class="bg-surface rounded-2xl shadow-softer overflow-hidden">
         <div v-for="(p, idx) in poems" :key="p.id" :class="['flex items-start gap-3 p-4', idx > 0 ? 'border-t border-cream-100' : '', 'hover:bg-cream-50']">
           <div class="text-lg">📜</div>
           <div class="flex-1 min-w-0">
@@ -303,12 +303,12 @@ function printWord(w: EnglishWord) {
       </div>
 
       <div v-if="formulasLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!formulas.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!formulas.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <Calculator class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无数学公式，点击「新建」或「初始化资源库」开始</p>
       </div>
 
-      <div v-else class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div v-else class="bg-surface rounded-2xl shadow-softer overflow-hidden">
         <div v-for="(f, idx) in formulas" :key="f.id" :class="['flex items-start gap-3 p-4', idx > 0 ? 'border-t border-cream-100' : '', 'hover:bg-cream-50']">
           <div class="text-lg">🔢</div>
           <div class="flex-1 min-w-0">
@@ -341,12 +341,12 @@ function printWord(w: EnglishWord) {
       </div>
 
       <div v-if="wordsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!words.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!words.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <Languages class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无英语单词，点击「新建」或「初始化资源库」开始</p>
       </div>
 
-      <div v-else class="bg-white rounded-2xl shadow-softer overflow-hidden">
+      <div v-else class="bg-surface rounded-2xl shadow-softer overflow-hidden">
         <div v-for="(w, idx) in words" :key="w.id" :class="['flex items-start gap-3 p-4', idx > 0 ? 'border-t border-cream-100' : '', 'hover:bg-cream-50']">
           <div class="text-lg">🔤</div>
           <div class="flex-1 min-w-0">
@@ -370,7 +370,7 @@ function printWord(w: EnglishWord) {
 
     <!-- 编辑弹窗 -->
     <div v-if="editing" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="editing = null">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-lg mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="bg-surface rounded-2xl p-6 w-full max-w-lg mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-cocoa-900">
             {{ editing.mode === 'create' ? '新建' : '编辑' }}{{ editing.kind === 'poems' ? '古诗词' : editing.kind === 'formulas' ? '数学公式' : '英语单词' }}

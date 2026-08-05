@@ -216,7 +216,7 @@ defineExpose({ reload: loadList })
         <select
           v-if="classFilterable !== false"
           v-model="classId"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         >
           <option value="">全部班级</option>
           <option v-for="opt in classOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -226,7 +226,7 @@ defineExpose({ reload: loadList })
           <input
             v-model="keyword"
             placeholder="搜索"
-            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-56 focus:outline-none focus:border-butter-400"
+            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm w-56 focus:outline-none focus:border-butter-400"
           />
         </div>
         <button

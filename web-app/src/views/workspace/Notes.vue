@@ -197,7 +197,7 @@ onMounted(() => {
         <input
           v-model="keyword"
           placeholder="搜索标题、内容、标签…"
-          class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         />
       </div>
       <div class="flex gap-1.5">
@@ -206,7 +206,7 @@ onMounted(() => {
             'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
             !categoryFilter
               ? 'bg-butter-500 text-white'
-              : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+              : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
           ]"
           @click="categoryFilter = ''"
         >全部</button>
@@ -217,7 +217,7 @@ onMounted(() => {
             'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
             categoryFilter === cat
               ? 'bg-butter-500 text-white'
-              : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+              : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
           ]"
           @click="categoryFilter = categoryFilter === cat ? '' : cat"
         >{{ cat }}</button>
@@ -242,7 +242,7 @@ onMounted(() => {
       <div
         v-for="note in filteredNotes"
         :key="note.id"
-        class="bg-white rounded-2xl p-5 shadow-softer border border-cream-200 hover:shadow-soft transition-all group"
+        class="bg-surface rounded-2xl p-5 shadow-softer border border-cream-200 hover:shadow-soft transition-all group"
       >
         <div class="flex items-start justify-between gap-2 mb-2">
           <div class="flex items-center gap-2 min-w-0">
@@ -293,7 +293,7 @@ onMounted(() => {
         class="fixed inset-0 z-50 flex items-center justify-center bg-cocoa-900/30 backdrop-blur-sm"
         @click.self="showForm = false"
       >
-        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-surface rounded-2xl shadow-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between px-6 py-4 border-b border-cream-200">
             <h3 class="text-lg font-semibold text-cocoa-900">
               {{ editing ? '编辑笔记' : '新建笔记' }}
@@ -308,7 +308,7 @@ onMounted(() => {
               <input
                 v-model="formTitle"
                 placeholder="笔记标题"
-                class="w-full mt-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors"
+                class="w-full mt-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors"
               />
             </div>
             <div>
@@ -321,7 +321,7 @@ onMounted(() => {
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                     formCategory === cat
                       ? 'bg-butter-500 text-white'
-                      : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+                      : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
                   ]"
                   @click="formCategory = formCategory === cat ? '' : cat"
                 >{{ cat }}</button>
@@ -333,7 +333,7 @@ onMounted(() => {
                 v-model="formContent"
                 rows="6"
                 placeholder="笔记内容…"
-                class="w-full mt-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors resize-none"
+                class="w-full mt-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors resize-none"
               />
             </div>
             <div>
@@ -346,7 +346,7 @@ onMounted(() => {
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                     formTags.includes(tag)
                       ? 'bg-butter-500 text-white'
-                      : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+                      : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
                   ]"
                   @click="toggleTag(tag)"
                 >{{ tag }}</button>

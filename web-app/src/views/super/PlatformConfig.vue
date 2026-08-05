@@ -352,14 +352,14 @@ function removeCustomSubject(name: string) {
       </button>
     </div>
 
-    <div v-if="loading" class="bg-white rounded-2xl shadow-softer p-10 text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl shadow-softer p-10 text-center text-cocoa-400">
       <Loader2 class="w-5 h-5 animate-spin inline-block mr-2" /> 加载中…
     </div>
 
     <template v-else>
       <form @submit.prevent="save" novalidate>
         <!-- AI 配置 -->
-      <div class="bg-white rounded-2xl shadow-softer p-6">
+      <div class="bg-surface rounded-2xl shadow-softer p-6">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <Bot class="w-5 h-5 text-butter-500" />
@@ -466,7 +466,7 @@ function removeCustomSubject(name: string) {
       </div>
 
       <!-- 微信配置 -->
-      <div class="bg-white rounded-2xl shadow-softer p-6">
+      <div class="bg-surface rounded-2xl shadow-softer p-6">
         <div class="flex items-center gap-2 mb-4">
           <MessageCircle class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">微信配置</h2>
@@ -488,7 +488,7 @@ function removeCustomSubject(name: string) {
       </div>
 
       <!-- IM 配置 -->
-      <div class="bg-white rounded-2xl shadow-softer p-6">
+      <div class="bg-surface rounded-2xl shadow-softer p-6">
         <div class="flex items-center gap-2 mb-4">
           <MessageCircle class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">IM 配置</h2>
@@ -506,7 +506,7 @@ function removeCustomSubject(name: string) {
       </div>
 
       <!-- 其他 -->
-      <div class="bg-white rounded-2xl shadow-softer p-6">
+      <div class="bg-surface rounded-2xl shadow-softer p-6">
         <div class="flex items-center gap-2 mb-4">
           <Boxes class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">其他</h2>
@@ -533,7 +533,7 @@ function removeCustomSubject(name: string) {
                   >
                     <span
                       class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors"
-                      :class="isStageAllSelected(stage as string) ? 'bg-butter-500 border-butter-500 text-white' : 'border-cream-300 bg-white'"
+                      :class="isStageAllSelected(stage as string) ? 'bg-butter-500 border-butter-500 text-white' : 'border-cream-300 bg-surface'"
                     >
                       <Check v-if="isStageAllSelected(stage as string)" class="w-3.5 h-3.5" />
                     </span>
@@ -549,7 +549,7 @@ function removeCustomSubject(name: string) {
                     class="px-3 py-1.5 rounded-lg text-sm transition-all border"
                     :class="isSubjectSelected(subj)
                       ? 'bg-butter-100 border-butter-300 text-butter-700 font-medium'
-                      : 'bg-white border-cream-200 text-cocoa-400 hover:border-cream-300'"
+                      : 'bg-surface border-cream-200 text-cocoa-400 hover:border-cream-300'"
                     @click="toggleSubject(subj)"
                   >
                     {{ subj }}

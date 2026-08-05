@@ -304,7 +304,7 @@ onMounted(() => {
     </h1>
 
     <!-- 顶部控制栏 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-wrap items-end gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-wrap items-end gap-4">
       <div class="min-w-[200px]">
         <label class="text-sm text-cocoa-500">班级</label>
         <select
@@ -380,7 +380,7 @@ onMounted(() => {
     </div>
 
     <!-- 历史布局列表 -->
-    <div v-if="loadingLayout && layouts.length" class="bg-white rounded-2xl p-4 shadow-softer">
+    <div v-if="loadingLayout && layouts.length" class="bg-surface rounded-2xl p-4 shadow-softer">
       <div class="text-sm text-cocoa-500 mb-2">点击加载历史布局，或启用某布局把座位回写到学生记录</div>
       <div class="flex flex-wrap gap-2">
         <div
@@ -407,13 +407,13 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="!classId" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="!classId" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       请先选择班级
     </div>
 
     <template v-else>
       <!-- 学生池 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="flex items-center gap-2 mb-2">
           <h2 class="text-lg font-semibold text-cocoa-900">未入座学生</h2>
           <span class="text-sm text-cocoa-400 ml-auto">{{ unassignedStudents.length }} / {{ students.length }}</span>
@@ -432,7 +432,7 @@ onMounted(() => {
       </div>
 
       <!-- 讲台 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="flex items-center justify-center gap-2 py-2 mb-4 bg-gradient-to-b from-cream-100 to-cream-50 rounded-xl border border-cream-200">
           <Monitor class="w-5 h-5 text-cocoa-500" />
           <span class="font-semibold text-cocoa-700 tracking-widest">讲  台</span>

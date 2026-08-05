@@ -89,11 +89,11 @@ function formatAction(action?: string) {
     </h1>
 
     <!-- 筛选 -->
-    <div class="bg-white rounded-2xl shadow-softer p-4 flex items-center gap-3">
+    <div class="bg-surface rounded-2xl shadow-softer p-4 flex items-center gap-3">
       <label class="text-sm text-cocoa-500">学校筛选</label>
       <select
         v-model="schoolId"
-        class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400 w-64"
+        class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 w-64"
         @change="onFilterChange"
       >
         <option value="">全部学校</option>

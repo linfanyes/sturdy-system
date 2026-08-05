@@ -19,7 +19,7 @@ const items = computed(() => props.data.map((d, i) => ({
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl p-5 shadow-softer">
+  <div class="bg-surface rounded-2xl p-5 shadow-softer">
     <div v-if="title" class="text-sm font-semibold text-cocoa-700 mb-3">{{ title }}</div>
     <div class="space-y-3">
       <div v-for="(it, i) in items" :key="i">

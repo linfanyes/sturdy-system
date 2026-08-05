@@ -281,21 +281,21 @@ onUnmounted(() => {
       <div class="flex gap-3">
         <button
           class="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
-          :class="curDiff === 'easy' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-white/10 hover:bg-white/20'"
+          :class="curDiff === 'easy' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-surface/10 hover:bg-surface/20'"
           @click="start('easy')"
         >
           简单
         </button>
         <button
           class="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
-          :class="curDiff === 'normal' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-white/10 hover:bg-white/20'"
+          :class="curDiff === 'normal' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-surface/10 hover:bg-surface/20'"
           @click="start('normal')"
         >
           普通
         </button>
         <button
           class="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
-          :class="curDiff === 'hard' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-white/10 hover:bg-white/20'"
+          :class="curDiff === 'hard' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-surface/10 hover:bg-surface/20'"
           @click="start('hard')"
         >
           困难
@@ -340,7 +340,7 @@ onUnmounted(() => {
             再来一局
           </button>
           <button
-            class="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-medium transition-colors"
+            class="px-6 py-2 bg-surface/10 hover:bg-surface/20 text-white rounded-full text-sm font-medium transition-colors"
             @click="quit"
           >
             换难度

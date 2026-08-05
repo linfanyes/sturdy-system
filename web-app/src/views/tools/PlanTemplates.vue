@@ -86,7 +86,7 @@ load()
     <p class="text-cocoa-400 text-xs">本地保存，不上云</p>
 
     <!-- 编辑表单 -->
-    <div v-if="editing" class="bg-white rounded-2xl p-4 shadow-softer space-y-3">
+    <div v-if="editing" class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
       <input v-model="draft.name" placeholder="模板名称" class="w-full px-3 py-2 border border-cocoa-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-butter-300" />
       <textarea v-model="draft.content" placeholder="模板内容" rows="6" class="w-full px-3 py-2 border border-cocoa-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-butter-300 resize-y"></textarea>
       <div class="flex gap-2">
@@ -97,13 +97,13 @@ load()
 
     <!-- 列表 -->
     <div v-if="!editing" class="space-y-3">
-      <div v-if="list.length === 0" class="text-center py-12 text-cocoa-400 bg-white rounded-2xl shadow-softer">
+      <div v-if="list.length === 0" class="text-center py-12 text-cocoa-400 bg-surface rounded-2xl shadow-softer">
         <FileText class="w-12 h-12 mx-auto mb-3 opacity-40" />
         <p>暂无文案模板</p>
         <p class="text-xs mt-1">点击「新增」添加模板</p>
       </div>
 
-      <div v-for="t in list" :key="t.id" class="bg-white rounded-2xl p-4 shadow-softer space-y-2">
+      <div v-for="t in list" :key="t.id" class="bg-surface rounded-2xl p-4 shadow-softer space-y-2">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold text-cocoa-800">{{ t.name }}</h3>
           <div class="flex gap-1">

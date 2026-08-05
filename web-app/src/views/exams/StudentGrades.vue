@@ -219,7 +219,7 @@ function fmt(n: number) {
     <!-- 顶部标题栏 -->
     <div class="flex items-center justify-between gap-4 flex-wrap">
       <div class="flex items-center gap-3">
-        <button class="p-2 rounded-xl bg-white border border-cream-200 hover:bg-cream-50 text-cocoa-600" @click="goBack">
+        <button class="p-2 rounded-xl bg-surface border border-cream-200 hover:bg-cream-50 text-cocoa-600" @click="goBack">
           <ArrowLeft class="w-5 h-5" />
         </button>
         <div>
@@ -236,12 +236,12 @@ function fmt(n: number) {
       </div>
     </div>
 
-    <div v-if="loading" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       加载中…
     </div>
 
     <template v-else>
-      <div v-if="!history.length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+      <div v-if="!history.length" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
         暂无数据
       </div>
 
@@ -297,7 +297,7 @@ function fmt(n: number) {
         </div>
 
         <!-- 各科成绩概览 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
             <BookOpen class="w-5 h-5 text-butter-500" /> 各科成绩概览
           </h2>
@@ -321,14 +321,14 @@ function fmt(n: number) {
         </div>
 
         <!-- 成绩趋势折线图 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 class="text-base font-semibold text-cocoa-900 flex items-center gap-2">
               <TrendingUp class="w-5 h-5 text-butter-500" /> 成绩趋势
             </h2>
             <select
               v-model="selectedSubject"
-              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
             >
               <option value="">全部科目</option>
               <option v-for="s in subjectNames" :key="s" :value="s">{{ s }}</option>
@@ -431,14 +431,14 @@ function fmt(n: number) {
         </div>
 
         <!-- 历次成绩明细表 -->
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 class="text-base font-semibold text-cocoa-900 flex items-center gap-2">
               <ListChecks class="w-5 h-5 text-butter-500" /> 历次成绩明细
             </h2>
             <select
               v-model="filterSubject"
-              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+              class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
             >
               <option value="">全部科目</option>
               <option v-for="s in subjectNames" :key="s" :value="s">{{ s }}</option>

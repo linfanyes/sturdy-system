@@ -449,7 +449,7 @@ async function subscribeNotifications() {
 <template>
   <div class="space-y-6">
     <!-- 孩子选择条 -->
-    <div v-if="me?.kids && me.kids.length > 1" class="flex gap-2 px-4 py-2 overflow-x-auto bg-white border-b shrink-0 -mx-4 -mt-6">
+    <div v-if="me?.kids && me.kids.length > 1" class="flex gap-2 px-4 py-2 overflow-x-auto bg-surface border-b shrink-0 -mx-4 -mt-6">
       <div
         v-for="kid in me.kids" :key="kid.studentId"
         @click="switchToKid(kid.studentId)"
@@ -490,7 +490,7 @@ async function subscribeNotifications() {
           <Repeat class="w-3.5 h-3.5" /> 切换至教师端
         </button>
         <button
-          class="shrink-0 text-sm rounded-xl border border-white/40 bg-white/20 px-3 py-1.5 text-cocoa-800 hover:bg-white/30"
+          class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
           @click="showPwdModal = true"
         >⚙️ 修改密码</button>
       </template>
@@ -501,7 +501,7 @@ async function subscribeNotifications() {
       <div
         v-for="k in me.kids"
         :key="k.studentId"
-        class="bg-white rounded-2xl px-4 py-3 shadow-softer border border-transparent flex items-center gap-3"
+        class="bg-surface rounded-2xl px-4 py-3 shadow-softer border border-transparent flex items-center gap-3"
       >
         <div class="w-10 h-10 rounded-xl bg-butter-100 flex items-center justify-center text-butter-600 font-bold">
           {{ (k.studentName || '?').slice(0, 1) }}
@@ -529,7 +529,7 @@ async function subscribeNotifications() {
             @click="openEditStudentInfo"
           >修改信息</button>
           <button
-            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-600 hover:bg-cocoa-50 transition-colors"
+            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-600 hover:bg-cocoa-50 transition-colors"
             @click="openStudentRequests"
           >查看申请记录</button>
         </div>
@@ -635,21 +635,21 @@ async function subscribeNotifications() {
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <select
             v-model="filterTerm"
-            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
           >
             <option value="">全部学期</option>
             <option v-for="t in termOptions" :key="t" :value="t">{{ t }}</option>
           </select>
           <select
             v-model="filterExamName"
-            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
           >
             <option value="">全部考试</option>
             <option v-for="n in examNameOptions" :key="n" :value="n">{{ n }}</option>
           </select>
           <select
             v-model="filterSubject"
-            class="text-sm rounded-xl border border-cream-200 bg-white px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
+            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
           >
             <option value="">全部科目</option>
             <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
@@ -1003,7 +1003,7 @@ async function subscribeNotifications() {
 
     <!-- 修改密码弹窗 -->
     <div v-if="showPwdModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showPwdModal = false">
-      <div class="w-full max-w-sm bg-white rounded-2xl p-5 shadow-xl">
+      <div class="w-full max-w-sm bg-surface rounded-2xl p-5 shadow-xl">
         <div class="flex items-center justify-between mb-4">
           <div class="text-lg font-semibold text-cocoa-900">修改登录密码</div>
           <button class="text-cocoa-400 hover:text-cocoa-600" @click="showPwdModal = false">✕</button>
@@ -1026,7 +1026,7 @@ async function subscribeNotifications() {
 
     <!-- 考试详情弹窗（点击「考试次数」卡片打开） -->
     <div v-if="showExamListModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showExamListModal = false">
-      <div class="w-full max-w-2xl bg-white rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
+      <div class="w-full max-w-2xl bg-surface rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
         <div class="flex items-center justify-between mb-4">
           <div class="text-lg font-semibold text-cocoa-900">考试详情（共 {{ exams.length }} 次）</div>
           <button class="text-cocoa-400 hover:text-cocoa-600" @click="showExamListModal = false">✕</button>
@@ -1077,7 +1077,7 @@ async function subscribeNotifications() {
 
     <!-- 科任老师信息弹窗（家长端：仅展示课表中已有的姓名/科目/班级） -->
     <div v-if="showTeacherModal && teacherModalInfo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showTeacherModal = false">
-      <div class="w-full max-w-sm bg-white rounded-2xl p-5 shadow-xl">
+      <div class="w-full max-w-sm bg-surface rounded-2xl p-5 shadow-xl">
         <div class="flex items-center justify-between mb-4">
           <div class="text-lg font-semibold text-cocoa-900">老师信息</div>
           <button class="text-cocoa-400 hover:text-cocoa-600" @click="showTeacherModal = false">✕</button>
@@ -1115,7 +1115,7 @@ async function subscribeNotifications() {
 
     <!-- 修改学生信息弹窗 -->
     <div v-if="showStudentInfoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showStudentInfoModal = false">
-      <div class="w-full max-w-md bg-white rounded-2xl p-5 shadow-xl max-h-[85vh] overflow-auto">
+      <div class="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl max-h-[85vh] overflow-auto">
         <div class="flex items-center justify-between mb-2">
           <div class="text-lg font-semibold text-cocoa-900">修改学生信息</div>
           <button class="text-cocoa-400 hover:text-cocoa-600" @click="showStudentInfoModal = false">✕</button>
@@ -1161,7 +1161,7 @@ async function subscribeNotifications() {
 
     <!-- 申请记录弹窗 -->
     <div v-if="showStudentRequestsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showStudentRequestsModal = false">
-      <div class="w-full max-w-lg bg-white rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
+      <div class="w-full max-w-lg bg-surface rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
         <div class="flex items-center justify-between mb-4">
           <div class="text-lg font-semibold text-cocoa-900">申请记录</div>
           <button class="text-cocoa-400 hover:text-cocoa-600" @click="showStudentRequestsModal = false">✕</button>

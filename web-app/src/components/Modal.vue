@@ -38,7 +38,7 @@ function close() {
           leave-from-class="scale-100 opacity-100"
           leave-to-class="scale-95 opacity-0"
         >
-          <div v-if="modelValue" :class="['relative bg-white rounded-2xl shadow-soft w-full', width]">
+          <div v-if="modelValue" :class="['relative bg-surface rounded-2xl shadow-soft w-full', width]">
             <!-- 头部 -->
             <div v-if="title" class="flex items-center justify-between px-6 py-4 border-b border-cream-200">
               <h3 class="text-lg font-semibold text-cocoa-900">{{ title }}</h3>

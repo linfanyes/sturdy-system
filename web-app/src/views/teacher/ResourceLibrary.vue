@@ -241,7 +241,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
 
     <!-- ============ 古诗词 ============ -->
     <template v-if="tab === 'poems'">
-      <div class="bg-white rounded-2xl p-4 shadow-softer space-y-3">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
         <div class="relative">
           <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
           <input v-model="poemKeyword" @keyup.enter="loadPoems" placeholder="搜索诗词标题、作者或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
@@ -262,7 +262,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
       </div>
 
       <div v-if="poemsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!poems.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!poems.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无古诗词</p>
       </div>
@@ -305,7 +305,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
 
     <!-- ============ 数学公式 ============ -->
     <template v-if="tab === 'formulas'">
-      <div class="bg-white rounded-2xl p-4 shadow-softer space-y-3">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
         <div class="relative">
           <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
           <input v-model="formulaKeyword" @keyup.enter="loadFormulas" placeholder="搜索公式标题或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
@@ -320,13 +320,13 @@ function printCategory(cat: string, list: EnglishWord[]) {
       </div>
 
       <div v-if="formulasLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!formulas.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!formulas.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <Calculator class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无数学公式</p>
       </div>
 
       <div v-else class="space-y-2">
-        <div v-for="f in formulas" :key="f.id" class="bg-white rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
+        <div v-for="f in formulas" :key="f.id" class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -350,7 +350,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
 
     <!-- ============ 英语单词 ============ -->
     <template v-if="tab === 'words'">
-      <div class="bg-white rounded-2xl p-4 shadow-softer space-y-3">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
         <div class="relative">
           <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
           <input v-model="wordKeyword" @keyup.enter="loadWords" placeholder="搜索单词或释义" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
@@ -365,13 +365,13 @@ function printCategory(cat: string, list: EnglishWord[]) {
       </div>
 
       <div v-if="wordsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
-      <div v-else-if="!words.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!words.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <Languages class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无英语单词</p>
       </div>
 
       <div v-else class="space-y-4">
-        <div v-for="(list, cat) in groupedWords" :key="cat" class="bg-white rounded-2xl border border-cream-200 shadow-softer overflow-hidden">
+        <div v-for="(list, cat) in groupedWords" :key="cat" class="bg-surface rounded-2xl border border-cream-200 shadow-softer overflow-hidden">
           <div class="px-4 py-2.5 bg-cream-50/60 border-b border-cream-100 flex items-center justify-between">
             <div class="font-medium text-cocoa-800 flex items-center gap-2">
               <span class="w-1.5 h-1.5 rounded-full bg-butter-400"></span>

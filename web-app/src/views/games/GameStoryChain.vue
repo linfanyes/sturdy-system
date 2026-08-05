@@ -63,7 +63,7 @@ const isMyTurn = computed(() => {
         <button class="p-2 rounded-xl hover:bg-cream-200 text-cocoa-500" @click="restart"><RefreshCw class="w-5 h-5" /></button>
       </div>
 
-      <div v-if="story.length === 0" class="bg-white rounded-2xl p-8 shadow-softer text-center space-y-4">
+      <div v-if="story.length === 0" class="bg-surface rounded-2xl p-8 shadow-softer text-center space-y-4">
         <div class="text-5xl">📚</div>
         <h2 class="text-lg font-semibold text-cocoa-900">创意接龙，一人一句编故事</h2>
         <div class="flex flex-wrap justify-center gap-2">
@@ -83,7 +83,7 @@ const isMyTurn = computed(() => {
       </div>
 
       <div v-else class="space-y-4">
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs text-cocoa-400 bg-cream-100 px-2 py-0.5 rounded">第 {{ story.length }} 句</span>
             <span v-if="theme" class="text-xs text-cocoa-400">主题：{{ theme }}</span>
@@ -96,7 +96,7 @@ const isMyTurn = computed(() => {
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 shadow-softer">
+        <div class="bg-surface rounded-2xl p-6 shadow-softer">
           <div class="flex items-center gap-2 mb-3">
             <div class="flex-1 h-px bg-cream-200" />
             <span class="text-xs text-cocoa-400 whitespace-nowrap">输入下一句</span>

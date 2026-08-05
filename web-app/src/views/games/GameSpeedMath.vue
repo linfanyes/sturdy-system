@@ -53,7 +53,7 @@ function restart() {
         <button class="p-2 rounded-xl hover:bg-cream-200 text-cocoa-500" @click="restart"><RefreshCw class="w-5 h-5" /></button>
       </div>
 
-      <div v-if="!finished" class="bg-white rounded-2xl p-8 shadow-softer text-center" :key="animKey">
+      <div v-if="!finished" class="bg-surface rounded-2xl p-8 shadow-softer text-center" :key="animKey">
         <div class="text-xs text-cocoa-400 mb-3">第 {{ idx + 1 }} / {{ QUESTIONS.length }} 题</div>
         <div class="text-4xl font-bold text-cocoa-900 mb-8 py-4 tracking-wide">{{ current.q }}</div>
         <div class="grid grid-cols-2 gap-3">
@@ -67,7 +67,7 @@ function restart() {
         <div v-else-if="feedback === 'wrong'" class="mt-4 text-red-500 font-semibold flex items-center justify-center gap-1"><X class="w-5 h-5" /> 正确答案：{{ current.a }}</div>
       </div>
 
-      <div v-else class="bg-white rounded-2xl p-8 shadow-softer text-center">
+      <div v-else class="bg-surface rounded-2xl p-8 shadow-softer text-center">
         <div class="text-5xl mb-4">🎉</div>
         <div class="text-2xl font-bold text-cocoa-900 mb-2">完成！</div>
         <div class="text-lg text-cocoa-500 mb-6">{{ score }} / {{ QUESTIONS.length }} 正确</div>

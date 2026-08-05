@@ -78,7 +78,7 @@ async function onClassChange() {
       <BarChart3 class="w-6 h-6 text-butter-500" /> 数据统计
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-sm text-cocoa-500">班级</label>

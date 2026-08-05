@@ -152,7 +152,7 @@ onMounted(() => {
           :key="item.id"
           :class="[
             'rounded-xl p-4 shadow-softer border border-cream-200 cursor-pointer transition-colors hover:shadow-soft',
-            item.read ? 'bg-white' : 'bg-butter-50 border-l-4 border-l-butter-400',
+            item.read ? 'bg-surface' : 'bg-butter-50 border-l-4 border-l-butter-400',
           ]"
           @click="handleMarkRead(item)"
         >
@@ -174,7 +174,7 @@ onMounted(() => {
         <!-- 分页 -->
         <div v-if="total > PAGE_SIZE" class="flex items-center justify-between pt-2">
           <button
-            class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+            class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
             :disabled="skip === 0"
             @click="prevPage"
           >
@@ -182,7 +182,7 @@ onMounted(() => {
           </button>
           <div class="text-sm text-cocoa-500">第 {{ page }} / {{ totalPages }} 页（共 {{ total }} 条）</div>
           <button
-            class="px-3 py-1.5 rounded-lg bg-white border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
+            class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
             :disabled="skip + PAGE_SIZE >= total"
             @click="nextPage"
           >

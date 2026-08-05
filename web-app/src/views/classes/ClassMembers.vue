@@ -141,7 +141,7 @@ watch(activeClassId, syncSubjectDraft)
       <h1 class="text-2xl font-bold text-cocoa-900">班级成员</h1>
       <select
         v-model="activeClassId"
-        class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+        class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         @change="loadMembers(activeClassId)"
       >
         <option value="">请选择班级</option>
@@ -149,14 +149,14 @@ watch(activeClassId, syncSubjectDraft)
       </select>
     </div>
 
-    <div v-if="!activeClassId" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="!activeClassId" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <Users class="w-10 h-10 mx-auto mb-2 text-cocoa-300" />
       请先选择班级查看协作教师
     </div>
 
     <template v-else>
       <!-- 班主任 -->
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="flex items-center gap-2 mb-3">
           <Crown class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">班主任</h2>
@@ -186,7 +186,7 @@ watch(activeClassId, syncSubjectDraft)
       </div>
 
       <!-- 科任老师 -->
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="flex items-center gap-2 mb-3">
           <BookOpen class="w-5 h-5 text-mint-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">科任老师</h2>
@@ -216,7 +216,7 @@ watch(activeClassId, syncSubjectDraft)
         </div>
       </div>
       <!-- 本学期课程设置 -->
-      <div class="bg-white rounded-2xl p-5 shadow-softer">
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="flex items-center gap-2 mb-3">
           <BookOpen class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">本学期课程设置</h2>

@@ -213,7 +213,7 @@ function selectRole(role: 'teacher' | 'parent') {
       <!-- 左侧品牌/欢迎区 -->
       <div class="space-y-7 text-center lg:text-left">
         <div
-          class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-1.5 text-sm font-semibold text-cocoa-800 shadow-sm backdrop-blur"
+          class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-surface/80 px-4 py-1.5 text-sm font-semibold text-cocoa-800 shadow-sm backdrop-blur"
         >
           <Sparkles :size="16" class="text-butter-500" /> 园丁工作台
         </div>
@@ -282,7 +282,7 @@ function selectRole(role: 'teacher' | 'parent') {
         </div>
 
         <div
-          class="rounded-[2.25rem] bg-white/90 p-6 shadow-2xl shadow-cocoa-900/5 backdrop-blur sm:p-8"
+          class="rounded-[2.25rem] bg-surface/90 p-6 shadow-2xl shadow-cocoa-900/5 backdrop-blur sm:p-8"
         >
           <div class="mb-6 pt-6 text-center">
             <h2 class="title-display text-2xl sm:text-[1.75rem]">一键登录</h2>
@@ -409,7 +409,7 @@ function selectRole(role: 'teacher' | 'parent') {
     v-if="showRoleChoiceModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
   >
-    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+    <div class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
       <h3 class="mb-2 text-center text-lg font-bold text-cocoa-900">选择登录身份</h3>
       <p class="mb-5 text-center text-sm text-cocoa-500">
         该账号同时关联了教师和家长身份

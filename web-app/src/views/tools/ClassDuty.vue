@@ -119,7 +119,7 @@ async function remove(row: any) {
         <Users class="w-6 h-6 text-butter-500" /> 班级职务
       </h1>
       <div class="flex items-center gap-2">
-        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400">
+        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
           <option value="">请选择班级</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
@@ -129,11 +129,11 @@ async function remove(row: any) {
       </div>
     </div>
 
-    <div v-if="!classId" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">请先选择班级</div>
-    <div v-else-if="loading" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="!classId" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">请先选择班级</div>
+    <div v-else-if="loading" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <Loader2 class="w-6 h-6 mx-auto mb-2 animate-spin" /> 加载中…
     </div>
-    <div v-else-if="!items.length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else-if="!items.length" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       暂无职务，点击「新增职务」创建
     </div>
     <div v-else class="table-wrap">

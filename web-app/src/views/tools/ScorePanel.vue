@@ -130,7 +130,7 @@ watch(classId, onClassChange)
     </h1>
 
     <!-- 班级选择 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <label class="text-sm text-cocoa-500">班级</label>
       <select
         v-model="classId"
@@ -141,7 +141,7 @@ watch(classId, onClassChange)
       </select>
     </div>
 
-    <div v-if="!classId" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="!classId" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       请先选择班级
     </div>
 
@@ -171,7 +171,7 @@ watch(classId, onClassChange)
       </div>
 
       <!-- 学生网格 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
         <div class="flex items-center gap-2 mb-3">
           <h2 class="text-lg font-semibold text-cocoa-900">学生列表</h2>
           <span class="text-sm text-cocoa-400 ml-auto">点击学生进行加减分</span>

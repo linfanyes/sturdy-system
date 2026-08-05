@@ -133,7 +133,7 @@ watch(options, (v) => {
     </h1>
 
     <!-- 选项输入 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer space-y-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-cocoa-900">选项</h2>
         <button
@@ -187,7 +187,7 @@ watch(options, (v) => {
             v-model.number="o.weight"
             type="number"
             min="1"
-            class="w-12 px-1 py-0.5 rounded-lg border border-cream-200 text-xs text-center bg-white"
+            class="w-12 px-1 py-0.5 rounded-lg border border-cream-200 text-xs text-center bg-surface"
           />
           <span v-else-if="o.weight !== 1" class="text-xs text-butter-600">×{{ o.weight }}</span>
           <button class="p-0.5 rounded-full hover:bg-red-100 text-red-500" @click="removeOption(i)">
@@ -199,7 +199,7 @@ watch(options, (v) => {
     </div>
 
     <!-- 结果展示 -->
-    <div class="bg-white rounded-2xl p-8 shadow-softer text-center">
+    <div class="bg-surface rounded-2xl p-8 shadow-softer text-center">
       <!-- 装饰转盘 -->
       <div class="flex justify-center mb-4">
         <div
@@ -225,7 +225,7 @@ watch(options, (v) => {
     </div>
 
     <!-- 历史 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center gap-2 mb-3">
         <History class="w-5 h-5 text-cocoa-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">历史记录</h2>

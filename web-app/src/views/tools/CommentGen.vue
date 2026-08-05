@@ -278,7 +278,7 @@ function downloadAll() {
     </h1>
 
     <!-- 选择区域 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
         <div>
           <label class="text-sm text-cocoa-500">班级</label>
@@ -324,7 +324,7 @@ function downloadAll() {
     </div>
 
     <!-- 生成结果 -->
-    <div v-if="results.length" class="bg-white rounded-2xl p-6 shadow-softer">
+    <div v-if="results.length" class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2 text-cocoa-700">
           <FileText class="w-4 h-4" />

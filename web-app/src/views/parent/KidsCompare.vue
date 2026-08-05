@@ -23,7 +23,7 @@
     <!-- 比对表 -->
     <div v-else class="space-y-4">
       <div v-for="exam in data.exams" :key="exam.examName"
-        class="bg-white rounded-xl p-4 shadow-sm">
+        class="bg-surface rounded-xl p-4 shadow-sm">
         <div class="font-semibold mb-3">{{ exam.examName }} <span class="text-xs text-gray-400 ml-2">{{ exam.date }}</span></div>
 
         <!-- 孩子成绩行 -->

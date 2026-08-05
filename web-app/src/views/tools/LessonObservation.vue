@@ -118,14 +118,14 @@ load()
     <p v-if="list.length" class="text-cocoa-400 text-xs">共 {{ list.length }} 条记录（本地保存）</p>
 
     <!-- 空状态 -->
-    <div v-if="list.length === 0" class="text-center py-12 text-cocoa-400 bg-white rounded-2xl shadow-softer">
+    <div v-if="list.length === 0" class="text-center py-12 text-cocoa-400 bg-surface rounded-2xl shadow-softer">
       <ClipboardList class="w-12 h-12 mx-auto mb-3 opacity-40" />
       <p>暂无听课记录</p>
       <p class="text-xs mt-1">点击「新增」添加记录</p>
     </div>
 
     <!-- 记录列表 -->
-    <div v-for="rec in list" :key="rec.id" class="bg-white rounded-2xl p-4 shadow-softer space-y-2">
+    <div v-for="rec in list" :key="rec.id" class="bg-surface rounded-2xl p-4 shadow-softer space-y-2">
       <div class="flex items-start justify-between">
         <div>
           <h3 class="font-semibold text-cocoa-800">{{ rec.topic }}</h3>
@@ -160,7 +160,7 @@ load()
     <!-- 遮罩 + 表单弹窗 -->
     <div v-if="show" class="fixed inset-0 z-50 flex items-end justify-center" @click.self="show = false">
       <div class="fixed inset-0 bg-black/30" @click="show = false"></div>
-      <div class="relative bg-white rounded-t-2xl w-full max-w-lg p-5 max-h-[85vh] overflow-y-auto shadow-xl">
+      <div class="relative bg-surface rounded-t-2xl w-full max-w-lg p-5 max-h-[85vh] overflow-y-auto shadow-xl">
         <h2 class="text-lg font-bold text-cocoa-800 mb-4">{{ editing ? '编辑' : '新增' }}听课记录</h2>
         <div class="space-y-3">
           <div>
@@ -186,7 +186,7 @@ load()
             <div class="flex gap-2 mt-1">
               <button v-for="r in ratings" :key="r"
                 class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
-                :class="form.overallRating === r ? ratingColor(r).split(' ').slice(0,2).join(' ') : 'text-cocoa-500 border-cocoa-200 bg-white hover:bg-cream-50'"
+                :class="form.overallRating === r ? ratingColor(r).split(' ').slice(0,2).join(' ') : 'text-cocoa-500 border-cocoa-200 bg-surface hover:bg-cream-50'"
                 @click="form.overallRating = r">{{ r }}</button>
             </div>
           </div>

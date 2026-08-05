@@ -134,7 +134,7 @@ async function submitReject() {
       <div class="flex items-center gap-2 flex-wrap">
         <select
           v-model="classFilter"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           @change="loadList"
         >
           <option value="">全部班级</option>
@@ -142,7 +142,7 @@ async function submitReject() {
         </select>
         <select
           v-model="statusFilter"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           @change="loadList"
         >
           <option value="">全部状态</option>
@@ -160,11 +160,11 @@ async function submitReject() {
     </div>
 
     <!-- 列表 -->
-    <div v-if="loading" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       加载中…
     </div>
 
-    <div v-else-if="filtered.length === 0" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else-if="filtered.length === 0" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <Inbox class="w-10 h-10 mx-auto mb-2 text-cocoa-300" />
       暂无申请记录
     </div>
@@ -173,7 +173,7 @@ async function submitReject() {
       <div
         v-for="item in filtered"
         :key="item.id"
-        class="bg-white rounded-2xl p-5 shadow-softer"
+        class="bg-surface rounded-2xl p-5 shadow-softer"
       >
         <!-- 卡片头部 -->
         <div class="flex items-start justify-between gap-3 flex-wrap">

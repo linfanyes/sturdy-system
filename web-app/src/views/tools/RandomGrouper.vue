@@ -102,7 +102,7 @@ async function importFromClass() {
     </h1>
 
     <!-- 班级选择 + 名单输入 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer space-y-3">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer space-y-3">
       <div class="flex flex-wrap items-end gap-4">
         <div class="flex-1 min-w-[200px]">
           <label class="text-sm text-cocoa-500">班级（可选，用于导入学生）</label>
@@ -136,16 +136,16 @@ async function importFromClass() {
     </div>
 
     <!-- 分组模式 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3">分组方式</h2>
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex rounded-xl bg-cream-100 p-1">
           <button
-            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === 'byGroup' ? 'bg-white text-butter-600 shadow-softer' : 'text-cocoa-500']"
+            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === 'byGroup' ? 'bg-surface text-butter-600 shadow-softer' : 'text-cocoa-500']"
             @click="mode = 'byGroup'"
           >按组数分</button>
           <button
-            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === 'bySize' ? 'bg-white text-butter-600 shadow-softer' : 'text-cocoa-500']"
+            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition', mode === 'bySize' ? 'bg-surface text-butter-600 shadow-softer' : 'text-cocoa-500']"
             @click="mode = 'bySize'"
           >按人数分</button>
         </div>
@@ -198,12 +198,12 @@ async function importFromClass() {
           <span
             v-for="(name, idx) in g"
             :key="idx"
-            class="px-3 py-1 rounded-full bg-white/70 text-cocoa-900 text-sm font-medium"
+            class="px-3 py-1 rounded-full bg-surface/70 text-cocoa-900 text-sm font-medium"
           >{{ name }}</span>
         </div>
       </div>
     </div>
-    <div v-else class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       输入名单后点击「生成分组」
     </div>
   </div>

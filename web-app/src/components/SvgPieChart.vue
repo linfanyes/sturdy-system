@@ -50,7 +50,7 @@ const segments = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl p-5 shadow-softer">
+  <div class="bg-surface rounded-2xl p-5 shadow-softer">
     <div v-if="title" class="text-sm font-semibold text-cocoa-700 mb-3">{{ title }}</div>
     <div class="flex items-center gap-5">
       <!-- 环形图 -->

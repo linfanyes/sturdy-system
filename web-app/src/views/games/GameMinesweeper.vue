@@ -89,7 +89,7 @@ reset()
       <Bomb class="w-6 h-6 text-butter-500" /> 扫雷
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full">
         <span class="text-cocoa-700 font-semibold">💣 {{ MINES }} 颗雷</span>
         <span v-if="won" class="text-mint-500 font-semibold">🎉 胜利！</span>

@@ -115,7 +115,7 @@ reset()
       <Puzzle class="w-6 h-6 text-butter-500" /> 消消乐
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full">
         <span class="text-cocoa-700 font-semibold">分数：{{ score }}</span>
         <span class="text-cocoa-500 text-sm">最高：{{ best }}</span>

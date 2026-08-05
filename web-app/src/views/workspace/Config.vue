@@ -388,11 +388,11 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
 
     <div class="flex gap-2 flex-wrap">
       <button
-        :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'ai' ? 'bg-butter-500 text-white' : 'bg-white text-cocoa-500 hover:bg-cream-100']"
+        :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'ai' ? 'bg-butter-500 text-white' : 'bg-surface text-cocoa-500 hover:bg-cream-100']"
         @click="tab = 'ai'"
       ><Bot class="w-4 h-4" /> AI 配置</button>
       <button
-        :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'app' ? 'bg-butter-500 text-white' : 'bg-white text-cocoa-500 hover:bg-cream-100']"
+        :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'app' ? 'bg-butter-500 text-white' : 'bg-surface text-cocoa-500 hover:bg-cream-100']"
         @click="tab = 'app'"
       ><Settings class="w-4 h-4" /> 应用配置</button>
     </div>
@@ -402,7 +402,7 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
     </div>
 
     <!-- ==================== AI 配置 ==================== -->
-    <div v-else-if="tab === 'ai'" class="bg-white rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
+    <div v-else-if="tab === 'ai'" class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
       <div class="text-xs text-butter-600 bg-butter-100/50 rounded-lg px-3 py-2">
         ⚠️ API Key 属敏感信息，请勿在公共环境泄露；仅保存在你自己的账号下。
         默认继承管理员的平台配置，你可在本页按需自定义。
@@ -514,7 +514,7 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
     </div>
 
     <!-- ==================== 应用配置 ==================== -->
-    <div v-else class="bg-white rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
+    <div v-else class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-sm text-cocoa-500">主题</label>

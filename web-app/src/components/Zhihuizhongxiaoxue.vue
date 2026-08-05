@@ -77,7 +77,7 @@ onMounted(load)
     </div>
 
     <!-- 过滤栏 -->
-    <div class="bg-white rounded-2xl p-4 shadow-softer space-y-3">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
       <div class="relative">
         <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
         <input
@@ -108,7 +108,7 @@ onMounted(load)
     <div v-if="loading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2">
       <Loader2 class="w-4 h-4 animate-spin" /> 加载中…
     </div>
-    <div v-else-if="!courses.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+    <div v-else-if="!courses.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
       <GraduationCap class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
       <p>暂无匹配的课程资源</p>
     </div>
@@ -117,7 +117,7 @@ onMounted(load)
       <div
         v-for="c in courses"
         :key="c.id"
-        class="bg-white rounded-2xl border border-cream-200 shadow-softer p-4 flex flex-col hover:shadow-md transition-shadow"
+        class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 flex flex-col hover:shadow-md transition-shadow"
       >
         <div class="flex items-start justify-between gap-2">
           <div class="font-semibold text-cocoa-900 text-lg leading-tight">{{ c.title }}</div>

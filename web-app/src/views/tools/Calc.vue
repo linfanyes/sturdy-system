@@ -164,7 +164,7 @@ onMounted(() => {
       <Calculator class="w-6 h-6 text-butter-500" /> 课堂计算器
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer max-w-md mx-auto">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer max-w-md mx-auto">
       <!-- 显示屏 -->
       <div class="bg-cream-50 rounded-xl p-4 mb-4 text-right">
         <div class="text-sm text-cocoa-400 min-h-[1.2em] break-all">{{ expr || ' ' }}</div>
@@ -187,7 +187,7 @@ onMounted(() => {
     </div>
 
     <!-- 历史记录 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer max-w-md mx-auto">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer max-w-md mx-auto">
       <div class="flex items-center gap-2 mb-3">
         <History class="w-5 h-5 text-cocoa-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">历史记录</h2>

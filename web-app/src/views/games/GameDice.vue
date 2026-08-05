@@ -163,7 +163,7 @@ onMounted(() => {
       <Dice class="w-6 h-6 text-sakura-500" /> 摇骰子比大小
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <!-- 状态栏 -->
       <div class="flex items-center justify-between w-full">
         <div class="flex items-center gap-3">

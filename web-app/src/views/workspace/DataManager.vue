@@ -292,7 +292,7 @@ onMounted(() => {
           'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors',
           activeTab === tab.key
             ? 'bg-butter-500 text-white shadow-sm'
-            : 'bg-white text-cocoa-600 border border-cream-200 hover:bg-cream-50',
+            : 'bg-surface text-cocoa-600 border border-cream-200 hover:bg-cream-50',
         ]"
         @click="activeTab = tab.key as any"
       >
@@ -301,7 +301,7 @@ onMounted(() => {
     </div>
 
     <!-- 导出面板 -->
-    <div v-if="activeTab === 'export'" class="bg-white rounded-2xl p-6 shadow-softer border border-cream-200 space-y-4">
+    <div v-if="activeTab === 'export'" class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200 space-y-4">
       <div class="flex items-center gap-2">
         <Download class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">导出数据</h2>
@@ -323,7 +323,7 @@ onMounted(() => {
             'px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left',
             selectedEndpoints.includes(ep.key)
               ? 'border-butter-400 bg-butter-50 text-butter-700 shadow-sm'
-              : 'border-cream-200 bg-white text-cocoa-600 hover:bg-cream-50',
+              : 'border-cream-200 bg-surface text-cocoa-600 hover:bg-cream-50',
           ]"
           @click="toggleEndpoint(ep.key)"
         >
@@ -343,7 +343,7 @@ onMounted(() => {
     </div>
 
     <!-- 导入面板 -->
-    <div v-if="activeTab === 'import'" class="bg-white rounded-2xl p-6 shadow-softer border border-cream-200 space-y-4">
+    <div v-if="activeTab === 'import'" class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200 space-y-4">
       <div class="flex items-center gap-2">
         <Upload class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">导入数据</h2>
@@ -390,7 +390,7 @@ onMounted(() => {
     <!-- 备份面板 -->
     <div v-if="activeTab === 'backup'" class="space-y-4">
       <!-- 创建备份 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer border border-cream-200 space-y-3">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200 space-y-3">
         <div class="flex items-center gap-2">
           <Plus class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">创建备份</h2>
@@ -399,7 +399,7 @@ onMounted(() => {
           <input
             v-model="backupLabel"
             placeholder="备份标签（如：2026年7月期末）"
-            class="flex-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-white transition-colors"
+            class="flex-1 px-4 py-2.5 rounded-xl border border-cream-200 bg-cream-50 text-sm focus:outline-none focus:border-butter-400 focus:bg-surface transition-colors"
             @keydown.enter="createBackup"
           />
           <button
@@ -415,7 +415,7 @@ onMounted(() => {
       </div>
 
       <!-- 备份历史 -->
-      <div class="bg-white rounded-2xl p-6 shadow-softer border border-cream-200">
+      <div class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200">
         <div class="flex items-center gap-2 mb-4">
           <History class="w-5 h-5 text-butter-500" />
           <h2 class="text-lg font-semibold text-cocoa-900">备份历史</h2>

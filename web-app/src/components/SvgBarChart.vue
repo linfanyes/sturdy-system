@@ -28,7 +28,7 @@ const gridLines = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl p-5 shadow-softer">
+  <div class="bg-surface rounded-2xl p-5 shadow-softer">
     <div v-if="title" class="text-sm font-semibold text-cocoa-700 mb-3">{{ title }}</div>
     <div v-if="!hasData" class="flex items-center justify-center text-cocoa-400 text-sm" :style="{ height: height + 'px' }">
       暂无数据

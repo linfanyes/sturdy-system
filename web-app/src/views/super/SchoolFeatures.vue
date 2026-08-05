@@ -149,7 +149,7 @@ onMounted(async () => {
     </div>
 
     <!-- 学校选择 -->
-    <div class="bg-white rounded-2xl shadow-softer p-4 flex items-center gap-3">
+    <div class="bg-surface rounded-2xl shadow-softer p-4 flex items-center gap-3">
       <School class="w-5 h-5 text-butter-500 shrink-0" />
       <label class="text-sm text-cocoa-500 shrink-0">选择学校</label>
       <select
@@ -164,13 +164,13 @@ onMounted(async () => {
       <span class="text-xs text-cocoa-400 whitespace-nowrap">已开启 {{ enabledCount }} / {{ ALL_KEYS.length }}</span>
     </div>
 
-    <div v-if="loading" class="bg-white rounded-2xl shadow-softer p-10 text-center text-cocoa-400">
+    <div v-if="loading" class="bg-surface rounded-2xl shadow-softer p-10 text-center text-cocoa-400">
       <Loader2 class="w-5 h-5 animate-spin inline-block mr-2" /> 加载中…
     </div>
 
     <template v-else>
       <!-- 全量操作 -->
-      <div class="bg-white rounded-2xl shadow-softer p-4 flex items-center justify-between">
+      <div class="bg-surface rounded-2xl shadow-softer p-4 flex items-center justify-between">
         <span class="text-sm text-cocoa-500">按组批量操作，或逐项切换</span>
         <div class="flex items-center gap-2">
           <button
@@ -193,7 +193,7 @@ onMounted(async () => {
       <div
         v-for="g in GROUPS"
         :key="g.title"
-        class="bg-white rounded-2xl shadow-softer p-5"
+        class="bg-surface rounded-2xl shadow-softer p-5"
       >
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-base font-semibold text-cocoa-900">{{ g.title }}</h2>
@@ -220,7 +220,7 @@ onMounted(async () => {
             class="flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors"
             :class="selected[k]
               ? 'border-butter-300 bg-butter-50'
-              : 'border-cream-200 bg-white hover:bg-cream-50'"
+              : 'border-cream-200 bg-surface hover:bg-cream-50'"
             @click="toggle(k)"
           >
             <span class="text-sm" :class="selected[k] ? 'text-cocoa-900 font-medium' : 'text-cocoa-400'">
@@ -230,7 +230,7 @@ onMounted(async () => {
               class="w-9 h-5 rounded-full flex items-center px-0.5 transition-colors shrink-0"
               :class="selected[k] ? 'bg-butter-500 justify-end' : 'bg-cream-300 justify-start'"
             >
-              <span class="w-4 h-4 rounded-full bg-white shadow" />
+              <span class="w-4 h-4 rounded-full bg-surface shadow" />
             </span>
           </button>
         </div>

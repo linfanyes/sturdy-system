@@ -148,7 +148,7 @@ onMounted(async () => {
       </h1>
       <select
         v-model="selectedClassId"
-        class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400 min-w-[160px]"
+        class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 min-w-[160px]"
         @change="onClassChange"
       >
         <option value="">全部班级</option>
@@ -175,7 +175,7 @@ onMounted(async () => {
     </div>
 
     <!-- 课表网格 -->
-    <div v-else class="bg-white rounded-2xl shadow-softer border border-cream-200 overflow-hidden">
+    <div v-else class="bg-surface rounded-2xl shadow-softer border border-cream-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[700px]">
           <thead>

@@ -228,7 +228,7 @@ onUnmounted(stop)
       <RefreshCw class="w-6 h-6 text-butter-500" /> 弹球打砖块
     </h1>
 
-    <div class="bg-white rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer flex flex-col items-center gap-3">
       <div class="flex items-center justify-between w-full text-sm">
         <span class="text-cocoa-700 font-semibold">分数 {{ score }}</span>
         <span class="text-cocoa-500">❤️ {{ lives }}</span>

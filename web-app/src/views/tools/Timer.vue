@@ -101,7 +101,7 @@ onBeforeUnmount(stopTimer)
     </h1>
 
     <!-- 预设时长 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <h2 class="text-lg font-semibold text-cocoa-900 mb-3">预设时长</h2>
       <div class="flex flex-wrap items-center gap-3">
         <button
@@ -129,7 +129,7 @@ onBeforeUnmount(stopTimer)
 
     <!-- 倒计时显示 -->
     <div
-      :class="['bg-white rounded-2xl p-8 shadow-softer text-center transition-colors', flashing ? 'bg-butter-100 animate-pulse' : '']"
+      :class="['bg-surface rounded-2xl p-8 shadow-softer text-center transition-colors', flashing ? 'bg-butter-100 animate-pulse' : '']"
     >
       <div class="relative inline-flex items-center justify-center">
         <!-- SVG 进度环 -->

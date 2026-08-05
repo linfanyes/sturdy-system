@@ -298,6 +298,7 @@ onUnmounted(() => stopTimer())
 .btn { color: #fff; border-radius: 40rpx; padding: 0 50rpx; font-size: 28rpx; line-height: 70rpx; }
 .tip { font-size: 22rpx; margin-top: 12rpx; text-align: center; }
 
+  padding-bottom: calc(env(safe-area-inset-bottom));
 .mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .mask-c { width: 480rpx; padding: 40rpx; border-radius: 18rpx; display: flex; flex-direction: column; align-items: center; }
 .mask-t { font-size: 36rpx; font-weight: 800; }

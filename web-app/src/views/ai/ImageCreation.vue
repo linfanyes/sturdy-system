@@ -39,7 +39,7 @@ function download() {
       <Sparkles class="w-6 h-6 text-butter-500" /> 图像创造
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer space-y-3">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer space-y-3">
       <div>
         <label class="text-sm text-cocoa-500">图片描述</label>
         <textarea v-model="prompt" rows="3" placeholder="如：一只可爱的卡通小猫在草地上放风筝，水彩风格" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 resize-none" />
@@ -61,7 +61,7 @@ function download() {
       </div>
     </div>
 
-    <div v-if="imageUrl || generating" class="bg-white rounded-2xl p-6 shadow-softer">
+    <div v-if="imageUrl || generating" class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center justify-between mb-3">
         <span class="text-sm text-cocoa-500">{{ generating ? '生成中…' : '生成结果' }}</span>
         <button v-if="imageUrl" class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="download">

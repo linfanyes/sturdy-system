@@ -203,7 +203,7 @@ function cellClasses(i: number) {
       <PenLine class="w-6 h-6" /> 一笔画
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <!-- 状态栏 -->
       <div class="flex items-center justify-between w-full">
         <span class="text-cocoa-700 font-semibold text-sm">
@@ -302,7 +302,7 @@ function cellClasses(i: number) {
         @click="win = false"
       >
         <div
-          class="bg-white rounded-3xl p-8 shadow-pop flex flex-col items-center gap-3 min-w-[220px] animate-fadeIn"
+          class="bg-surface rounded-3xl p-8 shadow-pop flex flex-col items-center gap-3 min-w-[220px] animate-fadeIn"
           @click.stop
         >
           <span class="text-5xl">🎉</span>

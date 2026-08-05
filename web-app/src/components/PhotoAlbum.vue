@@ -120,7 +120,7 @@ async function del(row: any) {
         <select
           v-if="classFilterable !== false"
           v-model="classId"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           @change="loadList"
         >
           <option value="">全部班级</option>
@@ -133,7 +133,7 @@ async function del(row: any) {
     </div>
 
     <div v-if="loading" class="text-center text-cocoa-400 py-10">加载中…</div>
-    <div v-else-if="!filtered.length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else-if="!filtered.length" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <ImageIcon class="w-10 h-10 mx-auto mb-2 text-cocoa-300" />
       暂无照片，点击「新增」上传
     </div>

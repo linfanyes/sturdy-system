@@ -72,7 +72,7 @@ onMounted(reset)
       <Trophy class="w-6 h-6 text-butter-500" /> 记忆翻牌
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer flex flex-col items-center gap-4">
       <div class="flex items-center justify-between w-full text-sm">
         <span class="text-cocoa-700">步数：{{ moves }}</span>
         <span class="text-cocoa-500">最佳：{{ best === 999 ? '-' : best }}</span>

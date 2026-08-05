@@ -254,7 +254,7 @@ function applyTemplate(t: any) {
       <div class="flex items-center gap-2">
         <select
           v-model="classFilter"
-          class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+          class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         >
           <option value="">全部范围</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -264,7 +264,7 @@ function applyTemplate(t: any) {
           <input
             v-model="keyword"
             placeholder="搜索标题/内容"
-            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm w-56 focus:outline-none focus:border-butter-400"
+            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm w-56 focus:outline-none focus:border-butter-400"
           />
         </div>
         <button

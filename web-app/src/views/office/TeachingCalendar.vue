@@ -154,7 +154,7 @@ const todayStr = fmtDate(new Date())
     </div>
 
     <!-- 日历网格 -->
-    <div class="bg-white rounded-2xl p-4 shadow-softer">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer">
       <div class="grid grid-cols-7 gap-1 mb-1">
         <div v-for="(w, i) in ['日','一','二','三','四','五','六']" :key="w"
           :class="['text-center text-xs py-2 font-medium', (i === 0 || i === 6) ? 'text-sakura-400' : 'text-cocoa-500']">{{ w }}</div>

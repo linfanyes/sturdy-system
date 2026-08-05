@@ -70,7 +70,7 @@ function exportTextbook(t: TextbookTreeNode) {
       <BookOpen class="w-6 h-6 text-butter-500" /> 教材知识库
     </h1>
 
-    <div class="bg-white rounded-2xl p-4 shadow-softer">
+    <div class="bg-surface rounded-2xl p-4 shadow-softer">
       <div class="flex gap-2">
         <div class="relative flex-1">
           <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
@@ -83,7 +83,7 @@ function exportTextbook(t: TextbookTreeNode) {
       </div>
     </div>
 
-    <div v-if="searchResults.length" class="bg-white rounded-2xl p-5 shadow-softer">
+    <div v-if="searchResults.length" class="bg-surface rounded-2xl p-5 shadow-softer">
       <div class="text-sm font-medium text-cocoa-700 mb-3">🔍 搜索结果（{{ searchResults.length }} 条）</div>
       <div class="space-y-2">
         <div v-for="r in searchResults" :key="r.id" class="border border-cream-200 rounded-xl p-3">
@@ -110,13 +110,13 @@ function exportTextbook(t: TextbookTreeNode) {
       </div>
 
       <div v-if="loading" class="text-cocoa-400 py-8 text-center">加载中…</div>
-      <div v-else-if="!tree.length" class="bg-white rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <div v-else-if="!tree.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
         <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
         <p>暂无教材知识点，请联系学校管理员导入</p>
       </div>
 
       <div v-else class="space-y-2">
-        <div v-for="t in tree" :key="t.id" class="bg-white rounded-2xl shadow-softer overflow-hidden">
+        <div v-for="t in tree" :key="t.id" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
           <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-cream-50" @click="toggleTextbook(t.id)">
             <component :is="expandedTextbooks.has(t.id) ? ChevronDown : ChevronRight" class="w-5 h-5 text-cocoa-400" />
             <div class="text-lg">{{ t.subject === '语文' ? '📜' : t.subject === '数学' ? '🔢' : t.subject === '英语' ? '🔤' : '📚' }}</div>
@@ -136,7 +136,7 @@ function exportTextbook(t: TextbookTreeNode) {
               </div>
               <div v-if="expandedUnits.has(u.id)" class="pl-12 pr-6 pb-3 space-y-1.5">
                 <div v-if="!u.knowledgePoints?.length" class="text-xs text-cocoa-400 py-1">暂无知识点</div>
-                <div v-for="p in u.knowledgePoints" :key="p.id" class="p-3 rounded-lg bg-white border border-cream-100">
+                <div v-for="p in u.knowledgePoints" :key="p.id" class="p-3 rounded-lg bg-surface border border-cream-100">
                   <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
                     {{ p.title }}
                     <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>

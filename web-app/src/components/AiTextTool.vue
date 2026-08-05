@@ -81,7 +81,7 @@ function downloadResult() {
       <Sparkles class="w-6 h-6 text-butter-500" /> {{ title }}
     </h1>
 
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="space-y-3">
         <div v-for="f in fields" :key="f.key">
           <label class="text-sm text-cocoa-500">{{ f.label }}</label>
@@ -120,7 +120,7 @@ function downloadResult() {
       </div>
     </div>
 
-    <div v-if="result || generating" class="bg-white rounded-2xl p-6 shadow-softer">
+    <div v-if="result || generating" class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2 text-cocoa-700">
           <FileText class="w-4 h-4" />

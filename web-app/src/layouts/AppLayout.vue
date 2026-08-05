@@ -588,7 +588,7 @@ function navigateTo(to: string) {
             v-for="cat in visibleTeacherMenu"
             :key="cat.label"
             class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             @click="toggleCat(cat.label)"
           >
             <div
@@ -607,7 +607,7 @@ function navigateTo(to: string) {
               v-if="cat.direct"
               :to="(cat.groups[0]?.items[0]?.to) || '#'"
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             >
               <div
                 class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
@@ -620,7 +620,7 @@ function navigateTo(to: string) {
             <button
               v-else
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-              :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
               @click="toggleCat(cat.label)"
             >
               <div
@@ -640,7 +640,7 @@ function navigateTo(to: string) {
               v-if="cat.direct"
               :to="(cat.groups[0]?.items[0]?.to) || '#'"
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             >
               <div
                 class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
@@ -653,7 +653,7 @@ function navigateTo(to: string) {
             <button
               v-else
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-              :class="activeCategory === cat.label ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+              :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
               @click="toggleCat(cat.label)"
             >
               <div
@@ -673,7 +673,7 @@ function navigateTo(to: string) {
             :key="item.name"
             :to="item.to"
             class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="route.name === item.name ? 'bg-white shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            :class="route.name === item.name ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
           >
             <div
               class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
@@ -712,18 +712,18 @@ function navigateTo(to: string) {
     <!-- 主内容区 -->
     <main class="flex-1 overflow-hidden bg-cream-50 flex flex-col">
       <!-- 顶栏：全局搜索（仅校管可见） -->
-      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-white/80 backdrop-blur px-6 py-2.5 shrink-0 no-print">
+      <div v-if="auth.role === 'school_admin'" class="border-b border-cream-200 bg-surface/80 backdrop-blur px-6 py-2.5 shrink-0 no-print">
         <div class="max-w-7xl mx-auto relative">
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400" />
             <input
               v-model="searchKeyword"
               placeholder="全局搜索：教师 / 班级 / 学生"
-              class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400"
+              class="w-full pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
               @input="onSearchInput"
             />
           </div>
-          <div v-if="searchKeyword && (searchLoading || hasResults || (!searchLoading && !hasResults))" class="absolute z-20 mt-1 w-full bg-white rounded-xl shadow-soft border border-cream-200 max-h-96 overflow-y-auto">
+          <div v-if="searchKeyword && (searchLoading || hasResults || (!searchLoading && !hasResults))" class="absolute z-20 mt-1 w-full bg-surface rounded-xl shadow-soft border border-cream-200 max-h-96 overflow-y-auto">
             <div v-if="searchLoading" class="px-4 py-3 text-sm text-cocoa-400">搜索中…</div>
             <div v-else-if="!hasResults" class="px-4 py-3 text-sm text-cocoa-400">未找到匹配结果</div>
             <template v-else>
@@ -769,7 +769,7 @@ function navigateTo(to: string) {
       </div>
 
       <!-- 统一页头 -->
-      <header class="shrink-0 border-b border-cream-100 bg-white/80 px-6 py-4 backdrop-blur">
+      <header class="shrink-0 border-b border-cream-100 bg-surface/80 px-6 py-4 backdrop-blur">
         <div class="flex items-center justify-between">
           <div>
             <div class="flex items-center gap-3">

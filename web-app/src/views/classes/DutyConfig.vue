@@ -122,7 +122,7 @@ async function del(row: any) {
     <div class="flex items-center justify-between gap-4">
       <h1 class="text-2xl font-bold text-cocoa-900">值日配置</h1>
       <div class="flex items-center gap-2">
-        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-white text-sm focus:outline-none focus:border-butter-400" @change="onClassChange">
+        <select v-model="classId" class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="onClassChange">
           <option value="">请选择班级</option>
           <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
@@ -132,16 +132,16 @@ async function del(row: any) {
       </div>
     </div>
 
-    <div v-if="!classId" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-if="!classId" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       <Settings class="w-10 h-10 mx-auto mb-2 text-cocoa-300" />
       请先选择班级
     </div>
     <div v-else-if="loading" class="text-center text-cocoa-400 py-10">加载中…</div>
-    <div v-else-if="!items.length" class="bg-white rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
+    <div v-else-if="!items.length" class="bg-surface rounded-2xl p-10 shadow-softer text-center text-cocoa-400">
       暂无值日配置，点击「新增」创建
     </div>
     <div v-else class="space-y-3">
-      <div v-for="row in items" :key="row.id" class="bg-white rounded-2xl p-5 shadow-softer">
+      <div v-for="row in items" :key="row.id" class="bg-surface rounded-2xl p-5 shadow-softer">
         <div class="flex items-center justify-between mb-3">
           <div class="font-semibold text-cocoa-900">{{ row.duties?.length || 0 }} 个职务</div>
           <div class="flex items-center gap-1">

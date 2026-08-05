@@ -169,7 +169,7 @@ function swap() {
     </h1>
 
     <!-- 输入 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex flex-wrap items-end gap-3">
         <div>
           <label class="text-sm text-cocoa-500">数 A</label>
@@ -195,7 +195,7 @@ function swap() {
     </div>
 
     <!-- 竖式展示 -->
-    <div class="bg-white rounded-2xl p-6 shadow-softer">
+    <div class="bg-surface rounded-2xl p-6 shadow-softer">
       <div v-if="lines.length" class="font-mono text-2xl text-cocoa-900 whitespace-pre leading-relaxed">
         <div v-for="(ln, i) in lines" :key="i">{{ ln }}</div>
       </div>

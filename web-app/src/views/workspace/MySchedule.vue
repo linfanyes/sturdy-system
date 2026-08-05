@@ -122,7 +122,7 @@ onMounted(load)
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
         <CalendarDays class="w-6 h-6 text-butter-500" /> 我的课表
       </h1>
-      <div v-if="teacherName" class="flex items-center gap-1.5 text-cocoa-600 text-sm bg-white rounded-xl px-3 py-2 border border-cream-200">
+      <div v-if="teacherName" class="flex items-center gap-1.5 text-cocoa-600 text-sm bg-surface rounded-xl px-3 py-2 border border-cream-200">
         <User class="w-4 h-4 text-butter-500" /> {{ teacherName }}
       </div>
     </div>
@@ -146,7 +146,7 @@ onMounted(load)
 
     <!-- 各班级课表 -->
     <template v-else>
-      <div v-for="g in renderedGroups" :key="g.classId" class="bg-white rounded-2xl shadow-softer border border-cream-200 overflow-hidden">
+      <div v-for="g in renderedGroups" :key="g.classId" class="bg-surface rounded-2xl shadow-softer border border-cream-200 overflow-hidden">
         <div class="px-4 py-3 bg-cream-100 text-cocoa-700 flex items-center gap-2">
           <BookOpen class="w-4 h-4 text-butter-500" />
           <span class="font-semibold">{{ g.className }}</span>
