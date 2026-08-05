@@ -22,10 +22,21 @@ const instance: AxiosInstance = axios.create({
 })
 
 // 请求拦截：注入 JWT
+// 注意：axios v1 的 config.headers 是 AxiosHeaders 实例，直接 `config.headers.Authorization = x`
+// 在部分版本/调用链下会被 normalize 丢弃，导致浏览器实际不发 Authorization 头。
+// 统一用 .set() 写入（若不存在则回退到直接赋值），保证跨域/云托管场景 token 一定被带上。
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('trace_web_token')
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    const h = config.headers as unknown as {
+      set?: (k: string, v: string) => void
+      Authorization?: string
+    }
+    if (typeof h.set === 'function') {
+      h.set('Authorization', `Bearer ${token}`)
+    } else {
+      h.Authorization = `Bearer ${token}`
+    }
   }
   return config
 })
@@ -33,7 +44,7 @@ instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 // 响应拦截：统一错误处理 + 解包 data
 instance.interceptors.response.use(
   (res) => res.data,
-  (err: AxiosError<any>) => {
+  async (err: AxiosError<any>) => {
     const status = err.response?.status
     const msg = err.response?.data?.message || err.message || '请求失败'
     if (status === 401) {
@@ -49,9 +60,22 @@ instance.interceptors.response.use(
         '/parent-auth/login',
       ].some((p) => url.includes(p))
       if (!isLoginApi) {
-        localStorage.removeItem('trace_web_token')
-        localStorage.removeItem('trace_web_user')
-        if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+        // 关键：只有「真正的会话失效」才清除登录态。
+        // 后端部分接口把「权限不足/角色不符」也以 401 返回（如校管访问教师专属 /grades），
+        // 这类 401 不该清 token 踢登录——否则一个无权限接口就会拖垮整个登录态。
+        const msgText = typeof err.response?.data?.message === 'string' ? err.response.data.message : ''
+        const isSessionInvalid = /登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用/.test(msgText)
+        if (isSessionInvalid) {
+          localStorage.removeItem('trace_web_token')
+          localStorage.removeItem('trace_web_user')
+          // 同步清空 Pinia store，避免守卫 isLoggedIn 仍为 true 导致踢登录被重定向循环拦截
+          try {
+            const { useAuthStore } = await import('@/stores/auth')
+            const auth = useAuthStore()
+            if (auth.token) auth.logout()
+          } catch { /* store 未就绪时忽略，localStorage 已清 */ }
+          if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+        }
       }
     }
     // 抛出业务错误（组件层 try/catch 捕获）

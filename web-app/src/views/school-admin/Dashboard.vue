@@ -85,9 +85,12 @@ async function load() {
   loadGradeTrend()
 }
 
-/* 考试均分趋势：/grades 按考试分组求平均分，按日期升序 */
+/* 考试均分趋势：/grades 按考试分组求平均分，按日期升序
+ * 注意：/grades 为教师专属接口（后端 @Roles('teacher')），校管/超管调用必然 401「权限不足」，
+ * 若被旧版拦截器当作会话失效会清掉登录 token 导致全线 401。此处按角色跳过，仅教师角色加载。 */
 const gradeAvgTrend = ref<{ label: string; value: number }[]>([])
 async function loadGradeTrend() {
+  if (auth.role !== 'teacher') return
   try {
     const res = await request.get<any, any>('/grades', { params: { take: 500 } })
     const list = Array.isArray(res) ? res : (res?.items || [])

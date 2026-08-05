@@ -776,7 +776,8 @@ function navigateTo(to: string) {
               <h1 class="text-2xl font-bold text-cocoa-900">{{ displayName }}</h1>
               <span class="chip bg-butter-100 text-butter-700">{{ greeting }}</span>
             </div>
-            <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
+            <!-- 二级瓷砖面板（showTilesPanel）时隐藏整条面包屑：面板标题已直接显示菜单名，避免冗余的"返回工作台" -->
+            <nav v-if="!showTilesPanel" aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
               <Home class="h-3.5 w-3.5" />
               <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
               <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')">

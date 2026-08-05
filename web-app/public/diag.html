@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web 登录态一键自检</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #faf7f2; color: #3b2f2a; margin: 0; padding: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: #8a7a70; font-size: 13px; margin-bottom: 16px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #eee; font-size: 14px; }
+  .row:last-child { border-bottom: none; }
+  .k { color: #8a7a70; font-weight: 500; }
+  .v { font-family: ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; max-width: 62%; text-align: right; }
+  .ok { color: #1a7f37; font-weight: 700; }
+  .bad { color: #cf222e; font-weight: 700; }
+  .warn { color: #9a6700; font-weight: 700; }
+  label { display: block; font-size: 13px; color: #6b5d53; margin: 10px 0 4px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1px solid #e3d9ce; border-radius: 8px; font-size: 14px; background: #fffdf9; }
+  button { margin-top: 16px; width: 100%; padding: 12px; border: none; border-radius: 10px; background: linear-gradient(135deg,#f5b342,#f0a53a); color: #4a3200; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button:hover { filter: brightness(.97); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  pre { background: #26221f; color: #f5e9d8; padding: 14px 16px; border-radius: 10px; font-size: 12px; line-height: 1.65; overflow-x: auto; min-height: 60px; white-space: pre-wrap; word-break: break-all; }
+  .tip { background: #fff3d6; border: 1px solid #f0d9a8; border-radius: 10px; padding: 12px 16px; font-size: 13px; line-height: 1.7; margin-top: 14px; }
+  code { background: #f3ece3; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  .mini { font-size: 12px; color: #9a8577; }
+  .enter-btn { background: linear-gradient(135deg,#ffb020,#f59f00); color: #3b2a00; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔍 登录态一键自检（同窗口完成 登录 → 写 token → 调接口）</h1>
+    <div class="sub" id="origin">当前页面：<code>...</code></div>
+    <div class="row"><span class="k">trace_web_token</span><span class="v" id="token">读取中…</span></div>
+    <div class="row"><span class="k">trace_web_user</span><span class="v" id="user">读取中…</span></div>
+    <div class="row"><span class="k">trace_role_switch</span><span class="v" id="switch">读取中…</span></div>
+    <div class="row"><span class="k">结论</span><span class="v" id="verdict">…</span></div>
+  </div>
+
+  <div class="card">
+    <h2>🔑 一键登录自检</h2>
+    <div class="sub">在此页输入校管账号密码，点击下方按钮，本页会：① 调真实登录接口 → ② 把返回的 token 写入本窗口 localStorage → ③ 带 token 调教师/班级接口验证。<b>全程同一个窗口，不跨窗口。</b></div>
+    <label>用户名</label>
+    <input id="u" placeholder="校管用户名" autocomplete="off">
+    <label>密码</label>
+    <input id="p" type="password" placeholder="校管密码">
+    <label>后端</label>
+    <select id="env">
+      <option value="cloud">云托管（生产，与 config.js 一致）</option>
+      <option value="local">本地 localhost:3000（当前未启动，一般不选）</option>
+    </select>
+    <button id="goBtn" onclick="doTest()">🚀 登录并验证</button>
+    <div style="margin-top:14px"><button class="enter-btn" onclick="enterApp()" style="margin-top:0">✅ 自检成功后，点这里进入校管工作台</button></div>
+    <pre id="log">（等待操作）</pre>
+  </div>
+
+  <div class="tip" id="tip">
+    <b>为什么之前显示「未持有有效 token」？</b><br>
+    最可能原因：登录的窗口/标签页 和 看诊断的窗口/标签页 <b>不是同一个</b>（例如在自己的浏览器登录，却在这个预览面板看诊断；或登录了线上域名，却在本地产看诊断）。localStorage 按 origin 隔离，跨窗口/跨域名读不到。<br>
+    <b>请直接用上面这个自检页</b>——在同一窗口登录、写 token、验接口，结果一目了然。
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id)
+  const CLOUD = 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api'
+  const q = (k) => { try { return localStorage.getItem(k) } catch { return null } }
+  const fmt = (v) => {
+    if (v === null) return '<span class="bad">不存在</span>'
+    if (v === '') return '<span class="bad">空字符串 ""</span>'
+    if (v === 'undefined') return '<span class="warn">字符串 "undefined"</span>'
+    return '<span class="ok">存在，长度 ' + v.length + '</span><br>' + v.slice(0, 24) + '…'
+  }
+  const t0 = q('trace_web_token')
+  const u0 = q('trace_web_user')
+  let role0 = '未知'
+  try { if (u0) role0 = JSON.parse(u0).role || '未知' } catch {}
+  $('origin').innerHTML = '当前页面：<code>' + location.origin + '</code>（localStorage 按此隔离；登录和看诊断必须同一个 origin）'
+  $('token').innerHTML = fmt(t0)
+  $('user').innerHTML = (u0 ? fmt(u0) : '<span class="bad">不存在</span>') + (role0 !== '未知' ? ' → role: <b>' + role0 + '</b>' : '')
+  $('switch').innerHTML = fmt(q('trace_role_switch'))
+  $('verdict').innerHTML =
+    (t0 ? '<span class="ok">✓ 本窗口已有 token</span> —— 若系统仍 401，多为旧标签页缓存，刷新即可。' :
+     '<span class="bad">✗ 本窗口无 token</span> —— 用下方「登录自检」在同一窗口完成登录。')
+
+  function log(msg) {
+    const el = $('log')
+    el.textContent += (el.textContent ? '\n' : '') + msg
+    el.scrollTop = el.scrollHeight
+  }
+
+  async function doTest() {
+    const u = $('u').value.trim(), p = $('p').value
+    if (!u || !p) { alert('请输入用户名和密码'); return }
+    const base = $('env').value === 'cloud' ? CLOUD : 'http://localhost:3000/api'
+    const btn = $('goBtn'); btn.disabled = true
+    $('log').textContent = ''
+    try {
+      log('① POST ' + base + '/auth/unified-login  {username:' + u + '}')
+      const r = await fetch(base + '/auth/unified-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p }),
+      })
+      let j
+      try { j = await r.json() } catch { log('⚠ 响应不是 JSON，HTTP ' + r.status); return }
+      log('② HTTP ' + r.status + '  响应字段: ' + Object.keys(j).join(', '))
+      if (r.status !== 200 && r.status !== 201) {
+        log('✗ 登录失败: ' + (j.message || r.status))
+        if (r.status === 401 && /密码|账号/.test(j.message || '')) {
+          log('→ 这是【密码错误】。请确认账号密码，或在超管端重置校管密码。')
+        }
+        return
+      }
+      if (j.needsRoleChoice) {
+        log('⚠ 该账号是【教师兼家长】双身份（needsRoleChoice=true），本自检页暂不处理；请直接在系统登录页选择身份。')
+        return
+      }
+      const token = j.token
+      if (!token || typeof token !== 'string' || token.length < 20) {
+        log('✗ 响应中 token 异常: ' + JSON.stringify(token))
+        return
+      }
+      log('③ ✓ 后端返回 token，长度 ' + token.length)
+
+      // 构造 AuthUser（与 src/api/auth.ts unifiedLogin 一致）
+      const role = j.role
+      let user = {}
+      if (role === 'school_admin') {
+        const a = j.user || {}
+        user = { id: a.id, role: 'school_admin', name: a.name, schoolId: a.schoolId, schoolName: a.schoolName, effectiveFeatures: j.effectiveFeatures }
+      } else if (role === 'super') {
+        user = { id: 'super', role: 'super', name: (j.user||{}).name || '超级管理员', effectiveFeatures: j.effectiveFeatures }
+      } else if (role === 'teacher') {
+        const t = j.user || {}
+        user = { id: t.id, role: 'teacher', name: t.name, schoolId: t.schoolId, schoolName: t.school, features: t.features || [], effectiveFeatures: j.effectiveFeatures, position: t.position || '', subject: t.subject || '', subjects: t.subjects || [] }
+      } else if (role === 'parent') {
+        const pj = j.parent || {}
+        user = { id: pj.imUserId, role: 'parent', name: '家长', studentId: pj.studentId, studentName: pj.studentName, classId: pj.classId, effectiveFeatures: j.effectiveFeatures }
+      } else {
+        log('✗ 未知角色: ' + role); return
+      }
+
+      localStorage.setItem('trace_web_token', token)
+      localStorage.setItem('trace_web_user', JSON.stringify(user))
+      log('④ ✓ 已写入 localStorage（本窗口 origin=' + location.origin + '）')
+      log('   当前角色: ' + role + '  ' + (user.name || ''))
+
+      // 验证 /auth/me
+      try {
+        const m = await fetch(base + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+        log('⑤ /auth/me → HTTP ' + m.status + (m.status === 200 ? ' ✓' : '  ✗'))
+      } catch (e) { log('⑤ /auth/me 请求异常: ' + e.message) }
+
+      // 验证 school-admin 接口（校管角色才调）
+      if (role === 'school_admin') {
+        for (const ep of ['school-admin/dashboard', 'school-admin/teachers?skip=0&take=1', 'school-admin/classes?skip=0&take=1']) {
+          try {
+            const rr = await fetch(base + '/' + ep, { headers: { 'Authorization': 'Bearer ' + token } })
+            log('⑥ ' + ep + ' → HTTP ' + rr.status + (rr.status === 200 ? ' ✓ 成功' : '  ✗'))
+          } catch (e) { log('⑥ ' + ep + ' 异常: ' + e.message) }
+        }
+      }
+      log('\n✅ 自检完成：若 ④⑤⑥ 全绿，点下方「进入校管工作台」即可正常使用。')
+    } catch (e) {
+      log('✗ 异常: ' + (e && e.message ? e.message : e))
+    } finally {
+      btn.disabled = false
+    }
+  }
+
+  function enterApp() {
+    const t = q('trace_web_token')
+    if (!t) { alert('当前窗口还没有 token，请先在上方完成「登录并验证」'); return }
+    // diag.html 是独立静态页，改 hash 不会切换 SPA 路由；必须跳回应用入口（index.html）的 hash 路由
+    const appEntry = location.href.replace(/diag\.html.*$/i, '')
+    location.href = appEntry + '#/school-admin'
+  }
+</script>
+</body>
+</html>

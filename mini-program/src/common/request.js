@@ -112,8 +112,15 @@ export function request(path, method = 'GET', data = {}, token) {
           // 不做登出/跳转，避免 reLaunch 打断错误提示，由调用方 toast 展示具体原因
           const isAuthEndpoint = /\/auth\/|\/parent-auth\//.test(path)
           if (!isAuthEndpoint) {
-            try { logout() } catch (e) { console.error('[mini catch]', e) }
-            uni.reLaunch({ url: '/pages/login/login' })
+            // 关键：只有「真正的会话失效」才登出踢回登录页。
+            // 后端部分接口把「权限不足/角色不符」也以 401 返回（如校管访问教师专属 /grades），
+            // 这类 401 不该清登录态——否则一个无权限接口就会把用户强制登出。
+            const msgText = typeof msg === 'string' ? msg : ''
+            const isSessionInvalid = /登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用/.test(msgText)
+            if (isSessionInvalid) {
+              try { logout() } catch (e) { console.error('[mini catch]', e) }
+              uni.reLaunch({ url: '/pages/login/login' })
+            }
           }
           return reject(new Error(msg || '登录已过期'))
         }
