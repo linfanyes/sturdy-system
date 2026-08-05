@@ -31,9 +31,9 @@ const games: GameItem[] = [
   { name: '数字推盘', icon: '🔢', desc: '顺序/倒序/蛇形/螺旋', route: '/teacher/games/slidingPuzzle', category: '益智类' },
   { name: '记忆翻牌', icon: '🃏', desc: '找出对子', route: '/teacher/games/memory', category: '益智类' },
   { name: '图片拼图', icon: '🧩', desc: '还原顺序', route: '/teacher/games/slidePuzzle', category: '益智类' },
-  { name: '一笔画', icon: '✏️', desc: '从S画到E过所有格', route: '/teacher/games/oneTouch', category: '益智类' },
+  { name: '一笔画', icon: '✏️', desc: '从S画到E过所有格', route: '/teacher/games/onetouch', category: '益智类' },
   { name: '颜色反应', icon: '🎨', desc: '选字的颜色', route: '/teacher/games/colorReact', category: '益智类' },
-  { name: '颜色匹配', icon: '🎯', desc: '选出最接近的目标色', route: '/teacher/games/colorMatching', category: '益智类' },
+  { name: '颜色匹配', icon: '🎯', desc: '选出最接近的目标色', route: '/teacher/games/colormatch', category: '益智类' },
   { name: '消消乐', icon: '🧩', desc: '三消游戏', route: '/teacher/games/match3', category: '益智类' },
   // 棋牌类
   { name: '井字棋', icon: '⭕', desc: '三连获胜', route: '/teacher/games/ticTacToe', category: '棋牌类' },
@@ -46,9 +46,9 @@ const games: GameItem[] = [
   { name: '极速摩托', icon: '🏍️', desc: '躲避障碍', route: '/teacher/games/motorcycle', category: '动作类' },
   { name: '汽车躲避', icon: '🚗', desc: '避开来车', route: '/teacher/games/carCrash', category: '动作类' },
   { name: '打地鼠', icon: '🔨', desc: '30秒计分', route: '/teacher/games/whack', category: '动作类' },
-  { name: '别踩白块', icon: '⬛', desc: '点击黑块得分', route: '/teacher/games/tapBlack', category: '动作类' },
+  { name: '别踩白块', icon: '⬛', desc: '点击黑块得分', route: '/teacher/games/tapblack', category: '动作类' },
   { name: '弹球打砖块', icon: '🧱', desc: '击碎所有砖块', route: '/teacher/games/breakout', category: '动作类' },
-  { name: '接金币', icon: '🪙', desc: '接金币躲炸弹', route: '/teacher/games/catchCoin', category: '动作类' },
+  { name: '接金币', icon: '🪙', desc: '接金币躲炸弹', route: '/teacher/games/catchcoin', category: '动作类' },
   { name: '像素鸟', icon: '🐦', desc: '穿越管道间隙', route: '/teacher/games/flappy', category: '动作类' },
   { name: '跳一跳', icon: '🟠', desc: '蓄力跳到下个平台', route: '/teacher/games/jump', category: '动作类' },
   // 学科类

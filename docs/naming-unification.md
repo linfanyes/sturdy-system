@@ -85,18 +85,21 @@ camelCase 标识（page key / route key / quicktool key），并补齐功能缺�
 - [x] 小程序 tools → camelCase + 引用同步（含 group→grouper、seats→seatMap、stroke/score-panel 子目录扁平化）
 - [x] 小程序 quicktool 键 + subject-tools 页 → camelCase（composition/writingMaterials、wordCards/wordCard、sentence/sentencePractice、spelling/spell 双处统一）
 - [x] Web 路由 path/name → camelCase + 导航引用同步（router + AppLayout + Toolbox + GamesIndex，0 残留 kebab）
-- [ ] 功能对等：补齐 Mini 独有 8 游戏到 Web（见下方待办）
+- [x] 功能对等：补齐 Mini 独有 8 游戏到 Web（8 个 .vue 均已实现并注册路由/GamesIndex；2026-08-05 将 Web 路由键对齐为 mini 规范键 catchcoin/colormatch/tapblack/onetouch，原 catchCoin/tapBlack/oneTouch/colorMatching 已改）
 
 ## 五、功能对等待办（双向完全对等剩余项）
-小程序独有、Web 缺失、需移植到 Web 实现真正双向对等的游戏（每个为独立 canvas 游戏实现，属较大的移植工作，本轮未实现，列为后续）：
-1. breakout（弹球打砖块）
-2. catchcoin（接金币）
-3. colormatch（颜色匹配，注意与 colorReact/颜色反应 区分）
-4. dice（摇骰子，游戏版；Web 现有 tools/decider 为随机决定器，二者不同）
-5. flappy（像素鸟）
-6. tapblack（别踩白块）
-7. jump（跳一跳）
-8. onetouch（一笔画）
+> ✅ 已完成（2026-08-05）：小程序独有 8 游戏在 Web 端均已实现并注册，且路由键与 mini 规范键**完全一致**。
+> 原 Web 路由键 catchCoin/tapBlack/oneTouch/colorMatching 已对齐为 catchcoin/tapblack/onetouch/colormatch（与 mini `pages/games/*` 同名）。
+> 组件文件名沿用 PascalCase（GameCatchCoin.vue 等）属 Web 约定，不在「两端 camelCase 统一」约束内（规范仅要求 page/route 键一致）。
+
+1. [x] breakout（弹球打砖块）
+2. [x] catchcoin（接金币）
+3. [x] colormatch（颜色匹配，注意与 colorReact/颜色反应 区分）
+4. [x] dice（摇骰子，游戏版；Web 现有 tools/decider 为随机决定器，二者不同）
+5. [x] flappy（像素鸟）
+6. [x] tapblack（别踩白块）
+7. [x] jump（跳一跳）
+8. [x] onetouch（一笔画）
 
 > Web 无独有游戏（全部已映射到小程序）。工具侧：Web seat-map ↔ Mini seatMap 已对等；
 > Web class-duty（班级职务独立页）↔ Mini 用 crud:class-duty-configs 覆盖，可保留或后续补独立页。
