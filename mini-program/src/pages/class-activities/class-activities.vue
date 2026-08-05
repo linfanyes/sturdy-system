@@ -30,7 +30,7 @@
 
     <!-- 新增/编辑活动弹窗 -->
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editingId ? '编辑活动' : '发布活动' }}</view>
         <view class="field">
           <text class="label">活动标题 <text class="req">*</text></text>

@@ -47,7 +47,7 @@
 
     <!-- 模板选择 sheet -->
     <view class="mask" v-if="showTpl" @click="showTpl = false">
-      <view class="sheet tpl-sheet" @click.stop>
+      <view class="sheet tpl-sheet safe-bottom" @click.stop>
         <view class="st">📋 公告模板库</view>
         <view v-if="!tplList.length && !tplLoading" class="tpl-empty">
           暂无模板，可在「工具箱 → 通知模板」中创建
@@ -67,7 +67,7 @@
 
     <!-- 打印预览弹层：先生成图片，用户确认预览后再保存到相册或复制文本 -->
     <view class="mask" v-if="showPrintPreview" @click="showPrintPreview = false">
-      <view class="sheet preview-sheet" @click.stop>
+      <view class="sheet preview-sheet safe-bottom" @click.stop>
         <view class="st">打印预览</view>
         <view class="hint">长按图片可保存，或点下方按钮保存到相册</view>
         <scroll-view scroll-y class="preview-box">

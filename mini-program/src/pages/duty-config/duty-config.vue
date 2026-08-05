@@ -33,7 +33,7 @@
     </view>
 
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editing ? '编辑' : '新增' }}值日配置</view>
         <view class="field">
           <text class="label">职务列表</text>

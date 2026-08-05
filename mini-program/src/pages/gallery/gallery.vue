@@ -32,7 +32,7 @@
     <EmptyState v-if="!photoItems.length" icon="🖼️" :text="classId ? '还没有班级风采照片' : '请先在上方选择班级'" hint="拍照或选择图片上传" />
 
     <view v-if="movePhoto" class="mask" @click="movePhoto = null">
-      <view class="sheet2" @click.stop>
+      <view class="sheet2 safe-bottom" @click.stop>
         <view class="sh-t">移动到相册</view>
         <view v-if="targetAlbums.length">
           <view v-for="a in targetAlbums" :key="a.id" class="opt" @click="doMove(a)">{{ a.title }}</view>

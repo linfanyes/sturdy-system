@@ -112,7 +112,7 @@
 
     <!-- 班级详情（花名册/座位/课表/公告/成员） -->
     <view v-if="showDetail" class="mask" @click="showDetail = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ detailC.name }} · 班级详情</view>
         <view class="sh-meta">{{ detailC.grade }} · {{ detailC.term || '未设学期' }}<text v-if="detailC.headTeacher"> · 班主任 {{ detailC.headTeacher }}</text></view>
         <view class="facets">
@@ -140,7 +140,7 @@
 
     <!-- 班级成员管理（班主任特权） -->
     <view v-if="showMembers" class="mask" @click="showMembers = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ membersC.name }} · 班级成员</view>
         <view class="sh-meta">
           <text v-if="isHead">您是本班班主任，可管理科任老师</text>
@@ -170,7 +170,7 @@
 
     <!-- 添加科任老师（班主任特权） -->
     <view v-if="showAddMember" class="mask" @click="showAddMember = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">添加科任老师到「{{ membersC.name }}」</view>
         <view class="field">
           <text class="label">选择本校教师</text>

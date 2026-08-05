@@ -1,10 +1,6 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view class="hd">
-      <text style="font-size:28rpx;color:#b8894a;min-width:96rpx;" @click="uni.navigateBack()">← 返回</text>
-      <text style="font-size:32rpx;font-weight:600;color:#4a3b2a;">👩‍🏫 教师管理</text>
-      <text style="min-width:96rpx;"></text>
-    </view>
+    <view class="hd">👩‍🏫 教师管理</view>
 
     <view class="bar">
       <text class="sc">共 {{ teachers.length }} 位教师</text>
@@ -41,7 +37,7 @@
 
     <!-- 新增/编辑教师弹窗 -->
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editingId ? '编辑教师' : '新增教师' }}</view>
         <view class="field">
           <text class="label">用户名 <text class="req">*</text></text>
@@ -80,7 +76,7 @@
 
     <!-- 密码重置弹窗 -->
     <view v-if="pwdUser" class="mask" @click="pwdUser = null">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">重置「{{ pwdUser.name }}」密码</view>
         <view class="field">
           <input v-model="newPwd" class="inp" placeholder="新密码（6-20位）" password />
@@ -95,7 +91,7 @@
 
     <!-- 批量导入弹窗 -->
     <view v-if="showBatchImport" class="mask" @click="showBatchImport = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">批量导入教师</view>
         <view class="hint-text">每行一条：姓名,用户名,密码（英文逗号分隔）</view>
         <textarea v-model="batchText" class="inp area" placeholder="张三,zhangsan,123456（每行一条）" />
@@ -116,7 +112,7 @@
 
   <!-- CSV 预览 -->
   <view v-if="showCsvModal" class="mask" @click="showCsvModal = false">
-    <view class="sheet" @click.stop>
+    <view class="sheet safe-bottom" @click.stop>
       <view class="sh-t">CSV 预览</view>
       <scroll-view scroll-y class="csv-box"><text class="csv-text">{{ csvContent }}</text></scroll-view>
       <view class="btn-row">
@@ -266,7 +262,7 @@ async function delTeacher(u) {
   })
 }
 
-function resetPwd(u) { pwdUser.value = u; newPwd.value = '1314521' }
+function resetPwd(u) { pwdUser.value = u; newPwd.value = '' }
 
 async function doResetPwd() {
   if (!newPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })

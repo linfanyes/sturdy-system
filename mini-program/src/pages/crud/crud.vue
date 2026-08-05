@@ -70,7 +70,7 @@
 
     <!-- 课程表 AI 批量导入弹层 -->
     <view v-if="showImport" class="mask" @click.self="showImport = false">
-      <view class="sheet">
+      <view class="sheet safe-bottom">
         <view class="sheet-h">
           <text class="sheet-t">课程表 AI 批量导入</text>
           <text class="sheet-x" @click="showImport = false">✕</text>

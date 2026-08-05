@@ -63,7 +63,7 @@
 
     <!-- 学生选择弹层 -->
     <view v-if="picking" class="mask" @click="picking = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <picker :range="pickOpts" @change="onPick">
           <view class="picker">选择学生（首位为清空）</view>
         </picker>
@@ -73,7 +73,7 @@
 
     <!-- 自动排座弹层 -->
     <view v-if="showAuto" class="mask" @click="showAuto = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">自动排座（{{ editing.name }}）</view>
         <view class="hint">按所选模式自动分配，已占用座位会被覆盖。</view>
         <picker :range="autoModes" :value="autoModeIdx" @change="(e) => (autoModeIdx = +e.detail.value)">
@@ -98,7 +98,7 @@
 
     <!-- 调整尺寸弹层 -->
     <view v-if="showResize" class="mask" @click="showResize = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">调整尺寸（当前 {{ editing.rows }}×{{ editing.cols }}）</view>
         <view class="hint">增大：新增格子为空；缩小：超出部分的学生会被清出。</view>
         <input v-model="resizeRows" type="number" class="inp" placeholder="新行数" />
@@ -112,7 +112,7 @@
 
     <!-- 过道设置弹层 -->
     <view v-if="showAisle" class="mask" @click="showAisle = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">过道布局（共 {{ editing.cols }} 列）</view>
         <view class="hint">勾选某列后，该列右侧将出现一条过道（最后一列无需设置）。</view>
         <view class="aisle-list">

@@ -8,8 +8,17 @@
       <view class="out" @click="logout">退出</view>
     </view>
 
+    <!-- Tab 切换 -->
+    <view class="tabs">
+      <text class="tab" :class="{ on: tab === 'dashboard' }" @click="switchTab('dashboard')">📊 看板</text>
+      <text class="tab" :class="{ on: tab === 'teachers' }" @click="switchTab('teachers')">👩‍🏫 教师</text>
+      <text class="tab" :class="{ on: tab === 'classes' }" @click="switchTab('classes')">🏫 班级</text>
+      <text class="tab" :class="{ on: tab === 'students' }" @click="switchTab('students')">🧑‍🎓 学生</text>
+      <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI 配置</text>
+    </view>
+
     <!-- ====== 看板 Tab ====== -->
-    <view v-if="bottomTab === 'dashboard'">
+    <template v-if="tab === 'dashboard'">
     <!-- 看板统计 -->
     <view class="dashboard">
       <view class="dash-card"><text class="dash-n">{{ dash.totalTeachers }}</text><text class="dash-l">教师</text></view>
@@ -96,42 +105,375 @@
       </view>
       <button class="demo-btn" @click="enterDemoMode">进入教师系统演示</button>
     </view>
+    </template>
 
-    <!-- 功能入口（二级菜单集中到工作台） -->
-    <view class="tiles-wrap" style="margin-top:24rpx;">
-      <view class="tiles-title">人员管理</view>
-      <view class="tiles">
-        <view class="tile" v-for="m in peopleMenus" :key="m.to" @click="navigate(m)">
-          <view class="tile-ic">{{ m.icon }}</view>
-          <view class="tile-label">{{ m.label }}</view>
+    <!-- ====== 教师管理 Tab ====== -->
+    <template v-if="tab === 'teachers'">
+      <view class="bar">
+        <text class="sc">共 {{ teachers.length }} 位教师</text>
+        <view class="bar-acts">
+          <text class="act" @click="openCreate">＋ 新增</text>
+          <text class="act" @click="showBatchImport = true">📋 批量</text>
+          <text class="act export" @click="exportTeachers">📥 导出</text>
         </view>
       </view>
-      <view class="tiles-title" style="margin-top:24rpx;">系统设置</view>
-      <view class="tiles">
-        <view class="tile" v-for="m in settingsMenus" :key="m.to" @click="navigate(m)">
-          <view class="tile-ic">{{ m.icon }}</view>
-          <view class="tile-label">{{ m.label }}</view>
+    <view class="list">
+      <EmptyState v-if="!teachers.length" icon="👩‍🏫" text="暂无教师" hint="点击右上角「新增」创建第一位教师" />
+      <view class="row" v-for="u in teachers" :key="u.id">
+        <view class="info" @click="openEdit(u)">
+          <view class="nm-line">
+            <text class="nm">{{ u.name }}</text>
+            <text class="badge" :class="u.enabled ? 'on' : 'off'">{{ u.enabled ? '启用' : '禁用' }}</text>
+          </view>
+          <view class="meta">用户名：{{ u.username || '微信登录' }}</view>
+          <view class="meta" v-if="u.teacherNo">编号：{{ u.teacherNo }}</view>
+          <view class="meta" v-if="u.phone">电话：{{ u.phone }}</view>
+        </view>
+        <view class="acts">
+          <text class="act" @click.stop="openFeatures(u)">功能配置</text>
+          <text class="act" @click.stop="resetPwd(u)">重置密码</text>
+          <text class="act del" @click.stop="delTeacher(u)">删除</text>
+        </view>
+      </view>
+      <view v-if="teachers.length < teacherTotal" class="load-more" @click="loadMoreTeachers">加载更多（共 {{ teacherTotal }} 位）</view>
+    </view>
+    </template>
+
+    <!-- ====== 班级管理 Tab ====== -->
+    <template v-if="tab === 'classes'">
+      <view class="bar">
+        <text class="sc">共 {{ classes.length }} 个班级</text>
+        <text class="act" @click="openCreateClass">＋ 新增班级</text>
+      </view>
+      <view class="list">
+        <EmptyState v-if="!classes.length" icon="🏫" text="暂无班级" hint="点击右上角「新增」创建第一个班级" />
+        <view class="row" v-for="c in classes" :key="c.id">
+          <view class="info" @click="openEditClass(c)">
+            <view class="nm-line">
+              <text class="nm">{{ c.name }}</text>
+              <text class="badge on">{{ c.headTeacher }}</text>
+            </view>
+            <view class="meta">年级：{{ c.grade }} · 班号：{{ c.classNo }} · 学期：{{ c.term || '未设置' }}</view>
+            <view class="meta" v-if="c.subjects && c.subjects.length">学科：{{ c.subjects.join('、') }}</view>
+            <view class="meta" v-else style="color:var(--c-warn,var(--c-sub))">学科：未设置</view>
+          </view>
+          <view class="acts">
+            <text class="act del" @click.stop="delClass(c)">删除</text>
+          </view>
+        </view>
+      </view>
+      <!-- 新增/编辑班级（全屏） -->
+      <view v-if="showClassForm" class="full-mask">
+        <view class="full-page">
+          <view class="full-head">
+            <text class="full-back" @click="showClassForm=false">← 返回</text>
+            <text class="full-title">{{ editingClassId ? '编辑班级' : '新增班级' }}</text>
+            <text class="full-placeholder"></text>
+          </view>
+          <scroll-view scroll-y class="full-body">
+            <view class="form-item">
+              <text class="label">班级名称 <text class="req">*</text></text>
+              <view class="readonly-inp">{{ className || '请选择年级并填写班级序号' }}</view>
+            </view>
+            <view class="form-item">
+              <text class="label">年级 <text class="req">*</text></text>
+              <picker class="picker" :range="GRADE_OPTIONS" @change="(e)=>classForm.grade=GRADE_OPTIONS[e.detail.value]">
+                <view class="picker-inp">{{ classForm.grade || '请选择年级' }}</view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="label">班号</text>
+              <input v-model="classForm.classNo" class="inp" placeholder="如：1" />
+            </view>
+            <view class="form-item">
+              <text class="label">班主任 <text class="req">*</text></text>
+              <picker class="picker" mode="selector" :range="teacherOptions" range-key="label" @change="onTeacherPick">
+                <view class="picker-inp">{{ classForm.headTeacherId ? teacherLabel(classForm.headTeacherId) : '请选择班主任' }}</view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="label">学期</text>
+              <input v-model="classForm.term" class="inp" placeholder="如：2026春季学期" />
+            </view>
+            <view class="form-item">
+              <text class="label">班主任任教学科</text>
+              <input v-model="classForm.subjectsText" class="inp" placeholder="如：语文,数学,英语" />
+              <text class="hint">多个学科用逗号分隔</text>
+            </view>
+          </scroll-view>
+          <view class="full-foot">
+            <button class="btn" :disabled="saving" @click="saveClass">{{ saving ? '保存中…' : (editingClassId ? '保存修改' : '确认创建') }}</button>
+          </view>
+        </view>
+      </view>
+    </template>
+
+    <!-- 新增/编辑教师（全屏） -->
+    <view v-if="showForm" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="showForm=false">← 返回</text>
+          <text class="full-title">{{ editingId ? '编辑教师' : '新增教师' }}</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <view class="form-item">
+            <text class="label">用户名 <text class="req">*</text></text>
+            <input v-model="form.username" class="inp" placeholder="登录用，如：zhangsan" />
+            <text class="tip">用户名不可重复，系统会自动校验</text>
+          </view>
+          <view class="form-item">
+            <text class="label">姓名 <text class="req">*</text></text>
+            <input v-model="form.name" class="inp" placeholder="如：张老师" />
+          </view>
+          <view class="form-item">
+            <text class="label">学科</text>
+            <picker class="picker" :range="ALL_SUBJECTS" @change="(e)=>form.subject=ALL_SUBJECTS[e.detail.value]">
+              <view class="picker-inp">{{ form.subject || '请选择学科' }}</view>
+            </picker>
+          </view>
+          <view v-if="!editingId" class="form-item">
+            <text class="label">密码 <text class="req">*</text></text>
+            <input v-model="form.password" class="inp" placeholder="登录密码" password />
+          </view>
+          <view v-else class="form-item">
+            <text class="label">新密码 <text class="opt">（留空则不修改）</text></text>
+            <input v-model="form.password" class="inp" placeholder="输入新密码可重置" password />
+          </view>
+          <view class="form-item">
+            <text class="label">手机号</text>
+            <input v-model="form.phone" class="inp" placeholder="可选" @blur="checkPhone" />
+            <text v-if="phoneError" class="field-err">{{ phoneError }}</text>
+          </view>
+          <view class="form-item switch-item">
+            <view class="label-line">
+              <text class="label">启用标志</text>
+              <text class="switch-val">{{ form.enabled ? '启用' : '禁用' }}</text>
+            </view>
+            <switch :checked="form.enabled" color="#4CAF50" @change="onEnabledChange" />
+          </view>
+        </scroll-view>
+        <view class="full-foot">
+          <button class="btn" :disabled="saving" @click="saveForm">{{ saving ? '保存中…' : (editingId ? '保存修改' : '确认创建') }}</button>
         </view>
       </view>
     </view>
 
+    <!-- 功能配置（全屏） -->
+    <view v-if="featUser" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="featUser=null">← 返回</text>
+          <text class="full-title">{{ featUser.name }} 功能配置</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <!-- 有效权限预览：effective = 学校级 ∩ 教师级（与 Web 端 Teachers.vue 同文案） -->
+          <view class="eff-box">
+            <view class="eff-head">
+              <text class="eff-title">有效权限预览</text>
+              <text class="eff-count">实际可用 {{ effectivePreview.length }} / {{ allFeatures.length }} 项</text>
+            </view>
+            <text class="eff-desc">实际可用 = 学校级 ∩ 教师级。学校级关闭后，该校教师即使勾选也不可用。<text v-if="schoolAllOn">当前学校级未做限制（全部开放）。</text></text>
+            <view v-if="effectivePreview.length" class="eff-tags">
+              <text class="eff-tag" v-for="f in effectivePreview" :key="f.key">{{ f.label }}</text>
+            </view>
+            <text v-else class="eff-none">当前配置下该教师无任何可用功能。</text>
+            <view v-if="blockedSelected.length" class="eff-blocked">
+              <text class="eff-blocked-t">以下 {{ blockedSelected.length }} 项已被学校级关闭，勾选也不生效：{{ blockedSelectedText }}</text>
+            </view>
+          </view>
+
+          <view class="feat-toolbar">
+            <text class="act" @click="selectAll">全选</text>
+            <text class="act" @click="selectNone">全不选</text>
+            <text class="sc">{{ sel.length }}/{{ allFeatures.length }} 项已启用</text>
+          </view>
+          <view class="flist">
+            <label
+              class="frow"
+              :class="blockedBySchool(f.key) && 'locked'"
+              v-for="f in allFeatures"
+              :key="f.key"
+              @click="toggleFeat(f.key)"
+            >
+              <text class="ck" :class="[sel.includes(f.key)&&'on', blockedBySchool(f.key)&&'dis']"></text>
+              <text class="frow-label">{{ f.label }}</text>
+              <text v-if="blockedBySchool(f.key)" class="frow-lock">被学校级关闭</text>
+            </label>
+          </view>
+        </scroll-view>
+        <view class="full-foot">
+          <button class="btn" :disabled="saving" @click="saveFeatures">{{ saving ? '保存中…' : '保存配置' }}</button>
+        </view>
+      </view>
     </view>
 
-    <!-- 底部一级导航（≤3） -->
-    <view class="bottom-nav">
-      <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
-        <text class="bn-ic">📊</text>
-        <text class="bn-tx">工作台</text>
+    <!-- ====== 学生管理 Tab ====== -->
+    <template v-if="tab === 'students'">
+      <view class="bar">
+        <text class="sc">共 {{ schoolStudents.length }} 名学生</text>
+        <view class="bar-acts">
+          <input v-model="studentFilter" class="filter-inp" placeholder="输入姓名搜索…" />
+          <text class="act export" @click="exportStudents">📥 导出</text>
+        </view>
       </view>
-      <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
-        <text class="bn-ic">👥</text>
-        <text class="bn-tx">人员管理</text>
+      <view class="list">
+        <EmptyState v-if="!schoolStudents.length" icon="🧑‍🎓" text="暂无学生" hint="需先创建班级和教师" />
+        <view class="row" v-for="s in filteredStudents" :key="s.id">
+          <view class="info" @click="openEditStudent(s)">
+            <view class="nm-line">
+              <text class="nm">{{ s.name }}</text>
+              <text class="badge on">{{ s.gender || '未知' }}</text>
+            </view>
+            <view class="meta">学号：{{ s.studentNo }} · 班级：{{ s.className || s.classId?.slice(0,8) }}</view>
+          </view>
+          <view class="acts" v-if="s.parentLoginEnabled">
+            <text class="badge on">家长已开通</text>
+          </view>
+        </view>
       </view>
-      <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
-        <text class="bn-ic">⚙️</text>
-        <text class="bn-tx">系统设置</text>
+      <!-- 编辑学生（全屏） -->
+      <view v-if="editingStudent" class="full-mask">
+        <view class="full-page">
+          <view class="full-head">
+            <text class="full-back" @click="editingStudent=null">← 返回</text>
+            <text class="full-title">编辑学生</text>
+            <text class="full-placeholder"></text>
+          </view>
+          <scroll-view scroll-y class="full-body">
+            <view class="form-item">
+              <text class="label">姓名</text>
+              <input v-model="editStudentForm.name" class="inp" placeholder="学生姓名" />
+            </view>
+            <view class="form-item">
+              <text class="label">性别</text>
+              <picker class="picker" mode="selector" :range="['男','女']" @change="(e) => editStudentForm.gender = ['男','女'][e.detail.value]">
+                <view class="picker-inp">{{ editStudentForm.gender || '请选择' }}</view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="label">家长姓名</text>
+              <input v-model="editStudentForm.parentName" class="inp" placeholder="选填" />
+            </view>
+            <view class="form-item">
+              <text class="label">家长电话</text>
+              <input v-model="editStudentForm.parentPhone" class="inp" placeholder="选填" />
+            </view>
+          </scroll-view>
+          <view class="full-foot">
+            <button class="btn" :disabled="saving" @click="saveStudent">{{ saving ? '保存中…' : '保存修改' }}</button>
+          </view>
+        </view>
+      </view>
+    </template>
+
+    <!-- 批量导入教师（全屏） -->
+    <view v-if="showBatchImport" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="showBatchImport = false">← 返回</text>
+          <text class="full-title">批量导入教师</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <view class="hint-block">
+            每行一条：姓名,用户名,密码（英文逗号分隔）
+            例如：张三,zhangsan,123456
+          </view>
+          <textarea v-model="batchText" class="inp batch-area" placeholder="张三,zhangsan,123456（每行一条）" />
+          <view v-if="batchResult.length" class="batch-result">
+            <view class="batch-summary">共 {{ batchResult.length }} 条，成功 {{ batchResult.filter(r => r.status==='成功').length }}/{{ batchResult.length }}</view>
+            <view class="batch-item" :class="r.status==='成功'?'ok':'fail'" v-for="r in batchResult" :key="r.username">
+              <text>{{ r.name }}({{ r.username }})：{{ r.status }}</text>
+              <text v-if="r.error" class="batch-err">{{ r.error }}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="full-foot">
+          <button class="btn" :disabled="saving || !batchText.trim()" @click="doBatchImport">{{ saving ? '导入中…' : '确认导入' }}</button>
+        </view>
       </view>
     </view>
+
+    <!-- 密码重置弹窗 -->
+    <view v-if="pwdUser" class="mask" @click="pwdUser=null">
+      <view class="sheet safe-bottom" @click.stop>
+        <view class="sh-t">重置「{{ pwdUser.name }}」密码</view>
+        <view class="inp-wrap"><input v-model="newPwd" class="inp" placeholder="新密码（6-20位）" password /></view>
+        <view class="sh-sub">默认密码 1314521，也可自行设置（6-20位）</view>
+        <button class="btn" :disabled="saving" @click="doResetPwd">确认重置</button>
+      </view>
+    </view>
+
+    <!-- ====== AI 配置 Tab（校管：从超管配置的服务商中选择 + 自填 API Key，可手动切换） ====== -->
+    <template v-if="tab === 'ai'">
+      <view class="ai-card">
+        <view class="ai-title">🤖 AI 配置（密钥仅存后端）</view>
+        <view class="ai-hint">从超级管理员配置的服务商中选择，并填写你自己的 API Key；非超管不可新增服务商。切换服务商即可「智能切换」到不同厂商。默认继承平台默认配置，可在此自定义。</view>
+
+        <view class="ai-field">
+          <text class="ai-label">服务商</text>
+          <picker :range="PROVIDER_NAMES" :value="aiProviderIdx" @change="onAiProviderChange">
+            <view class="ai-picker">{{ PROVIDER_NAMES[aiProviderIdx] || '请选择' }}</view>
+          </picker>
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">接口地址</text>
+          <input v-model="ai.baseUrl" class="inp" placeholder="AI 接口地址（切换服务商自动填充）" />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">密钥（API Key）</text>
+          <input v-model="ai.apiKey" class="inp" placeholder="AI 密钥" password />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">文本模型</text>
+          <picker :range="aiTextModelOpts" :value="aiTextModelIdx" @change="onAiTextModelPick">
+            <view class="ai-picker">{{ aiTextModelOpts[aiTextModelIdx] }}</view>
+          </picker>
+          <input v-if="aiTextModelIdx === aiTextModelOpts.length - 1" v-model="ai.textModel" class="inp" placeholder="输入模型名，如 qwen-plus" />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">多模态模型</text>
+          <picker :range="aiVisionModelOpts" :value="aiVisionModelIdx" @change="onAiVisionModelPick">
+            <view class="ai-picker">{{ aiVisionModelOpts[aiVisionModelIdx] }}</view>
+          </picker>
+          <input v-if="aiVisionModelIdx === aiVisionModelOpts.length - 1" v-model="ai.visionModel" class="inp" placeholder="自定义模型名称" />
+        </view>
+        <view class="ai-field" v-if="aiHasImageModels">
+          <text class="ai-label">文生图模型</text>
+          <picker :range="aiImageModelOpts" :value="aiImageModelIdx" @change="onAiImageModelPick">
+            <view class="ai-picker">{{ aiImageModelOpts[aiImageModelIdx] }}</view>
+          </picker>
+          <input v-if="aiImageModelIdx === aiImageModelOpts.length - 1" v-model="ai.imageModel" class="inp" placeholder="自定义模型名称" />
+        </view>
+        <view class="ai-field" v-if="aiHasVideoModels">
+          <text class="ai-label">文生视频模型</text>
+          <picker :range="aiVideoModelOpts" :value="aiVideoModelIdx" @change="onAiVideoModelPick">
+            <view class="ai-picker">{{ aiVideoModelOpts[aiVideoModelIdx] }}</view>
+          </picker>
+          <input v-if="aiVideoModelIdx === aiVideoModelOpts.length - 1" v-model="ai.videoModel" class="inp" placeholder="自定义模型名称" />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">温度（{{ ai.temperature }}）</text>
+          <input type="digit" v-model="ai.temperature" maxlength="5" class="inp" placeholder="0 - 2" />
+          <slider :value="ai.temperature" :min="0" :max="2" :step="0.1" @change="e => ai.temperature = e.detail.value" activeColor="#07c160" />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">AI 名字</text>
+          <input v-model="ai.aiName" class="inp" placeholder="AI 名字" />
+        </view>
+        <view class="ai-field">
+          <text class="ai-label">系统提示词</text>
+          <textarea v-model="ai.systemPrompt" class="ai-ta" placeholder="系统提示词（描述 AI 角色与回答风格）" />
+        </view>
+
+        <view class="ai-actions">
+          <button class="ai-ghost" @click="resetAiDefaults">恢复默认</button>
+          <button class="ai-save" :disabled="savingAi" @click="saveAi">{{ savingAi ? '保存中…' : '保存 AI 配置' }}</button>
+        </view>
+      </view>
+    </template>
   </view>
 </template>
 
@@ -183,21 +525,6 @@ const pwdUser = ref(null), newPwd = ref('')
 const allFeatures = FEATURE_FLAG_LIST
 
 function getToken() { return uni.getStorageSync('sa_token') }
-
-// ===== 校管一级/二级菜单（底部导航） =====
-const bottomTab = ref('dashboard')
-const peopleMenus = [
-  { label: '教师管理', icon: '👩‍🏫', to: '/pages/school-admin/teachers' },
-  { label: '班级管理', icon: '🏫', to: '/pages/school-admin/classes' },
-  { label: '学生管理', icon: '🧑‍🎓', to: '/pages/school-admin/students' },
-  { label: '学校功能包', icon: '🎛️', to: '/pages/school-admin/school-features' },
-]
-const settingsMenus = [
-  { label: '学校公告', icon: '📢', to: '/pages/school-admin/notices' },
-  { label: 'AI 配置', icon: '🤖', to: '/pages/school-admin/ai-config' },
-]
-function navigate(m) { uni.navigateTo({ url: m.to }) }
-
 
 async function apiCall(method, path, data) {
   const token = getToken()
@@ -425,7 +752,7 @@ async function saveFeatures() {
   saving.value = false
 }
 
-function resetPwd(u) { pwdUser.value = u; newPwd.value = '1314521' }
+function resetPwd(u) { pwdUser.value = u; newPwd.value = '' }
 async function doResetPwd() {
   if (!newPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
   if (newPwd.value.length < 6 || newPwd.value.length > 20) {
@@ -486,6 +813,7 @@ async function enterDemoMode() {
 
 // ===== Tab 切换 =====
 const tab = ref('dashboard')
+function switchTab(t) { tab.value = t; if (t === 'classes') loadClasses(); if (t === 'students') loadStudents(); if (t === 'ai') loadAi() }
 
 // ===== 批量导入教师 =====
 const showBatchImport = ref(false)
@@ -869,7 +1197,7 @@ async function saveAi() {
 }
 
 onShow(async () => {
-  await Promise.all([loadDashboard(), loadNotices(), loadSemesters()])
+  await Promise.all([loadTeachers(), loadDashboard(), loadNotices(), loadStudents(), loadSemesters()])
 })
 </script>
 
@@ -1020,22 +1348,4 @@ onShow(async () => {
 .ai-ghost { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; padding: 0 40rpx; }
 .ai-save { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; padding: 0 40rpx; }
 .ai-save[disabled] { opacity: .6; }
-
-/* ===== 底部一级导航 ===== */
-.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: #fff; border-top: 1rpx solid #f0e9df; padding: 14rpx 0 calc(14rpx + env(safe-area-inset-bottom)); z-index: 20; box-shadow: 0 -4rpx 18rpx rgba(0,0,0,.04); }
-.dark .bottom-nav { background: #262421; border-top-color: #3a3733; }
-.bn-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6rpx; color: #9a8f7d; }
-.bn-item.on { color: #07c160; }
-.bn-ic { font-size: 42rpx; line-height: 1; }
-.bn-tx { font-size: 22rpx; }
-/* ===== 二级菜单瓷砖 ===== */
-.tiles-wrap { padding: 8rpx 0 24rpx; }
-.tiles-title { font-size: 30rpx; font-weight: 700; color: var(--c-title, #4a3b2a); margin: 16rpx 4rpx 20rpx; }
-.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20rpx; }
-.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14rpx; padding: 44rpx 0; background: var(--c-card, #fff); border-radius: 24rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow, rgba(0,0,0,.05)); }
-.tile:active { transform: scale(.97); }
-.tile-ic { font-size: 56rpx; line-height: 1; }
-.tile-label { font-size: 28rpx; font-weight: 600; color: var(--c-title, #4a3b2a); }
-/* 内容区底部留出底部导航空间 */
-.page { padding-bottom: calc(170rpx + env(safe-area-inset-bottom)); }
 </style>

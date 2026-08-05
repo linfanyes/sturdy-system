@@ -27,7 +27,7 @@
 
     <!-- 玩法说明弹层 -->
     <view v-if="infoGame" class="mask" @click="infoGame = null">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-ic">{{ infoGame.icon }}</view>
         <view class="sh-t">{{ infoGame.label }}</view>
         <view class="sh-desc">{{ infoGame.desc || '暂无说明' }}</view>

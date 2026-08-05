@@ -29,7 +29,7 @@
     </view>
 
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editing ? '编辑' : '新增' }}积分记录</view>
         <view class="field">
           <text class="label">班级 *</text>

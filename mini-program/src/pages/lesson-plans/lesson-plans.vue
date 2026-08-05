@@ -23,7 +23,7 @@
 
     <!-- 详情弹窗 -->
     <view v-if="detail" class="mask" @click="detail = null">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ detail.title || '未命名教案' }}</view>
         <view class="sh-meta">
           <text v-if="detail.subject">科目：{{ detail.subject }}</text>

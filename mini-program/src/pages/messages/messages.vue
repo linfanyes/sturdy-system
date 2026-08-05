@@ -38,7 +38,7 @@
 
     <!-- 写留言弹窗 -->
     <view v-if="showCompose" class="mask" @click="showCompose = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">写留言</view>
         <view class="field" v-if="!isParent">
           <text class="label">收件人</text>
@@ -67,7 +67,7 @@
 
     <!-- 留言详情弹窗 -->
     <view v-if="detailMsg" class="mask" @click="detailMsg = null">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ detailMsg.title }}</view>
         <view class="sh-meta">
           <text>{{ tab === 'inbox' ? '来自 ' + detailMsg.senderName : '发给 ' + detailMsg.recipientName }}</text>

@@ -58,7 +58,7 @@
 
     <!-- 新增/编辑弹层 -->
     <view class="mask" v-if="showEdit" @click="showEdit = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">编辑课程（{{ dowLabel(edit.dayOfWeek) }} 第{{ edit.period }}节）</view>
         <input v-model="edit.subject" class="inp" placeholder="科目" />
         <template v-if="mode === 'teacher'">
@@ -83,7 +83,7 @@
 
     <!-- 任教设置弹层 -->
     <view class="mask" v-if="showTeach" @click="showTeach = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">设置任课教师（{{ selName }}）</view>
         <picker :range="classSubjects" @change="onTeachSubject">
           <view class="picker sm">{{ teachForm.subject || '选择科目' }}</view>
@@ -97,7 +97,7 @@
 
     <!-- 自动排课弹层 -->
     <view class="mask" v-if="showAuto" @click="showAuto = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">自动排课（{{ selName }}）</view>
         <view class="hint">按科目均匀轮转填充课表，可仅补齐空白或覆盖重建（替代 Web 拖拽自动排版）。</view>
         <input v-model="autoForm.subjectsText" class="inp" placeholder="科目列表，逗号分隔，如：语文,数学,英语,体育" />
@@ -123,7 +123,7 @@
 
     <!-- 排版打印：canvas 渲染课表为图片，可保存到相册或复制为文本 -->
     <view class="mask" v-if="showPrint" @click="showPrint = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ selName }} 课表排版</view>
         <view class="hint">选择排版样式后生成图片，可保存到相册打印。</view>
         <picker :range="printStyleOpts" :value="printStyleIdx" @change="(e) => (printStyleIdx = e.detail.value)">

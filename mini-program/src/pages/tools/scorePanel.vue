@@ -57,7 +57,7 @@
 
     <!-- 历史抽屉 -->
     <view v-if="showHistory" class="mask" @click="showHistory = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="s-hd">
           <text>📜 计分历史（最近 {{ history.length }} 条）</text>
           <text class="s-clr" @click="showHistory = false">✕</text>
@@ -77,7 +77,7 @@
 
     <!-- 加分理由弹层（点击加减分后可选填） -->
     <view v-if="showReason" class="mask" @click="cancelReason">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="s-hd"><text>{{ pendingDelta > 0 ? '加分' : '减分' }}理由（可选）</text></view>
         <input v-model="reasonInput" class="r-ipt" placeholder="如：积极发言、违纪等" :focus="true" />
         <view class="r-bar">

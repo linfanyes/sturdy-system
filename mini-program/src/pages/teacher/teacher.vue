@@ -68,7 +68,7 @@
 
     <!-- 编辑弹窗 -->
     <view class="mask" v-if="editOpen" @click="editOpen = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-h">{{ editId ? '编辑同事' : '添加同事' }}</view>
         <view class="row2">
           <view class="fld">

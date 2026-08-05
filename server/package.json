@@ -13,7 +13,8 @@
     "test:report": "jest --forceExit --detectOpenHandles --json --outputFile=test-report.json",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "seed": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/seed-data.js",
-    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/clear-data.js"
+    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/clear-data.js",
+    "slow-query-monitor": "node scripts/slow-query-monitor.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",

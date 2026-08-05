@@ -1,10 +1,6 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view class="hd">
-      <text style="font-size:28rpx;color:#b8894a;min-width:96rpx;" @click="uni.navigateBack()">← 返回</text>
-      <text style="font-size:32rpx;font-weight:600;color:#4a3b2a;">🏫 班级管理</text>
-      <text style="min-width:96rpx;"></text>
-    </view>
+    <view class="hd">🏫 班级管理</view>
 
     <view class="bar">
       <text class="sc">共 {{ classes.length }} 个班级</text>
@@ -37,7 +33,7 @@
 
     <!-- 新增/编辑班级弹窗 -->
     <view v-if="showClassForm" class="mask" @click="showClassForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editingClassId ? '编辑班级' : '新增班级' }}</view>
         <view class="field">
           <text class="label">班级名称</text>
@@ -78,7 +74,7 @@
 
   <!-- CSV 预览 -->
   <view v-if="showCsvModal" class="mask" @click="showCsvModal = false">
-    <view class="sheet" @click.stop>
+    <view class="sheet safe-bottom" @click.stop>
       <view class="sh-t">CSV 预览</view>
       <scroll-view scroll-y class="csv-box"><text class="csv-text">{{ csvContent }}</text></scroll-view>
       <view class="btn-row">

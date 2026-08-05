@@ -17,7 +17,7 @@
 
     <!-- 编辑资料弹层 -->
     <view class="mask editing" v-if="editing" @click="editing = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-h">编辑资料</view>
         <view class="fld"><text class="lab">老师称呼</text><input v-model="form.name" class="inp" maxlength="50" placeholder="如：王老师" /></view>
         <view class="fld"><text class="lab">所在学校</text><input v-model="form.school" class="inp" maxlength="30" placeholder="由学校管理员分配" disabled="true" /></view>

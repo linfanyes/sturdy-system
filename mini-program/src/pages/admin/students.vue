@@ -35,7 +35,7 @@
 
     <!-- CSV 预览 -->
     <view v-if="showCsvModal" class="mask" @click="showCsvModal = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">CSV 预览</view>
         <scroll-view scroll-y class="csv-box"><text class="csv-text">{{ csvContent }}</text></scroll-view>
         <view class="btn-row">

@@ -88,7 +88,7 @@
 
     <!-- 单人兑换弹层 -->
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">兑换奖励</view>
         <view class="fg">
           <text class="lb">学生</text>
@@ -120,7 +120,7 @@
 
     <!-- 批量发放弹层 -->
     <view v-if="showBatch" class="mask" @click="showBatch = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">📦 批量发放奖励</view>
         <view class="sh-sub">一次给多名学生发放同一奖励，库存会按发放人数扣减</view>
         <view class="fg">

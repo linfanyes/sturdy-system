@@ -28,7 +28,7 @@
     </view>
 
     <view v-if="showForm" class="mask" @click="showForm = false">
-      <view class="sheet" @click.stop>
+      <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">{{ editing ? '编辑' : '新增' }}职务</view>
         <view class="field">
           <text class="label">职务名 *</text>
