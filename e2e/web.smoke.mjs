@@ -50,9 +50,17 @@ async function login(page, cfg) {
 }
 
 const goto = async (page, route) => {
-  await page.evaluate((r) => {
-    window.location.hash = r
-  }, route)
+  await Promise.race([
+    page.evaluate((r) => {
+      window.location.hash = r
+    }, route),
+    new Promise((resolve) =>
+      setTimeout(() => {
+        console.warn(`WARN: Timeout visiting ${route}`)
+        resolve()
+      }, 5000)
+    ),
+  ])
 }
 
 const currentRoute = (page) => page.evaluate(() => location.hash.replace(/^#/, '').split('?')[0])

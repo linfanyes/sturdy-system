@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
-import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import { Student } from './student.entity'
@@ -23,6 +23,7 @@ import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
 import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
 import { Parent } from '../parent/parent.entity'
+import { CreateStudentDto, UpdateStudentDto } from '../dto/students.dto'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -421,6 +422,16 @@ class StudentsService extends CrudService<Student> {
 class StudentsController extends CrudController<Student> {
   constructor(s: StudentsService) {
     super(s)
+  }
+
+  @Post()
+  create(@Body() dto: CreateStudentDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateStudentDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
   }
 
   /** 批量导入：循环创建，返回新建的 id 列表（保留兼容） */

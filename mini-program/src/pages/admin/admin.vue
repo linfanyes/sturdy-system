@@ -402,7 +402,7 @@
           <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
           <view class="inp-wrap">
             <input v-model="resetPwd" class="inp-dialog" placeholder="请输入新密码" password />
-            <text class="dialog-hint">提示：密码设置后，该管理员需使用新密码重新登录，原密码立即失效。</text>
+            <text class="dialog-hint">提示：密码重置后，原密码立即失效，该管理员需使用新密码重新登录。若账号此前被禁用，将同时恢复启用。</text>
           </view>
           <button class="save-btn" :disabled="saving" @click="confirmReset">{{ saving ? '保存中…' : '确认重置' }}</button>
         </view>
@@ -944,7 +944,7 @@ async function confirmReset() {
   try {
     await apiCall('PATCH', '/admin/school-admins/' + resetTarget.value.id + '/password', { password: resetPwd.value })
     resetTarget.value = null
-    uni.showToast({ title: '密码已重置', icon: 'success' })
+    uni.showToast({ title: '密码已重置，账号已启用', icon: 'success' })
   } catch (e) { uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
   saving.value = false
 }

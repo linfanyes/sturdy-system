@@ -171,6 +171,11 @@ image {
 .fab {
   bottom: calc(60rpx + env(safe-area-inset-bottom)) !important;
 }
+/* 底部抽屉 .sheet / .sheet2（width:100%、border-radius:… 0 0、mask 内 flex-end）：底部加安全区留白 */
+.sheet,
+.sheet2 {
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom)) !important;
+}
 
 /* 6) 字体缩放变量（与「设置-字体大小」小/标准/大 对齐）。
    各页面根 view 可绑定 .fz-sm/.fz-md/.fz-lg 生效；此处给出全局默认值。 */

@@ -22,11 +22,11 @@ loadStudents()
 </template>
 <style scoped>
 .grade-trend{padding:20px} .grade-trend h2{margin:0 0 16px;font-size:18px}
-.sel{margin-bottom:16px} .sel select{padding:8px 12px;border:1px solid #e0d5c4;border-radius:4px}
+.sel{margin-bottom:16px} .sel select{padding:8px 12px;border:1px solid rgb(var(--cream-300));border-radius:4px}
 .list{display:flex;flex-direction:column;gap:8px}
-.item{background:#fff;border:1px solid #e0d5c4;border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px}
-.exam{min-width:80px;font-size:14px}.bar{flex:1;height:20px;background:#f0e6d3;border-radius:10px;overflow:hidden}
-.fill{height:100%;background:linear-gradient(90deg,#e6a23c,#07c160);border-radius:10px;display:flex;align-items:center}
-.fill span{color:#fff;font-size:11px;margin-left:8px}.date{font-size:12px;color:#999}
-.empty{text-align:center;padding:40px;color:#999}
+.item{background:rgb(var(--cream-50));border:1px solid rgb(var(--cream-300));border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.exam{min-width:80px;font-size:14px}.bar{flex:1;height:20px;background:rgb(var(--cream-200));border-radius:10px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,rgb(var(--p-amber)),rgb(var(--p-green)));border-radius:10px;display:flex;align-items:center}
+.fill span{color:#fff;font-size:11px;margin-left:8px}.date{font-size:12px;color:rgb(var(--cocoa-400))}
+.empty{text-align:center;padding:40px;color:rgb(var(--cocoa-400))}
 </style>

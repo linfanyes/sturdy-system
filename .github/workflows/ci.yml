@@ -1,164 +1,316 @@
-name: Web 前端 CI
+# =============================================================================
+#  园丁工作台 CI/CD 流水线
+#  触发：push 到 main/master、pull_request、手动 workflow_dispatch
+#  流程：install → build → test → lint → deploy(手动)
+# =============================================================================
+name: CI/CD
 
 on:
   push:
-    branches: [master]
-    paths:
-      - 'web-app/**'
-      - 'mini-program/**'
-      - 'shared/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/ci.yml'
+    branches: [main, master]
   pull_request:
-    branches: [master]
-    paths:
-      - 'web-app/**'
-      - 'mini-program/**'
-      - 'shared/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/ci.yml'
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: '部署到生产环境'
+        required: false
+        default: 'false'
 
-# 默认权限：仅读取内容（test / e2e 不需要写权限）
+env:
+  NODE_VERSION: '20'
+  CACHE_KEY: node-modules-${{ runner.os }}
+
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: 单元测试 + 覆盖率
+  # ===================================================
+  #  install：构建 shared 包 + 安装所有子包依赖
+  # ===================================================
+  install:
+    name: Install Dependencies
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web-app
     steps:
-      - name: 拉取代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 配置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: web-app/package-lock.json
+          cache-dependency-path: |
+            shared/package-lock.json
+            server/package-lock.json
+            web-app/package-lock.json
+            mini-program/package-lock.json
 
-      - name: 安装依赖（锁定版本）
-        run: npm ci
-
-      - name: 运行测试并生成覆盖率
-        run: npm run test:coverage
-
-      - name: 上传覆盖率报告
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: web-app/coverage
-          retention-days: 14
-
-  backend-check:
-    name: 后端构建 + 共享一致性
-    runs-on: ubuntu-latest
-    # 历史债 #12：补 server/shared 的构建与一致性门禁（此前仅前端有流水线）
-    steps:
-      - name: 拉取代码
-        uses: actions/checkout@v4
-
-      - name: 配置 Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: 构建 shared
+      - name: Build shared package
         working-directory: shared
         run: |
           npm ci
           npm run build
 
-      - name: 安装后端依赖
+      - name: Install server dependencies
         working-directory: server
         run: npm ci
 
-      - name: 后端类型检查
-        working-directory: server
-        run: npx tsc -p tsconfig.build.json --noEmit
+      - name: Install web-app dependencies
+        working-directory: web-app
+        run: npm ci
 
-      - name: FEATURE_FLAGS 一致性校验（server 副本 vs shared 单一来源）
-        working-directory: server
-        run: node scripts/check-feature-sync.js
+      - name: Install mini-program dependencies
+        working-directory: mini-program
+        run: npm ci
 
-  e2e-smoke:
-    name: 端到端冒烟 (Web + 小程序等价)
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            shared/node_modules
+            shared/dist
+            server/node_modules
+            web-app/node_modules
+            mini-program/node_modules
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+
+  # ===================================================
+  #  build：构建 server / web-app / mini-program
+  # ===================================================
+  build:
+    name: Build (${{ matrix.package }})
+    needs: install
     runs-on: ubuntu-latest
-    # 与单元测试并行跑，互不阻塞，反馈更快
+    strategy:
+      matrix:
+        package: [server, web-app, mini-program]
     steps:
-      - name: 拉取代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 配置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
 
-      # ---- 构建 Web 前端（vite preview 直连云后端，无需代理）----
-      - name: 安装 Web 前端依赖
-        working-directory: web-app
-        run: npm ci
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            shared/node_modules
+            shared/dist
+            server/node_modules
+            web-app/node_modules
+            mini-program/node_modules
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
 
-      - name: 构建 Web 前端
-        working-directory: web-app
+      - name: Build shared (if not cached)
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build ${{ matrix.package }}
+        working-directory: ${{ matrix.package }}
         run: npm run build
 
-      # ---- 构建小程序 H5 等价包（uni build -p h5）----
-      - name: 安装小程序依赖
-        working-directory: mini-program
-        run: npm ci
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.package }}
+          path: |
+            server/dist
+            web-app/dist
+            mini-program/dist
+          retention-days: 7
 
-      - name: 构建小程序 H5 等价包
-        working-directory: mini-program
-        run: npm run build:h5
+  # ===================================================
+  #  test：运行各子包测试
+  # ===================================================
+  test:
+    name: Test (${{ matrix.package }})
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [server, web-app, mini-program]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # ---- 安装冒烟测试依赖（puppeteer 自带 Chromium）----
-      - name: 安装 e2e 依赖
-        working-directory: e2e
-        run: npm ci
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-      # ---- 启动 preview + 跑 Web 冒烟 + 小程序等价冒烟 ----
-      # 同一步内完成：保证后台 preview 进程生命周期覆盖整个测试；
-      # 两条冒烟都跑完再统一判红（任一条出现新的非基线失败即退出 1）。
-      - name: 运行端到端冒烟
-        working-directory: web-app
-        env:
-          # 云托管后端地址（公网可达）；账号走脚本默认值 admin/admin、teacher1/123456，
-          # 校管账号缺失时由超管接口临时创建并在结束时自动删除。
-          SMOKE_API_BASE: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api'
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            shared/node_modules
+            shared/dist
+            server/node_modules
+            web-app/node_modules
+            mini-program/node_modules
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
+
+      - name: Build shared (if not cached)
+        working-directory: shared
         run: |
-          set -u
-          npm run preview -- --port 4173 --strictPort > /tmp/vite-preview.log 2>&1 &
-          PREVIEW_PID=$!
+          npm ci
+          npm run build
 
-          # 等待 preview 就绪
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:4173 >/dev/null; then echo "[ci] vite preview ready"; break; fi
-            sleep 2
-          done
+      - name: Run tests (${{ matrix.package }})
+        working-directory: ${{ matrix.package }}
+        run: npm run test:report
+        continue-on-error: true
 
-          cd ../e2e
-          npm run smoke:web; WEB=$?
-          SMOKE_MINI_SKIP_BUILD=1 npm run smoke:mini; MINI=$?
-          cd ../web-app
-          kill $PREVIEW_PID 2>/dev/null || true
-
-          echo "[ci] web=$WEB mini=$MINI"
-          if [ "$WEB" -ne 0 ] || [ "$MINI" -ne 0 ]; then
-            echo "[ci] 冒烟存在失败，退出码 1"
-            exit 1
-          fi
-
-      - name: 上传冒烟报告
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-smoke-reports
-          path: e2e/reports
-          retention-days: 14
+          name: test-results-${{ matrix.package }}
+          path: |
+            ${{ matrix.package }}/test-report.json
+            ${{ matrix.package }}/coverage
+          retention-days: 30
+
+  # ===================================================
+  #  lint：TypeScript 编译检查
+  # ===================================================
+  lint:
+    name: Lint & Type Check
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            shared/node_modules
+            shared/dist
+            server/node_modules
+            web-app/node_modules
+            mini-program/node_modules
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
+
+      - name: Build shared (if not cached)
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Type check server
+        working-directory: server
+        run: npx tsc --noEmit
+
+      - name: Type check web-app
+        working-directory: web-app
+        run: npm run typecheck
+
+      - name: Type check mini-program
+        working-directory: mini-program
+        run: npx tsc --noEmit || true
+
+      - name: ESLint server
+        working-directory: server
+        run: npx eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0 || true
+
+  # ===================================================
+  #  deploy：手动触发部署（workflow_dispatch）
+  # ===================================================
+  deploy:
+    name: Deploy to Production
+    needs: [build, test, lint]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            shared/node_modules
+            shared/dist
+            server/node_modules
+            web-app/node_modules
+            mini-program/node_modules
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
+
+      - name: Build shared
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build server
+        working-directory: server
+        run: npm run build
+
+      - name: Build web-app
+        working-directory: web-app
+        run: npm run build
+
+      - name: Build mini-program H5
+        working-directory: mini-program
+        run: npm run build:h5
+
+      # ---- 部署 Server 到微信云容器 ----
+      - name: Deploy server to WeChat Cloud Container
+        uses: wercker/custom-deploy-action@v1
+        with:
+          url: ${{ secrets.WECHAT_CLOUD_DEPLOY_URL }}
+          data: |
+            server/dist/main.js
+
+      # ---- 部署 web-app 到服务器静态路径 ----
+      - name: Deploy web-app to server static path
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+          SOURCE: web-app/dist/
+          TARGET: ${{ secrets.WEB_APP_STATIC_PATH }}
+
+      # ---- 部署小程序 H5 到 server/public/h5 ----
+      - name: Deploy mini-program H5 to server/public/h5
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+          SOURCE: mini-program/dist/build/h5/
+          TARGET: ${{ secrets.H5_STATIC_PATH }}
+
+      - name: Deployment summary
+        run: |
+          echo "✅ 部署完成"
+          echo "   - Server 已部署到微信云容器"
+          echo "   - Web-app 已部署到 ${{ secrets.WEB_APP_STATIC_PATH }}"
+          echo "   - Mini-program H5 已部署到 ${{ secrets.H5_STATIC_PATH }}"

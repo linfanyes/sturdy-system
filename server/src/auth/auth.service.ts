@@ -54,7 +54,7 @@ export class AuthService {
   async unifiedLogin(username: string, password: string) {
     if (!username || !password) throw new BadRequestException('请输入用户名和密码')
     const u = username.trim()
-    const p = password
+    const p = password.trim()
 
     // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报“账号不存在”）
     const su = this.config.get('SUPER_ADMIN_USER') || 'admin'

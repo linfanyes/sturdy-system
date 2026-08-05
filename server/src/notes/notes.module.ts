@@ -2,7 +2,7 @@ import { Module, UseGuards, Delete } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Controller } from '@nestjs/common'
+import { Controller, Post, Patch, Body, Param } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
@@ -11,6 +11,8 @@ import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { CreateNoteDto, UpdateNoteDto } from '../dto/notes.dto'
+import { CreateTodoDto, UpdateTodoDto } from '../dto/todos.dto'
 
 class NoteService extends CrudService<NoteItem> {
   constructor(@InjectRepository(NoteItem) repo: Repository<NoteItem>) {
@@ -24,6 +26,16 @@ class NoteService extends CrudService<NoteItem> {
 class NoteController extends CrudController<NoteItem> {
   constructor(s: NoteService) {
     super(s)
+  }
+
+  @Post()
+  create(@Body() dto: CreateNoteDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateNoteDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
   }
 }
 
@@ -39,6 +51,16 @@ class TodoService extends CrudService<TodoItem> {
 class TodoController extends CrudController<TodoItem> {
   constructor(s: TodoService) {
     super(s)
+  }
+
+  @Post()
+  create(@Body() dto: CreateTodoDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateTodoDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
   }
 }
 

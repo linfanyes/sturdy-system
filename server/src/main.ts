@@ -57,7 +57,13 @@ async function runMigrations(app: any) {
       console.log(`✅ 迁移完成: ${file}`)
     }
   } catch (e: any) {
-    console.error('⚠️  自动迁移执行失败（不阻塞启动，synchronize 仍会同步表结构）:', e?.message || e)
+    const isProd = app.get(ConfigService).get('NODE_ENV') === 'production'
+    if (isProd) {
+      console.error('❌ 自动迁移执行失败，生产环境拒绝启动:', e?.message || e)
+      process.exit(1)
+    } else {
+      console.error('⚠️  自动迁移执行失败（开发环境不阻塞启动，synchronize 仍会同步表结构）:', e?.message || e)
+    }
   } finally {
     if (conn) await conn.end().catch(() => {})
   }

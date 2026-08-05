@@ -2,7 +2,7 @@ import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Controller, NotFoundException } from '@nestjs/common'
+import { Controller, Post, Patch, Body, Param, NotFoundException } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
@@ -12,7 +12,9 @@ import { ClassItem } from '../classes/class.entity'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { Roles } from '../common/decorators/roles.decorator'
+import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
+import { CreateExamDto, UpdateExamDto } from '../dto/exams.dto'
 
 class ExamsService extends CrudService<Exam> {
   constructor(
@@ -92,6 +94,16 @@ class ExamsService extends CrudService<Exam> {
 class ExamsController extends CrudController<Exam> {
   constructor(s: ExamsService) {
     super(s)
+  }
+
+  @Post()
+  create(@Body() dto: CreateExamDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateExamDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
   }
 }
 

@@ -12,12 +12,12 @@ import { BusinessException } from '../exceptions/business.exception'
  * 统一异常过滤器（全局注册）：
  *  - BusinessException → 透传其错误码 code，返回 { statusCode, code, message }
  *  - 校验 / HTTP 异常（含 ValidationPipe 抛出的 BadRequestException）→
- *    返回 { statusCode, code: 'VALIDATION_ERROR'|'HTTP_xxx', message }
+ *    返回 { statusCode, code: 'VALIDATION_ERROR'|'HTTP_xxx', message, details? }
  *  - 数据库层错误 → 400 + code: 'DB_ERROR'（不暴露 SQL 细节）
  *  - 其他未预期异常 → 500 + code: 'INTERNAL_ERROR'
  *
- * 响应体统一含 code / message，前端可据此做差异化提示，且 message 字段与
- * 现有错误解包逻辑兼容。
+ * 响应体统一含 code / message（details 可选），前端可据此做差异化提示，
+ * 且 message 字段与现有错误解包逻辑兼容。
  */
 @Catch()
 export class TypeOrmExceptionFilter implements ExceptionFilter {
@@ -40,9 +40,15 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus()
       const res = exception.getResponse()
       const rawMsg = typeof res === 'string' ? res : (res as any)?.message || exception.message
-      const message = Array.isArray(rawMsg) ? rawMsg.join('；') : rawMsg
+      const isArr = Array.isArray(rawMsg)
+      const message = isArr ? rawMsg.join('；') : rawMsg
       const code = status === HttpStatus.BAD_REQUEST ? 'VALIDATION_ERROR' : `HTTP_${status}`
-      return response.status(status).json({ statusCode: status, code, message })
+      const body: any = { statusCode: status, code, message }
+      // ValidationPipe 返回数组形式的校验错误明细，附 details 字段供前端精准定位字段
+      if (isArr && (rawMsg as string[]).length > 0) {
+        body.details = rawMsg
+      }
+      return response.status(status).json(body)
     }
 
     // 3) 数据库层错误（TypeORM QueryFailedError 等）→ 400，不暴露 SQL

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource, In } from 'typeorm'
-import { Controller, Post, Get, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Param, Query, Body, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import {
@@ -25,6 +25,8 @@ import { Parent } from '../parent/parent.entity'
 import { ClassItem } from '../classes/class.entity'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { User } from '../users/user.entity'
+import { CreateHomeworkDto, UpdateHomeworkDto } from '../dto/homework.dto'
+import { CreateAttendanceDto, UpdateAttendanceDto } from '../dto/attendances.dto'
 
 class ScheduleService extends CrudService<ScheduleItem> {
   constructor(
@@ -114,6 +116,16 @@ class AttendanceController extends CrudController<Attendance> {
   constructor(s: AttendanceService) {
     super(s)
   }
+
+  @Post()
+  create(@Body() dto: CreateAttendanceDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
+  }
 }
 
 class HomeworkService extends CrudService<Homework> {
@@ -128,6 +140,16 @@ class HomeworkService extends CrudService<Homework> {
 class HomeworkController extends CrudController<Homework> {
   constructor(s: HomeworkService) {
     super(s)
+  }
+
+  @Post()
+  create(@Body() dto: CreateHomeworkDto, @CurrentTeacher() t: any) {
+    return super.create(dto as any, t)
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateHomeworkDto, @CurrentTeacher() t: any) {
+    return super.update(id, dto as any, t)
   }
 }
 

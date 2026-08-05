@@ -59,7 +59,7 @@ export class ResetPasswordDto {
   @IsNotEmpty({ message: '新密码必填' })
   @IsString()
   @MinLength(6, { message: '新密码至少 6 位' })
-  @MaxLength(100, { message: '新密码过长' })
+  @MaxLength(20, { message: '新密码最多 20 位' })
   password: string
 }
 

@@ -346,6 +346,9 @@ export class AdminService implements OnModuleInit {
       pwd = '1314520' // 未提供则使用默认口令，并随响应返回以便告知
     }
     a.passwordHash = hashPassword(pwd)
+    // 重置密码同时重新启用账号：若账号此前被禁用（学校停用级联或手动禁用），
+    // 仅重置密码而不恢复 enabled 会导致登录时被 enabled 检查拦截，用户报"重置后无法登录"
+    a.enabled = true
     await this.saRepo.save(a)
     return { ok: true, defaultPassword: pwd }
   }

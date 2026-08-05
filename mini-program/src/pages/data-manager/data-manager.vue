@@ -26,7 +26,11 @@
 
     <view v-if="activeTab === 'import'" class="panel">
       <text class="p-title">导入 JSON 数据</text>
-      <text class="hint">暂不支持手机端文件导入，请使用 Web 端进行数据导入操作。</text>
+      <text class="hint">建议使用电脑端 Web 版进行数据导入，操作更方便。您也可以复制 JSON 数据粘贴到下方文本框直接导入。</text>
+      <textarea v-model="importJson" class="json-area" placeholder='粘贴 JSON 数据，格式如 {"schedules":[...],"notes":[...]}' :disabled="importing" />
+      <button class="btn send" :disabled="importing || !importJson.trim()" @click="handleImport">
+        {{ importing ? '导入中…' : '导入 JSON' }}
+      </button>
     </view>
 
     <view v-if="activeTab === 'backup'" class="panel">
@@ -66,6 +70,8 @@ import { theme } from '../../common/store'
 
 const activeTab = ref('export')
 const exporting = ref(false)
+const importJson = ref('')
+const importing = ref(false)
 const endpoints = [
   { key: 'schedules', label: '课程表', path: '/schedules' },
   { key: 'notes', label: '笔记', path: '/notes' },
@@ -115,6 +121,46 @@ async function handleExport() {
   } catch (e) {
     uni.showToast({ title: '导出失败', icon: 'none' })
   } finally { exporting.value = false }
+}
+
+async function handleImport() {
+  const raw = importJson.value.trim()
+  if (!raw) return uni.showToast({ title: '请先粘贴 JSON 数据', icon: 'none' })
+  let data
+  try {
+    data = JSON.parse(raw)
+  } catch (e) {
+    return uni.showToast({ title: 'JSON 格式错误，请检查后重试', icon: 'none' })
+  }
+  if (!data || typeof data !== 'object') {
+    return uni.showToast({ title: '数据格式不正确', icon: 'none' })
+  }
+  importing.value = true
+  try {
+    const keys = Object.keys(data).filter(k => !k.startsWith('_') && Array.isArray(data[k]))
+    if (!keys.length) {
+      uni.showToast({ title: '未找到可导入的数据模块', icon: 'none' })
+      return
+    }
+    let count = 0
+    for (const key of keys) {
+      const ep = endpoints.find(e => e.key === key)
+      if (!ep) continue
+      const items = data[key]
+      if (!Array.isArray(items) || !items.length) continue
+      for (const item of items) {
+        try {
+          const { id, createdAt, updatedAt, ...rest } = item
+          await api.post(ep.path, rest)
+          count++
+        } catch (e) { /* skip duplicate / error */ }
+      }
+    }
+    importJson.value = ''
+    uni.showToast({ title: `导入完成，共 ${count} 条`, icon: 'success', duration: 3000 })
+  } catch (e) {
+    uni.showToast({ title: '导入失败', icon: 'none' })
+  } finally { importing.value = false }
 }
 
 // 备份
@@ -210,7 +256,8 @@ onPullDownRefresh(async () => { await loadBackups(); uni.stopPullDownRefresh() }
 .check-mark { font-size: 28rpx; font-weight: 700; }
 .all-row { text-align: right; margin: 8rpx 0 16rpx; }
 .all-row text { font-size: 24rpx; color: #409eff; }
-.hint { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; display: block; }
+.hint { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; display: block; line-height: 1.6; }
+.json-area { width: 100%; min-height: 300rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 20rpx; font-size: 24rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); margin-bottom: 20rpx; }
 .upload-area { border: 2rpx dashed var(--c-input-border); border-radius: 16rpx; padding: 60rpx; text-align: center; font-size: 28rpx; color: var(--c-sub); }
 .up-icon { font-size: 48rpx; display: block; margin-bottom: 12rpx; }
 
