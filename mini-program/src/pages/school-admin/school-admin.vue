@@ -844,7 +844,7 @@ function goSchoolFeatures() {
 
 /** 进入智慧中小学课程（与 Web 端 /school-admin/zhzx 对齐） */
 function goZhzx() {
-  uni.navigateTo({ url: '/pages/resource/resource' })
+  uni.navigateTo({ url: '/pages/community/resource' })
 }
 
 // ===== 批量导入教师 =====

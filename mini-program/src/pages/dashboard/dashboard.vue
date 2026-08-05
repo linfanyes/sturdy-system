@@ -62,23 +62,23 @@
 
     <!-- 快捷操作工具栏 -->
     <view class="quick-actions">
-      <view class="qa-item" @click="goPage('/pages/attendance/attendance')">
+      <view class="qa-item" @click="goPage('/pages/community/attendance')">
         <text class="qa-ic" style="background:#e8f9e8">✅</text>
         <text class="qa-lb">记考勤</text>
       </view>
-      <view class="qa-item" @click="goPage('/pages/homework/homework')">
+      <view class="qa-item" @click="goPage('/pages/community/homework')">
         <text class="qa-ic" style="background:#fff3d6">📝</text>
         <text class="qa-lb">布置作业</text>
       </view>
-      <view class="qa-item" @click="goPage('/pages/notice/notice')">
+      <view class="qa-item" @click="goPage('/pages/community/notice')">
         <text class="qa-ic" style="background:#e8f1fb">📢</text>
         <text class="qa-lb">发通知</text>
       </view>
-      <view class="qa-item" @click="goPage('/pages/todos/todos')">
+      <view class="qa-item" @click="goPage('/pages/community/todos')">
         <text class="qa-ic" style="background:#fde8ea">✅</text>
         <text class="qa-lb">待办</text>
       </view>
-      <view class="qa-item" @click="goPage('/pages/behavior-record/behavior-record')">
+      <view class="qa-item" @click="goPage('/pages/community/behavior-record')">
         <text class="qa-ic" style="background:#f3e8ff">👀</text>
         <text class="qa-lb">行为记录</text>
       </view>
@@ -112,7 +112,7 @@
         <view class="ov-num">{{ noteList.length }}</view>
         <view class="ov-lb">笔记</view>
       </view>
-      <view class="ov" @click="goPage('/pages/grades/grades')">
+      <view class="ov" @click="goPage('/pages/teaching/grades')">
         <view class="ov-ic" style="background:#e8f1fb">📊</view>
         <view class="ov-num">{{ gradeList.length }}</view>
         <view class="ov-lb">考试</view>
@@ -366,12 +366,12 @@ function catKey(cat) {
 const features = [
   { label: '班级管理', icon: '🏫', path: '/pages/classes/classes', tab: true, feature: 'classes' },
   { label: '学生管理', icon: '👧', path: '/pages/students/students', tab: true, feature: 'students' },
-  { label: '考试管理', icon: '📝', path: '/pages/exams/exams', feature: 'exams' },
-  { label: '成绩管理', icon: '📊', path: '/pages/grades/grades', feature: 'grades' },
-  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap', feature: 'seats' },
+  { label: '考试管理', icon: '📝', path: '/pages/teaching/exams', feature: 'exams' },
+  { label: '成绩管理', icon: '📊', path: '/pages/teaching/grades', feature: 'grades' },
+  { label: '座位表', icon: '💺', path: '/pages/teaching/seatMap', feature: 'seats' },
   { label: 'AI 助手', icon: '🤖', path: '/pages/ai/ai', feature: 'ai' },
   { label: '工具箱', icon: '🧰', path: '/pages/toolbox/toolbox', tab: true, feature: 'tools' },
-  { label: '留言板', icon: '📥', path: '/pages/messages/messages', feature: 'im' },
+  { label: '留言板', icon: '📥', path: '/pages/community/messages', feature: 'im' },
   { label: '设置', icon: '⚙️', path: '/pages/config/config', tab: true },
 ]
 
@@ -391,8 +391,8 @@ const widgetCands = [
   { label: '口算', icon: '➗', path: '/pages/tools/math', feature: 'tools' },
   { label: '错题本', icon: '📕', path: '/pages/tools/mathMistakes', feature: 'tools' },
   { label: '决策器', icon: '🔀', path: '/pages/tools/decider', feature: 'tools' },
-  { label: '随机分组', icon: '👥', path: '/pages/grouper/grouper' },
-  { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap', feature: 'seats' },
+  { label: '随机分组', icon: '👥', path: '/pages/community/grouper' },
+  { label: '座位表', icon: '💺', path: '/pages/teaching/seatMap', feature: 'seats' },
 ]
 // 小组件同样过滤：否则历史已选的工具类组件在功能包关闭后仍显示且点击被拦
 const visibleWidgetCands = computed(() =>
@@ -480,7 +480,7 @@ async function loadNotifications() {
   } catch {}
 }
 function goNotifications() {
-  uni.navigateTo({ url: '/pages/notifications/notifications' })
+  uni.navigateTo({ url: '/pages/community/notifications' })
 }
 const attendanceList = ref([])
 const homeworkList = ref([])

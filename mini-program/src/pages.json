@@ -49,12 +49,6 @@
       }
     },
     {
-      "path": "pages/data-dashboard/data-dashboard",
-      "style": {
-        "navigationBarTitleText": "数据看板"
-      }
-    },
-    {
       "path": "pages/classes/classes",
       "style": {
         "navigationBarTitleText": "班级管理",
@@ -69,86 +63,9 @@
       }
     },
     {
-      "path": "pages/exams/exams",
-      "style": {
-        "navigationBarTitleText": "考试管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/exam-detail/exam-detail",
-      "style": {
-        "navigationBarTitleText": "考试详情",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/student-grades/student-grades",
-      "style": {
-        "navigationBarTitleText": "学生成绩",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/grades/grades",
-      "style": {
-        "navigationBarTitleText": "成绩管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/seatMap/seatMap",
-      "style": {
-        "navigationBarTitleText": "座位表",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/leaderboard/leaderboard",
-      "style": {
-        "navigationBarTitleText": "积分排行榜",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/radar/radar",
-      "style": {
-        "navigationBarTitleText": "成绩雷达图",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/reading-log/reading-log",
-      "style": {
-        "navigationBarTitleText": "课外阅读",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/checkin/checkin",
-      "style": {
-        "navigationBarTitleText": "学生打卡",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/teaching-calendar/teaching-calendar",
-      "style": {
-        "navigationBarTitleText": "教学日历",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
       "path": "pages/admin/admin",
       "style": {
         "navigationBarTitleText": "管理员面板"
-      }
-    },
-    {
-      "path": "pages/grouper/grouper",
-      "style": {
-        "navigationBarTitleText": "随机分组",
-        "enablePullDownRefresh": true
       }
     },
     {
@@ -171,510 +88,9 @@
       }
     },
     {
-      "path": "pages/subject-tools/index",
-      "style": {
-        "navigationBarTitleText": "学科工具"
-      }
-    },
-    {
-      "path": "pages/subject-tools/chinese",
-      "style": {
-        "navigationBarTitleText": "语文工具"
-      }
-    },
-    {
-      "path": "pages/subject-tools/english",
-      "style": {
-        "navigationBarTitleText": "英语工具"
-      }
-    },
-    {
-      "path": "pages/subject-tools/math",
-      "style": {
-        "navigationBarTitleText": "数学工具"
-      }
-    },
-    {
-      "path": "pages/office-tools/index",
-      "style": {
-        "navigationBarTitleText": "办公工具"
-      }
-    },
-    {
-      "path": "pages/office-tools/translate",
-      "style": {
-        "navigationBarTitleText": "翻译助手"
-      }
-    },
-    {
-      "path": "pages/office-tools/thesis",
-      "style": {
-        "navigationBarTitleText": "教育论文"
-      }
-    },
-    {
-      "path": "pages/office-tools/comment",
-      "style": {
-        "navigationBarTitleText": "评语生成"
-      }
-    },
-    {
-      "path": "pages/office-tools/summary",
-      "style": {
-        "navigationBarTitleText": "期末总结"
-      }
-    },
-    {
-      "path": "pages/office-tools/blackboard",
-      "style": {
-        "navigationBarTitleText": "黑板报生成"
-      }
-    },
-    {
-      "path": "pages/office-tools/speech",
-      "style": {
-        "navigationBarTitleText": "演讲稿生成"
-      }
-    },
-    {
-      "path": "pages/subject-tools/writingMaterials",
-      "style": {
-        "navigationBarTitleText": "作文素材"
-      }
-    },
-    {
-      "path": "pages/subject-tools/poetry",
-      "style": {
-        "navigationBarTitleText": "古诗词助手"
-      }
-    },
-    {
-      "path": "pages/subject-tools/wordCard",
-      "style": {
-        "navigationBarTitleText": "单词卡片"
-      }
-    },
-    {
-      "path": "pages/subject-tools/dictation",
-      "style": {
-        "navigationBarTitleText": "汉字听写"
-      }
-    },
-    {
-      "path": "pages/subject-tools/idiom",
-      "style": {
-        "navigationBarTitleText": "成语词典"
-      }
-    },
-    {
-      "path": "pages/subject-tools/sentencePractice",
-      "style": {
-        "navigationBarTitleText": "句型练习"
-      }
-    },
-    {
-      "path": "pages/subject-tools/reading",
-      "style": {
-        "navigationBarTitleText": "阅读理解"
-      }
-    },
-    {
-      "path": "pages/subject-tools/grammar",
-      "style": {
-        "navigationBarTitleText": "语法练习"
-      }
-    },
-    {
-      "path": "pages/subject-tools/listening",
-      "style": {
-        "navigationBarTitleText": "听力训练"
-      }
-    },
-    {
-      "path": "pages/subject-tools/pinyin",
-      "style": {
-        "navigationBarTitleText": "拼音学习"
-      }
-    },
-    {
-      "path": "pages/subject-tools/spell",
-      "style": {
-        "navigationBarTitleText": "单词拼写"
-      }
-    },
-    {
-      "path": "pages/subject-tools/speaking",
-      "style": {
-        "navigationBarTitleText": "口语练习"
-      }
-    },
-    {
       "path": "pages/config/config",
       "style": {
         "navigationBarTitleText": "设置"
-      }
-    },
-    {
-      "path": "pages/quicktool/quicktool",
-      "style": {
-        "navigationBarTitleText": "智能工具"
-      }
-    },
-    {
-      "path": "pages/subject/subject",
-      "style": {
-        "navigationBarTitleText": "学科练习"
-      }
-    },
-    {
-      "path": "pages/subject-list/subject-list",
-      "style": {
-        "navigationBarTitleText": "学科工具"
-      }
-    },
-    {
-      "path": "pages/schedule/schedule",
-      "style": {
-        "navigationBarTitleText": "我的课表",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/attendance/attendance",
-      "style": {
-        "navigationBarTitleText": "考勤管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/homework/homework",
-      "style": {
-        "navigationBarTitleText": "作业管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/notice/notice",
-      "style": {
-        "navigationBarTitleText": "班级公告",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/profile/profile",
-      "style": {
-        "navigationBarTitleText": "个人中心",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/grade-trend/grade-trend",
-      "style": {
-        "navigationBarTitleText": "成绩趋势",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/resource/resource",
-      "style": {
-        "navigationBarTitleText": "在线资源",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/webview/webview",
-      "style": {
-        "navigationBarTitleText": "在线观看"
-      }
-    },
-    {
-      "path": "pages/resource-library/resource-library",
-      "style": {
-        "navigationBarTitleText": "资源库",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/growth/growth",
-      "style": {
-        "navigationBarTitleText": "成长档案",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/parent-contact/parent-contact",
-      "style": {
-        "navigationBarTitleText": "家长联系",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/teacher/teacher",
-      "style": {
-        "navigationBarTitleText": "教师通讯录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/teacher/textbook",
-      "style": {
-        "navigationBarTitleText": "教材知识库",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/student-info-review/student-info-review",
-      "style": {
-        "navigationBarTitleText": "信息修改审核",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/duty-roster/duty-roster",
-      "style": {
-        "navigationBarTitleText": "轮值表",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/class-activities/class-activities",
-      "style": {
-        "navigationBarTitleText": "班级活动",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/lesson-plans/lesson-plans",
-      "style": {
-        "navigationBarTitleText": "备课记录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/papers/papers",
-      "style": {
-        "navigationBarTitleText": "试卷查询",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/class-finance/class-finance",
-      "style": {
-        "navigationBarTitleText": "班费管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/gallery/gallery",
-      "style": {
-        "navigationBarTitleText": "班级风采",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/my-gallery/my-gallery",
-      "style": {
-        "navigationBarTitleText": "我的相册",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/im/im",
-      "style": {
-        "navigationBarTitleText": "家校沟通",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/image-creation/image-creation",
-      "style": {
-        "navigationBarTitleText": "图像创造",
-        "enablePullDownRefresh": false
-      }
-    },
-    {
-      "path": "pages/lesson-observation/lesson-observation",
-      "style": {
-        "navigationBarTitleText": "听课记录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/work-log/work-log",
-      "style": {
-        "navigationBarTitleText": "工作日志",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/behavior-record/behavior-record",
-      "style": {
-        "navigationBarTitleText": "行为观察",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/award-record/award-record",
-      "style": {
-        "navigationBarTitleText": "获奖记录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/notes/notes",
-      "style": {
-        "navigationBarTitleText": "笔记",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/todos/todos",
-      "style": {
-        "navigationBarTitleText": "待办",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/picker-history/picker-history",
-      "style": {
-        "navigationBarTitleText": "抽签历史",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/notifications/notifications",
-      "style": {
-        "navigationBarTitleText": "通知中心",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/analysis/analysis",
-      "style": {
-        "navigationBarTitleText": "数据统计",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/award-categories/award-categories",
-      "style": {
-        "navigationBarTitleText": "奖项类别",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/group-scores/group-scores",
-      "style": {
-        "navigationBarTitleText": "小组评分",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/score-records/score-records",
-      "style": {
-        "navigationBarTitleText": "积分记录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/reward-records/reward-records",
-      "style": {
-        "navigationBarTitleText": "加减分记录",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/duty-config/duty-config",
-      "style": {
-        "navigationBarTitleText": "值日配置",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/class-duty/class-duty",
-      "style": {
-        "navigationBarTitleText": "班级职务",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/schedule-maker/schedule-maker",
-      "style": {
-        "navigationBarTitleText": "课表排版",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/data-manager/data-manager",
-      "style": {
-        "navigationBarTitleText": "数据管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/essay/essay",
-      "style": {
-        "navigationBarTitleText": "小作文助手"
-      }
-    },
-    {
-      "path": "pages/english-story/english-story",
-      "style": {
-        "navigationBarTitleText": "英语小故事"
-      }
-    },
-    {
-      "path": "pages/scene-dialogue/scene-dialogue",
-      "style": {
-        "navigationBarTitleText": "情景对话"
-      }
-    },
-    {
-      "path": "pages/paper/paper",
-      "style": {
-        "navigationBarTitleText": "教育论文"
-      }
-    },
-    {
-      "path": "pages/messages/messages",
-      "style": {
-        "navigationBarTitleText": "消息中心",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/plan-template-lib/plan-template-lib",
-      "style": {
-        "navigationBarTitleText": "文案模板库",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/paper-queries/paper-queries",
-      "style": {
-        "navigationBarTitleText": "试卷查询",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/lesson-plan-templates/lesson-plan-templates",
-      "style": {
-        "navigationBarTitleText": "教案模板",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/knowledges/knowledges",
-      "style": {
-        "navigationBarTitleText": "知识点库",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
-      "path": "pages/notice-templates/notice-templates",
-      "style": {
-        "navigationBarTitleText": "通知模板",
-        "enablePullDownRefresh": true
       }
     }
   ],
@@ -904,6 +320,626 @@
           "path": "ai-lesson",
           "style": {
             "navigationBarTitleText": "智能教案"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/teaching",
+      "name": "teaching",
+      "pages": [
+        {
+          "path": "data-dashboard",
+          "style": {
+            "navigationBarTitleText": "数据看板"
+          }
+        },
+        {
+          "path": "exams",
+          "style": {
+            "navigationBarTitleText": "考试管理",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "exam-detail",
+          "style": {
+            "navigationBarTitleText": "考试详情",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "student-grades",
+          "style": {
+            "navigationBarTitleText": "学生成绩",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "grades",
+          "style": {
+            "navigationBarTitleText": "成绩管理",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "seatMap",
+          "style": {
+            "navigationBarTitleText": "座位表",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "leaderboard",
+          "style": {
+            "navigationBarTitleText": "积分排行榜",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "radar",
+          "style": {
+            "navigationBarTitleText": "成绩雷达图",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "reading-log",
+          "style": {
+            "navigationBarTitleText": "课外阅读",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "checkin",
+          "style": {
+            "navigationBarTitleText": "学生打卡",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "teaching-calendar",
+          "style": {
+            "navigationBarTitleText": "教学日历",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "grade-trend",
+          "style": {
+            "navigationBarTitleText": "成绩趋势",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "analysis",
+          "style": {
+            "navigationBarTitleText": "数据统计",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "award-categories",
+          "style": {
+            "navigationBarTitleText": "奖项类别",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "group-scores",
+          "style": {
+            "navigationBarTitleText": "小组评分",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "score-records",
+          "style": {
+            "navigationBarTitleText": "积分记录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "reward-records",
+          "style": {
+            "navigationBarTitleText": "加减分记录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "duty-config",
+          "style": {
+            "navigationBarTitleText": "值日配置",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "class-duty",
+          "style": {
+            "navigationBarTitleText": "班级职务",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "schedule-maker",
+          "style": {
+            "navigationBarTitleText": "课表排版",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "data-manager",
+          "style": {
+            "navigationBarTitleText": "数据管理",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/community",
+      "name": "community",
+      "pages": [
+        {
+          "path": "grouper",
+          "style": {
+            "navigationBarTitleText": "随机分组",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "schedule",
+          "style": {
+            "navigationBarTitleText": "我的课表",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "attendance",
+          "style": {
+            "navigationBarTitleText": "考勤管理",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "homework",
+          "style": {
+            "navigationBarTitleText": "作业管理",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "notice",
+          "style": {
+            "navigationBarTitleText": "班级公告",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "profile",
+          "style": {
+            "navigationBarTitleText": "个人中心",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "resource",
+          "style": {
+            "navigationBarTitleText": "在线资源",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "webview",
+          "style": {
+            "navigationBarTitleText": "在线观看"
+          }
+        },
+        {
+          "path": "resource-library",
+          "style": {
+            "navigationBarTitleText": "资源库",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "growth",
+          "style": {
+            "navigationBarTitleText": "成长档案",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "parent-contact",
+          "style": {
+            "navigationBarTitleText": "家长联系",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "teacher",
+          "style": {
+            "navigationBarTitleText": "教师通讯录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "textbook",
+          "style": {
+            "navigationBarTitleText": "教材知识库",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "student-info-review",
+          "style": {
+            "navigationBarTitleText": "信息修改审核",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "duty-roster",
+          "style": {
+            "navigationBarTitleText": "轮值表",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "class-activities",
+          "style": {
+            "navigationBarTitleText": "班级活动",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "lesson-plans",
+          "style": {
+            "navigationBarTitleText": "备课记录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "papers",
+          "style": {
+            "navigationBarTitleText": "试卷查询",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "class-finance",
+          "style": {
+            "navigationBarTitleText": "班费管理",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "gallery",
+          "style": {
+            "navigationBarTitleText": "班级风采",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "my-gallery",
+          "style": {
+            "navigationBarTitleText": "我的相册",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "im",
+          "style": {
+            "navigationBarTitleText": "家校沟通",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "image-creation",
+          "style": {
+            "navigationBarTitleText": "图像创造",
+            "enablePullDownRefresh": false
+          }
+        },
+        {
+          "path": "lesson-observation",
+          "style": {
+            "navigationBarTitleText": "听课记录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "work-log",
+          "style": {
+            "navigationBarTitleText": "工作日志",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "behavior-record",
+          "style": {
+            "navigationBarTitleText": "行为观察",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "award-record",
+          "style": {
+            "navigationBarTitleText": "获奖记录",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "notes",
+          "style": {
+            "navigationBarTitleText": "笔记",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "todos",
+          "style": {
+            "navigationBarTitleText": "待办",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "picker-history",
+          "style": {
+            "navigationBarTitleText": "抽签历史",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "notifications",
+          "style": {
+            "navigationBarTitleText": "通知中心",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "messages",
+          "style": {
+            "navigationBarTitleText": "消息中心",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/writing",
+      "name": "writing",
+      "pages": [
+        {
+          "path": "essay",
+          "style": {
+            "navigationBarTitleText": "小作文助手"
+          }
+        },
+        {
+          "path": "english-story",
+          "style": {
+            "navigationBarTitleText": "英语小故事"
+          }
+        },
+        {
+          "path": "scene-dialogue",
+          "style": {
+            "navigationBarTitleText": "情景对话"
+          }
+        },
+        {
+          "path": "paper",
+          "style": {
+            "navigationBarTitleText": "教育论文"
+          }
+        },
+        {
+          "path": "plan-template-lib",
+          "style": {
+            "navigationBarTitleText": "文案模板库",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "paper-queries",
+          "style": {
+            "navigationBarTitleText": "试卷查询",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "lesson-plan-templates",
+          "style": {
+            "navigationBarTitleText": "教案模板",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "knowledges",
+          "style": {
+            "navigationBarTitleText": "知识点库",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "notice-templates",
+          "style": {
+            "navigationBarTitleText": "通知模板",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/quick",
+      "name": "quick",
+      "pages": [
+        {
+          "path": "quicktool",
+          "style": {
+            "navigationBarTitleText": "智能工具"
+          }
+        },
+        {
+          "path": "subject",
+          "style": {
+            "navigationBarTitleText": "学科练习"
+          }
+        },
+        {
+          "path": "subject-list",
+          "style": {
+            "navigationBarTitleText": "学科工具"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/subject-tools",
+      "name": "subject-tools",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "学科工具"
+          }
+        },
+        {
+          "path": "chinese",
+          "style": {
+            "navigationBarTitleText": "语文工具"
+          }
+        },
+        {
+          "path": "english",
+          "style": {
+            "navigationBarTitleText": "英语工具"
+          }
+        },
+        {
+          "path": "math",
+          "style": {
+            "navigationBarTitleText": "数学工具"
+          }
+        },
+        {
+          "path": "writingMaterials",
+          "style": {
+            "navigationBarTitleText": "作文素材"
+          }
+        },
+        {
+          "path": "poetry",
+          "style": {
+            "navigationBarTitleText": "古诗词助手"
+          }
+        },
+        {
+          "path": "wordCard",
+          "style": {
+            "navigationBarTitleText": "单词卡片"
+          }
+        },
+        {
+          "path": "dictation",
+          "style": {
+            "navigationBarTitleText": "汉字听写"
+          }
+        },
+        {
+          "path": "idiom",
+          "style": {
+            "navigationBarTitleText": "成语词典"
+          }
+        },
+        {
+          "path": "sentencePractice",
+          "style": {
+            "navigationBarTitleText": "句型练习"
+          }
+        },
+        {
+          "path": "reading",
+          "style": {
+            "navigationBarTitleText": "阅读理解"
+          }
+        },
+        {
+          "path": "grammar",
+          "style": {
+            "navigationBarTitleText": "语法练习"
+          }
+        },
+        {
+          "path": "listening",
+          "style": {
+            "navigationBarTitleText": "听力训练"
+          }
+        },
+        {
+          "path": "pinyin",
+          "style": {
+            "navigationBarTitleText": "拼音学习"
+          }
+        },
+        {
+          "path": "spell",
+          "style": {
+            "navigationBarTitleText": "单词拼写"
+          }
+        },
+        {
+          "path": "speaking",
+          "style": {
+            "navigationBarTitleText": "口语练习"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/office-tools",
+      "name": "office-tools",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "办公工具"
+          }
+        },
+        {
+          "path": "translate",
+          "style": {
+            "navigationBarTitleText": "翻译助手"
+          }
+        },
+        {
+          "path": "thesis",
+          "style": {
+            "navigationBarTitleText": "教育论文"
+          }
+        },
+        {
+          "path": "comment",
+          "style": {
+            "navigationBarTitleText": "评语生成"
+          }
+        },
+        {
+          "path": "summary",
+          "style": {
+            "navigationBarTitleText": "期末总结"
+          }
+        },
+        {
+          "path": "blackboard",
+          "style": {
+            "navigationBarTitleText": "黑板报生成"
+          }
+        },
+        {
+          "path": "speech",
+          "style": {
+            "navigationBarTitleText": "演讲稿生成"
           }
         }
       ]

@@ -27,7 +27,7 @@
           <view class="ic">📊</view>
           <view class="lb">考试分析</view>
         </view>
-        <view class="cell" @click="go('/pages/image-creation/image-creation')">
+        <view class="cell" @click="go('/pages/community/image-creation')">
           <view class="ic">🎨</view>
           <view class="lb">图像创造</view>
         </view>
@@ -37,7 +37,7 @@
     <view class="section">
       <view class="sec-title">📖 资源库</view>
       <view class="grid">
-        <view class="cell" @click="go('/pages/resource/resource')">
+        <view class="cell" @click="go('/pages/community/resource')">
           <view class="ic">📚</view>
           <view class="lb">在线资源</view>
         </view>

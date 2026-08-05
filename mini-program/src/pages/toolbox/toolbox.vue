@@ -68,11 +68,11 @@ const sections = ref([
   {
     title: '我的工作台',
     items: [
-      { label: '待办', icon: '✅', path: '/pages/todos/todos' },
-      { label: '笔记', icon: '📓', path: '/pages/notes/notes' },
-      { label: '课表', icon: '🗓️', path: '/pages/schedule/schedule' },
-      { label: '公告', icon: '📢', path: '/pages/notice/notice' },
-      { label: '个人中心', icon: '👤', path: '/pages/profile/profile' },
+      { label: '待办', icon: '✅', path: '/pages/community/todos' },
+      { label: '笔记', icon: '📓', path: '/pages/community/notes' },
+      { label: '课表', icon: '🗓️', path: '/pages/community/schedule' },
+      { label: '公告', icon: '📢', path: '/pages/community/notice' },
+      { label: '个人中心', icon: '👤', path: '/pages/community/profile' },
     ],
   },
   {
@@ -84,9 +84,9 @@ const sections = ref([
       { label: '知识点生成', icon: '💡', path: '/pages/ai/ai-knowledge' },
       { label: '优选试卷生成', icon: '📃', path: '/pages/ai/ai-paper' },
       { label: '互动讲义', icon: '🎯', path: '/pages/ai/ai-interactive' },
-      { label: '图像创造', icon: '🎨', path: '/pages/image-creation/image-creation' },
+      { label: '图像创造', icon: '🎨', path: '/pages/community/image-creation' },
       { label: '教案模板', icon: '📋', crud: 'lesson-plan-templates' },
-      { label: '资源', icon: '📚', path: '/pages/resource/resource' },
+      { label: '资源', icon: '📚', path: '/pages/community/resource' },
     ],
   },
   {
@@ -132,28 +132,28 @@ const sections = ref([
   {
     title: '学情与考试',
     items: [
-      { label: '考试管理', icon: '📊', path: '/pages/exams/exams' },
+      { label: '考试管理', icon: '📊', path: '/pages/teaching/exams' },
       { label: '考试一键分析', icon: '📊', path: '/pages/ai/ai-exam' },
-      { label: '成绩管理', icon: '📈', path: '/pages/grades/grades' },
-      { label: '成绩雷达图', icon: '📡', path: '/pages/radar/radar' },
-      { label: '数据统计', icon: '📉', path: '/pages/analysis/analysis' },
-      { label: '数据看板', icon: '📊', path: '/pages/data-dashboard/data-dashboard' },
+      { label: '成绩管理', icon: '📈', path: '/pages/teaching/grades' },
+      { label: '成绩雷达图', icon: '📡', path: '/pages/teaching/radar' },
+      { label: '数据统计', icon: '📉', path: '/pages/teaching/analysis' },
+      { label: '数据看板', icon: '📊', path: '/pages/teaching/data-dashboard' },
       { label: '试卷查询', icon: '🔍', crud: 'generated/queries' },
-      { label: '作业', icon: '📝', path: '/pages/homework/homework' },
-      { label: '考勤', icon: '✅', path: '/pages/attendance/attendance' },
+      { label: '作业', icon: '📝', path: '/pages/community/homework' },
+      { label: '考勤', icon: '✅', path: '/pages/community/attendance' },
     ],
   },
   {
     title: '课堂互动',
     items: [
       { label: '随机点名', icon: '🎯', path: '/pages/tools/picker' },
-      { label: '随机分组', icon: '🎲', path: '/pages/grouper/grouper' },
+      { label: '随机分组', icon: '🎲', path: '/pages/community/grouper' },
       { label: '随机决定器', icon: '🎲', path: '/pages/tools/decider' },
       { label: '倒计时', icon: '⏱️', path: '/pages/tools/timer' },
       { label: '课堂计算器', icon: '🧮', path: '/pages/tools/calc' },
-      { label: '座位表', icon: '💺', path: '/pages/seatMap/seatMap' },
+      { label: '座位表', icon: '💺', path: '/pages/teaching/seatMap' },
       { label: '计分板', icon: '🎯', path: '/pages/tools/scorePanel' },
-      { label: '抽签历史', icon: '🎰', path: '/pages/picker-history/picker-history' },
+      { label: '抽签历史', icon: '🎰', path: '/pages/community/picker-history' },
       { label: '小游戏合集', icon: '🎮', path: '/pages/games/index' },
       { label: '笑口常开', icon: '🌸', path: '/pages/tools/flower' },
     ],
@@ -161,17 +161,17 @@ const sections = ref([
   {
     title: '学生评价与积分',
     items: [
-      { label: '成长记录', icon: '🌱', path: '/pages/growth/growth' },
-      { label: '行为记录', icon: '⭐', path: '/pages/behavior-record/behavior-record' },
-      { label: '获奖记录', icon: '🏆', path: '/pages/award-record/award-record' },
+      { label: '成长记录', icon: '🌱', path: '/pages/community/growth' },
+      { label: '行为记录', icon: '⭐', path: '/pages/community/behavior-record' },
+      { label: '获奖记录', icon: '🏆', path: '/pages/community/award-record' },
       { label: '奖项类别', icon: '🎖️', crud: 'award-categories' },
-      { label: '课外阅读', icon: '📖', path: '/pages/reading-log/reading-log' },
-      { label: '学生打卡', icon: '✅', path: '/pages/checkin/checkin' },
+      { label: '课外阅读', icon: '📖', path: '/pages/teaching/reading-log' },
+      { label: '学生打卡', icon: '✅', path: '/pages/teaching/checkin' },
       { label: '评语生成', icon: '✍️', quicktool: 'comment' },
       { label: '期末总结', icon: '📑', quicktool: 'summary' },
       { label: '加减分', icon: '➕', crud: 'reward-records' },
       { label: '积分记录', icon: '💯', crud: 'score-records' },
-      { label: '积分排行榜', icon: '🏆', path: '/pages/leaderboard/leaderboard' },
+      { label: '积分排行榜', icon: '🏆', path: '/pages/teaching/leaderboard' },
       { label: '小组评分', icon: '👥', crud: 'group-scores' },
       { label: '奖励兑换', icon: '🎁', path: '/pages/tools/reward/reward' },
     ],
@@ -180,19 +180,19 @@ const sections = ref([
     title: '班级管理',
     items: [
       { label: '班级成员', icon: '👥', tab: '/pages/classes/classes' },
-      { label: '轮值表', icon: '📋', path: '/pages/duty-roster/duty-roster' },
+      { label: '轮值表', icon: '📋', path: '/pages/community/duty-roster' },
       { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
-      { label: '班费', icon: '💰', path: '/pages/class-finance/class-finance' },
-      { label: '班级活动', icon: '🎉', path: '/pages/class-activities/class-activities' },
-      { label: '班级风采', icon: '🖼️', path: '/pages/gallery/gallery' },
-      { label: '我的相册', icon: '📷', path: '/pages/my-gallery/my-gallery' },
+      { label: '班费', icon: '💰', path: '/pages/community/class-finance' },
+      { label: '班级活动', icon: '🎉', path: '/pages/community/class-activities' },
+      { label: '班级风采', icon: '🖼️', path: '/pages/community/gallery' },
+      { label: '我的相册', icon: '📷', path: '/pages/community/my-gallery' },
     ],
   },
   {
     title: '家校沟通',
     items: [
-      { label: '家长联系', icon: '📞', path: '/pages/parent-contact/parent-contact' },
-      { label: '家校沟通', icon: '💬', path: '/pages/im/im' },
+      { label: '家长联系', icon: '📞', path: '/pages/community/parent-contact' },
+      { label: '家校沟通', icon: '💬', path: '/pages/community/im' },
       { label: '通知模板', icon: '✉️', crud: 'notice-templates' },
     ],
   },
@@ -209,10 +209,10 @@ const sections = ref([
   {
     title: '教师办公',
     items: [
-      { label: '工作日志', icon: '🗒️', path: '/pages/work-log/work-log' },
-      { label: '听课记录', icon: '👀', path: '/pages/lesson-observation/lesson-observation' },
-      { label: '教学日历', icon: '📅', path: '/pages/teaching-calendar/teaching-calendar' },
-      { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/teacher/teacher' },
+      { label: '工作日志', icon: '🗒️', path: '/pages/community/work-log' },
+      { label: '听课记录', icon: '👀', path: '/pages/community/lesson-observation' },
+      { label: '教学日历', icon: '📅', path: '/pages/teaching/teaching-calendar' },
+      { label: '教师通讯录', icon: '👨‍🏫', path: '/pages/community/teacher' },
       { label: '翻译', icon: '🌐', quicktool: 'translate' },
       { label: '教育论文', icon: '📝', quicktool: 'paper' },
       { label: '黑板报', icon: '🟢', quicktool: 'blackboard' },
@@ -333,9 +333,9 @@ const viewSections = computed(() => {
 function go(t) {
   if (t.tab) uni.switchTab({ url: t.tab })
   else if (t.crud) uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(t.crud) })
-  else if (t.subjectEntry) uni.navigateTo({ url: '/pages/subject-list/subject-list?subject=' + encodeURIComponent(t.subjectEntry) })
-  else if (t.subject) uni.navigateTo({ url: '/pages/subject/subject?type=' + encodeURIComponent(t.subject) })
-  else if (t.quicktool) uni.navigateTo({ url: '/pages/quicktool/quicktool?type=' + encodeURIComponent(t.quicktool) })
+  else if (t.subjectEntry) uni.navigateTo({ url: '/pages/quick/subject-list?subject=' + encodeURIComponent(t.subjectEntry) })
+  else if (t.subject) uni.navigateTo({ url: '/pages/quick/subject?type=' + encodeURIComponent(t.subject) })
+  else if (t.quicktool) uni.navigateTo({ url: '/pages/quick/quicktool?type=' + encodeURIComponent(t.quicktool) })
   else uni.navigateTo({ url: t.path })
 }
 

@@ -202,11 +202,11 @@ export const academicEndpoints = {
 
   // 通知（教师端通知系统）
   '/notifications': [
-    { id: 'nf1', teacherId: 'u1', title: '新公告发布', content: '学校发布了新公告：下周期末考试安排', type: 'notice', read: false, link: '/pages/notice/notice', createdAt: '2026-07-18' },
-    { id: 'nf2', teacherId: 'u1', title: '家长留言', content: '张小明家长发送了一条消息，请注意查看', type: 'parent', read: false, link: '/pages/im/im', createdAt: '2026-07-18' },
-    { id: 'nf3', teacherId: 'u1', title: '作业批改提醒', content: '您有 5 份语文作业待批改', type: 'homework', read: true, link: '/pages/homework/homework', createdAt: '2026-07-22' },
-    { id: 'nf4', teacherId: 'u1', title: '考勤异常', content: '今日赵小刚迟到，请关注', type: 'attendance', read: false, link: '/pages/attendance/attendance', createdAt: '2026-07-18' },
-    { id: 'nf5', teacherId: 'u1', title: '成绩录入提醒', content: '期末模拟成绩还未录入完成', type: 'grade', read: true, link: '/pages/grades/grades', createdAt: '2026-07-21' },
+    { id: 'nf1', teacherId: 'u1', title: '新公告发布', content: '学校发布了新公告：下周期末考试安排', type: 'notice', read: false, link: '/pages/community/notice', createdAt: '2026-07-18' },
+    { id: 'nf2', teacherId: 'u1', title: '家长留言', content: '张小明家长发送了一条消息，请注意查看', type: 'parent', read: false, link: '/pages/community/im', createdAt: '2026-07-18' },
+    { id: 'nf3', teacherId: 'u1', title: '作业批改提醒', content: '您有 5 份语文作业待批改', type: 'homework', read: true, link: '/pages/community/homework', createdAt: '2026-07-22' },
+    { id: 'nf4', teacherId: 'u1', title: '考勤异常', content: '今日赵小刚迟到，请关注', type: 'attendance', read: false, link: '/pages/community/attendance', createdAt: '2026-07-18' },
+    { id: 'nf5', teacherId: 'u1', title: '成绩录入提醒', content: '期末模拟成绩还未录入完成', type: 'grade', read: true, link: '/pages/teaching/grades', createdAt: '2026-07-21' },
   ],
 
   // 教学日历（函数形式，根据参数返回不同月份数据）

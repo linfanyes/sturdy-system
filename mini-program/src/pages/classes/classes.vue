@@ -399,15 +399,15 @@ function goStudents(c) {
 }
 function goSeats(c) {
   showDetail.value = false
-  uni.navigateTo({ url: `/pages/seatMap/seatMap?classId=${c.id}` })
+  uni.navigateTo({ url: `/pages/teaching/seatMap?classId=${c.id}` })
 }
 function goSchedule() {
   showDetail.value = false
-  uni.navigateTo({ url: '/pages/schedule/schedule' })
+  uni.navigateTo({ url: '/pages/community/schedule' })
 }
 function goNotice(c) {
   showDetail.value = false
-  uni.navigateTo({ url: '/pages/notice/notice' })
+  uni.navigateTo({ url: '/pages/community/notice' })
 }
 
 async function syncTerm() {

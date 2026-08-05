@@ -252,7 +252,7 @@ export const MATH_TOOLS = [
 /**
  * 按学科名称返回该学科的所有工具列表。
  * 返回统一格式：[{ key, title, icon, subject, path? }]
- * - 语文/英语/科学/道德与法治：从 SUBJECT_TOOLS 提取，path 跳转到 /pages/subject/subject?type=key
+ * - 语文/英语/科学/道德与法治：从 SUBJECT_TOOLS 提取，path 跳转到 /pages/quick/subject?type=key
  * - 数学：从 MATH_TOOLS 提取，path 跳转到独立页面
  */
 export function getToolsBySubject(subject) {
