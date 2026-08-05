@@ -50,7 +50,7 @@
         <text v-if="form.photos.length">{{ form.photos.length }} 张</text>
       </view>
       <view class="thumbs" v-if="form.photos.length">
-        <image v-for="(p,i) in form.photos" :key="i" :src="p" class="thumb" mode="aspectFill" @click="form.photos.splice(i,1)" />
+        <image v-for="(p,i) in form.photos" :key="i" :src="p" class="thumb" mode="aspectFill" lazy-load @click="form.photos.splice(i,1)" />
       </view>
       <button class="ok" :disabled="saving" @click="saveAlbum">{{ saving ? '保存中…' : '保存相册' }}</button>
       <button class="cancel" @click="showAdd = false">取消</button>

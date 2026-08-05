@@ -28,7 +28,7 @@
         </view>
         <view class="title"><text class="md" v-if="isMd(n.content)">MD</text>{{ n.title }}</view>
         <view class="content">{{ n.content }}</view>
-        <image v-if="n.images && n.images.length" :src="n.images[0]" mode="aspectFill" class="cardimg" @click.stop="previewImg(n.images, 0)" />
+        <image v-if="n.images && n.images.length" :src="n.images[0]" mode="aspectFill" class="cardimg" lazy-load @click.stop="previewImg(n.images, 0)" />
         <view class="foot">{{ fmt(n.updatedAt) }}</view>
       </view>
     </view>
@@ -57,13 +57,13 @@
       <textarea v-if="!previewing" v-model="form.content" class="inp area" :placeholder="voiceTip + '把今天想说的写下来吧...（支持 # 标题、**加粗**、- 列表、`代码`、> 引用）'"></textarea>
       <view class="imgs" v-if="!previewing && form.images.length">
         <view class="imgwrap" v-for="(img, idx) in form.images" :key="idx">
-          <image :src="img" mode="aspectFill" class="imgthumb" @click="previewImg(form.images, idx)" />
+          <image :src="img" mode="aspectFill" class="imgthumb" lazy-load @click="previewImg(form.images, idx)" />
           <text class="imgdel" @click="removeImg(idx)">✕</text>
         </view>
       </view>
       <scroll-view v-else scroll-y class="mdpreview">
         <view v-if="form.images.length" class="previmgs">
-          <image v-for="(img, idx) in form.images" :key="idx" :src="img" mode="widthFix" class="previmg" @click="previewImg(form.images, idx)" />
+          <image v-for="(img, idx) in form.images" :key="idx" :src="img" mode="widthFix" class="previmg" lazy-load @click="previewImg(form.images, idx)" />
         </view>
         <rich-text :nodes="mdPreview"></rich-text>
       </scroll-view>

@@ -946,14 +946,16 @@
     }
   ],
   "preloadRule": {
-    "pages/dashboard/dashboard": {
-      "network": "all",
+  "pages/dashboard/dashboard": {
+    "network": "all",
       "packages": [
         "ai-features",
         "games",
-        "tools"
+        "tools",
+        "teaching",
+        "community"
       ]
-    },
+  },
     "pages/toolbox/toolbox": {
       "network": "all",
       "packages": [

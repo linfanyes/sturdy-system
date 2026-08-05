@@ -50,7 +50,7 @@
           <text class="label">照片</text>
           <view class="up" @click="pickImg">
             <text v-if="!form.photos.length">📷 添加活动照片（{{ form.photos.length }}）</text>
-            <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" /></view>
+            <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" lazy-load /></view>
           </view>
         </view>
         <view class="btn-row">

@@ -61,7 +61,7 @@
       <textarea v-model="form.description" class="inp area" placeholder="描述（可选）" />
       <view class="up" @click="pickImg">
         <text v-if="!form.photos.length">📷 添加照片（{{ form.photos.length }}）</text>
-        <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" /></view>
+        <view v-else class="ph"><image v-for="(p,i) in form.photos" :key="i" :src="p" class="phimg" mode="aspectFill" lazy-load /></view>
       </view>
       <button class="ok" :disabled="saving" @click="add">{{ saving ? '保存中…' : '保存相册' }}</button>
     </view>

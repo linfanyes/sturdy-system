@@ -32,7 +32,7 @@
             <text class="copy-btn" @click="addToNotes(m)">📝 存笔记</text>
           </view>
           <view v-if="m.role === 'user' && (m.files?.length || m.image)" class="attach">
-            <view v-if="m.image" class="attach-img"><image :src="m.image" mode="aspectFill" /></view>
+            <view v-if="m.image" class="attach-img"><image :src="m.image" mode="aspectFill" lazy-load /></view>
             <view v-for="(f, k) in (m.files || [])" :key="k" class="chip">
               <text class="chip-ico">📄</text>
               <text class="chip-name">{{ f.name }}</text>
