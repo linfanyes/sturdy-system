@@ -84,8 +84,8 @@ export function updateTeacherFeatures(id: string, features: string[]) {
   return request.patch(`/school-admin/teachers/${id}/features`, { features })
 }
 
-export function resetTeacherPassword(id: string) {
-  return request.post(`/school-admin/teachers/${id}/reset-password`)
+export function resetTeacherPassword(id: string, password?: string) {
+  return request.post(`/school-admin/teachers/${id}/reset-password`, { password: password || '' })
 }
 
 export function deleteTeacher(id: string) {
@@ -197,8 +197,8 @@ export function toggleParentLogin(id: string) {
 }
 
 /** 班主任重置某学生家长登录口令为学号后 6 位，返回 { studentId, ok, defaultPassword } */
-export function resetParentPassword(id: string) {
-  return request.post<unknown, { studentId: string; ok: boolean; defaultPassword: string }>(`/students/${id}/reset-parent-password`)
+export function resetParentPassword(id: string, password?: string) {
+  return request.post<unknown, { studentId: string; ok: boolean; defaultPassword: string }>(`/students/${id}/reset-parent-password`, { password: password || '' })
 }
 
 /* ============ 全局搜索 ============ */

@@ -248,7 +248,7 @@
       <view class="tabbar">
         <view class="tab-item" :class="{ on: bottomTab === 'dashboard' }" @click="selectBottomTab('dashboard')">
           <text class="tab-ico">📊</text>
-          <text class="tab-txt">仪表盘</text>
+          <text class="tab-txt">工作台</text>
         </view>
         <view class="tab-item" :class="{ on: bottomTab === 'account' }" @click="selectBottomTab('account')">
           <text class="tab-ico">👥</text>

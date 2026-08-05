@@ -177,7 +177,7 @@
     {
       "path": "pages/admin/dashboard",
       "style": {
-        "navigationBarTitleText": "超管仪表盘"
+        "navigationBarTitleText": "超管工作台"
       }
     },
     {

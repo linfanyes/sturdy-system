@@ -96,10 +96,9 @@
       </view>
       <button class="demo-btn" @click="enterDemoMode">进入教师系统演示</button>
     </view>
-    </view>
 
-    <!-- 人员管理：二级菜单瓷砖 -->
-    <view v-else-if="bottomTab === 'people'" class="tiles-wrap">
+    <!-- 功能入口（二级菜单集中到工作台） -->
+    <view class="tiles-wrap" style="margin-top:24rpx;">
       <view class="tiles-title">人员管理</view>
       <view class="tiles">
         <view class="tile" v-for="m in peopleMenus" :key="m.to" @click="navigate(m)">
@@ -107,11 +106,7 @@
           <view class="tile-label">{{ m.label }}</view>
         </view>
       </view>
-    </view>
-
-    <!-- 系统设置：二级菜单瓷砖 -->
-    <view v-else-if="bottomTab === 'settings'" class="tiles-wrap">
-      <view class="tiles-title">系统设置</view>
+      <view class="tiles-title" style="margin-top:24rpx;">系统设置</view>
       <view class="tiles">
         <view class="tile" v-for="m in settingsMenus" :key="m.to" @click="navigate(m)">
           <view class="tile-ic">{{ m.icon }}</view>
@@ -120,17 +115,19 @@
       </view>
     </view>
 
+    </view>
+
     <!-- 底部一级导航（≤3） -->
     <view class="bottom-nav">
       <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
         <text class="bn-ic">📊</text>
         <text class="bn-tx">工作台</text>
       </view>
-      <view class="bn-item" :class="{ on: bottomTab === 'people' }" @click="bottomTab = 'people'">
+      <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
         <text class="bn-ic">👥</text>
         <text class="bn-tx">人员管理</text>
       </view>
-      <view class="bn-item" :class="{ on: bottomTab === 'settings' }" @click="bottomTab = 'settings'">
+      <view class="bn-item" :class="{ on: bottomTab === 'dashboard' }" @click="bottomTab = 'dashboard'">
         <text class="bn-ic">⚙️</text>
         <text class="bn-tx">系统设置</text>
       </view>
@@ -428,7 +425,7 @@ async function saveFeatures() {
   saving.value = false
 }
 
-function resetPwd(u) { pwdUser.value = u; newPwd.value = '' }
+function resetPwd(u) { pwdUser.value = u; newPwd.value = '1314521' }
 async function doResetPwd() {
   if (!newPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
   if (newPwd.value.length < 6 || newPwd.value.length > 20) {

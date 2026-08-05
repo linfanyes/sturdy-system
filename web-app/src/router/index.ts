@@ -28,7 +28,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['super'] as Role[] },
     children: [
-      { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '仪表盘' } },
+      { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '超管工作台' } },
       { path: 'schools', name: 'super-schools', component: () => import('@/views/super/Schools.vue'), meta: { title: '学校管理' } },
       { path: 'admins', name: 'super-admins', component: () => import('@/views/super/Admins.vue'), meta: { title: '校管理员' } },
       { path: 'audit-logs', name: 'super-audit-logs', component: () => import('@/views/super/AuditLogs.vue'), meta: { title: '审计日志' } },

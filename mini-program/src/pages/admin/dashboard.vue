@@ -2,7 +2,7 @@
   <view class="page" :class="dark && 'dark'">
     <view class="head">
       <text class="back" @click="goBack">← 返回</text>
-      <text class="title">👑 超管仪表盘</text>
+      <text class="title">👑 超管工作台</text>
       <text class="placeholder"></text>
     </view>
 

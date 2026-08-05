@@ -5,7 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { getDashboard } from '@/api/school-admin'
 import {
   Sparkles, School, Users, GraduationCap,
-  ArrowRight, Loader2, TrendingUp, Activity, BookOpen
+  ArrowRight, Loader2, TrendingUp, Activity, BookOpen,
+  ToggleLeft, Megaphone, Bot
 } from 'lucide-vue-next'
 import SvgBarChart from '@/components/SvgBarChart.vue'
 import SvgPieChart from '@/components/SvgPieChart.vue'
@@ -83,11 +84,39 @@ async function load() {
 }
 onMounted(load)
 
-const quickLinks = [
-  { label: '教师管理', desc: '教师信息与账号', to: '/school-admin/teachers', icon: Users, color: 'blue' },
-  { label: '班级管理', desc: '班级结构与数据', to: '/school-admin/classes', icon: School, color: 'green' },
-  { label: '学生管理', desc: '学生与家长关联', to: '/school-admin/students', icon: GraduationCap, color: 'rose' }
+// 二级功能入口（集中到工作台页内，按一级分类分组）
+const entryGroups = [
+  {
+    title: '人员管理',
+    items: [
+      { label: '教师管理', desc: '教师信息与账号', to: '/school-admin/teachers', icon: Users, color: 'blue' },
+      { label: '班级管理', desc: '班级结构与数据', to: '/school-admin/classes', icon: School, color: 'green' },
+      { label: '学生管理', desc: '学生与家长关联', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
+      { label: '学校功能包', desc: '功能开关配置', to: '/school-admin/features', icon: ToggleLeft, color: 'purple' },
+    ],
+  },
+  {
+    title: '资源与设置',
+    items: [
+      { label: '学校公告', desc: '发布与维护公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
+      { label: '教材知识库', desc: '教材与知识点', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
+      { label: '教学资源库', desc: '教学资源沉淀', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { label: 'AI 配置', desc: 'AI 服务商设置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
+    ],
+  },
 ]
+
+// 图标容器配色（用标准 tailwind 色避免依赖自定义 palette 未配置）
+function iconWrapClass(c: string) {
+  return ({
+    blue: 'bg-blue-100 text-blue-600',
+    green: 'bg-green-100 text-green-600',
+    rose: 'bg-rose-100 text-rose-600',
+    purple: 'bg-purple-100 text-purple-600',
+    butter: 'bg-amber-100 text-amber-600',
+    sky: 'bg-cyan-100 text-cyan-600',
+  } as Record<string, string>)[c] || 'bg-cream-100 text-cocoa-600'
+}
 </script>
 
 <template>
@@ -164,20 +193,14 @@ const quickLinks = [
       <SvgBarChart title="学校资源总览" :data="chartOverview" :height="200" />
     </div>
 
-    <div>
-      <h2 class="section-title">
-        <Sparkles class="w-5 h-5 text-butter-400" /> 快速管理
-      </h2>
+    <div v-for="g in entryGroups" :key="g.title" class="mt-8">
+      <h2 class="section-title">{{ g.title }}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <button v-for="l in quickLinks" :key="l.to" class="quick-card text-left" @click="router.push(l.to)">
+        <button v-for="l in g.items" :key="l.to" class="quick-card text-left" @click="router.push(l.to)">
           <div class="flex items-center justify-between">
             <div
               class="w-10 h-10 rounded-xl flex items-center justify-center"
-              :class="{
-                'bg-blue-100 text-blue-600': l.color === 'blue',
-                'bg-green-100 text-green-600': l.color === 'green',
-                'bg-rose-100 text-rose-600': l.color === 'rose'
-              }"
+              :class="iconWrapClass(l.color)"
             >
               <component :is="l.icon" class="w-5 h-5" />
             </div>

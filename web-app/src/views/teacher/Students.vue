@@ -13,6 +13,7 @@ import {
 } from '@/api/teacher'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
+import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Plus, Search, Edit3, Trash2, Users, Phone, KeyRound, Download, Upload, FileDown } from 'lucide-vue-next'
 
@@ -163,13 +164,27 @@ async function handleToggleParentLogin(s: TeacherStudent) {
   }
 }
 
-async function handleResetParentPwd(s: TeacherStudent) {
-  if (!await confirm(`确定将「${s.name}」的家长登录口令重置为默认密码？`)) return
+/* ============ 重置家长密码弹框 ============ */
+const showReset = ref(false)
+const resetTarget = ref<TeacherStudent | null>(null)
+const resetting = ref(false)
+
+function openReset(s: TeacherStudent) {
+  resetTarget.value = s
+  showReset.value = true
+}
+
+async function submitReset(password: string) {
+  if (!resetTarget.value || resetting.value) return
+  resetting.value = true
   try {
-    const res = await resetStudentParentPassword(s.id)
-    alert(`已重置为默认密码：${res.defaultPassword}`)
+    const res: any = await resetStudentParentPassword(resetTarget.value.id, password)
+    showReset.value = false
+    alert('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
     alert(e?.message || '重置失败')
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -298,7 +313,7 @@ function downloadTemplate() {
                   {{ s.parentLoginEnabled ? '已开通' : '未开通' }}
                 </span>
                 <template v-if="s.parentLoginEnabled">
-                  <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="handleResetParentPwd(s)">重置密码</button>
+                  <button class="text-xs text-cocoa-500 hover:text-rose-500 underline" @click="openReset(s)">重置密码</button>
                 </template>
                 <button
                   class="text-xs underline"
@@ -399,4 +414,12 @@ function downloadTemplate() {
 
   <!-- 批量导入：复用通用组件，导入完成后刷新列表 -->
   <BatchImportDialog v-model="showImport" type="student" :classes="classes" @imported="loadStudents" />
+
+  <!-- 重置密码 Modal -->
+  <ResetPasswordModal
+    v-model="showReset"
+    :target-name="resetTarget?.name ? resetTarget.name + ' 的家长' : '该学生家长'"
+    default-password="123456"
+    @confirm="submitReset"
+  />
 </template>

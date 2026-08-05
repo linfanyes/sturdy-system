@@ -7,6 +7,7 @@ import {
 } from '@/api/school-admin'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
+import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Search, Download, Edit3, Phone, Users, Upload, Printer, Trash2 } from 'lucide-vue-next'
 
@@ -74,13 +75,27 @@ async function toggleParentLogin(s: StudentItem) {
   }
 }
 
-async function resetParentPwd(s: StudentItem) {
-  if (!await confirm(`确定将「${s.name}」的家长登录口令重置为默认密码 123456？`)) return
+/* ============ 家长登录：重置密码弹框 ============ */
+const showReset = ref(false)
+const resetTarget = ref<StudentItem | null>(null)
+const resetting = ref(false)
+
+function openReset(s: StudentItem) {
+  resetTarget.value = s
+  showReset.value = true
+}
+
+async function submitReset(password: string) {
+  if (!resetTarget.value || resetting.value) return
+  resetting.value = true
   try {
-    const res = await resetParentPassword(s.id)
-    alert(`已重置为默认密码：${res.defaultPassword}`)
+    const res: any = await resetParentPassword(resetTarget.value.id, password)
+    showReset.value = false
+    alert('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
     alert(e?.message || '重置失败')
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -348,4 +363,12 @@ async function handleDelete(s: StudentItem) {
 
   <!-- 批量导入 -->
   <BatchImportDialog v-model="showImport" type="student" :classes="classes" @imported="loadStudents" />
+
+  <!-- 重置密码 Modal -->
+  <ResetPasswordModal
+    v-model="showReset"
+    :target-name="resetTarget?.name ? resetTarget.name + ' 的家长' : '该学生家长'"
+    default-password="123456"
+    @confirm="submitReset"
+  />
 </template>

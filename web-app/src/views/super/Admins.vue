@@ -7,6 +7,7 @@ import {
   listSchools,
 } from '@/api/admin'
 import Modal from '@/components/Modal.vue'
+import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 
 const loading = ref(false)
 const items = ref<any[]>([])
@@ -103,22 +104,20 @@ async function submit() {
 /* ============ 重置密码弹窗 ============ */
 const showReset = ref(false)
 const resetTarget = ref<any | null>(null)
-const newPassword = ref('')
 const resetting = ref(false)
 
 function openReset(row: any) {
   resetTarget.value = row
-  newPassword.value = '1314520'
   showReset.value = true
 }
 
-async function submitReset() {
-  if (!resetTarget.value) return
+async function submitReset(password: string) {
+  if (!resetTarget.value || resetting.value) return
   resetting.value = true
   try {
-    const res: any = await resetSchoolAdminPassword(resetTarget.value.id, newPassword.value)
+    const res: any = await resetSchoolAdminPassword(resetTarget.value.id, password)
     showReset.value = false
-    alert('密码已重置' + (res?.defaultPassword ? `，默认密码：${res.defaultPassword}` : ''))
+    alert('密码已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
     alert(e?.message || '重置失败')
   } finally {
@@ -275,22 +274,11 @@ function formatTime(t?: string) {
     </Modal>
 
     <!-- 重置密码 Modal -->
-    <Modal v-model="showReset" title="重置密码" width="max-w-md">
-      <p class="text-sm text-cocoa-500 mb-4">为「{{ resetTarget?.name }}」设置新密码（留空或保持默认即重置为 <b>1314520</b>）</p>
-      <div>
-        <label class="text-sm text-cocoa-500">新密码</label>
-        <input v-model="newPassword" type="text" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="默认 1314520" />
-      </div>
-      <template #footer>
-        <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showReset = false">取消</button>
-        <button
-          class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-          :disabled="resetting"
-          @click="submitReset"
-        >
-          {{ resetting ? '提交中…' : '确认重置' }}
-        </button>
-      </template>
-    </Modal>
+    <ResetPasswordModal
+      v-model="showReset"
+      :target-name="resetTarget?.name"
+      default-password="1314520"
+      @confirm="submitReset"
+    />
   </div>
 </template>

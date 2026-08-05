@@ -102,8 +102,8 @@ export function toggleStudentParentLogin(id: string) {
 }
 
 /** 重置家长登录口令 */
-export function resetStudentParentPassword(id: string) {
-  return request.post<any, { studentId: string; ok: boolean; defaultPassword: string }>('/students/' + id + '/reset-parent-password')
+export function resetStudentParentPassword(id: string, password?: string) {
+  return request.post<any, { studentId: string; ok: boolean; defaultPassword: string }>('/students/' + id + '/reset-parent-password', { password: password || '' })
 }
 
 /** 获取班级成员（协作教师）

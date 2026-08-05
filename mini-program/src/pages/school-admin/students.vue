@@ -78,6 +78,21 @@
       </view>
     </view>
   </view>
+
+  <!-- 家长密码重置弹窗 -->
+  <view v-if="pwdUser" class="mask" @click="pwdUser = null">
+    <view class="sheet" @click.stop>
+      <view class="sh-t">重置「{{ pwdUser.name }}」家长密码</view>
+      <view class="field">
+        <input v-model="newPwd" class="inp" placeholder="新密码（6-20位）" />
+      </view>
+      <view class="sh-sub">默认密码 123456，也可自行设置（6-20位）</view>
+      <view class="btn-row">
+        <button class="btn cancel" @click="pwdUser = null">取消</button>
+        <button class="btn save" :disabled="resetSaving" @click="doResetParentPwd">确认重置</button>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup>
@@ -193,23 +208,30 @@ async function toggleParentLogin(s) {
   })
 }
 
-async function resetParentPwd(s) {
-  uni.showModal({
-    title: '重置家长密码',
-    content: '确定将「' + s.name + '」的家长登录口令重置为学号后6位？',
-    success: async (m) => {
-      if (!m.confirm) return
-      try {
-        const res = await apiCall('POST', '/students/' + s.id + '/reset-parent-password')
-        uni.showModal({
-          title: '重置成功',
-          content: '默认口令已重置为学号后6位：' + (res.defaultPassword || ((s.studentNo || '').slice(-6))),
-          showCancel: false,
-        })
-        await loadStudents()
-      } catch (e) { uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
-    },
-  })
+/* ============ 家长登录：重置密码弹框 ============ */
+const pwdUser = ref(null)
+const newPwd = ref('')
+const resetSaving = ref(false)
+
+function resetParentPwd(s) {
+  pwdUser.value = s
+  newPwd.value = '123456'
+}
+
+async function doResetParentPwd() {
+  if (!pwdUser.value || resetSaving.value) return
+  resetSaving.value = true
+  try {
+    const res = await apiCall('POST', '/students/' + pwdUser.value.id + '/reset-parent-password', { password: newPwd.value })
+    pwdUser.value = null
+    uni.showModal({
+      title: '重置成功',
+      content: '家长登录口令已重置为：' + (res && res.defaultPassword ? res.defaultPassword : newPwd.value),
+      showCancel: false,
+    })
+    await loadStudents()
+  } catch (e) { uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
+  finally { resetSaving.value = false }
 }
 
 /* ============ 导出 ============ */

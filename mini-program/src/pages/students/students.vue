@@ -160,6 +160,19 @@
       </view>
     </view>
   </view>
+
+  <!-- 家长密码重置弹窗 -->
+  <view v-if="pwdUser" class="mask" @click="pwdUser = null">
+    <view class="dialog" @click.stop>
+      <view class="d-title">重置「{{ pwdUser.name }}」家长密码</view>
+      <input v-model="newPwd" class="pwd-inp" placeholder="新密码（6-20位）" />
+      <view class="d-sub">默认密码 123456，也可自行设置（6-20位）</view>
+      <view class="btn-row2">
+        <button class="cancel-btn" @click="pwdUser = null">取消</button>
+        <button class="confirm" :disabled="resetSaving" @click="doResetParentPwd">确认重置</button>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup>
@@ -371,26 +384,32 @@ async function batchAuthParent(enabled) {
   } catch (e) { uni.hideLoading(); uni.showToast({ title: '操作失败', icon: 'none' }) }
 }
 
-// 班主任重置某学生家长登录口令为学号后6位
-async function resetParentPwd(s) {
-  uni.showModal({
-    title: '重置家长密码',
-    content: '确定将「' + s.name + '」的家长登录口令重置为学号后6位？',
-    success: async (r) => {
-      if (!r.confirm) return
-      uni.showLoading({ title: '重置中…', mask: true })
-      try {
-        const res = await api.post('/students/' + s.id + '/reset-parent-password')
-        uni.hideLoading()
-        uni.showModal({
-          title: '重置成功',
-          content: '默认口令已重置为学号后6位：' + (res.defaultPassword || defaultPwd(s)),
-          showCancel: false,
-        })
-        load()
-      } catch (e) { uni.hideLoading(); uni.showToast({ title: '重置失败', icon: 'none' }) }
-    },
-  })
+// 班主任重置某学生家长登录口令（弹框：默认 123456，可自定义）
+const pwdUser = ref(null)
+const newPwd = ref('')
+const resetSaving = ref(false)
+
+function resetParentPwd(s) {
+  pwdUser.value = s
+  newPwd.value = '123456'
+}
+
+async function doResetParentPwd() {
+  if (!pwdUser.value || resetSaving.value) return
+  resetSaving.value = true
+  uni.showLoading({ title: '重置中…', mask: true })
+  try {
+    const res = await api.post('/students/' + pwdUser.value.id + '/reset-parent-password', { password: newPwd.value })
+    pwdUser.value = null
+    uni.hideLoading()
+    uni.showModal({
+      title: '重置成功',
+      content: '家长登录口令已重置为：' + (res && res.defaultPassword ? res.defaultPassword : newPwd.value),
+      showCancel: false,
+    })
+    load()
+  } catch (e) { uni.hideLoading(); uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
+  finally { resetSaving.value = false }
 }
 
 // 家长默认口令 = 学号后6位（与后端规则一致，仅用于界面展示）
@@ -868,4 +887,7 @@ function drawRadar() {
 .form .area { height: 120rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; color: var(--c-text); background: var(--c-input); width: 100%; }
 .dark .tag, .dark .pf-tag { background: var(--c-card2); color: #6db3f2; }
 .dark .dial { background: rgba(7,193,96,.2); }
+.pwd-inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 18rpx 20rpx; font-size: 28rpx; background: var(--c-input); color: var(--c-text); width: 100%; box-sizing: border-box; margin: 16rpx 0 8rpx; }
+.btn-row2 { display: flex; gap: 20rpx; margin-top: 12rpx; }
+.cancel-btn { flex: 1; border-radius: 50rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; background: var(--c-card2); color: var(--c-sub); }
 </style>

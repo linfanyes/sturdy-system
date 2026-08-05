@@ -12,6 +12,7 @@ import { ALL_POSITIONS } from '@gardener/shared/constants'
 import { useAuthStore } from '@/stores/auth'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
+import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer } from 'lucide-vue-next'
 
@@ -219,14 +220,26 @@ function toggleFeature(key: string) {
 }
 
 /* ============ 重置密码 ============ */
-async function handleResetPassword(t: TeacherItem) {
-  if (!await confirm(`确定重置 ${t.name} 的密码为默认密码？`)) return
+const showReset = ref(false)
+const resetTarget = ref<TeacherItem | null>(null)
+const resetting = ref(false)
+
+function openReset(t: TeacherItem) {
+  resetTarget.value = t
+  showReset.value = true
+}
+
+async function submitReset(password: string) {
+  if (!resetTarget.value || resetting.value) return
+  resetting.value = true
   try {
-    const r = await resetTeacherPassword(t.id)
-    const pwd = r?.defaultPassword
-    alert(pwd ? `密码已重置为：${pwd}\n请通知老师用此密码登录，并尽快修改。` : '密码已重置')
+    const r: any = await resetTeacherPassword(resetTarget.value.id, password)
+    showReset.value = false
+    alert('密码已重置' + (r?.defaultPassword ? `，新密码：${r.defaultPassword}\n请通知老师用此密码登录，并尽快修改。` : ''))
   } catch (e: any) {
     alert(e?.message || '重置失败')
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -383,7 +396,7 @@ function handlePrint() {
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="功能权限" @click="openFeatures(t)">
                 <Settings2 class="w-4 h-4" />
               </button>
-              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="重置密码" @click="handleResetPassword(t)">
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="重置密码" @click="openReset(t)">
                 <KeyRound class="w-4 h-4" />
               </button>
               <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="删除" @click="handleDelete(t)">
@@ -551,4 +564,12 @@ function handlePrint() {
 
   <!-- 批量导入 -->
   <BatchImportDialog v-model="showImport" type="teacher" @imported="loadTeachers" />
+
+  <!-- 重置密码 Modal -->
+  <ResetPasswordModal
+    v-model="showReset"
+    :target-name="resetTarget?.name"
+    default-password="1314521"
+    @confirm="submitReset"
+  />
 </template>

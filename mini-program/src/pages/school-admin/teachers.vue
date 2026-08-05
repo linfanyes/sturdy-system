@@ -266,7 +266,7 @@ async function delTeacher(u) {
   })
 }
 
-function resetPwd(u) { pwdUser.value = u; newPwd.value = '' }
+function resetPwd(u) { pwdUser.value = u; newPwd.value = '1314521' }
 
 async function doResetPwd() {
   if (!newPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })

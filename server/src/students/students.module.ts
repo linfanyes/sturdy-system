@@ -332,21 +332,30 @@ class StudentsService extends CrudService<Student> {
     return { studentId, parentLoginEnabled: s.parentLoginEnabled, initialPassword }
   }
 
-  /** 班主任重置家长登录口令为默认口令 123456 */
-  async resetParentPassword(teacherId: string, studentId: string) {
-    const s = await this.repo.findOne({ where: { id: studentId, teacherId } })
-    if (!s) throw new BadRequestException('学生不存在')
+  /** 教师/校管重置家长登录口令：未提供合规密码（6-20 位）时统一重置为默认口令 123456 */
+  async resetParentPassword(user: any, studentId: string, newPassword = '') {
+    const role = user?.role
+    // 校管按学校隔离（其学生列表已按学校过滤），教师按 teacherId 归属过滤
+    const s = role === 'school_admin'
+      ? await this.repo.findOne({ where: { id: studentId } })
+      : await this.repo.findOne({ where: { id: studentId, teacherId: user?.sub } })
+    if (!s) throw new BadRequestException('学生不存在或无权限')
     if (!s.parentLoginEnabled) throw new BadRequestException('该学生家长登录尚未开启，无法重置')
-    const no = (s.studentNo || '').trim()
-    if (!no) throw new BadRequestException('该学生缺少学号，无法重置为默认口令')
-    const defaultPassword = '123456'
-    s.parentPasswordHash = hashPassword(defaultPassword)
+    const raw = (newPassword || '').trim()
+    let pwd: string
+    if (raw) {
+      if (raw.length < 6 || raw.length > 20) throw new BadRequestException('密码长度须为 6-20 位')
+      pwd = raw
+    } else {
+      pwd = '123456' // 未提供则使用默认口令，并随响应返回以便告知
+    }
+    s.parentPasswordHash = hashPassword(pwd)
     await this.repo.save(s)
     // 审计日志
     const userRepo2 = this.dataSource.getRepository(User)
-    const teacherObj2 = await userRepo2.findOne({ where: { id: teacherId } }).catch(() => null)
-    await this.auditService.log(teacherObj2?.schoolId || teacherId, 'reset_parent_password', teacherId, s.studentNo, '重置家长登录口令').catch(() => {})
-    return { studentId, ok: true, defaultPassword }
+    const operator = await userRepo2.findOne({ where: { id: user?.sub } }).catch(() => null)
+    await this.auditService.log(operator?.schoolId || user?.schoolId || user?.sub, 'reset_parent_password', user?.sub, s.studentNo, '重置家长登录口令').catch(() => {})
+    return { studentId, ok: true, defaultPassword: pwd }
   }
 
   /** 删除学生（级联清理：家长联系记录 + 业务数据 + 家长微信绑定） */
@@ -502,11 +511,11 @@ class StudentsController extends CrudController<Student> {
     return (this.service as StudentsService).toggleParentLogin(t.sub, id)
   }
 
-  /** 班主任将该学生的家长登录口令重置为默认口令（学号后 6 位） */
+  /** 教师/校管将该学生的家长登录口令重置为默认口令（123456）或自定义密码 */
   @Post(':id/reset-parent-password')
   @UseGuards(JwtAuthGuard)
-  async resetParentPassword(@Param('id') id: string, @CurrentTeacher() t: any) {
-    return (this.service as StudentsService).resetParentPassword(t.sub, id)
+  async resetParentPassword(@Param('id') id: string, @CurrentTeacher() t: any, @Body() b: any) {
+    return (this.service as StudentsService).resetParentPassword(t, id, b?.password || '')
   }
 
   /** 教师查看某学生绑定的所有家长微信 */

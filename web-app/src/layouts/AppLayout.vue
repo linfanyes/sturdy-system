@@ -68,8 +68,9 @@ interface MenuCategory {
   color: ColorTone
   emoji?: string
   groups: MenuSubGroup[]
-  /** 直达分类：点击直接跳转其首个子项，不在内容区展开二级瓷砖（如超管「仪表盘」） */
+  /** 直达分类：点击直接跳转，to 存在则跳 to，否则跳首个子项；不在内容区展开二级瓷砖（如超管「工作台」/校管「人员管理」「资源与设置」） */
   direct?: boolean
+  to?: string
 }
 
 /* ============ 配色辅助 ============ */
@@ -87,6 +88,12 @@ const palette = (t: ColorTone) => colorClassMap[t] || colorClassMap.cream
 
 /* ============ 教师三级菜单 ============ */
 const teacherMenu: MenuCategory[] = [
+  {
+    label: '工作台', color: 'butter', icon: LayoutDashboard, direct: true, to: '/teacher',
+    groups: [{ label: '', items: [
+      { name: 'teacher-dashboard', label: '工作台', to: '/teacher', icon: LayoutDashboard, color: 'butter' },
+    ] }],
+  },
   {
     label: '教学管理', color: 'blue', icon: School,
     groups: [
@@ -261,13 +268,13 @@ const teacherMenu: MenuCategory[] = [
   },
 ]
 
-/* 超管菜单：仪表盘（直达）/ 账户管理（学校管理·校管理员·学校功能包）/ 设置（平台配置·AI 服务商）
+/* 超管菜单：工作台（直达）/ 账户管理（学校管理·校管理员·学校功能包）/ 设置（平台配置·AI 服务商）
    复用「侧边栏图标分类 + 内容区二级瓷砖」模式；教师/学生/审计日志按需求从菜单移除（页面与路由保留）。 */
 const superMenu: MenuCategory[] = [
   {
-    label: '仪表盘', color: 'butter', icon: LayoutDashboard, direct: true,
+    label: '工作台', color: 'butter', icon: LayoutDashboard, direct: true,
     groups: [{ label: '', items: [
-      { name: 'super-dashboard', label: '仪表盘', to: '/super', icon: LayoutDashboard, color: 'butter' },
+      { name: 'super-dashboard', label: '工作台', to: '/super', icon: LayoutDashboard, color: 'butter' },
     ] }],
   },
   {
@@ -306,7 +313,7 @@ const schoolAdminMenu: MenuCategory[] = [
     ] }],
   },
   {
-    label: '人员管理', color: 'blue', icon: Users,
+    label: '人员管理', color: 'blue', icon: Users, direct: true, to: '/school-admin',
     groups: [{ label: '', items: [
       { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
       { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
@@ -315,7 +322,7 @@ const schoolAdminMenu: MenuCategory[] = [
     ] }],
   },
   {
-    label: '资源与设置', color: 'cream', icon: Settings,
+    label: '资源与设置', color: 'cream', icon: Settings, direct: true, to: '/school-admin',
     groups: [{ label: '', items: [
       { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
@@ -416,7 +423,7 @@ function toggleCat(label: string) {
   if (cat?.direct) {
     activeCategory.value = ''
     openCats.value = []
-    router.push(cat.groups[0]?.items[0]?.to || '/')
+    router.push(cat.to || cat.groups[0]?.items[0]?.to || '/')
     return
   }
   // 从子页面点击分类：始终回到工作台根并展开该分类的二级菜单
@@ -760,7 +767,7 @@ function navigateTo(to: string) {
             </div>
             <nav aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
               <Home class="h-3.5 w-3.5" />
-              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '仪表盘' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
+              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
               <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super')">
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />
                 <span>{{ activeCategory }}</span>
@@ -784,7 +791,7 @@ function navigateTo(to: string) {
           <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
           <template v-if="showTilesPanel">
             <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-4">
-              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回{{ auth.role === 'super' ? '仪表盘' : '工作台' }}</button>
+              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回{{ auth.role === 'super' ? '工作台' : '工作台' }}</button>
               <ChevronRight class="w-4 h-4" />
               <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
             </div>
