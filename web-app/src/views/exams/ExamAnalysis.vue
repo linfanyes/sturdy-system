@@ -369,7 +369,7 @@ function goExamDetail() {
               <option v-for="s in examStats.subjects" :key="s.subject" :value="s.subject">{{ s.subject }}</option>
             </select>
           </div>
-          <div class="max-h-96 overflow-y-auto">
+          <div class="max-h-96 overflow-auto">
             <table class="w-full text-sm">
               <thead class="bg-cream-100 text-cocoa-500 text-left sticky top-0">
                 <tr>

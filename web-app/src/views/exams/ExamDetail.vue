@@ -484,7 +484,7 @@ function goBack() {
           <Loader2 class="w-4 h-4 animate-spin" /> 加载中…
         </div>
         <div v-else-if="!ranks.length" class="text-cocoa-400 text-sm py-8 text-center">暂无数据</div>
-        <div v-else class="overflow-y-auto" style="max-height: 480px">
+        <div v-else class="overflow-auto" style="max-height: 480px">
           <table class="w-full text-sm">
             <thead class="bg-cream-100 text-cocoa-500 text-left sticky top-0">
               <tr>

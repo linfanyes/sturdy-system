@@ -75,7 +75,7 @@
 
   /* 表格容器 */
   .table-wrap {
-    @apply bg-surface rounded-2xl shadow-softer overflow-hidden border border-cream-100/60;
+    @apply bg-surface rounded-2xl shadow-softer overflow-x-auto border border-cream-100/60;
   }
   .table-wrap table {
     @apply w-full text-sm;

@@ -803,7 +803,7 @@ function onStudentDblClick(studentId: string) {
           </div>
           <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="importPreview = []">重新选择</button>
         </div>
-        <div class="max-h-72 overflow-y-auto border border-cream-200 rounded-xl">
+        <div class="max-h-72 overflow-auto border border-cream-200 rounded-xl">
           <table class="w-full text-sm">
             <thead class="bg-cream-100 text-cocoa-500 text-left sticky top-0">
               <tr>

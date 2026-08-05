@@ -331,7 +331,7 @@ function onRowDblClick(row: any) {
         班级：{{ className(summaryExam?.classId || '') }} · 学期：{{ summaryExam?.term || '-' }} · 日期：{{ summaryExam?.date || '-' }}
       </div>
       <div v-if="!summaryData.length" class="text-center text-cocoa-400 py-8">暂无成绩数据</div>
-      <table v-else class="w-full text-sm">
+      <div v-else class="overflow-x-auto"><table class="w-full text-sm">
         <thead class="bg-cream-100 text-cocoa-500 text-left">
           <tr>
             <th class="px-3 py-2 font-medium">科目</th>
@@ -359,6 +359,7 @@ function onRowDblClick(row: any) {
           </tr>
         </tbody>
       </table>
+</div>
     </div>
     <template #footer>
       <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600" @click="summaryVisible = false">关闭</button>

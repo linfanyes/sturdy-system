@@ -41,6 +41,7 @@
         <!-- 各科对比 -->
         <div v-if="hasSubjects(exam)" class="mt-3 pt-3 border-t border-dashed">
           <div class="text-xs text-gray-400 mb-2">各科对比</div>
+          <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead><tr class="text-gray-400"><th class="text-left">科目</th><th v-for="(score, sid) in exam.rows" :key="sid" class="text-right">{{ getName(sid) }}</th></tr></thead>
             <tbody>
@@ -52,6 +53,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
