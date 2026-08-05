@@ -115,7 +115,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   padding: 20rpx 0;
-  background: #fff;
+  background: var(--c-card);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -134,7 +134,7 @@ onShow(() => {
   font-size: 24rpx;
   color: #999;
   padding: 10rpx 20rpx;
-  background: #fff8e1;
+  background: var(--c-card2);
   border-radius: 12rpx;
   margin-bottom: 16rpx;
 }
@@ -153,7 +153,7 @@ onShow(() => {
   text-decoration: underline;
 }
 .exam-card {
-  background: #fff;
+  background: var(--c-card);
   border-radius: 24rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
