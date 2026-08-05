@@ -94,6 +94,8 @@ const presetResources = [
   { title: '国家中小学智慧教育平台', url: 'https://basic.smartedu.cn/', description: '教育部官方中小学智慧教育平台，汇聚优质在线教学资源', category: '官方平台', tags: ['在线资源'] },
   { title: '学科网', url: 'https://www.zxxk.com/', description: '中小学校教学资源网站，提供教案、课件、试题等资源', category: '官方平台', tags: ['在线资源'] },
   { title: '一师一优课', url: 'https://1s1k.eduyun.cn/', description: '国家教育资源公共服务平台，汇集部级优课资源', category: '官方平台', tags: ['在线资源'] },
+  { title: '人教社中小学教材', url: 'https://jc.pep.com.cn/', description: '人民教育出版社中小学教材电子版，可在线阅读课本', category: '官方平台', tags: ['在线资源'] },
+  { title: '21世纪教育网', url: 'https://www.21cnjy.com/', description: '中小学备课与试题资源网站，覆盖各学段各学科', category: '教学资源', tags: ['在线资源'] },
 ]
 const list = ref([])
 const showAdd = ref(false)

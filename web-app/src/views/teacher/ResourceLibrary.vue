@@ -225,7 +225,7 @@ function printCategory(cat: string, list: EnglishWord[]) {
   <div class="space-y-4">
     <BackBar fallback="/teacher" />
     <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-      <BookOpen class="w-6 h-6 text-butter-500" /> 在线资源库
+      <BookOpen class="w-6 h-6 text-butter-500" /> 专项资源库
     </h1>
 
     <!-- 标签页 -->

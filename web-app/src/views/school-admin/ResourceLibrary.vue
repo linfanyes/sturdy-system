@@ -225,7 +225,7 @@ function printWord(w: EnglishWord) {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-        <BookOpen class="w-6 h-6 text-butter-500" /> 在线资源库
+        <BookOpen class="w-6 h-6 text-butter-500" /> 专项资源库
       </h1>
       <button
         class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-600 hover:bg-mint-200 disabled:opacity-60"

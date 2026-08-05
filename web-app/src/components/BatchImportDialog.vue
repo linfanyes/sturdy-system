@@ -8,12 +8,21 @@ import {
   previewClassesFile, aiClassesFile, importClassesFile, batchCreateClasses,
   type ClassItem,
 } from '@/api/school-admin'
+import {
+  previewTeacherStudentsImport, aiTeacherStudentsImport, commitTeacherStudentsImport,
+} from '@/api/teacher'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   modelValue: boolean
   type: 'teacher' | 'student' | 'class'
   classes?: ClassItem[]
 }>()
+
+const auth = useAuthStore()
+
+/** 学生导入按角色分流：校管走 /school-admin（学校级），教师/班主任走 /students（本班） */
+const studentUsesTeacherApi = computed(() => props.type === 'student' && auth.role !== 'school_admin')
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
@@ -120,8 +129,12 @@ async function parsePreview() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const api = props.type === 'teacher' ? previewTeachersFile : props.type === 'student' ? previewStudentsFile : previewClassesFile
-    const res = await api({ filename: fileName.value, data: fileData.value })
+    let res: any
+    if (props.type === 'teacher') res = await previewTeachersFile({ filename: fileName.value, data: fileData.value })
+    else if (props.type === 'student') res = studentUsesTeacherApi.value
+      ? await previewTeacherStudentsImport({ filename: fileName.value, data: fileData.value })
+      : await previewStudentsFile({ filename: fileName.value, data: fileData.value })
+    else res = await previewClassesFile({ filename: fileName.value, data: fileData.value })
     previewRows.value = res.rows || []
     mode.value = 'file'
   } catch (e: any) {
@@ -136,8 +149,18 @@ async function aiRecognize() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const api = props.type === 'teacher' ? aiTeachersFile : props.type === 'student' ? aiStudentsFile : aiClassesFile
-    const res = await api({ filename: fileName.value, data: fileData.value })
+    let res: any
+    if (props.type === 'teacher') res = await aiTeachersFile({ filename: fileName.value, data: fileData.value })
+    else if (props.type === 'student') {
+      if (studentUsesTeacherApi.value) {
+        const ext = (fileName.value.split('.').pop() || '').toLowerCase()
+        const mode = /png|jpe?g|webp|bmp/.test(ext) ? 'image' : (ext || 'txt')
+        res = await aiTeacherStudentsImport({ mode, data: fileData.value, filename: fileName.value })
+      } else {
+        res = await aiStudentsFile({ filename: fileName.value, data: fileData.value })
+      }
+    }
+    else res = await aiClassesFile({ filename: fileName.value, data: fileData.value })
     previewRows.value = res.rows || []
     mode.value = 'ai'
   } catch (e: any) {
@@ -176,12 +199,18 @@ async function confirmImport() {
     if (mode.value === 'ai') {
       const rows = buildPayloadRows()
       if (props.type === 'teacher') res = await batchCreateTeachers(rows)
-      else if (props.type === 'student') res = await batchCreateStudents(rows)
+      else if (props.type === 'student') {
+        if (studentUsesTeacherApi.value) res = await commitTeacherStudentsImport({ classId: classId.value, items: rows })
+        else res = await batchCreateStudents(rows)
+      }
       else res = await batchCreateClasses(rows)
     } else {
       // 文件模式：后端按文件重新解析后再写入
       if (props.type === 'teacher') res = await importTeachersFile({ filename: fileName.value, data: fileData.value })
-      else if (props.type === 'student') res = await importStudentsFile({ classId: classId.value, filename: fileName.value, data: fileData.value })
+      else if (props.type === 'student') {
+        if (studentUsesTeacherApi.value) res = await commitTeacherStudentsImport({ classId: classId.value, items: buildPayloadRows() })
+        else res = await importStudentsFile({ classId: classId.value, filename: fileName.value, data: fileData.value })
+      }
       else res = await importClassesFile({ filename: fileName.value, data: fileData.value })
     }
     importResult.value = res

@@ -11,7 +11,7 @@ import {
   GraduationCap, Sparkles, FileText, FileQuestion,
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
-  Gamepad2, LanguagesIcon, ScrollText, Trash2,
+  Gamepad2, LanguagesIcon, ScrollText, Trash2, ChevronLeft,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -162,7 +162,7 @@ const teacherMenu: MenuCategory[] = [
           { name: 'teacher-lesson-plans', label: '教案库', to: '/teacher/lesson-plans', feature: 'ai', icon: BookMarked, color: 'blue' },
           { name: 'teacher-knowledges', label: '知识点库', to: '/teacher/knowledges', feature: 'ai', icon: GraduationCap, color: 'green' },
           { name: 'teacher-textbook', label: '教材知识库', to: '/teacher/textbook', feature: 'ai', icon: BookOpen, color: 'sky' },
-          { name: 'teacher-resource-library', label: '在线资源库', to: '/teacher/resource-library', feature: 'ai', icon: BookOpen, color: 'butter' },
+          { name: 'teacher-resource-library', label: '专项资源库', to: '/teacher/resource-library', feature: 'ai', icon: BookOpen, color: 'butter' },
           { name: 'teacher-papers', label: '试卷库', to: '/teacher/papers', feature: 'ai', icon: ScrollText, color: 'purple' },
           { name: 'teacher-ai-resources', label: '在线资源', to: '/teacher/ai-resources', feature: 'ai', icon: BookOpen, color: 'sky' },
           { name: 'teacher-zhxue', label: '智慧中小学', to: '/teacher/zhzx', feature: 'ai', icon: GraduationCap, color: 'green' },
@@ -326,7 +326,7 @@ const schoolAdminMenu: MenuCategory[] = [
     groups: [{ label: '', items: [
       { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
       { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
-      { name: 'school-admin-resource-library', label: '在线资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+      { name: 'school-admin-resource-library', label: '专项资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
       { name: 'school-admin-zhxue', label: '智慧中小学', to: '/school-admin/zhzx', icon: GraduationCap, color: 'blue' },
       { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
     ] }],
@@ -466,6 +466,12 @@ function backToTiles() {
   if (auth.role === 'super') router.push('/super')
   else if (auth.role === 'school_admin') router.push('/school-admin')
   else router.push('/teacher')
+}
+
+/** 三级页面「返回上级」：有分类则回分类瓷砖面板，否则回工作台根 */
+function goBackUp() {
+  if (activeCategory.value) backToTiles()
+  else backToDashboard()
 }
 
 async function handleLogout() {
@@ -831,8 +837,19 @@ function navigateTo(to: string) {
               </div>
             </div>
           </template>
-          <!-- 常规页面内容 -->
+          <!-- 常规页面内容：三级/二级页面统一提供「返回上级」条（首页与瓷砖面板不显示） -->
           <template v-else>
+            <div v-if="!isHome" class="flex items-center gap-2 mb-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200 transition-colors text-sm"
+                @click="goBackUp"
+              >
+                <ChevronLeft class="w-4 h-4" />
+                返回{{ activeCategory ? activeCategory : '工作台' }}
+              </button>
+              <span class="text-xs text-cocoa-400">{{ pageTitle || '' }}</span>
+            </div>
             <router-view />
           </template>
           <footer class="mt-auto pt-8 pb-2 text-center text-xs text-cocoa-400">

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, Req, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import { Student } from './student.entity'
@@ -24,6 +24,8 @@ import { User } from '../users/user.entity'
 import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
 import { Parent } from '../parent/parent.entity'
 import { CreateStudentDto, UpdateStudentDto } from './dto/students.dto'
+import { SchoolAdminService } from '../school-admin/school-admin.service'
+import { SchoolAdminModule } from '../school-admin/school-admin.module'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
 const STUDENT_INSTRUCTION = `这是一份学生名单（图片 OCR 或文件提取后的文本），请识别其中每个学生并输出 JSON 数组。每个元素结构：
@@ -429,7 +431,7 @@ class StudentsService extends CrudService<Student> {
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('students')
 class StudentsController extends CrudController<Student> {
-  constructor(s: StudentsService) {
+  constructor(s: StudentsService, private readonly saSvc: SchoolAdminService) {
     super(s)
   }
 
@@ -455,23 +457,38 @@ class StudentsController extends CrudController<Student> {
     return { count: ids.length, ids }
   }
 
-  /** 预览：解析并校验文件，不落库 */
+  /** 预览：解析并校验文件，不落库（教师/校管均可） */
   @Post('import')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
-  async importPreview(@Body() body: { filename: string; data: string }) {
+  async importPreview(@Body() body: { filename: string; data: string }, @Req() req: any) {
     if (!body?.filename || !body?.data) throw new BadRequestException('缺少文件数据')
+    if (req.user?.role === 'school_admin') {
+      return this.saSvc.parseStudentFile(body.filename, body.data)
+    }
     return (this.service as StudentsService).parseFile(body.filename, body.data)
   }
 
-  /** 提交：事务写入已校验数据，失败整体回滚 */
+  /** 提交：教师班主任导入本班学生（事务回滚）；校管按学校批量写入（逐条收集结果） */
   @Post('import-commit')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   importCommit(
     @Body() body: { classId: string; items: any[] },
     @CurrentTeacher() t: any,
+    @Req() req: any,
   ) {
     if (!body?.classId || !Array.isArray(body.items) || !body.items.length) {
       throw new BadRequestException('提交数据为空')
+    }
+    if (req.user?.role === 'school_admin') {
+      // 校管：items 含 classId，按学校归属校验后逐条写入（复用校管批量创建逻辑）
+      const rows = body.items.map((it: any) => ({
+        name: it.name, gender: it.gender, studentNo: it.studentNo,
+        parentName: it.parentName, parentPhone: it.parentPhone,
+        classId: it.classId || body.classId,
+      }))
+      return this.saSvc.batchCreateStudents(req.user.schoolId, rows)
     }
     return (this.service as StudentsService).importStudents(
       t.sub,
@@ -488,13 +505,18 @@ class StudentsController extends CrudController<Student> {
    * 前端可直接复用现有预览 UI 与 /students/import-commit 落库。
    */
   @Post('import-ai')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   importAi(
     @Body() body: { mode: string; data: string; filename?: string },
     @CurrentTeacher() t: any,
+    @Req() req: any,
   ) {
     if (!body?.mode || !body?.data) {
       throw new BadRequestException('缺少识别数据')
+    }
+    if (req.user?.role === 'school_admin') {
+      return this.saSvc.aiRecognizeStudents(req.user.sub, body.filename || '', body.data)
     }
     return (this.service as StudentsService).importAi(
       t.sub,
@@ -543,7 +565,7 @@ class StudentsController extends CrudController<Student> {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule, AuditModule, StudentParentModule],
+  imports: [TypeOrmModule.forFeature([Student, ParentContact, ClassItem]), AiModule, ClassMembersModule, AuditModule, StudentParentModule, SchoolAdminModule],
   providers: [StudentsService],
   controllers: [StudentsController],
 })

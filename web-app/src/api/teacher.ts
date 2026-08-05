@@ -430,3 +430,17 @@ export function crudUpdate<T = any>(path: string, id: string, data: any) {
 export function crudDelete(path: string, id: string) {
   return request.delete<any, void>(path + '/' + id)
 }
+
+/* ============ 教师批量导入学生（走 /students 教师专属接口） ============ */
+/** 预览解析文件：POST /students/import（返回 { rows, validCount, errorCount }） */
+export function previewTeacherStudentsImport(payload: { filename: string; data: string }) {
+  return request.post('/students/import', payload)
+}
+/** AI 识别学生名单：POST /students/import-ai（mode=image 走 OCR，否则走文本提取） */
+export function aiTeacherStudentsImport(payload: { mode: string; data: string; filename?: string }) {
+  return request.post('/students/import-ai', payload)
+}
+/** 提交落库：POST /students/import-commit（仅班主任可导入本班学生） */
+export function commitTeacherStudentsImport(payload: { classId: string; items: any[] }) {
+  return request.post('/students/import-commit', payload)
+}

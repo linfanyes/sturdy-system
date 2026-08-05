@@ -1,5 +1,5 @@
 /**
- * 复制 / 打印工具：用于「在线资源库」等页面的小类复制与打印。
+ * 复制 / 打印工具：用于「专项资源库」等页面的小类复制与打印。
  *
  * - copyText: 写入剪贴板（优先 navigator.clipboard，非安全上下文降级 execCommand）
  * - printHtml: 用隐藏 iframe 渲染指定 HTML 并调起打印（避免受 SPA 样式/弹窗拦截影响）
