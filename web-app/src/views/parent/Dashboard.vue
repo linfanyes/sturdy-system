@@ -8,6 +8,8 @@ import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunicat
 import request from '@/api/request'
 import { Sparkles, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
+import SvgLineChart from '@/components/SvgLineChart.vue'
+import SvgBarChart from '@/components/SvgBarChart.vue'
 
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
@@ -89,6 +91,25 @@ const behaviorByMonth = computed(() => {
   return list.map((m) => ({ ...m, pct: Math.round((m.count / max) * 100), isMax: m.count === max }))
 })
 const behaviorRecent = computed(() => behavior.value?.recent || [])
+
+/* 成绩趋势：按日期取近 8 场考试，得分率 = totalScore/totalFullScore */
+const scoreTrend = computed(() => {
+  return [...exams.value]
+    .filter((e: any) => e.totalScore != null && e.totalFullScore)
+    .sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''))
+    .slice(-8)
+    .map((e: any) => ({
+      label: (e.examName || '考试').length > 6 ? (e.examName as string).slice(0, 6) + '…' : e.examName,
+      value: Math.round((e.totalScore / e.totalFullScore) * 1000) / 10,
+    }))
+})
+
+/* 月度成长足迹：attendance.byMonth 打卡次数 */
+const monthTrend = computed(() => {
+  const byMonth = (attendance.value?.byMonth || []) as Array<{ month: string; count: number }>
+  if (!byMonth.length) return [{ label: '暂无数据', value: 0 }]
+  return byMonth.slice(-6).map((m) => ({ label: m.month, value: m.count }))
+})
 const CATEGORY_COLOR: Record<string, string> = { praise: COLOR.green, violation: COLOR.red, other: COLOR.amber }
 
 // SECTION B — 课表 & 值日
@@ -624,6 +645,31 @@ async function subscribeNotifications() {
     </div>
     <div v-else class="mt-4 px-4 text-center text-xs text-[#07c160]">
       ✅ 订阅成功，将及时收到通知
+    </div>
+
+    <!-- 成长数据图表（成绩趋势 + 月度打卡） -->
+    <div v-if="!loading && (scoreTrend.length || monthTrend.length)" class="mt-4 px-4">
+      <div class="section-title">
+        <TrendingUp class="w-5 h-5 text-butter-400" />
+        <h2>成长数据</h2>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="quick-card !p-5">
+          <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700 mb-2">
+            <BarChart3 class="w-4 h-4 text-butter-500" /> 成绩趋势
+            <span class="ml-auto text-xs text-cocoa-400">得分率 %</span>
+          </div>
+          <SvgLineChart v-if="scoreTrend.length" :data="scoreTrend" :height="180" title="" series1Name="得分率" color="#f5b342" />
+          <div v-else class="text-sm text-cocoa-400 py-10 text-center">暂无成绩数据</div>
+        </div>
+        <div class="quick-card !p-5">
+          <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700 mb-2">
+            <CalendarCheck class="w-4 h-4 text-mint-500" /> 月度成长足迹
+            <span class="ml-auto text-xs text-cocoa-400">打卡次数</span>
+          </div>
+          <SvgBarChart :data="monthTrend" :height="180" title="" />
+        </div>
+      </div>
     </div>
 
     <!-- 成绩查询（学期/考试名称/科目筛选 + 分布 + 优弱势，与小程序端对齐） -->
