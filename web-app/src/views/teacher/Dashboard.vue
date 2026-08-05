@@ -2,10 +2,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { listMyClasses, type TeacherClass } from '@/api/teacher'
+import { listMyClasses, listAllStudents, type TeacherClass } from '@/api/teacher'
+import { crudList } from '@/api/teacher'
 import { getUnreadCount } from '@/api/notification'
-import { Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2, Calendar, Users, ClipboardList } from 'lucide-vue-next'
+import {
+  Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
+  Users, ClipboardList, BarChart3, PieChart, CalendarDays, Trophy,
+} from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -13,20 +18,90 @@ const loading = ref(true)
 const classes = ref<TeacherClass[]>([])
 const unreadCount = ref(0)
 
+// —— 图表数据 ——
+const chartLoading = ref(true)
+const students = ref<any[]>([])
+const recentExams = ref<any[]>([])
+const awards = ref<any[]>([])
+
+function unwrap(res: any): any[] {
+  return Array.isArray(res) ? res : (res?.items || [])
+}
+
 async function load() {
   loading.value = true
   try {
     const list = await listMyClasses() as any
-    // 后端 findAll 返回 {items, total}，也兼容直接返回数组的情况
-    classes.value = Array.isArray(list) ? list : (list?.items || [])
+    classes.value = unwrap(list)
     const res = await getUnreadCount()
     unreadCount.value = res?.count ?? 0
   } catch { classes.value = [] } finally { loading.value = false }
 }
-onMounted(load)
 
-const totalStudents = computed(() => classes.value.length) // 暂时不统计学生数
-const totalExams = computed(() => 0) // 暂时不统计考试数
+async function loadCharts() {
+  chartLoading.value = true
+  const [stu, exams, aw] = await Promise.allSettled([
+    listAllStudents({ take: 500 }),
+    crudList('/exams', { take: 5 }),
+    crudList('/award-records', { take: 200 }),
+  ])
+  if (stu.status === 'fulfilled') students.value = unwrap(stu.value)
+  if (exams.status === 'fulfilled') recentExams.value = unwrap(exams.value)
+  if (aw.status === 'fulfilled') awards.value = unwrap(aw.value)
+  chartLoading.value = false
+}
+onMounted(() => { load(); loadCharts() })
+
+/* —— 概览统计 —— */
+const totalStudents = computed(() => students.value.length || classes.value.length)
+const totalExams = computed(() => recentExams.value.length)
+
+/* —— 图表 1：各班学生分布（横向条形） —— */
+const classDist = computed(() => {
+  if (!classes.value.length || !students.value.length) return []
+  const map = new Map<string, number>()
+  for (const s of students.value) {
+    const key = s.classId || ''
+    map.set(key, (map.get(key) || 0) + 1)
+  }
+  const max = Math.max(1, ...map.values())
+  return classes.value.map((c) => {
+    const count = map.get(c.id) || 0
+    return { name: c.name, count, pct: Math.round((count / max) * 100) }
+  })
+})
+
+/* —— 图表 2：性别构成（SVG 环形） —— */
+const genderDist = computed(() => {
+  let male = 0, female = 0, other = 0
+  for (const s of students.value) {
+    const g = String(s.gender || '').trim()
+    if (g === '男' || g === 'M' || g === 'male' || g === '1') male++
+    else if (g === '女' || g === 'F' || g === 'female' || g === '2') female++
+    else other++
+  }
+  const total = Math.max(1, male + female + other)
+  const C = 2 * Math.PI * 40 // 周长
+  return {
+    male, female, other, total,
+    malePct: (male / total) * 100,
+    femalePct: (female / total) * 100,
+    maleLen: (male / total) * C,
+    femaleLen: (female / total) * C,
+    otherLen: (other / total) * C,
+  }
+})
+
+/* —— 图表 3：近期考试（纵向柱状，柱高=科目数） —— */
+const examBars = computed(() => {
+  const max = Math.max(1, ...recentExams.value.map((e) => (e.subjects?.length || 1)))
+  return recentExams.value.slice(0, 6).map((e) => ({
+    name: e.name || '考试',
+    date: (e.date || '').slice(5) || '-',
+    subs: e.subjects?.length || 1,
+    h: Math.round(((e.subjects?.length || 1) / max) * 64) + 8, // 柱高 8~72px
+  }))
+})
 
 const shortcutTools = [
   { label: '记考勤', icon: '✅', to: '/teacher/attendance', color: '#e8f9e8' },
@@ -61,16 +136,147 @@ const shortcutTools = [
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ classes.length }}</template></div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/students')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生管理</div>
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ totalStudents }}</template></div>
       </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/todos')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-sky2-500" /> 待办</div>
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/exams')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-sky2-500" /> 考试</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ totalExams }}</template></div>
       </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/config')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-sakura-500" /> 功能权限</div>
-        <div class="text-3xl font-bold text-cocoa-900">{{ auth.user?.features?.length ? (auth.user.features.length === 0 ? 0 : auth.user.features.length) : '全部' }}</div>
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/rewards')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-sakura-500" /> 奖励记录</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ awards.length }}</template></div>
+      </div>
+    </div>
+
+    <!-- 📊 数据一览（可视化图表区） -->
+    <div>
+      <h2 class="section-title"><BarChart3 class="w-5 h-5 text-butter-400" /> 数据一览</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 图表 1：各班学生分布 -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><Users class="w-4 h-4 text-butter-500" /> 各班学生分布</div>
+            <span class="text-xs text-cocoa-400">{{ totalStudents }} 人</span>
+          </div>
+          <div v-if="chartLoading" class="space-y-2.5 py-2">
+            <div v-for="i in 3" :key="i" class="h-5 rounded-lg bg-cream-100 animate-pulse" :style="{ width: `${90 - i * 15}%` }" />
+          </div>
+          <div v-else-if="classDist.length" class="space-y-2.5">
+            <div v-for="c in classDist" :key="c.name" class="flex items-center gap-2">
+              <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
+              <div class="flex-1 h-5 rounded-full bg-cream-100 overflow-hidden">
+                <div
+                  class="h-full rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700"
+                  :style="{ width: c.pct + '%' }"
+                />
+              </div>
+              <span class="w-8 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}</span>
+            </div>
+          </div>
+          <EmptyState v-else icon="📊" title="暂无班级数据" desc="分配班级后这里会展示学生分布" />
+        </div>
+
+        <!-- 图表 2：性别构成（SVG 环形） -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><PieChart class="w-4 h-4 text-mint-500" /> 性别构成</div>
+            <span class="text-xs text-cocoa-400">{{ genderDist.total }} 人</span>
+          </div>
+          <div v-if="chartLoading" class="flex items-center justify-center py-4">
+            <div class="w-24 h-24 rounded-full bg-cream-100 animate-pulse" />
+          </div>
+          <div v-else-if="genderDist.total > 1" class="flex items-center gap-6">
+            <!-- 环形图 -->
+            <svg viewBox="0 0 100 100" class="w-28 h-28 shrink-0 -rotate-90">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#f2ecdf" stroke-width="12" />
+              <circle
+                v-if="genderDist.male > 0" cx="50" cy="50" r="40" fill="none"
+                stroke="#4AAE7A" stroke-width="12" stroke-linecap="round"
+                :stroke-dasharray="`${genderDist.maleLen} ${2 * Math.PI * 40 - genderDist.maleLen}`"
+              />
+              <circle
+                v-if="genderDist.female > 0" cx="50" cy="50" r="40" fill="none"
+                stroke="#E7698C" stroke-width="12"
+                :stroke-dasharray="`${genderDist.femaleLen} ${2 * Math.PI * 40 - genderDist.femaleLen}`"
+                :stroke-dashoffset="-genderDist.maleLen"
+              />
+            </svg>
+            <!-- 图例 -->
+            <div class="space-y-2.5">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#4AAE7A" />
+                <span class="text-xs text-cocoa-600">男生</span>
+                <span class="ml-auto text-sm font-bold text-cocoa-800">{{ genderDist.male }}</span>
+                <span class="w-10 text-right text-xs text-cocoa-400">{{ genderDist.malePct.toFixed(1) }}%</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#E7698C" />
+                <span class="text-xs text-cocoa-600">女生</span>
+                <span class="ml-auto text-sm font-bold text-cocoa-800">{{ genderDist.female }}</span>
+                <span class="w-10 text-right text-xs text-cocoa-400">{{ genderDist.femalePct.toFixed(1) }}%</span>
+              </div>
+              <div v-if="genderDist.other > 0" class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-cream-300" />
+                <span class="text-xs text-cocoa-600">未设置</span>
+                <span class="ml-auto text-sm font-bold text-cocoa-800">{{ genderDist.other }}</span>
+              </div>
+            </div>
+          </div>
+          <EmptyState v-else icon="🧑‍🤝‍🧑" title="暂无学生数据" desc="导入学生后展示性别比例" />
+        </div>
+
+        <!-- 图表 3：近期考试（纵向柱状） -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><CalendarDays class="w-4 h-4 text-sky2-500" /> 近期考试</div>
+            <span class="text-xs text-cocoa-400">柱高 = 科目数</span>
+          </div>
+          <div v-if="chartLoading" class="flex items-end gap-3 py-2 h-24">
+            <div v-for="i in 5" :key="i" class="flex-1 h-16 rounded-lg bg-cream-100 animate-pulse" />
+          </div>
+          <div v-else-if="examBars.length" class="flex items-end gap-3 h-24">
+            <div v-for="(e, i) in examBars" :key="i" class="flex-1 flex flex-col items-center justify-end gap-1.5 group" :title="`${e.name} · ${e.subs} 科`">
+              <span class="text-[10px] leading-none text-cocoa-400 opacity-0 group-hover:opacity-100 transition-opacity">{{ e.subs }}科</span>
+              <div
+                class="w-full max-w-[34px] rounded-t-lg bg-gradient-to-t from-sky2-500 to-sky2-300 transition-all duration-700 group-hover:from-butter-500 group-hover:to-butter-300"
+                :style="{ height: e.h + 'px' }"
+              />
+              <span class="text-[10px] leading-none text-cocoa-500">{{ e.date }}</span>
+            </div>
+          </div>
+          <EmptyState v-else icon="🗓️" title="暂无考试" desc="创建考试后这里会展示考试节奏" />
+        </div>
+
+        <!-- 图表 4：数据速览 -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><Sparkles class="w-4 h-4 text-sakura-500" /> 今日速览</div>
+            <span class="text-xs text-cocoa-400">一键直达</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="rounded-xl bg-cream-50 p-3 text-left transition hover:bg-butter-50 hover:shadow-softer" @click="router.push('/teacher/attendance')">
+              <div class="text-2xl">✅</div>
+              <div class="mt-1 text-sm font-semibold text-cocoa-800">记考勤</div>
+              <div class="text-xs text-cocoa-400">今日出勤一键记录</div>
+            </button>
+            <button class="rounded-xl bg-cream-50 p-3 text-left transition hover:bg-butter-50 hover:shadow-softer" @click="router.push('/teacher/homework')">
+              <div class="text-2xl">📝</div>
+              <div class="mt-1 text-sm font-semibold text-cocoa-800">布置作业</div>
+              <div class="text-xs text-cocoa-400">快速发布今日任务</div>
+            </button>
+            <button class="rounded-xl bg-cream-50 p-3 text-left transition hover:bg-butter-50 hover:shadow-softer" @click="router.push('/teacher/notices')">
+              <div class="text-2xl">📢</div>
+              <div class="mt-1 text-sm font-semibold text-cocoa-800">发通知</div>
+              <div class="text-xs text-cocoa-400">同步给家长学生</div>
+            </button>
+            <button class="rounded-xl bg-cream-50 p-3 text-left transition hover:bg-butter-50 hover:shadow-softer" @click="router.push('/teacher/ai-chat')">
+              <div class="text-2xl">🤖</div>
+              <div class="mt-1 text-sm font-semibold text-cocoa-800">AI 助手</div>
+              <div class="text-xs text-cocoa-400">备课答疑随时问</div>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

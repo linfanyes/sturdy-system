@@ -143,6 +143,19 @@
       </view>
     </view>
 
+    <!-- 班级人数分布（数据可视化，对齐 Web 工作台图表区） -->
+    <view class="card" v-if="classDist.length">
+      <view class="card-h">
+        <text class="ch-t">🏫 班级人数分布</text>
+        <text class="ch-m">{{ studentList.length }} 人</text>
+      </view>
+      <view class="dist-row" v-for="d in classDist" :key="d.name">
+        <text class="dist-name">{{ d.name }}</text>
+        <view class="dist-bar"><view class="dist-fill" :style="{ width: d.pct + '%' }" /></view>
+        <text class="dist-num">{{ d.count }}</text>
+      </view>
+    </view>
+
     <!-- 班级工作台 -->
     <view class="card">
       <view class="card-h">
@@ -430,6 +443,16 @@ const loading = ref(false)
 const classList = ref([])
 const currentClassIdx = ref(0)
 const currentClass = computed(() => classList.value[currentClassIdx.value] || null)
+/* 班级人数分布（对齐 Web 工作台图表区） */
+const classDist = computed(() => {
+  if (!classList.value.length || !studentList.value.length) return []
+  const map = {}
+  studentList.value.forEach((s) => { map[s.classId] = (map[s.classId] || 0) + 1 })
+  const max = Math.max(1, ...Object.values(map))
+  return classList.value
+    .map((c) => ({ name: c.name, count: map[c.id] || 0, pct: Math.round(((map[c.id] || 0) / max) * 100) }))
+    .filter((d) => d.count > 0)
+})
 function onClassChange(e) { currentClassIdx.value = e.detail.value }
 const studentList = ref([])
 const noteList = ref([])
@@ -788,6 +811,12 @@ function switchToParent() {
 .dark .mood { background: rgba(38, 43, 52, 0.65); color: rgba(242, 232, 216, 0.7); }
 .dark .mood.on { background: var(--c-primary); color: #1a1c22; }
 .ov-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; margin: 10rpx 0 20rpx; }
+/* 班级人数分布条形图（对齐 Web 图表区） */
+.dist-row { display: flex; align-items: center; gap: 16rpx; padding: 12rpx 0; }
+.dist-name { width: 120rpx; font-size: 24rpx; color: var(--c-text); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dist-bar { flex: 1; height: 24rpx; border-radius: 12rpx; background: var(--c-card2); overflow: hidden; }
+.dist-fill { height: 100%; border-radius: 12rpx; background: linear-gradient(90deg, #ffd479, #f5b342); }
+.dist-num { width: 48rpx; text-align: right; font-size: 24rpx; font-weight: 600; color: var(--c-title); flex-shrink: 0; }
 .today-stats { grid-template-columns: repeat(3, 1fr); margin: 6rpx 0 14rpx; }
 .ts-card { flex-direction: column; align-items: center; text-align: center; padding: 20rpx 8rpx; gap: 8rpx; }
 .ts-card .ov-ic { width: 48rpx; height: 48rpx; line-height: 48rpx; font-size: 26rpx; }
