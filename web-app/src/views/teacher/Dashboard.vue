@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, type TeacherClass } from '@/api/teacher'
 import { crudList } from '@/api/teacher'
+import request from '@/api/request'
 import { getUnreadCount } from '@/api/notification'
 import {
   Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import SvgLineChart from '@/components/SvgLineChart.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -48,7 +50,36 @@ async function loadCharts() {
   if (stu.status === 'fulfilled') students.value = unwrap(stu.value)
   if (exams.status === 'fulfilled') recentExams.value = unwrap(exams.value)
   if (aw.status === 'fulfilled') awards.value = unwrap(aw.value)
+  loadGradeTrend()
   chartLoading.value = false
+}
+
+/* 考试均分趋势：/grades 按考试分组求平均分，按日期升序 */
+const gradeAvgTrend = ref<{ label: string; value: number }[]>([])
+async function loadGradeTrend() {
+  try {
+    const res = await request.get<any, any>('/grades', { params: { take: 500 } })
+    const list = Array.isArray(res) ? res : (res?.items || [])
+    const map = new Map<string, { total: number; n: number; date: string }>()
+    for (const g of list) {
+      const scores = Array.isArray(g.scores) ? g.scores : []
+      const valid = scores.filter((s: any) => typeof s?.score === 'number' && s.score !== null)
+      if (!valid.length) continue
+      const sum = valid.reduce((a: number, s: any) => a + s.score, 0)
+      const cur = map.get(g.examName) || { total: 0, n: 0, date: g.date || '' }
+      cur.total += sum
+      cur.n += valid.length
+      if (g.date && (!cur.date || g.date > cur.date)) cur.date = g.date
+      map.set(g.examName, cur)
+    }
+    gradeAvgTrend.value = [...map.entries()]
+      .map(([label, v]) => ({ label, value: Math.round((v.total / v.n) * 10) / 10, date: v.date }))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .slice(0, 8)
+      .map(({ label, value }) => ({ label, value }))
+  } catch {
+    gradeAvgTrend.value = []
+  }
 }
 onMounted(() => { load(); loadCharts() })
 
@@ -92,16 +123,7 @@ const genderDist = computed(() => {
   }
 })
 
-/* —— 图表 3：近期考试（纵向柱状，柱高=科目数） —— */
-const examBars = computed(() => {
-  const max = Math.max(1, ...recentExams.value.map((e) => (e.subjects?.length || 1)))
-  return recentExams.value.slice(0, 6).map((e) => ({
-    name: e.name || '考试',
-    date: (e.date || '').slice(5) || '-',
-    subs: e.subjects?.length || 1,
-    h: Math.round(((e.subjects?.length || 1) / max) * 64) + 8, // 柱高 8~72px
-  }))
-})
+/* —— 图表 3：考试均分趋势（见 loadGradeTrend / gradeAvgTrend） —— */
 
 const shortcutTools = [
   { label: '记考勤', icon: '✅', to: '/teacher/attendance', color: '#e8f9e8' },
@@ -226,26 +248,19 @@ const shortcutTools = [
           <EmptyState v-else icon="🧑‍🤝‍🧑" title="暂无学生数据" desc="导入学生后展示性别比例" />
         </div>
 
-        <!-- 图表 3：近期考试（纵向柱状） -->
+        <!-- 图表 3：考试均分趋势（真实成绩聚合折线） -->
         <div class="stat-card">
           <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><CalendarDays class="w-4 h-4 text-sky2-500" /> 近期考试</div>
-            <span class="text-xs text-cocoa-400">柱高 = 科目数</span>
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><CalendarDays class="w-4 h-4 text-sky2-500" /> 考试均分趋势</div>
+            <span class="text-xs text-cocoa-400">按考试聚合平均分</span>
           </div>
-          <div v-if="chartLoading" class="flex items-end gap-3 py-2 h-24">
-            <div v-for="i in 5" :key="i" class="flex-1 h-16 rounded-lg bg-cream-100 animate-pulse" />
+          <div v-if="chartLoading" class="py-2 h-24">
+            <div class="h-full rounded-lg bg-cream-100 animate-pulse" />
           </div>
-          <div v-else-if="examBars.length" class="flex items-end gap-3 h-24">
-            <div v-for="(e, i) in examBars" :key="i" class="flex-1 flex flex-col items-center justify-end gap-1.5 group" :title="`${e.name} · ${e.subs} 科`">
-              <span class="text-[10px] leading-none text-cocoa-400 opacity-0 group-hover:opacity-100 transition-opacity">{{ e.subs }}科</span>
-              <div
-                class="w-full max-w-[34px] rounded-t-lg bg-gradient-to-t from-sky2-500 to-sky2-300 transition-all duration-700 group-hover:from-butter-500 group-hover:to-butter-300"
-                :style="{ height: e.h + 'px' }"
-              />
-              <span class="text-[10px] leading-none text-cocoa-500">{{ e.date }}</span>
-            </div>
+          <div v-else-if="gradeAvgTrend.length">
+            <SvgLineChart :data="gradeAvgTrend" :height="200" title="" series1Name="平均分" color="#f5b342" />
           </div>
-          <EmptyState v-else icon="🗓️" title="暂无考试" desc="创建考试后这里会展示考试节奏" />
+          <EmptyState v-else icon="📈" title="暂无成绩数据" desc="录入成绩后这里展示均分变化趋势" />
         </div>
 
         <!-- 图表 4：数据速览 -->

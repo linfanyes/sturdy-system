@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getDashboard } from '@/api/school-admin'
+import request from '@/api/request'
 import {
   Sparkles, School, Users, GraduationCap,
   ArrowRight, Loader2, TrendingUp, Activity, BookOpen,
@@ -81,6 +82,35 @@ async function load() {
     Object.assign(stats.value, d)
   } catch { /* ignore */ }
   finally { loading.value = false }
+  loadGradeTrend()
+}
+
+/* 考试均分趋势：/grades 按考试分组求平均分，按日期升序 */
+const gradeAvgTrend = ref<{ label: string; value: number }[]>([])
+async function loadGradeTrend() {
+  try {
+    const res = await request.get<any, any>('/grades', { params: { take: 500 } })
+    const list = Array.isArray(res) ? res : (res?.items || [])
+    const map = new Map<string, { total: number; n: number; date: string }>()
+    for (const g of list) {
+      const scores = Array.isArray(g.scores) ? g.scores : []
+      const valid = scores.filter((s: any) => typeof s?.score === 'number' && s.score !== null)
+      if (!valid.length) continue
+      const sum = valid.reduce((a: number, s: any) => a + s.score, 0)
+      const cur = map.get(g.examName) || { total: 0, n: 0, date: g.date || '' }
+      cur.total += sum
+      cur.n += valid.length
+      if (g.date && (!cur.date || g.date > cur.date)) cur.date = g.date
+      map.set(g.examName, cur)
+    }
+    gradeAvgTrend.value = [...map.entries()]
+      .map(([label, v]) => ({ label, value: Math.round((v.total / v.n) * 10) / 10, date: v.date }))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+      .slice(0, 8)
+      .map(({ label, value }) => ({ label, value }))
+  } catch {
+    gradeAvgTrend.value = []
+  }
 }
 onMounted(load)
 
@@ -164,6 +194,17 @@ function iconWrapClass(c: string) {
           <TrendingUp class="w-3 h-3" /> {{ stats.attendanceRate ?? '—' }}% 出勤
         </div>
       </div>
+    </div>
+
+    <!-- 考试均分趋势（真实成绩聚合） -->
+    <div v-if="gradeAvgTrend.length" class="grid grid-cols-1 gap-4">
+      <SvgLineChart
+        :data="gradeAvgTrend"
+        :height="200"
+        title="考试均分趋势"
+        series1Name="平均分"
+        color="#f5b342"
+      />
     </div>
 
     <!-- 出勤趋势线 + 资源饼图 -->
