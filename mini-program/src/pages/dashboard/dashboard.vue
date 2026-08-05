@@ -769,7 +769,7 @@ function switchToParent() {
   box-shadow: 0 8rpx 20rpx rgba(214, 148, 38, 0.3);
 }
 .h-main { flex: 1; min-width: 0; }
-.hi { font-size: 40rpx; font-weight: 700; color: #4a3f35; line-height: 1.35; }
+.hi { font-size: 40rpx; font-weight: 700; color: var(--c-title); line-height: 1.35; }
 .hi-name { color: #b9821f; }
 .school { color: rgba(74, 63, 53, 0.72); margin-top: 6rpx; font-size: 24rpx; }
 .sem { color: #d69426; font-weight: 600; }
@@ -826,7 +826,7 @@ function switchToParent() {
 .bd-card-dialog { width: 580rpx; background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%); border-radius: 28rpx; padding: 40rpx 30rpx; text-align: center; }
 .bd-card-bg { font-size: 72rpx; }
 .bd-card-title { font-size: 36rpx; font-weight: 800; color: #e06c75; margin: 10rpx 0; }
-.bd-card-name { font-size: 44rpx; font-weight: 800; color: #4a3f35; }
+.bd-card-name { font-size: 44rpx; font-weight: 800; color: var(--c-title); }
 .bd-card-msg { font-size: 28rpx; color: #5a5048; margin: 16rpx 0; line-height: 1.6; }
 .bd-card-copy { width: 100%; background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 28rpx; margin-top: 10rpx; height: 80rpx; line-height: 80rpx; }
 .bd-card-close { width: 100%; background: transparent; color: #999; border-radius: 50rpx; font-size: 26rpx; margin-top: 6rpx; height: 60rpx; line-height: 60rpx; }

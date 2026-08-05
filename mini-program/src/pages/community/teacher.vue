@@ -351,7 +351,7 @@ function remove(t) {
 .av { width: 72rpx; height: 72rpx; border-radius: 50%; background: #f7f1e6; text-align: center; line-height: 72rpx; font-size: 40rpx; flex: 0 0 auto; }
 .info { flex: 1; min-width: 0; }
 .top { display: flex; align-items: center; gap: 10rpx; }
-.nm { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.nm { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .pos { font-size: 20rpx; color: #a07b3b; background: #f7f1e6; padding: 2rpx 12rpx; border-radius: 16rpx; }
 .star { font-size: 28rpx; margin-left: auto; }
 .star.off { color: #ccc; }

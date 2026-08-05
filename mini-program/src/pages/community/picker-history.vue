@@ -66,12 +66,12 @@ function clearAll() {
 <style scoped>
 .page { padding: 24rpx; }
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.h { font-size: 36rpx; font-weight: 800; color: #4a3f35; }
+.h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .sub { font-size: 24rpx; color: #9aa0a6; margin-top: 4rpx; }
 .clear { font-size: 26rpx; color: #e06c75; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 40rpx; font-size: 26rpx; }
 .group { background: #fff; border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 16rpx; }
-.gname { font-size: 28rpx; font-weight: 700; color: #4a3f35; margin-bottom: 14rpx; }
+.gname { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
 .chips { display: flex; flex-wrap: wrap; gap: 12rpx; }
 .chip { font-size: 26rpx; padding: 10rpx 24rpx; border-radius: 30rpx; background: #f3f3f3; color: #6a6058; }
 .dark .page { background: var(--c-bg); }

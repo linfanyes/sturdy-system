@@ -247,7 +247,7 @@ async function doExport() {
 .c1 { background: #fff7ec; } .c2 { background: #e8f1fb; } .c3 { background: #e8f9e8; }
 .c4 { background: #fdeef0; } .c5 { background: #eef0fb; } .c6 { background: #f3eefb; }
 .c7 { background: #fff3e0; } .c8 { background: #eafaf3; }
-.n { font-size: 48rpx; font-weight: 800; color: #4a3f35; }
+.n { font-size: 48rpx; font-weight: 800; color: var(--c-title); }
 .l { font-size: 24rpx; color: #8a7f74; margin-top: 8rpx; }
 .block { background: var(--c-card); border-radius: 20rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .bt { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }

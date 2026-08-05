@@ -127,7 +127,7 @@ async function del(g) {
 .dot { position: absolute; left: -22rpx; top: 24rpx; width: 18rpx; height: 18rpx; border-radius: 50%; background: #e6a23c; }
 .card { background: #fff; border-radius: 16rpx; padding: 20rpx 24rpx; }
 .top { display: flex; align-items: center; gap: 12rpx; }
-.stu { font-size: 28rpx; font-weight: 700; color: #4a3f35; }
+.stu { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .type { font-size: 22rpx; color: #a07b3b; background: #f7f1e6; padding: 2rpx 12rpx; border-radius: 16rpx; }
 .date { font-size: 22rpx; color: #9aa0a6; margin-left: auto; }
 .tt { font-size: 30rpx; color: #333; margin: 10rpx 0; font-weight: 600; }

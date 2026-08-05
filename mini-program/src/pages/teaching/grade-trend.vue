@@ -263,14 +263,14 @@ function pickClass(ev) {
 .seg-i { flex: 1; text-align: center; padding: 20rpx 0; font-size: 28rpx; color: #9aa0a6; }
 .seg-i.on { background: #e6a23c; color: #fff; font-weight: 600; }
 .chart { background: #fff; border-radius: 16rpx; padding: 24rpx; }
-.chart-title { font-size: 26rpx; color: #4a3f35; margin-bottom: 16rpx; font-weight: 600; }
+.chart-title { font-size: 26rpx; color: var(--c-title); margin-bottom: 16rpx; font-weight: 600; }
 .cv { width: 100%; height: 380rpx; }
 .legend-min { font-size: 22rpx; color: #9aa0a6; margin-top: 12rpx; text-align: center; }
 .tbl { margin-top: 18rpx; background: #fff; border-radius: 16rpx; padding: 6rpx 16rpx; }
 .tr { display: flex; padding: 14rpx 0; border-bottom: 1px solid #f3f3f3; font-size: 22rpx; }
 .tr.th { color: #9aa0a6; font-weight: 600; }
 .tr:last-child { border-bottom: none; }
-.td { flex: 1; color: #4a3f35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td { flex: 1; color: var(--c-title); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td.r { text-align: right; flex: 0 0 78rpx; }
 .td.g { color: #07c160; }
 .td.r { color: #e06c75; }
@@ -279,7 +279,7 @@ function pickClass(ev) {
 .bar { width: 60%; border-radius: 10rpx 10rpx 0 0; min-height: 4rpx; }
 .bv { font-size: 22rpx; color: #5a5048; margin-top: 8rpx; }
 .bx { font-size: 20rpx; color: #9aa0a6; margin-top: 4rpx; }
-.cmp-meta { display: flex; justify-content: space-between; font-size: 22rpx; color: #4a3f35; padding: 10rpx 0; border-bottom: 1px solid #f3f3f3; }
+.cmp-meta { display: flex; justify-content: space-between; font-size: 22rpx; color: var(--c-title); padding: 10rpx 0; border-bottom: 1px solid #f3f3f3; }
 .cmp-meta .sub { color: #9aa0a6; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 0; }
 /* 深色 */

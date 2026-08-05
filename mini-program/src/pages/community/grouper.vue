@@ -235,7 +235,7 @@ function copyResult() {
 .hint { display: block; color: #888; font-size: 24rpx; line-height: 1.6; margin-bottom: 16rpx; }
 .result { margin-top: 10rpx; }
 .grp { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 16rpx; }
-.gh { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 12rpx; display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; }
+.gh { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 12rpx; display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; }
 .gtag { font-size: 22rpx; color: #fff; background: var(--c-blue); padding: 4rpx 16rpx; border-radius: 20rpx; font-weight: 500; }
 .gsex { font-size: 22rpx; color: #888; font-weight: 400; }
 .mem { font-size: 28rpx; color: #5a5048; padding: 8rpx 0; display: flex; align-items: center; gap: 12rpx; }

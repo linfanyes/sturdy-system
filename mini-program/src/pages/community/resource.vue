@@ -291,7 +291,7 @@ async function del(r) {
 .chk-dot { width: 32rpx; height: 32rpx; border-radius: 50%; border: 3rpx solid #ccc; background: #fff; }
 .chk-dot.on { background: var(--c-primary); border-color: #07c160; }
 .thumb { width: 100%; height: 160rpx; border-radius: 12rpx; background: #f3f3f3; margin-bottom: 10rpx; }
-.tt { display: block; font-size: 28rpx; font-weight: 700; color: #4a3f35; }
+.tt { display: block; font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .desc { display: block; font-size: 22rpx; color: #9aa0a6; margin-top: 6rpx; }
 .chips { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 10rpx; }
 .cat { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; }
@@ -312,7 +312,7 @@ async function del(r) {
 /* 智慧中小学课程区 */
 .zhx { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
 .zhx-h { display: flex; flex-direction: column; gap: 4rpx; margin-bottom: 14rpx; }
-.zhx-t { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.zhx-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .zhx-sub { font-size: 22rpx; color: #9aa0a6; }
 .zhx-subs { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 14rpx; }
 .zhx-chip { font-size: 22rpx; padding: 8rpx 22rpx; border-radius: 30rpx; background: #f3f3f3; color: #666; }
@@ -320,7 +320,7 @@ async function del(r) {
 .zhx-list { display: flex; flex-direction: column; gap: 14rpx; }
 .zhx-card { border: 1px solid #eee; border-radius: 14rpx; padding: 18rpx; }
 .zhx-row { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
-.zhx-name { font-size: 28rpx; font-weight: 700; color: #4a3f35; flex: 1; }
+.zhx-name { font-size: 28rpx; font-weight: 700; color: var(--c-title); flex: 1; }
 .zhx-tag { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 16rpx; flex-shrink: 0; }
 .zhx-desc { display: block; font-size: 22rpx; color: #9aa0a6; margin: 10rpx 0; line-height: 1.5; }
 .zhx-acts { display: flex; gap: 20rpx; }

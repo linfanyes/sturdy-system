@@ -496,7 +496,7 @@ function clearAll() {
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 12rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .bar { display: flex; align-items: center; margin-bottom: 16rpx; }
 .back { color: var(--c-blue); font-size: 30rpx; margin-right: 16rpx; }
-.title { font-size: 28rpx; color: #4a3f35; }
+.title { font-size: 28rpx; color: var(--c-title); }
 .podium { text-align: center; background: #f3e9d2; color: #a07b3b; border-radius: 12rpx; padding: 12rpx; margin-bottom: 20rpx; font-size: 26rpx; }
 .grid-rows { display: flex; flex-direction: column; gap: 12rpx; margin-bottom: 20rpx; }
 .grid-row { display: flex; gap: 12rpx; }

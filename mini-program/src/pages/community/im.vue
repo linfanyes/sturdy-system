@@ -616,7 +616,7 @@ onShow(async () => {
 .row.me { justify-content: flex-end; }
 .col { display: flex; flex-direction: column; align-items: flex-start; max-width: 72%; }
 .row.me .col { align-items: flex-end; }
-.bubble { max-width: 100%; background: #fff; color: #4a3f35; padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
+.bubble { max-width: 100%; background: #fff; color: var(--c-title); padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
 .img { width: 280rpx; border-radius: 14rpx; }
 .row.me .bubble { background: var(--c-primary); color: #fff; }
 .read { font-size: 18rpx; color: #9aa0a6; margin-top: 4rpx; }

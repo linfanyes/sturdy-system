@@ -118,7 +118,7 @@ function del(t) {
 <style scoped>
 .page { padding: 24rpx; }
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.h { font-size: 36rpx; font-weight: 800; color: #4a3f35; }
+.h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .sub { font-size: 24rpx; color: #9aa0a6; margin-top: 4rpx; }
 .add { font-size: 28rpx; color: #fff; background: var(--c-primary); padding: 12rpx 26rpx; border-radius: 40rpx; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 40rpx; font-size: 26rpx; }
@@ -127,14 +127,14 @@ function del(t) {
 .box { width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid #ddd; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26rpx; flex-shrink: 0; }
 .box.on { background: var(--c-primary); border-color: #07c160; }
 .mid { flex: 1; min-width: 0; }
-.title { font-size: 29rpx; color: #4a3f35; }
+.title { font-size: 29rpx; color: var(--c-title); }
 .title.done { text-decoration: line-through; color: #bbb; }
 .meta { font-size: 23rpx; color: #9aa0a6; margin-top: 6rpx; }
 .del { font-size: 30rpx; color: #ccc; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
   padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
 .modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; }
-.mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: #4a3f35; }
+.mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .picker { background: #f6f6f6; border-radius: 12rpx; padding: 18rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .mbtns { display: flex; gap: 20rpx; }

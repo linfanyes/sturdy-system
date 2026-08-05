@@ -142,14 +142,14 @@ function del(o) {
 <style scoped>
 .page { padding: 24rpx; }
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.h { font-size: 36rpx; font-weight: 800; color: #4a3f35; }
+.h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .sub { font-size: 24rpx; color: #9aa0a6; margin-top: 4rpx; }
 .add { font-size: 28rpx; color: #fff; background: var(--c-primary); padding: 12rpx 26rpx; border-radius: 40rpx; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 40rpx; font-size: 26rpx; }
 .list { background: #fff; border-radius: 16rpx; padding: 10rpx 24rpx; }
 .c { padding: 20rpx 0; border-bottom: 1px solid #f3f3f3; }
 .top { display: flex; align-items: center; gap: 12rpx; }
-.teacher { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.teacher { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .chip { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; }
 .meta { font-size: 24rpx; color: #9aa0a6; margin: 8rpx 0; }
 .topic { font-size: 27rpx; color: #5a5048; }
@@ -168,7 +168,7 @@ function del(o) {
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
   padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
 .modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 90vh; overflow-y: auto; }
-.mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: #4a3f35; }
+.mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .picker { background: #f6f6f6; border-radius: 12rpx; padding: 18rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .area { height: 120rpx; }

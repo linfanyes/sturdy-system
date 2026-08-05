@@ -223,7 +223,7 @@ async function del(it) {
 .albums { background: #fff; border-radius: 16rpx; padding: 10rpx 24rpx; }
 .al { padding: 16rpx 0; border-bottom: 1px solid #f3f3f3; }
 .top { display: flex; justify-content: space-between; }
-.tt { font-size: 30rpx; font-weight: 700; color: #4a3f35; }
+.tt { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .dt { font-size: 24rpx; color: #9aa0a6; }
 .ct { font-size: 26rpx; color: #5a5048; margin: 8rpx 0; white-space: pre-wrap; }
 .del { font-size: 24rpx; color: #e06c75; }
