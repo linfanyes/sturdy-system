@@ -596,7 +596,7 @@ const analysis = computed(() => {
 })
 
 // P1-3: 各科雷达图数据 - 取当前班级、当前考试所有已录入成绩的科目，每科 5 维
-const RADAR_COLORS = ['#e6a23c', '#07c160', '#409eff', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
+const RADAR_COLORS = ['#e6a23c', '#07c160', 'var(--c-blue)', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
 const radarData = computed(() => {
   const result = { subjects: [], colors: RADAR_COLORS }
   if (!existing.value || !examName.value || !classId.value) return result
@@ -1153,26 +1153,26 @@ async function aiDiagnose() {
 .field { margin-bottom: 16rpx; }
 .label { display: block; font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; }
 .role-tag { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; }
-.homeroom { background: rgba(7, 193, 96, 0.15); color: #07c160; }
+.homeroom { background: rgba(245,179,66, 0.15); color: #07c160; }
 .shared { background: rgba(230, 162, 60, 0.15); color: #e6a23c; }
 .picker, .sel input {
   border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx;
   font-size: 28rpx; color: var(--c-title); min-height: 80rpx; line-height: 44rpx;
   box-sizing: border-box; background: var(--c-input); width: 100%;
 }
-.exist { background: rgba(7,193,96,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
+.exist { background: rgba(245,179,66,0.12); color: var(--c-primary); font-size: 26rpx; padding: 18rpx 24rpx; border-radius: 14rpx; margin-bottom: 16rpx; display: flex; justify-content: space-between; align-items: center; }
 .clear { color: var(--c-danger); font-size: 24rpx; }
 .exp-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
 .exp-csv, .exp-rank, .exp-share { flex: 1; text-align: center; font-size: 26rpx; padding: 16rpx 0; border-radius: 14rpx; background: var(--c-card2); color: var(--c-accent); border: 1px solid var(--c-border); }
 .exp-csv:active, .exp-rank:active, .exp-share:active { opacity: 0.6; }
-.exp-share { color: #409eff; }
-.share-stu { font-size: 28rpx; padding: 4rpx 10rpx; color: #409eff; flex-shrink: 0; }
+.exp-share { color: var(--c-blue); }
+.share-stu { font-size: 28rpx; padding: 4rpx 10rpx; color: var(--c-blue); flex-shrink: 0; }
 .item { background: var(--c-card); border-radius: 16rpx; padding: 20rpx 26rpx; margin-bottom: 14rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .name { font-size: 30rpx; color: var(--c-title); }
 .score { width: 220rpx; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; text-align: center; font-size: 28rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 16rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
-.imp { background: #409eff; color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+.imp { background: var(--c-blue); color: #fff; border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .import-box { margin-top: 16rpx; background: var(--c-card2); border-radius: 20rpx; padding: 24rpx; }
 .imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 14rpx; }
 .imp-btns { display: flex; gap: 16rpx; }
@@ -1183,7 +1183,7 @@ async function aiDiagnose() {
 .prog-txt { font-size: 26rpx; color: var(--c-sub); display: block; margin-bottom: 10rpx; }
 .prog-bar { height: 12rpx; background: var(--c-card2); border-radius: 6rpx; overflow: hidden; }
 .prog-fill { height: 100%; background: linear-gradient(90deg, var(--c-accent), var(--c-primary)); border-radius: 6rpx; transition: width 0.3s; }
-.pick { background: #409eff; color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
+.pick { background: var(--c-blue); color: #fff; border-radius: 50rpx; font-size: 28rpx; height: 84rpx; line-height: 84rpx; }
 .preview { margin-top: 14rpx; border-top: 1px dashed var(--c-border); padding-top: 14rpx; }
 .pv-sum { font-size: 26rpx; color: var(--c-title); }
 .pv-sum .ok { color: var(--c-primary); }

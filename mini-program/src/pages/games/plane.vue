@@ -358,7 +358,7 @@ onUnmounted(() => {
 
 .ctrl { display: flex; gap: 16rpx; margin-top: 18rpx; }
 .btn { background: #e6a23c; color: #fff; border-radius: 14rpx; font-size: 26rpx; padding: 0 28rpx; line-height: 64rpx; }
-.btn.pause { background: #409eff; }
+.btn.pause { background: var(--c-blue); }
 .btn.restart { background: #e6a23c; }
 .hint { font-size: 22rpx; opacity: .55; margin-top: 12rpx; }
 

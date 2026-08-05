@@ -488,14 +488,14 @@ function clearAll() {
 .on { color: #07c160; font-size: 26rpx; }
 .btns { margin-top: 12rpx; }
 .act { background: #e6a23c; color: #fff; margin-right: 12rpx; }
-.edit { background: #409eff; color: #fff; }
+.edit { background: var(--c-blue); color: #fff; }
 .empty { text-align: center; color: #c0c4cc; padding: 60rpx 0; }
 .add { margin-top: 16rpx; background: #e6a23c; color: #fff; border-radius: 50rpx; }
 .form { margin-top: 24rpx; background: #fff; border-radius: 20rpx; padding: 30rpx; }
 .form input { width: 100%; height: 80rpx; min-height: 80rpx; line-height: 44rpx; border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; color: #333; background: #fff; box-sizing: border-box; }
-.save { background: #07c160; color: #fff; border-radius: 50rpx; margin-top: 12rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 12rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .bar { display: flex; align-items: center; margin-bottom: 16rpx; }
-.back { color: #409eff; font-size: 30rpx; margin-right: 16rpx; }
+.back { color: var(--c-blue); font-size: 30rpx; margin-right: 16rpx; }
 .title { font-size: 28rpx; color: #4a3f35; }
 .podium { text-align: center; background: #f3e9d2; color: #a07b3b; border-radius: 12rpx; padding: 12rpx; margin-bottom: 20rpx; font-size: 26rpx; }
 .grid-rows { display: flex; flex-direction: column; gap: 12rpx; margin-bottom: 20rpx; }
@@ -511,7 +511,7 @@ function clearAll() {
 .cancel { background: #f4f4f4; border-radius: 50rpx; }
 /* 编辑态工具栏 */
 .toolbar { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 16rpx; }
-.tbtn { font-size: 24rpx; color: #409eff; background: #ecf5ff; padding: 10rpx 20rpx; border-radius: 32rpx; }
+.tbtn { font-size: 24rpx; color: var(--c-blue); background: #ecf5ff; padding: 10rpx 20rpx; border-radius: 32rpx; }
 .tbtn:active { opacity: 0.7; }
 /* 弹层（自动排座/调整尺寸/过道） */
 .sh-t { font-size: 32rpx; font-weight: 700; margin-bottom: 12rpx; color: #333; }
@@ -520,7 +520,7 @@ function clearAll() {
 .btn { flex: 1; height: 80rpx; line-height: 80rpx; border-radius: 40rpx; font-size: 28rpx; padding: 0; }
 .btn::after { border: none; }
 .btn.del { background: #f4f4f4; color: #666; }
-.btn.ok { background: #07c160; color: #fff; }
+.btn.ok { background: var(--c-primary); color: #fff; }
 .picker.sm { padding: 18rpx 24rpx; border: 1px solid #eee; border-radius: 12rpx; margin-bottom: 12rpx; min-height: 80rpx; line-height: 44rpx; box-sizing: border-box; font-size: 28rpx; }
 .mode-desc { font-size: 24rpx; color: #555; line-height: 1.7; background: #f8f8f8; padding: 16rpx 20rpx; border-radius: 12rpx; margin: 8rpx 0 16rpx; }
 .inp { width: 100%; height: 80rpx; line-height: 44rpx; border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 16rpx; font-size: 28rpx; color: #333; background: #fff; box-sizing: border-box; }
@@ -542,7 +542,7 @@ function clearAll() {
 .dark .aisle { border-color: var(--c-border); color: var(--c-sub); }
 .dark .aisle-mark { color: var(--c-sub); }
 .dark .aisle-row { border-bottom-color: var(--c-border); }
-.dark .aisle-row.on { background: rgba(7,193,96,0.12); }
+.dark .aisle-row.on { background: rgba(245,179,66,0.12); }
 .dark .aisle-label { color: var(--c-title); }
 .dark .tbtn { background: var(--c-card2); color: var(--c-primary); }
 /* 深色适配 */

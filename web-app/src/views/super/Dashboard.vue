@@ -167,7 +167,7 @@ function isToday(t?: string): boolean {
       <SvgProgress
         :data="[
           { label: '已启用学校', value: schoolByStatus.find(s => s.label === '活跃')?.value || 0, total: schoolTotal, color: '#67c23a' },
-          { label: '学校管理员', value: adminTotal, total: schoolTotal * 2 || 1, color: '#409eff' },
+          { label: '学校管理员', value: adminTotal, total: schoolTotal * 2 || 1, color: '#1C6FB3' },
           { label: '审计活跃度', value: weekLogCount, total: 50, color: '#e6a23c' },
           { label: '今日活跃度', value: todayLogCount, total: 10, color: '#e06c75' }
         ]"

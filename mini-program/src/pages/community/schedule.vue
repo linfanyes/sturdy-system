@@ -687,13 +687,13 @@ function copyAsText() {
 .tbtns { display: flex; gap: 14rpx; }
 .tbtn { font-size: 24rpx; color: #fff; background: var(--c-accent); padding: 10rpx 24rpx; border-radius: 30rpx; }
 .tbtn.auto { background: var(--c-primary); }
-.tbtn.print { background: #409eff; }
+.tbtn.print { background: var(--c-blue); }
 .dark .teach-bar { background: var(--c-card2); }
 .dark .tstat { color: var(--c-accent); }
 .lg { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; color: #fff; }
 .lg-all { background: #e6a23c; }
 .lg-single { background: #67c23a; }
-.lg-double { background: #409eff; }
+.lg-double { background: var(--c-blue); }
 .grid { border: 1px solid var(--c-border); border-radius: 12rpx; overflow: hidden; }
 .row { display: flex; }
 .row.head { background: var(--c-card2); }
@@ -714,8 +714,8 @@ function copyAsText() {
 .inp { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx; font-size: 28rpx; background: var(--c-input); width: 100%; box-sizing: border-box; }
 .picker.sm { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 20rpx; font-size: 28rpx; background: var(--c-input); width: 100%; box-sizing: border-box; }
 .ro { font-size: 26rpx; color: var(--c-accent); background: var(--c-card2); border-radius: 12rpx; padding: 14rpx 16rpx; margin-bottom: 16rpx; display: flex; align-items: center; justify-content: space-between; }
-.exp-link { font-size: 22rpx; color: var(--c-primary); padding: 4rpx 12rpx; border-radius: 12rpx; background: rgba(7,193,96,.1); flex-shrink: 0; }
-.exp-link.xls { color: #409eff; background: rgba(64,158,255,.1); }
+.exp-link { font-size: 22rpx; color: var(--c-primary); padding: 4rpx 12rpx; border-radius: 12rpx; background: rgba(245,179,66,.1); flex-shrink: 0; }
+.exp-link.xls { color: var(--c-blue); background: rgba(64,158,255,.1); }
 .hint { font-size: 22rpx; color: var(--c-sub); line-height: 1.5; margin-bottom: 16rpx; }
 .sw-row { display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; }
 .sh-bar { display: flex; gap: 20rpx; }

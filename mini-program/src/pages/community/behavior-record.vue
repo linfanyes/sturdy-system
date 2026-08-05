@@ -196,12 +196,12 @@ function del(b) {
 .date { font-size: 22rpx; color: var(--c-sub); }
 .note { font-size: 25rpx; color: #6a6058; margin-top: 6rpx; }
 .acts { display: flex; flex-direction: column; gap: 14rpx; }
-.a { font-size: 24rpx; color: #409eff; }
+.a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
-.fab { position: fixed; right: 40rpx; bottom: 60rpx; background: var(--c-primary); color: #fff; padding: 24rpx 36rpx; border-radius: 50rpx; font-size: 28rpx; box-shadow: 0 8rpx 24rpx rgba(7,193,96,.3); }
+.fab { position: fixed; right: 40rpx; bottom: 60rpx; background: var(--c-primary); color: #fff; padding: 24rpx 36rpx; border-radius: 50rpx; font-size: 28rpx; box-shadow: 0 8rpx 24rpx rgba(245,179,66,.3); }
 /* 行为配色 */
 .b-speak { background: #e8f9e8; color: #07c160; }
-.b-listen { background: #e8f1fb; color: #409eff; }
+.b-listen { background: #e8f1fb; color: var(--c-blue); }
 .b-away { background: #fff3e0; color: #e6a23c; }
 .b-help { background: #e8f9e8; color: #07c160; }
 .b-bad { background: #fde8ea; color: #e06c75; }
@@ -213,10 +213,10 @@ function del(b) {
 .chips2 { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }
 .chips2 .chip2 { background: var(--c-card2); color: var(--c-sub); }
 .chips2 .chip2.on { color: #fff; }
-.chips2 .b-speak.on { background: #07c160; }
-.chips2 .b-listen.on { background: #409eff; }
+.chips2 .b-speak.on { background: var(--c-primary); }
+.chips2 .b-listen.on { background: var(--c-blue); }
 .chips2 .b-away.on { background: #e6a23c; }
-.chips2 .b-help.on { background: #07c160; }
+.chips2 .b-help.on { background: var(--c-primary); }
 .chips2 .b-bad.on { background: #e06c75; }
 .chips2 .b-etc.on { background: #999; }
 .inp { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-card); }

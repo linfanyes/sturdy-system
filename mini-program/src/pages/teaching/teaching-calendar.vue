@@ -195,7 +195,7 @@ function del(it) {
 .nm { display:block; font-size:28rpx; color:var(--c-title); }
 .meta { font-size:22rpx; color:var(--c-sub); }
 .acts { display:flex; gap:18rpx; }
-.ed { font-size:24rpx; color:#409eff; }
+.ed { font-size:24rpx; color:var(--c-blue); }
 .del { font-size:24rpx; color:var(--c-danger); }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; }
 .modal { position:fixed; left:5%; right:5%; bottom:0; z-index:51; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:30rpx; max-height:90vh; overflow-y:auto; }

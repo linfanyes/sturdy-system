@@ -162,7 +162,7 @@ const trendLines = computed(() => {
   const n = trendChartPoints.value.length
   const plotW = CHART_W - PAD.left - PAD.right
   const plotH = CHART_H - PAD.top - PAD.bottom
-  const colors = ['#e6a23c', '#67c23a', '#409eff', '#f56c6c', '#909399', '#9c27b0']
+  const colors = ['#e6a23c', '#67c23a', '#1C6FB3', '#f56c6c', '#909399', '#9c27b0']
   return trendSubjects.value.map((subject, idx) => {
     const points = trendChartPoints.value
       .map((p, i) => {

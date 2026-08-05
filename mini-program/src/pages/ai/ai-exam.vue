@@ -173,7 +173,7 @@ onMounted(() => {
 
 .exam-list { display: flex; flex-direction: column; gap: 12rpx; }
 .exam-item { padding: 20rpx; background: var(--c-card2); border-radius: 12rpx; border: 2rpx solid transparent; }
-.exam-item.on { border-color: var(--c-primary); background: rgba(7,193,96,0.06); }
+.exam-item.on { border-color: var(--c-primary); background: rgba(245,179,66,0.06); }
 .exam-name { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
 .exam-meta { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
 

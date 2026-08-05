@@ -78,7 +78,7 @@ const statsLoaded = ref(false)
 const classes = ref([])
 const classIdx = ref(-1)
 const stats = ref({})
-const colors = ['#e6a23c','#409eff','#67c23a','#e06c75','#9b59b6','#1abc9c']
+const colors = ['#e6a23c','var(--c-blue)','#67c23a','#e06c75','#9b59b6','#1abc9c']
 const dimension = ref('class') // class | grade | school
 const dimensions = [{key:'class',label:'🏫 班级'},{key:'grade',label:'🎓 年级'},{key:'school',label:'🏢 全校'}]
 const startMonth = ref('')
@@ -129,14 +129,14 @@ function drawTrendChart(categories, data) {
       canvas.height = res[0].height * dpr
       ctx.scale(dpr, dpr)
       if (trendChart) {
-        trendChart.updateData({ categories, series: [{ name: '出勤率(%)', data, color: '#409eff', index: 0 }] })
+        trendChart.updateData({ categories, series: [{ name: '出勤率(%)', data, color: 'var(--c-blue)', index: 0 }] })
       } else {
         trendChart = new uCharts({
           type: 'line', context: ctx, width: res[0].width, height: res[0].height,
-          categories, series: [{ name: '出勤率(%)', data, color: '#409eff', index: 0 }],
+          categories, series: [{ name: '出勤率(%)', data, color: 'var(--c-blue)', index: 0 }],
           yAxis: { disabled: false, min: 0 }, xAxis: { disableGrid: true, fontSize: 11 },
           extra: { line: { type: 'straight', width: 2 } },
-          colors: ['#409eff'],
+          colors: ['var(--c-blue)'],
         })
       }
     })
@@ -390,7 +390,7 @@ onShow(async () => {
 .time-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx; }
 .tpick { font-size: 24rpx; color: var(--c-text); padding: 10rpx 18rpx; background: var(--c-card); border-radius: 14rpx; border: 1px solid var(--c-input-border); }
 .tsep { font-size: 24rpx; color: var(--c-sub); }
-.treset { font-size: 24rpx; color: #409eff; }
+.treset { font-size: 24rpx; color: var(--c-blue); }
 .cards { display: flex; gap: 14rpx; margin-bottom: 20rpx; }
 .card { flex: 1; border-radius: 16rpx; padding: 20rpx 14rpx; text-align: center; }
 .c1 { background: #fef3e6; } .c2 { background: #ecf5ff; } .c3 { background: #eff9f0; } .c4 { background: #fef0f5; }

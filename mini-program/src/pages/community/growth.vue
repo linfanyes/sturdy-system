@@ -49,7 +49,7 @@ import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
 const types = ['品德', '学业', '体育', '艺术', '劳动', '其他']
-const typeColors = { '品德': '#e06c75', '学业': '#409eff', '体育': '#07c160', '艺术': '#9b59b6', '劳动': '#e6a23c', '其他': '#9aa0a6' }
+const typeColors = { '品德': '#e06c75', '学业': 'var(--c-blue)', '体育': '#07c160', '艺术': '#9b59b6', '劳动': '#e6a23c', '其他': '#9aa0a6' }
 const list = ref([])
 const showAdd = ref(false)
 const form = ref({ studentName: '', title: '', type: '', date: '', content: '' })
@@ -138,7 +138,7 @@ async function del(g) {
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .area { height: 110rpx; }
 .picker.sm { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; background: #fff; }
-.ok { background: #07c160; color: #fff; border-radius: 50rpx; }
+.ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .search { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }

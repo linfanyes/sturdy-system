@@ -49,7 +49,7 @@
     <!-- 数据管理 -->
     <view class="card">
       <view class="card-h">数据管理</view>
-      <view class="dm" @click="exportData"><text class="dm-ic" style="background:#e8f9e8">📤</text><view><text class="dm-t">导出数据</text><text class="dm-s">复制全部数据为 JSON</text></view></view>
+      <view class="dm" @click="exportData"><text class="dm-ic" style="background:#fff3d6">📤</text><view><text class="dm-t">导出数据</text><text class="dm-s">复制全部数据为 JSON</text></view></view>
       <view class="dm" @click="importData"><text class="dm-ic" style="background:#e8f0fe">📥</text><view><text class="dm-t">导入数据</text><text class="dm-s">从 JSON 文件导入，覆盖现有数据</text></view></view>
       <view class="dm" @click="resetData"><text class="dm-ic" style="background:#fde8ea">🗑️</text><view><text class="dm-t" style="color:#e06c75">清空所有数据</text><text class="dm-s">不可恢复，请先导出</text></view></view>
     </view>
@@ -540,7 +540,7 @@ async function maybeAutoBackup(force = false) {
 .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .top { display: flex; align-items: center; gap: 12rpx; }
 .name { font-size: 38rpx; font-weight: 800; color: var(--c-title); }
-.chip { font-size: 20rpx; background: #e8f9e8; color: var(--c-primary); padding: 2rpx 12rpx; border-radius: 16rpx; }
+.chip { font-size: 20rpx; background: #fff3d6; color: var(--c-primary); padding: 2rpx 12rpx; border-radius: 16rpx; }
 .sub { font-size: 24rpx; color: var(--c-sub); margin-top: 4rpx; }
 .motto { font-size: 24rpx; color: #8a7a66; margin-top: 6rpx; }
 .edit { font-size: 26rpx; color: var(--c-accent); padding: 8rpx 20rpx; border: 1px solid var(--c-accent); border-radius: 30rpx; flex: 0 0 auto; }

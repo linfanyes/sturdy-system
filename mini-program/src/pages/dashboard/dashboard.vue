@@ -1,13 +1,18 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <!-- 欢迎条 -->
+    <!-- 欢迎条（黄油渐变横幅，对齐 Web WelcomeHero） -->
     <view class="header">
-      <view class="hi">{{ greeting }}，{{ auth.user?.name || '老师' }}</view>
-      <view class="school">{{ auth.user?.school || '未设置学校' }}
-        <picker v-if="semesterList.length" :range="semesterList" range-key="name" :value="semesterIdx" @change="onSemesterChange">
-          <text class="sem">{{ semesterList[semesterIdx]?.name || semesterName }} ▾</text>
-        </picker>
-        <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
+      <view class="h-orb h-orb-a" />
+      <view class="h-orb h-orb-b" />
+      <view class="h-avatar">🍎</view>
+      <view class="h-main">
+        <view class="hi">{{ greeting }}，<text class="hi-name">{{ auth.user?.name || '老师' }}</text></view>
+        <view class="school">{{ auth.user?.school || '未设置学校' }}
+          <picker v-if="semesterList.length" :range="semesterList" range-key="name" :value="semesterIdx" @change="onSemesterChange">
+            <text class="sem">{{ semesterList[semesterIdx]?.name || semesterName }} ▾</text>
+          </picker>
+          <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
+        </view>
       </view>
       <view class="bell" @click="goNotifications">
         <text class="bell-icon">🔔</text>
@@ -735,13 +740,53 @@ function switchToParent() {
 
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
-.header { padding: 10rpx 6rpx 20rpx; }
-.hi { font-size: 44rpx; font-weight: 700; color: var(--c-title); }
-.school { color: var(--c-sub); margin-top: 8rpx; }
-.sem { color: var(--c-accent); font-weight: 600; }
-.moods { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 18rpx; }
-.mood { font-size: 22rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card); color: var(--c-sub); }
-.mood.on { background: var(--c-accent); color: #fff; }
+/* 欢迎横幅：黄油渐变 + 光斑 + 头像（对齐 Web WelcomeHero） */
+.header {
+  position: relative;
+  overflow: hidden;
+  padding: 28rpx 28rpx 20rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #fff3d6 0%, #ffe9b8 55%, #ffe0b2 100%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(214, 148, 38, 0.14);
+}
+.h-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+.h-orb-a { width: 190rpx; height: 190rpx; right: -40rpx; top: -70rpx; background: radial-gradient(circle at 30% 30%, #fff6d8, #ffd479); opacity: 0.5; }
+.h-orb-b { width: 130rpx; height: 130rpx; right: 130rpx; bottom: -50rpx; background: radial-gradient(circle at 30% 30%, #ffe3ec, #ffb8cc); opacity: 0.4; }
+.h-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #ffe7a8, #ffd479);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  flex-shrink: 0;
+  box-shadow: 0 8rpx 20rpx rgba(214, 148, 38, 0.3);
+}
+.h-main { flex: 1; min-width: 0; }
+.hi { font-size: 40rpx; font-weight: 700; color: #4a3f35; line-height: 1.35; }
+.hi-name { color: #b9821f; }
+.school { color: rgba(74, 63, 53, 0.72); margin-top: 6rpx; font-size: 24rpx; }
+.sem { color: #d69426; font-weight: 600; }
+.moods { width: 100%; display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 4rpx; }
+.mood { font-size: 22rpx; padding: 8rpx 18rpx; border-radius: 30rpx; background: rgba(255, 255, 255, 0.7); color: rgba(74, 63, 53, 0.75); }
+.mood.on { background: var(--c-primary); color: #fff; }
+/* 暗色欢迎横幅 */
+.dark .header { background: linear-gradient(135deg, #3a3020 0%, #4a3c22 55%, #573d22 100%); box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.25); }
+.dark .h-orb-a { opacity: 0.3; }
+.dark .h-orb-b { opacity: 0.25; }
+.dark .h-avatar { background: linear-gradient(135deg, #6a5426, #8a6a2a); box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.3); }
+.dark .hi { color: #f2e8d8; }
+.dark .hi-name { color: #ffd479; }
+.dark .school { color: rgba(242, 232, 216, 0.65); }
+.dark .sem { color: #ffce54; }
+.dark .mood { background: rgba(38, 43, 52, 0.65); color: rgba(242, 232, 216, 0.7); }
+.dark .mood.on { background: var(--c-primary); color: #1a1c22; }
 .ov-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; margin: 10rpx 0 20rpx; }
 .today-stats { grid-template-columns: repeat(3, 1fr); margin: 6rpx 0 14rpx; }
 .ts-card { flex-direction: column; align-items: center; text-align: center; padding: 20rpx 8rpx; gap: 8rpx; }
@@ -768,7 +813,7 @@ function switchToParent() {
 .cat { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 16rpx; flex-shrink: 0; }
 .c-reflection { background: #fde8ea; color: #e06c75; }
 .c-meeting { background: #e8f9e8; color: #07c160; }
-.c-material { background: #e8f1fb; color: #409eff; }
+.c-material { background: #e8f1fb; color: var(--c-blue); }
 .c-other { background: #f7f1e6; color: #a07b3b; }
 .bord { border-left: 6rpx solid var(--c-danger); padding-left: 14rpx; }
 /* P1-4: 本周生日 */
@@ -783,7 +828,7 @@ function switchToParent() {
 .bd-card-title { font-size: 36rpx; font-weight: 800; color: #e06c75; margin: 10rpx 0; }
 .bd-card-name { font-size: 44rpx; font-weight: 800; color: #4a3f35; }
 .bd-card-msg { font-size: 28rpx; color: #5a5048; margin: 16rpx 0; line-height: 1.6; }
-.bd-card-copy { width: 100%; background: #07c160; color: #fff; border-radius: 50rpx; font-size: 28rpx; margin-top: 10rpx; height: 80rpx; line-height: 80rpx; }
+.bd-card-copy { width: 100%; background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 28rpx; margin-top: 10rpx; height: 80rpx; line-height: 80rpx; }
 .bd-card-close { width: 100%; background: transparent; color: #999; border-radius: 50rpx; font-size: 26rpx; margin-top: 6rpx; height: 60rpx; line-height: 60rpx; }
 /* 待办 */
 .todo-add { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
@@ -829,7 +874,7 @@ function switchToParent() {
 .ai-inp { flex: 1; border: 1px solid var(--c-border); border-radius: 30rpx; padding: 14rpx 20rpx; font-size: 24rpx; background: var(--c-input); color: var(--c-text); }
 .ai-send { flex-shrink: 0; background: var(--c-primary); color: #fff; border-radius: 30rpx; padding: 0 24rpx; font-size: 24rpx; display: flex; align-items: center; }
 .ai-hints { display: flex; gap: 8rpx; flex-wrap: wrap; }
-.ai-hint { font-size: 20rpx; color: #409eff; background: rgba(64,158,255,.1); padding: 6rpx 14rpx; border-radius: 20rpx; }
+.ai-hint { font-size: 20rpx; color: var(--c-blue); background: rgba(64,158,255,.1); padding: 6rpx 14rpx; border-radius: 20rpx; }
 /* 通知中心 */
 .bell { position: relative; margin-left: auto; padding: 0 10rpx; }
 .bell-icon { font-size: 36rpx; }
@@ -837,7 +882,7 @@ function switchToParent() {
 .notif-panel { position: fixed; top: 0; right: 0; width: 100%; height: 100vh; z-index: 999; background: var(--c-bg); display: flex; flex-direction: column; }
 .notif-hd { display: flex; align-items: center; gap: 16rpx; padding: 20rpx 24rpx; background: var(--c-card); border-bottom: 1rpx solid var(--c-border); }
 .notif-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); flex: 1; }
-.notif-act { font-size: 24rpx; color: #409eff; }
+.notif-act { font-size: 24rpx; color: var(--c-blue); }
 .notif-list { flex: 1; overflow-y: auto; padding: 14rpx 24rpx; }
 .notif-empty { text-align: center; padding: 60rpx 0; font-size: 26rpx; color: var(--c-sub); }
 .notif-item { display: flex; gap: 14rpx; padding: 16rpx 0; border-bottom: 1rpx solid var(--c-border); }

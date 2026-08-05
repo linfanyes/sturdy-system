@@ -215,9 +215,9 @@ onShow(async () => {
 .page { padding: 20rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; margin-bottom: 16rpx; }
 .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
-.sel { font-size: 24rpx; color: #409eff; padding: 6rpx 16rpx; background: var(--c-card); border-radius: 30rpx; }
+.sel { font-size: 24rpx; color: var(--c-blue); padding: 6rpx 16rpx; background: var(--c-card); border-radius: 30rpx; }
 .bar-ops { display: flex; gap: 10rpx; }
-.act { font-size: 24rpx; color: #409eff; padding: 6rpx 16rpx; background: var(--c-card); border-radius: 30rpx; }
+.act { font-size: 24rpx; color: var(--c-blue); padding: 6rpx 16rpx; background: var(--c-card); border-radius: 30rpx; }
 .act.save { color: #e6a23c; background: #fdf6ec; }
 .opts { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
 .opt { font-size: 24rpx; color: var(--c-sub); padding: 6rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
@@ -230,7 +230,7 @@ onShow(async () => {
 .t-cell.period { flex: 0.5; font-size: 20rpx; color: var(--c-sub); }
 .cell-inp { width: 100%; text-align: center; font-size: 20rpx; padding: 8rpx 0; border-radius: 6rpx; border: 1px solid transparent; background: transparent; }
 .cell-inp.sakura { background: #fef0f0; color: #e64340; border-color: #fbc4c4; }
-.cell-inp.sky { background: #ecf5ff; color: #409eff; border-color: #b3d8ff; }
+.cell-inp.sky { background: #ecf5ff; color: var(--c-blue); border-color: #b3d8ff; }
 .cell-inp.mint { background: #f0f9eb; color: #67c23a; border-color: #c2e7b0; }
 .cell-inp.butter { background: #fdf6ec; color: #e6a23c; border-color: #f5dab1; }
 .cell-inp.cocoa { background: #f5f0e8; color: #8b7355; border-color: #d4c5b2; }
@@ -240,7 +240,7 @@ onShow(async () => {
 .lg-list { display: flex; flex-wrap: wrap; gap: 8rpx; }
 .lg-item { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
 .lg-item.sakura { background: #fef0f0; color: #e64340; }
-.lg-item.sky { background: #ecf5ff; color: #409eff; }
+.lg-item.sky { background: #ecf5ff; color: var(--c-blue); }
 .lg-item.mint { background: #f0f9eb; color: #67c23a; }
 .lg-item.butter { background: #fdf6ec; color: #e6a23c; }
 .lg-item.cocoa { background: #f5f0e8; color: #8b7355; }

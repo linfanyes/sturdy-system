@@ -359,7 +359,7 @@ function remove(t) {
 .meta { font-size: 22rpx; color: #9aa0a6; display: block; }
 .meta.tap { color: var(--c-primary); }
 .acts { display: flex; flex-direction: column; gap: 8rpx; flex: 0 0 auto; }
-.call { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; background: #e8f1fb; color: #409eff; }
+.call { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; background: #e8f1fb; color: var(--c-blue); }
 .cp, .ed, .del { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; }
 .cp { background: #eef7ee; color: var(--c-primary); }
 .ed { background: #f3f1e6; color: #a07b3b; }

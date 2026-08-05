@@ -92,7 +92,7 @@ onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 .item.unread { background: #fffbf0; }
 .ico { width: 60rpx; height: 60rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28rpx; flex-shrink: 0; }
 .c-notice { background: rgba(230,162,60,.15); }
-.c-parent { background: rgba(7,193,96,.15); }
+.c-parent { background: rgba(245,179,66,.15); }
 .c-homework { background: rgba(64,158,255,.15); }
 .c-attendance { background: rgba(234,100,64,.15); }
 .c-grade { background: rgba(156,39,176,.15); }

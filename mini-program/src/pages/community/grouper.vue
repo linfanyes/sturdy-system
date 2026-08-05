@@ -230,17 +230,17 @@ function copyResult() {
 .seg2 { display: flex; margin-bottom: 20rpx; }
 .seg2 .seg-i { border-radius: 12rpx; }
 .ctrl { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: #333; background: #fff; }
-.go { background: #07c160; color: #fff; border-radius: 50rpx; }
+.go { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 .tip { display: block; color: #e06c75; font-size: 24rpx; margin-top: 12rpx; }
 .hint { display: block; color: #888; font-size: 24rpx; line-height: 1.6; margin-bottom: 16rpx; }
 .result { margin-top: 10rpx; }
 .grp { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 16rpx; }
 .gh { font-size: 30rpx; font-weight: 700; color: #4a3f35; margin-bottom: 12rpx; display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; }
-.gtag { font-size: 22rpx; color: #fff; background: #409eff; padding: 4rpx 16rpx; border-radius: 20rpx; font-weight: 500; }
+.gtag { font-size: 22rpx; color: #fff; background: var(--c-blue); padding: 4rpx 16rpx; border-radius: 20rpx; font-weight: 500; }
 .gsex { font-size: 22rpx; color: #888; font-weight: 400; }
 .mem { font-size: 28rpx; color: #5a5048; padding: 8rpx 0; display: flex; align-items: center; gap: 12rpx; }
 .mem-sex { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 16rpx; }
-.mem-sex.male { background: #ecf5ff; color: #409eff; }
+.mem-sex.male { background: #ecf5ff; color: var(--c-blue); }
 .mem-sex.female { background: #fef0f7; color: #e06c75; }
 /* 深色适配 */
 .dark .page { background: var(--c-bg); }

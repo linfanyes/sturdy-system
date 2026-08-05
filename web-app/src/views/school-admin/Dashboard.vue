@@ -33,7 +33,7 @@ const chartTeacherStudent = computed(() => [
 
 const chartOverview = computed(() => [
   { label: '教师', value: stats.value.totalTeachers, color: '#e6a23c' },
-  { label: '班级', value: stats.value.totalClasses, color: '#409eff' },
+  { label: '班级', value: stats.value.totalClasses, color: '#1C6FB3' },
   { label: '学生', value: stats.value.totalStudents, color: '#67c23a' }
 ])
 
@@ -70,7 +70,7 @@ const attendanceTrend = computed(() => {
 const coreMetrics = computed(() => [
   { label: '教师配齐率', value: stats.value.totalTeachers, total: Math.max(stats.value.totalClasses * 2, 1), color: '#e6a23c' },
   { label: '学生入学率', value: stats.value.totalStudents, total: Math.max(stats.value.totalClasses * 35, 1), color: '#67c23a' },
-  { label: '作业批改率', value: stats.value.pendingHomework > 0 ? 100 : 0, total: 100, color: '#409eff' },
+  { label: '作业批改率', value: stats.value.pendingHomework > 0 ? 100 : 0, total: 100, color: '#1C6FB3' },
   { label: '班级活跃率', value: stats.value.totalClasses, total: Math.max(stats.value.totalTeachers, 1), color: '#8e7cc3' }
 ])
 

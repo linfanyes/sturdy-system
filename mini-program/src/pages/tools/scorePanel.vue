@@ -95,7 +95,7 @@ import { onShow } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme, auth } from '../../common/store'
 
-const PALETTE = ['#e6a23c', '#07c160', '#409eff', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
+const PALETTE = ['#e6a23c', '#07c160', 'var(--c-blue)', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
 const MAX_GROUPS = 6
 const MAX_HISTORY = 100
 
@@ -333,7 +333,7 @@ function fmtTime(t) {
 .g-btns { display: flex; flex-direction: column; gap: 10rpx; }
 .g-r { display: flex; gap: 8rpx; }
 .g-b { flex: 1; text-align: center; padding: 14rpx 0; border-radius: 12rpx; font-size: 26rpx; font-weight: 600; background: rgba(255,255,255,0.6); color: var(--c-title); border: 1px solid var(--c-border); }
-.g-b.plus { background: rgba(7,193,96,0.12); color: var(--c-primary); }
+.g-b.plus { background: rgba(245,179,66,0.12); color: var(--c-primary); }
 .grid.fs .g-b { padding: 24rpx 0; font-size: 36rpx; }
 .empty { grid-column: 1 / -1; text-align: center; color: var(--c-sub); padding: 80rpx 0; font-size: 26rpx; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 50; }

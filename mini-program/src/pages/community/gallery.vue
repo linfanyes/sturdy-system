@@ -234,7 +234,7 @@ async function del(it) {
 .up { border: 1px dashed #e6a23c; border-radius: 12rpx; padding: 24rpx; text-align: center; color: #a07b3b; font-size: 26rpx; margin-bottom: 14rpx; }
 .ph { display: flex; flex-wrap: wrap; gap: 10rpx; }
 .phimg { width: 140rpx; height: 140rpx; border-radius: 12rpx; }
-.ok { background: #07c160; color: #fff; border-radius: 50rpx; }
+.ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 /* 深色 */
 .dark .page { background: var(--c-bg); }
 .dark .picker, .dark .albums, .dark .sheet { background: var(--c-card); }

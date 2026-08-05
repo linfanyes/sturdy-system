@@ -290,7 +290,7 @@ onPullDownRefresh(async () => {
 .tab.on { background: #e6a23c; color: #fff; }
 .badge { position: absolute; top: -8rpx; right: 20rpx; background: #e64340; color: #fff; border-radius: 20rpx; font-size: 18rpx; padding: 0 10rpx; min-width: 28rpx; text-align: center; line-height: 1.6; }
 .toolbar { display: flex; justify-content: space-between; margin-bottom: 16rpx; }
-.act { font-size: 26rpx; color: #409eff; padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
+.act { font-size: 26rpx; color: var(--c-blue); padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
 .list { }
 .item { background: var(--c-card); border-radius: 16rpx; padding: 22rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .item.unread { background: #fffbf0; border-left: 6rpx solid #e6a23c; }
@@ -304,13 +304,13 @@ onPullDownRefresh(async () => {
 
 /* 写留言弹窗 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 60; }
-.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; padding-bottom: calc(36rpx + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; text-align: center; }
 .sh-meta { display: flex; justify-content: space-between; font-size: 24rpx; color: var(--c-sub); margin-bottom: 16rpx; }
 .sh-time { color: var(--c-sub); }
 .sh-content { font-size: 28rpx; color: var(--c-title); line-height: 1.8; white-space: pre-wrap; margin-bottom: 20rpx; padding: 20rpx; background: var(--c-card2); border-radius: 12rpx; }
 .sh-acts { display: flex; gap: 24rpx; margin-bottom: 16rpx; }
-.sh-act { font-size: 26rpx; color: #409eff; padding: 8rpx 20rpx; background: var(--c-card2); border-radius: 24rpx; }
+.sh-act { font-size: 26rpx; color: var(--c-blue); padding: 8rpx 20rpx; background: var(--c-card2); border-radius: 24rpx; }
 .sh-act.del { color: #e64340; }
 .field { margin-bottom: 18rpx; }
 .label { display: block; font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; }

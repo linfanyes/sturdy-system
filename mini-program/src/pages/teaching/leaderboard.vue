@@ -97,7 +97,7 @@ function drawBars() {
   // 背景
   ctx.setFillStyle(theme.mode === 'dark' ? '#1f232b' : '#f8f4ec')
   ctx.fillRect(0, 0, W, H)
-  const colors = ['#e6a23c', '#07c160', '#409eff', '#e06c75', '#9b59b6']
+  const colors = ['#e6a23c', '#07c160', 'var(--c-blue)', '#e06c75', '#9b59b6']
   top.forEach((s, i) => {
     const h = ((s.total / max) * (H - bottom - topPad))
     const x = pad + i * gap + (gap - barW) / 2

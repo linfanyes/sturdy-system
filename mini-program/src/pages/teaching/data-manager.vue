@@ -255,7 +255,7 @@ onPullDownRefresh(async () => { await loadBackups(); uni.stopPullDownRefresh() }
 .check-item.on { background: #fdf6ec; color: #e6a23c; }
 .check-mark { font-size: 28rpx; font-weight: 700; }
 .all-row { text-align: right; margin: 8rpx 0 16rpx; }
-.all-row text { font-size: 24rpx; color: #409eff; }
+.all-row text { font-size: 24rpx; color: var(--c-blue); }
 .hint { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; display: block; line-height: 1.6; }
 .json-area { width: 100%; min-height: 300rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 20rpx; font-size: 24rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); margin-bottom: 20rpx; }
 .upload-area { border: 2rpx dashed var(--c-input-border); border-radius: 16rpx; padding: 60rpx; text-align: center; font-size: 28rpx; color: var(--c-sub); }
@@ -274,7 +274,7 @@ onPullDownRefresh(async () => { await loadBackups(); uni.stopPullDownRefresh() }
 .name { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
 .time { font-size: 22rpx; color: var(--c-sub); }
 .ops { display: flex; gap: 20rpx; margin-top: 10rpx; }
-.op { font-size: 24rpx; color: #409eff; }
+.op { font-size: 24rpx; color: var(--c-blue); }
 .op.del { color: #e64340; }
 .op.disabled { opacity: 0.5; }
 </style>

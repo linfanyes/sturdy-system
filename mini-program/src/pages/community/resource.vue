@@ -199,7 +199,7 @@ function copyZhzx(c) {
   uni.setClipboardData({ data: c.playUrl, success: () => uni.showToast({ title: '链接已复制', icon: 'none' }) })
 }
 function zhzxSubStyle(s) {
-  const col = { 语文: '#e6a23c', 数学: '#07c160', 英语: '#409eff', 综合: '#999' }[s] || '#999'
+  const col = { 语文: '#e6a23c', 数学: '#07c160', 英语: 'var(--c-blue)', 综合: '#999' }[s] || '#999'
   return `background:${col}1a;color:${col}`
 }
 onShow(() => {
@@ -289,7 +289,7 @@ async function del(r) {
 .card { width: calc(50% - 8rpx); background: #fff; border-radius: 16rpx; padding: 18rpx; box-sizing: border-box; position: relative; }
 .card-chk { position: absolute; top: 12rpx; left: 12rpx; z-index: 2; }
 .chk-dot { width: 32rpx; height: 32rpx; border-radius: 50%; border: 3rpx solid #ccc; background: #fff; }
-.chk-dot.on { background: #07c160; border-color: #07c160; }
+.chk-dot.on { background: var(--c-primary); border-color: #07c160; }
 .thumb { width: 100%; height: 160rpx; border-radius: 12rpx; background: #f3f3f3; margin-bottom: 10rpx; }
 .tt { display: block; font-size: 28rpx; font-weight: 700; color: #4a3f35; }
 .desc { display: block; font-size: 22rpx; color: #9aa0a6; margin-top: 6rpx; }
@@ -297,7 +297,7 @@ async function del(r) {
 .cat { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; }
 .tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; background: #fff3e0; color: #a07b3b; }
 .acts { display: flex; gap: 20rpx; margin-top: 12rpx; }
-.a { font-size: 24rpx; color: #409eff; }
+.a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: #e06c75; }
 .empty { width: 100%; text-align: center; color: #9aa0a6; padding: 40rpx 0; }
 .sheet { margin-top: 16rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
@@ -307,7 +307,7 @@ async function del(r) {
 .up { border: 1px dashed #e6a23c; border-radius: 12rpx; padding: 26rpx; text-align: center; color: #a07b3b; font-size: 24rpx; margin-bottom: 14rpx; }
 .prev { width: 160rpx; height: 160rpx; border-radius: 12rpx; }
 .tags { display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 14rpx; }
-.ok { background: #07c160; color: #fff; border-radius: 50rpx; }
+.ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; }
 .cancel { background: #f3f3f3; color: #666; border-radius: 50rpx; margin-top: 14rpx; }
 /* 智慧中小学课程区 */
 .zhx { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
@@ -316,7 +316,7 @@ async function del(r) {
 .zhx-sub { font-size: 22rpx; color: #9aa0a6; }
 .zhx-subs { display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 14rpx; }
 .zhx-chip { font-size: 22rpx; padding: 8rpx 22rpx; border-radius: 30rpx; background: #f3f3f3; color: #666; }
-.zhx-chip.on { background: #07c160; color: #fff; }
+.zhx-chip.on { background: var(--c-primary); color: #fff; }
 .zhx-list { display: flex; flex-direction: column; gap: 14rpx; }
 .zhx-card { border: 1px solid #eee; border-radius: 14rpx; padding: 18rpx; }
 .zhx-row { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
@@ -325,7 +325,7 @@ async function del(r) {
 .zhx-desc { display: block; font-size: 22rpx; color: #9aa0a6; margin: 10rpx 0; line-height: 1.5; }
 .zhx-acts { display: flex; gap: 20rpx; }
 .zhx-play { font-size: 24rpx; color: #07c160; font-weight: 600; }
-.zhx-copy { font-size: 24rpx; color: #409eff; }
+.zhx-copy { font-size: 24rpx; color: var(--c-blue); }
 .zhx-loading, .zhzx-empty { font-size: 24rpx; color: #9aa0a6; text-align: center; padding: 20rpx 0; }
 
 /* 深色 */
@@ -335,6 +335,6 @@ async function del(r) {
 .dark .desc { color: var(--c-sub); }
 .dark .inp { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
 .dark .up { border-color: var(--c-accent); color: var(--c-accent); }
-.dark .ok { background: #07c160; }
+.dark .ok { background: var(--c-primary); }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
 </style>

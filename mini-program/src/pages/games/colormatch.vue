@@ -216,7 +216,7 @@ onShow(() => { /* 恢复后用户需手动开始 */ })
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8rpx); } 75% { transform: translateX(8rpx); } }
 
 .fb { margin-top: 16rpx; font-size: 26rpx; padding: 10rpx 24rpx; border-radius: 16rpx; }
-.fb.ok { color: var(--accent); background: rgba(7, 193, 96, .12); }
+.fb.ok { color: var(--accent); background: rgba(245,179,66, .12); }
 .fb.no { color: var(--danger); background: rgba(230, 67, 64, .12); }
 
 .btn { background: var(--primary); color: #fff; border-radius: 40rpx; padding: 0 70rpx; font-size: 30rpx; line-height: 80rpx; }

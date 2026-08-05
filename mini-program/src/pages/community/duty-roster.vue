@@ -230,8 +230,8 @@ function remove(r) {
 .r-title { display: flex; align-items: center; gap: 12rpx; }
 .r-name { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .tag { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 16rpx; }
-.t-zh { background: #e8f9e8; color: var(--c-primary); }
-.t-bn { background: #e8f1fb; color: #409eff; }
+.t-zh { background: #fff3d6; color: var(--c-primary); }
+.t-bn { background: #e8f1fb; color: var(--c-blue); }
 .r-acts { display: flex; gap: 18rpx; }
 .ed { font-size: 24rpx; color: #a07b3b; }
 .del { font-size: 24rpx; color: var(--c-danger); }

@@ -272,7 +272,7 @@ function drawChart() {
           const gridColor = isDark ? '#2a2e36' : '#eee'
           const textColor = isDark ? '#8a909a' : '#9aa0a6'
           const labelColor = isDark ? '#c0c4cc' : '#5a5048'
-          const lineColor = '#409eff'
+          const lineColor = 'var(--c-blue)'
 
           // 网格 + Y 轴刻度
           ctx.strokeStyle = gridColor

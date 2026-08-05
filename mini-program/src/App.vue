@@ -65,8 +65,10 @@ page {
   --c-border: #ece4d7;
   --c-input: #f8f4ec;
   --c-input-border: #e0d5c4;
-  --c-primary: #07c160;
-  --c-primary-d: #19d27e;
+  /* 主操作色：黄油琥珀（对齐 Web 端 butter 系），绿色降级为成功/达标语义色 */
+  --c-primary: #f5b342;
+  --c-primary-d: #d69426;
+  --c-success: #07c160;
   --c-accent: #e6a23c;
   --c-danger: #f56c6c;
   --c-pink: #C9436D;
@@ -74,6 +76,11 @@ page {
   --c-blue: #1C6FB3;
   --c-blue-soft: #E0F0FC;
   --c-shadow: rgba(0, 0, 0, 0.04);
+  /* 圆角体系（排版布局统一）：胶囊按钮 > 主卡片 > 输入框/小卡 > 标签/徽章 */
+  --r-pill: 999rpx;
+  --r-lg: 24rpx;
+  --r-md: 18rpx;
+  --r-sm: 12rpx;
   /* 字体大小档位：通过 --fz-scale 缩放 rpx，由根 view 的 .fz-sm/.fz-lg class 控制 */
   --fz-scale: 1;
   background: var(--c-bg);
@@ -89,8 +96,10 @@ page {
   --c-border: #2c313a;
   --c-input: #262b34;
   --c-input-border: #2c313a;
-  --c-primary: #07c160;
-  --c-primary-d: #19d27e;
+  /* 暗色主操作色：更亮的黄油（暗背景上保持醒目），语义绿同亮色 */
+  --c-primary: #ffce54;
+  --c-primary-d: #f5b342;
+  --c-success: #07c160;
   --c-accent: #e6a23c;
   --c-danger: #f56c6c;
   --c-pink: #e06c8a;

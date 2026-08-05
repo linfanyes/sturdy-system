@@ -482,7 +482,7 @@ onUnmounted(() => {
 .panel-line { display: block; font-size: 20rpx; opacity: .7; margin-top: 4rpx; }
 
 .btn { background: #e6a23c; color: #fff; border-radius: 12rpx; font-size: 24rpx; padding: 0 20rpx; line-height: 60rpx; margin-top: auto; }
-.btn.pause { background: #409eff; }
+.btn.pause { background: var(--c-blue); }
 .btn.restart { background: #e6a23c; padding: 0 36rpx; line-height: 64rpx; margin-top: 18rpx; }
 
 .mask {

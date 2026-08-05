@@ -182,8 +182,8 @@ onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .hd { font-size: 36rpx; font-weight: 800; color: var(--c-accent); text-align: center; margin-bottom: 20rpx; }
 .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.sel { font-size: 26rpx; color: #409eff; padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
-.act { font-size: 26rpx; color: #409eff; padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
+.sel { font-size: 26rpx; color: var(--c-blue); padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
+.act { font-size: 26rpx; color: var(--c-blue); padding: 8rpx 20rpx; background: var(--c-card); border-radius: 30rpx; }
 .loading, .empty { text-align: center; padding: 80rpx 0; font-size: 28rpx; color: var(--c-sub); }
 .list { }
 .item { background: var(--c-card); border-radius: 16rpx; padding: 22rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
@@ -192,7 +192,7 @@ onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 .stu { font-size: 26rpx; color: #67c23a; background: #f0f9eb; padding: 2rpx 16rpx; border-radius: 20rpx; }
 .meta { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
 .ops { display: flex; gap: 20rpx; margin-top: 12rpx; }
-.op { font-size: 24rpx; color: #409eff; }
+.op { font-size: 24rpx; color: var(--c-blue); }
 .op.del { color: #e64340; }
 
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 60; }

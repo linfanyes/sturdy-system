@@ -33,7 +33,7 @@
       <view class="trend-h">📈 本周出勤率趋势</view>
       <canvas canvas-id="trendCanvas" class="trend-canvas"></canvas>
       <view class="trend-legend">
-        <text class="tl-i"><text class="tl-dot" style="background:#07c160"></text>出勤</text>
+        <text class="tl-i"><text class="tl-dot" style="background: var(--c-primary)"></text>出勤</text>
         <text class="tl-i"><text class="tl-dot" style="background:#e06c75"></text>旷课</text>
       </view>
     </view>
@@ -102,7 +102,7 @@ const statusList = ['出勤', '迟到', '请假', '旷课']
 const statusMap = {
   '出勤': { bg: '#e8f9e8', fg: '#07c160', emoji: '✅' },
   '迟到': { bg: '#fff3e0', fg: '#e6a23c', emoji: '⏰' },
-  '请假': { bg: '#e8f1fb', fg: '#409eff', emoji: '📝' },
+  '请假': { bg: '#e8f1fb', fg: 'var(--c-blue)', emoji: '📝' },
   '旷课': { bg: '#fde8ea', fg: '#e06c75', emoji: '❌' },
 }
 

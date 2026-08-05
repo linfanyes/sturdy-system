@@ -214,7 +214,7 @@ onUnmounted(() => stopTimer())
 .back { background-image: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(0,0,0,0.05)); }
 .front { transform: rotateY(180deg); }
 .face { font-size: 56rpx; }
-.card.done .front { box-shadow: 0 0 0 4rpx rgba(7,193,96,0.6) inset; }
+.card.done .front { box-shadow: 0 0 0 4rpx rgba(245,179,66,0.6) inset; }
 .btn { margin-top: 22rpx; border-radius: 40rpx; padding: 0 60rpx; font-size: 26rpx; line-height: 70rpx; }
 .over { margin-top: 16rpx; font-size: 28rpx; font-weight: 700; text-align: center; }
 </style>

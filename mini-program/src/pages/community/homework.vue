@@ -386,7 +386,7 @@ function after(n) {
 .ana-legend { display: flex; flex-wrap: wrap; gap: 8rpx 14rpx; margin-top: 8rpx; font-size: 22rpx; color: var(--c-sub); }
 .ana-legend .lg { display: flex; align-items: center; gap: 6rpx; padding: 4rpx 14rpx; border-radius: 16rpx; }
 .ana-legend .lg.b-pen { background: #fff3e0; color: #e6a23c; }
-.ana-legend .lg.b-ok { background: #e8f1fb; color: #409eff; }
+.ana-legend .lg.b-ok { background: #e8f1fb; color: var(--c-blue); }
 .ana-legend .lg.b-done { background: #e8f9e8; color: #07c160; }
 .lg-rate { margin-left: auto; font-weight: 700; color: var(--c-accent); }
 .overdue-item { padding: 14rpx 0; border-top: 1rpx solid var(--c-border); }
@@ -407,14 +407,14 @@ function after(n) {
 .top { display: flex; align-items: center; gap: 10rpx; }
 .badge { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; }
 .b-pen { background: #fff3e0; color: #e6a23c; }
-.b-ok { background: #e8f1fb; color: #409eff; }
+.b-ok { background: #e8f1fb; color: var(--c-blue); }
 .b-done { background: #e8f9e8; color: #07c160; }
 .sub { font-size: 20rpx; color: var(--c-accent); background: var(--c-card2); padding: 4rpx 12rpx; border-radius: 16rpx; }
 .tt { font-size: 28rpx; font-weight: 700; color: var(--c-title); flex: 1; }
 .content { display: block; font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; white-space: pre-wrap; }
 .meta { font-size: 22rpx; color: var(--c-sub); }
 .acts { display: flex; gap: 22rpx; margin-top: 8rpx; }
-.a { font-size: 24rpx; color: #409eff; }
+.a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }
 .sheet { margin-top: 16rpx; background: var(--c-card); border-radius: 16rpx; padding: 24rpx; }
@@ -436,7 +436,7 @@ function after(n) {
 .dark .hw { border-color: var(--c-input-border); }
 .dark .gc { background: var(--c-card2); color: var(--c-sub); }
 .dark .picker.sm, .dark .inp { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
-.dark .ok { background: #07c160; }
+.dark .ok { background: var(--c-primary); }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
 .dark .st { background: var(--c-card2); color: var(--c-sub); }
 </style>

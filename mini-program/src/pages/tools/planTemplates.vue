@@ -108,6 +108,6 @@ onShow(() => load())
 .field-label { font-size: 26rpx; color: var(--c-accent); margin: 16rpx 0 10rpx; }
 .ctrl { border: 1px solid var(--c-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 10rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-title); background: var(--c-input); }
 .area { min-height: 240rpx; }
-.gen { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 16rpx; }
+.gen { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 16rpx; }
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; font-size: 28rpx; margin-top: 14rpx; }
 </style>

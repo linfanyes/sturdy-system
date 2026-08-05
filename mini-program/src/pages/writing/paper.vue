@@ -80,6 +80,6 @@ function copyResult() {
 .result { background: var(--c-card); border-radius: 16rpx; padding: 24rpx; margin-top: 20rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .res-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .res-title { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
-.act { font-size: 24rpx; color: #409eff; }
+.act { font-size: 24rpx; color: var(--c-blue); }
 .res-content { font-size: 28rpx; line-height: 1.8; color: var(--c-title); white-space: pre-wrap; }
 </style>

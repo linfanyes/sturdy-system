@@ -120,7 +120,7 @@ function del(r) { uni.showModal({title:'删除',content:r.bookTitle,success:asyn
 .meta { font-size:24rpx; color:var(--c-sub); margin-top:4rpx; display:block; }
 .note { font-size:24rpx; color:#6a6058; margin-top:4rpx; display:block; }
 .acts { display:flex; flex-direction:column; gap:12rpx; }
-.ed { font-size:24rpx; color:#409eff; }
+.ed { font-size:24rpx; color:var(--c-blue); }
 .del { font-size:24rpx; color:var(--c-danger); }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; }
 .modal { position:fixed; left:5%; right:5%; bottom:0; z-index:51; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:30rpx; max-height:90vh; overflow-y:auto; }

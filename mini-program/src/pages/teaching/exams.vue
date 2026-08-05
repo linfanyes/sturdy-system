@@ -268,9 +268,9 @@ function remove(e) {
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 .filters { display: flex; align-items: center; gap: 14rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
 .fpick { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 12rpx 24rpx; font-size: 26rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; box-sizing: border-box; }
-.freset { font-size: 24rpx; color: #409eff; padding: 12rpx 8rpx; }
+.freset { font-size: 24rpx; color: var(--c-blue); padding: 12rpx 8rpx; }
 .fsort { font-size: 24rpx; color: var(--c-accent); padding: 12rpx 14rpx; border-radius: 30rpx; background: var(--c-card); margin-left: auto; }
-.semester-hint { text-align: center; font-size: 24rpx; color: #409eff; padding: 12rpx 0; margin-top: 10rpx; }
+.semester-hint { text-align: center; font-size: 24rpx; color: var(--c-blue); padding: 12rpx 0; margin-top: 10rpx; }
 .subjects { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; }
 .schip { font-size: 22rpx; padding: 6rpx 16rpx; border-radius: 20rpx; background: var(--c-card2); color: var(--c-sub); }
 .fs { color: #e6a23c; }

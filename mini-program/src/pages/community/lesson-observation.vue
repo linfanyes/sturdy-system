@@ -144,7 +144,7 @@ function del(o) {
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: #4a3f35; }
 .sub { font-size: 24rpx; color: #9aa0a6; margin-top: 4rpx; }
-.add { font-size: 28rpx; color: #fff; background: #07c160; padding: 12rpx 26rpx; border-radius: 40rpx; }
+.add { font-size: 28rpx; color: #fff; background: var(--c-primary); padding: 12rpx 26rpx; border-radius: 40rpx; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 40rpx; font-size: 26rpx; }
 .list { background: #fff; border-radius: 16rpx; padding: 10rpx 24rpx; }
 .c { padding: 20rpx 0; border-bottom: 1px solid #f3f3f3; }
@@ -156,13 +156,13 @@ function del(o) {
 .stg { margin-top: 8rpx; }
 .lab { font-size: 22rpx; font-weight: 600; margin-right: 8rpx; }
 .lab.s { color: #07c160; }
-.lab.t { color: #409eff; }
+.lab.t { color: var(--c-blue); }
 .txt { font-size: 25rpx; color: #6a6058; }
 .acts { display: flex; gap: 28rpx; margin-top: 12rpx; }
-.a { font-size: 26rpx; color: #409eff; }
+.a { font-size: 26rpx; color: var(--c-blue); }
 .a.del { color: #e06c75; }
 .r-excellent { background: #e8f9e8; color: #07c160; }
-.r-good { background: #e8f1fb; color: #409eff; }
+.r-good { background: #e8f1fb; color: var(--c-blue); }
 .r-normal { background: #fff3e0; color: #e6a23c; }
 .r-improve { background: #fde8ea; color: #e06c75; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
@@ -175,14 +175,14 @@ function del(o) {
 .chips { display: flex; gap: 14rpx; flex-wrap: wrap; margin-bottom: 14rpx; }
 .chip2 { font-size: 24rpx; padding: 12rpx 22rpx; border-radius: 30rpx; background: #f3f3f3; color: #999; }
 .chip2.on { color: #fff; }
-.chip2.r-excellent.on { background: #07c160; }
-.chip2.r-good.on { background: #409eff; }
+.chip2.r-excellent.on { background: var(--c-primary); }
+.chip2.r-good.on { background: var(--c-blue); }
 .chip2.r-normal.on { background: #e6a23c; }
 .chip2.r-improve.on { background: #e06c75; }
 .mbtns { display: flex; gap: 20rpx; margin-top: 10rpx; }
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
-.mb.ok { background: #07c160; color: #fff; }
+.mb.ok { background: var(--c-primary); color: #fff; }
 .mb.disabled { opacity: 0.5; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }

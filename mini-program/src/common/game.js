@@ -90,7 +90,7 @@ export const GAME_COLORS = {
     primary: '#e6a23c',
     accent: '#07c160',
     danger: '#e64340',
-    info: '#409eff',
+    info: 'var(--c-blue)',
     purple: '#9b59b6',
     snake: '#07c160',
     snakeHead: '#e6a23c',

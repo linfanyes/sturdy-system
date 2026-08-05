@@ -219,7 +219,7 @@ function savePreview() {
 .sheet input, .picker { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .sheet textarea { border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; height: 120rpx; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
 .up-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 14rpx; }
-.up { font-size: 26rpx; color: #409eff; padding: 12rpx 20rpx; border: 1px dashed #409eff; border-radius: 12rpx; }
+.up { font-size: 26rpx; color: var(--c-blue); padding: 12rpx 20rpx; border: 1px dashed var(--c-blue); border-radius: 12rpx; }
 .thumbs { display: flex; flex-wrap: wrap; gap: 10rpx; margin-bottom: 14rpx; }
 .thumb { width: 120rpx; height: 120rpx; border-radius: 10rpx; }
 .ok { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-bottom: 12rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }

@@ -116,5 +116,5 @@ onShow(() => {
 .gen { background: var(--c-accent); color: #fff; border-radius: 50rpx; font-size: 30rpx; margin-top: 6rpx; }
 .gen[disabled] { opacity: 0.6; }
 .result-text { font-size: 28rpx; line-height: 1.7; color: var(--c-title); white-space: pre-wrap; margin-bottom: 20rpx; }
-.copy { background: #07c160; color: #fff; border-radius: 50rpx; font-size: 30rpx; }
+.copy { background: var(--c-primary); color: #fff; border-radius: 50rpx; font-size: 30rpx; }
 </style>

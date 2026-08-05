@@ -120,12 +120,12 @@ function del(t) {
 .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
 .h { font-size: 36rpx; font-weight: 800; color: #4a3f35; }
 .sub { font-size: 24rpx; color: #9aa0a6; margin-top: 4rpx; }
-.add { font-size: 28rpx; color: #fff; background: #07c160; padding: 12rpx 26rpx; border-radius: 40rpx; }
+.add { font-size: 28rpx; color: #fff; background: var(--c-primary); padding: 12rpx 26rpx; border-radius: 40rpx; }
 .empty { text-align: center; color: #9aa0a6; padding: 80rpx 40rpx; font-size: 26rpx; }
 .list { background: #fff; border-radius: 16rpx; padding: 6rpx 24rpx; }
 .c { display: flex; align-items: center; gap: 18rpx; padding: 22rpx 0; border-bottom: 1px solid #f3f3f3; }
 .box { width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid #ddd; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26rpx; flex-shrink: 0; }
-.box.on { background: #07c160; border-color: #07c160; }
+.box.on { background: var(--c-primary); border-color: #07c160; }
 .mid { flex: 1; min-width: 0; }
 .title { font-size: 29rpx; color: #4a3f35; }
 .title.done { text-decoration: line-through; color: #bbb; }
@@ -139,7 +139,7 @@ function del(t) {
 .mbtns { display: flex; gap: 20rpx; }
 .mb { flex: 1; text-align: center; padding: 22rpx; border-radius: 40rpx; font-size: 30rpx; }
 .mb.cancel { background: #f3f3f3; color: #666; }
-.mb.ok { background: #07c160; color: #fff; }
+.mb.ok { background: var(--c-primary); color: #fff; }
 .dark .page { background: var(--c-bg); }
 .dark .h { color: var(--c-title); }
 .dark .list, .dark .modal { background: var(--c-card); }

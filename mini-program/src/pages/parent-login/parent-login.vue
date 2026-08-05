@@ -15,8 +15,7 @@
       <text class="hint-text">· 家长使用学号与密码登录</text>
       <text class="hint-text">· 教师请返回使用账号密码登录</text>
     </view>
-
-    </view>
+  </view>
 </template>
 
 <script setup>
@@ -89,10 +88,14 @@ function goUnified() {
 .btn {
   width: 100%;
   max-width: 620rpx;
-  background: #07c160;
+  background: linear-gradient(135deg, #ffce54 0%, #f5b342 60%, #d69426 100%);
   color: #fff;
   border-radius: 50rpx;
   font-size: 32rpx;
+  font-weight: 600;
+  height: 96rpx;
+  line-height: 96rpx;
+  box-shadow: 0 10rpx 30rpx rgba(214, 148, 38, 0.28);
 }
 .btn[disabled] { opacity: 0.6; }
 .tip-row { display: flex; gap: 30rpx; margin-top: 40rpx; }
@@ -115,7 +118,7 @@ function goUnified() {
 .sh-t { font-size: 34rpx; font-weight: 700; color: var(--c-title); }
 .sh-close { font-size: 36rpx; color: var(--c-sub); padding: 0 8rpx; }
 .sh-sub { font-size: 26rpx; color: var(--c-sub); margin: 8rpx 0 20rpx; line-height: 1.5; }
-.ok { width: 100%; background: #07c160; color: #fff; border-radius: 50rpx; font-size: 32rpx; height: 96rpx; line-height: 96rpx; margin-top: 10rpx; }
+.ok { width: 100%; background: linear-gradient(135deg, #ffce54 0%, #f5b342 60%, #d69426 100%); color: #fff; border-radius: 50rpx; font-size: 32rpx; height: 96rpx; line-height: 96rpx; margin-top: 10rpx; box-shadow: 0 10rpx 30rpx rgba(214, 148, 38, 0.28); }
 .ok[disabled] { opacity: .6; }
 .ok::after { border: none; }
 </style>

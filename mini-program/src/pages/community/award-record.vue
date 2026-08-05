@@ -187,7 +187,7 @@ function del(a) {
 .note { font-size: 25rpx; color: #6a6058; margin-top: 4rpx; }
 .score { font-size: 24rpx; color: var(--c-accent); margin-top: 4rpx; }
 .acts { display: flex; flex-direction: column; gap: 14rpx; }
-.a { font-size: 24rpx; color: #409eff; }
+.a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
 .modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 92vh; overflow-y: auto; }

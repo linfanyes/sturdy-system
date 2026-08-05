@@ -335,7 +335,7 @@ onPullDownRefresh(async () => {
 .st-tags { margin-top: 10rpx; display: flex; flex-wrap: wrap; gap: 8rpx; align-items: center; }
 .st-none { font-size: 30rpx; color: var(--c-sub); }
 .tag { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
-.tag.strong { background: rgba(7, 193, 96, 0.14); color: var(--c-primary); }
+.tag.strong { background: rgba(245,179,66, 0.14); color: var(--c-primary); }
 .tag.weak { background: rgba(230, 67, 64, 0.12); color: #e64340; }
 
 /* 区块标题 */

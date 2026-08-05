@@ -213,7 +213,7 @@ onShow(() => {
 .i-l { width: 80rpx; font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
 .i-v { flex: 1; font-size: 28rpx; color: var(--c-title); }
 .pinyin { font-size: 34rpx; font-weight: 700; color: var(--c-accent); }
-.speak { font-size: 24rpx; color: var(--c-primary); background: rgba(7,193,96,.12); padding: 8rpx 20rpx; border-radius: 30rpx; flex-shrink: 0; }
+.speak { font-size: 24rpx; color: var(--c-primary); background: rgba(245,179,66,.12); padding: 8rpx 20rpx; border-radius: 30rpx; flex-shrink: 0; }
 .sec-h { font-size: 26rpx; font-weight: 700; color: var(--c-title); margin: 16rpx 0 12rpx; }
 .stroke-list { display: flex; flex-direction: column; gap: 12rpx; }
 .stroke-item { display: flex; align-items: center; gap: 16rpx; background: var(--c-card2); border-radius: 14rpx; padding: 16rpx 20rpx; }

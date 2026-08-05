@@ -4,7 +4,7 @@
     <view class="top-bar">
       <view class="title">井字棋</view>
       <view class="scores">
-        <view class="score-box" :style="{ background: 'rgba(7,193,96,0.18)' }">
+        <view class="score-box" :style="{ background: 'rgba(245,179,66,0.18)' }">
           <text class="label" :style="{ color: c.sub }">玩家</text>
           <text class="val" :style="{ color: c.accent }">{{ scoreWin }}</text>
         </view>
@@ -234,7 +234,7 @@ onUnload(() => destroySound())
 .status { margin: 6rpx 0 16rpx; font-size: 26rpx; }
 .board { width: min(540rpx, 92vw); height: min(540rpx, 92vw); display: grid; grid-template-columns: repeat(3, 1fr); gap: 10rpx; padding: 10rpx; border-radius: 18rpx; }
 .cell { border-radius: 12rpx; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; }
-.cell.win { background: rgba(7, 193, 96, 0.35) !important; }
+.cell.win { background: rgba(245,179,66, 0.35) !important; }
 .mark { width: 80rpx; height: 80rpx; animation: pop 0.2s ease; }
 .mark.x { border: 14rpx solid; border-radius: 8rpx; }
 .mark.o { border: 14rpx solid; border-radius: 50%; }

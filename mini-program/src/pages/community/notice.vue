@@ -379,7 +379,7 @@ function useTemplate(t) {
 .bar { display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
 .picker { background: var(--c-card); border-radius: 12rpx; padding: 14rpx 20rpx; font-size: 26rpx; border: 1px solid var(--c-border); }
 .toggle { font-size: 24rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); }
-.toggle.on { background: #e8f1fb; color: #409eff; }
+.toggle.on { background: #e8f1fb; color: var(--c-blue); }
 .add { font-size: 28rpx; color: var(--c-accent); font-weight: 600; margin-left: auto; }
 .grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
 .card { width: calc(50% - 8rpx); background: var(--c-card); border-radius: 16rpx; padding: 20rpx; box-sizing: border-box; }
@@ -391,7 +391,7 @@ function useTemplate(t) {
 .c-ended { background: #eee; color: #999; }
 .c-scope { background: #e8f1fb; color: #3a8ee6; }
 .acts { display: flex; gap: 12rpx; flex-wrap: wrap; justify-content: flex-end; }
-.a { font-size: 22rpx; color: #409eff; }
+.a { font-size: 22rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .tt { display: block; font-size: 28rpx; font-weight: 700; color: var(--c-title); margin: 12rpx 0 6rpx; }
 .content { display: block; font-size: 24rpx; color: var(--c-sub); white-space: pre-wrap; }
@@ -413,7 +413,7 @@ function useTemplate(t) {
 .dark .chip.c-scope { background: var(--c-card2); color: var(--c-sub); }
 .dark .toggle { background: var(--c-card2); color: var(--c-sub); }
 .dark .inp { border-color: var(--c-input-border); background: var(--c-input); color: var(--c-text); }
-.dark .ok { background: #07c160; }
+.dark .ok { background: var(--c-primary); }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
 .a.print { color: var(--c-accent); }
 .print-canvas { position: fixed; left: -9999rpx; top: 0; width: 720rpx; height: 400rpx; pointer-events: none; }

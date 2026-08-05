@@ -42,6 +42,7 @@
             :src="m.imageUrl"
             class="img"
             mode="widthFix"
+            lazy-load
             @click="previewImg(m.imageUrl)"
           />
           <view v-else class="bubble">{{ m.text }}</view>
@@ -617,12 +618,12 @@ onShow(async () => {
 .row.me .col { align-items: flex-end; }
 .bubble { max-width: 100%; background: #fff; color: #4a3f35; padding: 16rpx 22rpx; border-radius: 16rpx; font-size: 26rpx; line-height: 1.5; }
 .img { width: 280rpx; border-radius: 14rpx; }
-.row.me .bubble { background: #07c160; color: #fff; }
+.row.me .bubble { background: var(--c-primary); color: #fff; }
 .read { font-size: 18rpx; color: #9aa0a6; margin-top: 4rpx; }
 .inputbar { display: flex; gap: 14rpx; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
 .imgbtn { font-size: 40rpx; padding: 0 6rpx; color: var(--c-sub); }
 .inp { flex: 1; background: var(--c-card); border: 1px solid var(--c-input-border); border-radius: 40rpx; padding: 18rpx 28rpx; font-size: 28rpx; color: var(--c-text); }
-.send { background: #07c160; color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; height: 72rpx; }
+.send { background: var(--c-primary); color: #fff; padding: 0 36rpx; border-radius: 40rpx; display: flex; align-items: center; font-size: 28rpx; height: 72rpx; }
 .dark .t { color: var(--c-title); }
 .dark .page { background: var(--c-bg); }
 .dark .chat, .dark .msgs { background: var(--c-card); }

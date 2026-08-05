@@ -145,7 +145,7 @@ const lineTitle = computed(() => {
 
 const compareData = computed(() => {
   if (mode.value !== 'compare' || !selSubject.value) return []
-  const palette = ['#e6a23c', '#07c160', '#409eff', '#a07b3b', '#9b59b6', '#e06c75']
+  const palette = ['#e6a23c', '#07c160', 'var(--c-blue)', '#a07b3b', '#9b59b6', '#e06c75']
   return classes.value.map((c, i) => {
     const list = grades.value.filter((g) => g.classId === c.id && g.subject === selSubject.value)
     if (!list.length) return null
@@ -197,7 +197,7 @@ function drawLine() {
       const minV = Math.min(...vals, 0)
       const range = maxV - minV || 1
       const stepX = pts.length > 1 ? (W - padL - padR) / (pts.length - 1) : 0
-      const color = studentTrend.value ? '#409eff' : '#07c160'
+      const color = studentTrend.value ? 'var(--c-blue)' : '#07c160'
 
       // 网格
       ctx.strokeStyle = '#eee'; ctx.lineWidth = 1

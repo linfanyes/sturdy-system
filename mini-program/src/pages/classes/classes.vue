@@ -211,7 +211,7 @@ const grades = ['一年级', '二年级', '三年级', '四年级', '五年级',
 const classOpts = ['一班', '二班', '三班', '四班', '五班', '六班', '七班', '八班', '九班', '十班']
 const quarters = ['春季', '秋季']
 
-const colorOpts = ['#07c160', '#409eff', '#e6a23c', '#e06c75', '#9b59b6', '#1abc9c', '#34495e', '#f39c12']
+const colorOpts = ['#07c160', 'var(--c-blue)', '#e6a23c', '#e06c75', '#9b59b6', '#1abc9c', '#34495e', '#f39c12']
 
 const thisYear = new Date().getFullYear()
 const years = Array.from({ length: 6 }, (_, i) => String(thisYear - 5 + i))
@@ -552,7 +552,7 @@ async function confirmAddMember() {
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .item {
   background: var(--c-card);
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 26rpx 30rpx;
   margin-bottom: 20rpx;
   display: flex;
@@ -567,11 +567,11 @@ async function confirmAddMember() {
 .slogan { color: #a07b3b; }
 .ops { display: flex; gap: 24rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }
-.edit { color: var(--c-primary); background: rgba(7, 193, 96, 0.12); }
+.edit { color: var(--c-primary); background: rgba(245,179,66, 0.12); }
 .del { color: var(--c-danger); background: rgba(230, 67, 64, 0.12); }
 .detail { color: #3a8ee6; background: rgba(58, 142, 230, 0.12); }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 60; }
-.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; }
+.sheet { width: 100%; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 36rpx; box-sizing: border-box; padding-bottom: calc(36rpx + env(safe-area-inset-bottom)); }
 .sh-t { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 8rpx; }
 .sh-meta { font-size: 24rpx; color: var(--c-sub); margin-bottom: 24rpx; }
 .facets { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
@@ -579,7 +579,7 @@ async function confirmAddMember() {
 .f-n { font-size: 36rpx; font-weight: 800; color: var(--c-accent); }
 .f-l { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
 .enter { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
-.sync { background: #409eff; color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
+.sync { background: var(--c-blue); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; }
 .cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; }
 .swatches { display: flex; flex-wrap: wrap; gap: 16rpx; align-items: center; }
 .sw { width: 56rpx; height: 56rpx; border-radius: 50%; border: 4rpx solid transparent; box-sizing: border-box; }
@@ -590,7 +590,7 @@ async function confirmAddMember() {
 .dark .mask { background: rgba(0,0,0,0.6); }
 .dark .sheet { background: var(--c-card); }
 .dark .facet { background: var(--c-card2); }
-.dark .enter { background: #07c160; }
+.dark .enter { background: var(--c-primary); }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
 .add {
   margin-top: 20rpx;
@@ -644,7 +644,7 @@ async function confirmAddMember() {
 .member-info { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 12rpx; }
 .member-name { font-size: 28rpx; font-weight: 600; color: var(--c-title); }
 .member-role { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
-.role-head { background: rgba(7, 193, 96, 0.15); color: #07c160; }
+.role-head { background: rgba(245,179,66, 0.15); color: #07c160; }
 .role-subject { background: rgba(58, 142, 230, 0.15); color: #3a8ee6; }
 .member-subj { font-size: 22rpx; color: var(--c-sub); }
 .member-del { font-size: 24rpx; color: var(--c-danger); padding: 8rpx 18rpx; background: rgba(230, 67, 64, 0.12); border-radius: 24rpx; flex-shrink: 0; }

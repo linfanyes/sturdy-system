@@ -262,7 +262,7 @@ async function del(p) {
 .count { margin-left: auto; font-size: 24rpx; color: var(--c-sub); }
 .bar { text-align: right; margin-bottom: 16rpx; }
 .add { font-size: 28rpx; color: var(--c-accent); font-weight: 600; }
-.add.batch { margin-left: 16rpx; color: #409eff; }
+.add.batch { margin-left: 16rpx; color: var(--c-blue); }
 /* 批量通知 */
 .sheet2 { margin-top: 16rpx; background: var(--c-card); border-radius: 20rpx; padding: 24rpx; }
 .sh-t { font-size: 30rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
@@ -280,13 +280,13 @@ async function del(p) {
 .c { padding: 18rpx 0; border-bottom: 1px solid var(--c-card2); }
 .top { display: flex; gap: 12rpx; align-items: center; flex-wrap: wrap; }
 .stu { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
-.cls { font-size: 20rpx; color: #409eff; background: #e8f1fb; padding: 4rpx 14rpx; border-radius: 20rpx; }
+.cls { font-size: 20rpx; color: var(--c-blue); background: #e8f1fb; padding: 4rpx 14rpx; border-radius: 20rpx; }
 .rel { font-size: 24rpx; color: var(--c-sub); }
 .meta { font-size: 24rpx; color: var(--c-sub); margin: 6rpx 0; }
 .ct { font-size: 26rpx; color: #5a5048; white-space: pre-wrap; }
 .fu { font-size: 24rpx; color: #a07b3b; margin-top: 6rpx; }
 .acts { display: flex; gap: 28rpx; margin-top: 8rpx; }
-.a { font-size: 26rpx; color: #409eff; }
+.a { font-size: 26rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }
 .sheet { margin-top: 16rpx; background: var(--c-card); border-radius: 16rpx; padding: 24rpx; width: 100%; box-sizing: border-box; }

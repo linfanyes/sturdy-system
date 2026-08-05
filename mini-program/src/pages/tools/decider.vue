@@ -184,12 +184,12 @@ onUnload(() => {
 .meta { font-size: 24rpx; color: var(--c-sub); margin-top: 14rpx; }
 .coin { width: 200rpx; height: 200rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx var(--c-shadow); margin-bottom: 24rpx; transition: transform .3s; }
 .coin.front { background: linear-gradient(135deg, #f6d365, #e6a23c); }
-.coin.back { background: linear-gradient(135deg, #a1c4fd, #409eff); }
+.coin.back { background: linear-gradient(135deg, #a1c4fd, var(--c-blue)); }
 .coin-text { font-size: 56rpx; font-weight: 800; color: #fff; }
 .stats { display: flex; align-items: center; gap: 30rpx; margin-top: 16rpx; font-size: 28rpx; color: var(--c-title); }
 .num { font-weight: 800; }
 .front-n { color: #e6a23c; }
-.back-n { color: #409eff; }
+.back-n { color: var(--c-blue); }
 .reset { color: var(--c-sub); font-size: 24rpx; }
 .wheel { width: 400rpx; height: 400rpx; border-radius: 50%; position: relative; overflow: hidden; margin-bottom: 24rpx; background: var(--c-card2); transition: transform 2.4s cubic-bezier(.17,.67,.3,1); border: 8rpx solid var(--c-accent); }
 .seg { display: flex; align-items: flex-start; justify-content: center; padding-top: 20rpx; font-size: 24rpx; color: #fff; }

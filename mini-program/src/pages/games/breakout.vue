@@ -70,7 +70,7 @@ const cssVars = computed(() => ({
 const W = 630, H = 880
 const pw = 120, ph = 20, ballR = 10
 // 每行砖块颜色（越上层分越高）
-const ROW_COLORS = ['#e64340', '#e6a23c', '#f1c40f', '#07c160', '#409eff', '#9b59b6', '#1abc9c', '#e06c75', '#3498db', '#16a085']
+const ROW_COLORS = ['#e64340', '#e6a23c', '#f1c40f', '#07c160', 'var(--c-blue)', '#9b59b6', '#1abc9c', '#e06c75', '#3498db', '#16a085']
 
 // px → rpx 换算（用于触摸坐标映射）
 const sys = uni.getSystemInfoSync()

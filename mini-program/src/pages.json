@@ -7,39 +7,9 @@
       }
     },
     {
-      "path": "pages/school-admin/school-admin",
-      "style": {
-        "navigationBarTitleText": "学校管理"
-      }
-    },
-    {
-      "path": "pages/school-admin/school-features",
-      "style": {
-        "navigationBarTitleText": "学校功能包"
-      }
-    },
-    {
       "path": "pages/parent-login/parent-login",
       "style": {
         "navigationBarTitleText": "家长登录"
-      }
-    },
-    {
-      "path": "pages/parent/parent",
-      "style": {
-        "navigationBarTitleText": "家长中心"
-      }
-    },
-    {
-      "path": "pages/parent/compare",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/parent/parent-resource-library",
-      "style": {
-        "navigationBarTitleText": "资源库"
       }
     },
     {
@@ -63,28 +33,9 @@
       }
     },
     {
-      "path": "pages/admin/admin",
-      "style": {
-        "navigationBarTitleText": "管理员面板"
-      }
-    },
-    {
-      "path": "pages/crud/crud",
-      "style": {
-        "navigationBarTitleText": "管理",
-        "enablePullDownRefresh": true
-      }
-    },
-    {
       "path": "pages/toolbox/toolbox",
       "style": {
         "navigationBarTitleText": "常用工具箱"
-      }
-    },
-    {
-      "path": "pages/ai-center/index",
-      "style": {
-        "navigationBarTitleText": "AI 备课中心"
       }
     },
     {
@@ -96,28 +47,38 @@
   ],
   "tabBar": {
     "color": "#9aa0a6",
-    "selectedColor": "#e6a23c",
+    "selectedColor": "#f5b342",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [
       {
         "pagePath": "pages/dashboard/dashboard",
+        "iconPath": "static/tabbar/dashboard.png",
+        "selectedIconPath": "static/tabbar/dashboard-active.png",
         "text": "工作台"
       },
       {
         "pagePath": "pages/classes/classes",
+        "iconPath": "static/tabbar/classes.png",
+        "selectedIconPath": "static/tabbar/classes-active.png",
         "text": "班级"
       },
       {
         "pagePath": "pages/students/students",
+        "iconPath": "static/tabbar/students.png",
+        "selectedIconPath": "static/tabbar/students-active.png",
         "text": "学生"
       },
       {
         "pagePath": "pages/toolbox/toolbox",
+        "iconPath": "static/tabbar/toolbox.png",
+        "selectedIconPath": "static/tabbar/toolbox-active.png",
         "text": "工具箱"
       },
       {
         "pagePath": "pages/config/config",
+        "iconPath": "static/tabbar/config.png",
+        "selectedIconPath": "static/tabbar/config-active.png",
         "text": "设置"
       }
     ]
@@ -943,24 +904,103 @@
           }
         }
       ]
+    },
+    {
+      "root": "pages/school-admin",
+      "name": "school-admin",
+      "pages": [
+        {
+          "path": "school-admin",
+          "style": {
+            "navigationBarTitleText": "学校管理"
+          }
+        },
+        {
+          "path": "school-features",
+          "style": {
+            "navigationBarTitleText": "学校功能包"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/parent",
+      "name": "parent",
+      "pages": [
+        {
+          "path": "parent",
+          "style": {
+            "navigationBarTitleText": "家长中心"
+          }
+        },
+        {
+          "path": "compare",
+          "style": {
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "parent-resource-library",
+          "style": {
+            "navigationBarTitleText": "资源库"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/admin",
+      "name": "admin",
+      "pages": [
+        {
+          "path": "admin",
+          "style": {
+            "navigationBarTitleText": "管理员面板"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/crud",
+      "name": "crud",
+      "pages": [
+        {
+          "path": "crud",
+          "style": {
+            "navigationBarTitleText": "管理",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/ai-center",
+      "name": "ai-center",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "AI 备课中心"
+          }
+        }
+      ]
     }
   ],
   "preloadRule": {
-  "pages/dashboard/dashboard": {
-    "network": "all",
-      "packages": [
-        "ai-features",
-        "games",
-        "tools",
-        "teaching",
-        "community"
-      ]
-  },
+    "pages/dashboard/dashboard": {
+      "network": "all",
+      "packages": ["ai-features", "games", "tools", "teaching", "community"]
+    },
     "pages/toolbox/toolbox": {
       "network": "all",
-      "packages": [
-        "tools"
-      ]
+      "packages": ["tools"]
+    },
+    "pages/classes/classes": {
+      "network": "all",
+      "packages": ["teaching", "community"]
+    },
+    "pages/students/students": {
+      "network": "all",
+      "packages": ["teaching", "community"]
     }
   },
   "globalStyle": {

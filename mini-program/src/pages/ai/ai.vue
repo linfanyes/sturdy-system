@@ -686,7 +686,7 @@ onUnload(() => saveSessions())
 .row.user .content { align-items: flex-end; }
 .bubble { padding: 20rpx 26rpx; border-radius: 24rpx; font-size: 30rpx; line-height: 1.6; }
 .bubble.assistant { background: var(--c-card); color: var(--c-text); border-bottom-left-radius: 8rpx; box-shadow: 0 4rpx 14rpx var(--c-shadow); }
-.bubble.user { background: linear-gradient(135deg, #07c160 0%, #19d27e 100%); color: #fff; border-bottom-right-radius: 8rpx; box-shadow: 0 4rpx 14rpx rgba(7, 193, 96, 0.25); }
+.bubble.user { background: linear-gradient(135deg, #07c160 0%, #19d27e 100%); color: #fff; border-bottom-right-radius: 8rpx; box-shadow: 0 4rpx 14rpx rgba(245,179,66, 0.25); }
 .text { white-space: pre-wrap; word-break: break-word; }
 .md { font-size: 30rpx; line-height: 1.6; word-break: break-word; }
 .bubble-ops { display: flex; justify-content: flex-end; margin-top: 6rpx; }

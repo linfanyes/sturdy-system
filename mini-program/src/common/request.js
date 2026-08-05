@@ -1,6 +1,10 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
 import { getToken, logout, auth, parent } from './store'
-import { getMockData } from './mock'
+// 演示模式 mock 数据仅在开发/预览构建（DEV）中被引用：
+// 生产构建（PROD）经 uni-app 条件编译剔除该 import，mock 模块零引用、不进发布包。
+// #ifdef DEV
+import { getMockData } from '../mock'
+// #endif
 
 // —— 演示模式（Mock）开关 ——
 let _mockMode = false
@@ -64,9 +68,13 @@ async function batchRun(tasks) {
 const REQUEST_TIMEOUT = 30000 // 30 秒（含冷启动），超时即视为后端/链路不可用
 
 export function request(path, method = 'GET', data = {}, token) {
-  // 演示模式：返回本地模拟数据，无需真实后端（生产构建下 DEMO_MODE_ENABLED 为 false，永不会进入）
+  // 演示模式：返回本地模拟数据，无需真实后端。
+  // 生产构建下 DEMO_MODE_ENABLED 为 false（编译期常量），该分支为死代码被剔除；
+  // getMockData 导入本身也经 #ifdef DEV 条件编译隔离，生产包零 mock 引用。
   if (DEMO_MODE_ENABLED && _mockMode) {
+    // #ifdef DEV
     return new Promise((resolve) => resolve(getMockData(path, method, data)))
+    // #endif
   }
   const useToken = token !== undefined ? token : getToken()
   return new Promise((resolve, reject) => {

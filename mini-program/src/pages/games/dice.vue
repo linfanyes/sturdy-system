@@ -281,7 +281,7 @@ onHide(() => {
 .rolling-tip { color: var(--sub); font-size: 26rpx; margin-top: 24rpx; }
 
 .result { margin-top: 20rpx; padding: 16rpx 30rpx; border-radius: 16rpx; display: flex; flex-direction: column; align-items: center; }
-.result.win { background: rgba(7, 193, 96, .15); }
+.result.win { background: rgba(245,179,66, .15); }
 .result.lose { background: rgba(230, 67, 64, .15); }
 .r-main { font-size: 36rpx; font-weight: 800; }
 .result.win .r-main { color: var(--accent); }
@@ -292,7 +292,7 @@ onHide(() => {
 .hist-lab { font-size: 22rpx; color: var(--sub); margin-bottom: 8rpx; }
 .hist-row { display: flex; gap: 10rpx; flex-wrap: wrap; }
 .hist-item { flex: 1; min-width: 100rpx; padding: 10rpx 0; border-radius: 12rpx; display: flex; flex-direction: column; align-items: center; font-size: 22rpx; }
-.hist-item.win { background: rgba(7, 193, 96, .12); color: var(--accent); }
+.hist-item.win { background: rgba(245,179,66, .12); color: var(--accent); }
 .hist-item.lose { background: rgba(230, 67, 64, .12); color: var(--danger); }
 .hi-type { font-weight: 700; }
 .hi-delta { font-size: 20rpx; margin-top: 2rpx; }

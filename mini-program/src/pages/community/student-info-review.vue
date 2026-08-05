@@ -265,7 +265,7 @@ async function submitReject() {
 .btn { padding: 16rpx 36rpx; border-radius: 40rpx; font-size: 28rpx; font-weight: 600; }
 .btn[disabled] { opacity: 0.6; }
 .btn.reject { background: var(--c-card); color: var(--c-sub); border: 1px solid var(--c-border); }
-.btn.approve { background: #07c160; color: #fff; }
+.btn.approve { background: var(--c-primary); color: #fff; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal { width: 600rpx; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; }
 .modal-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); text-align: center; margin-bottom: 16rpx; }

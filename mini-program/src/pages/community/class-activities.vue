@@ -178,7 +178,7 @@ async function del(it) {
 .ph { display: flex; flex-wrap: wrap; gap: 10rpx; margin: 10rpx 0; }
 .phimg { width: 140rpx; height: 140rpx; border-radius: 12rpx; }
 .acts { display: flex; gap: 20rpx; margin-top: 10rpx; }
-.act { font-size: 24rpx; color: #409eff; }
+.act { font-size: 24rpx; color: var(--c-blue); }
 .act.del { color: #e64340; }
 .loading { text-align: center; padding: 40rpx 0; }
 

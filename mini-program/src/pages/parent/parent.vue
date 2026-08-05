@@ -1105,7 +1105,7 @@ function tbClearSearch() {
 .chart { display: flex; align-items: flex-end; gap: 6rpx; padding: 0 10rpx 0 0; min-height: 240rpx; }
 .bar-col { display: flex; flex-direction: column; align-items: center; width: 52rpx; flex-shrink: 0; }
 .bar { width: 36rpx; min-height: 4rpx; border-radius: 6rpx 6rpx 0 0; background: #c8e6c9; transition: height 0.3s; }
-.bar.highlight { background: #07c160; }
+.bar.highlight { background: var(--c-primary); }
 .bar-label { font-size: 18rpx; color: #9aa0a6; margin-top: 6rpx; }
 .bar-count { font-size: 18rpx; color: var(--c-sub); margin-top: 2rpx; }
 .exam-analysis { margin-top: 14rpx; padding: 14rpx; background: var(--c-input); border-radius: 10rpx; }
@@ -1134,7 +1134,7 @@ function tbClearSearch() {
 .att-trend-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 8rpx; }
 .att-trend-month { font-size: 20rpx; color: var(--c-sub); width: 110rpx; flex-shrink: 0; }
 .att-trend-bar-bg { flex: 1; height: 18rpx; background: var(--c-input); border-radius: 10rpx; overflow: hidden; }
-.att-trend-bar { height: 100%; border-radius: 10rpx; background: #07c160; }
+.att-trend-bar { height: 100%; border-radius: 10rpx; background: var(--c-primary); }
 .att-trend-count { font-size: 20rpx; color: var(--c-sub); width: 80rpx; text-align: right; flex-shrink: 0; }
 .att-recent { background: var(--c-card); border-radius: 14rpx; padding: 16rpx 20rpx; }
 .att-rec { display: flex; align-items: center; gap: 14rpx; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
@@ -1156,13 +1156,13 @@ function tbClearSearch() {
 .pwd-err { font-size: 24rpx; color: #e06c75; background: #fde8e8; border-radius: 10rpx; padding: 14rpx; margin-bottom: 16rpx; }
 .pwd-label { font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; display: block; }
 .pwd-input { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; }
-.pwd-btn { background: #07c160; color: #fff; font-size: 28rpx; font-weight: 700; border-radius: 14rpx; padding: 22rpx; margin-top: 8rpx; }
+.pwd-btn { background: var(--c-primary); color: #fff; font-size: 28rpx; font-weight: 700; border-radius: 14rpx; padding: 22rpx; margin-top: 8rpx; }
 .pwd-btn[disabled] { opacity: 0.6; }
 /* 健康度总览 + 提醒中心 */
 .health-grid { display: flex; flex-wrap: wrap; gap: 14rpx; }
 .health-item { width: calc(50% - 7rpx); background: var(--c-card); border-radius: 16rpx; padding: 20rpx; display: flex; flex-direction: column; gap: 6rpx; position: relative; }
 .health-light { position: absolute; top: 16rpx; right: 16rpx; width: 16rpx; height: 16rpx; border-radius: 50%; }
-.hl-green { background: #07c160; }
+.hl-green { background: var(--c-primary); }
 .hl-yellow { background: #E6A23C; }
 .hl-red { background: #f56c6c; }
 .health-ico { font-size: 36rpx; line-height: 1; }
@@ -1179,12 +1179,12 @@ function tbClearSearch() {
 .beh-green { background: #e8f5e9; }
 .beh-red { background: #fde8e8; }
 .beh-amber { background: #fef3e0; }
-.att-trend-bar.bmax { background: #07c160; }
+.att-trend-bar.bmax { background: var(--c-primary); }
 .att-trend-bar.bmuted { background: #c8e6c9; }
 .beh-rec { display: flex; align-items: center; gap: 14rpx; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
 .beh-rec:last-child { border-bottom: none; }
 .beh-dot { width: 16rpx; height: 16rpx; border-radius: 50%; flex-shrink: 0; }
-.beh-praise { background: #07c160; }
+.beh-praise { background: var(--c-primary); }
 .beh-violation { background: #f56c6c; }
 .beh-other { background: #E6A23C; }
 /* 课表 & 值日 */
@@ -1243,7 +1243,7 @@ function tbClearSearch() {
   flex-shrink: 0;
 }
 .kid-chip.active {
-  background: #07c160;
+  background: var(--c-primary);
   color: #fff;
 }
 .compare-btn {
@@ -1265,7 +1265,7 @@ function tbClearSearch() {
 .info-val { font-size: 24rpx; color: var(--c-title); font-weight: 600; text-align: right; flex: 1; margin-left: 16rpx; }
 .info-actions { display: flex; gap: 14rpx; margin-top: 20rpx; }
 .info-btn { flex: 1; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 12rpx; background: var(--c-input); color: var(--c-title); font-weight: 600; }
-.info-btn.primary { background: #07c160; color: #fff; }
+.info-btn.primary { background: var(--c-primary); color: #fff; }
 .pwd-tip { font-size: 22rpx; color: #9aa0a6; margin-bottom: 16rpx; display: block; }
 .pwd-textarea { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; width: 100%; box-sizing: border-box; height: 120rpx; }
 /* 申请记录弹窗 */
