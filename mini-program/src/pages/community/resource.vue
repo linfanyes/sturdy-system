@@ -296,7 +296,9 @@ async function del(r) {
 .chips { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 10rpx; }
 .cat { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; }
 .tag { font-size: 20rpx; padding: 4rpx 12rpx; border-radius: 16rpx; background: #fff3e0; color: #a07b3b; }
-.acts { display: flex; gap: 20rpx; margin-top: 12rpx; }
+.acts { display: flex; gap: 20rpx; margin-top: 12rpx; 
+  justify-content: flex-end;
+}
 .a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: #e06c75; }
 .empty { width: 100%; text-align: center; color: #9aa0a6; padding: 40rpx 0; }

@@ -194,7 +194,9 @@ function del(it) {
 .info { flex:1; }
 .nm { display:block; font-size:28rpx; color:var(--c-title); }
 .meta { font-size:22rpx; color:var(--c-sub); }
-.acts { display:flex; gap:18rpx; }
+.acts { display:flex; gap:18rpx; 
+  justify-content: flex-end;
+}
 .ed { font-size:24rpx; color:var(--c-blue); }
 .del { font-size:24rpx; color:var(--c-danger); }
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; }

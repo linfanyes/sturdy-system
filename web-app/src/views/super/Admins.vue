@@ -4,7 +4,7 @@ import { Users, Plus, Edit3, Trash2, KeyRound, Power, Loader2 } from 'lucide-vue
 import {
   listSchoolAdmins, createSchoolAdmin, updateSchoolAdmin,
   resetSchoolAdminPassword, toggleSchoolAdminEnabled, deleteSchoolAdmin,
-  listSchools,
+  listSchools, listTeachers,
 } from '@/api/admin'
 import Modal from '@/components/Modal.vue'
 import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
@@ -13,6 +13,8 @@ const loading = ref(false)
 const items = ref<any[]>([])
 const total = ref(0)
 const schools = ref<any[]>([])
+/** schoolId → 教师数（超管查看校管理员时展示本校教师规模） */
+const teacherCountBySchool = ref<Record<string, number>>({})
 
 const activeCount = computed(() => items.value.filter(a => a.enabled !== false).length)
 
@@ -32,9 +34,20 @@ function schoolName(id: string) {
 async function load() {
   loading.value = true
   try {
-    const res = await listSchoolAdmins(0, 500)
-    items.value = (res?.items || [])
-    total.value = res?.total || 0
+    const [adminsRes, teachersRes] = await Promise.all([
+      listSchoolAdmins(0, 500),
+      listTeachers(0, 500).catch(() => ({ items: [] as any[], total: 0 })),
+    ])
+    items.value = (adminsRes?.items || [])
+    total.value = adminsRes?.total || 0
+    // 聚合各校教师数（schoolId → count）
+    const teachers = (teachersRes as any)?.items || []
+    const map: Record<string, number> = {}
+    for (const t of teachers) {
+      const sid = t.schoolId || ''
+      if (sid) map[sid] = (map[sid] || 0) + 1
+    }
+    teacherCountBySchool.value = map
   } catch (e: any) {
     alert(e?.message || '加载失败')
   } finally {
@@ -187,6 +200,7 @@ function formatTime(t?: string) {
             <th class="px-4 py-3 font-medium">姓名</th>
             <th class="px-4 py-3 font-medium">用户名</th>
             <th class="px-4 py-3 font-medium">所属学校</th>
+            <th class="px-4 py-3 font-medium">本校教师</th>
             <th class="px-4 py-3 font-medium">状态</th>
             <th class="px-4 py-3 font-medium">创建时间</th>
             <th class="px-4 py-3 font-medium text-right">操作</th>
@@ -194,17 +208,24 @@ function formatTime(t?: string) {
         </thead>
         <tbody class="divide-y divide-cream-100">
           <tr v-if="loading">
-            <td colspan="6" class="py-10 text-center text-cocoa-400">
+            <td colspan="7" class="py-10 text-center text-cocoa-400">
               <Loader2 class="w-5 h-5 animate-spin inline-block mr-2" /> 加载中…
             </td>
           </tr>
           <tr v-else-if="items.length === 0">
-            <td colspan="6" class="py-10 text-center text-cocoa-400">暂无管理员数据</td>
+            <td colspan="7" class="py-10 text-center text-cocoa-400">暂无管理员数据</td>
           </tr>
           <tr v-for="row in items" :key="row.id" class="hover:bg-cream-50 transition-colors">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ row.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ row.username || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ schoolName(row.schoolId || row.school_id) }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-xs">
+                <Users class="w-3.5 h-3.5 text-mint-500" />
+                <span class="text-cocoa-700 font-medium">{{ teacherCountBySchool[row.schoolId || row.school_id] ?? 0 }}</span>
+                <span class="text-cocoa-400">人</span>
+              </span>
+            </td>
             <td class="px-4 py-3">
               <span :class="['text-xs px-2 py-0.5 rounded-full', row.enabled !== false ? 'bg-mint-100 text-mint-500' : 'bg-sakura-100 text-sakura-500']">
                 {{ row.enabled !== false ? '启用' : '停用' }}

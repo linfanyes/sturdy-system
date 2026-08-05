@@ -801,10 +801,8 @@ function navigateTo(to: string) {
         <div class="w-full min-h-full px-8 py-6 flex flex-col">
           <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
           <template v-if="showTilesPanel">
-            <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-4">
-              <button @click="activeCategory = ''" class="hover:text-cocoa-700 transition-colors">← 返回{{ auth.role === 'super' ? '工作台' : '工作台' }}</button>
-              <ChevronRight class="w-4 h-4" />
-              <span class="text-cocoa-700 font-medium">{{ activeCategory }}</span>
+            <div class="flex items-center gap-2 text-sm text-cocoa-700 font-medium mb-4">
+              {{ activeCategory }}
             </div>
             <div v-for="g in activeGroups" :key="g.label || 'main'" class="mb-6">
               <div v-if="g.label" class="flex items-center gap-2 mb-3">

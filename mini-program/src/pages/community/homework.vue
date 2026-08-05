@@ -413,7 +413,9 @@ function after(n) {
 .tt { font-size: 28rpx; font-weight: 700; color: var(--c-title); flex: 1; }
 .content { display: block; font-size: 24rpx; color: var(--c-title); margin: 8rpx 0; white-space: pre-wrap; }
 .meta { font-size: 22rpx; color: var(--c-sub); }
-.acts { display: flex; gap: 22rpx; margin-top: 8rpx; }
+.acts { display: flex; gap: 22rpx; margin-top: 8rpx; 
+  justify-content: flex-end;
+}
 .a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }

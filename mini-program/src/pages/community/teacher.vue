@@ -358,7 +358,9 @@ function remove(t) {
 .teach { font-size: 22rpx; color: #5a5048; display: block; }
 .meta { font-size: 22rpx; color: #9aa0a6; display: block; }
 .meta.tap { color: var(--c-primary); }
-.acts { display: flex; flex-direction: column; gap: 8rpx; flex: 0 0 auto; }
+.acts { display: flex; flex-direction: column; gap: 8rpx; flex: 0 0 auto; 
+  align-items: flex-end;
+}
 .call { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; background: #e8f1fb; color: var(--c-blue); }
 .cp, .ed, .del { font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; }
 .cp { background: #eef7ee; color: var(--c-primary); }

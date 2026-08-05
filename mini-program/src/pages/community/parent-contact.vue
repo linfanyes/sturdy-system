@@ -285,7 +285,9 @@ async function del(p) {
 .meta { font-size: 24rpx; color: var(--c-sub); margin: 6rpx 0; }
 .ct { font-size: 26rpx; color: #5a5048; white-space: pre-wrap; }
 .fu { font-size: 24rpx; color: #a07b3b; margin-top: 6rpx; }
-.acts { display: flex; gap: 28rpx; margin-top: 8rpx; }
+.acts { display: flex; gap: 28rpx; margin-top: 8rpx; 
+  justify-content: flex-end;
+}
 .a { font-size: 26rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }

@@ -158,7 +158,9 @@ function del(o) {
 .lab.s { color: #07c160; }
 .lab.t { color: var(--c-blue); }
 .txt { font-size: 25rpx; color: #6a6058; }
-.acts { display: flex; gap: 28rpx; margin-top: 12rpx; }
+.acts { display: flex; gap: 28rpx; margin-top: 12rpx; 
+  justify-content: flex-end;
+}
 .a { font-size: 26rpx; color: var(--c-blue); }
 .a.del { color: #e06c75; }
 .r-excellent { background: #e8f9e8; color: #07c160; }

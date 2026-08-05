@@ -155,7 +155,9 @@ function del(l) {
 .c { padding: 20rpx 0; border-bottom: 1px solid #f3f3f3; }
 .top { display: flex; align-items: center; justify-content: space-between; }
 .date { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
-.acts { display: flex; gap: 28rpx; }
+.acts { display: flex; gap: 28rpx; 
+  justify-content: flex-end;
+}
 .a { font-size: 26rpx; color: var(--c-blue); }
 .a.del { color: #e06c75; }
 .tags { display: flex; gap: 12rpx; margin: 10rpx 0; }

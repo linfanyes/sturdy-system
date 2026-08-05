@@ -195,7 +195,9 @@ function del(b) {
 .chip2 { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; }
 .date { font-size: 22rpx; color: var(--c-sub); }
 .note { font-size: 25rpx; color: #6a6058; margin-top: 6rpx; }
-.acts { display: flex; flex-direction: column; gap: 14rpx; }
+.acts { display: flex; flex-direction: column; gap: 14rpx; 
+  align-items: flex-end;
+}
 .a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
 .fab { position: fixed; right: 40rpx; bottom: 60rpx; background: var(--c-primary); color: #fff; padding: 24rpx 36rpx; border-radius: 50rpx; font-size: 28rpx; box-shadow: 0 8rpx 24rpx rgba(245,179,66,.3); }
