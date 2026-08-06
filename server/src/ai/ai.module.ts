@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { AiService } from './ai.service'
+import { AiChatService } from './ai-chat.service'
+import { AiFileParserService } from './ai-file-parser.service'
+import { AiVisionService } from './ai-vision.service'
+import { AiMediaService } from './ai-media.service'
 import { AiController } from './ai.controller'
 import { ConfigModule } from '../config/config.module'
 import { User } from '../users/user.entity'
@@ -18,7 +22,13 @@ import { NoteItem } from '../notes/notes.entity'
     ConfigModule,
     TypeOrmModule.forFeature([User, ClassItem, Student, Teacher, Grade, Exam, AwardRecord, NoteItem]),
   ],
-  providers: [AiService],
+  providers: [
+    AiService,
+    AiChatService,
+    AiFileParserService,
+    AiVisionService,
+    AiMediaService,
+  ],
   controllers: [AiController],
   exports: [AiService],
 })

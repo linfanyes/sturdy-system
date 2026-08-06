@@ -16,8 +16,18 @@
 - **switchRole 逻辑矛盾**：从 `switchRole` 中移除 `g_token` 写入操作，修复与 `readToken()` 修复冲突导致的角色误判问题
 - **多实例迁移锁**：使用 MySQL 命名锁 `GET_LOCK()` 保护迁移过程，防止云托管多副本并发执行迁移
 
+### 重构
+- **AuthService 拆分**：将 ~460 行的巨型 AuthService 重构为 Facade，新增 `WechatAuthService` 专门处理微信登录和绑定逻辑
+- **AiService 拆分**：将 ~730 行的巨型 AiService 重构为 Facade，拆分为：
+  - `AiChatService` - 对话核心（流式/同步/结构化解析/上下文缓存）
+  - `AiFileParserService` - 文件解析（TXT/PDF/Excel/Magic Bytes）
+  - `AiVisionService` - 视觉识别（OCR/图片识别）
+  - `AiMediaService` - 媒体生成（文生图/文生视频/ASR）
+
 ### 改进
 - **安全自检增强**：生产环境新增超管密码格式验证
+- **废弃代码隔离**：将 `_deprecated_orphan_pages` 加入 .gitignore
+- **TypeORM 产物排除**：将 `server/dist/` 加入 .gitignore
 
 ---
 

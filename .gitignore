@@ -65,3 +65,9 @@ scripts/repair-e2e.mjs
 
 # 构建残留（IDE 锁定时 mv 出的旧 dist，勿入库）
 dist-*/
+
+# 已废弃的小程序旧页面（源码树保留但不跟踪，减小仓库体积）
+mini-program/src/_deprecated_orphan_pages/
+
+# TypeORM 无需提交编译产物
+server/dist/
