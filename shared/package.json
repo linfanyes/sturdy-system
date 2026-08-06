@@ -47,6 +47,14 @@
       "import": "./dist/utils/general.js",
       "types": "./dist/utils/general.d.ts"
     },
+    "./utils/export-data": {
+      "import": "./dist/utils/export-data.js",
+      "types": "./dist/utils/export-data.d.ts"
+    },
+    "./utils/image-spec": {
+      "import": "./dist/utils/image-spec.js",
+      "types": "./dist/utils/image-spec.d.ts"
+    },
     "./utils/game-mappings": {
       "import": "./dist/utils/game-mappings.js",
       "types": "./dist/utils/game-mappings.d.ts"

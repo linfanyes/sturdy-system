@@ -1,7 +1,19 @@
 /**
  * 照片上传辅助：读取本地图片 → 压缩 → base64 dataURL。
- * 与小程序端压缩策略一致（1280px 宽，70% 质量），控制 payload 体积。
+ *
+ * 【复用改造】压缩默认参数（长边 1280px / 质量 0.8）与纯缩放计算已委托给
+ * shared/utils/image-spec.ts；本文件仅保留 Web 平台 I/O（FileReader + Canvas + toDataURL）。
+ * 与小程序端 mini-program/src/common/image.js 共用同一份压缩策略。
  */
+
+import {
+  IMAGE_MAX_DIMENSION,
+  IMAGE_JPEG_QUALITY,
+  IMAGE_SKIP_COMPRESS_BYTES,
+  IMAGE_OUTPUT_FORMAT,
+  computeScaledDimensions,
+  shouldSkipCompressByFileSize,
+} from '@gardener/shared/utils/image-spec'
 
 /** 读取文件为 base64 dataURL（不压缩） */
 export function readFileAsDataURL(file: File): Promise<string> {
@@ -16,27 +28,30 @@ export function readFileAsDataURL(file: File): Promise<string> {
 /**
  * 压缩图片并返回 base64 dataURL。
  * @param file 原始文件
- * @param maxWidth 最大宽度（默认 1280，与小程序一致）
- * @param quality JPEG 质量 0-1（默认 0.7）
+ * @param maxWidth 最大宽度（默认 IMAGE_MAX_DIMENSION=1280，与小程序一致）
+ * @param quality JPEG 质量 0-1（默认 IMAGE_JPEG_QUALITY=0.8）
  */
 export async function compressImage(
   file: File,
-  maxWidth = 1280,
-  quality = 0.7,
+  maxWidth: number = IMAGE_MAX_DIMENSION,
+  quality: number = IMAGE_JPEG_QUALITY,
 ): Promise<string> {
   if (!file.type.startsWith('image/')) {
     throw new Error('仅支持图片文件')
   }
   const dataUrl = await readFileAsDataURL(file)
-  // 非 jpeg/png 或小图直接返回
-  if (file.size < 200 * 1024) return dataUrl
+  // 小文件跳过（避免无意义重编码）
+  if (shouldSkipCompressByFileSize(file.size)) return dataUrl
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
-      let { width, height } = img
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width)
-        width = maxWidth
+      const { width, height } = computeScaledDimensions(
+        { width: img.width, height: img.height },
+        { maxWidth, maxHeight: maxWidth },
+      )
+      if (width === img.width && height === img.height) {
+        // 无需缩放，直接返回原图
+        return resolve(dataUrl)
       }
       const canvas = document.createElement('canvas')
       canvas.width = width
@@ -45,7 +60,7 @@ export async function compressImage(
       if (!ctx) return resolve(dataUrl)
       ctx.drawImage(img, 0, 0, width, height)
       try {
-        resolve(canvas.toDataURL('image/jpeg', quality))
+        resolve(canvas.toDataURL(IMAGE_OUTPUT_FORMAT, quality))
       } catch {
         resolve(dataUrl)
       }

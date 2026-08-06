@@ -4,8 +4,12 @@
  *
  * 说明：小程序本地会保留包含图片/附件等富内容的完整会话（localStorage），
  * 这里仅把文字消息同步到后端，供 Web 端及其他设备查看/续聊。
+ *
+ * 【复用改造】端点路径、DTO 类型从 @gardener/shared/api/endpoints 导入，
+ * 与 Web 端（web-app/src/api/chat.ts）共用同一份事实来源。
  */
 import { api } from './request'
+import { CHAT_SESSIONS_PATHS } from '@gardener/shared/api/endpoints'
 
 // 本地会话 id(时间戳) → 后端会话 id 的映射（持久化在 localStorage，避免重复创建）
 const BACKEND_ID_KEY = 'ai_backend_session_ids'
@@ -44,14 +48,14 @@ export async function syncSessionToBackend(sess) {
 
     if (!backendId) {
       // 创建会话并一次性写入全部文字消息
-      const created = await api.post('/chat-sessions', { title: sess.title || '新对话' })
+      const created = await api.post(CHAT_SESSIONS_PATHS.base, { title: sess.title || '新对话' })
       backendId = created && created.id
       if (!backendId) return
       // 把首条 user 消息作为标题由后端语义化，随后逐条追加
       let first = true
       for (const m of textMsgs) {
         // 后端 append 会把首条 user 作为标题，跳过重复创建时的 title 处理
-        await api.patch(`/chat-sessions/${backendId}/messages`, m).catch(() => {})
+        await api.patch(CHAT_SESSIONS_PATHS.appendMessages(backendId), m).catch(() => {})
         void first
         first = false
       }
@@ -64,7 +68,7 @@ export async function syncSessionToBackend(sess) {
       let synced = 0
       try { synced = uni.getStorageSync(syncCountKey) || 0 } catch (e) { synced = 0 }
       for (let i = synced; i < textMsgs.length; i++) {
-        await api.patch(`/chat-sessions/${backendId}/messages`, textMsgs[i]).catch(() => {})
+        await api.patch(CHAT_SESSIONS_PATHS.appendMessages(backendId), textMsgs[i]).catch(() => {})
       }
       try { uni.setStorageSync(syncCountKey, textMsgs.length) } catch (e) { /* 静默 */ }
     }

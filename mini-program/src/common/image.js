@@ -2,23 +2,37 @@
  * 图片压缩与统一选择工具。
  * compressImage / readImageAsBase64 — 离屏 canvas 压缩。
  * pickAndCompressImage — 统一选图+压缩入口，全局替换 uni.chooseImage / chooseMedia。
+ *
+ * 【复用改造】压缩参数（长边 1280、质量 80%）、缩放计算已从本文件抽出到
+ * shared/utils/image-spec.ts；本文件仅保留小程序平台 I/O（uni.getImageInfo +
+ * OffscreenCanvas）。与 Web 端 web-app/src/composables/usePhotoUpload.ts 共用同一份策略。
  */
 
-/** 图片压缩：小程序 canvas 离屏压缩，避免上传过大图片导致请求超时/费用高 */
+import {
+  IMAGE_MAX_DIMENSION,
+  IMAGE_JPEG_QUALITY_PERCENT,
+  computeScaledDimensions,
+  qualityToPercent,
+} from '@gardener/shared/utils/image-spec'
+
+/** 图片压缩：小程序 canvas 离屏压缩，避免上传过大图片导致请求超时/质量下降 */
 export function compressImage(opts) {
-  const { src, maxWidth = 1280, maxHeight = 1280, quality = 80, fileType = 'jpg' } = opts || {}
+  const {
+    src,
+    maxWidth = IMAGE_MAX_DIMENSION,
+    maxHeight = IMAGE_MAX_DIMENSION,
+    quality = IMAGE_JPEG_QUALITY_PERCENT,
+    fileType = 'jpg',
+  } = opts || {}
   return new Promise((resolve, reject) => {
     if (!src) return reject(new Error('缺少 src'))
     uni.getImageInfo({
       src,
       success: (info) => {
-        const ow = info.width
-        const oh = info.height
-        let w = ow
-        let h = oh
-        const r = Math.min(maxWidth / w, maxHeight / h, 1)
-        w = Math.round(w * r)
-        h = Math.round(h * r)
+        const { width: w, height: h } = computeScaledDimensions(
+          { width: info.width, height: info.height },
+          { maxWidth, maxHeight },
+        )
         const canvas = wx.createOffscreenCanvas ? wx.createOffscreenCanvas({ type: '2d', width: w, height: h }) : null
         if (canvas) {
           try {
@@ -30,7 +44,7 @@ export function compressImage(opts) {
               uni.canvasToTempFilePath({
                 canvas, width: w, height: h, destWidth: w, destHeight: h,
                 fileType: fileType === 'png' ? 'png' : 'jpg',
-                quality: Math.max(0, Math.min(1, quality / 100)),
+                quality: qualityToPercent(quality) / 100,
                 success: (r) => {
                   uni.getFileInfo({
                     filePath: r.tempFilePath,
@@ -81,7 +95,13 @@ export async function readImageAsBase64(src, opts) {
  * @returns {Promise<{tempFiles: Array<{tempFilePath,size,width,height}>}>}
  */
 export async function pickAndCompressImage(opts = {}) {
-  const { count = 1, sourceType = ['album', 'camera'], maxWidth = 1280, maxHeight = 1280, quality = 80 } = opts
+  const {
+    count = 1,
+    sourceType = ['album', 'camera'],
+    maxWidth = IMAGE_MAX_DIMENSION,
+    maxHeight = IMAGE_MAX_DIMENSION,
+    quality = IMAGE_JPEG_QUALITY_PERCENT,
+  } = opts
   const res = await uni.chooseMedia({ count, mediaType: ['image'], sourceType, sizeType: ['compressed', 'original'] })
   const compressed = []
   for (const f of res.tempFiles) {

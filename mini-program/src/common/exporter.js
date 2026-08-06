@@ -1,10 +1,15 @@
 /**
  * 统一导出工具 —— 生成 .xlsx / .docx 文件并调起小程序预览/分享。
  * 依赖: xlsx (SheetJS), docx
+ *
+ * 【复用改造】文件名清理、XLSX 列宽启发式已委托给 shared/utils/export-data.ts；
+ * 本文件仅保留小程序平台 I/O（uni 文件系统 + 预览器）与 docx/xlsx 库的调用。
+ * 与 Web 端 web-app/src/utils/download.ts 共用同一份纯内容生成逻辑。
  */
 
 import * as XLSX from 'xlsx'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
+import { sanitizeFilename, computeXlsxLayout } from '@gardener/shared/utils/export-data'
 
 /**
  * 导出二维数组为 .xlsx 并打开预览
@@ -14,19 +19,16 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } fro
  * @param {string}     sheetName 工作表名
  */
 export async function exportXlsx(header, rows, filename = '导出', sheetName = 'Sheet1') {
+  const safeName = sanitizeFilename(filename)
   const data = [header, ...rows]
   const ws = XLSX.utils.aoa_to_sheet(data)
-  // 自动列宽
-  const colWidths = header.map((_, ci) => {
-    let max = (header[ci] || '').length * 2
-    rows.forEach((r) => { if (r[ci] != null) max = Math.max(max, String(r[ci]).length * 2) })
-    return { wch: Math.min(max + 2, 40) }
-  })
+  // 自动列宽（委托 shared 纯函数）
+  const { colWidths } = computeXlsxLayout(header, rows)
   ws['!cols'] = colWidths
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, sheetName)
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', bookSST: false })
-  await saveAndOpen(wbout, filename + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  await saveAndOpen(wbout, safeName + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 }
 
 /**
@@ -36,6 +38,7 @@ export async function exportXlsx(header, rows, filename = '导出', sheetName = 
  * @param {string} filename 不含扩展名
  */
 export async function exportDocx(title, body, filename = '导出') {
+  const safeName = sanitizeFilename(filename)
   const children = []
   // 标题
   children.push(
@@ -72,7 +75,7 @@ export async function exportDocx(title, body, filename = '导出') {
 
   const blob = await Packer.toBlob(doc)
   const buf = await blob.arrayBuffer()
-  await saveAndOpen(buf, filename + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  await saveAndOpen(buf, safeName + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 }
 
 /** 通用：写入临时文件 → 调起预览 */
