@@ -8,7 +8,6 @@ import { ClassMemberService } from '../../class-members/class-members.module'
 import { FEATURE_FLAGS } from './feature-flags.constants'
 import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
 import { CacheService } from '../cache/cache.service'
-import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
 
 /** 层级解析器注入令牌（便于将来插入 ProjectLevelResolver 等而不返工） */
 export const FEATURE_RESOLVERS = Symbol('FEATURE_RESOLVERS')

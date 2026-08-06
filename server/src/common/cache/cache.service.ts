@@ -47,8 +47,9 @@ export class CacheService implements OnModuleDestroy {
 
   set<T>(key: string, value: T, ttlMs?: number): void {
     if (ttlMs && 'ttl' in this.cache) {
-      // lru-cache 专属 API
-      (this.cache as LRUCacheWithTTL).set(key, value, { ttl: ttlMs })
+      // lru-cache 专属 API（LRUCacheWithTTL 独立接口，签名与 lru-cache v11 兼容）
+      const ttlCache = this.cache as unknown as { set: (k: string, v: unknown, o?: { ttl?: number }) => void }
+      ttlCache.set(key, value, { ttl: ttlMs })
     } else if (ttlMs && this.cache instanceof SimpleLRU) {
       // 内置简易 LRU 也支持 TTL
       this.cache.set(key, value, ttlMs)
@@ -132,11 +133,17 @@ interface LRUCacheStandard<K, V> {
   keys(): IterableIterator<K>
 }
 
-/** 支持 TTL 的 LRU 缓存接口 */
-interface LRUCacheWithTTL<K, V> extends LRUCacheStandard<K, V> {
-  set(key: K, value: V, options: { ttl: number }): void
+/** 支持 TTL 的 LRU 缓存接口（独立接口，不继承 LRUCacheStandard，避免 set 签名逆变） */
+interface LRUCacheWithTTL<K = string, V = unknown> {
+  get(key: K): V | undefined
+  set(key: K, value: V, options?: { ttl?: number }): void
+  delete(key: K): boolean
+  clear(): void
+  readonly size: number
+  readonly max: number
   readonly calculatedSize: number
   readonly ttl: number
+  keys(): IterableIterator<K>
 }
 
 interface LRUCacheOptions<K, V> {
@@ -158,7 +165,7 @@ function createLRUCache<K, V>(options: LRUCacheOptions<K, V>): LRUCacheStandard<
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { LRUCache } = require('lru-cache')
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return new LRUCache(options) as LRUCacheWithTTL<K, V>
+    return new LRUCache(options) as unknown as LRUCacheStandard<K, V>
   } catch {
     // lru-cache 不可用，使用内置简易实现
     return new SimpleLRU<K, V>(options)
