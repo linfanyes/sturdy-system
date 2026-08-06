@@ -43,6 +43,20 @@
 - 共享 dist 重建（含新增 `utils/general` 产物）。
 - **docs/image-compression-spec.md**（新增）：图片压缩策略规范 v1.0 —— 统一 Web / 小程序端 maxWidth=1280 / quality 0.8（/80）参数；明确降级、校验清单、后端无关化原则。
 
+### 重构（复用改造阶段 3 启动：schema 提升 + Web 端 schema-driven 渲染器）
+- **shared/schemas/crud-schema.ts**（迁移自 `mini-program/src/common/crud-schema.js`）：通用 CRUD 实体字段配置（29 个实体），新增 `CrudFieldType / CrudFieldDef / CrudEntityDef / CrudSchema` 类型。
+- **shared/schemas/subject-schema.ts**（迁移自 `mini-program/src/common/subject-schema.js`）：学科 AI 工具配置（21 项 = 语文 7 + 英语 9 + 科学 3 + 道德与法治 3）、学科清单（SUBJECT_LIST 5 科 / ALL_SUBJECTS 15 科）、数学独立工具（MATH_TOOLS 6 项）。新增 `SubjectToolFieldDef / SubjectToolDef / SubjectListItem / MathToolItem / ToolMenuItem` 类型。函数 `getSubjectTool / getToolsBySubject` 直接导出。
+- **shared/schemas/quicktool-schema.ts**（迁移自 `mini-program/src/common/quicktool-schema.js`）：通用 AI 工具配置（18 项）。新增 `QuickToolFieldDef / QuickToolDef / QuickToolSchema` 类型。函数 `getQuickTool` 直接导出。
+- **shared/schemas/index.ts**：星导出三份 schema。
+- **shared/package.json**：exports 新增 `./schemas` `./schemas/crud-schema` `./schemas/subject-schema` `./schemas/quicktool-schema`。
+- **shared/tsconfig.json**：include 加 `schemas/**/*.ts`；移除 `noPropertyAccessFromIndexSignature`（schema 场景触发过于频繁，其余 strict 项仍生效）。
+- **shared/index.ts** 星导出 `./schemas/index.js`。
+- 小程序端 `mini-program/src/common/crud-schema.js / subject-schema.js / quicktool-schema.js` 从直接实现改为 re-export from `@gardener/shared/schemas/*`，保留原 import 路径（5 处 importer 无感）。
+- 小程序端 `mini-program/test/subject-schema.spec.ts` 路径与正则适配 TS 版 schema。
+- **web-app/src/views/_schema_crud/SchemaCrudPage.vue**（新增）：Schema-driven 通用 CRUD 渲染器 —— 读 `route.params.entity`、从 `CRUD_SCHEMA[entity]` 取配置、映射为 `FieldDef[]`，复用已有 `CrudTable.vue` 组件（list + create + edit + delete + classId 筛选）；不在 display 中的字段自动 hideInList。
+- **web-app/src/router/index.ts**：教师模块新路由 `schema-crud/:entity`（feature: tools），指向 SchemaCrudPage；所有原手工 view 路由保持不动。
+- shared dist 完整重建（含 schemas/ 产物）。
+
 ### 新增（Web / 小程序功能对齐）
 - **小游戏得分云端同步**：
   - 后端新增 `game-scores` 模块（按教师租户隔离，幂等 upsert 最高分）+ 迁移 `0022_game_scores.sql`（root `migrations/`）。

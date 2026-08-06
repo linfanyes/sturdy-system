@@ -228,6 +228,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'games/geoQuiz', name: 'gameGeoQuiz', component: () => import('@/views/games/GameGeoQuiz.vue'), meta: { title: '人文地理', feature: 'games' } },
       // 创意型小游戏
       { path: 'games/storyChain', name: 'gameStoryChain', component: () => import('@/views/games/GameStoryChain.vue'), meta: { title: '故事接龙', feature: 'games' } },
+      // Schema-driven 通用 CRUD 渲染器（接入 shared/schemas/crud-schema.ts，按 entity 自动生成列表+表单）
+      { path: 'schema-crud/:entity', name: 'schema-crud', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), meta: { title: '数据管理', feature: 'tools' } },
     ],
   },
   // 家长
