@@ -3,6 +3,27 @@
     <view class="banner">🎮 小游戏合集</view>
     <view class="sub">共 {{ total }} 款 · 长按图标查看玩法</view>
 
+    <!-- 得分榜入口 -->
+    <view class="board-toggle" @click="toggleBoard">
+      <text class="board-ic">🏆</text>
+      <text class="board-tx">{{ showBoard ? '收起得分榜' : '我的得分榜' }}</text>
+    </view>
+    <view v-if="showBoard" class="board-panel">
+      <view class="board-title">游戏最佳成绩</view>
+      <view v-if="loadingBoard" class="board-empty">加载中…</view>
+      <view v-else-if="scores.length === 0" class="board-empty">
+        暂无成绩记录，去玩一局刷新即可上榜 🎮
+      </view>
+      <view v-else class="board-rows">
+        <view v-for="(s, i) in scores" :key="s.id" class="board-row">
+          <text class="board-rank" :class="{ top: i < 3 }">{{ i + 1 }}</text>
+          <text class="board-name">{{ scoreName(s) }}</text>
+          <text class="board-score">{{ s.bestScore }}</text>
+          <text class="board-cnt">×{{ s.playCount }}</text>
+        </view>
+      </view>
+    </view>
+
     <view v-for="cat in cats" :key="cat.title" class="sec">
       <view class="sec-title">
         <text class="sec-icon">{{ cat.icon }}</text>
@@ -51,6 +72,25 @@ import { pickColors } from '../../common/game'
 const dark = computed(() => theme.mode === 'dark')
 const c = computed(() => pickColors(dark.value))
 const infoGame = ref(null)
+
+// —— 得分榜 ——
+const showBoard = ref(false)
+const scores = ref([])
+const loadingBoard = ref(false)
+async function loadScores() {
+  if (loadingBoard.value) return
+  loadingBoard.value = true
+  const { fetchScores } = await import('../../common/game-score')
+  scores.value = await fetchScores()
+  loadingBoard.value = false
+}
+function toggleBoard() {
+  showBoard.value = !showBoard.value
+  if (showBoard.value) loadScores()
+}
+function scoreName(s) {
+  return (s && s.gameName) || (s && s.gameKey) || '未知游戏'
+}
 
 const cats = [
   {
@@ -137,6 +177,19 @@ onShow(() => {
 .page { background: var(--c-bg); min-height: 100vh; color: var(--c-text); padding: 30rpx; }
 .banner { font-size: 44rpx; font-weight: 800; color: #a07b3b; text-align: center; margin-bottom: 8rpx; }
 .sub { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-bottom: 30rpx; }
+.board-toggle { display: flex; align-items: center; justify-content: center; gap: 10rpx; margin: 0 auto 24rpx; width: fit-content; padding: 12rpx 30rpx; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 40rpx; color: var(--c-primary); font-size: 26rpx; font-weight: 600; }
+.board-ic { font-size: 28rpx; }
+.board-panel { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 20rpx; padding: 24rpx; margin-bottom: 30rpx; }
+.board-title { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 16rpx; }
+.board-empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 20rpx 0; }
+.board-rows { max-height: 420rpx; overflow-y: auto; }
+.board-row { display: flex; align-items: center; padding: 12rpx 0; border-bottom: 1px solid var(--c-border); font-size: 24rpx; }
+.board-row:last-child { border-bottom: none; }
+.board-rank { width: 44rpx; height: 44rpx; line-height: 44rpx; text-align: center; border-radius: 10rpx; background: var(--c-card2, #f5f5f5); color: var(--c-sub); font-weight: 700; margin-right: 16rpx; }
+.board-rank.top { background: #f5d9a8; color: #8a5a00; }
+.board-name { flex: 1; color: var(--c-title); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-score { color: #e6a23c; font-weight: 800; font-size: 28rpx; margin-right: 24rpx; }
+.board-cnt { color: var(--c-sub); font-size: 22rpx; }
 .sec { margin-bottom: 36rpx; }
 .sec-title { font-size: 30rpx; font-weight: 700; color: #a07b3b; margin-bottom: 18rpx; display: flex; align-items: center; gap: 12rpx; }
 .sec-icon { font-size: 32rpx; }

@@ -150,6 +150,10 @@ export function useGame(gameKey) {
     const isNew = setBest(gameKey, score)
     if (isNew) best.value = score
     isNewRecord.value = isNew
+    // 云端同步最高分（异步、失败静默）。动态 import 避免与 game-score.js 循环依赖。
+    try {
+      import('./game-score').then(({ reportScore }) => reportScore(gameKey, score))
+    } catch (e) { /* 静默 */ }
     return isNew
   }
   function reload() {

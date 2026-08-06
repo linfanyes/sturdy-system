@@ -238,6 +238,7 @@ export const routes: RouteRecordRaw[] = [
     children: [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长中心' } },
       { path: 'textbook', name: 'parent-textbook', component: () => import('@/views/parent/Textbook.vue'), meta: { title: '教材知识点' } },
+      { path: 'resources', name: 'parent-resource-library', component: () => import('@/views/parent/ResourceLibrary.vue'), meta: { title: '专项资源库' } },
       { path: 'compare', name: 'parent-compare', component: () => import('@/views/parent/KidsCompare.vue'), meta: { title: '跨娃比对' } },
     ],
   },

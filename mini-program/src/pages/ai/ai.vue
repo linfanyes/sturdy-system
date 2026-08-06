@@ -570,6 +570,10 @@ async function send() {
   sess.updatedAt = Date.now()
   scrollBottom()
   saveSessions()
+  // 云端同步当前会话（与 Web 端历史打通；异步失败静默）
+  try {
+    import('../../common/chat-history').then(({ syncSessionToBackend }) => syncSessionToBackend(sess))
+  } catch (e) { /* 静默 */ }
 }
 
 // 停止生成：中断流式请求，保留已接收到的部分回复

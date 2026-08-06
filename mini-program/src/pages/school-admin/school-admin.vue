@@ -165,7 +165,11 @@
     <template v-if="tab === 'classes'">
       <view class="bar">
         <text class="sc">共 {{ classes.length }} 个班级</text>
-        <text class="act" @click="openCreateClass">＋ 新增班级</text>
+        <view class="bar-acts">
+          <text class="act export" @click="exportClassesXls">📥 XLS</text>
+          <text class="act" @click="showClassImport = true">📋 批量导入</text>
+          <text class="act" @click="openCreateClass">＋ 新增班级</text>
+        </view>
       </view>
       <view class="list">
         <EmptyState v-if="!classes.length" icon="🏫" text="暂无班级" hint="点击右上角「新增」创建第一个班级" />
@@ -180,6 +184,7 @@
             <view class="meta" v-else style="color:var(--c-warn,var(--c-sub))">学科：未设置</view>
           </view>
           <view class="acts">
+            <text class="act" @click.stop="onPromoteClass(c)">升级</text>
             <text class="act del" @click.stop="delClass(c)">删除</text>
           </view>
         </view>
@@ -337,7 +342,9 @@
         <text class="sc">共 {{ schoolStudents.length }} 名学生</text>
         <view class="bar-acts">
           <input v-model="studentFilter" class="filter-inp" placeholder="输入姓名搜索…" />
-          <text class="act export" @click="exportStudents">📥 导出</text>
+          <text class="act" @click="showStudentImport = true">📋 批量导入</text>
+          <text class="act export" @click="exportStudentsXls">📥 XLS</text>
+          <text class="act export" @click="exportStudents">📥 CSV</text>
         </view>
       </view>
       <view class="list">
@@ -496,6 +503,120 @@
         </view>
       </view>
     </template>
+
+    <!-- ====== 批量导入班级（全屏） ====== -->
+    <view v-if="showClassImport" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="showClassImport = false">← 返回</text>
+          <text class="full-title">批量导入班级</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <view class="hint-block">
+            支持 Excel(.xlsx/.xls) 或 TXT/CSV，每行：班级名称,年级,班级序号,班主任姓名,学期
+            <text class="hint-example">例：三年级1班,三年级,1,张老师,2026春季</text>
+          </view>
+          <button class="btn import-btn" @click="showClassTpl = true">📄 查看模板</button>
+          <button class="btn import-btn" @click="pickClassFile">📂 选择文件</button>
+          <button class="btn import-btn ai" :disabled="classAiRecognizing" @click="pickClassImage">{{ classAiRecognizing ? '识别中…' : '📷 拍照/选图识别' }}</button>
+          <view class="imp-tip ai-tip">用 AI 识别班级名单图片（需后端配置多模态模型）</view>
+
+          <view v-if="classPreview" class="preview">
+            <view class="pv-sum">
+              校验结果：<text class="ok">有效 {{ classPreview.validCount }}</text> ·
+              <text class="bad">异常 {{ classPreview.errorCount }}</text> / 共 {{ classPreview.rows.length }} 行
+            </view>
+            <view v-if="classPreview.errorCount" class="pv-errs">
+              <view v-for="(r, i) in classPreview.rows.filter(x=>!x.valid).slice(0,8)" :key="i" class="pv-err">
+                第{{ r.line }}行 {{ r.name || '(空)' }}：{{ r.error }}
+              </view>
+            </view>
+            <button class="btn" :disabled="!classPreview.validCount || saving" @click="commitClassImport">确认导入 {{ classPreview.validCount }} 条</button>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 班级模板弹窗 -->
+    <view v-if="showClassTpl" class="mask" @click="showClassTpl = false">
+      <view class="dialog" @click.stop>
+        <view class="d-title">班级导入模板格式</view>
+        <view class="d-sub">第一行可写表头（班级名称,年级,班级序号,班主任姓名,学期），数据从下一行开始：</view>
+        <view class="d-code">班级名称,年级,班级序号,班主任姓名,学期
+三年级1班,三年级,1,张老师,2026春季
+五年级2班,五年级,2,李老师,2026春季</view>
+        <button class="d-copy" @click="copyClassTpl">📋 复制示例</button>
+        <button class="d-close" @click="showClassTpl = false">关闭</button>
+      </view>
+    </view>
+
+    <!-- ====== 批量导入学生（全屏） ====== -->
+    <view v-if="showStudentImport" class="full-mask">
+      <view class="full-page">
+        <view class="full-head">
+          <text class="full-back" @click="showStudentImport = false">← 返回</text>
+          <text class="full-title">批量导入学生</text>
+          <text class="full-placeholder"></text>
+        </view>
+        <scroll-view scroll-y class="full-body">
+          <view class="form-item">
+            <text class="label">导入到班级 <text class="req">*</text></text>
+            <picker class="picker" mode="selector" :range="importClassNames" @change="onImportClassPick">
+              <view class="picker-inp">{{ importClassName || '请选择班级' }}</view>
+            </picker>
+          </view>
+          <view class="hint-block">
+            支持 Excel(.xlsx/.xls) 或 TXT/CSV，每行：姓名,性别,学号,家长姓名,家长电话
+            <text class="hint-example">例：张三,男,2026001,张父,13800000001</text>
+          </view>
+          <button class="btn import-btn" @click="showStudentTpl = true">📄 查看模板</button>
+          <button class="btn import-btn" @click="pickStudentFile">📂 选择文件</button>
+          <button class="btn import-btn ai" :disabled="studentAiRecognizing" @click="pickStudentImage">{{ studentAiRecognizing ? '识别中…' : '📷 拍照/选图识别' }}</button>
+          <view class="imp-tip ai-tip">用 AI 识别学生名单图片（需后端配置多模态模型）</view>
+
+          <view v-if="studentPreview" class="preview">
+            <view class="pv-sum">
+              校验结果：<text class="ok">有效 {{ studentPreview.validCount }}</text> ·
+              <text class="bad">异常 {{ studentPreview.errorCount }}</text> / 共 {{ studentPreview.rows.length }} 行
+            </view>
+            <view v-if="studentPreview.errorCount" class="pv-errs">
+              <view v-for="(r, i) in studentPreview.rows.filter(x=>!x.valid).slice(0,8)" :key="i" class="pv-err">
+                第{{ r.line }}行 {{ r.name || '(空)' }}：{{ r.error }}
+              </view>
+            </view>
+            <button class="btn" :disabled="!studentPreview.validCount || saving" @click="commitStudentImport">确认导入 {{ studentPreview.validCount }} 条</button>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 学生模板弹窗 -->
+    <view v-if="showStudentTpl" class="mask" @click="showStudentTpl = false">
+      <view class="dialog" @click.stop>
+        <view class="d-title">学生导入模板格式</view>
+        <view class="d-sub">第一行可写表头（姓名,性别,学号,家长姓名,家长电话），数据从下一行开始：</view>
+        <view class="d-code">姓名,性别,学号,家长姓名,家长电话
+张三,男,2026001,张父,13800000001
+李四,女,2026002,李母,13800000002</view>
+        <button class="d-copy" @click="copyStudentTpl">📋 复制示例</button>
+        <button class="d-close" @click="showStudentTpl = false">关闭</button>
+      </view>
+    </view>
+
+    <!-- 班级升级（目标年级弹窗） -->
+    <view v-if="promoteTarget" class="mask" @click="promoteTarget=null">
+      <view class="sheet safe-bottom" @click.stop>
+        <view class="sh-t">升级「{{ promoteTarget.name }}」</view>
+        <view class="inp-wrap">
+          <picker class="picker" :range="PROMOTE_GRADES" @change="(e)=>promoteTargetGrade=PROMOTE_GRADES[e.detail.value]">
+            <view class="picker-inp">{{ promoteTargetGrade || '选择目标年级' }}</view>
+          </picker>
+        </view>
+        <view class="sh-sub">将「{{ promoteTarget.name }}」升入「{{ promoteTargetGrade || '目标年级' }}」，学生和班主任保留，班级名称自动更新。</view>
+        <button class="btn" :disabled="saving || !promoteTargetGrade" @click="doPromoteClass">{{ saving ? '升级中…' : '确认升级' }}</button>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -507,6 +628,8 @@ import { setMockMode } from '../../common/request'
 import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
 import { auth, setAuth, setFeatureProfile } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { compressImage } from '../../common/image'
+import { copyText } from '../../common/print'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
 import { FEATURE_FLAG_LIST } from '@gardener/shared/constants'
 
@@ -879,8 +1002,49 @@ async function exportStudents() {
   downloadBlob(blob, 'students.csv')
 }
 function downloadBlob(data, name) {
-  // 小程序环境下无法下载文件，走复制链接/提示
-  uni.showToast({ title: '导出功能需在 Web 端使用', icon: 'none' })
+  // 小程序环境无法直接保存文件：若拿到的是纯文本（CSV），复制到剪贴板让管理员粘贴到表格工具；
+  // 二进制（如 XLS）无法在端内保存，引导使用 Web 端导出。
+  if (typeof data === 'string' && data) {
+    copyText('\uFEFF' + data)
+    return
+  }
+  uni.showModal({
+    title: '导出',
+    content: '小程序端暂不支持直接保存 ' + (name || '文件') + '，请使用 Web 端导出。',
+    showCancel: false,
+  })
+}
+
+/* 班级 CSV（前端本地组装，小程序可直接复制；后端无 /school-admin/export/classes 文本接口） */
+function exportClasses() {
+  const list = classes.value
+  if (!list.length) return uni.showToast({ title: '没有可导出的班级', icon: 'none' })
+  const head = '班级名称,年级,班级序号,班主任,学期,学科'
+  const body = list.map(c =>
+    [c.name, c.grade, c.classNo || '', c.headTeacher || '', c.term || '', (c.subjects && c.subjects.length) ? c.subjects.join('/') : '']
+      .map(x => '"' + String(x).replace(/"/g, '""') + '"').join(',')
+  ).join('\n')
+  copyText('\uFEFF' + head + '\n' + body)
+}
+
+/* XLS 导出：小程序无法保存二进制，提供优雅降级——提示使用 Web 端，或回退到 CSV 复制 */
+async function exportClassesXls() {
+  uni.showModal({
+    title: '导出 XLS',
+    content: '小程序端暂不支持直接保存 XLS 文件，请使用 Web 端「班级管理」导出 XLS；或点击下方按钮复制 CSV 数据。',
+    confirmText: '复制 CSV',
+    cancelText: '取消',
+    success: (m) => { if (m.confirm) exportClasses() },
+  })
+}
+async function exportStudentsXls() {
+  uni.showModal({
+    title: '导出 XLS',
+    content: '小程序端暂不支持直接保存 XLS 文件，请使用 Web 端「学生管理」导出 XLS；或点击下方按钮复制 CSV 数据。',
+    confirmText: '复制 CSV',
+    cancelText: '取消',
+    success: (m) => { if (m.confirm) exportStudents() },
+  })
 }
 
 // ===== 班级管理 =====
@@ -973,6 +1137,232 @@ async function delClass(c) {
         uni.showToast({ title: e.message || '删除失败', icon: 'none' })
       }
     },
+  })
+}
+
+// ===== 班级升级（升级：三年级1班 → 四年级1班，学生和班主任保留） =====
+const promoteTarget = ref(null)
+const promoteTargetGrade = ref('')
+const PROMOTE_GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三', '高一', '高二', '高三']
+
+function onPromoteClass(c) {
+  promoteTarget.value = c
+  promoteTargetGrade.value = ''
+}
+async function doPromoteClass() {
+  if (!promoteTarget.value || !promoteTargetGrade.value) return
+  saving.value = true
+  try {
+    const r = await apiCall('POST', '/school-admin/classes/' + promoteTarget.value.id + '/promote', { targetGrade: promoteTargetGrade.value })
+    uni.showToast({ title: (r && r.message) || '已升级', icon: 'success' })
+    promoteTarget.value = null
+    await loadClasses()
+  } catch (e) {
+    uni.showToast({ title: e.message || '升级失败', icon: 'none' })
+  }
+  saving.value = false
+}
+
+// ===== 批量导入：班级（Excel/CSV + AI 识图） =====
+const showClassImport = ref(false)
+const showClassTpl = ref(false)
+const classPreview = ref(null)
+const classAiRecognizing = ref(false)
+
+function copyClassTpl() {
+  uni.setClipboardData({
+    data: '班级名称,年级,班级序号,班主任姓名,学期\n三年级1班,三年级,1,张老师,2026春季\n五年级2班,五年级,2,李老师,2026春季',
+    success: () => uni.showToast({ title: '已复制', icon: 'success' }),
+  })
+}
+function pickClassFile() {
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['xlsx', 'xls', 'txt', 'csv'],
+    success: async (res) => {
+      const f = res.tempFiles[0]
+      if (f.size > 5 * 1024 * 1024) return uni.showToast({ title: '文件不能超过 5MB', icon: 'none' })
+      uni.showLoading({ title: '解析中…' })
+      try {
+        const data = await readAsBase64(f.path)
+        const r = await apiCall('POST', '/school-admin/classes/import-preview', { filename: f.name, data })
+        classPreview.value = r
+        if (!r.validCount) uni.showToast({ title: '没有可导入的有效数据', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '解析失败：' + (e.message || '文件格式错误'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+    fail: () => {},
+  })
+}
+function pickClassImage() {
+  if (classAiRecognizing.value) return
+  uni.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+    sizeType: ['compressed', 'original'],
+    success: async (res) => {
+      const tempPath = res.tempFiles[0].tempFilePath
+      classAiRecognizing.value = true
+      uni.showLoading({ title: 'AI 识别中…', mask: true })
+      try {
+        const cmp = await compressImage({ src: tempPath, maxWidth: 1280, maxHeight: 1280, quality: 80, fileType: 'jpg' })
+        const compressedPath = cmp?.tempFilePath || tempPath
+        const base64 = await readAsBase64(compressedPath)
+        const r = await apiCall('POST', '/school-admin/classes/import-ai', {
+          mode: 'image',
+          data: base64,
+          filename: 'class_list.jpg',
+        })
+        classPreview.value = r
+        if (!r.validCount) uni.showToast({ title: '未识别到有效班级，请换张图试试', icon: 'none' })
+        else uni.showToast({ title: `识别到 ${r.validCount} 个班级`, icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '识别失败：' + (e.message || '请先配置 AI'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+        classAiRecognizing.value = false
+      }
+    },
+    fail: () => {},
+  })
+}
+async function commitClassImport() {
+  if (!classPreview.value) return
+  const items = classPreview.value.rows.filter((r) => r.valid)
+  if (!items.length) return
+  // /school-admin/classes/import 需要原始文件才能再次解析，故这里使用前端已校验的有效行走 batch 写入
+  uni.showLoading({ title: '导入中…' })
+  try {
+    const classesPayload = items.map((r) => ({ name: r.name, grade: r.grade, classNo: r.classNo, headTeacher: r.headTeacher, term: r.term }))
+    const r = await apiCall('POST', '/school-admin/classes/batch', { classes: classesPayload })
+    uni.showToast({ title: `成功 ${r.success || 0} / ${r.total || 0}`, icon: r.failed > 0 ? 'none' : 'success' })
+    classPreview.value = null
+    showClassImport.value = false
+    await loadClasses()
+  } catch (e) {
+    uni.showToast({ title: '导入失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+// ===== 批量导入：学生（Excel/CSV + AI 识图，需选择目标班级） =====
+const showStudentImport = ref(false)
+const showStudentTpl = ref(false)
+const studentPreview = ref(null)
+const studentAiRecognizing = ref(false)
+const importClassId = ref('')
+const importClassName = ref('')
+const importClassNames = computed(() => classes.value.map((c) => c.name))
+
+function onImportClassPick(e) {
+  const idx = e.detail.value
+  const c = classes.value[idx]
+  if (c) {
+    importClassId.value = c.id
+    importClassName.value = c.name
+  }
+}
+function copyStudentTpl() {
+  uni.setClipboardData({
+    data: '姓名,性别,学号,家长姓名,家长电话\n张三,男,2026001,张父,13800000001\n李四,女,2026002,李母,13800000002',
+    success: () => uni.showToast({ title: '已复制', icon: 'success' }),
+  })
+}
+function pickStudentFile() {
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['xlsx', 'xls', 'txt', 'csv'],
+    success: async (res) => {
+      const f = res.tempFiles[0]
+      if (f.size > 5 * 1024 * 1024) return uni.showToast({ title: '文件不能超过 5MB', icon: 'none' })
+      uni.showLoading({ title: '解析中…' })
+      try {
+        const data = await readAsBase64(f.path)
+        const r = await apiCall('POST', '/school-admin/students/import-preview', { filename: f.name, data })
+        studentPreview.value = r
+        if (!r.validCount) uni.showToast({ title: '没有可导入的有效数据', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '解析失败：' + (e.message || '文件格式错误'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    },
+    fail: () => {},
+  })
+}
+function pickStudentImage() {
+  if (studentAiRecognizing.value) return
+  uni.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+    sizeType: ['compressed', 'original'],
+    success: async (res) => {
+      const tempPath = res.tempFiles[0].tempFilePath
+      studentAiRecognizing.value = true
+      uni.showLoading({ title: 'AI 识别中…', mask: true })
+      try {
+        const cmp = await compressImage({ src: tempPath, maxWidth: 1280, maxHeight: 1280, quality: 80, fileType: 'jpg' })
+        const compressedPath = cmp?.tempFilePath || tempPath
+        const base64 = await readAsBase64(compressedPath)
+        const r = await apiCall('POST', '/school-admin/students/import-ai', {
+          mode: 'image',
+          data: base64,
+          filename: 'student_list.jpg',
+        })
+        studentPreview.value = r
+        if (!r.validCount) uni.showToast({ title: '未识别到有效学生，请换张图试试', icon: 'none' })
+        else uni.showToast({ title: `识别到 ${r.validCount} 名学生`, icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '识别失败：' + (e.message || '请先配置 AI'), icon: 'none' })
+      } finally {
+        uni.hideLoading()
+        studentAiRecognizing.value = false
+      }
+    },
+    fail: () => {},
+  })
+}
+async function commitStudentImport() {
+  if (!studentPreview.value) return
+  const items = studentPreview.value.rows.filter((r) => r.valid)
+  if (!items.length) return
+  if (!importClassId.value) return uni.showToast({ title: '请先选择目标班级', icon: 'none' })
+  uni.showLoading({ title: '导入中…' })
+  try {
+    // 使用有效行 + 目标班级走 /school-admin/students/batch 批量写入（与后端 import 端点一致，避免重复解析文件）
+    const studentsPayload = items.map((r) => ({
+      name: r.name, gender: r.gender, studentNo: r.studentNo,
+      parentName: r.parentName, parentPhone: r.parentPhone, classId: importClassId.value,
+    }))
+    const r = await apiCall('POST', '/school-admin/students/batch', { students: studentsPayload })
+    uni.showToast({ title: `成功 ${r.success || 0} / ${r.total || 0}`, icon: r.failed > 0 ? 'none' : 'success' })
+    studentPreview.value = null
+    showStudentImport.value = false
+    await loadStudents()
+  } catch (e) {
+    uni.showToast({ title: '导入失败：' + (e.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+function readAsBase64(path) {
+  return new Promise((resolve, reject) => {
+    const fs = wx.getFileSystemManager()
+    fs.readFile({
+      filePath: path,
+      encoding: 'base64',
+      success: (r) => resolve(r.data),
+      fail: reject,
+    })
   })
 }
 
@@ -1380,4 +1770,27 @@ onShow(async () => {
 .ai-ghost { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; padding: 0 40rpx; }
 .ai-save { background: var(--c-primary); color: #fff; border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; padding: 0 40rpx; }
 .ai-save[disabled] { opacity: .6; }
+
+/* ===== 批量导入（班级/学生）+ 班级升级 通用样式 ===== */
+.picker { width: 100%; box-sizing: border-box; }
+.picker-inp { height: 80rpx; line-height: 80rpx; border: 1px solid var(--c-input-border); border-radius: 12rpx; padding: 0 20rpx; font-size: 28rpx; color: var(--c-text); background: var(--c-input); box-sizing: border-box; }
+/* 导入面板内的按钮：纵向排列、留白，AI 用主色突出，禁用半透明 */
+.import-btn { margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 28rpx; }
+.import-btn.ai { background: var(--c-primary); }
+.import-btn.ai[disabled] { opacity: 0.6; }
+.imp-tip { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
+.ai-tip { margin-top: -8rpx; margin-bottom: 14rpx; }
+.preview { margin-top: 10rpx; border-top: 1px dashed var(--c-border); padding-top: 16rpx; }
+.pv-sum { font-size: 26rpx; color: var(--c-title); }
+.pv-sum .ok { color: var(--c-primary); }
+.pv-sum .bad { color: var(--c-danger); }
+.pv-errs { margin: 10rpx 0; }
+.pv-err { font-size: 24rpx; color: var(--c-danger); line-height: 1.6; }
+/* 模板弹窗（复用 password 弹窗的遮罩/面板风格） */
+.dialog { width: 86%; max-width: 640rpx; max-height: 80vh; overflow-y: auto; background: var(--c-card); border-radius: 24rpx; padding: 36rpx; box-shadow: 0 8rpx 30rpx rgba(0,0,0,0.3); }
+.d-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
+.d-sub { font-size: 24rpx; color: var(--c-sub); line-height: 1.6; margin-bottom: 16rpx; }
+.d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
+.d-copy { background: var(--c-blue); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
 </style>

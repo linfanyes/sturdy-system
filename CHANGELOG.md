@@ -29,6 +29,19 @@
 - **废弃代码隔离**：将 `_deprecated_orphan_pages` 加入 .gitignore
 - **TypeORM 产物排除**：将 `server/dist/` 加入 .gitignore
 
+### 新增（Web / 小程序功能对齐）
+- **小游戏得分云端同步**：
+  - 后端新增 `game-scores` 模块（按教师租户隔离，幂等 upsert 最高分）+ 迁移 `0022_game_scores.sql`（root `migrations/`）。
+  - Web 端：`api/games.ts` 上报/查询接口 + `GamesIndex.vue` 得分榜 + `installGameScoreReporter` 全局自动上报（补丁 `Storage.setItem`，覆盖全部游戏，零侵入）。
+  - 小程序端：`common/game-score.js` + `useGame.submitScore` 自动上报 + 游戏索引得分榜。
+- **AI 对话历史**：
+  - 后端新增 `chat-sessions` 模块（会话增删改查 + 置顶 + 消息追加）+ 迁移 `0023_chat_sessions.sql`（root `migrations/`）。
+  - Web 端：`api/chat.ts` + `AiChat.vue` 新增会话历史侧栏（新对话/打开/置顶/删除）、自动持久化用户与 AI 消息。
+  - 小程序端：`common/chat-history.js` 将本地会话同步到后端，实现跨端历史打通。
+- **家长端补缺**：Web 新增家长「专项资源库」页面（古诗词/数学公式/英语单词，`/parent/resources`），家长看板新增「教材知识点」「专项资源库」快捷入口。
+- **小程序校管补缺**（对齐 Web 校管）：`school-admin.vue` 新增班级/学生批量导入（Excel/CSV + AI 识图）、班级升级（`/classes/:id/promote`）、班级/学生 XLS 导出入口。
+- **复用改造计划**：产出 `复用改造实施计划.md`（分 3 阶段，首推先统一本次新增的得分/会话两端 API 层）。
+
 ---
 
 ## [3.0.0] - 2025-08-01

@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Gamepad2 } from 'lucide-vue-next'
+import { Gamepad2, Trophy } from 'lucide-vue-next'
+import { fetchGameScores } from '@/api/games'
 
 const router = useRouter()
+const scores = ref<any[]>([])
+const showBoard = ref(false)
 
 interface GameItem {
   name: string
@@ -10,6 +14,21 @@ interface GameItem {
   desc: string
   route: string
   category: string
+}
+
+/** 加载当前教师的所有游戏最佳成绩（失败静默，榜单仅作为增强功能） */
+async function loadScores() {
+  try {
+    scores.value = await fetchGameScores()
+  } catch {
+    scores.value = []
+  }
+}
+onMounted(loadScores)
+
+/** 各游戏在榜单中的显示名（与 games 数组对齐，未命中回退 gameKey） */
+function scoreName(s: any): string {
+  return s.gameName || s.gameKey || '未知游戏'
 }
 
 const GAME_CATEGORIES: { label: string; icon: string }[] = [
@@ -80,9 +99,52 @@ function go(route: string) {
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-      <Gamepad2 class="w-7 h-7 text-butter-500" /> 小游戏合集
-    </h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
+        <Gamepad2 class="w-7 h-7 text-butter-500" /> 小游戏合集
+      </h1>
+      <button
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-butter-100 text-cocoa-700 hover:bg-butter-200 transition-colors text-sm font-medium"
+        @click="showBoard = !showBoard"
+      >
+        <Trophy class="w-4 h-4" /> {{ showBoard ? '收起榜单' : '我的得分榜' }}
+      </button>
+    </div>
+
+    <!-- 得分榜 -->
+    <div v-if="showBoard" class="bg-surface rounded-2xl p-5 shadow-softer">
+      <h2 class="text-base font-semibold text-cocoa-900 mb-3 flex items-center gap-2">
+        <Trophy class="w-5 h-5 text-butter-500" /> 游戏最佳成绩
+      </h2>
+      <div v-if="scores.length === 0" class="text-sm text-cocoa-400 py-4 text-center">
+        暂无成绩记录，去玩一局并刷新即可上榜 🎮
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-cocoa-400 border-b border-cream-200">
+              <th class="py-2 pr-4 font-medium">游戏</th>
+              <th class="py-2 pr-4 font-medium">最佳分</th>
+              <th class="py-2 pr-4 font-medium">最近分</th>
+              <th class="py-2 font-medium">游玩次数</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(s, i) in scores" :key="s.id" class="border-b border-cream-100">
+              <td class="py-2 pr-4 text-cocoa-800">
+                <span class="inline-flex items-center gap-2">
+                  <span class="text-butter-500 font-semibold w-5">{{ i + 1 }}</span>
+                  {{ scoreName(s) }}
+                </span>
+              </td>
+              <td class="py-2 pr-4 font-semibold text-cocoa-900">{{ s.bestScore }}</td>
+              <td class="py-2 pr-4 text-cocoa-600">{{ s.lastScore }}</td>
+              <td class="py-2 text-cocoa-600">{{ s.playCount }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <div v-for="cat in GAME_CATEGORIES" :key="cat.label" class="space-y-3">
       <div class="flex items-center gap-2">

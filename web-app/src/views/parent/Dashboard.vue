@@ -488,6 +488,22 @@ async function subscribeNotifications() {
       </router-link>
     </div>
 
+    <!-- 学习工具快捷入口 -->
+    <div class="flex flex-wrap gap-2">
+      <router-link
+        to="/parent/textbook"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-cream-200 text-sm font-medium text-cocoa-700 hover:bg-cream-50 transition-colors"
+      >
+        📖 教材知识点
+      </router-link>
+      <router-link
+        to="/parent/resources"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-cream-200 text-sm font-medium text-cocoa-700 hover:bg-cream-50 transition-colors"
+      >
+        🧰 专项资源库
+      </router-link>
+    </div>
+
     <!-- 错误/重试态（与小程序端一致） -->
     <div
       v-if="loadError"

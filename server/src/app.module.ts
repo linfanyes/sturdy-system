@@ -53,6 +53,8 @@ import { OnlineResourcesModule } from './online-resources/online-resources.modul
 import { FeatureModule } from './common/feature/feature.module'
 import { CacheModule } from './common/cache/cache.module'
 import { EvaluationModule } from './evaluation/evaluation.module'
+import { GameScoresModule } from './game-scores/game-scores.module'
+import { ChatHistoryModule } from './chat-history/chat-history.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -136,6 +138,8 @@ import { HealthController } from './health.controller'
     ClassOpsModule,
     GrowthModule,
     NotesModule,
+    GameScoresModule,
+    ChatHistoryModule,
     AwardModule,
     TeacherModule,
     AdminModule,
