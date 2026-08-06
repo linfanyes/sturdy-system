@@ -143,9 +143,31 @@ export function request(path, method = 'GET', data = {}, token) {
   })
 }
 
+/**
+ * 把对象序列化为 query string（?a=1&b=2）。
+ * - 过滤 undefined / null / 空字符串，避免污染后端
+ * - 值做 encodeURIComponent，支持中文
+ * - 兼容两种入参： queryString({ a: 1 }) 或 queryString({ params: { a: 1 } })
+ */
+function queryString(obj) {
+  if (!obj || typeof obj !== 'object') return ''
+  // 支持 api.get('/path', { params: { ... } }) 的包装写法
+  const src = obj.params && typeof obj.params === 'object' ? obj.params : obj
+  const parts = []
+  for (const k of Object.keys(src)) {
+    const v = src[k]
+    if (v === undefined || v === null || v === '') continue
+    parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
+  }
+  return parts.length ? '?' + parts.join('&') : ''
+}
+
 export const api = {
-  get: async (p) => {
-    const data = await request(p)
+  get: async (p, params) => {
+    // 支持直接传 query 对象 或 { params } 包装：api.get('/path', { params: { a: 1 } })
+    // 此前 api.get 只接受单参数，query 被静默丢弃，过滤/搜索失效 —— 这里修复
+    const path = p + (params ? queryString(params) : '')
+    const data = await request(path)
     // 兼容 { items, total } 格式：自动解包为数组（所有旧代码不感知）
     if (data && typeof data === 'object' && !Array.isArray(data) && Array.isArray(data.items)) {
       return data.items
