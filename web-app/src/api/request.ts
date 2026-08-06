@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { resolveApiBase, getRuntimeApiBase } from '@/config/apiBase'
 import { getViteEnvApiBase } from '@/config/viteEnv'
+import { isSessionInvalid } from '@gardener/shared/utils/security'
 
 /**
  * 全局 HTTP 封装：对接小程序后端（NestJS）。
@@ -64,8 +65,7 @@ instance.interceptors.response.use(
         // 后端部分接口把「权限不足/角色不符」也以 401 返回（如校管访问教师专属 /grades），
         // 这类 401 不该清 token 踢登录——否则一个无权限接口就会拖垮整个登录态。
         const msgText = typeof err.response?.data?.message === 'string' ? err.response.data.message : ''
-        const isSessionInvalid = /登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用/.test(msgText)
-        if (isSessionInvalid) {
+        if (isSessionInvalid(msgText)) {
           localStorage.removeItem('trace_web_token')
           localStorage.removeItem('trace_web_user')
           // 同步清空 Pinia store，避免守卫 isLoggedIn 仍为 true 导致踢登录被重定向循环拦截

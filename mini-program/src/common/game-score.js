@@ -3,22 +3,15 @@
  * - reportScore：把单局最高分上报到后端（幂等 upsert，失败静默，节流防抖）。
  * - fetchScores / fetchBest：查询当前教师的历史成绩（得分榜）。
  * 后端接口与 Web 端共用：POST/GET /game-scores（JwtAuthGuard 按教师租户隔离）。
+ *
+ * 【复用改造】gameKey→显示名映射、节流常量从 @gardener/shared 导入，
+ * 与 Web 端（web-app/src/api/games.ts）共用同一份事实来源。
+ * 路径常量 GAME_SCORES_PATHS 如需可解构使用。
  */
 import { api } from './request'
+import { GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/utils/game-mappings'
 
-// 键 → 显示名映射（用于榜单展示；未命中则直接用 gameKey）
-const NAME_BY_KEY = {
-  '2048': '2048', snake: '贪吃蛇', flappy: '像素鸟', whack: '打地鼠',
-  tetris: '俄罗斯方块', plane: '飞机大战', motorcycle: '极速摩托',
-  carCrash: '汽车躲避', tapblack: '别踩白块', breakout: '弹球打砖块',
-  catchcoin: '接金币', jump: '跳一跳', memory: '记忆翻牌',
-  puzzle: '数字华容道', sliding: '数字推盘', slidePuzzle: '图片拼图',
-  colormatch: '颜色匹配', colorReact: '颜色反应', match3: '消消乐',
-  dice: '摇骰子', '24point': '24点', sudoku: '数独', minesweeper: '扫雷',
-  gomoku: '五子棋', ticTacToe: '井字棋', sequence: '数字排序',
-}
-
-// 上报节流：同一游戏 6 秒内只上报一次，避免游戏内多次调用 submitScore 高频请求
+// 上报节流：同一游戏间隔内仅上报一次，避免游戏内多次调用 submitScore 高频请求
 const lastReport = {}
 
 /**
@@ -26,17 +19,16 @@ const lastReport = {}
  * 幂等（后端只增不减 bestScore），网络失败静默，不影响游戏体验。
  * @param {string} gameKey 游戏唯一标识
  * @param {number} score   当前分数
- * @param {string} [gameName] 显示名（可选，缺省用映射）
  */
 export function reportScore(gameKey, score) {
   if (!gameKey || !(score > 0)) return Promise.resolve()
   const now = Date.now()
-  if (lastReport[gameKey] && now - lastReport[gameKey] < 6000) return Promise.resolve()
+  if (lastReport[gameKey] && now - lastReport[gameKey] < GAME_SCORE_SUBMIT_THROTTLE_MS) return Promise.resolve()
   lastReport[gameKey] = now
   return api
     .post('/game-scores', {
       gameKey,
-      gameName: NAME_BY_KEY[gameKey] || gameKey,
+      gameName: GAME_KEY_TO_NAME[gameKey] || gameKey,
       score: Math.floor(score),
     })
     .catch(() => {}) // 静默

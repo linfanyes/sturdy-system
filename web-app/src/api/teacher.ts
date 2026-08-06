@@ -1,4 +1,5 @@
 import request, { getApiBase } from './request'
+import { parseSSELn } from '@gardener/shared/utils/sse-parser'
 
 /**
  * 教师端 API 封装：对接小程序后端统一 CRUD 接口（base.controller.ts 模式）。
@@ -373,9 +374,10 @@ export async function aiChatStream(
     const lines = buf.split('\n')
     buf = lines.pop() || ''
     for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      const data = line.slice(6).trim()
-      if (data === '[DONE]') continue
+      // 共享 SSE 行解析：剥离 "data: " 前缀 + 识别 [DONE] 终止标记
+      const { data, done: evDone } = parseSSELn(line)
+      if (evDone) continue
+      if (data == null) continue
       try {
         const obj = JSON.parse(data)
         if (obj.delta) onDelta(obj.delta)

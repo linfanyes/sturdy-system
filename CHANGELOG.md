@@ -29,6 +29,15 @@
 - **废弃代码隔离**：将 `_deprecated_orphan_pages` 加入 .gitignore
 - **TypeORM 产物排除**：将 `server/dist/` 加入 .gitignore
 
+### 重构（复用改造阶段 2：跨端 API 层统一）
+- **shared/api/endpoints.ts**：后端端点契约集中化 —— game-scores（submit/list/byKey）+ chat-sessions（create/list/byId/messages/pin/remove）端点路径常量 + 请求/响应 DTO 类型。Web 端 `web-app/src/api/games.ts`、`chat.ts` 改为从 shared 导入（适配器层仍走 request，行为零变化）。
+- **shared/utils/sse-parser.ts**：新增 `createSSEParser` + `parseSSELn`，统一 SSE 分片解析 + `[DONE]` 协议。Web 端 `teacher.ts::aiChatStream` 的内联逐行解析已替换为 `parseSSELn`；小程序端 `request.js::streamChat::feed()` 留后续对接。
+- **shared/utils/security.ts**：导出 `isSessionInvalid(msgText)` 函数（"登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用"正则）。Web `request.ts` 和 mini `request.js` 两端 401 会话失效判断统一调用此函数，消除正则字面量漂移。
+- **shared/utils/game-mappings.ts + game-helpers.ts**：gameKey→显示名权威映射（35+ 游戏）+ `GAME_SCORE_SUBMIT_THROTTLE_MS`（5000ms）+ `rand/shuffle/clamp/fmtTime/createThrottle` 通用工具。小程序 `common/game-score.js` 已切换从 shared 导入。
+- **shared/utils/student.ts + general.ts**：`defaultParentPassword(studentNo)` + `safeParse/isNotNull/delay/deepClone` 等通用工具，后续步骤继续接入两端。
+- **shared/index.ts / package.json / tsconfig.json**：导出映射新增 `api/*` 和 `utils/*` 子路径；tsconfig include 扩容。
+- 小程序端 `chat-history.js` 的本地会话同步逻辑保留不动（行为零变化）；`util.js::safeParse` 因行为差异保留不动，待阶段 3 统一。
+
 ### 新增（Web / 小程序功能对齐）
 - **小游戏得分云端同步**：
   - 后端新增 `game-scores` 模块（按教师租户隔离，幂等 upsert 最高分）+ 迁移 `0022_game_scores.sql`（root `migrations/`）。

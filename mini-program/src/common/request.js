@@ -1,5 +1,6 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
 import { getToken, logout, auth, parent } from './store'
+import { isSessionInvalid } from '@gardener/shared/utils/security'
 // 演示模式 mock 数据仅在开发/预览构建（DEV）中被引用：
 // 生产构建（PROD）经 uni-app 条件编译剔除该 import，mock 模块零引用、不进发布包。
 // #ifdef DEV
@@ -116,8 +117,7 @@ export function request(path, method = 'GET', data = {}, token) {
             // 后端部分接口把「权限不足/角色不符」也以 401 返回（如校管访问教师专属 /grades），
             // 这类 401 不该清登录态——否则一个无权限接口就会把用户强制登出。
             const msgText = typeof msg === 'string' ? msg : ''
-            const isSessionInvalid = /登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用/.test(msgText)
-            if (isSessionInvalid) {
+            if (isSessionInvalid(msgText)) {
               try { logout() } catch (e) { console.error('[mini catch]', e) }
               uni.reLaunch({ url: '/pages/login/login' })
             }
