@@ -46,7 +46,12 @@ export class JwtAuthGuard implements CanActivate {
     let payload: any
     try {
       payload = this.jwt.verify(token)
-    } catch {
+    } catch (e: any) {
+      // 多实例部署时 JWT_SECRET 不一致会触发此类错误，增加日志帮助排查
+      if (process.env.NODE_ENV === 'production') {
+        // eslint-disable-next-line no-console
+        console.warn('[JWT] 校验失败:', e?.message?.slice(0, 100), 'token 前 16 位:', token.slice(0, 16))
+      }
       throw new UnauthorizedException('登录已过期，请重新登录')
     }
 
