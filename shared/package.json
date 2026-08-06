@@ -1,7 +1,7 @@
 {
   "name": "@gardener/shared",
   "version": "1.0.0",
-  "description": "Techer 共享类型、常量、校验器 - Web端、小程序端、后端服务的单一事实来源",
+  "description": "Techer 共享类型、常量、校验器、端点契约、跨端工具 — Web 端、小程序端、后端服务的单一事实来源",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -22,6 +22,34 @@
     "./validators": {
       "import": "./dist/validators/index.js",
       "types": "./dist/validators/index.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api/index.js",
+      "types": "./dist/api/index.d.ts"
+    },
+    "./api/endpoints": {
+      "import": "./dist/api/endpoints.js",
+      "types": "./dist/api/endpoints.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    },
+    "./utils/sse-parser": {
+      "import": "./dist/utils/sse-parser.js",
+      "types": "./dist/utils/sse-parser.d.ts"
+    },
+    "./utils/game-helpers": {
+      "import": "./dist/utils/game-helpers.js",
+      "types": "./dist/utils/game-helpers.d.ts"
+    },
+    "./utils/game-mappings": {
+      "import": "./dist/utils/game-mappings.js",
+      "types": "./dist/utils/game-mappings.d.ts"
+    },
+    "./utils/security": {
+      "import": "./dist/utils/security.js",
+      "types": "./dist/utils/security.d.ts"
     }
   },
   "scripts": {
@@ -34,7 +62,9 @@
     "shared",
     "types",
     "constants",
-    "validators"
+    "validators",
+    "api",
+    "utils"
   ],
   "license": "MIT",
   "devDependencies": {

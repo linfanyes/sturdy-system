@@ -29,7 +29,9 @@
     "index.ts",
     "constants/**/*.ts",
     "types/**/*.ts",
-    "validators/**/*.ts"
+    "validators/**/*.ts",
+    "api/**/*.ts",
+    "utils/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }
