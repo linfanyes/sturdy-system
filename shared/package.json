@@ -90,6 +90,22 @@
     "./schemas/quicktool-schema": {
       "import": "./dist/schemas/quicktool-schema.js",
       "types": "./dist/schemas/quicktool-schema.d.ts"
+    },
+    "./games": {
+      "import": "./dist/games/index.js",
+      "types": "./dist/games/index.d.ts"
+    },
+    "./games/snake": {
+      "import": "./dist/games/snake.js",
+      "types": "./dist/games/snake.d.ts"
+    },
+    "./games/game2048": {
+      "import": "./dist/games/game2048.js",
+      "types": "./dist/games/game2048.d.ts"
+    },
+    "./games/sudoku": {
+      "import": "./dist/games/sudoku.js",
+      "types": "./dist/games/sudoku.d.ts"
     }
   },
   "scripts": {

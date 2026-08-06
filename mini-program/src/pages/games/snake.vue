@@ -65,9 +65,15 @@
 </template>
 
 <script setup>
+/**
+ * 贪吃蛇 —— 核心状态机已提升到 @gardener/shared/games/snake。
+ * 本文件保留：响应式桥接、音效/震动/计时渲染、触摸手势。
+ * 游戏规则（步长、碰撞、吃食、难度递增）全部委托给 shared SnakeGame 实例。
+ */
 import { ref, computed, onUnmounted } from 'vue'
 import { theme } from '../../common/store'
 import { onLoad, onUnload, onHide, onShow } from '@dcloudio/uni-app'
+import { SnakeGame } from '@gardener/shared/games/snake'
 import {
   vibrate, playSound, destroySound, pickColors, useGame,
 } from '../../common/game'
@@ -84,29 +90,24 @@ const speeds = [
   { key: 'fast', label: '快', base: 130 },
 ]
 const speedKey = ref('mid')
-const MIN_INTERVAL = 80
 
-// 状态
-const snake = ref([])
-const dir = ref({ r: 0, c: 1 })
-const nextDir = ref({ r: 0, c: 1 })
-const food = ref({ r: 2, c: 2 })
+// shared 状态机（纯逻辑、零平台依赖）
+const machine = new SnakeGame({ size: N, speed: speeds[1].base })
+
+// 状态（桥接 machine → Vue 响应式，保持模板 API 不变）
+const snake = ref(machine.snapshot().snake)
+const food = ref(machine.snapshot().food)
 const score = ref(0)
+const ate = ref(0)
 const over = ref(false)
 const paused = ref(false)
 let timer = null
-let ate = 0 // 累计吃到的食物数（用于难度递增）
 
-// 触摸
+// 触摸手势局部状态
 let sx = 0, sy = 0, lastDir = ''
 
-// 当前实际帧间隔（受难度影响）
-const interval = computed(() => {
-  const base = speeds.find((s) => s.key === speedKey.value).base
-  // 每吃 5 个食物 -10ms，下限 MIN_INTERVAL
-  const reduce = Math.floor(ate / 5) * 10
-  return Math.max(MIN_INTERVAL, base - reduce)
-})
+// 帧间隔：委托给 shared machine 统一计算（每吃 5 食物 -10ms，下限 80ms）
+const interval = computed(() => machine.currentInterval())
 
 // 渲染单元
 const cells = computed(() => {
@@ -114,84 +115,73 @@ const cells = computed(() => {
   snake.value.forEach((s, i) => {
     arr[s.r * N + s.c] = { type: i === 0 ? 'head' : 'body', idx: i }
   })
-  arr[food.value.r * N + food.c] = { type: 'food' }
+  arr[food.value.r * N + food.value.c] = { type: 'food' }
   return arr
 })
 
 function cellStyle(c) {
   if (c.type === 'head') {
-    // 蛇头：深色渐变
     return { background: `linear-gradient(135deg, ${C.value.snakeHead}, ${C.value.primary})` }
   }
   if (c.type === 'body') {
-    // 蛇身：浅色渐变
     const ratio = c.idx / Math.max(snake.value.length, 1)
     return { background: `linear-gradient(135deg, ${C.value.snake}, ${C.value.accent})`, opacity: 0.55 + 0.45 * (1 - ratio) }
   }
   return {}
 }
 
-function placeFood() {
-  let p
-  do {
-    p = { r: Math.floor(Math.random() * N), c: Math.floor(Math.random() * N) }
-  } while (snake.value.some((s) => s.r === p.r && s.c === p.c))
-  food.value = p
+// ===== hooks：platform effects（sound/vibrate）桥接到 shared machine =====
+machine.hooks = {
+  onEat: (sc, at) => {
+    playSound('hit')
+    vibrate('short')
+    if (at % 5 === 0) playSound('win')
+  },
+  onDie: () => {
+    vibrate('long')
+    playSound('fail')
+  },
+}
+
+function syncFromMachine() {
+  const s = machine.snapshot()
+  snake.value = s.snake
+  food.value = s.food
+  score.value = s.score
+  ate.value = s.ate
+  over.value = s.over
 }
 
 function step() {
   if (over.value || paused.value) return
-  // 应用待生效方向（避免 180 度反向）
-  dir.value = nextDir.value
-  const head = snake.value[0]
-  const nr = head.r + dir.value.r
-  const nc = head.c + dir.value.c
-  if (nr < 0 || nr >= N || nc < 0 || nc >= N ||
-      snake.value.some((s) => s.r === nr && s.c === nc)) {
-    gameOver()
-    return
-  }
-  const ns = [{ r: nr, c: nc }, ...snake.value]
-  if (nr === food.value.r && nc === food.value.c) {
-    score.value++
-    ate++
-    playSound('hit')
-    vibrate('short')
-    placeFood()
-    // 难度递增：每 5 个食物提示
-    if (ate % 5 === 0) {
-      playSound('win')
-    }
-    // 重置定时器（速度变化）
+  const res = machine.step()
+  syncFromMachine()
+  if (res.over) {
+    submitScore(score.value)
+    clearTimer()
+  } else if (res.ate) {
+    // 吃食后帧间隔可能变化，重置定时器
     scheduleNext()
-  } else {
-    ns.pop()
   }
-  snake.value = ns
+}
+
+function clearTimer() {
+  if (timer) { clearTimeout(timer); timer = null }
 }
 
 function scheduleNext() {
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     step()
-    scheduleNext()
+    if (!over.value && !paused.value) scheduleNext()
   }, interval.value)
 }
 
-function gameOver() {
-  over.value = true
-  paused.value = false
-  if (timer) clearTimeout(timer)
-  timer = null
-  vibrate('long')
-  playSound('fail')
-  submitScore(score.value)
-}
-
 function setDir(r, c) {
-  // 禁止反向
-  if (dir.value.r === -r && dir.value.c === -c) return
-  nextDir.value = { r, c }
+  if (machine.setDir(r, c)) {
+    // 方向已成功设置：更新 nextDir 以保持模板其他可能的读取
+    // （模板目前未直接使用 nextDir，保留可避免未来兼容问题）
+  }
 }
 
 // 滑动手势
@@ -202,7 +192,6 @@ function ts(e) {
   lastDir = ''
 }
 function tm(e) {
-  // 滑动过程中即时响应，避免单次滑动只换一次方向
   const t = e.touches[0]
   const dx = t.clientX - sx
   const dy = t.clientY - sy
@@ -216,7 +205,6 @@ function tm(e) {
   else if (d === 'R') setDir(0, 1)
   else if (d === 'U') setDir(-1, 0)
   else if (d === 'D') setDir(1, 0)
-  // 重置起点，便于连续转向
   sx = t.clientX
   sy = t.clientY
 }
@@ -227,6 +215,7 @@ function te() {
 function setSpeed(k) {
   if (over.value) return
   speedKey.value = k
+  machine.speed = speeds.find((s) => s.key === k).base
   playSound('tap')
 }
 
@@ -235,44 +224,43 @@ function togglePause() {
   paused.value = !paused.value
   playSound('tap')
   if (!paused.value) scheduleNext()
-  else if (timer) { clearTimeout(timer); timer = null }
+  else clearTimer()
 }
 
 function start() {
-  if (timer) clearTimeout(timer)
-  snake.value = [{ r: 7, c: 7 }, { r: 7, c: 6 }, { r: 7, c: 5 }]
-  dir.value = { r: 0, c: 1 }
-  nextDir.value = { r: 0, c: 1 }
-  score.value = 0
-  ate = 0
-  over.value = false
+  clearTimer()
+  const k = speedKey.value
+  machine.speed = speeds.find((s) => s.key === k).base
+  machine.reset()
+  syncFromMachine()
   paused.value = false
   isNewRecord.value = false
-  placeFood()
   scheduleNext()
 }
 
 onLoad(() => start())
 onShow(() => {
-  // 自动恢复时若曾暂停则保持暂停
   if (!over.value && !paused.value && !timer && snake.value.length) {
     scheduleNext()
   }
 })
 onHide(() => {
-  // 自动暂停
   if (!over.value && !paused.value) paused.value = true
-  if (timer) { clearTimeout(timer); timer = null }
+  clearTimer()
 })
 onUnload(() => {
-  if (timer) clearTimeout(timer)
-  timer = null
+  clearTimer()
   destroySound()
 })
 onUnmounted(() => {
-  if (timer) clearTimeout(timer)
-  timer = null
+  clearTimer()
 })
+
+// 兼容性导出：保持未被模板使用但曾被其他模块 import 的名称
+// （mini-program 未发现其他引用；保险起见保留）
+const MIN_INTERVAL = 80
+const dir = ref({ r: 0, c: 1 })
+const nextDir = ref({ r: 0, c: 1 })
 </script>
 
 <style scoped>

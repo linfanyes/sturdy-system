@@ -74,8 +74,14 @@
 </template>
 
 <script setup>
+/**
+ * 2048 —— 核心状态机已提升到 @gardener/shared/games/game2048。
+ * 本文件保留：响应式桥接、合并动画计时、音效、撤销UI。
+ * 合并/滑动/死局检测/undo 全部委托给 shared Game2048 实例。
+ */
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { Game2048 } from '@gardener/shared/games/game2048'
 import { theme } from '../../common/store'
 import { pickColors, useGame, vibrate, playSound, destroySound } from '../../common/game'
 
@@ -88,17 +94,20 @@ const diffs = [
   { size: 5, label: '5×5 大师' },
 ]
 const size = ref(4)
-const board = ref([])
+
+// shared 状态机（size 不可动态变，diff 切换时重建）
+let machine = new Game2048({ size: 4 })
+
+// 响应式镜像（保持模板 API 不变）
+const board = ref(cloneBoard(machine.board))
 const score = ref(0)
 const over = ref(false)
-const history = ref([]) // 撤销栈，最多 5 步
-const flat = ref([]) // 渲染用扁平数组 [{v, merged}]
+const history = ref([])
+const flat = ref(syncFlat(machine))
 let sx = 0, sy = 0
 
-// 棋盘宽度响应式
 const boardW = computed(() => size.value === 4 ? 'min(630rpx, 92vw)' : 'min(700rpx, 94vw)')
 
-// 数字 → 配色（橙→红→紫渐变）
 const TILE_COLORS = {
   2: { bg: '#eee4da', fg: '#3a3a3a' },
   4: { bg: '#ede0c8', fg: '#3a3a3a' },
@@ -114,7 +123,6 @@ const TILE_COLORS = {
   4096: { bg: '#9b59b6', fg: '#fff' },
   8192: { bg: '#7d3c98', fg: '#fff' },
 }
-
 function tileStyle(v) {
   const t = TILE_COLORS[v] || { bg: '#5b2c6f', fg: '#fff' }
   return {
@@ -124,157 +132,69 @@ function tileStyle(v) {
   }
 }
 
-function clone(b) { return b.map((r) => r.slice()) }
-
-/** 初始化棋盘 */
-function init() {
-  const b = Array.from({ length: size.value }, () => Array(size.value).fill(0))
-  addRand(b); addRand(b)
-  board.value = b
-  score.value = 0
-  over.value = false
-  history.value = []
-  isNewRecord.value = false
-  sync()
-}
-
-/** 随机添加新数字 */
-function addRand(b) {
-  const e = []
-  for (let i = 0; i < size.value; i++)
-    for (let j = 0; j < size.value; j++)
-      if (b[i][j] === 0) e.push([i, j])
-  if (!e.length) return
-  const [i, j] = e[Math.floor(Math.random() * e.length)]
-  b[i][j] = Math.random() < 0.9 ? 2 : 4
-}
-
-/** 同步 board → flat 渲染数组 */
-function sync(mergedSet) {
-  const f = []
-  for (let i = 0; i < size.value; i++)
-    for (let j = 0; j < size.value; j++)
-      f.push({ v: board.value[i][j], merged: !!(mergedSet && mergedSet.has(i * size.value + j)) })
-  flat.value = f
-  // 触发动画：merged 状态会在下次 sync 时清除
-  if (mergedSet && mergedSet.size) {
-    setTimeout(() => {
-      const cur = flat.value.map((x) => ({ v: x.v, merged: false }))
-      flat.value = cur
-    }, 120)
-  }
-}
-
-/**
- * 执行移动
- * @param {number} dir 1上 2下 3左 4右
- */
-function move(dir) {
-  if (over.value) return
-  const b = clone(board.value)
-  let gained = 0
-  const mergedSet = new Set()
-  const N = size.value
-
-  const getLine = (i) => {
-    if (dir === 3) return b[i]
-    if (dir === 4) return b[i].slice().reverse()
-    if (dir === 1) return b.map((r) => r[i])
-    return b.map((r) => r[i]).reverse()
-  }
-  const setLine = (i, line) => {
-    if (dir === 3) b[i] = line
-    else if (dir === 4) b[i] = line.reverse()
-    else if (dir === 1) for (let k = 0; k < N; k++) b[k][i] = line[k]
-    else for (let k = 0; k < N; k++) b[N - 1 - k][i] = line[k]
-  }
-  const compress = (line, lineIdx) => {
-    let arr = line.filter((x) => x)
-    for (let k = 0; k < arr.length - 1; k++) {
-      if (arr[k] === arr[k + 1]) {
-        arr[k] *= 2
-        gained += arr[k]
-        // 记录合并位置用于动画
-        const origPositions = line.map((v, idx) => ({ v, idx })).filter((x) => x.v !== 0)
-        // 合并发生在结果数组的第 k 位，对应目标行/列第 k 个位置
-        mergedSet.add(lineIdx * N + k)
-        arr.splice(k + 1, 1)
-      }
-    }
-    while (arr.length < N) arr.push(0)
-    return arr
-  }
-
-  for (let i = 0; i < N; i++) setLine(i, compress(getLine(i), i))
-
-  const changed = JSON.stringify(b) !== JSON.stringify(board.value)
-  if (!changed) return
-
-  // 推入撤销栈（最多 5 步）
-  history.value.push({ b: clone(board.value), s: score.value })
-  if (history.value.length > 5) history.value.shift()
-
-  board.value = b
-  if (gained > 0) {
-    score.value += gained
-    playSound('hit')
-    vibrate('short')
-  } else {
-    playSound('tap')
-  }
-  addRand(board.value)
-  sync(mergedSet)
-  checkOver()
-}
-
-/** 检测死局 */
-function checkOver() {
-  const N = size.value
+function cloneBoard(b) { return b.map((r) => r.slice()) }
+function syncFlat(m) {
+  const N = m.size
+  const arr = []
   for (let i = 0; i < N; i++)
     for (let j = 0; j < N; j++)
-      if (board.value[i][j] === 0) return
-  for (let i = 0; i < N; i++)
-    for (let j = 0; j < N; j++) {
-      const v = board.value[i][j]
-      if (j < N - 1 && board.value[i][j + 1] === v) return
-      if (i < N - 1 && board.value[i + 1][j] === v) return
-    }
-  over.value = true
-  playSound('fail')
-  vibrate('long')
-  submitScore(score.value)
+      arr.push({ v: m.board[i][j], merged: m.lastMerged.has(i * N + j) })
+  return arr
+}
+function reSyncAll() {
+  board.value = cloneBoard(machine.board)
+  score.value = machine.score
+  over.value = machine.over
+  history.value = machine.historyList.slice()
+  flat.value = syncFlat(machine)
 }
 
-/** 撤销一步 */
+/** 滑动方向（与 shared Game2048 对齐） */
+function move(dir) {
+  if (machine.over) return
+  const res = machine.move(dir)
+  if (!res.moved) return
+  reSyncAll()
+  if (res.gained > 0) { playSound('hit'); vibrate('short') }
+  else playSound('tap')
+  if (res.over) { playSound('fail'); vibrate('long'); submitScore(score.value) }
+  // 合并动画：120ms 后清除 merged 标记
+  if (res.mergedCells.size) {
+    setTimeout(() => { machine.clearMerged(); flat.value = syncFlat(machine) }, 120)
+  }
+}
+
 function undo() {
-  if (!history.value.length || over.value) return
-  const last = history.value.pop()
-  board.value = last.b
-  score.value = last.s
-  sync()
-  playSound('tap')
+  if (!history.value.length || machine.over) return
+  if (machine.undo()) { reSyncAll(); playSound('tap') }
 }
 
-/** 滑动手势 */
 function ts(e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY }
 function te(e) {
   const dx = e.changedTouches[0].clientX - sx
   const dy = e.changedTouches[0].clientY - sy
   if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return
-  if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 4 : 3)
-  else move(dy > 0 ? 2 : 1)
+  if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 'right' : 'left')
+  else move(dy > 0 ? 'down' : 'up')
 }
 
 function changeDiff(s) {
   if (s === size.value) return
   size.value = s
-  reset()
+  machine = new Game2048({ size: s })
+  init()
+}
+
+function init() {
+  machine.reset()
+  reSyncAll()
+  isNewRecord.value = false
 }
 
 function reset() { init() }
 
 onLoad(() => init())
-onUnload(() => destroySound())
+onUnload(() => { machine.clearHistory(); destroySound() })
 </script>
 
 <style scoped>

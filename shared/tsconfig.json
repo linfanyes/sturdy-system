@@ -32,7 +32,8 @@
     "api/**/*.ts",
     "auth/**/*.ts",
     "utils/**/*.ts",
-    "schemas/**/*.ts"
+    "schemas/**/*.ts",
+    "games/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -86,14 +86,19 @@
 </template>
 
 <script setup>
+/**
+ * 数独 —— 核心状态机已提升到 @gardener/shared/games/sudoku。
+ * 本文件保留：响应式桥接、计时/暂停、cellClass/cellStyle UI、音效。
+ * 校验/求解/笔记/通关判定全部委托给 shared Sudoku 实例。
+ */
 import { ref, computed, onUnmounted } from 'vue'
 import { onLoad, onUnload, onHide } from '@dcloudio/uni-app'
+import { Sudoku } from '@gardener/shared/games/sudoku'
 import { theme } from '../../common/store'
 import { pickColors, vibrate, playSound, destroySound, fmtTime, useGame } from '../../common/game'
 
 const dark = computed(() => theme.mode === 'dark')
 const c = computed(() => pickColors(dark.value))
-// 通关次数累计（数独无传统"分数"，用通关次数代替）
 const { best: solvedCount, submitScore: addSolved } = useGame('sudoku')
 
 const diffs = [
@@ -104,10 +109,14 @@ const diffs = [
 const diff = ref(45)
 const diffLabel = computed(() => diffs.find((d) => d.holes === diff.value)?.label || '中等')
 
-const puzzle = ref(Array(81).fill(0)) // 初始题面（固定）
-const solution = ref(Array(81).fill(0)) // 完整解
-const show = ref(Array(81).fill(0)) // 当前显示
-const notes = ref(Array.from({ length: 81 }, () => [])) // 候选数字
+// shared 状态机（hole 数可在运行时切换）
+let machine = new Sudoku({ holes: 45 })
+
+// 响应式镜像
+const puzzle = ref(machine.puzzle.slice())
+const solution = ref(machine.solution.slice())
+const show = ref(machine.current.slice())
+const notes = ref(machine.notes.map((arr) => arr.slice()))
 const bad = ref(Array(81).fill(false))
 const sel = ref(-1)
 const status = ref('点击空格 → 选数字')
@@ -117,7 +126,16 @@ const elapsed = ref(0)
 const startedAt = ref(0)
 let timer = null
 
-/** 启动计时 */
+function syncFromMachine() {
+  puzzle.value = machine.puzzle.slice()
+  solution.value = machine.solution.slice()
+  show.value = machine.current.slice()
+  notes.value = machine.notes.map((arr) => arr.slice())
+  bad.value = machine.bad.slice()
+  sel.value = machine.sel
+  noteMode.value = machine.noteMode
+}
+
 function startTimer() {
   stopTimer()
   startedAt.value = Date.now() - elapsed.value
@@ -127,7 +145,6 @@ function startTimer() {
 }
 function stopTimer() { if (timer) { clearInterval(timer); timer = null } }
 
-/** 切换暂停 */
 function togglePause() {
   if (paused.value) {
     startedAt.value = Date.now() - elapsed.value
@@ -137,148 +154,74 @@ function togglePause() {
   }
 }
 
-/** 数独回溯求解 */
-function solve(grid) {
-  for (let i = 0; i < 81; i++) {
-    if (grid[i] === 0) {
-      const r = Math.floor(i / 9), col = i % 9
-      const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5)
-      for (const n of nums) {
-        if (isValid(grid, r, col, n)) {
-          grid[i] = n
-          if (solve(grid)) return true
-          grid[i] = 0
-        }
-      }
-      return false
-    }
-  }
-  return true
-}
-function isValid(grid, r, col, n) {
-  for (let k = 0; k < 9; k++) {
-    if (grid[r * 9 + k] === n) return false
-    if (grid[k * 9 + col] === n) return false
-  }
-  const br = Math.floor(r / 3) * 3, bc = Math.floor(col / 3) * 3
-  for (let i = 0; i < 3; i++)
-    for (let j = 0; j < 3; j++)
-      if (grid[(br + i) * 9 + (bc + j)] === n) return false
-  return true
-}
-
-/** 生成题目 */
 function gen() {
-  const grid = Array(81).fill(0)
-  solve(grid)
-  solution.value = grid.slice()
-  // 随机挖空
-  const idx = [...Array(81).keys()].sort(() => Math.random() - 0.5)
-  for (let k = 0; k < diff.value; k++) grid[idx[k]] = 0
-  puzzle.value = grid.slice()
-  show.value = grid.slice()
-  notes.value = Array.from({ length: 81 }, () => [])
-  bad.value = Array(81).fill(false)
-  sel.value = -1
+  machine.holes = diff.value
+  machine.reset()
+  syncFromMachine()
   status.value = '点击空格 → 选数字'
   elapsed.value = 0
   startTimer()
 }
 
-/** 选中格子 */
 function pick(i) {
   if (paused.value) return
+  machine.select(i)
   sel.value = i
   playSound('tap')
 }
 
-/** 填数字 */
 function fill(n) {
   if (paused.value || sel.value < 0) return
-  const i = sel.value
-  if (puzzle.value[i] !== 0) return
-
-  if (noteMode.value && n !== 0) {
-    // 笔记模式：切换候选
-    const arr = notes.value[i]
-    const idx = arr.indexOf(n)
-    if (idx >= 0) arr.splice(idx, 1)
-    else arr.push(n)
-    playSound('tap')
-    return
-  }
-
-  show.value[i] = n
-  notes.value[i] = []
+  const cur = machine.fill(n)
+  if (!cur.ok) return
+  syncFromMachine()
   if (n === 0) {
-    bad.value[i] = false
     playSound('tap')
     return
   }
-  // 即时校验
-  if (n === solution.value[i]) {
-    bad.value[i] = false
-    playSound('hit')
-    vibrate('short')
-    // 检查是否完成
-    if (show.value.every((v, k) => v === solution.value[k])) {
-      stopTimer()
-      playSound('win')
-      vibrate('long')
-      status.value = `🎉 通关！用时 ${fmtTime(elapsed.value)}`
-      addSolved(solvedCount.value + 1)
-    }
-  } else {
-    bad.value[i] = true
+  if (machine.noteMode) {
+    playSound('tap')
+    return
+  }
+  if (cur.solved) {
+    stopTimer()
+    playSound('win')
+    vibrate('long')
+    status.value = `🎉 通关！用时 ${fmtTime(elapsed.value)}`
+    addSolved(solvedCount.value + 1)
+  } else if (cur.mismatch) {
     playSound('fail')
     vibrate('short')
     status.value = '这个数字不对'
+  } else {
+    playSound('hit')
+    vibrate('short')
   }
 }
 
-/** 检查全局 */
 function check() {
-  let wrong = 0
-  for (let i = 0; i < 81; i++) {
-    if (puzzle.value[i] === 0) {
-      if (show.value[i] !== 0 && show.value[i] !== solution.value[i]) {
-        bad.value[i] = true
-        wrong++
-      }
-    }
-  }
-  status.value = wrong === 0 ? '已填部分全部正确' : `发现 ${wrong} 处错误`
-  if (wrong === 0) playSound('hit')
+  const res = machine.check()
+  syncFromMachine()
+  status.value = res.wrong === 0 ? '已填部分全部正确' : `发现 ${res.wrong} 处错误`
+  if (res.wrong === 0) playSound('hit')
   else playSound('fail')
 }
 
-/** 切换笔记模式 */
 function toggleNote() {
-  noteMode.value = !noteMode.value
+  machine.toggleNoteMode()
+  noteMode.value = machine.noteMode
   playSound('tap')
 }
 
-/** 计算 cell 高亮 class */
 function cellClass(i) {
   return {
     fixed: puzzle.value[i] !== 0,
     sel: sel.value === i,
-    related: isRelated(i),
+    related: machine.isRelated(i),
     bad: bad.value[i],
   }
 }
 
-/** 是否与选中格同行同列同宫 */
-function isRelated(i) {
-  if (sel.value < 0 || i === sel.value) return false
-  const r1 = Math.floor(sel.value / 9), c1 = sel.value % 9
-  const r2 = Math.floor(i / 9), c2 = i % 9
-  if (r1 === r2 || c1 === c2) return true
-  if (Math.floor(r1 / 3) === Math.floor(r2 / 3) && Math.floor(c1 / 3) === Math.floor(c2 / 3)) return true
-  return false
-}
-
-/** cell 样式：含 3×3 分隔线 */
 function cellStyle(i) {
   const r = Math.floor(i / 9), col = i % 9
   const border = `2rpx solid ${c.value.border}`

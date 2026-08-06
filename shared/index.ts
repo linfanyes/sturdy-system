@@ -24,5 +24,8 @@ export * from './auth/index.js'
 // 跨端 schema 配置（CRUD / 学科工具 / 快捷工具）
 export * from './schemas/index.js'
 
+// 跨端游戏状态机（snake / 2048 / sudoku）—— 纯函数，两端各自渲染
+export * from './games/index.js'
+
 // 显式转发 constants 的三个类型，消除与 types star 导出的同名歧义（constants 为权威来源）
 export type { Role, SubjectOption, RoleOption } from './constants/index.js'
