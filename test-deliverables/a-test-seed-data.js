@@ -23,7 +23,10 @@ async function seed() {
     'attendances', 'resources', 'lesson_observations', 'work_logs',
     'lesson_plan_templates', 'award_records', 'award_categories', 'group_scores',
     'behavior_records', 'growth_entries', 'notes', 'todos', 'reward_records',
-    'score_records']
+    'score_records', 'class_members', 'class_activities', 'class_expenses',
+    'duty_rosters', 'class_duty_configs', 'class_galleries', 'my_galleries',
+    'parent_contacts', 'picker_history', 'reading_logs', 'checkins',
+    'seat_layouts', 'student_parents']
   for (const t of tables) {
     await conn.execute(`DELETE FROM \`${t}\``)
   }
@@ -92,6 +95,20 @@ async function seed() {
   const classB = classes[1] // 二年级二班 - tLi.id
   console.log(`📚 班级: ${classA.name} (班主任:王老师), ${classB.name} (班主任:李老师)`)
 
+  // ---- 4.1 班级成员关系（class_members）：班主任 head + 科任 subject，按学期隔离 ----
+  // 注意：class_members 有唯一索引 (teacherId, classId, term)，重复执行会因清理表已删除旧数据而安全
+  const CM = (teacherId, classId, className, role, subjects, term) =>
+    conn.execute(`INSERT INTO class_members (id, teacherId, classId, className, role, subjects, term) VALUES
+      (UUID(), ?, ?, ?, ?, ?, ?)`, [teacherId, classId, className, role, JSON.stringify(subjects), term])
+  const TERM = '2026学年'
+  await CM(tWang.id, classA.id, classA.name, 'head', ['语文','数学'], TERM)   // 王老师 班主任 一年级一班
+  await CM(tLi.id, classB.id, classB.name, 'head', ['数学','英语'], TERM)     // 李老师 班主任 二年级二班
+  await CM(tZhang.id, classA.id, classA.name, 'subject', ['英语','科学'], TERM) // 张老师 科任 一年级一班
+  await CM(tChen.id, classA.id, classA.name, 'subject', ['音乐','美术'], TERM)  // 陈老师 科任 一年级一班
+  await CM(tZhang.id, classB.id, classB.name, 'subject', ['英语'], TERM)        // 张老师 科任 二年级二班
+  await CM(tWang.id, classB.id, classB.name, 'subject', ['语文'], TERM)         // 王老师 兼科任 二年级二班
+  console.log('👥 班级成员关系: class_members 写入完成（head 2 条 + subject 4 条）')
+
   // ---- 5. 学生 ----
   const studentsData = [
     // 班级A 6名学生（含家长）
@@ -109,9 +126,9 @@ async function seed() {
   ]
   for (const [cid, tid, name, gender, sno, pn, pp, ple] of studentsData) {
     await conn.execute(
-      `INSERT INTO students (id, classId, teacherId, name, gender, studentNo, parentName, parentPhone, parentLoginEnabled) VALUES
-       (UUID(), ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cid, tid, name, gender, sno, pn, pp, ple ? 1 : 0]
+      `INSERT INTO students (id, classId, teacherId, name, gender, studentNo, parentName, parentPhone, parentLoginEnabled, parentPasswordHash) VALUES
+       (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cid, tid, name, gender, sno, pn, pp, ple ? 1 : 0, ple ? PWD_HASH : null] // 家长登录默认口令 123456（sha256 兼容校验）
     )
   }
   console.log('🧑‍🎓 学生: 10名创建完成')

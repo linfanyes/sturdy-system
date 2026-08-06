@@ -44,6 +44,8 @@ export interface ClassItem {
   subjects?: string[]
   subjectTeachers?: Record<string, string>
   imGroupId?: string
+  /** 班级学生人数（后端列表接口回填） */
+  studentCount?: number
   createdAt: string
 }
 

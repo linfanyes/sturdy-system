@@ -377,10 +377,19 @@ export class SchoolAdminService {
       where: ids.map(id => ({ teacherId: id })),
       order: { createdAt: 'DESC' },
     })
-    // 从 class_members 回填科任老师（role='subject'），保证前端编辑下拉能显示已选科任；
-    // 实体 subjectTeachers 列可能为历史遗留的 Record 或空值，此处以 class_member 为准
     if (items.length) {
       const classIds = items.map(i => i.id)
+      // 回填每个班级的学生人数（按 classId 分组统计）
+      const counts: Array<{ classId: string; cnt: string }> = await this.studentRepo
+        .createQueryBuilder('s')
+        .select('s.classId', 'classId')
+        .addSelect('COUNT(*)', 'cnt')
+        .where('s.classId IN (:...ids)', { ids: classIds })
+        .groupBy('s.classId')
+        .getRawMany()
+      const cntByClass = new Map(counts.map(r => [r.classId, Number(r.cnt) || 0]))
+      // 从 class_members 回填科任老师（role='subject'），保证前端编辑下拉能显示已选科任；
+      // 实体 subjectTeachers 列可能为历史遗留的 Record 或空值，此处以 class_member 为准
       const members = await this.classMemberRepo.find({
         where: classIds.map(cid => ({ classId: cid, role: 'subject' })),
       })
@@ -390,6 +399,7 @@ export class SchoolAdminService {
         byClass.get(m.classId)!.push({ teacherId: m.teacherId, subjects: m.subjects || [] })
       }
       for (const item of items) {
+        ;(item as any).studentCount = cntByClass.get(item.id) || 0
         ;(item as any).subjectTeachers = byClass.get(item.id) || []
       }
     }
@@ -458,6 +468,8 @@ export class SchoolAdminService {
       await this.classMemberSvc.addHeadTeacher(newHead.id, id, cls.name, term)
       cls.teacherId = newHead.id
       cls.headTeacher = dto.headTeacher || newHead.name
+      // 同步更新该班所有学生的 teacherId，避免转交后原班主任仍能看到学生、新班主任看不到
+      await this.studentRepo.update({ classId: id }, { teacherId: newHead.id }).catch(() => {})
     } else {
       Object.assign(cls, dto)
     }

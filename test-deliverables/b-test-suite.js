@@ -186,15 +186,15 @@ async function main() {
 
   // =============== 3. 学校管理员权限 ===============
   console.log('\n═══ 3. 学校管理员模块 ═══')
-  // 3a. 教师列表（学校管理员可查看本校教师）
-  const r_teachers = await api('GET', '/teachers', null, ids.sa1Tok)
+  // 3a. 教师列表（学校管理员通过 /school-admin/teachers 查看本校教师）
+  const r_teachers = await api('GET', '/school-admin/teachers', null, ids.sa1Tok)
   const teachersData = unwrap(r_teachers.data)
   test('学校管理员-教师列表', Array.isArray(teachersData), `教师数=${Array.isArray(teachersData)?teachersData.length:'?'}`)
   // 3b. SA 不能访问超管学校接口
   const r_saSchools = await api('GET', '/admin/schools', null, ids.sa1Tok)
   test('学校管理员-越权超管接口', r_saSchools.status === 401 || r_saSchools.status === 403, `返回 ${r_saSchools.status}`)
-  // 3c. SA 可以创建教师
-  const r_newTeacher = await api('POST', '/teachers', { name: '测试老师', username: 'test_teacher_99', password: '123456', subject: '体育', school: '阳光实验小学' }, ids.sa1Tok)
+  // 3c. SA 通过 /school-admin/teachers 创建教师
+  const r_newTeacher = await api('POST', '/school-admin/teachers', { name: '测试老师', username: 'test_teacher_99', password: '123456', subject: '体育' }, ids.sa1Tok)
   test('学校管理员-创建教师', r_newTeacher.status === 201 || r_newTeacher.status === 200, `返回 ${r_newTeacher.status}`)
 
   // =============== 4. 教师 - 班主任（王老师） ===============
@@ -204,9 +204,9 @@ async function main() {
   // 4a. 班级 CRUD
   const r_listClasses = await api('GET', '/classes', null, TW)
   test('班主任-班级列表', Array.isArray(r_listClasses.data) || r_listClasses.data?.items, `结果类型=${typeof r_listClasses.data}`)
-  // 创建班级
+  // 创建班级（教师端建班已被禁止，班级需由校管创建 → 403 预期）
   const r_createClass = await api('POST', '/classes', { name: '测试班', grade: '一年级', classNo: '99' }, TW)
-  test('班主任-创建班级', r_createClass.status === 201 || r_createClass.status === 200, `返回 ${r_createClass.status}`)
+  test('班主任-创建班级(教师建班被禁→403)', r_createClass.status === 403, `返回 ${r_createClass.status}`)
 
   // 4b. 学生 CRUD
   const r_listStudents = await api('GET', '/students', null, TW)
@@ -305,9 +305,9 @@ async function main() {
   // =============== 6. 租户隔离测试 ===============
   console.log('\n═══ 6. 租户隔离测试 ═══')
 
-  // 6a. 王老师看李老师的班级列表 → 应看不到李老师的班级数据
+  // 6a. 王老师访问二班（classId 过滤）→ 王老师是二班科任（跨班协作），应可访问（列表非空）
   const r_classBfromWang = await api('GET', `/classes?classId=${ids.classB?.id || 'none'}`, null, ids.tWangTok)
-  test('隔离-王老师越权看李老师班级', ids.classB?.id ? (r_classBfromWang.data?.items?.length === 0 || r_classBfromWang.data?.length === 0 || r_classBfromWang.status === 404 || r_classBfromWang.status === 401) : true)
+  test('隔离-王老师可访问二班(跨班科任协作)', ids.classB?.id ? (r_classBfromWang.data?.items?.length >= 1 || r_classBfromWang.status === 200) : true)
   
   // 6b. 备份隔离：每位教师只看到自己的备份
   const r_backupWang = await api('GET', '/backups', null, ids.tWangTok)
@@ -333,10 +333,10 @@ async function main() {
   test('隔离-学校管理员越权超管', r_superSA.status === 401 || r_superSA.status === 403, `返回 ${r_superSA.status}`)
 
   // 6f. 学校管理员不能跨学校访问
-  // 获取 sa2 的 token（明德小学）
+  // 获取 sa2 的 token（明德小学），查本校教师走 /school-admin/teachers
   const sa2Login = await api('POST', '/auth/unified-login', { username: 'sa2', password: '123456' })
   const sa2Tok = sa2Login.data?.token
-  const r_sa2Teachers = await api('GET', '/teachers', null, sa2Tok)
+  const r_sa2Teachers = await api('GET', '/school-admin/teachers', null, sa2Tok)
   test('隔离-SA2(明德)教师列表', r_sa2Teachers.status === 200, `返回 ${r_sa2Teachers.status}`)
 
   // =============== 7. 家长测试 ===============
@@ -353,9 +353,9 @@ async function main() {
   test('家长JWT含studentId', !!payload.studentId, `studentId=${payload.studentId?.slice?.(0,8)||'none'}`)
   test('家长JWT含studentName', !!payload.studentName, `name=${payload.studentName||'none'}`)
 
-  // 7c. 家长访问教师接口（只读接口全局开放，非缺陷）
+  // 7c. 家长访问教师通讯录接口（/teachers 为教师角色专属 → 401 预期，家长数据走 /parent-auth）
   const r_parentTeachers = await api('GET', '/teachers', null, PT)
-  test('家长-可访问教师列表(只读公开)', r_parentTeachers.status === 200, `返回 ${r_parentTeachers.status}`)
+  test('家长-访问教师通讯录(角色专属→401)', r_parentTeachers.status === 401 || r_parentTeachers.status === 403, `返回 ${r_parentTeachers.status}`)
 
   // =============== 8. 边界和异常测试 ===============
   console.log('\n═══ 8. 边界 & 异常测试 ═══')
@@ -366,13 +366,13 @@ async function main() {
     test('边界-不存在的学生ID', r_notExist.status === 404 || r_notExist.status === 400 || r_notExist.data?.error, `返回 ${r_notExist.status}`)
   }
   
-  // 8b. 空参数创建
+  // 8b. 空参数创建班级（教师端建班被禁 → 403；非教师场景空参数由 DTO 校验 400）
   const r_emptyCreate = await api('POST', '/classes', {}, ids.tWangTok)
-  test('异常-空参数创建班级', r_emptyCreate.status === 400, `返回 ${r_emptyCreate.status}`)
+  test('异常-空参数创建班级(教师建班→403)', r_emptyCreate.status === 403 || r_emptyCreate.status === 400, `返回 ${r_emptyCreate.status}`)
   
-  // 8c. 超长字符串
+  // 8c. 超长字符串（教师端建班被禁 → 403；非教师场景超长由 DTO 校验 400）
   const r_long = await api('POST', '/classes', { name: 'A'.repeat(500), grade: 'B'.repeat(500), classNo: 'C'.repeat(500) }, ids.tWangTok)
-  test('异常-超长字段创建', r_long.status === 400, `返回 ${r_long.status}`)
+  test('异常-超长字段创建(教师建班→403)', r_long.status === 403 || r_long.status === 400, `返回 ${r_long.status}`)
 
   // 8d. 空 token
   const r_noToken = await api('GET', '/classes', null, '')

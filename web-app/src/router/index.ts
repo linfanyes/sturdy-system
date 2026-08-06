@@ -96,7 +96,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'attendances' }, meta: { title: '考勤', feature: 'attendance' } },
       { path: 'homework', name: 'teacher-homework', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'homework' }, meta: { title: '作业', feature: 'homework' } },
       // 学生评价
-      { path: 'rewards', name: 'teacher-rewards', component: () => import('@/views/evaluation/RewardRecords.vue'), meta: { title: '奖励记录', feature: 'rewards' } },
+      { path: 'rewards', name: 'teacher-rewards', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'reward-records' }, meta: { title: '奖励记录', feature: 'rewards' } },
       { path: 'score-records', name: 'teacher-score-records', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'score-records' }, meta: { title: '加减分记录', feature: 'rewards' } },
       { path: 'group-scores', name: 'teacher-group-scores', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'group-scores' }, meta: { title: '小组评分', feature: 'rewards' } },
       { path: 'leaderboard', name: 'teacher-leaderboard', component: () => import('@/views/evaluation/Leaderboard.vue'), meta: { title: '排行榜', feature: 'rewards' } },

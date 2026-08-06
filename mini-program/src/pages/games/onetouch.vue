@@ -1,5 +1,5 @@
 <template>
-  <view class="page" :class="{ dark }" :style="pageStyle">
+  <view class="page" :class="{ dark }" :style="[pageStyle, { paddingBottom: 'env(safe-area-inset-bottom)' }]">
     <view class="hd">一笔画</view>
     <view class="status">
       <text>关卡 {{ level + 1 }}/{{ levels.length }}</text>
@@ -238,7 +238,6 @@ onHide(() => { stopTimer() })
 .btn { background: var(--primary); color: #fff; border-radius: 40rpx; padding: 0 40rpx; font-size: 28rpx; line-height: 72rpx; }
 .btn.ghost { background: var(--card); color: var(--primary); border: 2rpx solid var(--primary); }
 
-  padding-bottom: calc(env(safe-area-inset-bottom));
 .win-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
 .win-card { background: var(--card); padding: 40rpx 50rpx; border-radius: 24rpx; display: flex; flex-direction: column; align-items: center; gap: 14rpx; }
 .win-t { font-size: 40rpx; font-weight: 800; color: var(--accent); }

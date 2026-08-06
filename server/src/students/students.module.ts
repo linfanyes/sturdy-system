@@ -51,6 +51,11 @@ class StudentsService extends CrudService<Student> {
     this.withClassMemberService(cmSvc)
   }
 
+  /** 学生是班级维度实体：按教师可访问的班级集合过滤（同班协作），不再按 teacherId 严格隔离 */
+  protected isClassScopedEntity(): boolean {
+    return true
+  }
+
   /** D1 修复：创建学生时校验家长手机号格式（与前端 PHONE_REGEX 一致，防脏数据入库） */
   override async create(teacherId: string, dto: any) {
     const phone = String(dto?.parentPhone || '').trim()

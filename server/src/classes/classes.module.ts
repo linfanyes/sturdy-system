@@ -35,6 +35,24 @@ class ClassesService extends CrudService<ClassItem> {
     return true
   }
 
+  /** 列表回填每个班级的学生人数（教师端 GET /classes 也携带 studentCount，两端一致） */
+  override async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string, date?: string) {
+    const res = await super.findAll(teacherId, classId, skip, take, term, date)
+    const items = res.items as any[]
+    if (items.length) {
+      const counts: Array<{ classId: string; cnt: string }> = await this.studentRepo
+        .createQueryBuilder('s')
+        .select('s.classId', 'classId')
+        .addSelect('COUNT(*)', 'cnt')
+        .where('s.classId IN (:...ids)', { ids: items.map(i => i.id) })
+        .groupBy('s.classId')
+        .getRawMany()
+      const cntByClass = new Map(counts.map(r => [r.classId, Number(r.cnt) || 0]))
+      for (const item of items) item.studentCount = cntByClass.get(item.id) || 0
+    }
+    return res
+  }
+
   /**
    * 班级实体本身没有 classId 列：其 id 即是班级 id。
    * 按"教师可访问的班级集合"过滤时，应使用 id 而非 classId，避免

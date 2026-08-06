@@ -10,7 +10,7 @@ export class AuditService {
   ) {}
 
   async log(schoolId: string, action: string, operator: string, target: string, detail?: string) {
-    const entry = this.auditRepo.create({ schoolId, action, operator, target, detail })
+    const entry = this.auditRepo.create({ teacherId: '', schoolId, action, operator, target, detail })
     return this.auditRepo.save(entry)
   }
 

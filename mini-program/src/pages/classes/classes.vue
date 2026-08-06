@@ -8,7 +8,7 @@
       >
         <view class="info" @click="open(c)">
           <view class="name"><text class="dot" :style="{ background: c.color || '#07c160' }"></text>{{ c.name }}</view>
-          <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}<text v-if="c.slogan" class="slogan"> · {{ c.slogan }}</text></view>
+          <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}<text class="stu"> · {{ c.studentCount ?? '0' }} 名学生</text><text v-if="c.slogan" class="slogan"> · {{ c.slogan }}</text></view>
         </view>
         <view class="ops">
           <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
@@ -388,8 +388,14 @@ const noticesCount = ref(0)
 async function showDetailOf(c) {
   detailC.value = c
   showDetail.value = true
-  const [students, notices] = await Promise.all([api.get('/students').catch(() => []), api.get('/notices').catch(() => [])])
-  stuCount.value = (students || []).filter((s) => s.classId === c.id).length
+  // 花名册数优先用后端回填的 studentCount，缺失时才拉取学生列表兜底
+  if (typeof c.studentCount === 'number') {
+    stuCount.value = c.studentCount
+  } else {
+    const students = await api.get('/students').catch(() => [])
+    stuCount.value = (students || []).filter((s) => s.classId === c.id).length
+  }
+  const notices = await api.get('/notices').catch(() => [])
   noticesCount.value = (notices || []).filter((n) => n.classId === c.id && !n.ended).length
 }
 function goStudents(c) {
@@ -564,6 +570,7 @@ async function confirmAddMember() {
 .name { font-size: 34rpx; font-weight: 600; color: var(--c-title); display: flex; align-items: center; }
 .dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin-right: 12rpx; flex-shrink: 0; }
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
+.stu { color: #07c160; }
 .slogan { color: #a07b3b; }
 .ops { display: flex; gap: 24rpx; flex-shrink: 0; }
 .op { font-size: 26rpx; padding: 8rpx 16rpx; border-radius: 24rpx; }

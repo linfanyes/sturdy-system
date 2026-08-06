@@ -3,10 +3,8 @@ import {
   type GameScoreSubmitDTO,
   type GameScoreRecord,
   GAME_SCORES_PATHS,
-  GAME_KEY_TO_NAME,
-  GAME_SCORE_SUBMIT_THROTTLE_MS,
 } from '@gardener/shared/api/endpoints'
-import { gameNameByKey } from '@gardener/shared/utils/game-mappings'
+import { gameNameByKey, GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/utils/game-mappings'
 
 export type { GameScoreSubmitDTO, GameScoreRecord }
 

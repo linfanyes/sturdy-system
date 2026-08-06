@@ -35,7 +35,16 @@ if (smoke) {
     const fail = routes.filter((x) => !x.ok).length
     return { role: r.role, user: r.user, loginOk: r.loginOk, loginErr: r.loginErr, total: routes.length, pass, fail }
   })
-  smokeSummary = { totals: t, roles: roleLines, browser: smoke.browser, durationMs: smoke.durationMs }
+  // 产物新鲜度：冒烟 JSON 落盘时间早于 API 结果落盘时间 → 本轮冒烟未成功刷新，属陈旧数据
+  let staleHint = null
+  try {
+    const smokeMtime = fs.statSync(smokeReportPath).mtimeMs
+    const apiMtime = fs.statSync(path.join(ROOT, 'scripts/mini-api-test-results.json')).mtimeMs
+    if (apiMtime - smokeMtime > 5 * 60 * 1000) {
+      staleHint = new Date(smokeMtime).toLocaleString('zh-CN', { hour12: false })
+    }
+  } catch { /* 统计失败不阻断报告 */ }
+  smokeSummary = { totals: t, roles: roleLines, browser: smoke.browser, durationMs: smoke.durationMs, staleHint }
 }
 
 // ---- 功能套件（与 mini-api-test.mjs 一致）----
@@ -75,14 +84,15 @@ md.push(`| 全功能 API | 11 套件 / ${apiRes.total} 条断言 | ${apiRes.pass
 if (smokeSummary) {
   const t = smokeSummary.totals
   const traversed = t.pass + t.auth + t.quarantined + t.fail + t.redirected
-  md.push(`| 全页面遍历 | ${traversed} 页面（4 角色：super/校管/教师/家长，家长端 3 页已纳入） | 硬失败 ${t.fail} / 已知基线隔离 ${t.quarantined} / 后端鉴权抖动 ${t.auth} / 守卫重定向 ${t.redirected} / 正常通过 ${t.pass} | 硬失败 0% |`)
+  const failRate = traversed > 0 ? ((t.fail / traversed) * 100).toFixed(1) : '0.0'
+  md.push(`| 全页面遍历 | ${traversed} 页面（4 角色：super/校管/教师/家长，家长端 3 页已纳入） | 硬失败 ${t.fail} / 已知基线隔离 ${t.quarantined} / 后端鉴权抖动 ${t.auth} / 守卫重定向 ${t.redirected} / 正常通过 ${t.pass} | 硬失败 ${failRate}% |`)
 } else {
   md.push(`| 全页面遍历 | ${totalPages} 页面（3 角色） | 报告生成时冒烟产物未就绪，见第 6 节 | — |`)
 }
 md.push(`| 全按钮/交互 | 静态分析 ${sa.totalClickTap} click/tap + ${sa.totalNav} 导航 + ${sa.totalApiCall} api 调用点 | 已全量枚举并纳入覆盖 | 100% 枚举 |`)
 md.push(`| 测试数据 | 五角色凭证 + 种子实体 + 边界数据集 | 已生成并可用 | — |`)
 md.push('')
-md.push('**总体结论**：小程序在云托管环境下，全功能 API 断言 **100%（241/241）通过**；全页面遍历冒烟' +
+md.push(`**总体结论**：小程序在云托管环境下，全功能 API 断言 **${apiRes.passRate}%（${apiRes.passed}/${apiRes.total}）通过**；全页面遍历冒烟` +
   (smokeSummary ? (smokeSummary.totals.fail === 0 ? '**全部通过**' : `发现 ${smokeSummary.totals.fail} 条失败（详见第 6 节）`) : '见第 6 节') +
   '；全按钮/交互入口已完成 100% 静态枚举，覆盖到每个页面的点击事件、导航跳转与接口调用。')
 md.push('')
@@ -163,6 +173,10 @@ md.push('')
 md.push('## 6. 全页面遍历冒烟结果')
 md.push('')
 if (smokeSummary) {
+  if (smokeSummary.staleHint) {
+    md.push(`> ⚠️ **数据陈旧告警**：本轮页面冒烟未成功产出结果（脚本崩溃或被中断），下列数据来自上一次成功运行（${smokeSummary.staleHint}），不代表本轮状态。`)
+    md.push('')
+  }
   md.push(`- 浏览器：${smokeSummary.browser}`)
   md.push(`- 耗时：${(smokeSummary.durationMs / 1000).toFixed(1)} s`)
   md.push('')

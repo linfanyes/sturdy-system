@@ -105,14 +105,56 @@ async function login(page, cfg, base) {
       await pwd.click()
       await page.keyboard.type(cfg.pass, { delay: 25 })
 
+      // uni-app H5 的 <input> 经 @input 同步进 Vue 响应式模型，键入结束到模型落值存在延迟。
+      // 若立即点击提交，会把「少了尾部若干字符」的半截密码发给后端 → 误报 401 密码错误，
+      // 且因属时序竞争，失败角色在多轮之间随机漂移，极难定位。
+      // 这里等待 DOM 值与预期完全一致，再留出一次事件循环让模型同步。
+      const valueSettled = await page
+        .waitForFunction(
+          (u, p) => {
+            const vals = [...document.querySelectorAll('input')].map((e) => e.value)
+            return vals.includes(u) && vals.includes(p)
+          },
+          { timeout: 5000, polling: 100 },
+          cfg.user,
+          cfg.pass,
+        )
+        .then(() => true)
+        .catch(() => false)
+      if (!valueSettled) {
+        // 键入丢字：清空后用直接赋值 + 派发 input 事件重填，绕开键盘时序
+        await page.evaluate(
+          (u, p) => {
+            const inputs = [...document.querySelectorAll('input')]
+            const set = (el, v) => {
+              el.value = v
+              el.dispatchEvent(new Event('input', { bubbles: true }))
+              el.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+            const pwdEl = inputs.find((e) => e.type === 'password')
+            const usrEl = inputs.find((e) => e !== pwdEl)
+            if (usrEl) set(usrEl, u)
+            if (pwdEl) set(pwdEl, p)
+          },
+          cfg.user,
+          cfg.pass,
+        )
+      }
+      await new Promise((r) => setTimeout(r, 300)) // 让 Vue 模型完成同步
+
       const typed = await page.evaluate(() =>
-        [...document.querySelectorAll('input')].map((e) => e.value).join('|'),
+        [...document.querySelectorAll('input')].map((e) => e.value.length).join('|'),
       )
-      console.log(`[mini-smoke] 已键入(${attempt}): ${typed}`)
+      console.log(`[mini-smoke] 已键入(${attempt}) 长度: ${typed}（settled=${valueSettled}）`)
 
       const clicked = await page.evaluate(() => {
         const btns = [...document.querySelectorAll('uni-button, button')]
-        const target = btns.find((b) => /登\s*录/.test(b.innerText || '') && !/微信/.test(b.innerText || ''))
+        const txt = (b) => b.innerText || ''
+        // 文案匹配：兼容「登录」与 UI 统一后的「开始工作 →」/「登录中…」，排除微信一键登录
+        const byText = btns.find((b) => /登\s*录|开始工作/.test(txt(b)) && !/微信/.test(txt(b)))
+        // 兜底：登录页主操作按钮统一使用 .btn 类，避免文案再次变更导致冒烟失效
+        const byClass = btns.find((b) => b.classList.contains('btn') && !/微信/.test(txt(b)))
+        const target = byText || byClass
         if (!target) return false
         target.click()
         return true
@@ -162,10 +204,33 @@ async function parentLogin(page, cfg, base) {
       }
       if (!no || !pwd) throw new Error('家长登录页未找到学号/密码输入框')
 
+      // 重试时 SPA 组件状态不随 hash 跳转重置，输入框会残留上一轮内容，
+      // 直接 type 会累加成「8803619508 8803619508」导致后续重试全部无效。先清空。
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('input')) {
+          el.value = ''
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+      })
+
       // 直接 type（内部自动 focus），规避 number 输入框在 H5 里 click 中心被遮挡导致的
       // "Node is either not clickable" 问题；type 走真实键盘事件，uni v-model 正常同步。
       await no.type(cfg.user, { delay: 25 }) // cfg.user = 学号
       await pwd.type(cfg.pass, { delay: 25 })
+
+      // 与教师/校管登录同理：等待 DOM 值落定并留出 Vue 模型同步时间，避免半截密码误报 401
+      await page
+        .waitForFunction(
+          (u, p) => {
+            const vals = [...document.querySelectorAll('input')].map((e) => e.value)
+            return vals.includes(u) && vals.includes(p)
+          },
+          { timeout: 5000, polling: 100 },
+          cfg.user,
+          cfg.pass,
+        )
+        .catch(() => {})
+      await sleep(300)
 
       const typed = await page.evaluate(() =>
         [...document.querySelectorAll('input')].map((e) => e.value).join('|'),
@@ -228,13 +293,25 @@ async function main() {
   const server = await serveStatic(H5_DIST, 0)
   console.log(`[mini-smoke] 静态服务: ${server.url}`)
 
-  const sa = await ensureSchoolAdmin(API_BASE, {
-    superUser: process.env.SMOKE_SUPER_USER || 'admin',
-    superPass: process.env.SMOKE_SUPER_PASS || 'admin',
-    preferUser: process.env.SMOKE_SA_USER || '',
-    preferPass: process.env.SMOKE_SA_PASS || '',
-  })
-  console.log(`[mini-smoke] 校管账号: ${sa.user}${sa.created ? '（临时创建）' : '（复用已有）'}`)
+  // 校管预置依赖超管凭证；一旦超管不可用不得拖垮其余角色（教师/家长），
+  // 降级为「跳过 school_admin 角色」并继续，保证仍能产出部分覆盖与报告。
+  const saNeeded = !ROLE_FILTER.length || ROLE_FILTER.includes('school_admin')
+  let sa = { user: '', pass: '', created: false, cleanup: async () => {} }
+  let saError = null
+  if (saNeeded) {
+    try {
+      sa = await ensureSchoolAdmin(API_BASE, {
+        superUser: process.env.SMOKE_SUPER_USER || 'admin',
+        superPass: process.env.SMOKE_SUPER_PASS || 'admin',
+        preferUser: process.env.SMOKE_SA_USER || '',
+        preferPass: process.env.SMOKE_SA_PASS || '',
+      })
+      console.log(`[mini-smoke] 校管账号: ${sa.user}${sa.created ? '（临时创建）' : '（复用已有）'}`)
+    } catch (e) {
+      saError = e.message
+      console.warn(`[mini-smoke] ⚠ 校管预置失败，将跳过 school_admin 角色继续执行: ${saError}`)
+    }
+  }
 
   const byRole = classifyPages(readMiniPages())
   console.log(
@@ -273,6 +350,8 @@ async function main() {
     },
   ]
   if (ROLE_FILTER.length) roles = roles.filter((r) => ROLE_FILTER.includes(r.role))
+  // 校管预置失败时剔除该角色，避免以空账号进入登录流产生噪声失败
+  if (saError) roles = roles.filter((r) => r.role !== 'school_admin')
 
   let report
   try {

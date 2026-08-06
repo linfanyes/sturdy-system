@@ -95,7 +95,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onLoad } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import api from '../../common/request'
 import { theme } from '../../common/store'
 

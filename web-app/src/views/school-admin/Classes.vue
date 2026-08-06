@@ -8,7 +8,7 @@ import {
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
-import { Plus, Search, Trash2, Edit3, Upload, Printer, Download } from 'lucide-vue-next'
+import { Plus, Search, Trash2, Edit3, Upload, Printer, Download, Users } from 'lucide-vue-next'
 
 /* ============ 列表 ============ */
 const loading = ref(false)
@@ -285,22 +285,29 @@ function handlePrint() {
             <th class="px-4 py-3 font-medium">年级</th>
             <th class="px-4 py-3 font-medium">学期</th>
             <th class="px-4 py-3 font-medium">班主任</th>
+            <th class="px-4 py-3 font-medium">学生人数</th>
             <th class="px-4 py-3 font-medium">班主任任教学科</th>
             <th class="px-4 py-3 font-medium text-right">操作</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-cream-100">
           <tr v-if="loading" class="text-center text-cocoa-400">
-            <td colspan="6" class="py-8">加载中…</td>
+            <td colspan="7" class="py-8">加载中…</td>
           </tr>
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
-            <td colspan="6" class="py-8">暂无班级数据</td>
+            <td colspan="7" class="py-8">暂无班级数据</td>
           </tr>
           <tr v-for="c in filtered" :key="c.id" class="hover:bg-cream-50 transition-colors">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ c.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.grade || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.term || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.headTeacher || teacherName(c.teacherId) || '-' }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-cocoa-700">
+                <Users class="w-3.5 h-3.5 text-mint-500" />
+                {{ c.studentCount ?? '-' }} 人
+              </span>
+            </td>
             <td class="px-4 py-3">
               <span v-if="!c.subjects || c.subjects.length === 0" class="text-cocoa-400 text-xs">未设置</span>
               <div v-else class="flex flex-wrap gap-1">

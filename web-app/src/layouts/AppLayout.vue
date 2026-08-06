@@ -11,7 +11,7 @@ import {
   GraduationCap, Sparkles, FileText, FileQuestion,
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
-  Gamepad2, Languages, ScrollText, Trash2, ChevronLeft,
+  Gamepad2, ScrollText, Trash2, ChevronLeft,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -785,15 +785,16 @@ function navigateTo(to: string) {
               <span class="chip bg-butter-100 text-butter-700">{{ greeting }}</span>
             </div>
             <!-- 二级瓷砖面板（showTilesPanel）时隐藏整条面包屑：面板标题已直接显示菜单名，避免冗余的"返回工作台" -->
+            <!-- 面包屑首级「工作台」仅在处于可展开业务分类下才渲染；直达分类页面（如超管审计日志，activeCategory 为空）只显示当前页名，避免冗余的"返回工作台"路径 -->
             <nav v-if="!showTilesPanel" aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
-              <Home class="h-3.5 w-3.5" />
-              <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
               <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')">
+                <Home class="h-3.5 w-3.5" />
+                <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
                 <ChevronRight class="h-3 w-3 text-cocoa-300" />
                 <button class="transition-colors hover:text-cocoa-700" @click="backToTiles">{{ activeCategory }}</button>
               </template>
               <template v-if="!isHome">
-                <ChevronRight class="h-3 w-3 text-cocoa-300" />
+                <ChevronRight v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')" class="h-3 w-3 text-cocoa-300" />
                 <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
               </template>
             </nav>
