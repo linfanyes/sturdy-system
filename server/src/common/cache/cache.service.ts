@@ -49,6 +49,9 @@ export class CacheService implements OnModuleDestroy {
     if (ttlMs && 'ttl' in this.cache) {
       // lru-cache 专属 API
       (this.cache as LRUCacheWithTTL).set(key, value, { ttl: ttlMs })
+    } else if (ttlMs && this.cache instanceof SimpleLRU) {
+      // 内置简易 LRU 也支持 TTL
+      this.cache.set(key, value, ttlMs)
     } else {
       this.cache.set(key, value)
     }
@@ -165,18 +168,39 @@ function createLRUCache<K, V>(options: LRUCacheOptions<K, V>): LRUCacheStandard<
 /**
  * 内置简易 LRU 缓存实现（降级方案）。
  * 当 lru-cache 包不可用时使用，功能足够满足基本缓存需求。
+ * 支持 TTL 过期 + LRU 淘汰 + 大小限制。
  */
 class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
   private map = new Map<K, V>()
+  private expireMap = new Map<K, number>() // key → 过期时间戳
   private accessOrder: K[] = []
   private currentSize = 0
-  private readonly maxTTL: number
+  private readonly defaultTTL: number
 
   constructor(private readonly options: LRUCacheOptions<K, V>) {
-    this.maxTTL = options.ttl
+    this.defaultTTL = options.ttl
+  }
+
+  /** 清理已过期条目（懒清理 + 定期清理） */
+  private evictExpired(): void {
+    const now = Date.now()
+    for (const [key, expireAt] of this.expireMap) {
+      if (expireAt <= now) {
+        this.map.delete(key)
+        this.expireMap.delete(key)
+        const idx = this.accessOrder.indexOf(key)
+        if (idx > -1) this.accessOrder.splice(idx, 1)
+      }
+    }
   }
 
   get(key: K): V | undefined {
+    // 检查是否过期
+    const expireAt = this.expireMap.get(key)
+    if (expireAt && expireAt <= Date.now()) {
+      this.delete(key)
+      return undefined
+    }
     const value = this.map.get(key)
     if (value !== undefined && this.options.updateAgeOnGet) {
       // 移动到最近使用
@@ -189,14 +213,15 @@ class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
     return value
   }
 
-  set(key: K, value: V): void {
+  set(key: K, value: V, ttlMs?: number): void {
     // 已存在则更新
     if (this.map.has(key)) {
       const oldValue = this.map.get(key)!
       this.currentSize -= this.options.sizeCalculation(oldValue)
       this.map.set(key, value)
       this.currentSize += this.options.sizeCalculation(value)
-      // 更新访问顺序
+      // 更新 TTL 和访问顺序
+      this.expireMap.set(key, Date.now() + (ttlMs ?? this.defaultTTL))
       const idx = this.accessOrder.indexOf(key)
       if (idx > -1) {
         this.accessOrder.splice(idx, 1)
@@ -204,6 +229,9 @@ class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
       }
       return
     }
+
+    // 先清理过期条目（节省空间）
+    this.evictExpired()
 
     // 淘汰策略
     while ((this.map.size >= this.options.max || this.currentSize >= this.options.maxSize) && this.accessOrder.length > 0) {
@@ -213,10 +241,12 @@ class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
         this.currentSize -= this.options.sizeCalculation(lruValue)
       }
       this.map.delete(lruKey)
+      this.expireMap.delete(lruKey)
     }
 
     this.map.set(key, value)
     this.currentSize += this.options.sizeCalculation(value)
+    this.expireMap.set(key, Date.now() + (ttlMs ?? this.defaultTTL))
     this.accessOrder.unshift(key)
   }
 
@@ -225,6 +255,7 @@ class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
     if (value !== undefined) {
       this.currentSize -= this.options.sizeCalculation(value)
     }
+    this.expireMap.delete(key)
     const idx = this.accessOrder.indexOf(key)
     if (idx > -1) {
       this.accessOrder.splice(idx, 1)
@@ -234,6 +265,7 @@ class SimpleLRU<K, V> implements LRUCacheStandard<K, V> {
 
   clear(): void {
     this.map.clear()
+    this.expireMap.clear()
     this.accessOrder = []
     this.currentSize = 0
   }

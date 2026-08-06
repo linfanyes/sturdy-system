@@ -11,7 +11,7 @@ import {
   GraduationCap, Sparkles, FileText, FileQuestion,
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
-  Gamepad2, LanguagesIcon, ScrollText, Trash2, ChevronLeft,
+  Gamepad2, Languages, ScrollText, Trash2, ChevronLeft,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -217,10 +217,10 @@ const teacherMenu: MenuCategory[] = [
       {
         label: '英语工具', asGrid: true, subject: '英语',
         items: [
-          { name: 'toolWordCard', label: '单词卡片', to: '/teacher/tools/wordCard', feature: 'tools', icon: LanguagesIcon, color: 'blue' },
+          { name: 'toolWordCard', label: '单词卡片', to: '/teacher/tools/wordCard', feature: 'tools', icon: Languages, color: 'blue' },
           { name: 'toolSentencePractice', label: '句型练习', to: '/teacher/tools/sentencePractice', feature: 'tools', emoji: '📝', color: 'green' },
           { name: 'toolListening', label: '英语听力', to: '/teacher/tools/listening', feature: 'tools', emoji: '🎧', color: 'rose' },
-          { name: 'toolGrammar', label: '语法练习', to: '/teacher/tools/grammar', feature: 'tools', icon: LanguagesIcon, color: 'butter' },
+          { name: 'toolGrammar', label: '语法练习', to: '/teacher/tools/grammar', feature: 'tools', icon: Languages, color: 'butter' },
           { name: 'toolSceneDialogue', label: '情景对话', to: '/teacher/tools/sceneDialogue', feature: 'tools', emoji: '💬', color: 'purple' },
           { name: 'toolSpell', label: '单词拼写', to: '/teacher/tools/spell', feature: 'tools', emoji: '✍️', color: 'sky' },
           { name: 'toolSpeaking', label: '口语练习', to: '/teacher/tools/speaking', feature: 'tools', icon: MessageSquare, color: 'cocoa' },
