@@ -50,6 +50,14 @@
     "./utils/security": {
       "import": "./dist/utils/security.js",
       "types": "./dist/utils/security.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/auth/index.js",
+      "types": "./dist/auth/index.d.ts"
+    },
+    "./auth/machine": {
+      "import": "./dist/auth/machine.js",
+      "types": "./dist/auth/machine.d.ts"
     }
   },
   "scripts": {

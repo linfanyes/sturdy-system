@@ -29,14 +29,17 @@
 - **废弃代码隔离**：将 `_deprecated_orphan_pages` 加入 .gitignore
 - **TypeORM 产物排除**：将 `server/dist/` 加入 .gitignore
 
-### 重构（复用改造阶段 2：跨端 API 层统一）
+### 重构（复用改造阶段 2：跨端 API 层统一 + 鉴权抽象 + 图片规范）
 - **shared/api/endpoints.ts**：后端端点契约集中化 —— game-scores（submit/list/byKey）+ chat-sessions（create/list/byId/messages/pin/remove）端点路径常量 + 请求/响应 DTO 类型。Web 端 `web-app/src/api/games.ts`、`chat.ts` 改为从 shared 导入（适配器层仍走 request，行为零变化）。
-- **shared/utils/sse-parser.ts**：新增 `createSSEParser` + `parseSSELn`，统一 SSE 分片解析 + `[DONE]` 协议。Web 端 `teacher.ts::aiChatStream` 的内联逐行解析已替换为 `parseSSELn`；小程序端 `request.js::streamChat::feed()` 留后续对接。
-- **shared/utils/security.ts**：导出 `isSessionInvalid(msgText)` 函数（"登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用"正则）。Web `request.ts` 和 mini `request.js` 两端 401 会话失效判断统一调用此函数，消除正则字面量漂移。
+- **shared/utils/sse-parser.ts**：新增 `createSSEParser` + `parseSSELn`，统一 SSE 分片解析 + `[DONE]` 协议。Web 端 `teacher.ts::aiChatStream` 内联逐行解析已替换为 `parseSSELn`（TS）。小程序端 `mini-program/src/common/request.js::streamChat::feed()`（JS）内联 SSE 分片解析已替换为 `createSSEParser` Promise 包装（I1）—— 两端 SSE 分片协议处理至此完全收敛到 shared。
+- **shared/utils/security.ts**：导出 `isSessionInvalid(msgText)` 函数（正则：登录已过期|未登录|缺少令牌|账号已禁用|登录已关闭|账号已被禁用）。Web `request.ts` 和 mini `request.js` 两端 401 会话失效判断统一调用此函数，消除正则字面量漂移。
 - **shared/utils/game-mappings.ts + game-helpers.ts**：gameKey→显示名权威映射（35+ 游戏）+ `GAME_SCORE_SUBMIT_THROTTLE_MS`（5000ms）+ `rand/shuffle/clamp/fmtTime/createThrottle` 通用工具。小程序 `common/game-score.js` 已切换从 shared 导入。
 - **shared/utils/student.ts + general.ts**：`defaultParentPassword(studentNo)` + `safeParse/isNotNull/delay/deepClone` 等通用工具，后续步骤继续接入两端。
-- **shared/index.ts / package.json / tsconfig.json**：导出映射新增 `api/*` 和 `utils/*` 子路径；tsconfig include 扩容。
+- **shared/auth/machine.ts**（新增）：鉴权状态机接口 `IAuthStateMachine` / `IAuthStateMachineWithEvents` / `AuthPersistence` / `IAuthMachineOptions`，统一 login/logout/restore/switchRole 语义；类型 `AuthUser / Credentials / LoginResult / Role / AuthError`；JWT 辅助 `isJwtLike / parseJwtPayload / isJwtExpired`（跨端 atob base64 解码，无 Node Buffer 依赖）。作为阶段 2 契约层 —— 各端 store 实现保留；阶段 3 可收敛为同一状态机 + Persistence Adapter。
+- **shared/constants/index.ts**：Role 类型改为从 `auth/machine` re-export，auth 作为权威源；shared/index.ts 星导出 auth 模块。
+- **shared/index.ts / package.json / tsconfig.json**：导出映射新增 `api/*` / `utils/*` / `auth/*` 子路径；tsconfig include 扩容。
 - 小程序端 `chat-history.js` 的本地会话同步逻辑保留不动（行为零变化）；`util.js::safeParse` 因行为差异保留不动，待阶段 3 统一。
+- **docs/image-compression-spec.md**（新增）：图片压缩策略规范 v1.0 —— 统一 Web / 小程序端 maxWidth=1280 / quality 0.8（/80）参数；明确降级、校验清单、后端无关化原则。
 
 ### 新增（Web / 小程序功能对齐）
 - **小游戏得分云端同步**：

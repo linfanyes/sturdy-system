@@ -76,8 +76,10 @@ export const GRADE_OPTIONS: string[] = [
 /**
  * 角色选项（4 种角色）
  * 对齐：web-app/src/types/user.ts::Role、后端 JWT payload.role
+ * Role 类型权威来源：@gardener/shared/auth（auth/machine.ts）
  */
-export type Role = 'super' | 'school_admin' | 'teacher' | 'parent'
+import type { Role } from '../auth/machine.js'
+export type { Role }
 
 export interface RoleOption {
   label: string

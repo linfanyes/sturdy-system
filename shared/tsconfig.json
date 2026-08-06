@@ -31,6 +31,7 @@
     "types/**/*.ts",
     "validators/**/*.ts",
     "api/**/*.ts",
+    "auth/**/*.ts",
     "utils/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]

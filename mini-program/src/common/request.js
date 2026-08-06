@@ -1,6 +1,7 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
 import { getToken, logout, auth, parent } from './store'
 import { isSessionInvalid } from '@gardener/shared/utils/security'
+import { createSSEParser } from '@gardener/shared/utils/sse-parser'
 // 演示模式 mock 数据仅在开发/预览构建（DEV）中被引用：
 // 生产构建（PROD）经 uni-app 条件编译剔除该 import，mock 模块零引用、不进发布包。
 // #ifdef DEV
@@ -254,43 +255,15 @@ export function streamChat(path, data, onDelta, opts = {}) {
       if (full) resolve(full) // 已经收到部分内容则兜底返回
       else reject(new Error('AI 请求超时：未连接到远端大模型，请在设置中检查AI配置后重试。'))
     }, 45000)
-    let buf = ''
-    let full = ''
     let finished = false
     let aborted = false
 
-    const feed = (text) => {
-      if (typeof text !== 'string') return
-      buf += text
-      let cut
-      while ((cut = buf.indexOf('\n\n')) >= 0) {
-        const raw = buf.slice(0, cut)
-        buf = buf.slice(cut + 2)
-        const line = raw
-          .split('\n')
-          .map((l) => l.trim())
-          .find((l) => l.startsWith('data:'))
-        if (!line) continue
-        const payload = line.slice(5).trim()
-        if (payload === '[DONE]') {
-          finished = true
-          continue
-        }
-        try {
-          const obj = JSON.parse(payload)
-          if (obj.error) {
-            reject(new Error(obj.error))
-            return
-          }
-          if (obj.delta) {
-            full += obj.delta
-            if (onDelta) onDelta(obj.delta, full)
-          }
-        } catch (e) {
-          /* 忽略不完整分片 */
-        }
-      }
-    }
+    // 使用 shared SSE 解析器：统一 SSE 分片解析 + [DONE] 协议
+    const parser = createSSEParser({
+      onDelta: (delta, full) => { if (onDelta) onDelta(delta, full) },
+      onError: (msg) => reject(new Error(msg)),
+      onDone: () => { finished = true },
+    })
 
     const task = cloud.callContainer({
       config: { env: CLOUDRUN_ENV },
@@ -310,22 +283,23 @@ export function streamChat(path, data, onDelta, opts = {}) {
         clearTimeout(timer)
         if (aborted) {
           // 用户已主动中断，按完成处理，保留已收到的部分内容
-          resolve(full)
+          resolve(parser.full)
           return
         }
-        // 兜底：未走分片（整体缓冲）时从 res.data 解析全部 data: 行
-        if (!finished && buf === '' && res && res.data) {
+        // 兜底：未走分片（整体缓冲）时从 res.data 喂给 parser 解析全部 data: 行
+        if (!finished && parser.buffer === '' && res && res.data) {
           const body = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
-          feed(body)
+          parser.feed(body)
         }
-        if (finished || full) resolve(full)
+        parser.flush() // 确保即使后端未发 [DONE] 也触发 onDone
+        if (finished || parser.full) resolve(parser.full)
         else reject(new Error('AI 未返回内容'))
       },
       fail: (e) => {
         if (settled) return
         settled = true
         clearTimeout(timer)
-        if (aborted) resolve(full) // 中断导致的 fail 也视为完成
+        if (aborted) resolve(parser.full) // 中断导致的 fail 也视为完成
         else reject(toError(e, 'AI 流式请求失败'))
       },
     })
@@ -342,7 +316,7 @@ export function streamChat(path, data, onDelta, opts = {}) {
 
     if (task && typeof task.onChunkReceived === 'function') {
       task.onChunkReceived((res) => {
-        feed(ab2str(res.data))
+        parser.feed(ab2str(res.data))
       })
     }
   })
