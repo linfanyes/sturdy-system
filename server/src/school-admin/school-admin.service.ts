@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt'
 import crypto from 'node:crypto'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
-import { Repository, EntityManager, In } from 'typeorm'
+import { Repository, EntityManager, In, Not } from 'typeorm'
 import { SchoolAdmin } from './school-admin.entity'
 import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
@@ -705,14 +705,19 @@ export class SchoolAdminService {
 
   // ===== 学生管理 =====
 
-  /** 编辑学生基本信息 */
-  async updateStudent(schoolId: string, id: string, dto: { name?: string; gender?: string; parentName?: string; parentPhone?: string }) {
+  /** 编辑学生基本信息（含学号） */
+  async updateStudent(schoolId: string, id: string, dto: { name?: string; gender?: string; parentName?: string; parentPhone?: string; studentNo?: string }) {
     const student = await this.studentRepo.findOne({ where: { id } })
     if (!student) throw new BadRequestException('学生不存在')
     const cls = await this.classRepo.findOne({ where: { id: student.classId } })
     if (!cls) throw new BadRequestException('班级不存在')
     const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
     if (!teacher) throw new BadRequestException('无权操作此学生')
+    // 学号唯一性校验：若修改学号，确保不与本校其他学生冲突
+    if (dto.studentNo && dto.studentNo !== student.studentNo) {
+      const clash = await this.studentRepo.findOne({ where: { studentNo: dto.studentNo, id: Not(id) } })
+      if (clash) throw new BadRequestException('该学号已被其他学生使用')
+    }
     Object.assign(student, dto)
     return this.studentRepo.save(student)
   }

@@ -166,8 +166,7 @@ function del(l) {
 .content { font-size: 27rpx; color: #5a5048; white-space: pre-wrap; }
 .note { font-size: 24rpx; color: #a07b3b; margin-top: 8rpx; font-style: italic; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
-.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 90vh; overflow-y: auto; }
+.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
 .mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .picker { background: #f6f6f6; border-radius: 12rpx; padding: 18rpx; margin-bottom: 14rpx; font-size: 28rpx; }
 .row { display: flex; gap: 16rpx; margin-bottom: 14rpx; }

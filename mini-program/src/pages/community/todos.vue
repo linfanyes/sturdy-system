@@ -132,8 +132,7 @@ function del(t) {
 .meta { font-size: 23rpx; color: #9aa0a6; margin-top: 6rpx; }
 .del { font-size: 30rpx; color: #ccc; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
-.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; }
+.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); }
 .mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .inp { border: 1px solid #e5e5e5; border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; font-size: 28rpx; width: 100%; box-sizing: border-box; background: #fff; }
 .picker { background: #f6f6f6; border-radius: 12rpx; padding: 18rpx; margin-bottom: 14rpx; font-size: 28rpx; }

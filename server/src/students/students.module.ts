@@ -284,13 +284,17 @@ class StudentsService extends CrudService<Student> {
 
   /** 切换家长登录权限（关闭时清空敏感绑定数据；开启时默认口令为随机 hex 并随响应返回） */
   async toggleParentLogin(user: any, studentId: string) {
-    // 校管按 id 查（其学生列表已按学校过滤，仅能操作本校学生），教师按 teacherId 归属过滤
+    // 校管按 id + schoolId 查（防止越权操作外校学生），教师按 teacherId 归属过滤
     const role = user?.role
     const teacherId = user?.sub
     const s = role === 'school_admin'
-      ? await this.repo.findOne({ where: { id: studentId } })
+      ? await this.repo.createQueryBuilder('s')
+          .innerJoin('classes', 'c', 's.classId = c.id')
+          .innerJoin('users', 'u', 'c.teacherId = u.id')
+          .where('s.id = :id AND u.schoolId = :schoolId', { id: studentId, schoolId: user?.schoolId })
+          .getOne()
       : await this.repo.findOne({ where: { id: studentId, teacherId: user?.sub } })
-    if (!s) throw new BadRequestException('学生不存在')
+    if (!s) throw new BadRequestException('学生不存在或无权限')
     s.parentLoginEnabled = !s.parentLoginEnabled
     let initialPassword: string | undefined
     if (!s.parentLoginEnabled) {

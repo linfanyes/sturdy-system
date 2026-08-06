@@ -200,7 +200,7 @@ function del(b) {
 }
 .a { font-size: 24rpx; color: var(--c-blue); }
 .a.del { color: var(--c-danger); }
-.fab { position: fixed; right: 40rpx; bottom: 60rpx; background: var(--c-primary); color: #fff; padding: 24rpx 36rpx; border-radius: 50rpx; font-size: 28rpx; box-shadow: 0 8rpx 24rpx rgba(245,179,66,.3); }
+.fab { position: fixed; right: 40rpx; bottom: calc(60rpx + env(safe-area-inset-bottom)); background: var(--c-primary); color: #fff; padding: 24rpx 36rpx; border-radius: 50rpx; font-size: 28rpx; box-shadow: 0 8rpx 24rpx rgba(245,179,66,.3); }
 /* 行为配色 */
 .b-speak { background: #e8f9e8; color: #07c160; }
 .b-listen { background: #e8f1fb; color: var(--c-blue); }
@@ -209,8 +209,7 @@ function del(b) {
 .b-bad { background: #fde8ea; color: #e06c75; }
 .b-etc { background: #f3f3f3; color: #999; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
-.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; max-height: 90vh; overflow-y: auto; }
+.modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
 .mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }
 .lab2 { font-size: 24rpx; color: var(--c-sub); margin: 10rpx 0; }
 .chips2 { display: flex; flex-wrap: wrap; gap: 14rpx; margin-bottom: 14rpx; }

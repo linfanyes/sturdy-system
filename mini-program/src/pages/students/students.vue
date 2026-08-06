@@ -800,8 +800,7 @@ function drawRadar() {
 .item.selectable { display: flex; align-items: center; gap: 16rpx; }
 .check { width: 44rpx; height: 44rpx; border-radius: 50%; border: 2rpx solid var(--c-border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #fff; }
 .check.on { background: var(--c-primary); border-color: var(--c-primary); }
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
-.batchbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--c-card); border-top: 1px solid var(--c-border); padding: 20rpx 30rpx; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4rpx 16rpx var(--c-shadow); z-index: 40; }
+.batchbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--c-card); border-top: 1px solid var(--c-border); padding: 20rpx 30rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -4rpx 16rpx var(--c-shadow); z-index: 40; }
 .bsel { font-size: 26rpx; color: var(--c-title); }
 .bdel { font-size: 28rpx; color: #fff; background: var(--c-danger); padding: 14rpx 36rpx; border-radius: 40rpx; }
 .dark .search { border-color: var(--c-input-border); }
