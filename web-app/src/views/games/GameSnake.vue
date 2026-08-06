@@ -1,75 +1,84 @@
 <script setup lang="ts">
+/**
+ * 贪吃蛇 —— 核心状态机已提升到 @gardener/shared/games/snake。
+ * 桥接：响应式渲染、键盘事件、200ms 定时触发、localStorage 最高分保留。
+ * 坐标系转换：shared {r=row, c=col} ↔ web {x=col, y=row}。
+ */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, RefreshCw } from 'lucide-vue-next'
+import { SnakeGame } from '@gardener/shared/games/snake'
 
 const router = useRouter()
 const SIZE = 18
-type P = { x: number; y: number }
-const snake = ref<P[]>([{ x: 8, y: 8 }])
-const dir = ref<P>({ x: 1, y: 0 })
-const food = ref<P>({ x: 12, y: 8 })
+
+// shared 状态机（size 18 对齐 web 端网格）
+const machine = new SnakeGame({ size: SIZE, speed: 200, difficulty: 'medium' })
+
+// 响应式镜像（保持模板 API 兼容）
+const snake = ref(machine.snapshot().snake)
+const food = ref(machine.snapshot().food)
 const score = ref(0)
 const gameOver = ref(false)
 const best = ref(parseInt(localStorage.getItem('web_game_snake_highscore') || '0'))
 let timer: ReturnType<typeof setInterval> | null = null
 
-function reset() {
-  if (timer) clearInterval(timer)
-  snake.value = [{ x: 8, y: 8 }]
-  dir.value = { x: 1, y: 0 }
-  food.value = { x: 12, y: 8 }
-  score.value = 0
-  gameOver.value = false
-  timer = setInterval(tick, 200)
+function syncFromMachine() {
+  const s = machine.snapshot()
+  snake.value = s.snake
+  food.value = s.food
+  // 原 web 端显示分值：每个食物 +10，与改造前行为一致（shared 内部 +1/食 × 10）
+  score.value = s.score * 10
+  gameOver.value = s.over
 }
 
 function tick() {
-  if (gameOver.value) return
-  const head = snake.value[0]
-  const nh = { x: head.x + dir.value.x, y: head.y + dir.value.y }
-  if (nh.x < 0 || nh.x >= SIZE || nh.y < 0 || nh.y >= SIZE ||
-      snake.value.some(p => p.x === nh.x && p.y === nh.y)) {
-    gameOver.value = true
-    if (timer) clearInterval(timer)
+  if (machine.over) return
+  const res = machine.step()
+  syncFromMachine()
+  if (res.over) {
+    if (timer) { clearInterval(timer); timer = null }
     if (score.value > best.value) {
       best.value = score.value
       localStorage.setItem('web_game_snake_highscore', String(score.value))
     }
-    return
-  }
-  snake.value.unshift(nh)
-  if (nh.x === food.value.x && nh.y === food.value.y) {
-    score.value += 10
-    let nf: P
-    do {
-      nf = { x: Math.floor(Math.random() * SIZE), y: Math.floor(Math.random() * SIZE) }
-    } while (snake.value.some(p => p.x === nf.x && p.y === nf.y))
-    food.value = nf
-  } else {
-    snake.value.pop()
   }
 }
 
+machine.hooks = { onDie: () => { if (timer) { clearInterval(timer); timer = null } } }
+
+function reset() {
+  if (timer) { clearInterval(timer); timer = null }
+  machine.speed = 200
+  machine.reset()
+  syncFromMachine()
+  timer = setInterval(tick, 200)
+}
+
+// 键盘方向（防 180° 反向在 shared SnakeGame.setDir 中处理）
+const DIR: Record<string, { dx: number; dy: number }> = {
+  ArrowUp: { dx: 0, dy: -1 },
+  ArrowDown: { dx: 0, dy: 1 },
+  ArrowLeft: { dx: -1, dy: 0 },
+  ArrowRight: { dx: 1, dy: 0 },
+}
 function onKey(e: KeyboardEvent) {
-  const m: Record<string, P> = {
-    ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 },
-    ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 },
-  }
-  const nd = m[e.key]
-  if (nd && (nd.x !== -dir.value.x || nd.y !== -dir.value.y)) {
-    e.preventDefault()
-    dir.value = nd
-  }
+  const nd = DIR[e.key]
+  if (!nd) return
+  // web {x=col, y=row} → shared {r=row, c=col} ⇒ setDir(r=dy, c=dx)
+  const accepted = machine.setDir(nd.dy, nd.dx)
+  if (accepted) e.preventDefault()
 }
 
 onMounted(() => { reset(); window.addEventListener('keydown', onKey) })
 onUnmounted(() => { window.removeEventListener('keydown', onKey); if (timer) clearInterval(timer) })
 
+// 单元格渲染：模板坐标 (r=row, c=col) ↔ shared {r, c} 直接对应
 function cellType(r: number, c: number): string {
-  if (snake.value[0].x === c && snake.value[0].y === r) return 'head'
-  if (snake.value.some(p => p.x === c && p.y === r)) return 'body'
-  if (food.value.x === c && food.value.y === r) return 'food'
+  const head = snake.value[0]
+  if (head && head.r === r && head.c === c) return 'head'
+  if (snake.value.some(s => s.r === r && s.c === c)) return 'body'
+  if (food.value && food.value.r === r && food.value.c === c) return 'food'
   return ''
 }
 </script>

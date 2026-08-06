@@ -1,103 +1,76 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+/**
+ * 2048 —— 核心状态机已提升到 @gardener/shared/games/game2048。
+ * 桥接：grid 渲染、键盘事件、localStorage 最高分、动画标记。
+ * 分数规则（合并后新值直接加入 score）与改造前行为一致。
+ */
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, RefreshCw, Grid3x3 } from 'lucide-vue-next'
+import type { Direction2048 } from '@gardener/shared/games/game2048'
+import { Game2048 } from '@gardener/shared/games/game2048'
 
 const router = useRouter()
-const SIZE = 4
-type Grid = number[][]
-const grid = ref<Grid>([])
+const machine = new Game2048({ size: 4, target: 2048 })
+
+// 响应式镜像
+const grid = ref(boardClone(machine.board))
 const score = ref(0)
 const best = ref(parseInt(localStorage.getItem('web_game_2048_highscore') || '0'))
 const won = ref(false)
 
-function emptyGrid(): Grid {
-  return Array.from({ length: SIZE }, () => Array(SIZE).fill(0))
+function boardClone(b: number[][]): number[][] {
+  return b.map(r => r.slice())
 }
 
-function addRandom() {
-  const empty: [number, number][] = []
-  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
-    if (grid.value[r][c] === 0) empty.push([r, c])
+function syncFromMachine() {
+  grid.value = boardClone(machine.board)
+  score.value = machine.score
+  won.value = machine.won
+}
+
+function updateBest() {
+  if (score.value > best.value) {
+    best.value = score.value
+    localStorage.setItem('web_game_2048_highscore', String(score.value))
   }
-  if (empty.length === 0) return
-  const [r, c] = empty[Math.floor(Math.random() * empty.length)]
-  grid.value[r][c] = Math.random() < 0.9 ? 2 : 4
 }
 
 function reset() {
-  grid.value = emptyGrid()
-  score.value = 0
+  machine.reset()
+  syncFromMachine()
   won.value = false
-  addRandom()
-  addRandom()
 }
 
-function slide(row: number[]): { row: number[]; gained: number } {
-  const arr = row.filter(v => v !== 0)
-  let gained = 0
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] === arr[i + 1]) {
-      arr[i] *= 2
-      gained += arr[i]
-      if (arr[i] === 2048) won.value = true
-      arr.splice(i + 1, 1)
-    }
-  }
-  while (arr.length < SIZE) arr.push(0)
-  return { row: arr, gained }
+const DIR: Record<string, Direction2048> = {
+  ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
 }
 
-function rotate(g: Grid): Grid {
-  const n = SIZE
-  const r = emptyGrid()
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) r[j][n - 1 - i] = g[i][j]
-  return r
-}
-
-function move(dir: 'left' | 'right' | 'up' | 'down') {
-  let g = grid.value.map(r => [...r])
-  const rotations = { left: 0, up: 3, right: 2, down: 1 }[dir]
-  for (let i = 0; i < rotations; i++) g = rotate(g)
-  let gained = 0
-  let changed = false
-  g = g.map(row => {
-    const { row: nr, gained: gg } = slide(row)
-    if (nr.join(',') !== row.join(',')) changed = true
-    gained += gg
-    return nr
-  })
-  for (let i = 0; i < (4 - rotations) % 4; i++) g = rotate(g)
-  if (changed) {
-    grid.value = g
-    score.value += gained
-    if (score.value > best.value) {
-      best.value = score.value
-      localStorage.setItem('web_game_2048_highscore', String(score.value))
-    }
-    addRandom()
-  }
+function move(dir: Direction2048) {
+  if (machine.over) return
+  const res = machine.move(dir)
+  if (!res.moved) return
+  syncFromMachine()
+  updateBest()
 }
 
 function onKey(e: KeyboardEvent) {
-  const map: Record<string, 'left' | 'right' | 'up' | 'down'> = {
-    ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down',
-  }
-  if (map[e.key]) {
-    e.preventDefault()
-    move(map[e.key])
-  }
+  const d = DIR[e.key]
+  if (!d) return
+  e.preventDefault()
+  move(d)
 }
 
+onMounted(() => { reset(); window.addEventListener('keydown', onKey) })
+onUnmounted(() => window.removeEventListener('keydown', onKey))
+
+// 数字→配色（保留原 web 端配色）
 const colors: Record<number, string> = {
   0: 'bg-cream-100', 2: 'bg-cream-200 text-cocoa-700', 4: 'bg-butter-100 text-cocoa-700',
   8: 'bg-butter-300 text-white', 16: 'bg-butter-400 text-white', 32: 'bg-butter-500 text-white',
   64: 'bg-sakura-400 text-white', 128: 'bg-sakura-500 text-white', 256: 'bg-mint-400 text-white',
   512: 'bg-mint-500 text-white', 1024: 'bg-sky2-400 text-white', 2048: 'bg-sky2-500 text-white',
 }
-
-onMounted(() => { reset(); window.addEventListener('keydown', onKey) })
-onUnmounted(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>

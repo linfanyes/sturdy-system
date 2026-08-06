@@ -1,68 +1,74 @@
 <script setup lang="ts">
+/**
+ * 数独 —— 核心状态机已提升到 @gardener/shared/games/sudoku。
+ * 桥接：Cell 矩阵呈现（{ v, fixed, error }）、点击选格、数字输入、通关计数。
+ * 模板沿用原有 Cell API，内部适配为 shared Sudoku 的 flat 数组模型。
+ */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, RefreshCw, Grid3x3 } from 'lucide-vue-next'
+import { Sudoku } from '@gardener/shared/games/sudoku'
 
 const router = useRouter()
 type Cell = { v: number; fixed: boolean; error: boolean }
-const board = ref<Cell[][]>([])
+
+// shared 状态机（holes=45 接近原 web 的 55% 挖空率）
+const machine = new Sudoku({ holes: 45 })
+
+// 派生渲染矩阵：puzzle=1/当前值=2 ⇒ fixed；bad 标记对应 error
+function toCellMatrix(): Cell[][] {
+  const out: Cell[][] = []
+  for (let r = 0; r < 9; r++) {
+    const row: Cell[] = []
+    for (let c = 0; c < 9; c++) {
+      const i = r * 9 + c
+      row.push({
+        v: machine.current[i]!,
+        fixed: machine.puzzle[i] !== 0,
+        error: machine.bad[i]!,
+      })
+    }
+    out.push(row)
+  }
+  return out
+}
+
+const board = ref<Cell[][]>(toCellMatrix())
+// selected 为 [r, c]；内部对齐到 machine.sel（一维索引）
 const selected = ref<[number, number] | null>(null)
 const wins = ref(parseInt(localStorage.getItem('web_game_sudoku_highscore') || '0'))
 
-function makePuzzle(): Cell[][] {
-  // 简单生成：基于一个完整解挖空
-  const base = [
-    [5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],
-    [8,5,9,7,6,1,4,2,3],[4,2,6,8,5,3,7,9,1],[7,1,3,9,2,4,8,5,6],
-    [9,6,1,5,3,7,2,8,4],[2,8,7,4,1,9,6,3,5],[3,4,5,2,8,6,1,7,9],
-  ]
-  return base.map(row => row.map(v => {
-    const fixed = Math.random() < 0.45
-    return { v: fixed ? v : 0, fixed, error: false }
-  }))
-}
-
-function reset() {
-  board.value = makePuzzle()
-  selected.value = null
+function syncFromMachine() {
+  board.value = toCellMatrix()
 }
 
 function select(r: number, c: number) {
   if (board.value[r][c].fixed) return
   selected.value = [r, c]
+  machine.select(r * 9 + c)
 }
 
 function input(n: number) {
   if (!selected.value) return
   const [r, c] = selected.value
-  const cell = board.value[r][c]
-  if (cell.fixed) return
-  cell.v = n
-  cell.error = n !== 0 && !isValid(r, c, n)
-  if (isComplete()) {
+  if (board.value[r][c].fixed) return
+  machine.select(r * 9 + c)
+  const res = machine.fill(n)
+  syncFromMachine()
+  if (res.solved) {
     wins.value++
     localStorage.setItem('web_game_sudoku_highscore', String(wins.value))
   }
 }
 
-function isValid(r: number, c: number, n: number): boolean {
-  for (let i = 0; i < 9; i++) {
-    if (i !== c && board.value[r][i].v === n) return false
-    if (i !== r && board.value[i][c].v === n) return false
-  }
-  const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3
-  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-    const rr = br + i, cc = bc + j
-    if ((rr !== r || cc !== c) && board.value[rr][cc].v === n) return false
-  }
-  return true
+function reset() {
+  machine.reset()
+  selected.value = null
+  syncFromMachine()
 }
 
-function isComplete(): boolean {
-  return board.value.every(row => row.every(c => c.v !== 0 && !c.error))
-}
-
-const complete = computed(() => isComplete())
+// 完成判定：shared Sudoku 在 fill 时检测到 solved 即所有空格都以 solution 一致值填入
+const complete = computed(() => machine.solved)
 reset()
 </script>
 
@@ -109,7 +115,7 @@ reset()
           class="w-9 h-9 rounded-lg bg-cream-100 hover:bg-cream-200 text-cocoa-900 font-semibold"
           @click="input(n)"
         >{{ n }}</button>
-        <button class="w-9 h-9 rounded-lg bg-cream-200 hover:bg-cream-300 text-cocoa-500" @click="input(0)">✕</button>
+        <button class="w-9 h-9 rounded-lg bg-cream-200 hover:bg-cream-300 text-cocoa-500" @click="input(0)">✗</button>
       </div>
 
       <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 inline-flex items-center gap-1" @click="reset">
