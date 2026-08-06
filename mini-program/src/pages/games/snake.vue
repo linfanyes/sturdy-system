@@ -255,12 +255,6 @@ onUnload(() => {
 onUnmounted(() => {
   clearTimer()
 })
-
-// 兼容性导出：保持未被模板使用但曾被其他模块 import 的名称
-// （mini-program 未发现其他引用；保险起见保留）
-const MIN_INTERVAL = 80
-const dir = ref({ r: 0, c: 1 })
-const nextDir = ref({ r: 0, c: 1 })
 </script>
 
 <style scoped>
