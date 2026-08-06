@@ -418,31 +418,24 @@ watch(() => route.name, syncActiveCat)
 
 function toggleCat(label: string) {
   const role = auth.role
-  const rootName = role === 'super' ? 'super-dashboard' : role === 'school_admin' ? 'school-admin-dashboard' : 'teacher-dashboard'
-  const onSubPage = (role === 'teacher' || role === 'super' || role === 'school_admin') && route.name !== rootName
-  // 直达分类（如超管「仪表盘」/校管「工作台」）：点击直接跳转首个子项，不展开瓷砖
   const menu = role === 'super' ? superMenu : role === 'school_admin' ? schoolAdminMenu : visibleTeacherMenu.value
   const cat = menu.find((c) => c.label === label)
+  // 直达分类（如超管「工作台」/校管「工作台」）：点击直接跳转，并收起所有展开
   if (cat?.direct) {
     activeCategory.value = ''
     openCats.value = []
     router.push(cat.to || cat.groups[0]?.items[0]?.to || '/')
     return
   }
-  // 从子页面点击分类：始终回到工作台根并展开该分类的二级菜单
-  if (onSubPage) {
-    activeCategory.value = label
-    openCats.value = [label]
-    router.push(role === 'super' ? '/super' : role === 'school_admin' ? '/school-admin' : '/teacher')
-    return
-  }
-  // 在工作台页面：切换/折叠分类
+  // 统一 toggle：已展开则收起，未展开则展开
   if (activeCategory.value === label) {
     activeCategory.value = ''
+    openCats.value = []
   } else {
     activeCategory.value = label
+    openCats.value = [label]
   }
-  openCats.value = activeCategory.value ? [activeCategory.value] : []
+  router.push(role === 'super' ? '/super' : role === 'school_admin' ? '/school-admin' : '/teacher')
 }
 
 /** 是否在内容区展示二级菜单瓷砖（教师/超管/校管 + 已选分类 + 工作台根页面） */
@@ -614,6 +607,7 @@ function navigateTo(to: string) {
             <router-link
               v-if="cat.direct"
               :to="(cat.groups[0]?.items[0]?.to) || '#'"
+              @click="activeCategory = ''; openCats = []"
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
               :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             >
@@ -647,6 +641,7 @@ function navigateTo(to: string) {
             <router-link
               v-if="cat.direct"
               :to="(cat.groups[0]?.items[0]?.to) || '#'"
+              @click="activeCategory = ''; openCats = []"
               class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
               :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
             >
