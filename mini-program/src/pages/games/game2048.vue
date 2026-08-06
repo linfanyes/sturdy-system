@@ -149,10 +149,10 @@ function reSyncAll() {
   flat.value = syncFlat(machine)
 }
 
-/** 滑动方向（与 shared Game2048 对齐） */
+/** 滑动方向：字符串上/下/左/右（手势）+ 数字编码 1/2/3/4（dpad 按钮），两种调用方式兼容 */
 function move(dir) {
   if (machine.over) return
-  const res = machine.move(dir)
+  const res = typeof dir === 'number' ? machine.moveByCode(dir as 1 | 2 | 3 | 4) : machine.move(dir)
   if (!res.moved) return
   reSyncAll()
   if (res.gained > 0) { playSound('hit'); vibrate('short') }
