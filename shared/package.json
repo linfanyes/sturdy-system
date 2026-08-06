@@ -43,6 +43,10 @@
       "import": "./dist/utils/game-helpers.js",
       "types": "./dist/utils/game-helpers.d.ts"
     },
+    "./utils/general": {
+      "import": "./dist/utils/general.js",
+      "types": "./dist/utils/general.d.ts"
+    },
     "./utils/game-mappings": {
       "import": "./dist/utils/game-mappings.js",
       "types": "./dist/utils/game-mappings.d.ts"

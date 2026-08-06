@@ -38,7 +38,9 @@
 - **shared/auth/machine.ts**（新增）：鉴权状态机接口 `IAuthStateMachine` / `IAuthStateMachineWithEvents` / `AuthPersistence` / `IAuthMachineOptions`，统一 login/logout/restore/switchRole 语义；类型 `AuthUser / Credentials / LoginResult / Role / AuthError`；JWT 辅助 `isJwtLike / parseJwtPayload / isJwtExpired`（跨端 atob base64 解码，无 Node Buffer 依赖）。作为阶段 2 契约层 —— 各端 store 实现保留；阶段 3 可收敛为同一状态机 + Persistence Adapter。
 - **shared/constants/index.ts**：Role 类型改为从 `auth/machine` re-export，auth 作为权威源；shared/index.ts 星导出 auth 模块。
 - **shared/index.ts / package.json / tsconfig.json**：导出映射新增 `api/*` / `utils/*` / `auth/*` 子路径；tsconfig include 扩容。
-- 小程序端 `chat-history.js` 的本地会话同步逻辑保留不动（行为零变化）；`util.js::safeParse` 因行为差异保留不动，待阶段 3 统一。
+- 小程序端 `chat-history.js` 的本地会话同步逻辑保留不动（行为零变化）；~~`util.js::safeParse` 因行为差异保留不动，待阶段 3 统一。~~ ✅ 阶段 2 收尾：`util.js::safeParse` 实现已删除，改为 `export { safeParse } from '@gardener/shared/utils/general'`，行为收敛为单一源。
+- shared `package.json` exports 新增 `./utils/general` 映射。
+- 共享 dist 重建（含新增 `utils/general` 产物）。
 - **docs/image-compression-spec.md**（新增）：图片压缩策略规范 v1.0 —— 统一 Web / 小程序端 maxWidth=1280 / quality 0.8（/80）参数；明确降级、校验清单、后端无关化原则。
 
 ### 新增（Web / 小程序功能对齐）
