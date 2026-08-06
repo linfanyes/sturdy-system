@@ -525,6 +525,13 @@
           }
         },
         {
+          "path": "teacher-detail",
+          "style": {
+            "navigationBarTitleText": "教师详情",
+            "enablePullDownRefresh": false
+          }
+        },
+        {
           "path": "textbook",
           "style": {
             "navigationBarTitleText": "教材知识库",

@@ -26,6 +26,7 @@
           <text class="meta" v-else-if="t.email">{{ t.email }}</text>
         </view>
         <view class="acts">
+          <text class="det" @click.stop="goDetail(t)">详情</text>
           <text class="call" v-if="t.phone" @click.stop="call(t.phone)">拨打</text>
           <text class="cp" @click.stop="copy(t)">复制</text>
           <text class="ed" @click.stop="openEdit(t)">编辑</text>
@@ -260,6 +261,9 @@ async function star(t, v) {
   try { const r = await api.patch('/teachers/' + t.id, { isStarred: v }); t.isStarred = r.isStarred }
   catch (e) { uni.showToast({ title: '失败', icon: 'none' }) }
 }
+function goDetail(t) {
+  uni.navigateTo({ url: '/pages/community/teacher-detail?id=' + t.id + '&userId=' + (t.teacherId || t.id) })
+}
 function copy(t) {
   const text = `${t.name} 老师\n${t.position || ''}\n任教：${(t.teachings || []).map((e) => {
     const c = classes.value.find((x) => x.id === e.classId); return c ? c.name + '·' + e.subject : e.subject
@@ -366,6 +370,7 @@ function remove(t) {
 .cp { background: #eef7ee; color: var(--c-primary); }
 .ed { background: #f3f1e6; color: #a07b3b; }
 .del { background: #fde8ea; color: #e06c75; }
+.det { background: #eef7ee; color: var(--c-primary); font-size: 22rpx; padding: 6rpx 14rpx; border-radius: 20rpx; text-align: center; }
 .empty { text-align: center; color: var(--c-sub); padding: 40rpx 0; }
 /* 弹窗 */
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; z-index: 99; }
