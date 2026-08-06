@@ -62,6 +62,22 @@
     "./auth/machine": {
       "import": "./dist/auth/machine.js",
       "types": "./dist/auth/machine.d.ts"
+    },
+    "./schemas": {
+      "import": "./dist/schemas/index.js",
+      "types": "./dist/schemas/index.d.ts"
+    },
+    "./schemas/crud-schema": {
+      "import": "./dist/schemas/crud-schema.js",
+      "types": "./dist/schemas/crud-schema.d.ts"
+    },
+    "./schemas/subject-schema": {
+      "import": "./dist/schemas/subject-schema.js",
+      "types": "./dist/schemas/subject-schema.d.ts"
+    },
+    "./schemas/quicktool-schema": {
+      "import": "./dist/schemas/quicktool-schema.js",
+      "types": "./dist/schemas/quicktool-schema.d.ts"
     }
   },
   "scripts": {

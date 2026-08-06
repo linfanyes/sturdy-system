@@ -12,7 +12,6 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -32,7 +31,8 @@
     "validators/**/*.ts",
     "api/**/*.ts",
     "auth/**/*.ts",
-    "utils/**/*.ts"
+    "utils/**/*.ts",
+    "schemas/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

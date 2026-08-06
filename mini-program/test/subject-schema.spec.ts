@@ -1,30 +1,25 @@
 import fs from 'fs'
 import path from 'path'
 
-const schemaPath = path.resolve(__dirname, '../src/common/subject-schema.js')
-const src = fs.readFileSync(schemaPath, 'utf-8')
+const schemaPath = path.resolve(__dirname, '../shared/schemas/subject-schema.ts')
 
-// Import GRADE_OPTIONS from shared constants (replacing the old extraction approach)
-import { GRADE_OPTIONS } from '@gardener/shared/constants'
-const GRADE = GRADE_OPTIONS
-
-// 提取 SUBJECT_TOOLS 对象并求值（需传入 GRADE 常量）
-const toolsMatch = src.match(/export const SUBJECT_TOOLS = (\{[\s\S]*?\n\})/)
-if (!toolsMatch) throw new Error('未能从 subject-schema.js 提取 SUBJECT_TOOLS')
+// 提取 SUBJECT_TOOLS 对象字面量（TS 版：SUBJECT_TOOLS: SubjectToolSchema = { ... }）
+const toolsMatch = src.match(/export const SUBJECT_TOOLS:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\{[\s\S]*?\n\})/)
+if (!toolsMatch) throw new Error('未能从 subject-schema.ts 提取 SUBJECT_TOOLS')
 // eslint-disable-next-line no-new-func
 const SUBJECT_TOOLS: Record<string, any> = new Function('GRADE', 'return ' + toolsMatch[1])(GRADE)
 
-// 提取 SUBJECT_LIST 数组
-const listMatch = src.match(/export const SUBJECT_LIST = (\[[\s\S]*?\n\])/)
-if (!listMatch) throw new Error('未能从 subject-schema.js 提取 SUBJECT_LIST')
+// 提取 SUBJECT_LIST 数组（TS 版：SUBJECT_LIST: SubjectListItem[] = [ ... ]）
+const listMatch = src.match(/export const SUBJECT_LIST:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\[[\s\S]*?\n\])/)
+if (!listMatch) throw new Error('未能从 subject-schema.ts 提取 SUBJECT_LIST')
 // eslint-disable-next-line no-new-func
-const SUBJECT_LIST: any[] = new Function('return ' + listMatch[1])()
+const SUBJECT_LIST: Record<string, any> = new Function('return ' + listMatch[1])()
 
-// 提取 MATH_TOOLS 数组
-const mathMatch = src.match(/export const MATH_TOOLS = (\[[\s\S]*?\n\])/)
-if (!mathMatch) throw new Error('未能从 subject-schema.js 提取 MATH_TOOLS')
+// 提取 MATH_TOOLS 数组（TS 版：MATH_TOOLS: MathToolItem[] = [ ... ]）
+const mathMatch = src.match(/export const MATH_TOOLS:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\[[\s\S]*?\n\])/)
+if (!mathMatch) throw new Error('未能从 subject-schema.ts 提取 MATH_TOOLS')
 // eslint-disable-next-line no-new-func
-const MATH_TOOLS: any[] = new Function('return ' + mathMatch[1])()
+const MATH_TOOLS: Record<string, any> = new Function('return ' + mathMatch[1])()
 
 describe('学科工具配置 subject-schema', () => {
   describe('学科清单 SUBJECT_LIST', () => {
