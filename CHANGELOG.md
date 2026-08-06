@@ -43,7 +43,7 @@
 - 共享 dist 重建（含新增 `utils/general` 产物）。
 - **docs/image-compression-spec.md**（新增）：图片压缩策略规范 v1.0 —— 统一 Web / 小程序端 maxWidth=1280 / quality 0.8（/80）参数；明确降级、校验清单、后端无关化原则。
 
-### 重构（复用改造阶段 3 启动：schema 提升 + Web 端 schema-driven 渲染器）
+### 重构（复用改造阶段 3 完成：auth 状态机收敛 + schema 提升 + Web 端 schema-driven 渲染器 + 工具中心）
 - **shared/schemas/crud-schema.ts**（迁移自 `mini-program/src/common/crud-schema.js`）：通用 CRUD 实体字段配置（29 个实体），新增 `CrudFieldType / CrudFieldDef / CrudEntityDef / CrudSchema` 类型。
 - **shared/schemas/subject-schema.ts**（迁移自 `mini-program/src/common/subject-schema.js`）：学科 AI 工具配置（21 项 = 语文 7 + 英语 9 + 科学 3 + 道德与法治 3）、学科清单（SUBJECT_LIST 5 科 / ALL_SUBJECTS 15 科）、数学独立工具（MATH_TOOLS 6 项）。新增 `SubjectToolFieldDef / SubjectToolDef / SubjectListItem / MathToolItem / ToolMenuItem` 类型。函数 `getSubjectTool / getToolsBySubject` 直接导出。
 - **shared/schemas/quicktool-schema.ts**（迁移自 `mini-program/src/common/quicktool-schema.js`）：通用 AI 工具配置（18 项）。新增 `QuickToolFieldDef / QuickToolDef / QuickToolSchema` 类型。函数 `getQuickTool` 直接导出。
@@ -53,9 +53,20 @@
 - **shared/index.ts** 星导出 `./schemas/index.js`。
 - 小程序端 `mini-program/src/common/crud-schema.js / subject-schema.js / quicktool-schema.js` 从直接实现改为 re-export from `@gardener/shared/schemas/*`，保留原 import 路径（5 处 importer 无感）。
 - 小程序端 `mini-program/test/subject-schema.spec.ts` 路径与正则适配 TS 版 schema。
-- **web-app/src/views/_schema_crud/SchemaCrudPage.vue**（新增）：Schema-driven 通用 CRUD 渲染器 —— 读 `route.params.entity`、从 `CRUD_SCHEMA[entity]` 取配置、映射为 `FieldDef[]`，复用已有 `CrudTable.vue` 组件（list + create + edit + delete + classId 筛选）；不在 display 中的字段自动 hideInList。
-- **web-app/src/router/index.ts**：教师模块新路由 `schema-crud/:entity`（feature: tools），指向 SchemaCrudPage；所有原手工 view 路由保持不动。
+- **web-app/src/views/_schema_crud/SchemaCrudPage.vue**（新增）：Schema-driven 通用 CRUD 渲染器。支持两种调用方式：`route.params.entity`（独立 URL `/schema-crud/:entity`）或 `<SchemaCrudPage entity="x" />`（router component props 模式，prop 优先）；从 `CRUD_SCHEMA[entity]` 取配置、映射为 `FieldDef[]`，复用已有 `CrudTable.vue`。
+- **web-app/src/router/index.ts**（深度批量替换，复用改造关键推进）：原教师模块 26 条手工 view 路由（均基于 `CrudTable.vue` 直配 FieldDef 数组）批量替换为 SchemaCrudPage + props.entity 映射。原 view 文件 27 个移至 `web-app/src/views_deprecated/manual_views/` 备份（保留回滚能力）。路由名 / title / feature 全部保留 → 菜单通过 route name 引用自动生效。新增 27 条 `schema-crud/:entity` 路由（可作为独立 URL 进入）。路由 ↔ 实体映射示例：route `papers` → entity `generated/papers`、`duty-roster` → `duty-rosters`、`attendance` → `attendances`、`class-finance` → `class-expenses` 等。SchemaCrudPage 升级：`props.entity` 优先 + 保留 `route.params.entity` 兼容。
 - shared dist 完整重建（含 schemas/ 产物）。
+- **鉴权状态机收敛（阶段 3 核心）**：
+  - **shared/auth/factory.ts**（新增）：跨端通用鉴权状态机工厂 `createAuthMachine(opts)` —— 注入 `loginFn + persistence + revokeFn`，实现 login/logout/restore/switchRole 四大操作统一语义；多角色快照 `multiRole`（师兼家 / 超管/校管 token 分存）；事件系统 `on('login'|'logout'|'switchRole'|'restore'|'tokenExpired')` 订阅导出；通用 persistence 工厂 `createKvPersistence / createLocalStoragePersistence`。
+  - **shared/auth/index.ts** 星导出 `./factory.js`。shared `package.json` exports 新增 `./auth/factory`。
+  - **web-app/src/stores/auth-machine.ts**（新增）：Web 侧 Pinia store 包装。localStorage 适配器（key 沿用 `trace_web_token/trace_web_user` 向后兼容 + 新增 `trace_web_multi_role`）；loginFn 适配 `authApi.unifiedLogin`；事件订阅 → 同步更新 Pinia token/user/role/effectiveFeatures/schoolFeatureFlags ref；保留 Web 侧 `fetchMe / applyFeatureProfile / loginByUserName / loginAs*` 旧 API。
+  - **mini-program/src/common/auth-machine.js**（新增）：小程序侧适配器。wxStorage 持久化 key 对齐 route-guard 角色优先级（`admin_token > sa_token > g_parent_token > g_token`），`loadLogin` 同链路回读；loginFn 走 `api.post('/auth/unified-login')` 适配返回结构（含 needsRoleChoice、双身份 parent）；`bindAuthMachine(authReactive)` 注册事件桥接 → 把 machine 状态同步写入 reactive `auth.token / auth.user`。
+  - **mini-program/src/common/store.js** 接入 authMachine：`logout()` 走 machine.logout()（清 storage 全量）、reactive immediate 同步兜底；`getToken()` 优先 `authMachine.token`；`switchRole` / `setDualTokens` / `setParent` 写双身份 machine 多角色快照。
+  - **mini-program/src/App.vue** 启动集成：`onLaunch` 注册 `bindAuthMachine(auth)` + `authMachine.restore()` 异步冷启动恢复（不阻塞首页跳转；route-guard 同步检测仍基于 storage）。
+- **Web 端工具中心 schema 驱动落地**：
+  - **web-app/src/views/tools/AIDetailPage.vue**（新增）：通用 AI 工具详情页，根据 `?key=subject-tool-key` 或 `?q=quicktool-type` 动态渲染表单（input/number/textarea/select四类），submit 走 `schema.build(form)` → `/ai/chat-sync`。统一替代此前各学科分散的人工表单 view。
+  - **web-app/src/views/tools/SubjectTools.vue / SubjectList.vue / SubjectDetail.vue** 改为消费 shared schema：`SUBJECT_LIST` (SubjectTools/SubjectList) 与 `getToolsBySubject(subject)` (SubjectDetail) 替换内部写死数据。
+  - **web-app/src/router/index.ts** 新增 `tools/ai`（name: teacher-ai-detail）路由指向 AIDetailPage（同时 subject/:subject 路由也引 SubjectDetail → 点具体工具跳 `tools/ai?key=...` / `tools/ai?q=...`）。
 
 ### 新增（Web / 小程序功能对齐）
 - **小游戏得分云端同步**：

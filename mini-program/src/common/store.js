@@ -1,8 +1,9 @@
 import { reactive } from 'vue'
 import { DEMO_MODE_ENABLED } from './config'
 import { SCHEMES, FONT_SIZES } from '@gardener/shared/constants'
+import { authMachine, bindAuthMachine } from './auth-machine'
 
-export { SCHEMES, FONT_SIZES }
+export { SCHEMES, FONT_SIZES, authMachine, bindAuthMachine }
 
 const TOKEN_KEY = 'g_token'
 const USER_KEY = 'g_user'
@@ -166,6 +167,12 @@ export function setDualTokens(teacherToken, parentToken, parentData) {
   if (parentData) {
     uni.setStorageSync(PARENT_DATA_KEY, { parentId: parentData.parentId, kids: parentData.kids })
   }
+  // machine 快照写入（双身份）
+  const snap = {
+    teacher: { token: teacherToken, user: auth.user },
+    parent: { token: parentToken, user: parent.user || auth.user },
+  }
+  uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
 }
 
 export function switchRole(targetRole) {
@@ -174,25 +181,43 @@ export function switchRole(targetRole) {
     parent.parentToken = parent.token
     parent.token = parent.teacherToken
     parent.currentRole = 'teacher'
-    // 同步 auth.token 使 teacher api 生效（直接修改 reactive 对象，不污染 g_token）
-    // 注意：readToken() 现已按 admin_token > sa_token > g_token 优先级恢复，
-    // 此处不再写入 g_token，避免与 readToken() 修复冲突导致角色误判
     auth.token = parent.teacherToken
     uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parent.parentToken)
     uni.setStorageSync(PARENT_TOKEN_KEY, parent.teacherToken)
     uni.setStorageSync(PARENT_ROLE_KEY, 'teacher')
+    // machine 快照同步：把双身份写入 multiRole 快照
+    syncMachineMultiRole()
     uni.reLaunch({ url: '/pages/dashboard/dashboard' })
   } else if (targetRole === 'parent' && parent.parentToken) {
     // 切换到家长：备份当前 teacherToken，激活 parentToken
     parent.teacherToken = parent.token
     parent.token = parent.parentToken
     parent.currentRole = 'parent'
-    // 同步 auth.token 使家长 API 也能工作（直接修改 reactive 对象，不污染 g_token）
     auth.token = parent.parentToken
     uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, parent.teacherToken)
     uni.setStorageSync(PARENT_TOKEN_KEY, parent.parentToken)
     uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
+    // machine 快照同步
+    syncMachineMultiRole()
     uni.reLaunch({ url: '/pages/parent/parent' })
+  }
+}
+
+/**
+ * 把当前双身份（parent.teacherToken/parent.parentToken）同步到 machine 的 multiRole 快照，
+ * 从而使 authMachine.switchRole 可正常工作。
+ * 内部调用 persistence。
+ */
+function syncMachineMultiRole() {
+  const snap = {}
+  if (parent.teacherToken && auth.user) {
+    snap.teacher = { token: parent.teacherToken, user: auth.user }
+  }
+  if (parent.parentToken && parent.user) {
+    snap.parent = { token: parent.parentToken, user: parent.user }
+  }
+  if (Object.keys(snap).length) {
+    uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
   }
 }
 
@@ -202,9 +227,14 @@ export function setParent(token, user) {
   parent.parentToken = token
   parent.currentRole = 'parent'
   uni.setStorageSync(PARENT_TOKEN_KEY, token)
-  uni.setStorageSync(PARENT_USER_KEY, user)
+  uni.setStorageSync(PARENT_USER_KEY, typeof user === 'string' ? user : JSON.stringify(user))
   uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, token)
   uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
+  // 同步更新 machine 快照 + auth reactive，使 getToken / effectiveFeatures 一致
+  auth.token = token
+  auth.user = user
+  const snap = { parent: { token, user } }
+  uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
 }
 
 export function logoutParent() {
@@ -301,14 +331,16 @@ export function applyFontSize(size) {
 }
 
 export function getToken() {
-  return auth.token
+  // 优先 machine（冷启动 restore 后 machine 是最新的），回退 auth reactive
+  return authMachine.token || auth.token
 }
 
 export function setAuth(token, user) {
   auth.token = token
   auth.user = user
   uni.setStorageSync(TOKEN_KEY, token)
-  uni.setStorageSync(USER_KEY, user)
+  const u = typeof user === 'string' ? user : JSON.stringify(user)
+  uni.setStorageSync(USER_KEY, u)
 }
 
 export function setUser(user) {
@@ -337,26 +369,20 @@ export function setFeatureProfile(profile) {
 }
 
 export function logout() {
+  // 通过 shared machine 统一清除：machine 内部已清 storage 全量
+  authMachine.logout()
+  // reactive 字段同步（machine logout 已发事件由 bindAuthMachine 桥接更新 auth.token/user；
+  // 这里再补一次 immediate 同步，避免桥接时序问题）
   auth.token = ''
   auth.user = null
-  // 清除功能档案，避免换账号登录时沿用上一位用户的可用功能集合
   auth.features = []
   auth.effectiveFeatures = []
   auth.schoolFeatureFlags = null
-  uni.removeStorageSync(EFFECTIVE_FEATURES_KEY)
-  uni.removeStorageSync(SCHOOL_FEATURE_FLAGS_KEY)
-  // 清除全部角色的登录态，确保 401 等场景下各身份都能正确登出（而非仅清教师令牌）
-  uni.removeStorageSync(TOKEN_KEY)
-  uni.removeStorageSync(USER_KEY)
-  uni.removeStorageSync(PARENT_TOKEN_KEY)
-  uni.removeStorageSync(PARENT_USER_KEY)
+  // 双身份 / 家长端 key 也清理（machine.clearLogin 未包 parent 双身份 key）
   uni.removeStorageSync(PARENT_TEACHER_TOKEN_KEY)
   uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
   uni.removeStorageSync(PARENT_ROLE_KEY)
   uni.removeStorageSync(PARENT_DATA_KEY)
-  uni.removeStorageSync(ADMIN_TOKEN_KEY)
-  uni.removeStorageSync(SA_TOKEN_KEY)
-  uni.removeStorageSync(SA_USER_KEY)
-  // 清除演示模式标记，防止登出后冷启动时 App.vue 误读恢复演示数据
+  // 演示模式标记也清理
   uni.removeStorageSync(MOCK_KEY)
 }

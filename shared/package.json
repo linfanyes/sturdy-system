@@ -63,6 +63,10 @@
       "import": "./dist/auth/machine.js",
       "types": "./dist/auth/machine.d.ts"
     },
+    "./auth/factory": {
+      "import": "./dist/auth/factory.js",
+      "types": "./dist/auth/factory.d.ts"
+    },
     "./schemas": {
       "import": "./dist/schemas/index.js",
       "types": "./dist/schemas/index.d.ts"

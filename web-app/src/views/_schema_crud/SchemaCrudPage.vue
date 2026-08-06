@@ -1,19 +1,26 @@
 <script setup lang="ts">
 /**
- * Schema-driven CRUD 渲染器
+ * Schema-driven CRUD 渲染器（通用入口）
  *
- * 根据 shared/schemas/crud-schema.ts 中的配置自动生成列表 + 表单，
- * 复用 CrudTable.vue 通用组件完成 CRUD。
+ * 支持两种使用方式：
+ *   1. 路由模式：访问 /teacher/schema-crud/:entity，自动读 route.params.entity
+ *   2. 直接绑定：在路由或其它父组件中通过 <SchemaCrudPage entity="xxx" /> 传参
  *
- * 路由参数 :entity 为 CRUD_SCHEMA 的 key，如 'parent-contacts'、'todos'、'attendances'
+ * 内部读 shared/schemas/crud-schema.ts 中的 CrudEntityDef，映射为 CrudTable 的 FieldDef[]，
+ * 自动把不在 display 中的字段设为 hideInList。
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { CRUD_SCHEMA, type CrudEntityDef, type CrudFieldDef } from '@gardener/shared/schemas/crud-schema'
 import CrudTable, { type FieldDef } from '@/components/CrudTable.vue'
 
+const props = defineProps<{
+  /** 直接指定实体 key（可选）；不传则由路由参数 :entity 决定 */
+  entity?: string
+}>()
+
 const route = useRoute()
-const entity = computed(() => route.params.entity as string)
+const entity = computed(() => props.entity || (route.params.entity as string))
 
 const entityDef = computed<CrudEntityDef | undefined>(() => CRUD_SCHEMA[entity.value])
 
@@ -25,7 +32,7 @@ function mapType(t: CrudFieldDef['type']): FieldDef['type'] {
 }
 
 /**
- * 把 CrudFieldDef 转为 FieldDef。
+ * 把 CrudFieldDef 转为 FieldDef：
  * 不在 display 中的字段自动 hideInList（仅详情/编辑可见）。
  */
 const fields = computed<FieldDef[]>(() => {
@@ -42,9 +49,6 @@ const fields = computed<FieldDef[]>(() => {
     hideInList: !displaySet.has(f.key),
   }))
 })
-
-// 自动推导一个合理的搜索字段
-const defaultSearchField = computed(() => entityDef.value?.search)
 </script>
 
 <template>

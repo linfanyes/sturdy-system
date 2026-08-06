@@ -1,6 +1,6 @@
 <script>
 import { onLaunch } from '@dcloudio/uni-app'
-import { mockMode, initTheme } from './common/store'
+import { mockMode, initTheme, auth, bindAuthMachine, authMachine } from './common/store'
 import { setMockMode } from './common/request'
 import { CLOUDRUN_ENV, DEMO_MODE_ENABLED } from './common/config'
 import { setupRouteGuard } from './common/route-guard'
@@ -9,6 +9,8 @@ export default {
   onLaunch() {
     // 注册前端路由角色守卫（拦截越权导航，如教师进入管理员面板）
     setupRouteGuard()
+    // 鉴权状态机桥接：machine ↔ reactive auth，使 machine 事件能更新 reactive 对象
+    bindAuthMachine(auth)
     // 屏蔽 uni-app 运行框架内置的 DCloud CDN 阴影图预加载（wx.preloadAssets）。
     // 该预加载仅作性能优化，非页面实际渲染图；在无法访问 cdn1.dcloud.net.cn 的环境会
     // 持续刷「渲染层网络层错误 / ERR_TIMED_OUT」且无任何功能影响。仅拦截此 CDN 的预加载，
@@ -33,6 +35,14 @@ export default {
       setMockMode(true)
     }
     initTheme()
+    // 鉴权状态机冷启动恢复：从 wx storage 读取最新 token 写入 machine → reactive auth
+    // （异步，不阻塞首页跳转；跳转逻辑仍基于 route-guard 同步 token 检测）
+    authMachine.restore().then((r) => {
+      if (r && r.user && r.user.effectiveFeatures) {
+        // 通过 store.setFeatureProfile 更新 reactive 的 effectiveFeatures
+        if (auth && auth.setFeatureProfile) auth.setFeatureProfile({ effectiveFeatures: r.user.effectiveFeatures })
+      }
+    })
     // 多角色会话恢复：任一角色令牌存在即视为已登录，并跳转对应首页，
     // 避免超管 / 校管 / 家长 / 教师登录态在冷启动时被判为未登录而被强制退回登录页。
     // 无任何登录态时，停留在登录页（pages/login/login 为首页），不再自动进入演示模式。
