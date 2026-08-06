@@ -10,6 +10,7 @@ import * as path from 'node:path'
 import * as mysql from 'mysql2/promise'
 import { AppModule } from './app.module'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
+import { isBcryptHash } from './common/utils/password.util'
 
 /**
  * 启动时自动执行 migrations 目录下未应用的 .sql 文件。
@@ -18,10 +19,15 @@ import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filte
  *   仅打印错误供运维排查。
  * - 使用独立的迁移连接（仅该连接开启 multipleStatements），
  *   业务连接不再开启多语句，缩小 SQL 注入单点风险面。
+ * - 使用 MySQL 命名锁（GET_LOCK）防止多实例并发执行迁移，
+ *   避免云托管多副本场景下的竞态条件。
  */
 async function runMigrations(app: any) {
   const config = app.get(ConfigService)
   let conn: mysql.Connection | null = null
+  let lockAcquired = false
+  const LOCK_NAME = 'gardener_run_migrations'
+  const LOCK_TIMEOUT = 60 // 秒
   try {
     const migrationsDir = path.join(__dirname, '..', 'migrations')
     if (!fs.existsSync(migrationsDir)) {
@@ -40,6 +46,18 @@ async function runMigrations(app: any) {
       connectTimeout: 5000,
       ...(config.get('DB_SSL') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
     })
+
+    // 获取分布式锁，防止多实例并发执行迁移
+    const [lockResult] = await conn.query<mysql.RowDataPacket[]>(
+      'SELECT GET_LOCK(?, ?) as acquired',
+      [LOCK_NAME, LOCK_TIMEOUT],
+    )
+    lockAcquired = lockResult[0]?.acquired === 1
+    if (!lockAcquired) {
+      console.warn(`⚠️ 未能获取迁移锁 ${LOCK_NAME}（其他实例正在执行迁移），跳过本轮迁移`)
+      return
+    }
+
     await conn.query(`CREATE TABLE IF NOT EXISTS _migrations_applied (
       id INT AUTO_INCREMENT PRIMARY KEY,
       filename VARCHAR(255) NOT NULL UNIQUE,
@@ -65,7 +83,13 @@ async function runMigrations(app: any) {
       console.error('⚠️  自动迁移执行失败（开发环境不阻塞启动，synchronize 仍会同步表结构）:', e?.message || e)
     }
   } finally {
-    if (conn) await conn.end().catch(() => {})
+    // 释放锁并关闭连接
+    if (conn) {
+      if (lockAcquired) {
+        await conn.query('SELECT RELEASE_LOCK(?)', [LOCK_NAME]).catch(() => {})
+      }
+      await conn.end().catch(() => {})
+    }
   }
 }
 
@@ -156,6 +180,10 @@ async function bootstrap() {
     if (config.get('NODE_ENV') === 'production') {
       throw new Error('超级管理员仍为默认账号 admin/admin，生产环境拒绝启动，请修改 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 为强口令。')
     }
+  }
+  // 生产环境检查超管密码是否为 bcrypt 哈希（$2b$... 开头），否则拒绝启动
+  if (config.get('NODE_ENV') === 'production' && !isBcryptHash(sp)) {
+    throw new Error('生产环境超级管理员密码未使用 bcrypt 哈希格式，存在安全风险。请通过 `SUPER_ADMIN_PASSWORD` 设置 bcrypt 哈希值（$2b$... 开头）后重试。')
   }
   // 生产环境开启 DB_SYNCHRONIZE 会让实体变更隐式改表结构，存在数据损坏风险，仅警告不阻断
   if (config.get('NODE_ENV') === 'production' && config.get('DB_SYNCHRONIZE') === 'true') {

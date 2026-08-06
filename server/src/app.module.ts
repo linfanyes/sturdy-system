@@ -51,6 +51,7 @@ import { TextbookModule } from './textbook/textbook.module'
 import { ResourceLibraryModule } from './resource-library/resource-library.module'
 import { OnlineResourcesModule } from './online-resources/online-resources.module'
 import { FeatureModule } from './common/feature/feature.module'
+import { CacheModule } from './common/cache/cache.module'
 import { EvaluationModule } from './evaluation/evaluation.module'
 import { HealthController } from './health.controller'
 
@@ -156,6 +157,7 @@ import { HealthController } from './health.controller'
     ResourceLibraryModule,
     OnlineResourcesModule,
     FeatureModule,
+    CacheModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

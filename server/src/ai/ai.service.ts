@@ -8,6 +8,7 @@ import { xlsxToCsvText } from '../common/excel.util'
 import mammoth from 'mammoth'
 import { createCanvas } from '@napi-rs/canvas'
 import { ConfigService } from '../config/config.service'
+import { CacheService } from '../common/cache/cache.service'
 import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
@@ -76,8 +77,12 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024
 
 @Injectable()
 export class AiService {
+  // AI 上下文缓存 TTL：5 分钟（学生/班级/成绩等数据在此期间变化概率低）
+  private readonly AI_CONTEXT_TTL = 5 * 60 * 1000
+
   constructor(
     private readonly cfg: ConfigService,
+    private readonly cache: CacheService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
@@ -367,6 +372,10 @@ export class AiService {
     // 校管无教师本地数据，跳过上下文注入，避免按 teacherId 查不到数据而报错
     if (ownerType !== 'teacher') return ''
     const teacherId = ownerId
+    // 缓存命中时直接返回，避免每次对话都执行 8 路数据库查询
+    const cacheKey = `ai-context:${teacherId}`
+    const cached = this.cache.get<string>(cacheKey)
+    if (cached !== undefined) return cached
     const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
     const [u, classes, students, teachers, grades, exams, awards, notes] = await Promise.all([
       this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null),
@@ -411,7 +420,12 @@ export class AiService {
       lines.push('# 最近笔记（最多 10 条标题）')
       lines.push((notes as any[]).map((n) => `- ${n.title || '-'}`).join('\n'))
     }
-    return lines.length > 1 ? lines.join('\n\n') : ''
+    const result = lines.length > 1 ? lines.join('\n\n') : ''
+    // 仅缓存非空结果（空结果表示该教师无任何本地数据）
+    if (result) {
+      this.cache.set(cacheKey, result, this.AI_CONTEXT_TTL)
+    }
+    return result
   }
 
   /**
@@ -727,5 +741,21 @@ export class AiService {
     } catch {
       return { text: '' }
     }
+  }
+
+  /**
+   * 清除指定教师的 AI 上下文缓存（数据变更时外部调用）。
+   * 场景：新增/修改/删除 学生、班级、成绩、考试、奖惩、笔记等数据后调用。
+   * @param teacherId 教师 ID
+   */
+  clearAiContextCache(teacherId: string): void {
+    this.cache.del(`ai-context:${teacherId}`)
+  }
+
+  /**
+   * 清除所有 AI 上下文缓存（全局配置变更时调用）。
+   */
+  clearAllAiContextCache(): void {
+    this.cache.delByScope('ai-context')
   }
 }

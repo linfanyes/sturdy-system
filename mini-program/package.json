@@ -19,7 +19,7 @@
     "docx": "^9.7.1",
     "marked": "^18.0.6",
     "vue": "^3.4.21",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.20.3"
   },
   "devDependencies": {
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5020120260710001",

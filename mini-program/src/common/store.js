@@ -174,24 +174,24 @@ export function switchRole(targetRole) {
     parent.parentToken = parent.token
     parent.token = parent.teacherToken
     parent.currentRole = 'teacher'
-    // 同步 auth.token 使 teacher api 生效
+    // 同步 auth.token 使 teacher api 生效（直接修改 reactive 对象，不污染 g_token）
+    // 注意：readToken() 现已按 admin_token > sa_token > g_token 优先级恢复，
+    // 此处不再写入 g_token，避免与 readToken() 修复冲突导致角色误判
     auth.token = parent.teacherToken
     uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parent.parentToken)
     uni.setStorageSync(PARENT_TOKEN_KEY, parent.teacherToken)
     uni.setStorageSync(PARENT_ROLE_KEY, 'teacher')
-    uni.setStorageSync('g_token', parent.teacherToken)
     uni.reLaunch({ url: '/pages/dashboard/dashboard' })
   } else if (targetRole === 'parent' && parent.parentToken) {
     // 切换到家长：备份当前 teacherToken，激活 parentToken
     parent.teacherToken = parent.token
     parent.token = parent.parentToken
     parent.currentRole = 'parent'
-    // 同步 auth.token 使家长 API 也能工作
+    // 同步 auth.token 使家长 API 也能工作（直接修改 reactive 对象，不污染 g_token）
     auth.token = parent.parentToken
     uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, parent.teacherToken)
     uni.setStorageSync(PARENT_TOKEN_KEY, parent.parentToken)
     uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
-    uni.setStorageSync('g_token', parent.parentToken)
     uni.reLaunch({ url: '/pages/parent/parent' })
   }
 }

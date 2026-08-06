@@ -7,6 +7,7 @@ import { AppConfig } from './app-config.entity'
 import { AiSettings } from './ai-settings.entity'
 import { AiProvider } from './ai-provider.entity'
 import { fetchProviderModels, type ProviderModelsResult } from './provider-models'
+import { CacheService } from '../common/cache/cache.service'
 
 /**
  * 密钥类配置项：写入时加密落库，读取时解密（超管页面仅展示脱敏值）。
@@ -72,7 +73,18 @@ export class ConfigService implements OnModuleInit {
     @InjectRepository(AiProvider)
     private readonly providerRepo: Repository<AiProvider>,
     private readonly env: EnvConfigService,
-  ) {}
+    private readonly cache: CacheService,
+  ) {
+    /** AI 配置缓存 TTL：10 分钟（配置不频繁变更） */
+    this.AI_SETTINGS_TTL = 1000 * 60 * 10
+    /** 应用配置缓存 TTL：10 分钟 */
+    this.APP_CONFIG_TTL = 1000 * 60 * 10
+  }
+
+  /** AI 配置缓存 TTL（毫秒） */
+  private readonly AI_SETTINGS_TTL: number
+  /** 应用配置缓存 TTL（毫秒） */
+  private readonly APP_CONFIG_TTL: number
 
   async onModuleInit() {
     if (!getEncryptionKey()) {
@@ -228,9 +240,15 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getAppConfigValue(key: string): Promise<string | undefined> {
+    const cacheKey = `app-config:${key}`
+    const cached = this.cache.get<string>(cacheKey)
+    if (cached !== undefined) return cached
     const c = await this.appRepo.findOne({ where: { key } })
     if (!c) return undefined
-    return SECRET_CONFIG_KEYS.has(key) ? decryptSecret(c.value) : c.value
+    const value = SECRET_CONFIG_KEYS.has(key) ? decryptSecret(c.value) : c.value
+    // 仅缓存非 undefined 值
+    this.cache.set(cacheKey, value, this.APP_CONFIG_TTL)
+    return value
   }
 
   async setAppConfig(key: string, value: string, description?: string) {
@@ -243,7 +261,10 @@ export class ConfigService implements OnModuleInit {
     }
     c.value = SECRET_CONFIG_KEYS.has(key) ? encryptSecret(value) : value
     if (description) c.description = description
-    return this.appRepo.save(c)
+    await this.appRepo.save(c)
+    // 配置变更后清除对应缓存，下次读取时重新加载
+    this.clearAppConfigCache(key)
+    return c
   }
 
   /** 批量保存平台配置（事务式逐条写入） */
@@ -251,6 +272,10 @@ export class ConfigService implements OnModuleInit {
     for (const it of items || []) {
       if (!it || !it.key) continue
       await this.setAppConfig(it.key, it.value ?? '')
+    }
+    // 批量更新后清除相关缓存
+    for (const it of items || []) {
+      if (it?.key) this.clearAppConfigCache(it.key)
     }
     return { ok: true }
   }
@@ -275,6 +300,28 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
+  /**
+   * 清除应用配置缓存（配置变更时调用）。
+   */
+  clearAppConfigCache(key?: string): void {
+    if (key) {
+      this.cache.del(`app-config:${key}`)
+    } else {
+      this.cache.delByScope('app-config')
+    }
+  }
+
+  /**
+   * 清除 AI 配置缓存（AI 设置变更时调用）。
+   */
+  clearAiSettingsCache(ownerType?: string, ownerId?: string): void {
+    if (ownerType && ownerId) {
+      this.cache.del(`ai-settings:${ownerType}:${ownerId}`)
+    } else {
+      this.cache.delByScope('ai-settings')
+    }
+  }
+
   /** 下发给小程序的公开配置（剔除敏感项） */
   async publicConfig() {
     const subjects = (await this.getAppConfigValue('defaultSubjects')) || ''
@@ -285,6 +332,12 @@ export class ConfigService implements OnModuleInit {
 
   /** 取教师/校管的 AI 设置；无则回退平台默认值 + 默认服务商 */
   async getAiSettings(ownerType: string, ownerId: string): Promise<AiSettings> {
+    const cacheKey = `ai-settings:${ownerType}:${ownerId}`
+    const cached = this.cache.get<AiSettings>(cacheKey)
+    if (cached) {
+      // 返回缓存的副本（避免外部修改影响缓存）
+      return { ...cached, apiKey: cached.apiKey ? decryptSecret(cached.apiKey) : '' }
+    }
     let s = await this.aiRepo.findOne({ where: { ownerType, ownerId } })
     if (!s) {
       const defaultProv = await this.providerRepo.findOne({ where: { isDefault: true, enabled: true } })
@@ -317,6 +370,12 @@ export class ConfigService implements OnModuleInit {
       }
     }
     // apiKey 为密文时解密，供 AI 调用与控制器脱敏展示使用
+    // 在返回前缓存一份（apiKey 保持加密状态以保护缓存中的密钥安全）
+    const toCache = { ...s }
+    if (toCache.apiKey && !toCache.apiKey.startsWith('enc:v1:')) {
+      toCache.apiKey = encryptSecret(toCache.apiKey)
+    }
+    this.cache.set(cacheKey, toCache, this.AI_SETTINGS_TTL)
     if (s.apiKey) s.apiKey = decryptSecret(s.apiKey)
     return s
   }
@@ -348,7 +407,10 @@ export class ConfigService implements OnModuleInit {
       dto.apiKey = encryptSecret(incomingKey)
     }
     Object.assign(s, dto, { ownerType, ownerId })
-    return this.aiRepo.save(s)
+    await this.aiRepo.save(s)
+    // AI 设置变更后清除对应缓存
+    this.clearAiSettingsCache(ownerType, ownerId)
+    return s
   }
 
   /**

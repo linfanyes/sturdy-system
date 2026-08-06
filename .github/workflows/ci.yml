@@ -168,7 +168,6 @@ jobs:
       - name: Run tests (${{ matrix.package }})
         working-directory: ${{ matrix.package }}
         run: npm run test:report
-        continue-on-error: true
 
       - name: Upload test results
         if: always()
@@ -225,11 +224,11 @@ jobs:
 
       - name: Type check mini-program
         working-directory: mini-program
-        run: npx tsc --noEmit || true
+        run: npx tsc --noEmit
 
       - name: ESLint server
         working-directory: server
-        run: npx eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0 || true
+        run: npx eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0
 
   # ===================================================
   #  deploy：手动触发部署（workflow_dispatch）

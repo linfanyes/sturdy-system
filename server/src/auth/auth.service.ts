@@ -11,11 +11,12 @@ import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { parentImUserId } from '../im/parent-im.util'
-import { verifyAndUpgrade } from '../common/utils/password.util'
+import { verifyAndUpgrade, isBcryptHash, hashPassword } from '../common/utils/password.util'
 import { AuditService } from '../audit/audit.service'
 import { Parent } from '../parent/parent.entity'
 import { FeatureService } from '../common/feature/feature.service'
 import { StudentParentService } from '../student-parent/student-parent.module'
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class AuthService {
@@ -56,11 +57,16 @@ export class AuthService {
     const u = username.trim()
     const p = password.trim()
 
-    // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报“账号不存在”）
+    // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报"账号不存在"）
     const su = this.config.get('SUPER_ADMIN_USER') || 'admin'
     const sp = this.config.get('SUPER_ADMIN_PASSWORD') || 'admin'
     if (u === su) {
-      if (p === sp) {
+      // 支持 bcrypt 哈希或明文比较（向后兼容）。
+      // 建议通过 SUPER_ADMIN_PASSWORD 设置 bcrypt 哈希（$2b$... 开头）以提高安全性。
+      const valid = isBcryptHash(sp)
+        ? bcrypt.compareSync(p, sp)
+        : p === sp
+      if (valid) {
         return {
           role: 'super',
           token: this.jwt.sign({ sub: 'super', role: 'super' }),

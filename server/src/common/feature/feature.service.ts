@@ -7,6 +7,8 @@ import { School } from '../../school/school.entity'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { FEATURE_FLAGS } from './feature-flags.constants'
 import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
+import { CacheService } from '../cache/cache.service'
+import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
 
 /** 层级解析器注入令牌（便于将来插入 ProjectLevelResolver 等而不返工） */
 export const FEATURE_RESOLVERS = Symbol('FEATURE_RESOLVERS')
@@ -45,10 +47,14 @@ export class FeatureService {
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @Inject(FEATURE_RESOLVERS) private readonly resolvers: FeatureLevelResolver[],
     private readonly classMemberSvc: ClassMemberService,
+    private readonly cache: CacheService,
   ) {
     this.allFeatures = FEATURE_FLAGS
     this.allSet = new Set(FEATURE_FLAGS)
   }
+
+  /** 功能权限缓存 TTL：10 分钟（权限在此期间变化概率低） */
+  private readonly FEATURE_CONTEXT_TTL = 10 * 60 * 1000
 
   /**
    * 把 JWT payload（req.user）转换为 FeatureContext。
@@ -58,14 +64,23 @@ export class FeatureService {
    */
   async resolveContextFromReq(user: any): Promise<FeatureContext> {
     const role = user?.role
+    // 超管/校管无需缓存（直接返回，无 DB 查询）
     if (role === 'super' || role === 'school_admin') return { role, schoolId: user?.schoolId }
+    // 检查缓存（按用户角色 + ID）
+    const cacheKey = role === 'parent'
+      ? `feature-ctx:parent:${user.studentId}`
+      : `feature-ctx:${role}:${user.sub}`
+    const cached = this.cache.get<FeatureContext>(cacheKey)
+    if (cached) return cached
     if (role === 'teacher') {
       const u = await this.userRepo.findOne({ where: { id: user.sub } })
-      return {
+      const ctx: FeatureContext = {
         role: 'teacher',
         schoolId: u?.schoolId ?? undefined,
         teacherFeatures: u?.features ?? null,
       }
+      this.cache.set(cacheKey, ctx, this.FEATURE_CONTEXT_TTL)
+      return ctx
     }
     if (role === 'parent') {
       const stu = await this.studentRepo.findOne({ where: { id: user.studentId } })
@@ -84,13 +99,34 @@ export class FeatureService {
           }
         }
       }
-      return {
+      const ctx: FeatureContext = {
         role: 'parent',
         schoolId,
         teacherFeatures: teacherFeaturesUnion.size ? [...teacherFeaturesUnion] : null,
       }
+      this.cache.set(cacheKey, ctx, this.FEATURE_CONTEXT_TTL)
+      return ctx
     }
     return { role: (role as FeatureContext['role']) ?? 'teacher' }
+  }
+
+  /**
+   * 清除教师/家长的功能权限缓存（用户信息或学校 featureFlags 变更时调用）。
+   * @param userId 用户 ID（教师 ID 或家长对应的 studentId）
+   * @param role 用户角色
+   */
+  clearFeatureContextCache(userId: string, role: 'teacher' | 'parent'): void {
+    const cacheKey = role === 'parent'
+      ? `feature-ctx:parent:${userId}`
+      : `feature-ctx:${role}:${userId}`
+    this.cache.del(cacheKey)
+  }
+
+  /**
+   * 清除所有功能权限缓存（学校级 featureFlags 变更时调用）。
+   */
+  clearAllFeatureContextCache(): void {
+    this.cache.delByScope('feature-ctx')
   }
 
   /** 计算有效功能包集合（核心算法） */
