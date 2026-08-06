@@ -405,9 +405,11 @@ function findCategoryForRoute(targetName: any) {
 }
 
 function syncActiveCat() {
+  const rootNames = ['teacher-dashboard', 'super-dashboard', 'school-admin-dashboard']
+  // 根路由不覆盖已选分类：支持从三级页面通过 backToTiles()/goBackUp() 返回时正确展示瓷砖面板。
+  // 非根路由进入时（含刷新页面）才更新 activeCategory，确保面包屑正确反映当前页面所属分类。
+  if (rootNames.includes(route.name as string)) return
   const c = findCategoryForRoute(route.name)
-  // 关键：路由进入直达项（仪表盘/审计日志）或无匹配分类时，必须清空 activeCategory，
-  // 否则之前选中的分类（如「设置」）会残留在面包屑路径中（如「仪表盘 / 设置 / 审计日志」）。
   activeCategory.value = c
   if (c && !openCats.value.includes(c)) openCats.value = [...openCats.value, c]
 }
@@ -839,16 +841,17 @@ function navigateTo(to: string) {
           </template>
           <!-- 常规页面内容：三级/二级页面统一提供「返回上级」条（首页与瓷砖面板不显示） -->
           <template v-else>
-            <div v-if="!isHome" class="flex items-center gap-2 mb-4">
+            <div v-if="!isHome" class="flex items-center gap-2 mb-4 flex-wrap">
               <button
                 type="button"
-                class="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200 transition-colors text-sm"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200 active:scale-95 transition-all text-sm font-medium shadow-sm"
+                :title="activeCategory ? `返回「${activeCategory}」菜单` : '返回工作台'"
                 @click="goBackUp"
               >
-                <ChevronLeft class="w-4 h-4" />
-                返回{{ activeCategory ? activeCategory : '工作台' }}
+                <ChevronLeft class="w-4 h-4 shrink-0" />
+                <span class="hidden sm:inline">返回</span>{{ activeCategory ? activeCategory : '工作台' }}
               </button>
-              <span class="text-xs text-cocoa-400">{{ pageTitle || '' }}</span>
+              <span class="text-xs text-cocoa-400 truncate">{{ pageTitle || '' }}</span>
             </div>
             <router-view />
           </template>
