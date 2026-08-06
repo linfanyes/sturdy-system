@@ -177,7 +177,7 @@ function selectRole(role: 'teacher' | 'parent') {
 
 <template>
   <div
-    class="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8"
+    class="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8"
     style="background: linear-gradient(135deg, #fff0e6 0%, #fff8f0 40%, #eafaf1 100%);"
   >
     <!-- 柔和光斑 -->

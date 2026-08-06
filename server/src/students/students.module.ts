@@ -286,6 +286,7 @@ class StudentsService extends CrudService<Student> {
   async toggleParentLogin(user: any, studentId: string) {
     // 校管按 id 查（其学生列表已按学校过滤，仅能操作本校学生），教师按 teacherId 归属过滤
     const role = user?.role
+    const teacherId = user?.sub
     const s = role === 'school_admin'
       ? await this.repo.findOne({ where: { id: studentId } })
       : await this.repo.findOne({ where: { id: studentId, teacherId: user?.sub } })

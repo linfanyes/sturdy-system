@@ -805,7 +805,7 @@ function navigateTo(to: string) {
 
       <!-- 实际页面内容 -->
       <div class="flex-1 overflow-auto">
-        <div class="w-full min-h-full px-8 py-6 flex flex-col">
+        <div class="w-full min-h-full px-4 py-4 sm:px-6 sm:py-6 lg:px-8 flex flex-col">
           <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
           <template v-if="showTilesPanel">
             <div class="flex items-center gap-2 text-sm text-cocoa-700 font-medium mb-4">

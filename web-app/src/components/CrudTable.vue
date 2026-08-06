@@ -210,9 +210,9 @@ defineExpose({ reload: loadList })
 <template>
   <div class="card-soft">
     <!-- 顶栏 -->
-    <div class="flex items-center justify-between gap-4 mb-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
       <h1 class="text-2xl font-bold text-cocoa-900">{{ title }}管理</h1>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <select
           v-if="classFilterable !== false"
           v-model="classId"
@@ -221,12 +221,12 @@ defineExpose({ reload: loadList })
           <option value="">全部班级</option>
           <option v-for="opt in classOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
-        <div class="relative">
+        <div class="relative flex-1 min-w-[160px] sm:flex-none">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cocoa-400" />
           <input
             v-model="keyword"
             placeholder="搜索"
-            class="pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm w-56 focus:outline-none focus:border-butter-400"
+            class="w-full sm:w-56 pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           />
         </div>
         <button
@@ -267,10 +267,10 @@ defineExpose({ reload: loadList })
           <tr v-for="row in filtered" :key="row.id" class="hover:bg-cream-50 transition-colors">
             <td v-for="f in listFields" :key="f.key" class="px-4 py-3 text-cocoa-700">{{ fmtVal(row, f) }}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap">
-              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(row)">
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" aria-label="编辑" @click="openEdit(row)">
                 <Edit3 class="w-4 h-4" />
               </button>
-              <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 ml-1" title="删除" @click="handleDelete(row)">
+              <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 ml-1" title="删除" aria-label="删除" @click="handleDelete(row)">
                 <Trash2 class="w-4 h-4" />
               </button>
               <button
@@ -289,7 +289,7 @@ defineExpose({ reload: loadList })
   <!-- 新增/编辑模态框 -->
   <Modal v-model="showForm" :title="editing ? `编辑${title}` : `新增${title}`" width="max-w-2xl">
     <div class="space-y-3">
-      <div v-for="f in fields" :key="f.key" :class="f.type === 'textarea' ? '' : 'grid grid-cols-2 gap-3'">
+      <div v-for="f in fields" :key="f.key" :class="f.type === 'textarea' ? '' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'">
         <div :class="f.type === 'textarea' ? '' : 'col-span-1'">
           <label class="text-sm text-cocoa-500">
             {{ f.label }}<span v-if="f.required" class="text-red-500">*</span>

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-04T14:57:37.843Z",
+  "timestamp": "2026-08-06T03:18:51.156Z",
   "dimension1_functionalScope": {
     "totalModules": 40,
     "matched": 38,
@@ -443,7 +443,7 @@
         "module": "IM 通讯",
         "backendModule": "im",
         "webPages": [
-          "/teacher/im"
+          "/teacher/messages"
         ],
         "miniPages": [
           "pages/im/im"

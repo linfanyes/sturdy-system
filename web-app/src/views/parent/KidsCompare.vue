@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4">
+  <div class="min-h-[100dvh] bg-cream-50 p-4">
     <!-- 返回 -->
     <div @click="router.back()" class="flex items-center gap-1 text-gray-500 mb-4 cursor-pointer">
       ← 返回看板

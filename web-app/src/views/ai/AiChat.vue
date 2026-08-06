@@ -91,7 +91,7 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="flex flex-col h-[calc(100vh-9rem)]">
+  <div class="flex flex-col h-[calc(100dvh-9rem)]">
     <div class="flex items-center justify-between mb-3">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
         <Bot class="w-6 h-6 text-butter-500" /> AI 助手
