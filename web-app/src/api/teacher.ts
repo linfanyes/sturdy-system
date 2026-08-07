@@ -419,6 +419,41 @@ export function aiDiagnose(studentId: string) {
   return request.post<any, { content: string }>('/ai/diagnose', { studentId })
 }
 
+/* ============ 成绩分析 API ============ */
+
+/** 某次考试统计（按班级+考试） */
+export function getExamAnalysis(classId: string, examId: string, fullScoreMap?: Record<string, number>) {
+  const params: Record<string, any> = { classId, examId }
+  if (fullScoreMap) params.fullScoreMap = JSON.stringify(fullScoreMap)
+  return request.get<any, any>('/grades/analysis/exam', { params })
+}
+
+/** 班级内排名 */
+export function getClassRank(classId: string, examId: string, subject?: string) {
+  const params: Record<string, any> = { classId, examId }
+  if (subject) params.subject = subject
+  return request.get<any, { ranks: any[] }>('/grades/analysis/rank', { params })
+}
+
+/** 历次考试趋势 */
+export function getExamTrend(classId: string, subject?: string) {
+  const params: Record<string, any> = { classId }
+  if (subject) params.subject = subject
+  return request.get<any, any>('/grades/analysis/trend', { params })
+}
+
+/** 某学生历史成绩 */
+export function getStudentHistory(studentId: string) {
+  return request.get<any, any>(`/grades/analysis/student/${studentId}`)
+}
+
+/** 薄弱学生预警 */
+export function getWeakStudents(classId: string, examId?: string) {
+  const params: Record<string, any> = { classId }
+  if (examId) params.examId = examId
+  return request.get<any, any>('/grades/analysis/weak', { params })
+}
+
 /* ============ 通用 CRUD 辅助 ============ */
 
 /** 通用列表查询 */

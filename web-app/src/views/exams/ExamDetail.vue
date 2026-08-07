@@ -10,8 +10,11 @@ import request from '@/api/request'
 import { useClasses } from '@/composables/useClasses'
 import {
   ArrowLeft, Users, GraduationCap, CheckCircle, Award,
-  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2,
+  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen,
 } from 'lucide-vue-next'
+import {
+  getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
+} from '@/api/teacher'
 
 const props = defineProps<{ examId?: string; classId?: string }>()
 const route = useRoute()
@@ -24,7 +27,9 @@ const classId = computed(() => props.classId || String(route.query.classId || ''
 const loading = ref(false)
 const exam = ref<any | null>(null)
 const analysis = ref<any | null>(null)
-const students = ref<any[]>([])
+const students = ref<any[]>(([]))
+const weakStudents = ref<any[]>(([]))
+const weakLoading = ref(false)
 
 const subjects = computed<any[]>(() => analysis.value?.subjects || [])
 const subjectNames = computed<string[]>(() => subjects.value.map((s: any) => s.subject))
@@ -86,9 +91,11 @@ async function loadExam() {
 async function loadAnalysis() {
   if (!examId.value || !classId.value) return
   try {
-    analysis.value = await request.get('/grades/analysis/exam', {
-      params: { classId: classId.value, examId: examId.value },
-    })
+    const raw = exam.value?.subjectFullScores
+    const fullScoreMap = raw
+      ? Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Number(v) || 100]))
+      : undefined
+    analysis.value = await getExamAnalysis(classId.value, examId.value, fullScoreMap)
   } catch {
     analysis.value = null
   }
@@ -174,14 +181,25 @@ async function loadRanks() {
   if (!examId.value || !classId.value) { ranks.value = []; return }
   rankLoading.value = true
   try {
-    const params: Record<string, any> = { classId: classId.value, examId: examId.value }
-    if (rankSubject.value) params.subject = rankSubject.value
-    const res: any = await request.get('/grades/analysis/rank', { params })
+    const res: any = await getClassRank(classId.value, examId.value, rankSubject.value || undefined)
     ranks.value = res?.ranks || []
   } catch {
     ranks.value = []
   } finally {
     rankLoading.value = false
+  }
+}
+
+async function loadWeakStudents() {
+  if (!classId.value || !examId.value) { weakStudents.value = []; return }
+  weakLoading.value = true
+  try {
+    const res: any = await getWeakStudents(classId.value, examId.value)
+    weakStudents.value = res?.weakList || res?.students || []
+  } catch {
+    weakStudents.value = []
+  } finally {
+    weakLoading.value = false
   }
 }
 
@@ -226,6 +244,7 @@ async function loadAll() {
       distSubject.value = subjectNames.value[0]
     }
     await loadRanks()
+    await loadWeakStudents()
   } finally {
     loading.value = false
   }
@@ -567,6 +586,43 @@ function goBack() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- 薄弱学生预警 -->
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
+        <div class="font-medium text-cocoa-700 mb-3 flex items-center gap-2">
+          <AlertTriangle class="w-4 h-4 text-red-400" /> 薄弱学生预警
+          <span v-if="weakStudents.length" class="text-xs text-cocoa-400 font-normal">共 {{ weakStudents.length }} 人</span>
+        </div>
+        <div v-if="weakLoading" class="text-cocoa-400 text-sm py-6 text-center flex items-center justify-center gap-2">
+          <Loader2 class="w-4 h-4 animate-spin" /> 加载中…
+        </div>
+        <div v-else-if="!weakStudents.length" class="text-cocoa-400 text-sm py-6 text-center">暂无薄弱学生数据</div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-cream-100 text-cocoa-500 text-left">
+              <tr>
+                <th class="px-3 py-2 font-medium">姓名</th>
+                <th class="px-3 py-2 font-medium">薄弱科目</th>
+                <th class="px-3 py-2 font-medium text-right">该科分数</th>
+                <th class="px-3 py-2 font-medium text-right">班级均分</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cream-100">
+              <tr v-for="(w, i) in weakStudents" :key="'w' + i" class="hover:bg-cream-50">
+                <td class="px-3 py-2 font-medium text-cocoa-900">{{ w.studentName || w.name || '-' }}</td>
+                <td class="px-3 py-2">
+                  <span v-if="w.weakSubjects?.length" class="flex flex-wrap gap-1">
+                    <span v-for="s in w.weakSubjects" :key="s" class="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-500">{{ s }}</span>
+                  </span>
+                  <span v-else class="text-cocoa-400">-</span>
+                </td>
+                <td class="px-3 py-2 text-right text-red-500 font-semibold">{{ fmt1(w.score || w.subjectScore) }}</td>
+                <td class="px-3 py-2 text-right text-cocoa-500">{{ fmt1(w.classAvg || w.subjectAvg) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </template>

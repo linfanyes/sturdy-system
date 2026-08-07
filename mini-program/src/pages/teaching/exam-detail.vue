@@ -130,6 +130,27 @@
           </view>
         </view>
       </view>
+
+      <!-- 薄弱学生预警 -->
+      <view class="sec-title">⚠️ 薄弱学生预警<text v-if="weakStudents.length" class="sec-sub">共 {{ weakStudents.length }} 人</text></view>
+      <view v-if="!weakStudents.length" class="empty sm">暂无薄弱学生数据</view>
+      <view v-else class="tbl item">
+        <view class="tr th">
+          <text class="td nm">姓名</text>
+          <text class="td sc">薄弱科目</text>
+          <text class="td sc">该科分数</text>
+          <text class="td pc">班级均分</text>
+        </view>
+        <view class="tr" v-for="(w, i) in weakStudents" :key="'w' + i">
+          <text class="td nm">{{ w.studentName || w.name || '—' }}</text>
+          <text class="td sc">
+            <text v-if="w.weakSubjects?.length" v-for="s in w.weakSubjects" :key="s" class="tag weak">{{ s }}</text>
+            <text v-else>-</text>
+          </text>
+          <text class="td sc" style="color:#e64340">{{ fmt1(w.score || w.subjectScore) }}</text>
+          <text class="td pc">{{ fmt1(w.classAvg || w.subjectAvg) }}</text>
+        </view>
+      </view>
     </template>
   </view>
 </template>
@@ -138,6 +159,7 @@
 import { ref, computed } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getExam, listClasses, getGradesAnalysisExam, getGradesAnalysisRank } from '@/api/teaching'
+import { getWeakStudents } from '@/api/grades'
 import { theme } from '../../common/store'
 
 const examId = ref('')
@@ -146,6 +168,7 @@ const loading = ref(false)
 const exam = ref(null)
 const analysis = ref(null)
 const ranks = ref([])
+const weakStudents = ref([])
 const classes = ref([])
 const distSubject = ref('')
 
@@ -299,6 +322,13 @@ async function load() {
 
     if (!distSubject.value && subjectNames.value.length) {
       distSubject.value = subjectNames.value[0]
+    }
+
+    // 薄弱学生
+    if (classId.value && examId.value) {
+      getWeakStudents(classId.value, examId.value)
+        .then((r) => { weakStudents.value = (r && r.weakList) || [] })
+        .catch(() => { weakStudents.value = [] })
     }
   } finally {
     loading.value = false

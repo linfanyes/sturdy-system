@@ -71,3 +71,36 @@ export function analyzeExam(examId) {
 export function diagnoseStudent(studentId) {
   return api.post('/ai/diagnose', { studentId })
 }
+
+/** 某次考试统计（按班级+考试） */
+export function getGradesAnalysisExam(classId, examId, fullScoreMap) {
+  const params = { classId, examId }
+  if (fullScoreMap) params.fullScoreMap = JSON.stringify(fullScoreMap)
+  return api.get('/grades/analysis/exam', params)
+}
+
+/** 班级内排名 */
+export function getGradesAnalysisRank(classId, examId, subject) {
+  const params = { classId, examId }
+  if (subject) params.subject = subject
+  return api.get('/grades/analysis/rank', params)
+}
+
+/** 历次考试趋势 */
+export function getGradesAnalysisTrend(classId, subject) {
+  const params = { classId }
+  if (subject) params.subject = subject
+  return api.get('/grades/analysis/trend', params)
+}
+
+/** 某学生历史成绩 */
+export function getStudentHistory(studentId) {
+  return api.get('/grades/analysis/student/' + studentId)
+}
+
+/** 薄弱学生预警 */
+export function getWeakStudents(classId, examId) {
+  const params = { classId }
+  if (examId) params.examId = examId
+  return api.get('/grades/analysis/weak', params)
+}
