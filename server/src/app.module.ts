@@ -56,6 +56,7 @@ import { EvaluationModule } from './evaluation/evaluation.module'
 import { GameScoresModule } from './game-scores/game-scores.module'
 import { ChatHistoryModule } from './chat-history/chat-history.module'
 import { MonitorModule } from './monitor/monitor.module'
+import { MathMistakesModule } from './math-mistakes/math-mistakes.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -142,6 +143,7 @@ import { HealthController } from './health.controller'
     GameScoresModule,
     ChatHistoryModule,
     MonitorModule,
+    MathMistakesModule,
     AwardModule,
     TeacherModule,
     AdminModule,
