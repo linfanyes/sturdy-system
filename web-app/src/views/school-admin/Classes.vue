@@ -301,7 +301,7 @@ function handlePrint() {
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
             <td colspan="7" class="py-8">暂无班级数据</td>
           </tr>
-          <tr v-for="c in filtered" :key="c.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="c in filtered" :key="c.id" class="hover:bg-cream-50 transition-colors cursor-pointer" @dblclick="router.push('/school-admin/classes/' + c.id)">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ c.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.grade || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.term || '-' }}</td>

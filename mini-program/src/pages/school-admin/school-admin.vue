@@ -152,6 +152,7 @@
           <view class="meta" v-if="u.phone">电话：{{ u.phone }}</view>
         </view>
         <view class="acts">
+          <text class="act" @click.stop="goTeacherDetail(u)">详情</text>
           <text class="act" @click.stop="openFeatures(u)">功能配置</text>
           <text class="act" @click.stop="resetPwd(u)">重置密码</text>
           <text class="act del" @click.stop="delTeacher(u)">删除</text>
@@ -184,11 +185,47 @@
             <view class="meta" v-else style="color:var(--c-warn,var(--c-sub))">学科：未设置</view>
           </view>
           <view class="acts">
+            <text class="act" @click.stop="showClassDetailOf(c)">详情</text>
             <text class="act" @click.stop="onPromoteClass(c)">升级</text>
             <text class="act del" @click.stop="delClass(c)">删除</text>
           </view>
         </view>
       </view>
+
+      <!-- 班级详情底部弹出 -->
+      <view v-if="showClassDetail" class="mask" @click="showClassDetail = false">
+        <view class="sheet safe-bottom" @click.stop>
+          <view class="sh-t">{{ classDetail.name }} · 班级详情</view>
+          <view class="sh-meta">{{ classDetail.grade }} · {{ classDetail.term || '未设学期' }}<text v-if="classDetail.headTeacher"> · 班主任 {{ classDetail.headTeacher }}</text></view>
+          <view class="facets">
+            <view class="facet">
+              <text class="f-n">{{ classDetail.studentCount || 0 }}</text><text class="f-l">学生</text>
+            </view>
+            <view class="facet">
+              <text class="f-n">{{ classDetail.memberCount || 0 }}</text><text class="f-l">班级成员</text>
+            </view>
+            <view class="facet" v-if="classDetail.noticesCount != null">
+              <text class="f-n">{{ classDetail.noticesCount }}</text><text class="f-l">进行中公告</text>
+            </view>
+          </view>
+          <view class="sh-section" v-if="classDetail.subjects && classDetail.subjects.length">
+            <text class="sh-lbl">本学期课程：</text>
+            <text class="sh-val">{{ classDetail.subjects.join('、') }}</text>
+          </view>
+          <view class="sh-section" v-if="classDetail.members && classDetail.members.length">
+            <text class="sh-lbl">班级成员：</text>
+            <view class="mem-list">
+              <view class="mem-row" v-for="m in classDetail.members" :key="m.teacherId">
+                <text class="mem-name">{{ m.teacherName }}</text>
+                <text class="mem-role" :class="m.role === 'head' ? 'role-head' : 'role-subject'">{{ m.role === 'head' ? '班主任' : '科任老师' }}</text>
+              </view>
+            </view>
+          </view>
+          <button class="enter" @click="goClassStudents(classDetail)">进入学生管理</button>
+          <button class="cancel" @click="showClassDetail = false">关闭</button>
+        </view>
+      </view>
+
       <!-- 新增/编辑班级（全屏） -->
       <view v-if="showClassForm" class="full-mask">
         <view class="full-page">
@@ -360,8 +397,43 @@
           <view class="acts" v-if="s.parentLoginEnabled">
             <text class="badge on">家长已开通</text>
           </view>
+          <view class="acts">
+            <text class="act" @click.stop="showStudentDetail(s)">详情</text>
+          </view>
         </view>
       </view>
+
+      <!-- 学生档案弹窗 -->
+      <view v-if="showStudentProfile" class="mask" @click="showStudentProfile = false">
+        <view class="sheet safe-bottom" @click.stop>
+          <view class="sh-t">{{ profile.name }} 的档案</view>
+          <view class="sh-meta">{{ profile.gender }} · 学号 {{ profile.studentNo || '—' }}</view>
+          <view class="sh-section" v-if="profile.className">
+            <text class="sh-lbl">班级：</text><text class="sh-val">{{ profile.className }}</text>
+          </view>
+          <view class="sh-section" v-if="profile.parentName">
+            <text class="sh-lbl">家长：</text><text class="sh-val">{{ profile.parentName }} <text v-if="profile.parentPhone" class="pf-dial" @click="dial(profile.parentPhone)">📞 拨号</text></text>
+          </view>
+          <view class="sh-section" v-if="profile.address">
+            <text class="sh-lbl">地址：</text><text class="sh-val">{{ profile.address }}</text>
+          </view>
+          <view class="sh-section" v-if="profile.studentPhone">
+            <text class="sh-lbl">学生电话：</text><text class="sh-val">{{ profile.studentPhone }}</text>
+          </view>
+          <view class="sh-section" v-if="profile.duty">
+            <text class="sh-lbl">班级职务：</text><text class="sh-val">{{ profile.duty }}</text>
+          </view>
+          <view class="sh-section" v-if="profile.tags && profile.tags.length">
+            <text class="sh-lbl">标签：</text>
+            <text class="tag" v-for="t in profile.tags" :key="t">{{ t }}</text>
+          </view>
+          <view class="sh-section" v-if="profile.note">
+            <text class="sh-lbl">备注：</text><text class="sh-val">{{ profile.note }}</text>
+          </view>
+          <button class="cancel" @click="showStudentProfile = false">关闭</button>
+        </view>
+      </view>
+
       <!-- 编辑学生（全屏） -->
       <view v-if="editingStudent" class="full-mask">
         <view class="full-page">
@@ -759,6 +831,10 @@ function openEdit(u) {
   showForm.value = true
 }
 
+function goTeacherDetail(u) {
+  uni.navigateTo({ url: '/pages/community/teacher-detail?id=' + u.id + '&userId=' + (u.teacherId || u.id) })
+}
+
 function onEnabledChange(e) {
   form.value.enabled = e.detail.value
 }
@@ -1046,6 +1122,39 @@ async function exportStudentsXls() {
   })
 }
 
+// ===== 班级详情 =====
+const showClassDetail = ref(false)
+const classDetail = ref({ name: '', grade: '', term: '', headTeacher: '', studentCount: 0, memberCount: 0, noticesCount: 0, subjects: [], members: [] })
+
+async function showClassDetailOf(c) {
+  try {
+    const r = await apiCall('GET', '/school-admin/classes/' + c.id)
+    classDetail.value = {
+      name: c.name || r.name || '',
+      grade: c.grade || r.grade || '',
+      term: c.term || r.term || '',
+      headTeacher: c.headTeacher || r.headTeacher || '',
+      studentCount: r.studentCount || 0,
+      memberCount: (r.members || []).length,
+      noticesCount: r.noticesCount || 0,
+      subjects: c.subjects || r.subjects || [],
+      members: r.members || [],
+    }
+  } catch (e) {
+    classDetail.value = {
+      name: c.name || '', grade: c.grade || '', term: c.term || '', headTeacher: c.headTeacher || '',
+      studentCount: c.studentCount || 0, memberCount: 0, noticesCount: 0,
+      subjects: c.subjects || [], members: [],
+    }
+  }
+  showClassDetail.value = true
+}
+
+function goClassStudents(c) {
+  showClassDetail.value = false
+  uni.redirectTo({ url: '/pages/students/students?classId=' + c.id })
+}
+
 // ===== 班级管理 =====
 const classes = ref([])
 const showClassForm = ref(false)
@@ -1248,6 +1357,11 @@ async function commitClassImport() {
   } finally {
     uni.hideLoading()
   }
+}
+
+function dial(phone) {
+  if (!phone) return uni.showToast({ title: '无联系电话', icon: 'none' })
+  uni.makePhoneCall({ phoneNumber: String(phone), fail: () => {} })
 }
 
 // ===== 批量导入：学生（Excel/CSV + AI 识图，需选择目标班级） =====
@@ -1476,6 +1590,27 @@ async function loadStudents() {
     const r = await apiCall('GET', '/school-admin/students') || { items: [], total: 0 }
     schoolStudents.value = Array.isArray(r) ? r : (r.items || [])
   } catch (e) { schoolStudents.value = [] }
+}
+
+// ===== 学生档案 =====
+const showStudentProfile = ref(false)
+const profile = ref({ name: '', gender: '', studentNo: '', className: '', parentName: '', parentPhone: '', address: '', studentPhone: '', duty: '', tags: [], note: '' })
+
+function showStudentDetail(s) {
+  profile.value = {
+    name: s.name || '',
+    gender: s.gender || '',
+    studentNo: s.studentNo || '',
+    className: s.className || s.classId || '',
+    parentName: s.parentName || '',
+    parentPhone: s.parentPhone || '',
+    address: s.address || '',
+    studentPhone: s.studentPhone || '',
+    duty: s.duty || '',
+    tags: s.tags || [],
+    note: s.note || '',
+  }
+  showStudentProfile.value = true
 }
 
 // ===== 校管 AI 配置（后端按校管角色隔离存储） =====
@@ -1792,4 +1927,27 @@ onShow(async () => {
 .d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
 .d-copy { background: var(--c-blue); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+
+/* 班级详情底部弹出 */
+.facets { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
+.facet { flex: 1; background: var(--c-card2); border-radius: 16rpx; padding: 24rpx 0; display: flex; flex-direction: column; align-items: center; }
+.f-n { font-size: 36rpx; font-weight: 800; color: var(--c-primary); }
+.f-l { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
+.sh-section { margin-top: 18rpx; padding-top: 14rpx; border-top: 1px dashed var(--c-border); }
+.sh-lbl { font-size: 24rpx; color: var(--c-sub); font-weight: 600; }
+.sh-val { font-size: 26rpx; color: var(--c-title); margin-left: 8rpx; }
+.mem-list { margin-top: 10rpx; }
+.mem-row { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); }
+.mem-row:last-child { border-bottom: none; }
+.mem-name { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
+.mem-role { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
+.role-head { background: rgba(245,179,66, 0.15); color: #07c160; }
+.role-subject { background: rgba(58, 142, 230, 0.15); color: #3a8ee6; }
+.pf-dial { color: var(--c-primary); font-weight: 600; margin-left: 8rpx; }
+.tag { font-size: 22rpx; color: var(--c-primary); background: rgba(245,179,66,.1); border-radius: 20rpx; padding: 6rpx 14rpx; margin-right: 10rpx; }
+.enter { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 28rpx; font-weight: 600; }
+.cancel { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; margin-top: 14rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
+
+.dark .facet { background: var(--c-card2); }
+.dark .enter { background: var(--c-primary); }
 </style>

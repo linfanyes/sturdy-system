@@ -324,7 +324,7 @@ function downloadTemplate() {
           <tr v-else-if="totalFilteredStudents === 0" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">暂无学生数据</td>
           </tr>
-          <tr v-for="s in displayedStudents" :key="s.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="s in displayedStudents" :key="s.id" class="hover:bg-cream-50 transition-colors" @dblclick="goStudentDetail(s)">
             <td class="px-4 py-3 font-medium text-butter-600 cursor-pointer hover:underline" @click="goStudentDetail(s)">{{ s.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.studentNo || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.gender || '-' }}</td>

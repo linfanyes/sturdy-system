@@ -15,7 +15,7 @@ import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import Modal from '@/components/Modal.vue'
 import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
-import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer } from 'lucide-vue-next'
+import { Plus, Search, Settings2, KeyRound, Trash2, Edit3, Download, Upload, Printer, Eye } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -362,7 +362,7 @@ function handlePrint() {
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">暂无教师数据</td>
           </tr>
-          <tr v-for="t in filtered" :key="t.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="t in filtered" :key="t.id" class="hover:bg-cream-50 transition-colors" @dblclick="goDetail(t)">
             <td class="px-4 py-3 font-medium text-cocoa-900">
               <button class="hover:text-butter-600 hover:underline transition-colors text-left" @click="goDetail(t)">{{ t.name }}</button>
             </td>
@@ -391,6 +391,9 @@ function handlePrint() {
               </span>
             </td>
             <td class="px-4 py-3 text-right space-x-1">
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-sky2-500" title="详情" @click="goDetail(t)">
+                <Eye class="w-4 h-4" />
+              </button>
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(t)">
                 <Edit3 class="w-4 h-4" />
               </button>
