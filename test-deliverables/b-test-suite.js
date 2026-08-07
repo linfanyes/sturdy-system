@@ -193,8 +193,9 @@ async function main() {
   // 3b. SA 不能访问超管学校接口
   const r_saSchools = await api('GET', '/admin/schools', null, ids.sa1Tok)
   test('学校管理员-越权超管接口', r_saSchools.status === 401 || r_saSchools.status === 403, `返回 ${r_saSchools.status}`)
-  // 3c. SA 通过 /school-admin/teachers 创建教师
-  const r_newTeacher = await api('POST', '/school-admin/teachers', { name: '测试老师', username: 'test_teacher_99', password: '123456', subject: '体育' }, ids.sa1Tok)
+  // 3c. SA 通过 /school-admin/teachers 创建教师（用时间戳避免与历史数据冲突）
+  const uniqUsername = 'test_teacher_' + Date.now()
+  const r_newTeacher = await api('POST', '/school-admin/teachers', { name: '测试老师', username: uniqUsername, password: '123456', subject: '体育' }, ids.sa1Tok)
   test('学校管理员-创建教师', r_newTeacher.status === 201 || r_newTeacher.status === 200, `返回 ${r_newTeacher.status}`)
 
   // =============== 4. 教师 - 班主任（王老师） ===============

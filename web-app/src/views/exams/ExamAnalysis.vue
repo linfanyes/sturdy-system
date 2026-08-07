@@ -26,7 +26,7 @@ const selectedExamId = ref('')
 async function loadExams() {
   if (!classId.value) { exams.value = []; return }
   try {
-    const res = await request.get('/exams', { params: { classId: classId.value, take: 500 } })
+    const res = await request.get('/exams', { params: { classId: classId.value, take: 100 } })
     exams.value = Array.isArray(res) ? res : (res?.items || [])
     selectedExamId.value = ''
   } catch { exams.value = [] }

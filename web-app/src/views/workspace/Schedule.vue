@@ -106,7 +106,7 @@ async function loadSchedules() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const params: Record<string, any> = { take: 500 }
+    const params: Record<string, any> = { take: selectedClassId.value ? 100 : 500 }
     if (selectedClassId.value) params.classId = selectedClassId.value
     const res = await request.get('/schedules', { params })
     const list: any[] = Array.isArray(res) ? res : (res?.items || [])
