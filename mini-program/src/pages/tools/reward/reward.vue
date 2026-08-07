@@ -170,7 +170,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../../common/request'
+import { listClasses, listStudents, listRewardRecords, createRewardRecord, removeRewardRecord } from '@/api/reward'
 import { auth, theme } from '../../../common/store'
 import EmptyState from '../../../components/EmptyState/EmptyState.vue'
 
@@ -312,7 +312,7 @@ function decreaseStock(itemName) {
 }
 
 async function loadClasses() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (classes.value.length && !classId.value) {
     classIdx.value = 0
     classId.value = classes.value[0].id
@@ -340,12 +340,12 @@ async function onClass(e) {
 
 async function loadStudents() {
   if (!classId.value) return
-  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+  students.value = await listStudents(classId.value, { silent: true })
 }
 
 async function loadRecords() {
   if (!classId.value) return
-  const list = await api.getList('/reward-records', { loading: true, loadingText: '加载兑换记录' })
+  const list = await listRewardRecords({ loading: true, loadingText: '加载兑换记录' })
   records.value = list.filter((r) => r.classId === classId.value)
 }
 
@@ -389,7 +389,7 @@ async function save() {
   const student = students.value[studentIdx.value]
   saving.value = true
   try {
-    const r = await api.post('/reward-records', {
+    const r = await createRewardRecord({
       classId: classId.value,
       studentId: student.id,
       studentName: student.name,
@@ -454,7 +454,7 @@ async function saveBatch() {
   batchSaving.value = true
   const selStudents = students.value.filter((s) => batchSel.value.has(s.id))
   const date = new Date().toISOString().slice(0, 10)
-  const tasks = selStudents.map((s) => () => api.post('/reward-records', {
+  const tasks = selStudents.map((s) => () => createRewardRecord({
     classId: classId.value,
     studentId: s.id,
     studentName: s.name,
@@ -495,7 +495,7 @@ function del(r) {
       if (!res.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
       try {
-        await api.del('/reward-records/' + r.id)
+        await removeRewardRecord(r.id)
         records.value = records.value.filter((x) => x.id !== r.id)
         uni.showToast({ title: '已删除', icon: 'none' })
       } catch (e) {

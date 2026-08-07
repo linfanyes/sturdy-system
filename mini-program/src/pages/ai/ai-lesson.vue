@@ -64,7 +64,9 @@
 <script setup>
 import { ref } from 'vue'
 import { marked } from 'marked'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
+import { createNote } from '@/api/notes'
+import { createLessonPlan } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -85,7 +87,7 @@ async function generate() {
   try {
     const reqText = form.value.requirement || '包含教学目标、教学重难点、教学过程、板书设计、作业布置、教学反思'
     const prompt = '请根据以下信息生成一份完整的教案：\n年级：' + (form.value.grade || '未指定') + '\n学科：' + (form.value.subject || '未指定') + '\n课题：' + form.value.topic + '\n课时：' + form.value.lesson + '\n要求：' + reqText + '\n\n请用清晰的 Markdown 格式输出完整教案内容。'
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }]
     })
     result.value = res.content || '生成失败'
@@ -109,7 +111,7 @@ function copyResult() {
 async function saveToNotes() {
   if (!result.value) return
   try {
-    await api.post('/notes', {
+    await createNote({
       title: `教案：${form.value.topic}`,
       content: result.value,
       category: 'AI 生成'
@@ -124,7 +126,7 @@ async function saveToLibrary() {
   if (!result.value) return
   try {
     const title = `${form.value.subject || ''} ${form.value.topic} ${form.value.lesson || ''}`.trim()
-    await api.post('/generated/lesson-plans', {
+    await createLessonPlan({
       title,
       subject: form.value.subject || '',
       grade: form.value.grade || '',

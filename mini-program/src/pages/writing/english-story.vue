@@ -35,7 +35,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import api from '../../common/request'
+import { generateAi } from '@/api/ai'
 import { theme } from '../../common/store'
 
 const grades = ['四年级', '五年级', '六年级']
@@ -55,7 +55,7 @@ async function generate() {
   result.value = ''
   try {
     const prompt = `请写一篇${form.value.grade}${form.value.words}的英语小故事，主题：${form.value.theme}。要求词汇适合该年级、情节有趣、附中文翻译和重点词汇表。`
-    const res = await api.post('/ai/generate', { prompt, type: 'english-story' })
+    const res = await generateAi(prompt, 'english-story')
     result.value = typeof res === 'string' ? res : (res?.result || res?.content || '生成失败')
   } catch (e) { uni.showToast({ title: '生成失败', icon: 'none' }) }
   finally { generating.value = false }

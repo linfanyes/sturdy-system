@@ -16,8 +16,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ scene: '', topic: '', duration: '' })
 const result = ref('')
 const loading = ref(false)
@@ -25,7 +25,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请写一篇${form.value.scene || '班会'}演讲稿，主题「${form.value.topic}」，篇幅${form.value.duration || '约5分钟'}。\n要求：开头亲切有感染力，主体分 2-3 个论点，结尾升华号召；口语化、适合朗读。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = r.content || r.message || '生成失败'
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

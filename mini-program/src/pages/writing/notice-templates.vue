@@ -51,7 +51,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listNoticeTemplates, createNoticeTemplate, updateNoticeTemplate, removeNoticeTemplate } from '@/api/template'
 import { theme } from '../../common/store'
 
 const list = ref([])
@@ -71,7 +71,7 @@ function onCatChange(e) {
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/notice-templates?take=200')
+    const res = await listNoticeTemplates({ take: 200 })
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -96,9 +96,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/notice-templates/' + editing.value.id, form.value)
+      await updateNoticeTemplate(editing.value.id, form.value)
     } else {
-      await api.post('/notice-templates', form.value)
+      await createNoticeTemplate(form.value)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -114,7 +114,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/notice-templates/' + it.id)
+        await removeNoticeTemplate(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

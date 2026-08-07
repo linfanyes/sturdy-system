@@ -37,7 +37,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import api from '../../common/request'
+import { generateAi } from '@/api/ai'
 import { theme } from '../../common/store'
 
 const subjects = ['语文', '数学', '英语', '科学', '道德与法治', '其他']
@@ -54,7 +54,7 @@ async function generate() {
   result.value = ''
   try {
     const prompt = `请撰写一篇教育论文。主题：${form.value.topic}；学科：${form.value.subject}；字数：${form.value.wordCount || '不限'}；要求：${form.value.requirement || '无'}。论文需包含：摘要、关键词、引言、正文、结论、参考文献。`
-    const res = await api.post('/ai/generate', { prompt, type: 'paper' })
+    const res = await generateAi(prompt, 'paper')
     result.value = typeof res === 'string' ? res : (res?.result || res?.content || '生成失败')
   } catch (e) { uni.showToast({ title: '生成失败', icon: 'none' }) }
   finally { generating.value = false }

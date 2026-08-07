@@ -16,8 +16,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ theme: '', grade: '', style: '' })
 const result = ref('')
 const loading = ref(false)
@@ -25,7 +25,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请生成 3 套黑板报设计方案，主题「${form.value.theme}」，适用${form.value.grade || '通用'}，风格偏向${form.value.style || '学习园地'}。\n每套包含：① 版面布局（分块说明）② 大标题与栏目小标题 ③ 各板块文字内容（可直接抄写）④ 插图 / 花边建议。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = r.content || r.message || '生成失败'
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

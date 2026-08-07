@@ -44,8 +44,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
-import { api } from '../../common/request'
 import { theme, auth } from '../../common/store'
+import { listClasses, listStudents } from '@/api/students'
 const dark = computed(() => theme.mode === 'dark')
 
 const classes = ref([])
@@ -110,8 +110,8 @@ watch([namesText, history, excludePicked, picked], saveDraft, { deep: true })
 
 async function loadClasses() {
   try {
-    const res = await api.get('/classes')
-    const list = res?.items || res?.data || res || []
+    const res = await listClasses()
+    const list = res || []
     classes.value = Array.isArray(list) ? list : []
     // 自动恢复上次班级
     const lastClsId = uni.getStorageSync(sk('lastClsId'))
@@ -138,8 +138,8 @@ function onClass(e) {
 }
 async function loadStudents(classId) {
   try {
-    const res = await api.get('/students?pageSize=1000')
-    const list = res?.items || res?.data || res || []
+    const res = await listStudents(null, { pageSize: 1000 })
+    const list = res || []
     const ns = (Array.isArray(list) ? list : [])
       .filter((s) => s.classId === classId)
       .map((s) => s.name || s.studentName || s)

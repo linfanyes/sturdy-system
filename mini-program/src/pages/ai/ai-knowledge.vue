@@ -58,7 +58,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { marked } from 'marked'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
+import { createNote } from '@/api/notes'
+import { createKnowledge } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -84,7 +86,7 @@ async function generate() {
 要求：${form.value.requirement || '包含知识点概述、重点难点、典型例题、教学建议'}
 
 请用清晰的 Markdown 格式输出。`
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }]
     })
     result.value = res.content || '生成失败'
@@ -108,7 +110,7 @@ function copyResult() {
 async function saveToNotes() {
   if (!result.value) return
   try {
-    await api.post('/notes', {
+    await createNote({
       title: `知识点：${form.value.topic}`,
       content: result.value,
       category: 'AI 生成'
@@ -123,7 +125,7 @@ async function saveToLibrary() {
   if (!result.value) return
   try {
     const title = `${form.value.subject || ''} ${form.value.topic}`.trim()
-    await api.post('/generated/knowledges', {
+    await createKnowledge({
       title,
       subject: form.value.subject || '',
       grade: form.value.grade || '',

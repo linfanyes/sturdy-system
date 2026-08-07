@@ -124,9 +124,11 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { getRaw, patchRaw, postRaw, deleteRaw } from '../../common/request'
 import { CRUD_SCHEMA } from '../../common/crud-schema'
 import { theme } from '../../common/store'
+import { listClasses } from '@/api/students'
+import { importSchedulesAi, importSchedulesCommit } from '@/api/schedule'
 import { compressImage } from '../../common/image'
 
 const schema = ref(null)
@@ -152,7 +154,7 @@ onShow(load)
 async function load() {
   if (!schema.value) return
   try {
-    list.value = await api.get(schema.value.prefix)
+    list.value = await getRaw(schema.value.prefix)
   } catch (e) {
     list.value = []
   }
@@ -232,10 +234,10 @@ async function save() {
   saving.value = true
   try {
     if (editingId.value) {
-      await api.patch(p + '/' + editingId.value, payload)
+      await patchRaw(p + '/' + editingId.value, payload)
       uni.showToast({ title: '已更新', icon: 'success' })
     } else {
-      await api.post(p, payload)
+      await postRaw(p, payload)
       uni.showToast({ title: '已添加', icon: 'success' })
     }
     showForm.value = false
@@ -255,7 +257,7 @@ function remove(item) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del(schema.value.prefix + '/' + item.id)
+        await deleteRaw(schema.value.prefix + '/' + item.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         load()
       } catch (e) {
@@ -297,7 +299,7 @@ function openImport() {
 
 async function loadClasses() {
   try {
-    classList.value = (await api.get('/classes')) || []
+    classList.value = (await listClasses()) || []
     if (classIdx.value >= classList.value.length) classIdx.value = 0
   } catch (e) {
     classList.value = []
@@ -389,7 +391,7 @@ async function recognize() {
   preview.items = []
   preview.errors = []
   try {
-    const r = await api.post('/schedules/import-ai', {
+    const r = await importSchedulesAi({
       classId: selectedClassId(),
       mode: picked.value.mode,
       data: picked.value.data,
@@ -409,7 +411,7 @@ async function recognize() {
 async function confirmImport() {
   if (!preview.items.length) return
   try {
-    const r = await api.post('/schedules/import-commit', {
+    const r = await importSchedulesCommit({
       classId: selectedClassId(),
       items: preview.items,
     })

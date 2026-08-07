@@ -50,7 +50,7 @@
 <script setup>
 import { ref } from 'vue'
 import { marked } from 'marked'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -79,7 +79,7 @@ async function ask() {
 2. 多用生活中的例子帮助理解
 3. 语气亲切、鼓励思考
 4. 如果问题较复杂，分步骤解答`
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }]
     })
     result.value = res.content || '回答失败'

@@ -20,3 +20,11 @@ export function removeSchedule(id) {
 export function batchRemoveSchedules(ids) {
   return Promise.all(ids.map((id) => api.del('/schedules/' + id)))
 }
+/** AI 识别课表（图片→结构化预览） */
+export function importSchedulesAi(payload) {
+  return api.post('/schedules/import-ai', payload)
+}
+/** 提交 AI 识别的课表 */
+export function importSchedulesCommit(payload) {
+  return api.post('/schedules/import-commit', payload)
+}

@@ -18,8 +18,8 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const text = ref('')
 const result = ref('')
 const loading = ref(false)
@@ -27,7 +27,7 @@ const lang = ref('zh')
 async function translate() {
   loading.value = true
   try {
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: `请将以下文本${lang.value==='zh'?'翻译成英文':'翻译成中文'}：\n${text.value}` }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: `请将以下文本${lang.value==='zh'?'翻译成英文':'翻译成中文'}：\n${text.value}` }] })
     result.value = r.content || r.message || '翻译失败'
   } catch (e) { result.value = '翻译失败：' + (e.message || '') }
   loading.value = false

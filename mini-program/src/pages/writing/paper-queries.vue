@@ -55,7 +55,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listQueries, createQuery, updateQuery, removeQuery } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 
 const list = ref([])
@@ -68,7 +68,7 @@ const form = ref({ title: '', subject: '', query: '', result: '' })
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/generated/queries?take=200')
+    const res = await listQueries({ take: 200 })
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -91,9 +91,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/generated/queries/' + editing.value.id, form.value)
+      await updateQuery(editing.value.id, form.value)
     } else {
-      await api.post('/generated/queries', form.value)
+      await createQuery(form.value)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -109,7 +109,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/generated/queries/' + it.id)
+        await removeQuery(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

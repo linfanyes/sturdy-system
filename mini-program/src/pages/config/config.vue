@@ -109,9 +109,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
 import { auth, setUser, logout, theme, setTheme, cycleColorScheme, SCHEMES, flushTabBarStyle } from '../../common/store'
 import { inRange, isUrl, clip, MAX_LEN } from '../../common/validators'
+import { getAiSettings, updateAppConfig, getAiProviders, saveAiConfig } from '@/api/config'
+import { patchMe } from '@/api/user'
 
 // ==================== AI 服务商：以「后端 ai_providers 表」为准，内置预设仅作兜底 ====================
 const PROVIDER_FALLBACK = [
@@ -209,8 +210,8 @@ function onTheme(e) {
   setTheme(mode)
   // 持久化到后端：Web 与小程序共享主题偏好
   try {
-    api.patch('/config/app-config', { theme: mode }).catch(() => {})
-    api.patch('/users/me', { theme: mode }).catch(() => {})
+    updateAppConfig({ theme: mode }).catch(() => {})
+    patchMe({ theme: mode }).catch(() => {})
   } catch {
     // ignore
   }
@@ -219,8 +220,8 @@ function onTheme(e) {
 function cycle() {
   const next = cycleColorScheme()
   try {
-    api.patch('/config/app-config', { colorScheme: next }).catch(() => {})
-    api.patch('/users/me', { colorScheme: next }).catch(() => {})
+    updateAppConfig({ colorScheme: next }).catch(() => {})
+    patchMe({ colorScheme: next }).catch(() => {})
   } catch {
     // ignore
   }
@@ -317,7 +318,7 @@ function resetAiDefaults() {
 /** 从后端加载 AI 服务商列表，失败时回退到本地兜底预设 */
 async function loadProviders() {
   try {
-    const res = await api.get('/config/ai-providers')
+    const res = await getAiProviders()
     const list = (res && res.items) || (Array.isArray(res) ? res : [])
     if (list && list.length) {
       providers.value = list
@@ -334,7 +335,7 @@ async function load() {
   try {
     await loadProviders()
     // 读取教师个人 AI 设置（已从平台默认 + 教师自定义合并）
-    const a = await api.get('/config/ai').catch(() => ({}))
+    const a = await getAiSettings().catch(() => ({}))
     // 匹配 provider
     if (a && a.providerCode) {
       providerCode.value = a.providerCode
@@ -368,7 +369,7 @@ async function load() {
     }
     // 加载平台公开配置（主题、学期、颜色等）
     try {
-      const cfg = await api.get('/config/app-config').catch(() => null)
+      const cfg = await getAppConfig().catch(() => null)
       if (cfg) {
         // 兼容 { items: [...], ...map } 结构
         if (Array.isArray(cfg)) {
@@ -426,11 +427,7 @@ async function saveAi() {
       resourceModels: ai.value.resourceModels || {},
     }
     // 兼容后端 @Put('ai') 与 @Patch('ai-settings') 两条路径，优先新端点
-    try {
-      await api.patch('/config/ai-settings', payload)
-    } catch (_) {
-      await api.put('/config/ai', payload)
-    }
+    await saveAiConfig(payload)
     uni.showToast({ title: 'AI 配置已保存', icon: 'success' })
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })

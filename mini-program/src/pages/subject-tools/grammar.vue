@@ -14,8 +14,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ topic: '' })
 const result = ref('')
 const loading = ref(false)
@@ -23,7 +23,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请生成关于「${form.value.topic}」的英语语法练习，包含：语法规则说明、5 个例句、10 道练习题（选择题/填空题）及答案。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '生成失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

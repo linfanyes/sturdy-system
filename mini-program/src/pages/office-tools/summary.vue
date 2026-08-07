@@ -16,8 +16,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ className: '', term: '', highlights: '' })
 const result = ref('')
 const loading = ref(false)
@@ -25,7 +25,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请以班主任口吻，撰写${form.value.className||'本班'}的期末工作总结（300字左右）。${form.value.term?`学期：${form.value.term}。`:''}${form.value.highlights?`本学期亮点：${form.value.highlights}。`:''}`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '生成失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

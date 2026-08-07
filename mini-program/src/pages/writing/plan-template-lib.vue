@@ -67,7 +67,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listLessonPlanTemplates, createLessonPlanTemplate, updateLessonPlanTemplate, removeLessonPlanTemplate } from '@/api/template'
 import { theme } from '../../common/store'
 
 const list = ref([])
@@ -90,7 +90,7 @@ function onLessonChange(e) { lessonIdx.value = e.detail.value; form.value.lesson
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/lesson-plan-templates?take=200')
+    const res = await listLessonPlanTemplates({ take: 200 })
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -117,9 +117,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/lesson-plan-templates/' + editing.value.id, form.value)
+      await updateLessonPlanTemplate(editing.value.id, form.value)
     } else {
-      await api.post('/lesson-plan-templates', form.value)
+      await createLessonPlanTemplate(form.value)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -135,7 +135,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/lesson-plan-templates/' + it.id)
+        await removeLessonPlanTemplate(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

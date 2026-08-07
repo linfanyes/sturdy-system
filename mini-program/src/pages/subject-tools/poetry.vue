@@ -14,8 +14,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ query: '' })
 const result = ref('')
 const loading = ref(false)
@@ -23,7 +23,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请详细介绍古诗词「${form.query.value}」的原文、作者、创作背景、诗句赏析、艺术特色，适合小学教师备课使用。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '查询失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '查询失败：' + (e.message || '') }
   loading.value = false

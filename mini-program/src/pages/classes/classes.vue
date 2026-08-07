@@ -13,7 +13,7 @@
         <view class="ops">
           <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
           <text class="op edit" @click.stop="edit(c)">编辑</text>
-          <text class="op del" @click.stop="remove(c)">删除</text>
+          <text class="op del" @click.stop="deleteClass(c)">删除</text>
         </view>
       </view>
       <EmptyState v-if="!list.length" icon="🏫" text="还没有班级" hint="点下方按钮新建第一个班级" />
@@ -199,8 +199,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api, { batchRun } from '../../common/request'
+import { listClasses, createClass, updateClass, removeClass, listNotices, listSchoolTeachers, listClassMembers, removeClassMember, addClassMember, batchUpdateClasses } from '@/api/teaching'
+import { listStudents } from '@/api/students'
+import { getPublicConfig } from '@/api/config'
 import { auth, theme, flushTabBarStyle, switchTabParams } from '../../common/store'
+import { batchRun } from '../../common/request'
 
 const list = ref([])
 const showForm = ref(false)
@@ -235,9 +238,9 @@ const className = computed(() => grades[form.value.gradeIdx] + (form.value.class
 const autoTermName = computed(() => years[form.value.yearIdx] + '年' + quarters[form.value.quarterIdx] + '学期')
 
 async function load() {
-  list.value = await api.getList('/classes', { loading: true, loadingText: '加载班级' })
+  list.value = await listClasses({ loading: true, loadingText: '加载班级' })
   try {
-    const pub = await api.get('/config/public')
+    const pub = await getPublicConfig()
     pubSubjects.value = (pub && pub.defaultSubjects) || []
   } catch (e) {
     pubSubjects.value = []
@@ -345,10 +348,10 @@ async function save() {
   saving.value = true
   try {
     if (editingId.value) {
-      await api.patch('/classes/' + editingId.value, payload)
+      await updateClass(editingId.value, payload)
       uni.showToast({ title: '已保存修改', icon: 'success' })
     } else {
-      await api.post('/classes', payload)
+      await createClass(payload)
       uni.showToast({ title: '班级已创建', icon: 'success' })
     }
     cancelEdit()
@@ -360,7 +363,7 @@ async function save() {
   }
 }
 
-function remove(c) {
+function deleteClass(c) {
   uni.showModal({
     title: '删除班级',
     content: `确定删除「${c.name}」吗？该班级下的学生与成绩不会自动删除，请谨慎操作。`,
@@ -369,7 +372,7 @@ function remove(c) {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
       try {
-        await api.del('/classes/' + c.id)
+        await removeClass(c.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         load()
       } catch (e) {
@@ -392,10 +395,10 @@ async function showDetailOf(c) {
   if (typeof c.studentCount === 'number') {
     stuCount.value = c.studentCount
   } else {
-    const students = await api.get('/students').catch(() => [])
+    const students = await listStudents().catch(() => [])
     stuCount.value = (students || []).filter((s) => s.classId === c.id).length
   }
-  const notices = await api.get('/notices').catch(() => [])
+  const notices = await listNotices().catch(() => [])
   noticesCount.value = (notices || []).filter((n) => n.classId === c.id && !n.ended).length
 }
 function goStudents(c) {
@@ -427,7 +430,7 @@ async function syncTerm() {
       uni.showLoading({ title: '同步中…' })
       try {
         const { success, failed } = await batchRun(
-          others.map((c) => api.patch('/classes/' + c.id, { term: detailC.value.term })),
+          others.map((c) => () => updateClass(c.id, { term: detailC.value.term })),
         )
         if (failed === 0) {
           uni.showToast({ title: `已同步 ${success} 个班级`, icon: 'success' })
@@ -483,7 +486,7 @@ async function loadSchoolTeachers() {
   if (schoolTeachers.value.length) return
   try {
     // 班主任特权接口：查询本校教师列表（供添加科任老师时选择）
-    const res = await api.post('/classes/school-teachers')
+    const res = await listSchoolTeachers()
     if (Array.isArray(res)) schoolTeachers.value = res
   } catch {
     // ignore
@@ -496,7 +499,7 @@ async function openMembers(c) {
   showMembers.value = true
   uni.showLoading({ title: '加载成员…', mask: true })
   try {
-    const list = await api.post('/classes/' + c.id + '/members/list')
+    const list = await listClassMembers(c.id)
     members.value = list || []
     // 判断当前教师在本班的角色
     const me = (list || []).find(m => m.teacherId === auth.user?.id)
@@ -520,10 +523,10 @@ async function removeMember(m) {
       if (!r.confirm) return
       uni.showLoading({ title: '移除中…', mask: true })
       try {
-        await api.del('/classes/' + membersC.value.id + '/members/' + m.teacherId)
+        await removeClassMember(membersC.value.id, m.teacherId)
         uni.showToast({ title: '已移除', icon: 'success' })
         // 刷新成员列表
-        members.value = await api.post('/classes/' + membersC.value.id + '/members/list')
+        members.value = await listClassMembers(membersC.value.id)
       } catch (e) {
         uni.showToast({ title: '移除失败：' + (e.message || ''), icon: 'none' })
       } finally {
@@ -539,7 +542,7 @@ async function confirmAddMember() {
   }
   saving.value = true
   try {
-    await api.post('/classes/' + membersC.value.id + '/members', {
+    await addClassMember(membersC.value.id, {
       teacherId: addMemberForm.value.teacherId,
       subjects: addMemberForm.value.subjects,
     })
@@ -547,7 +550,7 @@ async function confirmAddMember() {
     showAddMember.value = false
     addMemberForm.value = { teacherId: '', subjects: [] }
     // 刷新成员列表
-    members.value = await api.post('/classes/' + membersC.value.id + '/members/list')
+    members.value = await listClassMembers(membersC.value.id)
   } catch (e) {
     uni.showToast({ title: '添加失败：' + (e.message || ''), icon: 'none' })
   } finally {

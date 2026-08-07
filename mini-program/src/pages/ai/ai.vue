@@ -140,8 +140,10 @@
 import { ref, computed, nextTick } from 'vue'
 import { onShow, onUnload } from '@dcloudio/uni-app'
 import { marked } from 'marked'
-import api, { streamChat } from '../../common/request'
-import { auth, theme } from '../../common/store'
+import { streamChat } from '../../common/request'
+import { getAiSettings } from '@/api/config'
+import { createNote } from '@/api/notes'
+import { theme } from '../../common/store'
 import { compressImage } from '../../common/image'
 
 // —— Markdown 渲染：token 化 renderer + 内联样式，产物交给 <rich-text> 渲染 ——
@@ -435,7 +437,7 @@ async function addToNotes(m) {
       if (!r.confirm) return
       const title = (r.content || 'AI 回复').trim().slice(0, 50)
       try {
-        await api.post('/notes', {
+        await createNote({
           title,
           content,
           category: 'AI 助教',
@@ -632,8 +634,8 @@ onShow(() => {
   }
   loadSessions()
   // 拉取教师个人 AI 配置用于模型提示徽章（失败静默，不影响主流程）
-  api.get('/config/ai-settings').then((r) => { aiSettings.value = r }).catch(() => {
-    api.get('/config/ai').then((r2) => { aiSettings.value = r2 }).catch(() => { aiSettings.value = null })
+  getAiSettings().then((r) => { aiSettings.value = r }).catch(() => {
+    getAiSettings().then((r2) => { aiSettings.value = r2 }).catch(() => { aiSettings.value = null })
   })
 })
 onUnload(() => saveSessions())

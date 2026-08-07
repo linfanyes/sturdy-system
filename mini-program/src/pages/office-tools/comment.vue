@@ -18,8 +18,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const subjectOpts = ['语文','数学','英语','科学','道德与法治','音乐','美术','体育']
 const form = ref({ name: '', subject: '', traits: '' })
 const result = ref('')
@@ -28,7 +28,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请为${form.value.name}同学写一段${form.value.subject||''}课程的期末评语（100字左右），特点：${form.value.traits||'表现良好'}。语气温暖、鼓励为主。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = r.content || r.message || '生成失败'
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

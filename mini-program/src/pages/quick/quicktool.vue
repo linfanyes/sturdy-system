@@ -42,7 +42,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
 import { auth, theme } from '../../common/store'
 import { getQuickTool } from '../../common/quicktool-schema'
 const dark = computed(() => theme.mode === 'dark')
@@ -83,7 +83,7 @@ async function gen() {
   loading.value = true
   content.value = ''
   try {
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }],
     })
     content.value = res.content || ''

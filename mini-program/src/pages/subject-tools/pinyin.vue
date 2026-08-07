@@ -23,7 +23,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请为以下汉字标注拼音（多音字根据上下文判断），格式：汉字(拼音)，标出声调：\n${text.value}`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '标注失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '标注失败：' + (e.message || '') }
   loading.value = false

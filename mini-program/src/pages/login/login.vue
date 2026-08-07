@@ -55,9 +55,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import api from '../../common/request'
 import { setMockMode } from '../../common/request'
 import { setAuth, setParent, setFeatureProfile, theme, auth } from '../../common/store'
+import { unifiedLogin } from '@/api/user'
 
 const dark = computed(() => theme.mode === 'dark')
 const username = ref(''), password = ref(''), loading = ref(false)
@@ -68,7 +68,7 @@ async function doLogin() {
   if (!username.value.trim() || !password.value) return uni.showToast({ title:'请输入用户名和密码', icon:'none' })
   loading.value = true
   try {
-    const r = await api.post('/auth/unified-login', { username: username.value.trim(), password: password.value })
+    const r = await unifiedLogin({ username: username.value.trim(), password: password.value })
     handleLoginResult(r)
   } catch (e) { uni.showToast({ title: String(e?.message||'登录失败').slice(0,40), icon:'none' }) }
   loading.value = false

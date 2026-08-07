@@ -29,7 +29,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import api from '../../common/request'
+import { generateAi } from '@/api/ai'
 import { theme } from '../../common/store'
 
 const grades = ['三年级', '四年级', '五年级', '六年级']
@@ -46,7 +46,7 @@ async function generate() {
   result.value = ''
   try {
     const prompt = `请生成一段${form.value.grade}英语情景对话，场景：${form.value.scene}。包含6-8轮对话、中文翻译、重点句型标注、角色扮演建议。`
-    const res = await api.post('/ai/generate', { prompt, type: 'scene-dialogue' })
+    const res = await generateAi(prompt, 'scene-dialogue')
     result.value = typeof res === 'string' ? res : (res?.result || res?.content || '生成失败')
   } catch (e) { uni.showToast({ title: '生成失败', icon: 'none' }) }
   finally { generating.value = false }

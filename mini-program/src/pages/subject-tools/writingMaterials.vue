@@ -18,8 +18,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const gradeOpts = ['一年级','二年级','三年级','四年级','五年级','六年级']
 const form = ref({ topic: '', grade: '', requirements: '' })
 const result = ref('')
@@ -28,7 +28,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请为${form.value.grade||'小学'}学生提供作文《${form.value.topic}》的写作素材（包括好词好句、开头结尾范例、结构提纲）。${form.value.requirements||''}`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '生成失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false

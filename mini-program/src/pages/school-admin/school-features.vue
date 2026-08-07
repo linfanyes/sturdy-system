@@ -71,7 +71,7 @@
 import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
-import { api } from '../../common/request'
+import { listAdminSchools } from '@/api/teaching'
 import {
   getSchoolFeatures,
   updateSchoolFeatures,
@@ -142,7 +142,7 @@ async function loadSchools(preferId) {
   if (isSa.value) return
   loadingSchools.value = true
   try {
-    const r = await api.get('/admin/schools')
+    const r = await listAdminSchools()
     schools.value = Array.isArray(r) ? r : (r && r.items) || []
     if (schools.value.length) {
       // 由学校列表跳转进来时定位到指定学校，否则默认第一所

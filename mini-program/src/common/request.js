@@ -364,6 +364,14 @@ export function getRaw(path) {
 export function deleteRaw(path) {
   return api.del(path)
 }
+/** PATCH 任意路径资源（用于动态 schema 页面等场景） */
+export function patchRaw(path, data) {
+  return api.patch(path, data)
+}
+/** POST 任意路径资源（用于动态 schema 页面等场景） */
+export function postRaw(path, data) {
+  return api.post(path, data)
+}
 
 /** 家长端专用请求封装：使用家长令牌（parent.token），其余与 api 一致 */
 export const parentApi = {

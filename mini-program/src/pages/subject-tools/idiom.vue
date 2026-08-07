@@ -14,8 +14,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
+import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import api from '../../common/request'
 const form = ref({ query: '' })
 const result = ref('')
 const loading = ref(false)
@@ -23,7 +23,7 @@ async function generate() {
   loading.value = true
   try {
     const prompt = `请介绍成语「${form.query.value}」的释义、出处、近义词、反义词、例句，并给出 5 个接龙成语。`
-    const r = await api.post('/ai/chat-sync', { messages: [{ role: 'user', content: prompt }] })
+    const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
     result.value = (r.content || r.message || '查询失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '查询失败：' + (e.message || '') }
   loading.value = false

@@ -92,7 +92,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listGroupScores, listClasses, createGroupScore, updateGroupScore, removeGroupScore } from '@/api/score'
 import { theme, auth } from '../../common/store'
 
 const PALETTE = ['#e6a23c', '#07c160', 'var(--c-blue)', '#e06c75', '#9b59b6', '#1abc9c', '#f39c12', '#34495e']
@@ -151,7 +151,7 @@ async function onClass(e) {
 // 尝试从服务端 group-scores 拉取初始化（如果本地无数据）
 async function tryLoadServer() {
   try {
-    const list = await api.getList('/group-scores', { silent: true })
+    const list = await listGroupScores({ silent: true })
     const mine = list.filter((x) => x.classId === classId.value)
     if (mine.length && !uni.getStorageSync(sk())) {
       groups.value = mine.map((x) => ({
@@ -169,7 +169,7 @@ async function tryLoadServer() {
 }
 
 async function loadClasses() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (classes.value.length && !classId.value) {
     classIdx.value = 0
     classId.value = classes.value[0].id
@@ -201,7 +201,7 @@ function delGroup(i) {
     success: (r) => {
       if (!r.confirm) return
       const g = groups.value[i]
-      if (g.id) api.del('/group-scores/' + g.id).catch(() => {})
+      if (g.id) removeGroupScore(g.id).catch(() => {})
       groups.value.splice(i, 1)
       saveLocal()
     },
@@ -255,9 +255,9 @@ function syncServer(i) {
     color: g.color,
   }
   if (g.id) {
-    api.patch('/group-scores/' + g.id, payload).catch(() => {})
+    updateGroupScore(g.id, payload).catch(() => {})
   } else {
-    api.post('/group-scores', payload).then((r) => { g.id = r.id }).catch(() => {})
+    createGroupScore(payload).then((r) => { g.id = r.id }).catch(() => {})
   }
 }
 

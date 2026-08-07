@@ -62,7 +62,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listKnowledges, createKnowledge, updateKnowledge, removeKnowledge } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 
 const list = ref([])
@@ -75,7 +75,7 @@ const form = ref({ title: '', subject: '', grade: '', topic: '', content: '' })
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/generated/knowledges?take=200')
+    const res = await listKnowledges({ take: 200 })
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -98,9 +98,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/generated/knowledges/' + editing.value.id, form.value)
+      await updateKnowledge(editing.value.id, form.value)
     } else {
-      await api.post('/generated/knowledges', form.value)
+      await createKnowledge(form.value)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -116,7 +116,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/generated/knowledges/' + it.id)
+        await removeKnowledge(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

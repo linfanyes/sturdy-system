@@ -68,7 +68,9 @@
 <script setup>
 import { ref } from 'vue'
 import { marked } from 'marked'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
+import { createNote } from '@/api/notes'
+import { createPaper } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -107,7 +109,7 @@ async function generate() {
 4. 排版清晰，方便打印
 
 请用 Markdown 格式输出完整试卷内容。`
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }]
     })
     result.value = res.content || '生成失败'
@@ -131,7 +133,7 @@ function copyResult() {
 async function saveToNotes() {
   if (!result.value) return
   try {
-    await api.post('/notes', {
+    await createNote({
       title: `${form.value.subject || ''}试卷 - ${form.value.scope}`,
       content: result.value,
       category: 'AI 生成'
@@ -147,7 +149,7 @@ async function saveToLibrary() {
   try {
     const title = `${form.value.subject || ''}试卷 - ${form.value.scope}`.trim()
     const difficultyMap = { easy: '基础', medium: '中等', hard: '较难' }
-    await api.post('/generated/papers', {
+    await createPaper({
       title,
       subject: form.value.subject || '',
       grade: form.value.grade || '',

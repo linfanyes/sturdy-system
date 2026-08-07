@@ -78,7 +78,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { chatSync } from '@/api/ai'
 import { auth, theme } from '../../common/store'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -128,7 +128,7 @@ async function gen() {
       `{"hanzi":"${hanzi}","pinyin":"带声调的拼音","totalStrokes":数字,"radical":"部首","structure":"结构",` +
       `"strokes":[{"name":"笔画名称(如 横/竖/撇/捺/点)","desc":"简短描述"}],"meaning":"简短释义"}` +
       `。其中 strokes 按正确书写顺序逐笔列出。`
-    const res = await api.post('/ai/chat-sync', {
+    const res = await chatSync({
       messages: [{ role: 'user', content: prompt }],
     })
     const raw = (res && res.content) || ''

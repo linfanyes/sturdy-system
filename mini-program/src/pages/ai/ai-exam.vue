@@ -64,7 +64,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { marked } from 'marked'
-import api from '../../common/request'
+import { listExams } from '@/api/exams'
+import { getPapersByType } from '@/api/ai-generated'
+import { analyzeExam } from '@/api/ai'
+import { createNote } from '@/api/notes'
 import { theme } from '../../common/store'
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -85,7 +88,7 @@ function formatReport(md) {
 
 async function loadExams() {
   try {
-    const res = await api.get('/exams')
+    const res = await listExams()
     exams.value = res.items || []
     if (exams.value.length > 0 && !selectedExam.value) {
       selectedExam.value = exams.value[0].id
@@ -97,7 +100,7 @@ async function loadExams() {
 
 async function loadHistory() {
   try {
-    const res = await api.get('/generated/papers', { type: 'exam-analysis' })
+    const res = await getPapersByType('exam-analysis')
     history.value = (res.items || []).slice(0, 5)
   } catch {
     history.value = []
@@ -114,7 +117,7 @@ async function analyze() {
   analyzing.value = true
   report.value = ''
   try {
-    const res = await api.post('/ai/analyze-exam', { examId: selectedExam.value })
+    const res = await analyzeExam({ examId: selectedExam.value })
     report.value = res.content || '未生成报告'
     loadHistory()
   } catch (e) {
@@ -139,7 +142,7 @@ function copyReport() {
 async function saveToNotes() {
   if (!report.value) return
   try {
-    await api.post('/notes', {
+    await createNote({
       title: '考试分析报告 - ' + (exams.value.find(e => e.id === selectedExam.value)?.name || ''),
       content: report.value,
       category: 'AI 分析'
