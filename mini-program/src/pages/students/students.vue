@@ -179,6 +179,13 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onLoad, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
+import {
+  listStudents, listClasses, createStudent, updateStudent, removeStudent,
+  batchRemoveStudents, toggleParentLogin, resetParentPassword,
+  importStudents, importStudentsAi, importStudentsCommit, generateComment,
+  getStudentGrades, getStudentAttendances, getStudentBehaviorRecords,
+} from '@/api/students'
+import { listGrades, getGrades } from '@/api/grades'
 import { isPhone, isStudentNo } from '../../common/validators'
 import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -270,7 +277,7 @@ const genCommentLoading = ref(false)
 async function genComment(stu) {
   if (genCommentLoading.value) return
   // 获取该生本学期考试成绩作为评语依据
-  const allGrades = await api.getList('/grades', { silent: true })
+  const allGrades = await listGrades({ silent: true })
   const semester = form.value.semesterId || ''
   const myGrades = allGrades.filter((g) => g.scores && g.scores.some((s) => s.studentId === stu.id && s.score != null))
   const lines = myGrades.map((g) => {
@@ -281,14 +288,13 @@ async function genComment(stu) {
   genCommentLoading.value = true
   try {
     const prompt = `请根据以下学生考试成绩，为该学生写一段学期评语。评语要求：语气亲切、重点突出优点和进步方向，约100-150字。不要出现具体分数数字，用描述性语言代替。\n学生姓名：${stu.name}\n成绩：\n${lines.join('\n')}`
-    const r = await api.post('/ai/chat-sync', {
+    const r = await generateComment({
       messages: [{ role: 'user', content: prompt }],
       modelType: 'text',
     })
     const comment = r.content || ''
     if (comment) {
-      // 保存到学生档案
-      await api.patch('/students/' + stu.id, { comment })
+      await updateStudent(stu.id, { comment })
       profile.value.comment = comment
       stu.comment = comment
       uni.showToast({ title: '评语已生成并保存', icon: 'success' })
@@ -323,14 +329,14 @@ async function load() {
       }
     }
     if (classId.value) {
-      list.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { loading: false })
+      list.value = await listStudents(classId.value, { loading: false })
     }
   } finally { loading.value = false }
   resetPage()
 }
 
 async function loadClasses() {
-  try { classList.value = await api.get('/classes') || [] } catch (e) { classList.value = [] }
+  try { classList.value = await listClasses() || [] } catch (e) { classList.value = [] }
 }
 onShow(async () => {
   await load()
@@ -370,7 +376,7 @@ async function batchAuthParent(enabled) {
     const tasks = ids
       .map((id) => shown.value.find((s) => s.id === id))
       .filter((s) => s && s.parentLoginEnabled !== enabled)
-      .map((s) => api.post('/students/' + s.id + '/toggle-parent-login'))
+      .map((s) => toggleParentLogin(s.id))
     const { success, failed } = await batchRun(tasks)
     uni.hideLoading()
     uni.showToast({
@@ -399,7 +405,7 @@ async function doResetParentPwd() {
   resetSaving.value = true
   uni.showLoading({ title: '重置中…', mask: true })
   try {
-    const res = await api.post('/students/' + pwdUser.value.id + '/reset-parent-password', { password: newPwd.value })
+    const res = await resetParentPassword(pwdUser.value.id, { password: newPwd.value })
     pwdUser.value = null
     uni.hideLoading()
     uni.showModal({
@@ -433,7 +439,7 @@ async function deleteOne(s) {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…' })
       try {
-        await api.del('/students/' + s.id)
+        await removeStudent(s.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         load()
       } catch (e) {
@@ -455,7 +461,7 @@ async function batchDelete() {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…' })
       try {
-        const { success, failed } = await batchRun(ids.map((id) => api.del('/students/' + id)))
+        const { success, failed } = await batchRun(ids.map((id) => removeStudent(id)))
         selected.value = new Set()
         batchMode.value = false
         if (failed === 0) {
@@ -529,7 +535,7 @@ async function save() {
       tags: parseTags(form.value.tags),
       classId: classId.value,
     }
-    await api.post('/students', payload)
+    await createStudent(payload)
     uni.showToast({ title: '已保存', icon: 'success' })
     showForm.value = false
     form.value = { name: '', gender: '男', studentNo: '', parentName: '', parentPhone: '', studentPhone: '', address: '', duty: '', birthDate: '', tags: '', note: '' }
@@ -570,7 +576,7 @@ function pickFile() {
       uni.showLoading({ title: '解析中…' })
       try {
         const data = await readAsBase64(f.path)
-        const r = await api.post('/students/import', { filename: f.name, data })
+        const r = await importStudents({ filename: f.name, data })
         preview.value = r
         if (!r.validCount) uni.showToast({ title: '没有可导入的有效数据', icon: 'none' })
       } catch (e) {
@@ -608,7 +614,7 @@ function pickImage() {
         // 压缩失败时 compressImage 会返回原图路径，统一用结果路径读 base64
         const compressedPath = cmp?.tempFilePath || tempPath
         const base64 = await readAsBase64(compressedPath)
-        const r = await api.post('/students/import-ai', {
+        const r = await importStudentsAi({
           mode: 'image',
           data: base64,
           filename: 'student_list.jpg',
@@ -663,7 +669,7 @@ async function commit() {
   }
   uni.showLoading({ title: '导入中…' })
   try {
-    const r = await api.post('/students/import-commit', { classId: classId.value, items })
+    const r = await importStudentsCommit({ classId: classId.value, items })
     uni.showToast({ title: `成功导入 ${r.count} 名学生`, icon: 'success' })
     preview.value = null
     showImport.value = false
@@ -683,9 +689,9 @@ async function openProfile(s) {
 }
 async function computeProfile(s) {
   const [grades, atts, beh] = await Promise.all([
-    api.get('/grades').catch(() => []),
-    api.get('/attendances').catch(() => []),
-    api.get('/behavior-records').catch(() => []),
+    getStudentGrades().catch(() => []),
+    getStudentAttendances(),
+    getStudentBehaviorRecords(),
   ])
   // 成绩均分
   const sc = []

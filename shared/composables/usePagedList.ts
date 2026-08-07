@@ -8,19 +8,19 @@
  * 注意：filtered / totalFiltered / totalPages / displayedItems 由调用者自行定义，
  * 以便各页面可按需定制过滤逻辑。
  */
-import { ref, watch } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 
 export function usePagedList(
   loadFn: (params: Record<string, any>) => Promise<any[] | { items: any[]; total?: number }>,
   defaultPageSize = 10,
   totalRef?: { value: number },
 ) {
-  const page = ref(0)
-  const pageSize = ref(defaultPageSize)
-  const total = ref(0)
+  const page = ref<number>(0)
+  const pageSize = ref<number>(defaultPageSize)
+  const total = ref<number>(0)
   const allItems = ref<any[]>([])
-  const keyword = ref('')
-  const classId = ref('')
+  const keyword = ref<string>('')
+  const classId = ref<string>('')
 
   async function loadList() {
     const isSearching = !!keyword.value.trim()
@@ -64,12 +64,12 @@ export function usePagedList(
   function nextPage() { goPage(page.value + 1) }
 
   return {
-    page,
-    pageSize,
-    total,
-    allItems,
-    keyword,
-    classId,
+    page: page as Ref<number>,
+    pageSize: pageSize as Ref<number>,
+    total: total as Ref<number>,
+    allItems: allItems as Ref<any[]>,
+    keyword: keyword as Ref<string>,
+    classId: classId as Ref<string>,
     loadList,
     resetAndReload,
     goPage,

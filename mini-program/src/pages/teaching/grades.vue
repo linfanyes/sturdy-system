@@ -271,7 +271,7 @@ import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import {
   listGrades, getGrades, saveGrade, importGradesPreview, importGradesCommit,
-  mergeGrades, removeGrade, listClasses, listExams, listStudents,
+  mergeGrades, listClasses, listExams, listStudents,
   getPublicConfig, listSemesters, analyzeExam, diagnoseStudent,
 } from '@/api/grades'
 import { auth, theme } from '../../common/store'
@@ -889,7 +889,7 @@ async function removeGrade() {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…' })
       try {
-        await removeGrade(existing.value.id)
+        await api.del('/grades/' + existing.value.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         grades.value = await getGrades()
         existing.value = null

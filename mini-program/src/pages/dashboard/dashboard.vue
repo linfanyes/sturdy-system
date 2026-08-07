@@ -356,6 +356,12 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh, onHide } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import {
+  globalSearch, chatSync, getUnreadCount, listSemesters,
+  listDashboardClasses, listDashboardStudents, listNotes, listDashboardGrades,
+  listTodos, listSchedules, listNotices, listAttendances, listHomework,
+  listSchoolNotices, listBehaviorRecords, createTodo, updateTodo, deleteTodo,
+} from '@/api/dashboard'
 import { auth, theme, flushTabBarStyle, parent, switchRole } from '../../common/store'
 import { hasFeature } from '../../common/feature'
 import { copyText } from '../../common/print'
@@ -469,7 +475,7 @@ async function doSearch() {
   const q = searchQuery.value.trim()
   if (!q) { searchResults.value = null; return }
   try {
-    const r = await api.get('/school-admin/search?q=' + encodeURIComponent(q))
+    const r = await globalSearch(q)
     searchResults.value = r || { students: [], teachers: [], classes: [] }
   } catch { searchResults.value = { students: [], teachers: [], classes: [] } }
 }
@@ -487,7 +493,7 @@ async function askAi() {
   aiQuery.value = ''
   aiLoading.value = true
   try {
-    const r = await api.post('/ai/chat-sync', {
+    const r = await chatSync({
       messages: [{ role: 'user', content: '你是小学班主任的AI助手，请用中文简要回答：' + q }],
     })
     aiHistory.value.push({ role: 'assistant', text: r.content || '抱歉，我暂时无法回答这个问题。' })
@@ -503,7 +509,7 @@ const unreadCount = ref(0)
 let notifTimer = null
 async function loadNotifications() {
   try {
-    const r = await api.get('/notifications/unread-count')
+    const r = await getUnreadCount()
     unreadCount.value = r?.count || 0
   } catch {}
 }
@@ -518,7 +524,7 @@ const semesterIdx = ref(0)
 
 async function loadSemester() {
   try {
-    const arr = await api.get('/semesters')
+    const arr = await listSemesters()
     if (arr && arr.length) {
       semesterList.value = arr
       const curIdx = arr.findIndex((s) => s.current)
@@ -652,18 +658,21 @@ async function loadAll() {
   loading.value = true
   loadSemester()
   try {
-    const [classes, students, notes, grades, todos, schedules, notices, attendances, homeworks, schoolNoticesR, behaviors] = await Promise.all([
-      api.get('/classes').catch(() => []),
-      api.get('/students').catch(() => []),
-      api.get('/notes').catch(() => []),
-      api.get('/grades').catch(() => []),
-      api.get('/todos').catch(() => []),
-      api.get('/schedules').catch(() => []),
-      api.get('/notices').catch(() => []),
-      api.get('/attendances').catch(() => []),
-      api.get('/homework').catch(() => []),
-      api.get('/notices?scope=school').catch(() => ({ items: [] })),
-      api.get('/behavior-records').catch(() => []),
+    const [
+      classes, students, notes, grades, todos, schedules, notices,
+      attendances, homeworks, schoolNoticesR, behaviors,
+    ] = await Promise.all([
+      listDashboardClasses().catch(() => []),
+      listDashboardStudents().catch(() => []),
+      listNotes().catch(() => []),
+      listDashboardGrades().catch(() => []),
+      listTodos().catch(() => []),
+      listSchedules().catch(() => []),
+      listNotices().catch(() => []),
+      listAttendances().catch(() => []),
+      listHomework().catch(() => []),
+      listSchoolNotices().catch(() => ({ items: [] })),
+      listBehaviorRecords().catch(() => []),
     ])
     classList.value = classes || []
     studentList.value = students || []
@@ -709,14 +718,14 @@ async function addTodo() {
   const t = newTodo.value.trim()
   if (!t) return
   try {
-    const r = await api.post('/todos', { title: t, note: '', date: todayStr, done: false })
+    const r = await createTodo({ title: t, note: '', date: todayStr, done: false })
     todoList.value.push(r)
     newTodo.value = ''
   } catch (e) { uni.showToast({ title: '添加失败', icon: 'none' }) }
 }
 async function toggleTodo(t) {
   t.done = !t.done
-  try { await api.patch('/todos/' + t.id, { done: t.done }) }
+  try { await updateTodo(t.id, { done: t.done }) }
   catch (e) {
     // 回滚前给用户明确反馈，避免状态被悄悄撤销造成困惑
     uni.showToast({ title: '更新失败，已回滚', icon: 'none' })
@@ -730,7 +739,7 @@ async function delTodo(t) {
     confirmColor: '#e64340',
     success: async (r) => {
       if (!r.confirm) return
-      try { await api.del('/todos/' + t.id); todoList.value = todoList.value.filter((x) => x.id !== t.id) }
+      try { await deleteTodo(t.id); todoList.value = todoList.value.filter((x) => x.id !== t.id) }
       catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     },
   })
