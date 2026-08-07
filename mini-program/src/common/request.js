@@ -1,7 +1,28 @@
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
-import { getToken, logout, auth, parent } from './store'
 import { isSessionInvalid } from '@gardener/shared/utils/security'
 import { createSSEParser } from '@gardener/shared/utils/sse-parser'
+import { emitAuthReset } from './auth-events'
+
+// ========== 本地鉴权帮手（下沉自 store.js，打破 circular chunk） ==========
+const TOKEN_KEY = 'g_token'
+const ADMIN_TOKEN_KEY = 'admin_token'
+const SA_TOKEN_KEY = 'sa_token'
+
+function readToken() {
+  return uni.getStorageSync(ADMIN_TOKEN_KEY) || uni.getStorageSync(SA_TOKEN_KEY) || uni.getStorageSync(TOKEN_KEY) || ''
+}
+
+function clearAuthStorage() {
+  uni.removeStorageSync(TOKEN_KEY)
+  uni.removeStorageSync(ADMIN_TOKEN_KEY)
+  uni.removeStorageSync(SA_TOKEN_KEY)
+  uni.removeStorageSync('g_user')
+  uni.removeStorageSync('admin_user')
+  uni.removeStorageSync('sa_user')
+  uni.removeStorageSync('g_parent_token')
+  uni.removeStorageSync('g_parent_user')
+  uni.removeStorageSync('__auth_multi_role__')
+}
 // 演示模式 mock 数据仅在开发/预览构建（DEV）中被引用：
 // 生产构建（PROD）经 uni-app 条件编译剔除该 import，mock 模块零引用、不进发布包。
 // #ifdef DEV
@@ -78,7 +99,7 @@ export function request(path, method = 'GET', data = {}, token) {
     return new Promise((resolve) => resolve(getMockData(path, method, data)))
     // #endif
   }
-  const useToken = token !== undefined ? token : getToken()
+  const useToken = token !== undefined ? token : readToken()
   return new Promise((resolve, reject) => {
     const cloud = typeof wx !== 'undefined' && wx.cloud
     if (!cloud || typeof cloud.callContainer !== 'function') {
@@ -119,7 +140,8 @@ export function request(path, method = 'GET', data = {}, token) {
             // 这类 401 不该清登录态——否则一个无权限接口就会把用户强制登出。
             const msgText = typeof msg === 'string' ? msg : ''
             if (isSessionInvalid(msgText)) {
-              try { logout() } catch (e) { console.error('[mini catch]', e) }
+              clearAuthStorage()
+              emitAuthReset()
               uni.reLaunch({ url: '/pages/login/login' })
             }
           }
@@ -373,12 +395,12 @@ export function postRaw(path, data) {
   return api.post(path, data)
 }
 
-/** 家长端专用请求封装：使用家长令牌（parent.token），其余与 api 一致 */
+/** 家长端专用请求封装：使用家长令牌（从 storage 读取），其余与 api 一致 */
 export const parentApi = {
-  get: (p) => request(p, 'GET', {}, parent.token),
-  post: (p, d) => request(p, 'POST', d || {}, parent.token),
-  put: (p, d) => request(p, 'PUT', d || {}, parent.token),
-  del: (p) => request(p, 'DELETE', {}, parent.token),
+  get: (p) => request(p, 'GET', {}, uni.getStorageSync('g_parent_token') || ''),
+  post: (p, d) => request(p, 'POST', d || {}, uni.getStorageSync('g_parent_token') || ''),
+  put: (p, d) => request(p, 'PUT', d || {}, uni.getStorageSync('g_parent_token') || ''),
+  del: (p) => request(p, 'DELETE', {}, uni.getStorageSync('g_parent_token') || ''),
 }
 
 export default api

@@ -2,8 +2,23 @@ import { reactive } from 'vue'
 import { DEMO_MODE_ENABLED } from './config'
 import { SCHEMES, FONT_SIZES } from '@gardener/shared/constants'
 import { authMachine, bindAuthMachine } from './auth-machine'
+import { onAuthReset } from './auth-events'
 
 export { SCHEMES, FONT_SIZES, authMachine, bindAuthMachine }
+
+// 监听 request.js 发出的鉴权重置事件（打破 circular chunk：request.js 不直接 import store.js）
+onAuthReset(() => {
+  auth.token = ''
+  auth.user = null
+  auth.features = []
+  auth.effectiveFeatures = []
+  auth.schoolFeatureFlags = null
+  parent.token = ''
+  parent.user = null
+  parent.teacherToken = ''
+  parent.parentToken = ''
+  parent.currentRole = 'parent'
+})
 
 const TOKEN_KEY = 'g_token'
 const USER_KEY = 'g_user'

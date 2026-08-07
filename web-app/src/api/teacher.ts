@@ -92,6 +92,11 @@ export function updateStudent(id: string, data: Partial<{
   return request.patch<any, TeacherStudent>('/students/' + id, data)
 }
 
+/** 获取单个学生详情 */
+export function getStudent(id: string) {
+  return request.get<any, TeacherStudent>('/students/' + id)
+}
+
 /** 删除学生 */
 export function deleteStudent(id: string) {
   return request.delete<any, void>('/students/' + id)

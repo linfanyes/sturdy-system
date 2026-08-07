@@ -54,6 +54,8 @@ function selectAllEndpoints() {
   }
 }
 
+const exportProgress = ref({ current: 0, total: 0, currentLabel: '' })
+
 async function handleExport() {
   if (!selectedEndpoints.value.length) {
     errorMsg.value = '请至少选择一个要导出的数据类型'
@@ -64,11 +66,15 @@ async function handleExport() {
   successMsg.value = ''
   try {
     const endpoints = EXPORT_ENDPOINTS.filter(e => selectedEndpoints.value.includes(e.key))
+    exportProgress.value = { current: 0, total: endpoints.length, currentLabel: '' }
     const exportData: Record<string, any> = {
       _exportedAt: new Date().toISOString(),
       _version: '1.0',
     }
-    for (const ep of endpoints) {
+    for (let i = 0; i < endpoints.length; i++) {
+      const ep = endpoints[i]
+      exportProgress.value.current = i + 1
+      exportProgress.value.currentLabel = ep.label
       try {
         const res = await request.get(ep.path, { params: { take: 10000 } })
         exportData[ep.key] = Array.isArray(res) ? res : (res?.items || [])
@@ -76,6 +82,7 @@ async function handleExport() {
         exportData[ep.key] = []
       }
     }
+    exportProgress.value.currentLabel = ''
     // 下载 JSON 文件
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -339,7 +346,7 @@ onMounted(() => {
       >
         <Loader2 v-if="exportLoading" class="w-4 h-4 animate-spin" />
         <Download v-else class="w-4 h-4" />
-        {{ exportLoading ? '导出中…' : '导出 JSON' }}
+        {{ exportLoading ? `导出中… (${exportProgress.current}/${exportProgress.total}${exportProgress.currentLabel ? ' - ' + exportProgress.currentLabel : ''})` : '导出 JSON' }}
       </button>
     </div>
 

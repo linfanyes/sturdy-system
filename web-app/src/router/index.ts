@@ -79,6 +79,7 @@ export const routes: RouteRecordRaw[] = [
       // 班级与学生
       { path: 'classes', name: 'teacher-classes', component: () => import('@/views/classes/ClassMembers.vue'), meta: { title: '班级成员', feature: 'classes' } },
       { path: 'students', name: 'teacher-students', component: () => import('@/views/teacher/Students.vue'), meta: { title: '学生管理', feature: 'students' } },
+      { path: 'students/:id', name: 'teacher-student-detail', component: () => import('@/views/teacher/StudentDetail.vue'), meta: { title: '学生详情', feature: 'students' } },
       { path: 'student-info-review', name: 'student-info-review', component: () => import('@/views/teacher/StudentInfoReview.vue'), meta: { title: '信息修改审核', feature: 'students' } },
       { path: 'duty-roster', name: 'teacher-duty-roster', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'duty-rosters' }, meta: { title: '轮值表', feature: 'duty' } },
       { path: 'duty-config', name: 'teacher-duty-config', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'class-duty-configs' }, meta: { title: '值日配置', feature: 'duty' } },
