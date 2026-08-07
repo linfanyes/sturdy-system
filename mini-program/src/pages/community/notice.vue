@@ -87,6 +87,9 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { listClasses, listNotices, createNotice, updateNotice, pushNotice, toggleNoticePinned, toggleNoticeEnded, removeNotice, listNoticeTemplates } from '@/api/notice'
+import { chatSync } from '@/api/dashboard'
+import { checkText } from '@/api/security'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 import { drawAndSave, saveToAlbum, copyText } from '../../common/print'
@@ -145,8 +148,8 @@ const shown = computed(() => {
 async function load() {
   // 并行加载 + 各自兜底，避免 classes 失败导致 notices 也不渲染
   const [cls, ns] = await Promise.all([
-    api.getList('/classes', { silent: true }),
-    api.getList('/notices', { loading: true, loadingText: '加载公告' }),
+    listClasses({ silent: true }),
+    listNotices({ loading: true, loadingText: '加载公告' }),
   ])
   classes.value = cls
   list.value = ns
@@ -179,7 +182,7 @@ async function aiPolish() {
   if (!form.value.content.trim()) return uni.showToast({ title: '请先输入内容', icon: 'none' })
   polishing.value = true
   try {
-    const r = await api.post('/ai/chat-sync', {
+    const r = await chatSync({
       messages: [
         {
           role: 'system',
@@ -208,7 +211,7 @@ async function save() {
   // 微信内容安全审核（后端已配置则审核，未配置/异常放行）
   try {
     const text = (form.value.title + '\n' + form.value.content).trim()
-    const r = await api.post('/security/msg-check', { content: text })
+    const r = await checkText(text)
     if (r && r.pass === false) {
       return uni.showToast({ title: '内容未通过安全审核：' + (r.reason || ''), icon: 'none' })
     }
@@ -218,15 +221,15 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/notices/' + editing.value.id, { ...form.value })
+      await updateNotice(editing.value.id, { ...form.value })
       uni.showToast({ title: '已更新', icon: 'none' })
     } else {
-      const notice = await api.post('/notices', { ...form.value, ended: false })
+      const notice = await createNotice({ ...form.value, ended: false })
       uni.showToast({ title: '已发布', icon: 'none' })
       // 推送通知给家长
       if (pushToParent.value && form.value.classId) {
         try {
-          await api.post('/notices/push', {
+          await pushNotice({
             classId: form.value.classId,
             title: form.value.title,
             content: form.value.content,
@@ -248,7 +251,7 @@ async function save() {
 async function togglePin(n) {
   uni.showLoading({ title: '处理中…', mask: true })
   try {
-    await api.patch('/notices/' + n.id, { pinned: !n.pinned })
+    await toggleNoticePinned(n.id)
     n.pinned = !n.pinned
   } catch (e) {
     uni.showToast({ title: '操作失败', icon: 'none' })
@@ -259,7 +262,7 @@ async function togglePin(n) {
 async function setEnded(n, v) {
   uni.showLoading({ title: '处理中…', mask: true })
   try {
-    await api.patch('/notices/' + n.id, { ended: v })
+    await toggleNoticeEnded(n.id, v)
     n.ended = v
     uni.showToast({ title: v ? '已结束' : '已重新发布', icon: 'none' })
   } catch (e) {
@@ -276,7 +279,7 @@ async function del(n) {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
       try {
-        await api.del('/notices/' + n.id)
+        await removeNotice(n.id)
         list.value = list.value.filter((x) => x.id !== n.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })
@@ -349,7 +352,7 @@ async function openTemplates() {
   showTpl.value = true
   tplLoading.value = true
   try {
-    const list = await api.getList('/notice-templates', { silent: true })
+    const list = await listNoticeTemplates({ silent: true })
     tplList.value = Array.isArray(list) ? list : []
   } catch (e) {
     tplList.value = []
