@@ -269,7 +269,11 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import {
+  listGrades, getGrades, saveGrade, importGradesPreview, importGradesCommit,
+  mergeGrades, removeGrade, listClasses, listExams, listStudents,
+  getPublicConfig, listSemesters, analyzeExam, diagnoseStudent,
+} from '@/api/grades'
 import { auth, theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isScore } from '../../common/validators'
@@ -422,14 +426,14 @@ async function saveAll() {
         if (v !== '') rows.push({ studentId: s.id, score: Number(v) })
       })
       if (!rows.length) continue
-      await api.post('/grades/import-commit', {
+      await importGradesCommit({
         classId: classId.value, examName: examName.value, examId: examId.value,
         subject: sub, date: date.value, rows,
       })
       done++
     }
     uni.showToast({ title: `已保存 ${done} 个科目`, icon: 'success' })
-    grades.value = await api.get('/grades')
+    grades.value = await getGrades()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
   } finally {
@@ -513,7 +517,7 @@ async function commitAll() {
     for (const sub of p.subjectCols) {
       const rows = (p.bySubject[sub] || []).filter((r) => r.valid)
       if (!rows.length) continue
-      await api.post('/grades/import-commit', {
+      await importGradesCommit({
         classId: classId.value, examName: examName.value, examId: examId.value,
         subject: sub, date: date.value, rows,
       })
@@ -522,7 +526,7 @@ async function commitAll() {
     uni.showToast({ title: `成功导入 ${done} 个科目`, icon: 'success' })
     allPreview.value = null
     showAllImport.value = false
-    grades.value = await api.get('/grades')
+    grades.value = await getGrades()
     buildMatrix()
   } catch (e) {
     uni.showToast({ title: '导入失败：' + (e.message || '请重试'), icon: 'none' })
@@ -730,11 +734,11 @@ async function load() {
   loadError.value = false
   try {
     const [cs, es, pub, gs, semesters] = await Promise.all([
-      api.getList('/classes', { silent: true }),
-      api.getList('/exams', { silent: true }),
-      api.get('/config/public'),
-      api.getList('/grades', { loading: true, loadingText: '加载成绩' }),
-      api.get('/semesters').catch(() => []),
+      listClasses({ silent: true }),
+      listExams({ silent: true }),
+      getPublicConfig(),
+      listGrades({ loading: true, loadingText: '加载成绩' }),
+      listSemesters(),
     ])
     classes.value = cs
     exams.value = es
@@ -808,7 +812,7 @@ function onSubject(e) {
 
 async function loadStudents() {
   // 服务端按 classId 过滤，避免拉全量再前端 filter
-  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+  students.value = await listStudents(classId.value, { silent: true })
 }
 
 function checkExisting() {
@@ -855,7 +859,7 @@ async function saveManual() {
   saving.value = true
   uni.showLoading({ title: '保存中…', mask: true })
   try {
-    const r = await api.post('/grades/merge', {
+    const r = await mergeGrades({
       classId: classId.value,
       examName: examName.value,
       examId: examId.value,
@@ -865,7 +869,7 @@ async function saveManual() {
       scores: sc,
     })
     uni.showToast({ title: r.created ? '成绩已创建' : '成绩已更新', icon: 'success' })
-    grades.value = await api.get('/grades')
+    grades.value = await getGrades()
     checkExisting()
   } catch (e) {
     uni.showToast({ title: '保存失败：' + (e.message || '请重试'), icon: 'none' })
@@ -885,9 +889,9 @@ async function removeGrade() {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…' })
       try {
-        await api.del('/grades/' + existing.value.id)
+        await removeGrade(existing.value.id)
         uni.showToast({ title: '已删除', icon: 'success' })
-        grades.value = await api.get('/grades')
+        grades.value = await getGrades()
         existing.value = null
         for (const k in scores) delete scores[k]
       } catch (e) {
@@ -965,7 +969,7 @@ function pickFile() {
       uni.showLoading({ title: '解析中…' })
       try {
         const data = await readAsBase64(f.path)
-        const r = await api.post('/grades/import-preview', { classId: classId.value, filename: f.name, data })
+        const r = await importGradesPreview({ classId: classId.value, filename: f.name, data })
         preview.value = r
         if (!r.validCount) uni.showToast({ title: '没有可导入的有效数据', icon: 'none' })
       } catch (e) {
@@ -997,7 +1001,7 @@ async function commit() {
   }
   uni.showLoading({ title: '导入中…' })
   try {
-    const r = await api.post('/grades/import-commit', {
+    const r = await importGradesCommit({
       classId: classId.value,
       examName: examName.value,
       examId: examId.value,
@@ -1008,7 +1012,7 @@ async function commit() {
     uni.showToast({ title: `成功导入 ${r.count} 条成绩`, icon: 'success' })
     preview.value = null
     showImport.value = false
-    grades.value = await api.get('/grades')
+    grades.value = await getGrades()
     checkExisting()
   } catch (e) {
     uni.showToast({ title: '导入失败：' + (e.message || '请重试'), icon: 'none' })
@@ -1120,7 +1124,7 @@ async function aiAnalyze() {
   aiTitle.value = `AI 分析：${exam.name}`
   aiResult.value = '分析中…'
   try {
-    const r = await api.post('/ai/analyze-exam', { examId: exam.id })
+    const r = await analyzeExam(exam.id)
     aiResult.value = r.content || '未返回分析结果'
   } catch (e) {
     aiResult.value = '分析失败，请检查 AI 配置'
@@ -1137,7 +1141,7 @@ async function aiDiagnose() {
       aiTitle.value = `学情诊断：${s.name}`
       aiResult.value = '诊断中…'
       try {
-        const res = await api.post('/ai/diagnose', { studentId: s.id })
+        const res = await diagnoseStudent(s.id)
         aiResult.value = res.content || '未返回诊断结果'
       } catch (e) {
         aiResult.value = '诊断失败，请检查 AI 配置'

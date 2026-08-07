@@ -70,7 +70,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listExams, listClasses, getPublicConfig, createExam, updateExam, removeExam } from '@/api/exams'
 import { auth, theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 
@@ -125,9 +125,9 @@ const selClassName = computed(() => {
 })
 
 async function load() {
-  list.value = await api.getList('/exams', { loading: true, loadingText: '加载考试' })
-  classes.value = await api.getList('/classes', { silent: true })
-  const pub = await api.get('/config/public')
+  list.value = await listExams({ loading: true, loadingText: '加载考试' })
+  classes.value = await listClasses({ silent: true })
+  const pub = await getPublicConfig()
   subjects.value = pub.defaultSubjects || []
 }
 onShow(load)
@@ -204,10 +204,10 @@ async function save() {
       teacherName: form.value.teacherName || auth.user?.name || '',
     }
     if (editingId.value) {
-      await api.patch('/exams/' + editingId.value, payload)
+      await updateExam(editingId.value, payload)
       uni.showToast({ title: '考试已更新', icon: 'success' })
     } else {
-      await api.post('/exams', payload)
+      await createExam(payload)
       uni.showToast({ title: '考试已创建', icon: 'success' })
     }
     cancelEdit()
@@ -227,7 +227,7 @@ function remove(e) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/exams/' + e.id)
+        await removeExam(e.id)
         uni.showToast({ title: '已删除', icon: 'success' })
         load()
       } catch (err) {

@@ -4,6 +4,7 @@
  * 支持收件箱/已发送 Tab、收件人列表、发送留言、已读标记、删除等。
  */
 import { ref, computed, onMounted } from 'vue'
+import { formatRelativeTime } from '@gardener/shared/utils'
 import {
   MessageSquare, Send, Check, Trash2, Inbox, SendHorizonal,
   User, Loader2, Search, ChevronLeft, ChevronRight, CheckCheck,
@@ -80,11 +81,9 @@ const sendFilteredRecipients = computed(() => {
 
 // ===== 时间格式化 =====
 function formatTime(createdAt: string): string {
+  const rel = formatRelativeTime(createdAt)
+  if (rel.endsWith('前') || rel === '刚刚') return rel
   const dt = new Date(createdAt)
-  const diff = Date.now() - dt.getTime()
-  if (diff < 60 * 1000) return '刚刚'
-  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}小时前`
   const now = new Date()
   if (dt.getFullYear() === now.getFullYear()) {
     return `${dt.getMonth() + 1}月${dt.getDate()}日`

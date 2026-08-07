@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { toast } from '@/utils/feedback'
+import { formatISOTime } from '@gardener/shared/utils'
 import { FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-vue-next'
 import { listAuditLogs, listSchools } from '@/api/admin'
 
@@ -61,8 +62,7 @@ function nextPage() {
 }
 
 function formatTime(t?: string) {
-  if (!t) return '-'
-  return t.replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19)
+  return formatISOTime(t || undefined)
 }
 
 const ACTION_LABELS: Record<string, string> = {

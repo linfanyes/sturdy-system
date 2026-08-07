@@ -3,6 +3,7 @@
  * 消息中心：按分类 Tab 展示消息，支持分页、单条已读。
  */
 import { ref, computed, onMounted } from 'vue'
+import { formatRelativeTime } from '@gardener/shared/utils'
 import {
   MessageSquare, ChevronLeft, ChevronRight, Loader2,
 } from 'lucide-vue-next'
@@ -63,14 +64,11 @@ function categoryLabel(category: string): string {
   return tab?.label || category
 }
 
-/** 时间格式化 */
+/** 时间格式化：相对时间 + 日期回退 */
 function formatTime(createdAt: string): string {
-  const dt = new Date(createdAt)
-  const diff = Date.now() - dt.getTime()
-  if (diff < 60 * 1000) return '刚刚'
-  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}小时前`
-  return dt.toLocaleString('zh-CN')
+  const rel = formatRelativeTime(createdAt)
+  if (rel.endsWith('前') || rel === '刚刚') return rel
+  return new Date(createdAt).toLocaleString('zh-CN')
 }
 
 async function loadList() {

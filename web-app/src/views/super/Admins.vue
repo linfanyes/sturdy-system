@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { toast } from '@/utils/feedback'
+import { formatISOTime } from '@gardener/shared/utils'
 import { Users, Plus, Edit3, Trash2, KeyRound, Power, Loader2 } from 'lucide-vue-next'
 import {
   listSchoolAdmins, createSchoolAdmin, updateSchoolAdmin,
@@ -162,8 +163,7 @@ async function handleDelete(row: any) {
 }
 
 function formatTime(t?: string) {
-  if (!t) return '-'
-  return t.replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19)
+  return formatISOTime(t || undefined)
 }
 </script>
 

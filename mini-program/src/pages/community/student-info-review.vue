@@ -87,6 +87,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
+import { formatDateTime } from '@gardener/shared/utils'
 import { auth, theme } from '../../common/store'
 import api from '../../common/request'
 
@@ -136,10 +137,7 @@ function className(id) {
   return classList.value.find(c => c.id === id)?.name || id
 }
 function formatTime(t) {
-  if (!t) return '-'
-  const d = new Date(t)
-  if (isNaN(d.getTime())) return t
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return formatDateTime(t || undefined)
 }
 
 async function loadList() {

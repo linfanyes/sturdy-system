@@ -3,6 +3,7 @@
  * 数据管理：导出、导入、备份管理。
  */
 import { ref, onMounted } from 'vue'
+import { formatDateTime } from '@gardener/shared/utils'
 import {
   Database, Download, Upload, HardDrive, History, Plus,
   Loader2, RotateCcw, Check, AlertCircle, FileJson,
@@ -249,7 +250,7 @@ async function restoreBackup(backup: BackupItem) {
 
 function formatTime(dateStr: string): string {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString('zh-CN')
+  return formatDateTime(dateStr)
 }
 
 function formatSize(bytes?: number): string {

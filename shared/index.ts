@@ -27,5 +27,8 @@ export * from './schemas/index.js'
 // 跨端游戏状态机（snake / 2048 / sudoku）—— 纯函数，两端各自渲染
 export * from './games/index.js'
 
+// 跨端 composables（Vue 3 响应式逻辑，两端通用）
+export * from './composables/index.js'
+
 // 显式转发 constants 的三个类型，消除与 types star 导出的同名歧义（constants 为权威来源）
 export type { Role, SubjectOption, RoleOption } from './constants/index.js'

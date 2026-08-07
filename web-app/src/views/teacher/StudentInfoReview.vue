@@ -5,6 +5,7 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { toast } from '@/utils/feedback'
+import { formatDateTime } from '@gardener/shared/utils'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
@@ -58,10 +59,7 @@ function className(id: string) {
 }
 
 function formatTime(t: string | null) {
-  if (!t) return '-'
-  const d = new Date(t)
-  if (isNaN(d.getTime())) return t
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return formatDateTime(t || undefined)
 }
 
 async function loadList() {

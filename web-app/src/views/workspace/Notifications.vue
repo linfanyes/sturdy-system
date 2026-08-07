@@ -4,6 +4,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { toast } from '@/utils/feedback'
+import { formatRelativeTime } from '@gardener/shared/utils'
 import {
   Bell, ClipboardList, Megaphone, Award, Settings, CheckCheck, ChevronLeft, ChevronRight, Loader2,
 } from 'lucide-vue-next'
@@ -23,14 +24,11 @@ const unreadCount = ref(0)
 const page = computed(() => Math.floor(skip.value / PAGE_SIZE) + 1)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
 
-/** 时间格式化：刚刚 / N分钟前 / N小时前 / 日期 */
+/** 时间格式化：相对时间 + 日期回退 */
 function formatTime(createdAt: string): string {
-  const dt = new Date(createdAt)
-  const diff = Date.now() - dt.getTime()
-  if (diff < 60 * 1000) return '刚刚'
-  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)}小时前`
-  return dt.toLocaleString('zh-CN')
+  const rel = formatRelativeTime(createdAt)
+  if (rel.endsWith('前') || rel === '刚刚') return rel
+  return new Date(createdAt).toLocaleString('zh-CN')
 }
 
 /** 通知类型图标映射 */
