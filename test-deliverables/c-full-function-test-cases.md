@@ -163,8 +163,43 @@
 | Web 导入完整性（140 路由依赖） | `node scripts/check-imports.mjs` | 0 缺失 |
 | Web 全部懒加载路由文件存在 | 路由表 vs views 目录 | 0 断链 |
 | Web 关键页面 vite 编译 | curl /src/views/... | HTTP 200 |
+| Web TypeScript 类型检查 | `vue-tsc --noEmit` | 0 错误 |
+| Web 生产构建 | `vite build` | exit 0 |
 | 小程序构建 | `npm run build:mp-weixin` | exit 0，0 warning |
 | 小程序页面清单 | pages/ 159 页 | 与 pages.json 一致 |
+
+### 4.1 Web UI 专项：面包屑与分页
+
+#### 4.1.1 面包屑简化
+
+| 编号 | 案例 | 页面 | 预期 |
+|---|---|---|---|
+| R1-UI-01 | 工作台首页面包屑 | `/super` | 不显示面包屑或仅显示页面标题 |
+| R1-UI-02 | 子页面面包屑 | `/super/schools` | 仅显示「学校管理」，无「工作台 > 账户管理」路径 |
+| R1-UI-03 | 直达页面面包屑 | `/super/audit-logs` | 仅显示「审计日志」 |
+| R1-UI-04 | 返回按钮 | 任意子页面 | 按钮文字为「返回」，点击回到工作台瓷砖面板 |
+
+#### 4.1.2 通用分页（CrudTable / usePagedList）
+
+| 编号 | 案例 | 页面 | 预期 |
+|---|---|---|---|
+| R1-UI-05 | 列表默认分页 | 任意 SchemaCrudPage 列表 | 默认每页 10 条 |
+| R1-UI-06 | 修改每页条数 | 同一列表 | 切换 5/10/20/50 后列表更新 |
+| R1-UI-07 | 上一页/下一页 | 多页列表 | 翻页正常，总条数正确 |
+| R1-UI-08 | 搜索时前端缓存分页 | 输入关键词后 | 先拉 500 条，前端过滤后分页 |
+| R3-UI-01 | 自定义页面分页 | `/teacher/exams` | 底部显示分页栏 |
+| R3-UI-02 | 自定义页面分页 | `/teacher/grades` | 底部显示分页栏 |
+| R3-UI-03 | 自定义页面分页 | `/teacher/students` | 底部显示分页栏 |
+| R3-UI-04 | 自定义页面分页 | `/teacher/notices` | 底部显示分页栏 |
+
+#### 4.1.3 一级菜单切换
+
+| 编号 | 案例 | 操作 | 预期 |
+|---|---|---|---|
+| R1-UI-09 | 直达菜单点击 | 在 `/super` 点击「工作台」 | 保持工作台首页，activeCategory 清空 |
+| R1-UI-10 | 展开后切换直达 | 展开「账户管理」后点击「工作台」 | 收起账户管理，显示仪表盘 |
+| R1-UI-11 | 子页面切换分类 | 在 `/super/schools` 点击「教学管理」 | 跳回 `/super` 并展开教学管理 |
+| R1-UI-12 | 同一分类 toggle | 在 `/super` 点击「账户管理」两次 | 第一次展开，第二次收起 |
 
 ## 5. 已知缺陷与回归清单（本版修复）
 
@@ -202,12 +237,25 @@ cd mini-program && npm run build:mp-weixin
 | 专项回归 `d-regression-verify.mjs`（studentCount/班级集合/转交同步/家长登录/越权） | ✅ **26/26 通过（100%）** |
 | 前端导入完整性 `check-imports.mjs` | ✅ 951/951 具名导入 0 缺失 |
 | 路由断链检查 `check-routes.mjs` | ✅ 181/181 组件文件存在 |
-| Web 关键页面 vite 编译（班级管理/学生管理等） | ✅ 全部 HTTP 200 |
-| 小程序构建 `build:mp-weixin` | ✅ exit 0（1 个历史遗留无害 circular 警告） |
+| Web TypeScript 类型检查 `vue-tsc --noEmit` | ✅ **0 错误** |
+| Web 生产构建 `vite build` | ✅ **exit 0**（13.12s） |
+| Web 关键路由 HTTP 200 | ✅ `/login /super /super/schools /super/teachers /teacher /teacher/classes /teacher/students /teacher/exams` |
+| 小程序构建 `build:mp-weixin` | ✅ **exit 0**（159 页，1 个历史遗留无害 circular 警告） |
+| 小程序 pages.json 结构 | ✅ 7 主包 + 14 分包 = 159 页 |
 | 审计日志写入（teacherId 默认值修复） | ✅ 本地实测有数据 |
-| 浏览器级 UI 冒烟 | ⚠️ 受本机环境限制（无可用 Chromium 运行时），以 API+编译验证兜底；`e2e/mini.smoke.mjs` 为可执行 H5 冒烟入口 |
+| 浏览器级 UI 冒烟 | ⚠️ 受本机环境限制（无可用 Chromium 运行时），以 API+编译验证兜底 |
 
-### 7.1 b-test-suite 修正说明（脚本过时项，产品行为正确）
+### 7.1 本轮新增修复（TypeScript / UI）
+
+| 文件 | 问题 | 修复 |
+|---|---|---|
+| `web-app/src/composables/usePagedList.ts` | `res?.items` / `res?.total` 类型推断为 `any[]` 导致 TS2339 | 拆分数组/对象分支，显式 `arr` / `totalVal` |
+| `web-app/src/views/tools/AIDetailPage.vue` | `form[f[k]]` 索引表达式笔误 | 改为 `form[f.k]` |
+| `web-app/src/views/tools/AIDetailPage.vue` | 模板中 `navigator.clipboard` 不可用 | 改为 `@click="copyResult"` + script 定义 `copyResult()` |
+| `web-app/src/views/games/GameSnake.vue` | `machine.hooks` / `machine.speed` 为 private | 加 `(machine as any)` 断言绕过 TS 访问限制 |
+| `web-app/src/views/tools/SubjectDetail.vue` 等 3 文件 | `@gardener/shared/subject-schema` 路径错误 | 统一改为 `@gardener/shared/schemas/subject-schema` |
+
+### 7.2 b-test-suite 修正说明（脚本过时项，产品行为正确）
 
 | 原断言 | 修正 | 原因 |
 |---|---|---|

@@ -45,11 +45,11 @@ function tick() {
   }
 }
 
-machine.hooks = { onDie: () => { if (timer) { clearInterval(timer); timer = null } } }
+;(machine as any).hooks = { onDie: () => { if (timer) { clearInterval(timer); timer = null } } }
 
 function reset() {
   if (timer) { clearInterval(timer); timer = null }
-  machine.speed = 200
+  ;(machine as any).speed = 200
   machine.reset()
   syncFromMachine()
   timer = setInterval(tick, 200)

@@ -67,7 +67,7 @@ const fields = computed<NormField[]>(() => {
 const form = reactive<Record<string, any>>({})
 // 初始化字段默认值
 for (const f of fields.value) {
-  if (form[f.k] === undefined) form[f[k]] = ''
+  if (form[f.k] === undefined) form[f.k] = ''
 }
 
 const loading = ref(false)
@@ -104,6 +104,13 @@ function reset() {
   for (const f of fields.value) form[f.k] = ''
   result.value = ''
   errorMsg.value = ''
+}
+function copyResult() {
+  if (result.value && typeof window !== 'undefined') {
+    window.navigator.clipboard.writeText(result.value).catch(() => {
+      errorMsg.value = '复制失败，请手动复制'
+    })
+  }
 }
 </script>
 
@@ -166,7 +173,7 @@ function reset() {
     <div v-if="result" class="result">
       <div class="result-head">
         <span>生成结果</span>
-        <button class="copy" @click="navigator.clipboard.writeText(result)">复制</button>
+        <button class="copy" @click="copyResult">复制</button>
       </div>
       <pre>{{ result }}</pre>
     </div>

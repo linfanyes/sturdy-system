@@ -11,7 +11,7 @@
 import { ref, watch } from 'vue'
 
 export function usePagedList(
-  loadFn: (params: Record<string, any>) => Promise<any[]>,
+  loadFn: (params: Record<string, any>) => Promise<any[] | { items: any[]; total?: number }>,
   defaultPageSize = 10,
   totalRef?: { value: number },
 ) {
@@ -30,9 +30,17 @@ export function usePagedList(
     }
     if (classId.value) params.classId = classId.value
     const res = await loadFn(params)
-    const arr = Array.isArray(res) ? res : (res?.items || [])
+    let arr: any[] = []
+    let totalVal = 0
+    if (Array.isArray(res)) {
+      arr = res
+      totalVal = res.length
+    } else {
+      arr = res?.items || []
+      totalVal = res?.total ?? arr.length
+    }
     allItems.value = arr
-    total.value = res?.total ?? arr.length
+    total.value = totalVal
     page.value = 0
   }
 
