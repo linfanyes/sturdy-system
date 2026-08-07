@@ -118,6 +118,9 @@
 import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun, setMockMode } from '../../common/request'
+import { getMe, updateMe } from '@/api/user'
+import { getAiSettings, updateAiSettings, getAppConfig, updateAppConfig, getAiProviders } from '@/api/config'
+import { listBackups, createBackup as createBackupApi, getBackup, removeBackup, autoBackup } from '@/api/backup'
 import { isPhone, isEmail } from '../../common/validators'
 import { DEMO_MODE_ENABLED } from '../../common/config'
 import { theme, auth, setUser, setAuth, setColorScheme, logout as doLogout } from '../../common/store'
@@ -151,7 +154,7 @@ const termOpts = ['2026春季学期', '2026秋季学期', '2027春季学期', '2
 
 async function load() {
   try {
-    const u = await api.get('/users/me')
+    const u = await getMe()
     Object.assign(me, u)
     Object.assign(form, {
       name: u.name || '',
@@ -223,7 +226,7 @@ async function save() {
     email: form.email,
   }
   try {
-    const u = await api.put('/users/me', payload)
+    const u = await updateMe(payload)
     Object.assign(me, u)
     setUser(u)
     editing.value = false
@@ -245,9 +248,9 @@ async function exportData() {
       const key = p.replace(/^\//, '').replace(/-/g, '_')
       try { out[key] = await api.get(p) } catch (e) { out[key] = [] }
     }))
-    try { out.ai_settings = await api.get('/config/ai-settings') } catch (e) { out.ai_settings = null }
-    try { out.app_config = await api.get('/config/app-config') } catch (e) { out.app_config = null }
-    try { out.ai_providers = await api.get('/config/ai-providers') } catch (e) { out.ai_providers = null }
+    try { out.ai_settings = await getAiSettings() } catch (e) { out.ai_settings = null }
+    try { out.app_config = await getAppConfig() } catch (e) { out.app_config = null }
+    try { out.ai_providers = await getAiProviders() } catch (e) { out.ai_providers = null }
     uni.setClipboardData({
       data: JSON.stringify(out),
       success: () => uni.showToast({ title: '已全部复制，可粘贴保存', icon: 'none' }),
@@ -301,10 +304,10 @@ async function importData() {
 async function doImport(data) {
   // 收集所有写入任务（每项是一个返回 Promise 的函数，便于按需触发）
   const tasks = []
-  if (data.user) tasks.push(() => api.put('/users/me', data.user))
-  if (data.aiSettings) tasks.push(() => api.patch('/config/ai-settings', data.aiSettings))
-  if (data.ai_settings) tasks.push(() => api.patch('/config/ai-settings', data.ai_settings))
-  if (data.app_config) tasks.push(() => api.patch('/config/app-config', data.app_config))
+  if (data.user) tasks.push(() => updateMe(data.user))
+  if (data.aiSettings) tasks.push(() => updateAiSettings(data.aiSettings))
+  if (data.ai_settings) tasks.push(() => updateAiSettings(data.ai_settings))
+  if (data.app_config) tasks.push(() => updateAppConfig(data.app_config))
   if (Array.isArray(data.classes)) data.classes.forEach(c => tasks.push(() => api.post('/classes', c)))
   if (Array.isArray(data.students)) data.students.forEach(s => tasks.push(() => api.post('/students', s)))
   if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => api.post('/notes', n)))
@@ -436,7 +439,7 @@ function fmtTime(t) {
 async function loadBackups() {
   bkLoading.value = true
   try {
-    const list = await api.get('/backups')
+    const list = await listBackups()
     backups.value = Array.isArray(list) ? list : []
   } catch (e) {
     // 静默：备份接口失败不应阻塞 Profile 页加载
@@ -450,7 +453,7 @@ async function createBackup() {
   if (bkSaving.value) return
   bkSaving.value = true
   try {
-    await api.post('/backups', { label: '手动备份 ' + fmtTime(Date.now()) })
+    await createBackupApi({ label: '手动备份 ' + fmtTime(Date.now()) })
     uni.showToast({ title: '已创建备份', icon: 'success' })
     await loadBackups()
   } catch (e) {
@@ -469,7 +472,7 @@ async function restoreBackup(b) {
       if (!r.confirm) return
       uni.showLoading({ title: '恢复中…', mask: true })
       try {
-        const rec = await api.get('/backups/' + b.id)
+        const rec = await getBackup(b.id)
         const raw = rec?.payload
         if (!raw) throw new Error('备份内容为空')
         const data = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -491,7 +494,7 @@ async function deleteBackup(b) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/backups/' + b.id)
+        await removeBackup(b.id)
         uni.showToast({ title: '已删除', icon: 'none' })
         await loadBackups()
       } catch (e) {
@@ -523,7 +526,7 @@ async function maybeAutoBackup(force = false) {
   const TWO_HOURS = 2 * 60 * 60 * 1000
   if (!force && now - lastAutoAt.value < TWO_HOURS) return
   try {
-    await api.post('/backups/auto')
+    await autoBackup()
     const uid = (auth && auth.id) || 'default'
     uni.setStorageSync('lastAutoBackupAt_' + uid, String(now))
     lastAutoAt.value = now
