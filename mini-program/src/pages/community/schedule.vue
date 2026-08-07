@@ -146,6 +146,8 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listSchedules, createSchedule, updateSchedule, removeSchedule, batchRemoveSchedules } from '@/api/schedule'
 import { auth, theme } from '../../common/store'
 import { isInt } from '../../common/validators'
 import { copyText } from '../../common/print'
@@ -217,7 +219,7 @@ function weekLabel(v) {
 }
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   await loadItems()
 }
@@ -227,7 +229,7 @@ async function loadItems() {
       items.value = []
       return
     }
-    items.value = (await api.get('/schedules')).filter((s) => s.classId === classId.value)
+    items.value = (await listSchedules(classId.value)).filter((s) => s.classId === classId.value)
   } else {
     // 教师课表：展示本人任教的全部课程（跨班级）
     // 匹配本人姓名；若通讯录带有工号(employeeNo/no)，则一并匹配工号写法，避免后端存工号时恒空
@@ -235,7 +237,7 @@ async function loadItems() {
     const emp = auth.user && (auth.user.employeeNo || auth.user.no || '')
       ? String(auth.user.employeeNo || auth.user.no).trim()
       : ''
-    const all = await api.get('/schedules')
+    const all = await listSchedules(classId.value)
     items.value = (me || emp)
       ? all.filter((s) => {
           const t = (s.teacher || '').trim()
@@ -336,9 +338,9 @@ async function saveItem() {
   saving.value = true
   try {
     if (edit.value.id) {
-      await api.patch('/schedules/' + edit.value.id, payload)
+      await updateSchedule(edit.value.id, payload)
     } else {
-      await api.post('/schedules', payload)
+      await createSchedule(payload)
     }
     showEdit.value = false
     await loadItems()
@@ -354,7 +356,7 @@ async function removeItem() {
   uni.showLoading({ title: '删除中…', mask: true })
   saving.value = true
   try {
-    await api.del('/schedules/' + edit.value.id)
+    await removeSchedule(edit.value.id)
     showEdit.value = false
     await loadItems()
     uni.showToast({ title: '已删除', icon: 'none' })
@@ -379,7 +381,7 @@ async function saveTeach() {
   savingTeach.value = true
   try {
     const { success, failed } = await batchRun(
-      targets.map((s) => api.patch('/schedules/' + s.id, { teacher: teachForm.value.teacher.trim() })),
+      targets.map((s) => updateSchedule(s.id, { teacher: teachForm.value.teacher.trim() })),
     )
     if (failed === 0) {
       uni.showToast({ title: `已设置 ${success} 节课任课教师`, icon: 'success' })
@@ -444,7 +446,7 @@ async function doSavePlan(plan) {
   savingPlan.value = true
   try {
     if (autoForm.value.cover && items.value.length) {
-      const dr = await batchRun(items.value.map((s) => api.del('/schedules/' + s.id)))
+      const dr = await batchRemoveSchedules(items.value.map((s) => s.id))
       if (dr.failed > 0) {
         uni.showToast({ title: `覆盖删除失败 ${dr.failed} 条，已中止`, icon: 'none' })
         return
@@ -466,7 +468,7 @@ async function doSavePlan(plan) {
           section: '',
           weekType: 'all',
         }
-        jobs.push(existing ? api.patch('/schedules/' + existing.id, payload) : api.post('/schedules', payload))
+        jobs.push(existing ? updateSchedule(existing.id, payload) : createSchedule(payload))
       }
     }
     const { success, failed } = await batchRun(jobs)
