@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { listAllStudents, createReward } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
 const students = ref<any[]>([])
 const selected = ref('')
@@ -8,7 +8,7 @@ const points = ref('5')
 const reason = ref('')
 async function loadStudents() {
   try {
-    const d = await request.get('/students')
+    const d = await listAllStudents({ take: 50 })
     students.value = (d?.items || d || []).slice(0, 50)
   } catch (e: any) {
     console.error('[Reward] loadStudents error:', e)
@@ -17,7 +17,7 @@ async function loadStudents() {
 async function award() {
   if (!selected.value) return
   try {
-    await request.post('/reward-records', {
+    await createReward({
       studentId: selected.value,
       points: parseInt(points.value) || 1,
       reason: reason.value,

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
-import request from '@/api/request'
+import {
+  listNotices, createNotice, updateNotice, deleteNotice, listNoticeTemplates,
+  pushNotice, aiChatSync,
+} from '@/api/teacher'
 import { loadClasses, useClasses, classNameById } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import {
@@ -72,7 +75,7 @@ watch(keyword, resetNoticesPage)
 async function loadNotices() {
   loading.value = true
   try {
-    const res: any = await request.get('/notices', { params: { take: 100 } })
+    const res: any = await listNotices({ take: 100 })
     notices.value = Array.isArray(res) ? res : (res?.items || [])
     pageNotices.value = 0
   } catch (e: any) {
@@ -146,11 +149,11 @@ async function submitForm() {
       payload.className = ''
     }
     if (editing.value) {
-      const res: any = await request.patch('/notices/' + editing.value.id, payload)
+      const res: any = await updateNotice(editing.value.id, payload)
       const idx = notices.value.findIndex(x => x.id === editing.value!.id)
       if (idx >= 0) notices.value[idx] = { ...notices.value[idx], ...payload, ...res }
     } else {
-      const res: any = await request.post('/notices', payload)
+      const res: any = await createNotice(payload)
       if (res?.id) notices.value.unshift(res)
       else await loadNotices()
     }
@@ -165,7 +168,7 @@ async function submitForm() {
 async function handleDelete(n: NoticeItem) {
   if (!await confirm('确定删除？')) return
   try {
-    await request.delete('/notices/' + n.id)
+    await deleteNotice(n.id)
     notices.value = notices.value.filter(x => x.id !== n.id)
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -175,7 +178,7 @@ async function handleDelete(n: NoticeItem) {
 /* ============ 置顶 / 结束 / 恢复 ============ */
 async function togglePin(n: NoticeItem) {
   try {
-    await request.patch('/notices/' + n.id, { pinned: !n.pinned })
+    await updateNotice(n.id, { pinned: !n.pinned })
     n.pinned = !n.pinned
   } catch (e: any) {
     toast.error(e?.message || '操作失败')
@@ -184,7 +187,7 @@ async function togglePin(n: NoticeItem) {
 
 async function setEnded(n: NoticeItem, ended: boolean) {
   try {
-    await request.patch('/notices/' + n.id, { ended })
+    await updateNotice(n.id, { ended })
     n.ended = ended
   } catch (e: any) {
     toast.error(e?.message || '操作失败')
@@ -198,7 +201,7 @@ async function pushToParents(n: NoticeItem) {
   if (!await confirm(`确定将公告「${n.title}」推送给家长？`)) return
   pushing.value[n.id] = true
   try {
-    await request.post('/security/push-notice', { noticeId: n.id })
+    await pushNotice(n.id)
     toast.success('已推送给家长')
   } catch (e: any) {
     toast.error(e?.message || '推送失败')
@@ -217,9 +220,9 @@ async function aiPolish() {
   if (polishing.value) return
   polishing.value = true
   try {
-    const res: any = await request.post('/ai/chat-sync', {
-      messages: [{ role: 'user', content: '请润色以下公告内容，使其更专业、有温度：\n' + form.value.content }],
-    })
+    const res: any = await aiChatSync([
+      { role: 'user', content: '请润色以下公告内容，使其更专业、有温度：\n' + form.value.content },
+    ])
     const out = res?.content
     if (out) form.value.content = out
     else toast.warning('AI 未返回内容')
@@ -240,7 +243,7 @@ async function openTemplates() {
   templateLoading.value = true
   templates.value = []
   try {
-    const res: any = await request.get('/notice-templates', { params: { take: 200 } })
+    const res: any = await listNoticeTemplates()
     templates.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
     toast.error(e?.message || '加载模板失败')

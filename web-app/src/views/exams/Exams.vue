@@ -6,7 +6,7 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import request from '@/api/request'
+import { listExams, createExam, updateExam, deleteExam, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { usePagedList } from '@gardener/shared/composables'
 import Modal from '@/components/Modal.vue'
@@ -35,7 +35,7 @@ const {
   nextPage,
   goPage,
 } = usePagedList(async (params: Record<string, any>) => {
-  const res = await request.get('/exams', { params })
+  const res = await listExams(params)
   return Array.isArray(res) ? res : (res?.items || [])
 })
 
@@ -105,11 +105,11 @@ async function submitForm() {
   formLoading.value = true
   try {
     if (editing.value) {
-      const res = await request.patch(`/exams/${editing.value.id}`, form.value)
+      const res = await updateExam(editing.value.id, form.value)
       const idx = allItems.value.findIndex(x => x.id === editing.value.id)
       if (idx >= 0) allItems.value[idx] = { ...allItems.value[idx], ...form.value, ...res }
     } else {
-      const res = await request.post('/exams', form.value)
+      const res = await createExam(form.value)
       if (res?.id) allItems.value.unshift(res)
     }
     showForm.value = false
@@ -123,7 +123,7 @@ async function submitForm() {
 async function handleDelete(row: any) {
   if (!await confirm(`确定删除考试「${row.name}」？`)) return
   try {
-    await request.delete(`/exams/${row.id}`)
+    await deleteExam(row.id)
     allItems.value = allItems.value.filter(x => x.id !== row.id)
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -143,7 +143,7 @@ async function openSummary(row: any) {
   summaryData.value = []
   try {
     // 查询该班级、该考试名称的所有成绩记录
-    const res = await request.get('/grades', { params: { classId: row.classId, take: 500 } })
+    const res = await listGrades({ classId: row.classId, take: 500 })
     const grades = Array.isArray(res) ? res : (res?.items || [])
     // 过滤出本次考试的成绩
     const examGrades = grades.filter((g: any) => g.examName === row.name || g.examId === row.id)

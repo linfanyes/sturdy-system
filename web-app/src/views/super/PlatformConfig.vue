@@ -2,7 +2,8 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { Settings, Save, Loader2, Bot, MessageCircle, Boxes, RefreshCw, Plus, X, Check } from 'lucide-vue-next'
-import request from '@/api/request'
+import { getPlatformConfig, updatePlatformConfig } from '@/api/admin'
+import { saveAiModels } from '@/api/teacher'
 
 interface ConfigItem { key: string; value: string }
 interface ConfigResp { items?: ConfigItem[]; [k: string]: any }
@@ -160,7 +161,7 @@ function applyProvider(name: string) {
 async function refreshModels() {
   loadingModels.value = true
   try {
-    const res = await request.post<any, any>('/config/ai/models', {
+    const res = await saveAiModels({
       provider: providerName.value,
       baseUrl: form.aiBaseUrl,
       apiKey: form.aiApiKey,
@@ -194,7 +195,7 @@ watch(() => form.aiBaseUrl, () => {
 async function load() {
   loading.value = true
   try {
-    const res = await request.get<unknown, ConfigResp>('/config/app')
+    const res = await getPlatformConfig()
     const items: ConfigItem[] = (res?.items || []).filter(Boolean)
     const map: Record<string, string> = {}
     for (const it of items) {
@@ -242,7 +243,7 @@ async function save() {
       }
       items.push({ key: keyMap[k], value: (form as any)[k] ?? '' })
     }
-    await request.put('/config/app', { items })
+    await updatePlatformConfig({ items })
     // 保存后把已填写的密钥标记为已修改（不再视为脱敏跳过）
     for (const k of SECRET_KEYS) if ((form as any)[k]) secretMasked[k] = false
     toast.success('保存成功')

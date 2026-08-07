@@ -3,9 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests } from '@/api/parent'
+import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, subscribeParentDemo } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentTeacher } from '@/api/parent'
-import request from '@/api/request'
 import { Sparkles, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
@@ -455,7 +454,7 @@ const subscribeStatus = ref<'none' | 'loading' | 'done'>('none')
 async function subscribeNotifications() {
   subscribeStatus.value = 'loading'
   try {
-    await request.post('/parent-auth/subscribe', { code: 'demo_subscribe' })
+    await subscribeParentDemo()
     subscribeStatus.value = 'done'
     setTimeout(() => { subscribeStatus.value = 'none' }, 3000)
   } catch (e) {

@@ -3,9 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import {
-  getStudent, listAwards, listGrades, getStudentHistory, listAttendances, listBehaviors, type TeacherStudent,
+  getStudent, listAwards, listGrades, getStudentHistory, listAttendances, listBehaviors, listAllStudents, type TeacherStudent,
 } from '@/api/teacher'
-import request from '@/api/request'
 import {
   ArrowLeft, User, Phone, Users, BookOpen, Trophy, Calendar,
   Mail, MapPin, IdCard, TrendingUp, Activity, BarChart3,
@@ -219,7 +218,7 @@ async function loadStudentDetails() {
 
 async function estimateClassSize() {
   try {
-    const res = await request.get('/students', { params: { classId: student.value?.classId, take: 1 } })
+    const res = await listAllStudents({ classId: student.value?.classId, take: 1 })
     return res?.total || res?.items?.length || 0
   } catch {
     return 0

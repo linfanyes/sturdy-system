@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { aiBlackboard } from '@/api/teacher'
 const topic = ref('')
 const content = ref('')
 const result = ref('')
 async function generate() {
   if (!topic.value.trim()) return
   try {
-    const d = await request.post('/ai/blackboard', { topic: topic.value })
+    const d = await aiBlackboard({ topic: topic.value })
     result.value = d?.content || d?.result || ''
   } catch (e) {
     console.error(e)

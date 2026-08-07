@@ -8,7 +8,7 @@ import { CalendarDays, Save, Printer, Trash2, Wand2, Loader2, Download, Pencil }
 import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
-import request from '@/api/request'
+import { listSchedules, createSchedule, deleteSchedule } from '@/api/teacher'
 import Modal from '@/components/Modal.vue'
 import { shuffle } from '@gardener/shared/utils/game-helpers'
 
@@ -114,7 +114,7 @@ async function load() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const res = await request.get('/schedules', { params: { classId: classId.value, take: 500 } })
+    const res = await listSchedules({ classId: classId.value, take: 500 })
     const list: any[] = Array.isArray(res) ? res : (res?.items || [])
     originalItems.value = list
     initGrid()
@@ -283,10 +283,10 @@ async function saveToServer() {
   saving.value = true
   try {
     // 1. 删除该班旧课表
-    await Promise.allSettled(originalItems.value.map(it => request.delete(`/schedules/${it.id}`)))
+    await Promise.allSettled(originalItems.value.map(it => deleteSchedule(it.id)))
     // 2. 批量创建当前格子
     const payload = collectCells()
-    await Promise.all(payload.map(c => request.post('/schedules', c)))
+    await Promise.all(payload.map(c => createSchedule(c)))
     // 3. 重新加载，刷新 id
     await load()
     toast.success('已保存到服务器')

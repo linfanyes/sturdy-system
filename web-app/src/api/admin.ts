@@ -89,3 +89,30 @@ export function listStudents(schoolId?: string, classId?: string, skip = 0, take
 export function clearTeacherData(teacherId: string) {
   return request.post(`/admin/teachers/${teacherId}/clear-data`)
 }
+
+/* ============ 超管：AI 供应商与平台配置 ============ */
+
+/** 超管：创建 AI 供应商 */
+export function createAiProvider(body: Record<string, any>) {
+  return request.post<any, any>('/ai-providers', body)
+}
+
+/** 超管：更新 AI 供应商 */
+export function updateAiProvider(code: string, body: Record<string, any>) {
+  return request.patch<any, any>(`/ai-providers/${code}`, body)
+}
+
+/** 超管：删除 AI 供应商 */
+export function deleteAiProvider(code: string) {
+  return request.delete<any, void>(`/ai-providers/${code}`)
+}
+
+/** 超管：平台配置（key-value items） */
+export function getPlatformConfig() {
+  return request.get<any, { items: any[] }>('/config/app')
+}
+
+/** 超管：保存平台配置 */
+export function updatePlatformConfig(data: { items: any[] }) {
+  return request.put<any, any>('/config/app', data)
+}

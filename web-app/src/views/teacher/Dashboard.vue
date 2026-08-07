@@ -2,9 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { listMyClasses, listAllStudents, type TeacherClass } from '@/api/teacher'
+import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
 import { crudList } from '@/api/teacher'
-import request from '@/api/request'
 import { getUnreadCount } from '@/api/notification'
 import {
   Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
@@ -66,7 +65,7 @@ async function loadCharts() {
 const gradeAvgTrend = ref<{ label: string; value: number }[]>([])
 async function loadGradeTrend() {
   try {
-    const res = await request.get<any, any>('/grades', { params: { take: 500 } })
+    const res = await listGrades({ take: 500 })
     const list = Array.isArray(res) ? res : (res?.items || [])
     const map = new Map<string, { total: number; n: number; date: string }>()
     for (const g of list) {

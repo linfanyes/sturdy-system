@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import request from '@/api/request'
+import { listExams, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { BarChart3, TrendingUp } from 'lucide-vue-next'
 
@@ -58,8 +58,8 @@ async function loadData() {
   loading.value = true
   try {
     const [ex, gr] = await Promise.all([
-      request.get('/exams', { params: { classId: classId.value } }),
-      request.get('/grades', { params: { classId: classId.value } }),
+      listExams({ classId: classId.value }),
+      listGrades({ classId: classId.value }),
     ])
     exams.value = Array.isArray(ex) ? ex : (ex?.items || [])
     grades.value = Array.isArray(gr) ? gr : (gr?.items || [])

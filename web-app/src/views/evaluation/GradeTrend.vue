@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { listAllStudents, listGrades } from '@/api/teacher'
 const students = ref<any[]>([])
 const selected = ref('')
 const trend = ref<any[]>([])
 async function loadStudents() {
   try {
-    const d = await request.get('/students')
+    const d = await listAllStudents({ take: 50 })
     students.value = (d?.items || d || []).slice(0, 50)
   } catch (e) {
     console.error(e)
@@ -15,7 +15,7 @@ async function loadStudents() {
 async function loadTrend() {
   if (!selected.value) return
   try {
-    const d = await request.get('/grades', { params: { studentId: selected.value } })
+    const d = await listGrades({ studentId: selected.value })
     trend.value = d?.items || d || []
   } catch (e) {
     console.error(e)

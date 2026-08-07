@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { aiGenImage } from '@/api/teacher'
 import { Image as ImageIcon, Download, Sparkles } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 
@@ -14,7 +14,7 @@ async function generate() {
   generating.value = true
   imageUrl.value = ''
   try {
-    const res = await request.post('/ai/gen-image', { prompt: prompt.value, size: size.value })
+    const res = await aiGenImage({ prompt: prompt.value, size: size.value })
     imageUrl.value = res?.url || res?.image || ''
     if (!imageUrl.value) toast.warning('未返回图片地址')
   } catch (e: any) {

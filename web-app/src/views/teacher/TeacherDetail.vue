@@ -7,7 +7,7 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import request from '@/api/request'
+import { getTeacherDetail } from '@/api/teacher'
 import {
   ArrowLeft, Phone, Mail, User, BookOpen, School, Award,
   Calendar, Quote, Copy, Check, Users, GraduationCap, Briefcase, Star,
@@ -33,7 +33,7 @@ async function loadDetail() {
   if (!id) return
   loading.value = true
   try {
-    detail.value = await request.get(`/teachers/${id}/detail`, { params: { userId } })
+    detail.value = await getTeacherDetail(id, userId)
   } catch {
     detail.value = null
   } finally {

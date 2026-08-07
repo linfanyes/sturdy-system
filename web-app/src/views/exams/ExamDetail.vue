@@ -6,7 +6,6 @@
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import request from '@/api/request'
 import { toast } from '@/utils/feedback'
 import { useClasses } from '@/composables/useClasses'
 import {
@@ -14,7 +13,8 @@ import {
   TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen, Printer, FileText,
 } from 'lucide-vue-next'
 import {
-  getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
+  getExam, getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
+  listAllStudents, updateExam,
 } from '@/api/teacher'
 
 const props = defineProps<{ examId?: string; classId?: string }>()
@@ -83,7 +83,7 @@ const cards = computed(() => [
 async function loadExam() {
   if (!examId.value) return
   try {
-    exam.value = await request.get(`/exams/${examId.value}`)
+    exam.value = await getExam(examId.value)
   } catch {
     exam.value = null
   }
@@ -105,7 +105,7 @@ async function loadAnalysis() {
 async function loadStudents() {
   if (!classId.value) { students.value = []; return }
   try {
-    const res = await request.get('/students', { params: { classId: classId.value, take: 500 } })
+    const res = await listAllStudents({ classId: classId.value, take: 500 })
     students.value = Array.isArray(res) ? res : (res?.items || [])
   } catch {
     students.value = []
@@ -286,7 +286,7 @@ function startEditNote() {
 async function saveNote() {
   if (!examId.value) return
   try {
-    await request.patch('/exams/' + examId.value, { analysisNote: noteText.value })
+    await updateExam(examId.value, { analysisNote: noteText.value })
     exam.value = { ...exam.value, analysisNote: noteText.value }
     editingNote.value = false
     toast.success('评析已保存')

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import request from '@/api/request'
+import { listScoreRecords, listRewards } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { Trophy, Medal } from 'lucide-vue-next'
 
@@ -17,8 +17,8 @@ async function loadData() {
   loading.value = true
   try {
     const [sc, rw] = await Promise.all([
-      request.get('/score-records', { params: { classId: classId.value } }),
-      request.get('/reward-records', { params: { classId: classId.value } }),
+      listScoreRecords(classId.value),
+      listRewards(classId.value),
     ])
     scoreRecords.value = Array.isArray(sc) ? sc : (sc?.items || [])
     rewardRecords.value = Array.isArray(rw) ? rw : (rw?.items || [])

@@ -15,10 +15,11 @@ import {
   saveSeatLayout,
   listSeatLayouts,
   activateSeatLayout,
+  listExams,
+  getClassRank,
   type TeacherStudent,
 } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
-import request from '@/api/request'
 import { LayoutGrid, Save, Download, Monitor, RefreshCw, Trash2 } from 'lucide-vue-next'
 
 const { classes, loadClasses } = useClasses()
@@ -107,7 +108,7 @@ async function loadStudents(cid: string) {
 async function loadExams(cid: string) {
   if (!cid) { exams.value = []; return }
   try {
-    const res = await request.get('/exams', { params: { classId: cid, take: 100 } })
+    const res = await listExams({ classId: cid, take: 100 })
     const list = Array.isArray(res) ? res : ((res as any)?.items || [])
     exams.value = list
       .map((e: any) => ({ id: e.id, name: e.name, date: e.date || '' }))
@@ -217,9 +218,7 @@ async function arrangeByGrade() {
   if (!classId.value) { toast.warning('请先选择班级'); return }
   if (!examId.value) { toast.warning('请先选择考试'); return }
   try {
-    const res: any = await request.get('/grades/analysis/rank', {
-      params: { classId: classId.value, examId: examId.value },
-    })
+    const res: any = await getClassRank(classId.value, examId.value)
     const ranks = res?.ranks || []
     const sumMap = new Map<string, number>()
     for (const r of ranks) {

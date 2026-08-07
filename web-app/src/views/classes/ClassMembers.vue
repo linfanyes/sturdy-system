@@ -8,10 +8,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import { listClassMembers, listTeachers, type ClassMember } from '@/api/teacher'
+import { listClassMembers, listTeachers, updateClassSubjects, type ClassMember } from '@/api/teacher'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
 import { useAuthStore } from '@/stores/auth'
-import request from '@/api/request'
 import { Users, Crown, BookOpen, Phone, Mail, Calendar, Briefcase, X, Save } from 'lucide-vue-next'
 
 const { classes } = useClasses()
@@ -113,7 +112,7 @@ async function saveSubjects() {
   subjectsSaving.value = true
   subjectsMsg.value = ''
   try {
-    await request.patch(`/classes/${activeClassId.value}`, {
+    await updateClassSubjects(activeClassId.value, {
       subjects: subjectDraft.value,
       subjectTeachers: subjectTeacherDraft.value,
     })

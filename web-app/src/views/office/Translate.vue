@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { aiTranslate } from '@/api/teacher'
 const input = ref('')
 const result = ref('')
 const lang = ref('en')
 async function doTranslate() {
   if (!input.value.trim()) return
   try {
-    const d = await request.post('/ai/translate', { text: input.value, targetLang: lang.value })
+    const d = await aiTranslate({ text: input.value, targetLang: lang.value })
     result.value = d?.result || d?.text || ''
   } catch (e) {
     console.error(e)

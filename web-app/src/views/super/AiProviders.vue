@@ -2,7 +2,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { toast } from '@/utils/feedback'
 import { Plus, Save, Trash2, Loader2, Star, Bot, RefreshCw } from 'lucide-vue-next'
-import request from '@/api/request'
+import { listAiProviders } from '@/api/teacher'
+import { createAiProvider, updateAiProvider, deleteAiProvider } from '@/api/admin'
 
 interface Provider {
   code: string
@@ -41,7 +42,7 @@ function parseList(s: string): string[] {
 async function load() {
   loading.value = true
   try {
-    list.value = await request.get('/ai-providers')
+    list.value = await listAiProviders()
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
   } finally {
@@ -96,9 +97,9 @@ async function save() {
       sortOrder: form.sortOrder,
     }
     if (editing.value) {
-      await request.patch(`/ai-providers/${editing.value}`, body)
+      await updateAiProvider(editing.value, body)
     } else {
-      await request.post('/ai-providers', body)
+      await createAiProvider(body)
     }
     editing.value = null
     await load()
@@ -112,7 +113,7 @@ async function save() {
 async function remove(p: Provider) {
   if (!await confirm(`确认删除「${p.name}」吗？此操作不可恢复。`)) return
   try {
-    await request.delete(`/ai-providers/${p.code}`)
+    await deleteAiProvider(p.code)
     await load()
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -121,7 +122,7 @@ async function remove(p: Provider) {
 
 async function setDefault(p: Provider) {
   try {
-    await request.patch(`/ai-providers/${p.code}`, { isDefault: true })
+    await updateAiProvider(p.code, { isDefault: true })
     await load()
   } catch (e: any) {
     toast.error(e?.message || '设置失败')

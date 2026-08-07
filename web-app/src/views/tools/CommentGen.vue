@@ -11,8 +11,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { Sparkles, Save, Loader2, Users, FileText, Download } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import { listClassStudents, aiChatSync, type TeacherStudent } from '@/api/teacher'
-import request from '@/api/request'
+import { listClassStudents, listExams, listGrades, getClassRank, listBehaviors, listRewards, getStudent, updateStudent, aiChatSync, type TeacherStudent } from '@/api/teacher'
 import { downloadText } from '@/utils/download'
 
 const { classes } = useClasses()
@@ -50,7 +49,7 @@ async function loadStudents(cid: string) {
 async function loadExams(cid: string) {
   if (!cid) { exams.value = []; return }
   try {
-    const res = await request.get('/exams', { params: { classId: cid, take: 100 } })
+    const res = await listExams({ classId: cid, take: 100 })
     const list = Array.isArray(res) ? res : (res?.items || [])
     exams.value = list.map((e: any) => ({ id: e.id, name: e.name, date: e.date || '' }))
       .sort((a: ExamOption, b: ExamOption) => (b.date || '').localeCompare(a.date || ''))
@@ -79,7 +78,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
   const ctx: string[] = []
   try {
     // 成绩数据
-    const grades = await request.get('/grades', { params: { classId: classId.value, take: 500 } })
+    const grades = await listGrades({ classId: classId.value, take: 500 })
     const gradeList = Array.isArray(grades) ? grades : (grades?.items || [])
     let myGrades = gradeList.filter((g: any) =>
       g.scores?.some((s: any) => s.studentId === stu.id),
@@ -95,7 +94,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
         ctx.push(`本次考试《${selectedExam.value.name}》（${selectedExam.value.date || '日期未填'}）成绩：${subjectSummaries.join('、')}`)
         // 同时拉取班级排名上下文
         try {
-          const rankRes = await request.get('/grades/analysis/rank', { params: { classId: classId.value, examId: selectedExam.value.id } })
+          const rankRes = await getClassRank(classId.value, selectedExam.value.id)
           const ranks = rankRes?.ranks || []
           const myRank = ranks.find((r: any) => r.studentId === stu.id || r.id === stu.id)
           if (myRank) {
@@ -128,7 +127,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
 
   try {
     // 行为/表现记录
-    const behaviors = await request.get('/behavior-records', { params: { classId: classId.value, take: 100 } })
+    const behaviors = await listBehaviors(classId.value)
     const behaviorList = Array.isArray(behaviors) ? behaviors : (behaviors?.items || [])
     const myBehaviors = behaviorList.filter((b: any) => b.studentId === stu.id || b.studentName === stu.name)
     if (myBehaviors.length) {
@@ -139,7 +138,7 @@ async function fetchStudentContext(stu: TeacherStudent): Promise<string> {
 
   try {
     // 奖惩记录
-    const rewards = await request.get('/reward-records', { params: { classId: classId.value, take: 100 } })
+    const rewards = await listRewards(classId.value)
     const rewardList = Array.isArray(rewards) ? rewards : (rewards?.items || [])
     const myRewards = rewardList.filter((r: any) => r.studentId === stu.id || r.studentName === stu.name)
     if (myRewards.length) {
@@ -232,7 +231,7 @@ async function saveCommentToStudent(studentId: string, comment: string) {
   if (selectedExam.value) {
     // 先拉取学生现有 examComments，避免覆盖其他考试评语
     try {
-      const stu = await request.get(`/students/${studentId}`)
+      const stu = await getStudent(studentId)
       const examComments: Record<string, any> = { ...(stu?.examComments || {}) }
       examComments[selectedExam.value.id] = {
         comment,
@@ -243,7 +242,7 @@ async function saveCommentToStudent(studentId: string, comment: string) {
       patch.examComments = examComments
     } catch { /* ignore：拉取失败时仅更新 comment */ }
   }
-  await request.patch(`/students/${studentId}`, patch)
+  await updateStudent(studentId, patch)
 }
 
 function copyComment(text: string) {

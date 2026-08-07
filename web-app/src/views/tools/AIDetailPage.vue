@@ -13,7 +13,7 @@
  */
 import { computed, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
-import request from '@/api/request'
+import { aiChatSync } from '@/api/teacher'
 import {
   getSubjectTool,
   type SubjectToolDef,
@@ -89,9 +89,7 @@ async function submit() {
     const prompt = isSubject.value
       ? subjectDef.value!.build(form as Record<string, string>)
       : quickDef.value!.build(form as Record<string, string>)
-    const res = await request.post<any, { content: string }>('/ai/chat-sync', {
-      messages: [{ role: 'user', content: prompt }],
-    })
+    const res = await aiChatSync([{ role: 'user', content: prompt }])
     result.value = res?.content || ''
   } catch (e: any) {
     errorMsg.value = e?.message || 'AI 调用失败，请稍后重试'

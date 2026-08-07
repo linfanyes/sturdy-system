@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getDashboard } from '@/api/school-admin'
-import request from '@/api/request'
+import { listGrades } from '@/api/teacher'
 import {
   Sparkles, School, Users, GraduationCap,
   ArrowRight, Loader2, TrendingUp, Activity, BookOpen,
@@ -93,7 +93,7 @@ const gradeAvgTrend = ref<{ label: string; value: number }[]>([])
 async function loadGradeTrend() {
   if (auth.role !== 'teacher') return
   try {
-    const res = await request.get<any, any>('/grades', { params: { take: 500 } })
+    const res = await listGrades({ take: 500 })
     const list = Array.isArray(res) ? res : (res?.items || [])
     const map = new Map<string, { total: number; n: number; date: string }>()
     for (const g of list) {

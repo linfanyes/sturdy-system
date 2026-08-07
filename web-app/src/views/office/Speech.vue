@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import request from '@/api/request'
+import { aiSpeech } from '@/api/teacher'
 const topic = ref('')
 const role = ref('')
 const result = ref('')
 async function generate() {
   if (!topic.value.trim()) return
   try {
-    const d = await request.post('/ai/speech', { topic: topic.value, role: role.value })
+    const d = await aiSpeech({ topic: topic.value, role: role.value })
     result.value = d?.content || d?.result || ''
   } catch (e) {
     console.error(e)

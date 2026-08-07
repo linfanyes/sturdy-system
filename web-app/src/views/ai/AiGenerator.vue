@@ -7,6 +7,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import request from '@/api/request'
+import { aiChatSync } from '@/api/teacher'
 import { Sparkles, Save, Copy, FileText, Download } from 'lucide-vue-next'
 import { downloadDoc } from '@/utils/download'
 import { toast } from '@/utils/feedback'
@@ -65,9 +66,9 @@ async function generate() {
   generating.value = true
   result.value = ''
   try {
-    const res = await request.post('/ai/chat-sync', {
-      messages: [{ role: 'user', content: cfg.value.prompt(input) }],
-    })
+    const res = await aiChatSync([
+      { role: 'user', content: cfg.value.prompt(input) },
+    ])
     result.value = res?.content || '（无内容返回）'
   } catch (e: any) {
     result.value = `生成失败：${e?.message || '未知错误'}`

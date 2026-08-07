@@ -2,7 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { Save, Bot, Settings, RefreshCw, Loader2 } from 'lucide-vue-next'
-import request from '@/api/request'
+import {
+  listAiProviders, saveAiModels, getTeacherAiDefaults, getAiSettings,
+  updateAiSettings, getAppConfig, updateAppConfig, updateMe,
+} from '@/api/teacher'
 import { useAuthStore } from '@/stores/auth'
 import { ROLE_PROMPTS, DEFAULT_TEACHER_PROMPT } from '@/constants/teacher-prompts'
 
@@ -32,7 +35,7 @@ const providerLoading = ref(false)
 async function loadProviders() {
   providerLoading.value = true
   try {
-    providers.value = await request.get('/ai-providers')
+    providers.value = await listAiProviders()
   } catch {
     providers.value = []
   } finally {
@@ -137,7 +140,7 @@ function hasVideoModels() { return models.video.length > 0 || aiForm.videoModel 
 async function refreshModels() {
   loadingModels.value = true
   try {
-    const res = await request.post<any, any>('/config/ai/models', {
+    const res = await saveAiModels({
       providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
@@ -172,8 +175,8 @@ async function load() {
     await loadProviders()
     // 同时加载平台默认配置和教师个人配置
     const [platformRes, teacherRes] = await Promise.all([
-      request.get('/config/teacher/ai-defaults').catch(() => null),
-      request.get('/config/ai-settings').catch(() => null),
+      getTeacherAiDefaults().catch(() => null),
+      getAiSettings().catch(() => null),
     ])
     // 先用平台默认填充
     if (platformRes) {
@@ -242,7 +245,7 @@ function onProviderChange(e: Event) {
 async function saveAi() {
   saving.value = true
   try {
-    await request.patch('/config/ai-settings', {
+    await updateAiSettings({
       providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
@@ -268,7 +271,7 @@ async function resetAiDefaults() {
   if (!await confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
   saving.value = true
   try {
-    const res = await request.get('/config/teacher/ai-defaults').catch(() => null)
+    const res = await getTeacherAiDefaults().catch(() => null)
     if (res) {
       aiForm.baseUrl = res.baseUrl || res.aiBaseUrl || ''
       aiForm.apiKey = ''
@@ -335,7 +338,7 @@ function applyTheme(theme: string) {
 
 async function loadApp() {
   try {
-    const app = await request.get('/config/app-config').catch(() => null)
+    const app = await getAppConfig().catch(() => null)
     if (app) {
       // 兼容 map 形态（{theme, semester, ...}）与 items 形态（[{key,value}]）
       if (app && Array.isArray(app.items)) {
@@ -364,9 +367,9 @@ onMounted(() => {
 async function saveApp() {
   saving.value = true
   try {
-    await request.patch('/config/app-config', appForm)
+    await updateAppConfig(appForm)
     // 同步主题/配色到用户档案，跨端可见
-    await request.patch('/users/me', {
+    await updateMe({
       theme: appForm.theme,
       colorScheme: appForm.colorScheme,
     }).catch(() => {})

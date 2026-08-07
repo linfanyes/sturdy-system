@@ -92,14 +92,24 @@ export function updateStudent(id: string, data: Partial<{
   return request.patch<any, TeacherStudent>('/students/' + id, data)
 }
 
-/** 获取单个学生详情 */
+/** 获取单个学生详情（含 examComments 等扩展字段） */
 export function getStudent(id: string) {
-  return request.get<any, TeacherStudent>('/students/' + id)
+  return request.get<any, TeacherStudent & { examComments?: Record<string, any> }>('/students/' + id)
 }
 
 /** 删除学生 */
 export function deleteStudent(id: string) {
   return request.delete<any, void>('/students/' + id)
+}
+
+/** 学生信息变更申请列表 */
+export function listStudentInfoUpdates(params?: Record<string, any>) {
+  return request.get<any, any>('/student-info-updates', { params })
+}
+
+/** 审批学生信息变更（approve / reject） */
+export function reviewStudentInfoUpdate(id: string, payload: { action: 'approve' | 'reject'; note?: string }) {
+  return request.post<any, any>(`/student-info-updates/${id}/review`, payload)
 }
 
 /** 开通/关闭家长登录 */
@@ -184,6 +194,21 @@ export function sendImMessage(data: { conversationId: string; content: string; t
   return request.post<any, any>('/im/messages', data)
 }
 
+/** IM 家长通讯录（按班级） */
+export function listImParents(classId: string) {
+  return request.get<any, any>('/im/parents', { params: { classId } })
+}
+
+/** 获取 IM UserSig（腾讯云 IM 签名） */
+export function getImUserSig() {
+  return request.post<any, any>('/im/user-sig', {})
+}
+
+/** 创建 IM 班级群 */
+export function createImClassGroup(data: { classId: string; groupId: string }) {
+  return request.post<any, any>('/im/class-group', data)
+}
+
 /* ============ 教师办公 ============ */
 
 /** 工作日志 */
@@ -197,13 +222,145 @@ export function listLessonObservations() {
 }
 
 /** 教学日历 */
-export function listTeachingCalendar() {
-  return request.get<any, any[]>('/teaching-calendar')
+export function listTeachingCalendar(params?: Record<string, any>) {
+  return request.get<any, any>('/teaching-calendar', { params })
+}
+
+/** 新建教学日历事件 */
+export function createTeachingCalendar(data: Record<string, any>) {
+  return request.post<any, any>('/teaching-calendar', data)
+}
+
+/** 更新教学日历事件 */
+export function updateTeachingCalendar(id: string, data: Record<string, any>) {
+  return request.patch<any, any>('/teaching-calendar/' + id, data)
+}
+
+/** 删除教学日历事件 */
+export function deleteTeachingCalendar(id: string) {
+  return request.delete<any, void>('/teaching-calendar/' + id)
 }
 
 /** 教师通讯录 */
 export function listTeachers() {
   return request.get<any, any[]>('/teachers')
+}
+
+/** 教师详情（含任课班级等） */
+export function getTeacherDetail(id: string, userId?: string) {
+  return request.get<any, any>(`/teachers/${id}/detail`, { params: userId ? { userId } : {} })
+}
+
+/** 更新班级课程设置（班主任权限：科目 + 科任老师映射） */
+export function updateClassSubjects(classId: string, data: { subjects?: string[]; subjectTeachers?: Record<string, string> }) {
+  return request.patch<any, any>('/classes/' + classId, data)
+}
+
+/** 课表列表 */
+export function listSchedules(params?: Record<string, any>) {
+  return request.get<any, any>('/schedules', { params })
+}
+
+/** 我的课表（个人课表视图） */
+export function listMySchedules() {
+  return request.get<any, any>('/schedules/my')
+}
+
+/** 新建课表条目 */
+export function createSchedule(data: Record<string, any>) {
+  return request.post<any, any>('/schedules', data)
+}
+
+/** 删除课表条目 */
+export function deleteSchedule(id: string) {
+  return request.delete<any, void>('/schedules/' + id)
+}
+
+/* ============ 通用配置 / 消息（workspace 与超管共用） ============ */
+
+/** AI 供应商列表 */
+export function listAiProviders() {
+  return request.get<any, any>('/ai-providers')
+}
+
+/** 校管：本校可用 AI 供应商 */
+export function listSchoolAiProviders() {
+  return request.get<any, any>('/config/ai-providers')
+}
+
+/** 保存 AI 模型配置 */
+export function saveAiModels(data: Record<string, any>) {
+  return request.post<any, any>('/config/ai/models', data)
+}
+
+/** 教师 AI 默认参数 */
+export function getTeacherAiDefaults() {
+  return request.get<any, any>('/config/teacher/ai-defaults')
+}
+
+/** AI 全局设置 */
+export function getAiSettings() {
+  return request.get<any, any>('/config/ai-settings')
+}
+
+/** 更新 AI 全局设置 */
+export function updateAiSettings(data: Record<string, any>) {
+  return request.patch<any, any>('/config/ai-settings', data)
+}
+
+/** 应用配置 */
+export function getAppConfig() {
+  return request.get<any, any>('/config/app-config')
+}
+
+/** 更新应用配置 */
+export function updateAppConfig(data: Record<string, any>) {
+  return request.patch<any, any>('/config/app-config', data)
+}
+
+/** 更新当前用户资料 */
+export function updateMe(data: Record<string, any>) {
+  return request.patch<any, any>('/users/me', data)
+}
+
+/** 推送公告到家长端 */
+export function pushNotice(noticeId: string) {
+  return request.post<any, any>('/security/push-notice', { noticeId })
+}
+
+/** 留言板：可选收件人列表 */
+export function listMessageRecipients() {
+  return request.get<any, any>('/messages/recipients')
+}
+
+/** 留言板：会话列表 */
+export function listMessages(params?: Record<string, any>) {
+  return request.get<any, any>('/messages', { params })
+}
+
+/** 留言板：已发送列表 */
+export function listMessagesSent(params?: Record<string, any>) {
+  return request.get<any, any>('/messages/sent', { params })
+}
+
+/** 标记单条留言已读 */
+export function markMessageRead(id: string) {
+  return request.patch<any, void>('/messages/' + id + '/read')
+}
+
+/** 全部已读 */
+export function markAllMessagesRead() {
+  return request.patch<any, void>('/messages/mark-all-read')
+}
+
+/** 删除留言 */
+export function deleteMessage(id: string) {
+  return request.delete<any, void>('/messages/' + id)
+}
+
+/** 发送留言 */
+export function sendMessage(data: Record<string, any>) {
+  return request.post<any, any>('/messages', data)
 }
 
 /* ============ 课堂互动（带后端数据的） ============ */
@@ -241,7 +398,7 @@ export function clearPickerHistory(classId?: string) {
 
 /** 奖惩记录（后端表 reward_records，路径 /reward-records） */
 export function listRewards(classId?: string) {
-  return request.get<any, any[]>('/reward-records', { params: classId ? { classId } : {} })
+  return request.get<any, any>('/reward-records', { params: classId ? { classId } : {} })
 }
 export function createReward(data: any) {
   return request.post<any, any>('/reward-records', data)
@@ -255,7 +412,7 @@ export function deleteReward(id: string) {
 
 /** 加减分记录 */
 export function listScoreRecords(classId?: string) {
-  return request.get<any, any[]>('/score-records', { params: classId ? { classId } : {} })
+  return request.get<any, any>('/score-records', { params: classId ? { classId } : {} })
 }
 export function createScoreRecord(data: any) {
   return request.post<any, any>('/score-records', data)
@@ -310,7 +467,7 @@ export function createGrowthRecord(data: any) {
 
 /** 行为记录（后端表 behavior_records，路径 /behavior-records） */
 export function listBehaviors(classId?: string) {
-  return request.get<any, any[]>('/behavior-records', { params: classId ? { classId } : {} })
+  return request.get<any, any>('/behavior-records', { params: classId ? { classId } : {} })
 }
 export function createBehavior(data: any) {
   return request.post<any, any>('/behavior-records', data)
@@ -419,6 +576,21 @@ export function aiDiagnose(studentId: string) {
   return request.post<any, { content: string }>('/ai/diagnose', { studentId })
 }
 
+/** AI 文本翻译 */
+export function aiTranslate(data: { text: string; targetLang?: string }) {
+  return request.post<any, any>('/ai/translate', data)
+}
+
+/** AI 生成英语口语对话 */
+export function aiSpeech(data: { topic?: string; role?: string }) {
+  return request.post<any, any>('/ai/speech', data)
+}
+
+/** AI 生成黑板板书 */
+export function aiBlackboard(data: { topic?: string }) {
+  return request.post<any, any>('/ai/blackboard', data)
+}
+
 /* ============ 成绩分析 API ============ */
 
 /** 某次考试统计（按班级+考试） */
@@ -461,6 +633,21 @@ export function listExams(params?: Record<string, any>) {
   return request.get<any, any>('/exams', { params })
 }
 
+/** 创建考试 */
+export function createExam(data: Record<string, any>) {
+  return request.post<any, any>('/exams', data)
+}
+
+/** 更新考试 */
+export function updateExam(id: string, data: Record<string, any>) {
+  return request.patch<any, any>('/exams/' + id, data)
+}
+
+/** 删除考试 */
+export function deleteExam(id: string) {
+  return request.delete<any, void>('/exams/' + id)
+}
+
 /** 单个考试详情 */
 export function getExam(id: string) {
   return request.get<any, any>('/exams/' + id)
@@ -483,7 +670,7 @@ export function importGradesCommit(payload: {
   examId: string
   subject: string
   date: string
-  rows: Array<{ studentId: string; score: number; valid?: boolean }>
+  rows: Array<{ studentId: string; score: number | null; valid?: boolean; name?: string; studentNo?: string }>
 }) {
   return request.post<any, any>('/grades/import-commit', payload)
 }
@@ -527,6 +714,30 @@ export function listNotes(params?: Record<string, any>) {
 /** 公告列表 */
 export function listNotices(params?: Record<string, any>) {
   return request.get<any, any[]>('/notices', { params: params || {} })
+}
+/** 创建公告 */
+export function createNotice(payload: Record<string, any>) {
+  return request.post<any, any>('/notices', payload)
+}
+/** 更新公告（含置顶/结束等） */
+export function updateNotice(id: string, payload: Record<string, any>) {
+  return request.patch<any, any>('/notices/' + id, payload)
+}
+/** 删除公告 */
+export function deleteNotice(id: string) {
+  return request.delete<any, void>('/notices/' + id)
+}
+/** 备份列表（数据管理） */
+export function listBackups(params?: Record<string, any>) {
+  return request.get<any, any>('/backups', { params: params || {} })
+}
+/** 创建备份 */
+export function createBackup(label: string) {
+  return request.post<any, any>('/backups', { label })
+}
+/** 获取备份详情（下载） */
+export function getBackup(id: string) {
+  return request.get<any, any>('/backups/' + id)
 }
 /** 作业列表 */
 export function listHomework(params?: Record<string, any>) {

@@ -9,6 +9,7 @@ import {
   Loader2, RotateCcw, Check, AlertCircle, FileJson,
 } from 'lucide-vue-next'
 import request from '@/api/request'
+import { listBackups, createBackup as apiCreateBackup, getBackup } from '@/api/teacher'
 
 interface BackupItem {
   id: string
@@ -189,7 +190,7 @@ async function loadBackups() {
   backupLoading.value = true
   errorMsg.value = ''
   try {
-    const res = await request.get('/backups', { params: { take: 100 } })
+    const res = await listBackups({ take: 100 })
     backups.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
     errorMsg.value = e?.message || '加载备份列表失败'
@@ -208,7 +209,7 @@ async function createBackup() {
   errorMsg.value = ''
   successMsg.value = ''
   try {
-    await request.post('/backups', { label: backupLabel.value.trim() })
+    await apiCreateBackup(backupLabel.value.trim())
     backupLabel.value = ''
     successMsg.value = '备份创建成功'
     await loadBackups()
@@ -225,7 +226,7 @@ async function restoreBackup(backup: BackupItem) {
   errorMsg.value = ''
   successMsg.value = ''
   try {
-    const data = await request.get(`/backups/${backup.id}`)
+    const data = await getBackup(backup.id)
     if (!data || typeof data !== 'object') {
       errorMsg.value = '备份数据无效'
       return

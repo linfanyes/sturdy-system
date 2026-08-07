@@ -5,7 +5,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { CalendarDays, Loader2, BookOpen, User } from 'lucide-vue-next'
-import request from '@/api/request'
+import { listMySchedules } from '@/api/teacher'
 
 interface MyScheduleItem {
   id: string
@@ -101,7 +101,7 @@ async function load() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const res = await request.get<any, MyScheduleResp>('/schedules/my')
+    const res = await listMySchedules()
     teacherName.value = res?.teacherName || ''
     groups.value = Array.isArray(res?.classes) ? res.classes : []
   } catch (e: any) {

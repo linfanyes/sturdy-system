@@ -12,7 +12,6 @@
  */
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { listClassStudents, listAllStudents, listExams, listGrades, importGradesPreview, importGradesCommit, importGradesAi, removeGrade, type TeacherStudent } from '@/api/teacher'
@@ -187,7 +186,7 @@ async function submitEntry() {
       studentId: s.id,
       score: entryScores.value[s.id] === '' || entryScores.value[s.id] == null ? null : Number(entryScores.value[s.id]),
     }))
-    await request.post('/grades/import-commit', {
+    await importGradesCommit({
       classId: classId.value,
       examName: selectedExam.value.name,
       examId: selectedExam.value.id,
@@ -399,7 +398,7 @@ async function submitMatrix() {
         }
       })
       try {
-        await request.post('/grades/import-commit', {
+        await importGradesCommit({
           classId: classId.value,
           examName: selectedExam.value.name,
           examId: selectedExam.value.id,

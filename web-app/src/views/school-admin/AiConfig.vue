@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { toast } from '@/utils/feedback'
 import { Save, Bot, RefreshCw, Loader2 } from 'lucide-vue-next'
-import request from '@/api/request'
+import { listSchoolAiProviders, saveAiModels, getAiSettings, updateAiSettings } from '@/api/teacher'
 import { ROLE_PROMPTS, DEFAULT_TEACHER_PROMPT } from '@/constants/teacher-prompts'
 
 const loading = ref(false)
@@ -28,7 +28,7 @@ const providerLoading = ref(false)
 async function loadProviders() {
   providerLoading.value = true
   try {
-    providers.value = (await request.get('/config/ai-providers')).items || []
+    providers.value = (await listSchoolAiProviders()).items || []
   } catch {
     providers.value = []
   } finally {
@@ -132,7 +132,7 @@ function hasVideoModels() { return models.video.length > 0 || aiForm.videoModel 
 async function refreshModels() {
   loadingModels.value = true
   try {
-    const res = await request.post<any, any>('/config/ai/models', {
+    const res = await saveAiModels({
       providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
@@ -166,7 +166,7 @@ async function load() {
   loading.value = true
   try {
     await loadProviders()
-    const res = await request.get('/config/ai-settings').catch(() => null)
+    const res = await getAiSettings().catch(() => null)
     if (res) {
       Object.assign(aiForm, res)
       if (res.providerCode) {
@@ -202,7 +202,7 @@ function onProviderChange(e: Event) {
 async function saveAi() {
   saving.value = true
   try {
-    await request.patch('/config/ai-settings', {
+    await updateAiSettings({
       providerCode: aiForm._providerCode,
       baseUrl: aiForm.baseUrl,
       apiKey: aiForm.apiKey,
@@ -228,7 +228,7 @@ async function resetAiDefaults() {
   if (!await confirm('恢复默认将丢弃你的自定义 AI 配置，确定吗？')) return
   saving.value = true
   try {
-    const res = await request.get('/config/ai-settings').catch(() => null)
+    const res = await getAiSettings().catch(() => null)
     // 清空本地自定义：以平台默认重新填充（apiKey 留空，需自行填写）
     aiForm.apiKey = ''
     if (res && res.providerCode) {

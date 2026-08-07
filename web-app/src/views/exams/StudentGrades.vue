@@ -8,7 +8,7 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import request from '@/api/request'
+import { getStudent, getStudentHistory, getClassRank } from '@/api/teacher'
 import { loadClasses, classNameById } from '@/composables/useClasses'
 import {
   ArrowLeft, GraduationCap, TrendingUp, Award, AlertCircle,
@@ -143,14 +143,14 @@ function rankOf(examId?: string, subject?: string) {
 async function loadStudent() {
   if (!studentId) return
   try {
-    student.value = await request.get(`/students/${studentId}`)
+    student.value = await getStudent(studentId)
   } catch { student.value = null }
 }
 
 async function loadAnalysis() {
   if (!studentId) return
   try {
-    analysis.value = await request.get(`/grades/analysis/student/${studentId}`)
+    analysis.value = await getStudentHistory(studentId)
   } catch { analysis.value = null }
 }
 
@@ -160,7 +160,7 @@ async function loadRanks() {
   const examIds = examsAsc.value.map(e => e.examId).filter(Boolean)
   if (!examIds.length) return
   const results = await Promise.allSettled(
-    examIds.map(id => request.get('/grades/analysis/rank', { params: { classId, examId: id } })),
+    examIds.map(id => getClassRank(classId, id)),
   )
   results.forEach((r, i) => {
     if (r.status !== 'fulfilled') return

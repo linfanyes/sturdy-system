@@ -7,7 +7,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Calendar, Loader2, BookOpen } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import request from '@/api/request'
+import { listSchedules } from '@/api/teacher'
 
 interface ScheduleItem {
   id: string
@@ -108,7 +108,7 @@ async function loadSchedules() {
   try {
     const params: Record<string, any> = { take: selectedClassId.value ? 100 : 500 }
     if (selectedClassId.value) params.classId = selectedClassId.value
-    const res = await request.get('/schedules', { params })
+    const res = await listSchedules(params)
     const list: any[] = Array.isArray(res) ? res : (res?.items || [])
     // 字段映射：dayOfWeek(0-6) → weekday(1-7)
     schedules.value = list.map((it: any) => ({

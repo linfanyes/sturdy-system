@@ -6,7 +6,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { toast } from '@/utils/feedback'
 import { formatDateTime } from '@gardener/shared/utils'
-import request from '@/api/request'
+import { listStudentInfoUpdates, reviewStudentInfoUpdate } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { Check, X, Clock, UserCog, FileEdit, Inbox } from 'lucide-vue-next'
@@ -68,7 +68,7 @@ async function loadList() {
     const params: Record<string, string> = {}
     if (classFilter.value) params.classId = classFilter.value
     if (statusFilter.value) params.status = statusFilter.value
-    const res = await request.get('/student-info-updates', { params })
+    const res = await listStudentInfoUpdates(params)
     list.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
@@ -92,7 +92,7 @@ async function handleApprove(item: InfoUpdate) {
   if (!await confirm(`确定通过「${item.studentName}」的信息修改申请？通过后将直接更新学生信息。`)) return
   reviewing.value = true
   try {
-    await request.post(`/student-info-updates/${item.id}/review`, { action: 'approve' })
+    await reviewStudentInfoUpdate(item.id, { action: 'approve' })
     await loadList()
   } catch (e: any) {
     toast.error(e?.message || '操作失败')
@@ -111,7 +111,7 @@ async function submitReject() {
   if (!rejectTarget.value) return
   reviewing.value = true
   try {
-    await request.post(`/student-info-updates/${rejectTarget.value.id}/review`, {
+    await reviewStudentInfoUpdate(rejectTarget.value.id, {
       action: 'reject',
       note: rejectNote.value.trim() || undefined,
     })

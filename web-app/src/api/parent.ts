@@ -206,3 +206,8 @@ export function submitStudentUpdateRequest(payload: Record<string, any>) {
 export function listStudentUpdateRequests() {
   return request.get<any, StudentUpdateRequest[]>('/parent-auth/student-update-requests')
 }
+
+/** 家长端：演示模式订阅 */
+export function subscribeParentDemo() {
+  return request.post<any, any>('/parent-auth/subscribe', { code: 'demo_subscribe' })
+}

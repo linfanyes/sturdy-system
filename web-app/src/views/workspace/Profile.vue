@@ -2,7 +2,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { toast } from '@/utils/feedback'
 import { useAuthStore } from '@/stores/auth'
-import request from '@/api/request'
+import { getProfileMe } from '@/api/auth'
+import { getAppConfig, updateMe } from '@/api/teacher'
+import { getMe } from '@/api/feature'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
 import { User, School, Phone, BookOpen, Calendar, Save } from 'lucide-vue-next'
 
@@ -31,9 +33,9 @@ async function loadProfile() {
   try {
     // 同时加载用户信息、平台配置的学科、auth/me
     const [res, appCfg, authMe] = await Promise.all([
-      request.get('/users/me'),
-      request.get('/config/app-config').catch(() => null),
-      request.get('/auth/me').catch(() => null),
+      getProfileMe(),
+      getAppConfig().catch(() => null),
+      getMe().catch(() => null),
     ])
     // 解析平台预设学科（兼容 {items:[...]} 与 map 两种形态）
     if (appCfg) {
@@ -86,7 +88,7 @@ async function save() {
   }
   saving.value = true
   try {
-    await request.patch('/users/me', {
+    await updateMe({
       name: form.value.name,
       phone: form.value.phone,
       subject: form.value.subjects.join(','),

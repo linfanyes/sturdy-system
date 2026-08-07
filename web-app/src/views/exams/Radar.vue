@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import request from '@/api/request'
+import { listAllStudents, listExams, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses, classNameById } from '@/composables/useClasses'
 import { Radar as RadarIcon } from 'lucide-vue-next'
 
@@ -19,9 +19,9 @@ async function loadData() {
   loading.value = true
   try {
     const [st, ex, gr] = await Promise.all([
-      request.get('/students', { params: { classId: classId.value } }),
-      request.get('/exams', { params: { classId: classId.value } }),
-      request.get('/grades', { params: { classId: classId.value } }),
+      listAllStudents({ classId: classId.value }),
+      listExams({ classId: classId.value }),
+      listGrades({ classId: classId.value }),
     ])
     students.value = Array.isArray(st) ? st : (st?.items || [])
     exams.value = Array.isArray(ex) ? ex : (ex?.items || [])

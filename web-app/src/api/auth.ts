@@ -238,6 +238,11 @@ export function checkHealth() {
   return request.get<any, { status: string; time: string }>('/health')
 }
 
+/** 当前用户资料（含扩展字段）：GET /api/users/me */
+export function getProfileMe() {
+  return request.get<any, any>('/users/me')
+}
+
 /**
  * 当前登录态功能档案：GET /api/auth/me
  * 返回 { role, schoolId, effectiveFeatures, rawFeatures, schoolFeatureFlags, user }

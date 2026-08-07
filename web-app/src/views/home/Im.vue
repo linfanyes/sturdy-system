@@ -6,7 +6,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import request from '@/api/request'
+import { listImParents, getImUserSig, createImClassGroup } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
 import { MessageCircle, Phone, Users, Copy, Check } from 'lucide-vue-next'
 
@@ -23,7 +23,7 @@ async function loadParents() {
   if (!classId.value) { parents.value = []; return }
   loading.value = true
   try {
-    const res = await request.get('/im/parents', { params: { classId: classId.value } })
+    const res = await listImParents(classId.value)
     parents.value = Array.isArray(res) ? res : []
   } catch (e: any) {
     toast.error(e?.message || '加载家长列表失败')
@@ -35,7 +35,7 @@ async function loadParents() {
 
 async function loadUserSig() {
   try {
-    const res = await request.post('/im/user-sig', {})
+    const res = await getImUserSig()
     userSig.value = res
   } catch {
     userSig.value = null
@@ -46,7 +46,7 @@ async function saveGroup() {
   if (!classId.value) return
   savingGroup.value = true
   try {
-    await request.post('/im/class-group', { classId: classId.value, groupId: classGroup.value })
+    await createImClassGroup({ classId: classId.value, groupId: classGroup.value })
     toast.success('群号已保存')
   } catch (e: any) {
     toast.error(e?.message || '保存失败')

@@ -6,7 +6,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit3, Calendar } from 'lucide-vue-next'
 import Modal from '@/components/Modal.vue'
-import request from '@/api/request'
+import { listTeachingCalendar, createTeachingCalendar, updateTeachingCalendar, deleteTeachingCalendar } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
 
 const items = ref<any[]>([])
@@ -75,7 +75,7 @@ function today() {
 async function loadList() {
   loading.value = true
   try {
-    const res = await request.get('/teaching-calendar', { params: { take: 500 } })
+    const res = await listTeachingCalendar({ take: 500 })
     items.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
@@ -109,9 +109,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await request.patch(`/teaching-calendar/${editing.value.id}`, form.value)
+      await updateTeachingCalendar(editing.value.id, form.value)
     } else {
-      const res = await request.post('/teaching-calendar', form.value)
+      const res = await createTeachingCalendar(form.value)
       if (res?.id) items.value.unshift(res)
     }
     await loadList()
@@ -126,7 +126,7 @@ async function submit() {
 async function del(item: any) {
   if (!await confirm(`确定删除「${item.title}」？`)) return
   try {
-    await request.delete(`/teaching-calendar/${item.id}`)
+    await deleteTeachingCalendar(item.id)
     items.value = items.value.filter(x => x.id !== item.id)
   } catch (e: any) {
     toast.error(e?.message || '删除失败')

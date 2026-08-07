@@ -9,7 +9,11 @@ import {
   MessageSquare, Send, Check, Trash2, Inbox, SendHorizonal,
   User, Loader2, Search, ChevronLeft, ChevronRight, CheckCheck,
 } from 'lucide-vue-next'
-import request from '@/api/request'
+import {
+  listMessageRecipients, listMessages, listMessagesSent,
+  markMessageRead, markAllMessagesRead,
+  deleteMessage as apiDeleteMessage, sendMessage as apiSendMessage,
+} from '@/api/teacher'
 
 interface Recipient {
   id: string
@@ -95,7 +99,7 @@ function formatTime(createdAt: string): string {
 async function loadRecipients() {
   recipientsLoading.value = true
   try {
-    const res = await request.get('/messages/recipients')
+    const res = await listMessageRecipients()
     recipients.value = Array.isArray(res) ? res : (res?.items || [])
   } catch {
     recipients.value = []
@@ -109,13 +113,13 @@ async function loadMessages() {
   loading.value = true
   errorMsg.value = ''
   try {
-    let url = '/messages'
-    if (activeTab.value === 'sent') url = '/messages/sent'
     const params: Record<string, any> = { skip: skip.value, take: PAGE_SIZE }
     if (selectedRecipient.value) {
       params.recipientId = selectedRecipient.value.id
     }
-    const res = await request.get(url, { params })
+    const res = activeTab.value === 'sent'
+      ? await listMessagesSent(params)
+      : await listMessages(params)
     if (Array.isArray(res)) {
       messages.value = res
       total.value = res.length
@@ -136,7 +140,7 @@ async function loadMessages() {
 async function markRead(msg: Message) {
   if (msg.isRead ?? msg.read) return
   try {
-    await request.patch(`/messages/${msg.id}/read`)
+    await markMessageRead(msg.id)
     if (msg.isRead !== undefined) msg.isRead = true
     else msg.read = true
   } catch (e: any) {
@@ -147,7 +151,7 @@ async function markRead(msg: Message) {
 // ===== 一键全部已读 =====
 async function markAllRead() {
   try {
-    await request.patch('/messages/mark-all-read')
+    await markAllMessagesRead()
     messages.value.forEach(m => {
       if (m.isRead !== undefined) m.isRead = true
       else m.read = true
@@ -161,7 +165,7 @@ async function markAllRead() {
 async function deleteMessage(msg: Message) {
   if (!await confirm('确定删除该留言？')) return
   try {
-    await request.delete(`/messages/${msg.id}`)
+    await apiDeleteMessage(msg.id)
     messages.value = messages.value.filter(m => m.id !== msg.id)
     total.value = Math.max(0, total.value - 1)
   } catch (e: any) {
@@ -186,7 +190,7 @@ async function sendMessage() {
   sending.value = true
   errorMsg.value = ''
   try {
-    await request.post('/messages', {
+    await apiSendMessage({
       recipientId: sendRecipientId.value,
       recipientRole: 'parent',
       title: sendTitle.value.trim(),
