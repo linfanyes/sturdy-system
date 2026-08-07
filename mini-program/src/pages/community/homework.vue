@@ -103,6 +103,9 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listHomework, createHomework, updateHomework, removeHomework } from '@/api/homework'
+import { createNotice } from '@/api/notice'
 import { theme, auth } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 
@@ -244,8 +247,8 @@ function toggle(cid) {
 async function load() {
   // 并行加载 + 各自兜底，避免 classes 失败导致作业列表也不渲染
   const [cls, hw] = await Promise.all([
-    api.getList('/classes', { silent: true }),
-    api.getList('/homework', { loading: true, loadingText: '加载作业' }),
+    listClasses({ silent: true }),
+    listHomework({ loading: true, loadingText: '加载作业' }),
   ])
   classes.value = cls
   all.value = hw
@@ -293,10 +296,10 @@ async function save() {
   try {
     if (editing.value) {
       const prev = editing.value.status
-      await api.patch('/homework/' + editing.value.id, { ...form.value })
+      await updateHomework(editing.value.id, { ...form.value })
       if (form.value.status === '已发还' && prev !== '已发还') await makeNotice(form.value)
     } else {
-      await api.post('/homework', { ...form.value })
+      await createHomework({ ...form.value })
     }
     showAdd.value = false
     uni.showToast({ title: '已保存', icon: 'none' })
@@ -310,7 +313,7 @@ async function save() {
 async function makeNotice(h) {
   try {
     const cls = classMap.value[h.classId]
-    await api.post('/notices', {
+    await createNotice({
       classId: h.classId,
       title: `${h.title} 已发还`,
       content: `${cls || ''}的「${h.title}」作业已发还，请同学们查收。`,
@@ -324,7 +327,7 @@ async function makeNotice(h) {
 async function quickDone(h) {
   uni.showLoading({ title: '标记中…', mask: true })
   try {
-    await api.patch('/homework/' + h.id, { status: '已批改' })
+    await updateHomework(h.id, { status: '已批改' })
     h.status = '已批改'
     uni.showToast({ title: '已标记已批改', icon: 'none' })
   } catch (e) {
@@ -341,7 +344,7 @@ async function del(h) {
       if (!r.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
       try {
-        await api.del('/homework/' + h.id)
+        await removeHomework(h.id)
         all.value = all.value.filter((x) => x.id !== h.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })
