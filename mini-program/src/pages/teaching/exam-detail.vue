@@ -6,6 +6,9 @@
       <view class="hd-meta">
         {{ className }} · {{ exam?.date || '-' }}<text v-if="exam?.term"> · {{ exam.term }}</text>
       </view>
+      <view v-if="classId && examId" class="hd-actions">
+        <view class="btn-sm mint" @click="goCompare">对比其他考试</view>
+      </view>
     </view>
 
     <view v-if="loading" class="loading">加载中…</view>
@@ -151,6 +154,11 @@
           <text class="td pc">{{ fmt1(w.classAvg || w.subjectAvg) }}</text>
         </view>
       </view>
+
+      <!-- 教师评析 -->
+      <view class="sec-title">📝 教师评析</view>
+      <view v-if="exam?.analysisNote" class="item note">{{ exam.analysisNote }}</view>
+      <view v-else class="empty sm">暂无评析</view>
     </template>
   </view>
 </template>
@@ -287,6 +295,11 @@ function goStudentGrades(studentId) {
   uni.navigateTo({ url: '/pages/teaching/student-grades?studentId=' + encodeURIComponent(studentId) + '&classId=' + encodeURIComponent(classId.value) })
 }
 
+function goCompare() {
+  if (!classId.value || !examId.value) return
+  uni.navigateTo({ url: '/pages/teaching/exam-compare?classId=' + encodeURIComponent(classId.value) + '&examId=' + encodeURIComponent(examId.value) })
+}
+
 function onDistChange(e) {
   distSubject.value = subjectNames.value[e.detail.value] || ''
 }
@@ -361,6 +374,9 @@ onPullDownRefresh(async () => {
 .hd { background: var(--c-card); border-radius: 20rpx; padding: 28rpx 30rpx; margin-bottom: 20rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
 .hd-name { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
 .hd-meta { font-size: 26rpx; color: var(--c-sub); margin-top: 10rpx; }
+.hd-actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
+.btn-sm { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 12rpx; background: rgba(103,194,58,0.12); color: #67c23a; }
+.btn-sm.mint { background: rgba(103,194,58,0.12); color: #67c23a; }
 
 /* 统计卡片 2x3 */
 .grid { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 20rpx; }
@@ -432,4 +448,7 @@ onPullDownRefresh(async () => {
 .mini-rk.r1 { color: #e6a23c; font-weight: 800; }
 .mini-rk.r2 { color: #9a9a9a; font-weight: 800; }
 .mini-rk.r3 { color: #cd7f32; font-weight: 700; }
+
+/* 教师评析 */
+.note { background: var(--c-card); border-radius: 16rpx; padding: 22rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); font-size: 28rpx; color: var(--c-title); line-height: 1.6; white-space: pre-wrap; }
 </style>

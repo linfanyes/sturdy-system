@@ -3,8 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import { getClass, deleteClass, listSchoolNotices, type ClassItem } from '@/api/school-admin'
-import { listClassMembers, type ClassMember } from '@/api/teacher'
-import { listExams, getExamAnalysis, getLeaderboard } from '@/api/teacher'
+import { listClassMembers, listClassStudents, type ClassMember } from '@/api/teacher'
+import { listExams, getExamAnalysis, getLeaderboard, getExamTrend } from '@/api/teacher'
 import { Users, Crown, BookOpen, Calendar, TrendingUp, Edit3, Trash2, ArrowLeft, GraduationCap, Megaphone, Trophy, BarChart3 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -26,12 +26,16 @@ const currentExamId = ref('')
 const leaderboard = ref<any[]>([])
 const academicLoading = ref(false)
 
+/* 班级学业趋势 */
+const trendData = ref<Array<{ examName: string; date: string; classAvg: number }>>([])
+const trendLoading = ref(false)
+
 async function load() {
   loading.value = true
   try {
     const res = await getClass(classId)
     cls.value = res
-    await Promise.all([loadMembers(), loadNotices(), loadAcademic()])
+    await Promise.all([loadMembers(), loadNotices(), loadAcademic(), loadStudents()])
   } catch (e: any) {
     toast.error(e?.message || '加载班级详情失败')
   } finally {
@@ -83,12 +87,46 @@ async function loadAcademic() {
     // 3. 加载班级积分榜
     const lb = await getLeaderboard(classId)
     leaderboard.value = (lb as any)?.items || lb || []
+    // 4. 加载学业趋势
+    await loadTrend()
   } catch {
     recentExams.value = []
     examStats.value = null
     leaderboard.value = []
+    trendData.value = []
   } finally {
     academicLoading.value = false
+  }
+}
+
+async function loadTrend() {
+  trendLoading.value = true
+  try {
+    const res = await getExamTrend(classId)
+    const trend = (res as any)?.trend || {}
+    // 将按科目存储的 trend 转换为按考试汇总的班级均分
+    const examMap = new Map<string, { examName: string; date: string; totalScore: number; totalCount: number }>()
+    for (const [, arr] of Object.entries(trend)) {
+      for (const item of arr as Array<{ examName: string; date: string; avg: number; count: number }>) {
+        if (item.count <= 0) continue
+        const key = item.examName + '|' + item.date
+        const existing = examMap.get(key) || { examName: item.examName, date: item.date, totalScore: 0, totalCount: 0 }
+        existing.totalScore += item.avg * item.count
+        existing.totalCount += item.count
+        examMap.set(key, existing)
+      }
+    }
+    trendData.value = Array.from(examMap.values())
+      .map(e => ({
+        examName: e.examName,
+        date: e.date,
+        classAvg: Math.round((e.totalScore / e.totalCount) * 10) / 10,
+      }))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+  } catch {
+    trendData.value = []
+  } finally {
+    trendLoading.value = false
   }
 }
 
@@ -106,6 +144,21 @@ function onExamChange() {
 const headTeacher = computed(() => members.value.find(m => m.role === 'head'))
 const subjectTeachers = computed(() => members.value.filter(m => m.role === 'subject'))
 const activeNotices = computed(() => notices.value.filter(n => !n.ended).length)
+
+/* 学生花名册 */
+const students = ref<any[]>([])
+const studentsLoading = ref(false)
+async function loadStudents() {
+  studentsLoading.value = true
+  try {
+    const list = await listClassStudents(classId)
+    students.value = Array.isArray(list) ? list : (list as any)?.items || []
+  } catch {
+    students.value = []
+  } finally {
+    studentsLoading.value = false
+  }
+}
 
 function goStudents() {
   router.push(`/teacher/students?classId=${classId}`)
@@ -138,6 +191,38 @@ function fmtScore(n: number | undefined) { return n != null ? Number(n).toFixed(
 function pct(n: number | undefined) {
   if (n == null) return '-'
   return (n <= 1 ? n * 100 : n).toFixed(1) + '%'
+}
+
+/* ============ 趋势图 SVG ============ */
+const TREND_W = 680
+const TREND_H = 220
+const TREND_PAD = { top: 20, right: 20, bottom: 40, left: 44 }
+
+const trendChart = computed(() => {
+  const data = trendData.value
+  if (!data.length) return null
+  const n = data.length
+  const plotW = TREND_W - TREND_PAD.left - TREND_PAD.right
+  const plotH = TREND_H - TREND_PAD.top - TREND_PAD.bottom
+  const vals = data.map(d => d.classAvg).filter((v): v is number => v != null)
+  const maxY = Math.max(100, ...vals)
+  const minY = Math.min(0, ...vals)
+  const yRange = maxY - minY || 100
+  const points = data.map((d, i) => {
+    const x = n <= 1 ? TREND_PAD.left + plotW / 2 : TREND_PAD.left + (i / (n - 1)) * plotW
+    const y = d.classAvg != null ? TREND_PAD.top + plotH - ((d.classAvg - minY) / yRange) * plotH : null
+    return { x, y, label: d.examName, value: d.classAvg }
+  }).filter((p): p is { x: number; y: number; label: string; value: number } => p.y != null)
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const ticks = [0, 25, 50, 75, 100].map(v => ({ v, y: TREND_PAD.top + plotH - ((v - minY) / yRange) * plotH }))
+  return { TREND_W, TREND_H, TREND_PAD, plotW, plotH, points, path, ticks, maxY, minY, data }
+})
+
+function goStudentDetail(studentId: string) {
+  router.push(`/teacher/student-detail?id=${studentId}`)
+}
+function goStudentGradesFromLeaderboard(studentId: string) {
+  router.push({ path: '/teacher/student-grades', query: { studentId } })
 }
 
 onMounted(load)
@@ -277,6 +362,32 @@ onMounted(load)
               </tbody>
             </table>
           </div>
+
+          <!-- 班级学业趋势 -->
+          <div v-if="trendLoading" class="text-center text-cocoa-400 py-6 text-sm">加载趋势中…</div>
+          <div v-else-if="trendChart" class="mt-4">
+            <div class="font-medium text-cocoa-700 mb-2 flex items-center gap-2">
+              <TrendingUp class="w-4 h-4 text-butter-500" /> 班级均分趋势
+            </div>
+            <svg :viewBox="`0 0 ${trendChart.TREND_W} ${trendChart.TREND_H}`" class="w-full h-auto">
+              <g v-for="(t, i) in trendChart.ticks" :key="'y' + i">
+                <line :x1="trendChart.TREND_PAD.left" :x2="trendChart.TREND_W - trendChart.TREND_PAD.right" :y1="t.y" :y2="t.y" stroke="#f5f0e8" stroke-dasharray="3 3" />
+                <text :x="trendChart.TREND_PAD.left - 6" :y="t.y + 4" text-anchor="end" class="fill-cocoa-400" style="font-size: 10px;">{{ t.v }}</text>
+              </g>
+              <g v-for="(p, i) in trendChart.points" :key="'x' + i">
+                <text :x="p.x" :y="trendChart.TREND_H - 6" text-anchor="middle" class="fill-cocoa-400" style="font-size: 9px;">{{ p.label.length > 5 ? p.label.slice(0, 5) + '…' : p.label }}</text>
+              </g>
+              <path v-if="trendChart.points.length > 1" :d="trendChart.path" stroke="#e6a23c" stroke-width="2" fill="none" />
+              <g v-for="(p, i) in trendChart.points" :key="'p' + i">
+                <circle :cx="p.x" :cy="p.y" r="3" fill="#e6a23c" />
+                <text v-if="p.value != null" :x="p.x" :y="p.y - 6" text-anchor="middle" class="fill-cocoa-700" style="font-size: 9px; font-weight: 600;">{{ p.value.toFixed(1) }}</text>
+              </g>
+            </svg>
+            <div class="flex items-center justify-center gap-4 mt-2 text-xs text-cocoa-500">
+              <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-butter-500 rounded"></span> 班级均分</span>
+            </div>
+          </div>
+          <div v-else-if="!trendLoading && recentExams.length" class="text-center text-cocoa-400 py-4 text-sm">暂无趋势数据</div>
         </div>
 
         <!-- 班级积分榜 -->
@@ -301,7 +412,9 @@ onMounted(load)
                   <td class="px-3 py-2">
                     <span :class="['font-bold', item.rank <= 3 ? 'text-butter-600' : 'text-cocoa-700']">{{ item.rank }}</span>
                   </td>
-                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ item.name }}</td>
+                  <td class="px-3 py-2">
+                    <button class="text-butter-600 hover:text-butter-700 hover:underline font-medium" @click="goStudentGradesFromLeaderboard(item.studentId)">{{ item.name }}</button>
+                  </td>
                   <td class="px-3 py-2 text-right font-semibold" :class="item.total >= 0 ? 'text-mint-600' : 'text-red-500'">
                     {{ item.total > 0 ? '+' : '' }}{{ item.total }}
                   </td>
@@ -348,6 +461,41 @@ onMounted(load)
               <span v-for="s in m.subjects" :key="s" class="text-xs px-2 py-0.5 rounded-full bg-mint-100 text-mint-700">{{ s }}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 学生花名册 -->
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
+        <div class="flex items-center gap-2 mb-3">
+          <GraduationCap class="w-5 h-5 text-butter-500" />
+          <h2 class="text-lg font-semibold text-cocoa-900">学生花名册</h2>
+          <span class="text-sm text-cocoa-400 ml-auto">{{ students.length }} 人</span>
+        </div>
+        <div v-if="studentsLoading" class="text-cocoa-400 text-sm">加载中…</div>
+        <div v-else-if="!students.length" class="text-cocoa-400 text-sm">暂无学生</div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-cream-100 text-cocoa-500 text-left">
+              <tr>
+                <th class="px-3 py-2 font-medium">姓名</th>
+                <th class="px-3 py-2 font-medium">学号</th>
+                <th class="px-3 py-2 font-medium">性别</th>
+                <th class="px-3 py-2 font-medium">家长</th>
+                <th class="px-3 py-2 font-medium">电话</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cream-100">
+              <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50">
+                <td class="px-3 py-2">
+                  <button class="text-butter-600 hover:text-butter-700 hover:underline font-medium" @click="goStudentDetail(s.id)">{{ s.name || s.studentName || '-' }}</button>
+                </td>
+                <td class="px-3 py-2 text-cocoa-700">{{ s.studentNo || '-' }}</td>
+                <td class="px-3 py-2 text-cocoa-700">{{ s.gender || '-' }}</td>
+                <td class="px-3 py-2 text-cocoa-700">{{ s.parentName || '-' }}</td>
+                <td class="px-3 py-2 text-cocoa-700">{{ s.parentPhone || s.studentPhone || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

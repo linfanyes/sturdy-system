@@ -199,6 +199,51 @@ const distribution = computed(() => {
   return Object.entries(subj.distribution).map(([range, count]) => ({ range, count: count as number }))
 })
 
+/* 班级整体趋势（从 trendData 聚合） */
+const overallTrend = computed(() => {
+  if (!trendData.value?.trend) return []
+  const examMap = new Map<string, { examName: string; date: string; totalScore: number; totalCount: number }>()
+  for (const [, arr] of Object.entries(trendData.value.trend)) {
+    for (const item of arr as Array<{ examName: string; date: string; avg: number; count: number }>) {
+      if (item.count <= 0) continue
+      const key = item.examName + '|' + item.date
+      const existing = examMap.get(key) || { examName: item.examName, date: item.date, totalScore: 0, totalCount: 0 }
+      existing.totalScore += item.avg * item.count
+      existing.totalCount += item.count
+      examMap.set(key, existing)
+    }
+  }
+  return Array.from(examMap.values())
+    .map(e => ({
+      examName: e.examName,
+      date: e.date,
+      classAvg: Math.round((e.totalScore / e.totalCount) * 10) / 10,
+    }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+})
+
+const TREND_PAD = { left: 40, right: 20, top: 20, bottom: 30 }
+const trendPoints = computed(() => {
+  const data = overallTrend.value
+  if (!data.length) return []
+  const n = data.length
+  const plotW = 680 - TREND_PAD.left - TREND_PAD.right
+  const plotH = 140
+  const maxY = Math.max(100, ...data.map(d => d.classAvg))
+  const minY = Math.min(0, ...data.map(d => d.classAvg))
+  const yRange = maxY - minY || 100
+  return data.map((d, i) => {
+    const x = n <= 1 ? TREND_PAD.left + plotW / 2 : TREND_PAD.left + (i / (n - 1)) * plotW
+    const y = d.classAvg != null ? TREND_PAD.top + plotH - ((d.classAvg - minY) / yRange) * plotH : null
+    return { x, y, label: d.examName, value: d.classAvg }
+  }).filter((p): p is { x: number; y: number; label: string; value: number } => p.y != null)
+})
+
+const trendPath = computed(() => {
+  if (trendPoints.value.length < 2) return ''
+  return trendPoints.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+})
+
 /* 各科均分对比柱状图 */
 const subjectBars = computed(() => {
   if (!examStats.value?.subjects?.length) return []
@@ -304,6 +349,10 @@ function goExamDetail() {
 function goCompare() {
   if (!classId.value) return
   router.push({ path: '/teacher/exam-compare', query: { classId: classId.value } })
+}
+function goStudentGrades(studentId: string) {
+  if (!classId.value) return
+  router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
 }
 </script>
 
@@ -517,7 +566,9 @@ function goCompare() {
               <tbody class="divide-y divide-cream-100">
                 <tr v-for="row in scoreMatrix" :key="row.studentId" class="hover:bg-cream-50">
                   <td class="px-2 py-1.5 text-cocoa-500 text-xs sticky left-0 bg-white z-10">{{ row.rank }}</td>
-                  <td class="px-2 py-1.5 font-medium text-cocoa-900 text-sm sticky left-12 bg-white z-10 min-w-20">{{ row.name }}</td>
+                  <td class="px-2 py-1.5 font-medium text-cocoa-900 text-sm sticky left-12 bg-white z-10 min-w-20">
+                    <button class="text-butter-600 hover:text-butter-700 hover:underline" @click="goStudentGrades(row.studentId)">{{ row.name }}</button>
+                  </td>
                   <td v-for="subj in examStats.subjects" :key="subj.subject" class="px-2 py-1.5 text-center">
                     <span
                       class="inline-block px-2 py-0.5 rounded text-xs font-medium min-w-10"
@@ -541,6 +592,33 @@ function goCompare() {
             <span class="inline-block w-3 h-3 rounded" style="background:#f5b342"></span>临界(≥50%)
             <span class="inline-block w-3 h-3 rounded" style="background:#f56c6c"></span>不及格(<50%)
           </div>
+        </div>
+
+        <!-- 历史趋势对比 -->
+        <div v-if="overallTrend.length > 1" class="bg-surface rounded-2xl p-4 shadow-softer">
+          <h3 class="text-sm font-medium text-cocoa-700 mb-3 flex items-center gap-1">
+            <TrendingUp class="w-4 h-4 text-butter-500" /> 班级均分趋势
+          </h3>
+          <svg :viewBox="`0 0 680 200`" class="w-full h-auto">
+            <g v-for="(t, i) in [0, 25, 50, 75, 100]" :key="'y' + t">
+              <line x1="40" :x2="660" :y1="20 + (1 - t / 100) * 140" :y2="20 + (1 - t / 100) * 140" stroke="#f5f0e8" stroke-dasharray="3 3" />
+              <text x="34" :y="20 + (1 - t / 100) * 140 + 4" text-anchor="end" class="fill-cocoa-400" style="font-size: 10px;">{{ t }}</text>
+            </g>
+            <g v-for="(p, i) in trendPoints" :key="'x' + i">
+              <text :x="p.x" :y="194" text-anchor="middle" class="fill-cocoa-400" style="font-size: 9px;">{{ p.label.length > 5 ? p.label.slice(0, 5) + '…' : p.label }}</text>
+            </g>
+            <path v-if="trendPoints.length > 1" :d="trendPath" stroke="#e6a23c" stroke-width="2" fill="none" />
+            <g v-for="(p, i) in trendPoints" :key="'p' + i">
+              <circle :cx="p.x" :cy="p.y" r="3" fill="#e6a23c" />
+              <text v-if="p.value != null" :x="p.x" :y="p.y - 6" text-anchor="middle" class="fill-cocoa-700" style="font-size: 9px; font-weight: 600;">{{ p.value.toFixed(1) }}</text>
+            </g>
+          </svg>
+          <div class="flex items-center justify-center gap-4 mt-2 text-xs text-cocoa-500">
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-butter-500 rounded"></span> 班级均分</span>
+          </div>
+        </div>
+        <div v-else-if="overallTrend.length === 1" class="bg-surface rounded-2xl p-4 shadow-softer text-center text-cocoa-400 text-sm">
+          仅有一次考试记录，无法展示趋势
         </div>
 
         <!-- 分数段统计 -->

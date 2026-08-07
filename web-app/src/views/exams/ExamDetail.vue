@@ -7,10 +7,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import request from '@/api/request'
+import { toast } from '@/utils/feedback'
 import { useClasses } from '@/composables/useClasses'
 import {
   ArrowLeft, Users, GraduationCap, CheckCircle, Award,
-  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen, Printer,
+  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen, Printer, FileText,
 } from 'lucide-vue-next'
 import {
   getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
@@ -272,6 +273,32 @@ function goBack() {
 function goPrint() {
   window.print()
 }
+
+/* ============ 教师评析 ============ */
+const editingNote = ref(false)
+const noteText = ref('')
+
+function startEditNote() {
+  noteText.value = exam.value?.analysisNote || ''
+  editingNote.value = true
+}
+
+async function saveNote() {
+  if (!examId.value) return
+  try {
+    await request.patch('/exams/' + examId.value, { analysisNote: noteText.value })
+    exam.value = { ...exam.value, analysisNote: noteText.value }
+    editingNote.value = false
+    toast.success('评析已保存')
+  } catch (e: any) {
+    toast.error(e?.message || '保存失败')
+  }
+}
+
+function cancelNote() {
+  editingNote.value = false
+  noteText.value = ''
+}
 </script>
 
 <template>
@@ -292,6 +319,14 @@ function goPrint() {
           @click="goBack"
         >
           <ArrowLeft class="w-5 h-5" />
+        </button>
+        <button
+          v-if="examId && classId"
+          class="px-3 py-2 rounded-xl bg-mint-100 text-mint-600 text-sm hover:bg-mint-200 flex items-center gap-1 shrink-0"
+          title="对比其他考试"
+          @click="router.push({ path: '/teacher/exam-compare', query: { classId, examId } })"
+        >
+          <TrendingUp class="w-4 h-4" /> 对比其他考试
         </button>
         <div class="min-w-0">
           <h1 class="text-2xl font-bold text-cocoa-900 truncate">{{ exam?.name || '考试详情' }}</h1>
@@ -640,6 +675,30 @@ function goPrint() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- 教师评析 -->
+      <div class="bg-surface rounded-2xl p-6 shadow-softer">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-medium text-cocoa-700 flex items-center gap-2">
+            <FileText class="w-4 h-4 text-butter-500" /> 教师评析
+          </div>
+          <button v-if="!editingNote" class="text-sm text-butter-600 hover:text-butter-700" @click="startEditNote">编辑</button>
+        </div>
+        <div v-if="editingNote" class="space-y-2">
+          <textarea
+            v-model="noteText"
+            rows="4"
+            class="w-full px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 resize-y"
+            placeholder="请输入本次考试的评析..."
+          ></textarea>
+          <div class="flex gap-2">
+            <button class="px-3 py-1.5 rounded-xl bg-butter-500 text-white text-sm hover:bg-butter-600" @click="saveNote">保存</button>
+            <button class="px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-700 text-sm hover:bg-cream-200" @click="cancelNote">取消</button>
+          </div>
+        </div>
+        <div v-else-if="exam?.analysisNote" class="text-sm text-cocoa-800 leading-relaxed whitespace-pre-wrap">{{ exam.analysisNote }}</div>
+        <div v-else class="text-sm text-cocoa-400">暂无评析，点击「编辑」添加</div>
       </div>
     </template>
   </div>
