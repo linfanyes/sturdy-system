@@ -2,6 +2,10 @@
 import { ref, onMounted, computed } from 'vue'
 import request from '@/api/request'
 import {
+  listMyClasses, listAllStudents, listExams, listGrades,
+  listAttendances, listHomework, listNotes, listTodos, listNotices,
+} from '@/api/teacher'
+import {
   BarChart3, School, Users, CalendarCheck, NotebookPen,
   GraduationCap, ListTodo, NotebookText, Megaphone,
   Download, Loader2, RefreshCw, Trophy, PieChart,
@@ -18,8 +22,9 @@ const semesterName = computed(() => {
 
 async function loadSemesters() {
   try {
+    // /semesters 是独立端点，暂用 request.get
     const res = await request.get('/semesters')
-    const list = Array.isArray(res) ? res : (res?.items || [])
+    const list = toArray(res)
     semesterList.value = list
   } catch {
     semesterList.value = []
@@ -84,14 +89,14 @@ async function loadAll() {
   loading.value = true
   try {
     const res = await Promise.allSettled([
-      request.get('/classes', { params: params() }),
-      request.get('/students', { params: params() }),
-      request.get('/attendances', { params: params() }),
-      request.get('/grades', { params: params() }),
-      request.get('/homework', { params: params() }),
-      request.get('/notes', { params: params() }),
-      request.get('/todos', { params: params() }),
-      request.get('/notices', { params: params() }),
+      listMyClasses(semesterId.value ? { term: semesterName.value } : undefined),
+      listAllStudents(params()),
+      listAttendances(),
+      listGrades(params()),
+      listHomework(),
+      listNotes(),
+      listTodos(),
+      listNotices(params()),
     ])
     const [classesRes, studentsRes, attsRes, gradesRes, homeworkRes, notesRes, todosRes, noticesRes] =
       res.map(r => (r.status === 'fulfilled' ? toArray(r.value) : []))
@@ -272,7 +277,7 @@ function computeGradeDashboards(gradesRes: any[], classesRes: any[], studentsRes
 /** 考试均分趋势：最近 12 次考试 */
 async function loadExamTrend() {
   try {
-    let examsRes = await request.get('/exams', { params: params() })
+    let examsRes = await listExams(params())
     let examsArr = toArray(examsRes)
     if (semesterName.value) {
       examsArr = examsArr.filter((e: any) => e.term === semesterName.value)
@@ -286,7 +291,7 @@ async function loadExamTrend() {
     const points: TrendPoint[] = []
     for (const exam of recent) {
       try {
-        const gradesRes = await request.get('/grades', { params: { examId: exam.id } })
+        const gradesRes = await listGrades({ examId: exam.id })
         const gradesArr = toArray(gradesRes)
         const scs: number[] = []
         gradesArr.forEach((g: any) => {

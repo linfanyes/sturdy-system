@@ -49,9 +49,9 @@ export interface ClassMember {
 
 /* ============ 班级与学生 ============ */
 
-/** 获取当前教师的班级列表 */
-export function listMyClasses() {
-  return request.get<any, TeacherClass[]>('/classes')
+/** 获取当前教师的班级列表（支持 term 等筛选） */
+export function listMyClasses(params?: { term?: string }) {
+  return request.get<any, TeacherClass[]>('/classes', { params: params || {} })
 }
 
 /** 获取某班级的学生列表 */
@@ -60,7 +60,7 @@ export function listClassStudents(classId: string) {
 }
 
 /** 获取当前教师所有学生（不传 classId 返回全部） */
-export function listAllStudents(params?: { classId?: string; skip?: number; take?: number }) {
+export function listAllStudents(params?: { classId?: string; skip?: number; take?: number; term?: string }) {
   return request.get<any, any>('/students', { params: params || {} })
 }
 
@@ -517,20 +517,20 @@ export function listAttendances(classId?: string) {
   return request.get<any, any[]>('/attendances', { params: classId ? { classId } : {} })
 }
 /** 待办列表 */
-export function listTodos() {
-  return request.get<any, any[]>('/todos')
+export function listTodos(params?: Record<string, any>) {
+  return request.get<any, any[]>('/todos', { params: params || {} })
 }
 /** 笔记列表 */
-export function listNotes() {
-  return request.get<any, any[]>('/notes')
+export function listNotes(params?: Record<string, any>) {
+  return request.get<any, any[]>('/notes', { params: params || {} })
 }
 /** 公告列表 */
-export function listNotices() {
-  return request.get<any, any[]>('/notices')
+export function listNotices(params?: Record<string, any>) {
+  return request.get<any, any[]>('/notices', { params: params || {} })
 }
 /** 作业列表 */
-export function listHomework() {
-  return request.get<any, any[]>('/homework')
+export function listHomework(params?: Record<string, any>) {
+  return request.get<any, any[]>('/homework', { params: params || {} })
 }
 
 /* ============ 通用 CRUD 辅助 ============ */
