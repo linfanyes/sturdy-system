@@ -510,6 +510,29 @@ export function getLeaderboard(classId: string) {
   return request.get<any, { classId: string; total: number; items: Array<{ rank: number; studentId: string; name: string; total: number; count: number }> }>('/leaderboard', { params: { classId } })
 }
 
+/* ============ 通用列表辅助（Dashboard 等） ============ */
+
+/** 考勤列表 */
+export function listAttendances(classId?: string) {
+  return request.get<any, any[]>('/attendances', { params: classId ? { classId } : {} })
+}
+/** 待办列表 */
+export function listTodos() {
+  return request.get<any, any[]>('/todos')
+}
+/** 笔记列表 */
+export function listNotes() {
+  return request.get<any, any[]>('/notes')
+}
+/** 公告列表 */
+export function listNotices() {
+  return request.get<any, any[]>('/notices')
+}
+/** 作业列表 */
+export function listHomework() {
+  return request.get<any, any[]>('/homework')
+}
+
 /* ============ 通用 CRUD 辅助 ============ */
 
 /** 通用列表查询 */
