@@ -7,6 +7,7 @@
   "scripts": {
     "smoke:web": "node web.smoke.mjs",
     "smoke:mini": "node mini.smoke.mjs",
+    "flow:web": "node web.flow.mjs",
     "smoke": "npm run smoke:web && npm run smoke:mini"
   },
   "devDependencies": {
