@@ -93,6 +93,9 @@
 import { ref, computed, nextTick } from 'vue'
 import { onShow, onPullDownRefresh, onUnload } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listAttendances, createAttendance, updateAttendance } from '@/api/attendance'
+import { createNotice } from '@/api/notice'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
@@ -130,14 +133,14 @@ const stats = computed(() => {
 async function load() {
   loading.value = true
   try {
-    classes.value = await api.getList('/classes', { silent: true })
+    classes.value = await listClasses({ silent: true })
     if (classId.value) await loadStudents()
   } finally { loading.value = false }
 }
 async function loadStudents() {
   loading.value = true
   try {
-    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+    students.value = await listStudents({ classId: classId.value, silent: true })
     await loadAtt()
     loadTrend()
   } finally { loading.value = false }
@@ -164,7 +167,7 @@ async function loadAtt() {
   // 服务端按 classId（+date）过滤，避免全表拉取后在端侧过滤
   let url = '/attendances?classId=' + encodeURIComponent(classId.value)
   if (date.value) url += '&date=' + encodeURIComponent(date.value)
-  const list = (await api.get(url)).filter(
+  const list = (await listAttendances({ classId: classId.value, date: date.value })).filter(
     (a) => a.classId === classId.value && (date.value ? a.date === date.value : true)
   )
   if (list.length) {
@@ -189,7 +192,7 @@ const trendAbsent = computed(() => trendData.value.map((d) => d.absentRate))
 async function loadTrend() {
   if (!classId.value || !students.value.length) return
   // 仅按 classId 服务端过滤一次（避免近7天每天各拉一次全表），端侧按日期分组统计
-  const all = await api.get('/attendances?classId=' + encodeURIComponent(classId.value))
+  const all = await listAttendances({ classId: classId.value })
   const byDate = {}
   for (const a of all) {
     if (a.classId !== classId.value) continue
@@ -286,7 +289,7 @@ async function setStu(id, s) {
     const stu = students.value.find((x) => x.id === id)
     const cls = classes.value.find((x) => x.id === classId.value)
     try {
-      await api.post('/notices', {
+      await createNotice({
         classId: classId.value,
         title: (stu ? stu.name : '某同学') + '今日旷课',
         content: (cls ? cls.name : '') + ' ' + (stu ? stu.name : '') + ' 于 ' + (date.value || '今天') + ' 旷课，请家长关注。',
@@ -313,8 +316,8 @@ async function save(silent = false) {
   const records = students.value.map((s) => ({ studentId: s.id, status: map.value[s.id] || '出勤' }))
   const payload = { classId: classId.value, date: date.value || undefined, records }
   try {
-    if (attId.value) await api.patch('/attendances/' + attId.value, payload)
-    else await api.post('/attendances', payload)
+    if (attId.value) await updateAttendance(attId.value, payload)
+    else await createAttendance(payload)
     dirty = false
     if (!silent) uni.showToast({ title: '考勤已保存', icon: 'none' })
   } catch (e) {
@@ -369,7 +372,7 @@ async function loadCmpStats(name) {
     // 服务端按 classId（+date）过滤，避免全表拉取
     let url = '/attendances?classId=' + encodeURIComponent(c.id)
     if (date.value) url += '&date=' + encodeURIComponent(date.value)
-    const filtered = await api.get(url)
+    const filtered = await listAttendances({ classId: c.id, date: date.value })
     const o = { 出勤: 0, 迟到: 0, 请假: 0, 旷课: 0 }
     for (const a of filtered) {
       const recs = safeParse(a.records, [])
