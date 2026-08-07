@@ -4,9 +4,12 @@ import { mockMode, initTheme, auth, bindAuthMachine, authMachine } from './commo
 import { setMockMode } from './common/request'
 import { CLOUDRUN_ENV, DEMO_MODE_ENABLED } from './common/config'
 import { setupRouteGuard } from './common/route-guard'
+import { initMonitor, onAppError, onAppUnhandledRejection } from './common/monitor'
 
 export default {
   onLaunch() {
+    // 前端监控（错误 / 异常上报，仅生产）
+    initMonitor()
     // 注册前端路由角色守卫（拦截越权导航，如教师进入管理员面板）
     setupRouteGuard()
     // 鉴权状态机桥接：machine ↔ reactive auth，使 machine 事件能更新 reactive 对象
@@ -59,6 +62,12 @@ export default {
     } else if (hasTeacher) {
       uni.switchTab({ url: '/pages/dashboard/dashboard' })
     }
+  },
+  onError(err) {
+    onAppError(err)
+  },
+  onUnhandledRejection(res) {
+    onAppUnhandledRejection(res)
   },
 }
 </script>

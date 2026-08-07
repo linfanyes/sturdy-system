@@ -55,6 +55,7 @@ import { CacheModule } from './common/cache/cache.module'
 import { EvaluationModule } from './evaluation/evaluation.module'
 import { GameScoresModule } from './game-scores/game-scores.module'
 import { ChatHistoryModule } from './chat-history/chat-history.module'
+import { MonitorModule } from './monitor/monitor.module'
 import { HealthController } from './health.controller'
 
 @Module({
@@ -140,6 +141,7 @@ import { HealthController } from './health.controller'
     NotesModule,
     GameScoresModule,
     ChatHistoryModule,
+    MonitorModule,
     AwardModule,
     TeacherModule,
     AdminModule,
