@@ -70,7 +70,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listTeachingCalendar, createTeachingCalendar, updateTeachingCalendar, removeTeachingCalendar } from '@/api/calendar'
 import { theme } from '../../common/store'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
 
@@ -113,7 +113,7 @@ function changeMonth(dir) {
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/teaching-calendar', { year: year.value, month: month.value })
+    const res = await listTeachingCalendar({ year: year.value, month: month.value })
     items.value = res.items || []
   } catch (e) {
     items.value = []
@@ -140,10 +140,10 @@ async function save() {
   try {
     const payload = {...form.value}
     if (editing.value) {
-      const r = await api.patch('/teaching-calendar/'+editing.value.id, payload)
+      const r = await updateTeachingCalendar(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/teaching-calendar', payload)
+      const r = await createTeachingCalendar(payload)
       items.value.push(r)
     }
     show.value=false
@@ -156,7 +156,7 @@ function del(it) {
   uni.showModal({title:'删除',content:it.title,success:async(m)=>{
     if(!m.confirm)return
     try {
-      await api.del('/teaching-calendar/'+it.id)
+      await removeTeachingCalendar(it.id)
       items.value = items.value.filter(x=>x.id!==it.id)
     } catch(e) { uni.showToast({title:'失败',icon:'none'}) }
   }})

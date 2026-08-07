@@ -91,7 +91,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { onLoad, onReady, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { getStudent, getStudentGradesAnalysis } from '@/api/teaching'
 import { theme } from '../../common/store'
 
 const loading = ref(true)
@@ -346,8 +346,8 @@ async function load() {
   loading.value = true
   try {
     const [stu, ana] = await Promise.all([
-      api.get('/students/' + studentId.value),
-      api.get('/grades/analysis/student/' + studentId.value),
+      getStudent(studentId.value),
+      getStudentGradesAnalysis(studentId.value),
     ])
     student.value = Array.isArray(stu) ? stu[0] || null : stu
     const a = ana || {}

@@ -37,7 +37,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listCheckins, createCheckin, removeCheckin } from '@/api/checkin'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
@@ -49,7 +49,7 @@ const filtered = computed(()=>selType.value?list.value.filter(c=>c.type===selTyp
 const summary = computed(()=>cTypes.map(t=>({...t,count:list.value.filter(c=>c.type===t.k).reduce((s,c)=>s+(c.count||1),0)})))
 const cType = (t)=>cTypes.find(x=>x.k===t)||{icon:'📝',bg:'#f3f3f3'}
 
-async function load() { list.value = await api.getList('/checkins',{loading:true,loadingText:'加载打卡'}) }
+async function load() { list.value = await listCheckins({loading:true,loadingText:'加载打卡'}) }
 onShow(load)
 onPullDownRefresh(async()=>{await load();uni.stopPullDownRefresh()})
 function openAdd() { form.value={studentName:'',type:'阅读',date:new Date().toISOString().slice(0,10),count:1,note:''}; show.value=true }
@@ -57,11 +57,11 @@ async function save() {
   if (saving.value) return
   if (!form.value.studentName.trim()) return uni.showToast({title:'请输入学生姓名',icon:'none'})
   saving.value=true
-  try { await api.post('/checkins',{...form.value,studentId:'s'+Date.now(),count:Number(form.value.count)||1}); list.value.unshift({...form.value,id:String(Date.now())}); show.value=false; uni.showToast({title:'已打卡',icon:'none'}) }
+  try { await createCheckin({...form.value,studentId:'s'+Date.now(),count:Number(form.value.count)||1}); list.value.unshift({...form.value,id:String(Date.now())}); show.value=false; uni.showToast({title:'已打卡',icon:'none'}) }
   catch(e) { uni.showToast({title:'失败:'+(e.message||''),icon:'none'}) }
   finally { saving.value=false }
 }
-function del(c) { uni.showModal({title:'删除',content:c.studentName+' '+c.type,success:async(m)=>{if(!m.confirm)return;try{await api.del('/checkins/'+c.id);list.value=list.value.filter(x=>x.id!==c.id)}catch(e){uni.showToast({title:'失败',icon:'none'})}}}) }
+function del(c) { uni.showModal({title:'删除',content:c.studentName+' '+c.type,success:async(m)=>{if(!m.confirm)return;try{await removeCheckin(c.id);list.value=list.value.filter(x=>x.id!==c.id)}catch(e){uni.showToast({title:'失败',icon:'none'})}}}) }
 </script>
 
 <style scoped>

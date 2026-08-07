@@ -71,7 +71,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listGrades, listStudents } from '@/api/teaching'
 import { theme } from '../../common/store'
 
 const mode = ref('trend')
@@ -234,8 +234,8 @@ function drawLine() {
 watch([mode, selSubject, classId, selStudent], () => { drawLine() }, { deep: false })
 
 async function load() {
-  classes.value = await api.get('/classes')
-  const [g, st] = await Promise.all([api.get('/grades'), api.get('/students')])
+  classes.value = await listClasses()
+  const [g, st] = await Promise.all([listGrades(), listStudents()])
   grades.value = g || []
   studentList.value = st || []
   studentOpts.value = ['全班均分', ...studentList.value.filter((s) => s.classId === classId.value).map((s) => s.name)]

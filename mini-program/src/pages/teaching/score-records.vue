@@ -77,7 +77,8 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listScoreRecords, createScoreRecord, updateScoreRecord, removeScoreRecord } from '@/api/scores'
 import { theme } from '../../common/store'
 
 const list = ref([])
@@ -107,7 +108,7 @@ function onSourceChange(e) {
 
 async function loadClasses() {
   try {
-    const res = await api.get('/classes?take=200')
+    const res = await listClasses({ take: 200 })
     classes.value = Array.isArray(res) ? res : (res.items || [])
     classOpts.value = classes.value.map(c => c.name)
   } catch (e) { classes.value = [] }
@@ -116,7 +117,7 @@ async function loadClasses() {
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/score-records?take=200')
+    const res = await listScoreRecords({ take: 200 })
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -143,9 +144,9 @@ async function submit() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch('/score-records/' + editing.value.id, form.value)
+      await updateScoreRecord(editing.value.id, form.value)
     } else {
-      await api.post('/score-records', form.value)
+      await createScoreRecord(form.value)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -161,7 +162,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/score-records/' + it.id)
+        await removeScoreRecord(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

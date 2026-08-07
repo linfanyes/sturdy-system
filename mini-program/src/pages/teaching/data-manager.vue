@@ -65,22 +65,17 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import {
+  getEndpoints, getEndpointByKey, fetchEndpoint, importEndpoint,
+  listBackups, createBackup as createBackupApi, getBackup, removeBackup as removeBackupApi,
+} from '@/api/data-manager'
 import { theme } from '../../common/store'
 
 const activeTab = ref('export')
 const exporting = ref(false)
 const importJson = ref('')
 const importing = ref(false)
-const endpoints = [
-  { key: 'schedules', label: '课程表', path: '/schedules' },
-  { key: 'notes', label: '笔记', path: '/notes' },
-  { key: 'todos', label: '待办', path: '/todos' },
-  { key: 'notices', label: '公告', path: '/notices' },
-  { key: 'messages', label: '留言', path: '/messages' },
-  { key: 'students', label: '学生', path: '/students' },
-  { key: 'classes', label: '班级', path: '/classes' },
-]
+const endpoints = getEndpoints()
 const selected = ref(endpoints.map(e => e.key))
 
 function toggleEndpoint(key) {
@@ -103,7 +98,7 @@ async function handleExport() {
     let count = 0
     for (const ep of eps) {
       try {
-        const res = await api.get(ep.path + '?take=10000')
+        const res = await fetchEndpoint(ep.path)
         exportData[ep.key] = Array.isArray(res) ? res : (res?.items || [])
         count++
       } catch (e) { exportData[ep.key] = [] }
@@ -151,7 +146,7 @@ async function handleImport() {
       for (const item of items) {
         try {
           const { id, createdAt, updatedAt, ...rest } = item
-          await api.post(ep.path, rest)
+          await importEndpoint(ep.path, rest)
           count++
         } catch (e) { /* skip duplicate / error */ }
       }
@@ -173,7 +168,7 @@ const restoringId = ref('')
 async function loadBackups() {
   backupLoading.value = true
   try {
-    const res = await api.get('/backups?take=100')
+    const res = await listBackups({ take: 100 })
     backups.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { backups.value = [] }
   finally { backupLoading.value = false }
@@ -183,7 +178,7 @@ async function createBackup() {
   if (!backupLabel.value.trim()) return uni.showToast({ title: '请输入备份标签', icon: 'none' })
   creatingBackup.value = true
   try {
-    await api.post('/backups', { label: backupLabel.value.trim() })
+    await createBackupApi({ label: backupLabel.value.trim() })
     backupLabel.value = ''
     uni.showToast({ title: '备份创建成功', icon: 'success' })
     loadBackups()
@@ -199,7 +194,7 @@ async function restoreBackup(b) {
       if (!r.confirm) return
       restoringId.value = b.id
       try {
-        const data = await api.get('/backups/' + b.id)
+        const data = await getBackup(b.id)
         if (!data || typeof data !== 'object') { uni.showToast({ title: '备份数据无效', icon: 'none' }); return }
         let restoredCount = 0
         const keys = Object.keys(data).filter(k => !k.startsWith('_') && Array.isArray(data[k]))
@@ -211,7 +206,7 @@ async function restoreBackup(b) {
           for (const item of items) {
             try {
               const { id, createdAt, updatedAt, ...rest } = item
-              await api.post(ep.path, rest)
+              await importEndpoint(ep.path, rest)
               restoredCount++
             } catch (e) { /* skip */ }
           }
@@ -230,7 +225,7 @@ async function removeBackup(b) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/backups/' + b.id)
+        await removeBackupApi(b.id)
         backups.value = backups.value.filter(x => x.id !== b.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

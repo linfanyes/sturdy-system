@@ -57,7 +57,8 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listDutyConfigs, createDutyConfig, updateDutyConfig, removeDutyConfig } from '@/api/duty'
 import { theme } from '../../common/store'
 
 const loading = ref(false)
@@ -87,7 +88,7 @@ function onStudentChange(e) {
 
 async function loadClasses() {
   try {
-    const res = await api.get('/classes?take=200')
+    const res = await listClasses({ take: 200 })
     classes.value = Array.isArray(res) ? res : (res.items || [])
     classOpts.value = classes.value.map(c => c.name)
   } catch (e) { classes.value = [] }
@@ -96,7 +97,7 @@ async function loadClasses() {
 async function loadStudents() {
   if (!classId.value) { students.value = []; return }
   try {
-    const res = await api.get('/students?classId=' + classId.value + '&take=200')
+    const res = await listStudents({ classId: classId.value, take: 200 })
     students.value = Array.isArray(res) ? res : (res.items || [])
     studentOpts.value = students.value.map(s => s.name)
   } catch (e) { students.value = [] }
@@ -106,7 +107,7 @@ async function load() {
   if (!classId.value) { list.value = []; return }
   loading.value = true
   try {
-    const res = await api.get('/class-duty-configs?classId=' + classId.value)
+    const res = await listDutyConfigs(classId.value)
     list.value = Array.isArray(res) ? res : (res.items || [])
   } catch (e) { list.value = [] }
   finally { loading.value = false }
@@ -141,9 +142,9 @@ async function submit() {
   try {
     const payload = { ...form.value, classId: classId.value }
     if (editing.value) {
-      await api.patch('/class-duty-configs/' + editing.value.id, payload)
+      await updateDutyConfig(editing.value.id, payload)
     } else {
-      await api.post('/class-duty-configs', payload)
+      await createDutyConfig(payload)
     }
     showForm.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -159,7 +160,7 @@ async function remove(it) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/class-duty-configs/' + it.id)
+        await removeDutyConfig(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

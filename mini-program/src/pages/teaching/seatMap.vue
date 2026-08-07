@@ -139,7 +139,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import {
+  listSeatLayouts, listSeatStudents, listSeatExams,
+  createSeatLayout, activateSeatLayout, updateSeatLayout,
+} from '@/api/seat'
+import { listClasses, getGradesAnalysisRank } from '@/api/teaching'
 import { theme } from '../../common/store'
 import { isInt } from '../../common/validators'
 
@@ -208,13 +212,13 @@ const seatRows = computed(() => {
 const pickOpts = computed(() => ['（清空座位）', ...students.value.map((s) => s.name)])
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (classId.value) {
     // 服务端按 classId 过滤，避免拉全量再前端 filter
-    layouts.value = await api.getList('/seat-layouts?classId=' + encodeURIComponent(classId.value), { silent: true })
-    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+    layouts.value = await listSeatLayouts(classId.value, { silent: true })
+    students.value = await listSeatStudents(classId.value, { silent: true })
     // 按成绩排座需要考试列表：按日期倒序，便于选最近一次
-    const ex = await api.getList('/exams?classId=' + encodeURIComponent(classId.value), { silent: true }) || []
+    const ex = await listSeatExams(classId.value, { silent: true }) || []
     exams.value = ex.slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
     if (examIdx.value >= exams.value.length) examIdx.value = 0
   }
@@ -241,7 +245,7 @@ async function save() {
   saving.value = true
   try {
     const seats = Array.from({ length: rows }, () => Array(cols).fill(null))
-    await api.post('/seat-layouts', { classId: classId.value, name: form.value.name, rows, cols, seats, aisleCols: [] })
+    await createSeatLayout({ classId: classId.value, name: form.value.name, rows, cols, seats, aisleCols: [] })
     uni.showToast({ title: '布局已创建', icon: 'success' })
     showForm.value = false
     form.value = { name: '默认座位', rows: 6, cols: 7 }
@@ -256,7 +260,7 @@ async function save() {
 async function activate(id) {
   busy.value = true
   try {
-    await api.post(`/seat-layouts/${id}/activate`, {})
+    await activateSeatLayout(id)
     uni.showToast({ title: '已启用，学生行列已回写', icon: 'success' })
     await load()
   } catch (e) {
@@ -297,7 +301,7 @@ function onPick(ev) {
 async function saveSeats() {
   busy.value = true
   try {
-    await api.patch(`/seat-layouts/${editing.value.id}`, {
+    await updateSeatLayout(editing.value.id, {
       seats: editing.value.seats,
       rows: editing.value.rows,
       cols: editing.value.cols,
@@ -333,12 +337,7 @@ async function doAutoArrange() {
     const exam = exams.value[examIdx.value] || exams.value[0]
     if (!exam) return null
     try {
-      const res = await api.get(
-        '/grades/analysis/rank?classId=' +
-          encodeURIComponent(classId.value) +
-          '&examId=' +
-          encodeURIComponent(exam.id),
-      )
+      const res = await getGradesAnalysisRank(classId.value, exam.id)
       const ranks = (res && res.ranks) || []
       const sumMap = {}
       for (const r of ranks) {

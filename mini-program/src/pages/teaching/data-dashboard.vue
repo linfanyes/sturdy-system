@@ -68,7 +68,10 @@
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
-import api from '../../common/request'
+import {
+  listClasses, listStudents, listGrades, listExams, listNotices,
+  listAttendances, listSemesters, getExam,
+} from '@/api/teaching'
 import { exportXlsx } from '../../common/exporter'
 import uCharts from '@qiun/ucharts'
 
@@ -149,7 +152,7 @@ function nowMonth() {
 }
 
 async function loadClasses() {
-  classes.value = await api.getList('/classes', { silent: true }) || []
+  classes.value = await listClasses({ silent: true }) || []
 }
 
 function isInRange(date) {
@@ -167,10 +170,10 @@ async function loadClassStats(classId) {
   const c = classes.value.find(x => x.id === classId)
   const name = c ? (c.name || '') : ''
   const [students, attends, grades, notices] = await Promise.all([
-    api.getList('/students?classId=' + classId, { silent: true }),
-    api.getList('/attendances?classId=' + classId, { silent: true }),
-    api.getList('/grades?classId=' + classId, { silent: true }),
-    api.getList('/notices?classId=' + classId, { silent: true }),
+    listStudents(classId, { silent: true }),
+    listAttendances(classId, { silent: true }),
+    listGrades(classId, { silent: true }),
+    listNotices(classId, { silent: true }),
   ])
   const filteredAtt = attends.filter(a => isInRange(a.date))
   const attTotal = filteredAtt.length
@@ -246,13 +249,13 @@ async function loadGradeStats() {
     const clsOfGrade = classes.value.filter(c => c.grade === gr)
     let students = 0, attSum = 0, attCount = 0
     for (const cl of clsOfGrade) {
-      const [stu] = await Promise.all([api.getList('/students?classId='+cl.id,{silent:true})])
+      const [stu] = await Promise.all([listStudents(cl.id, { silent: true })])
       students += stu.length
     }
     allStudents += students
     // 简化：取第一个班级的考勤作为年级参考
     if (clsOfGrade.length) {
-      const atts = await api.getList('/attendances?classId='+clsOfGrade[0].id,{silent:true})
+      const atts = await listAttendances(clsOfGrade[0].id, { silent: true })
       const fa = atts.filter(a => isInRange(a.date))
       if (fa.length) {
         attSum += (fa.filter(a => a.status==='出勤'||a.status==='正常').length / fa.length * 100)
@@ -264,7 +267,7 @@ async function loadGradeStats() {
     gradeData.push({ label: gr + '年级', rate: +rate, students })
   }
 
-  const nots = await api.getList('/notices',{silent:true})
+  const nots = await listNotices({ silent: true })
   allNotices = nots.filter(n => isInRange(n.date || n.createdAt)).length
 
   stats.value = {
@@ -285,9 +288,9 @@ async function loadGradeStats() {
 async function loadSchoolStats() {
   loading.value = true
   statsLoaded.value = false
-  const allStu = await api.getList('/students',{silent:true}) || []
-  const allAtt = await api.getList('/attendances',{silent:true}) || []
-  const allNoti = await api.getList('/notices',{silent:true}) || []
+  const allStu = await listStudents({ silent: true }) || []
+  const allAtt = await listAttendances({ silent: true }) || []
+  const allNoti = await listNotices({ silent: true }) || []
   const fa = allAtt.filter(a => isInRange(a.date))
   const attRate = fa.length
     ? (fa.filter(a => a.status==='出勤'||a.status==='正常').length / fa.length * 100).toFixed(0)

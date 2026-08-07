@@ -50,7 +50,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listReadingLogs, createReadingLog, updateReadingLog, removeReadingLog } from '@/api/reading'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
@@ -81,7 +81,7 @@ const filtered = computed(() => {
 
 const saveText = computed(()=>saving.value?'保存中…':'保存')
 
-async function load() { list.value = await api.getList('/reading-logs',{loading:true,loadingText:'加载阅读'}) }
+async function load() { list.value = await listReadingLogs({loading:true,loadingText:'加载阅读'}) }
 onShow(load)
 onPullDownRefresh(async()=>{await load();uni.stopPullDownRefresh()})
 
@@ -92,13 +92,13 @@ async function save() {
   if (!form.value.bookTitle.trim()) return uni.showToast({title:'请填写书名',icon:'none'})
   saving.value=true
   try {
-    if (editing.value) { const r=await api.patch('/reading-logs/'+editing.value.id,form.value); Object.assign(editing.value,r) }
-    else { const r=await api.post('/reading-logs',{...form.value,studentId:'s'+Date.now(),pages:Number(form.value.pages)||0,minutes:Number(form.value.minutes)||0}); list.value.unshift(r) }
+    if (editing.value) { const r=await updateReadingLog(editing.value.id,form.value); Object.assign(editing.value,r) }
+    else { const r=await createReadingLog({...form.value,studentId:'s'+Date.now(),pages:Number(form.value.pages)||0,minutes:Number(form.value.minutes)||0}); list.value.unshift(r) }
     show.value=false; uni.showToast({title:'已保存',icon:'none'})
   } catch(e) { uni.showToast({title:'失败:'+(e.message||''),icon:'none'}) }
   finally { saving.value=false }
 }
-function del(r) { uni.showModal({title:'删除',content:r.bookTitle,success:async(m)=>{if(!m.confirm)return;try{await api.del('/reading-logs/'+r.id);list.value=list.value.filter(x=>x.id!==r.id)}catch(e){uni.showToast({title:'失败',icon:'none'})}}}) }
+function del(r) { uni.showModal({title:'删除',content:r.bookTitle,success:async(m)=>{if(!m.confirm)return;try{await removeReadingLog(r.id);list.value=list.value.filter(x=>x.id!==r.id)}catch(e){uni.showToast({title:'失败',icon:'none'})}}}) }
 </script>
 
 <style scoped>

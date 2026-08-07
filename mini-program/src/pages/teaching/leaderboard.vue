@@ -36,7 +36,8 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listRewardRecords } from '@/api/scores'
 import { theme } from '../../common/store'
 
 const classes = ref([])
@@ -71,11 +72,11 @@ const top3 = computed(() => ranked.value.slice(0, 3))
 const topScore = computed(() => ranked.value[0]?.total || 1)
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) {
-    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
-    records.value = await api.getList('/reward-records', { silent: true })
+    students.value = await listStudents({ classId: classId.value, silent: true })
+    records.value = await listRewardRecords({ silent: true })
   }
 }
 onShow(load)

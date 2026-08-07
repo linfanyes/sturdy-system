@@ -58,7 +58,10 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import {
+  listClasses, listStudents, listAttendances, listGrades,
+  listHomework, listNotes, listTodos, listNotices, listSemesters, listExams,
+} from '@/api/teaching'
 import { theme } from '../../common/store'
 import { exportXlsx } from '../../common/exporter'
 import { safeParse } from '../../common/util'
@@ -82,7 +85,7 @@ let trendChart = null
 
 // 学期筛选
 async function loadSemesters() {
-  try { semesterList.value = await api.get('/semesters') || []; semesterIdx.value = 0 }
+  try { semesterList.value = await listSemesters() || []; semesterIdx.value = 0 }
   catch { semesterList.value = [] }
 }
 function onSemesterChange(e) { semesterIdx.value = e.detail.value; load() }
@@ -91,14 +94,14 @@ async function load() {
   uni.showLoading({ title: '统计中…', mask: false })
   try {
     const res = await Promise.allSettled([
-      api.get('/classes'),
-      api.get('/students'),
-      api.get('/attendances'),
-      api.get('/grades'),
-      api.get('/homework'),
-      api.get('/notes'),
-      api.get('/todos'),
-      api.get('/notices'),
+      listClasses(),
+      listStudents(),
+      listAttendances(),
+      listGrades(),
+      listHomework(),
+      listNotes(),
+      listTodos(),
+      listNotices(),
     ])
     const [classes, students, atts, grades, homework, notes, todos, notices] = res.map((r) =>
       r.status === 'fulfilled' ? r.value || [] : [],
@@ -171,13 +174,13 @@ onPullDownRefresh(async () => { await load(); uni.stopPullDownRefresh() })
 async function loadExamTrend() {
   try {
     const semester = semesterList.value.length ? semesterList.value[semesterIdx.value]?.name : ''
-    let exams = await api.getList('/exams', { silent: true }) || []
+    let exams = await listExams({ silent: true }) || []
     if (semester) exams = exams.filter(e => e.term === semester)
     if (!exams.length) return
     exams.sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     const labels = [], data = []
     for (const exam of exams.slice(-12)) { // 最近12次
-      const grades = await api.getList('/grades?examId=' + exam.id, { silent: true }) || []
+      const grades = await listGrades({ examId: exam.id, silent: true }) || []
       const scs = []
       grades.forEach(g => (g.scores || []).forEach(s => { if (s.score != null) scs.push(+s.score) }))
       if (scs.length) {

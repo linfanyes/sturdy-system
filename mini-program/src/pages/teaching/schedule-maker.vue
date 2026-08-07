@@ -47,7 +47,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
 import { theme } from '../../common/store'
 
 const PERIODS = 8
@@ -186,7 +186,7 @@ function load() {
 
 async function loadClasses() {
   try {
-    const res = await api.get('/classes?take=200')
+    const res = await listClasses({ take: 200 })
     classes.value = Array.isArray(res) ? res : (res.items || [])
     classOpts.value = classes.value.map(c => c.name)
   } catch (e) { classes.value = [] }

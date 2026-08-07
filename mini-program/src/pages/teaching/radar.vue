@@ -44,7 +44,7 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents, listGrades } from '@/api/teaching'
 import { theme } from '../../common/store'
 
 const classes = ref([])
@@ -93,11 +93,11 @@ const detailData = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) {
-    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
-    grades.value = await api.getList('/grades', { silent: true })
+    students.value = await listStudents({ classId: classId.value, silent: true })
+    grades.value = await listGrades({ silent: true })
   }
 }
 onShow(load)

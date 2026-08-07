@@ -137,7 +137,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { getExam, listClasses, getGradesAnalysisExam, getGradesAnalysisRank } from '@/api/teaching'
 import { theme } from '../../common/store'
 
 const examId = ref('')
@@ -270,21 +270,21 @@ async function load() {
   try {
     // 若未传 classId，先取考试信息回填
     if (!classId.value) {
-      const ex = await api.get('/exams/' + examId.value).catch(() => null)
+      const ex = await getExam(examId.value).catch(() => null)
       exam.value = ex
       if (ex?.classId) classId.value = ex.classId
     }
 
     const tasks = [
-      api.get('/exams/' + examId.value).catch(() => null),
-      api.get('/classes').catch(() => []),
+      getExam(examId.value).catch(() => null),
+      listClasses().catch(() => []),
     ]
     if (classId.value) {
       tasks.push(
-        api.get('/grades/analysis/exam?classId=' + classId.value + '&examId=' + examId.value).catch(() => null),
+        getGradesAnalysisExam(classId.value, examId.value).catch(() => null),
       )
       tasks.push(
-        api.get('/grades/analysis/rank?classId=' + classId.value + '&examId=' + examId.value).catch(() => null),
+        getGradesAnalysisRank(classId.value, examId.value).catch(() => null),
       )
     } else {
       tasks.push(Promise.resolve(null))
