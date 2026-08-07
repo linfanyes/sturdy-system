@@ -119,6 +119,10 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   listClasses(@CurrentSchoolAdmin() a: any) { return this.svc.listClasses(a.schoolId) }
 
+  @Get('classes/:id')
+  @UseGuards(JwtAuthGuard)
+  getClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.getClass(a.schoolId, id) }
+
   @Post('classes')
   @UseGuards(JwtAuthGuard)
   createClass(@CurrentSchoolAdmin() a: any, @Body() b: CreateClassDto) { return this.svc.createClass(a.schoolId, b) }

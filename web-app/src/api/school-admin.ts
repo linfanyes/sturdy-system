@@ -100,6 +100,10 @@ export function listClasses(skip = 0, take = 100) {
   return request.get<any, { items: ClassItem[]; total: number }>('/school-admin/classes', { params: { skip, take } })
 }
 
+export function getClass(id: string) {
+  return request.get<any, ClassItem>(`/school-admin/classes/${id}`)
+}
+
 export function createClass(dto: {
   name: string
   grade: string

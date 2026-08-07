@@ -406,6 +406,24 @@ export class SchoolAdminService {
     return { items, total }
   }
 
+  /** 单个班级详情（校验班级属于本校） */
+  async getClass(schoolId: string, id: string) {
+    const cls = await this.classRepo.findOne({ where: { id } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    // 验证班级属于本校
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权查看此班级')
+    // 学生人数
+    const studentCount = await this.studentRepo.count({ where: { classId: id } })
+    ;(cls as any).studentCount = studentCount
+    // 科任老师（含班主任）
+    const allMembers = await this.classMemberRepo.find({ where: { classId: id } })
+    ;(cls as any).members = allMembers
+    const subjectMembers = allMembers.filter(m => m.role === 'subject')
+    ;(cls as any).subjectTeachers = subjectMembers.map(m => ({ teacherId: m.teacherId, subjects: m.subjects || [] }))
+    return cls
+  }
+
   /** 创建班级（班主任必须是本校教师，由校管指定班主任身份；支持指定班主任任教学科 + 一次性加入科任老师） */
   async createClass(schoolId: string, dto: {
     name: string; grade: string; classNo: string; headTeacher: string; headTeacherId: string;

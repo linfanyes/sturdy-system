@@ -49,6 +49,7 @@ export const routes: RouteRecordRaw[] = [
       { path: '', name: 'school-admin-dashboard', component: () => import('@/views/school-admin/Dashboard.vue'), meta: { title: '校管工作台' } },
       { path: 'teachers', name: 'school-admin-teachers', component: () => import('@/views/school-admin/Teachers.vue'), meta: { title: '教师管理' } },
       { path: 'classes', name: 'school-admin-classes', component: () => import('@/views/school-admin/Classes.vue'), meta: { title: '班级管理' } },
+      { path: 'classes/:id', name: 'school-admin-class-detail', component: () => import('@/views/school-admin/ClassDetail.vue'), meta: { title: '班级详情' } },
       { path: 'students', name: 'school-admin-students', component: () => import('@/views/school-admin/Students.vue'), meta: { title: '学生管理' } },
       { path: 'notices', name: 'school-admin-notices', component: () => import('@/views/school-admin/Notices.vue'), meta: { title: '学校公告' } },
       { path: 'textbooks', name: 'school-admin-textbooks', component: () => import('@/views/school-admin/Textbooks.vue'), meta: { title: '教材知识库' } },

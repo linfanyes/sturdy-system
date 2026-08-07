@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import {
   listClasses, createClass, updateClass, deleteClass,
@@ -9,7 +10,9 @@ import {
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
-import { Plus, Search, Trash2, Edit3, Upload, Printer, Download, Users } from 'lucide-vue-next'
+import { Plus, Search, Trash2, Edit3, Upload, Printer, Download, Users, Eye } from 'lucide-vue-next'
+
+const router = useRouter()
 
 /* ============ 列表 ============ */
 const loading = ref(false)
@@ -320,6 +323,9 @@ function handlePrint() {
               </div>
             </td>
             <td class="px-4 py-3 text-right space-x-1">
+              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-sky2-500" title="详情" @click="router.push('/school-admin/classes/' + c.id)">
+                <Eye class="w-4 h-4" />
+              </button>
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" @click="openEdit(c)">
                 <Edit3 class="w-4 h-4" />
               </button>
