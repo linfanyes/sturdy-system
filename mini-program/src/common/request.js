@@ -355,6 +355,16 @@ function ab2str(buf) {
 
 export { batchRun }
 
+/** 从任意路径获取原始数据（用于数据导出/清空等动态路径场景） */
+export function getRaw(path) {
+  return api.get(path)
+}
+
+/** 删除任意路径资源（用于数据清空等动态路径场景） */
+export function deleteRaw(path) {
+  return api.del(path)
+}
+
 /** 家长端专用请求封装：使用家长令牌（parent.token），其余与 api 一致 */
 export const parentApi = {
   get: (p) => request(p, 'GET', {}, parent.token),

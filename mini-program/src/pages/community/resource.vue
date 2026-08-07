@@ -86,6 +86,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { listResources, createResource, removeResource } from '@/api/resource'
+import { getZhzxCourses } from '@/api/resource-library'
 import { theme } from '../../common/store'
 import { isNonEmpty, isUrl, clip, MAX_LEN } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
@@ -186,7 +187,7 @@ const zhzxShown = computed(() => (zhzxSub.value === '全部' ? zhzx.value : zhzx
 async function loadZhzx() {
   zhzxLoading.value = true
   try {
-    zhzx.value = await api.get('/online-resources/zhzx/courses')
+    zhzx.value = await getZhzxCourses()
   } catch (e) {
     zhzx.value = []
   } finally {

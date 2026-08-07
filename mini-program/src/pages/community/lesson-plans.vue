@@ -41,7 +41,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listLessonPlans } from '@/api/ai-generated'
 import { theme } from '../../common/store'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
@@ -60,7 +60,7 @@ function fmt(ts) {
 async function load() {
   loading.value = true
   try {
-    const arr = await api.get('/generated/lesson-plans').catch(() => [])
+    const arr = await listLessonPlans().catch(() => [])
     list.value = Array.isArray(arr) ? arr : (arr.items || [])
   } catch (e) { list.value = [] } finally { loading.value = false }
 }

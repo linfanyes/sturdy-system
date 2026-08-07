@@ -156,7 +156,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listPoems, listFormulas, listWords, listWordCategories } from '@/api/resource-library'
 import { theme, auth } from '../../common/store'
 
 const tabs = [
@@ -197,75 +197,57 @@ const wordCategory = ref('全部')
 
 const loading = reactive({ poems: false, formulas: false, words: false })
 
-// 构建查询串：跳过空值
-function qs(params) {
-  const parts = []
-  for (const k in params) {
-    const v = params[k]
-    if (v !== '' && v !== undefined && v !== null) {
-      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(v))
-    }
-  }
-  return parts.length ? '?' + parts.join('&') : ''
-}
-
-// 列表加载帮手：loading 提示 + 失败 toast + 数组兜底
-async function fetchList(path, loadingText) {
-  try {
-    const data = await api.get(path)
-    if (Array.isArray(data)) return data
-    if (data && Array.isArray(data.items)) return data.items
-    if (data && Array.isArray(data.list)) return data.list
-    return []
-  } catch (e) {
-    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
-    return []
-  } finally {
-  }
-}
-
 async function loadPoems() {
   loading.poems = true
-  poems.value = await fetchList(
-    '/resource-library/poems' + qs({
+  try {
+    const data = await listPoems({
       grade: poemGrade.value,
       dynasty: poemDynasty.value,
       keyword: poemKeyword.value.trim(),
-    }),
-    '加载古诗词'
-  )
+    })
+    poems.value = Array.isArray(data) ? data : (data?.items || data?.list || [])
+  } catch (e) {
+    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    poems.value = []
+  }
   loading.poems = false
 }
 
 async function loadFormulas() {
   loading.formulas = true
-  const cat = formulaCategory.value === '全部' ? '' : formulaCategory.value
-  formulas.value = await fetchList(
-    '/resource-library/formulas' + qs({
+  try {
+    const cat = formulaCategory.value === '全部' ? '' : formulaCategory.value
+    const data = await listFormulas({
       category: cat,
       keyword: formulaKeyword.value.trim(),
-    }),
-    '加载公式'
-  )
+    })
+    formulas.value = Array.isArray(data) ? data : (data?.items || data?.list || [])
+  } catch (e) {
+    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    formulas.value = []
+  }
   loading.formulas = false
 }
 
 async function loadWords() {
   loading.words = true
-  const cat = wordCategory.value === '全部' ? '' : wordCategory.value
-  words.value = await fetchList(
-    '/resource-library/words' + qs({
+  try {
+    const cat = wordCategory.value === '全部' ? '' : wordCategory.value
+    const data = await listWords({
       category: cat,
       keyword: wordKeyword.value.trim(),
-    }),
-    '加载单词'
-  )
+    })
+    words.value = Array.isArray(data) ? data : (data?.items || data?.list || [])
+  } catch (e) {
+    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    words.value = []
+  }
   loading.words = false
 }
 
 async function loadWordCategories() {
   try {
-    const data = await api.get('/resource-library/words/categories')
+    const data = await listWordCategories()
     const arr = Array.isArray(data) ? data.filter(Boolean) : []
     if (arr.length) {
       wordCatOptions.value = ['全部', ...arr]

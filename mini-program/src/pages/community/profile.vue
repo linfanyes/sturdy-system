@@ -117,7 +117,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api, { batchRun, setMockMode } from '../../common/request'
+import { getRaw, deleteRaw, batchRun, setMockMode } from '../../common/request'
 import { getMe, updateMe } from '@/api/user'
 import { getAiSettings, updateAiSettings, getAppConfig, updateAppConfig, getAiProviders } from '@/api/config'
 import { listBackups, createBackup as createBackupApi, getBackup, removeBackup, autoBackup } from '@/api/backup'
@@ -254,7 +254,7 @@ async function exportData() {
     const out = { version: 2, user: me, exportedAt: Date.now() }
     await Promise.all(paths.map(async (p) => {
       const key = p.replace(/^\//, '').replace(/-/g, '_')
-      try { out[key] = await api.get(p) } catch (e) { out[key] = [] }
+      try { out[key] = await getRaw(p) } catch (e) { out[key] = [] }
     }))
     try { out.ai_settings = await getAiSettings() } catch (e) { out.ai_settings = null }
     try { out.app_config = await getAppConfig() } catch (e) { out.app_config = null }
@@ -378,9 +378,9 @@ function resetData() {
           const tasks = []
           for (const p of paths) {
             try {
-              const list = await api.get(p)
+              const list = await getRaw(p)
               for (const item of (list || [])) {
-                if (item && item.id) tasks.push(api.del(p + '/' + item.id))
+                if (item && item.id) tasks.push(deleteRaw(p + '/' + item.id))
               }
             } catch {
               // ignore

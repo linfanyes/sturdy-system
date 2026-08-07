@@ -83,8 +83,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { getTextbookTree, searchTextbooks } from '@/api/textbook'
 import { auth, theme } from '../../common/store'
-import api from '../../common/request'
 
 const dark = computed(() => theme.mode === 'dark')
 const loading = ref(false)
@@ -113,7 +113,7 @@ async function loadTree() {
     const params = {}
     if (SUBJECTS[subjectIdx.value]) params.subject = SUBJECTS[subjectIdx.value]
     if (GRADES[gradeIdx.value]) params.grade = GRADES[gradeIdx.value]
-    const res = await api.get('/textbooks/tree', { params })
+    const res = await getTextbookTree(params)
     tree.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e) {
     tree.value = []
@@ -144,7 +144,7 @@ function toggleUnit(id) {
 async function doSearch() {
   if (!keyword.value.trim()) { searchResults.value = []; return }
   try {
-    const res = await api.get('/textbooks/search', { params: { keyword: keyword.value.trim() } })
+    const res = await searchTextbooks({ keyword: keyword.value.trim() })
     searchResults.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e) {
     searchResults.value = []

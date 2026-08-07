@@ -63,7 +63,8 @@
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme, auth } from '../../common/store'
-import api from '../../common/request'
+import { listClasses, listTodos } from '@/api/teaching'
+import { listParents, createClassGroup, getUserSig } from '@/api/im'
 import { pickAndCompressImage } from '../../common/image'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -418,7 +419,7 @@ function previewImg(url) {
 async function loadClasses() {
   if (classes.value.length) return classes.value
   try {
-    classes.value = (await api.getList('/classes', { silent: true })) || []
+    classes.value = (await listClasses({ silent: true })) || []
   } catch (e) {
     classes.value = []
   }
@@ -453,7 +454,7 @@ async function pickParentFromRoster() {
   if (!cls) return
   let roster = []
   try {
-    roster = (await api.get('/im/parents?classId=' + cls.id)) || []
+    roster = (await listParents(cls.id)) || []
   } catch (e) {
     roster = []
   }
@@ -470,7 +471,7 @@ async function pickParentFromRoster() {
   })
 }
 
-async function createClassGroup() {
+async function doCreateClassGroup() {
   const cls = await pickClass()
   if (!cls) return
   // 已建群：直接打开
@@ -484,7 +485,7 @@ async function createClassGroup() {
   }
   let roster = []
   try {
-    roster = (await api.get('/im/parents?classId=' + cls.id)) || []
+    roster = (await listParents(cls.id)) || []
   } catch (e) {
     roster = []
   }
@@ -498,7 +499,7 @@ async function createClassGroup() {
     const gid = res.data.group.groupID
     uni.showToast({ title: '班级群已创建', icon: 'success' })
     try {
-      await api.post('/im/class-group', { classId: cls.id, groupId: gid })
+      await createClassGroup({ classId: cls.id, groupId: gid })
     } catch {
       // ignore
     }
@@ -515,7 +516,7 @@ function newConv() {
     itemList: ['从花名册选家长', '一键全班群', '发起单聊（输入账号）', '进入班级群（输入群号）', '示例：张三妈妈'],
     success: (r) => {
       if (r.tapIndex === 0) pickParentFromRoster()
-      else if (r.tapIndex === 1) createClassGroup()
+      else if (r.tapIndex === 1) doCreateClassGroup()
       else if (r.tapIndex === 2) promptC2C()
       else if (r.tapIndex === 3) promptGroup()
       else if (r.tapIndex === 4) openByTo('parent_zhang', '张三妈妈', 'C2C', '示例')
@@ -594,7 +595,7 @@ onShow(async () => {
   if (demoMode.value && convList.value.length === 0) seedDemo()
   try {
     const userId = (auth.user && auth.user.id) || 'teacher'
-    const r = await api.post('/im/user-sig', { userId })
+    const r = await getUserSig({ userId })
     if (r && r.sdkAppId && r.userSig) {
       loginUser.value = userId
       await initTim(r.sdkAppId, r.userSig)
