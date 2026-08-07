@@ -46,7 +46,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listClassExpenses, createClassExpense, removeClassExpense } from '@/api/class-finance'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isAmount } from '../../common/validators'
@@ -70,13 +71,13 @@ const totalOut = computed(() => list.value.filter((x) => Number(x.amount) < 0).r
 const balance = computed(() => totalIn.value + totalOut.value)
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadList()
 }
 async function loadList() {
   if (!classId.value) return
-  list.value = await api.getList('/class-expenses?classId=' + encodeURIComponent(classId.value), { silent: true })
+  list.value = await listClassExpenses({ classId: classId.value, silent: true })
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -93,7 +94,7 @@ async function add() {
   if (!['收入', '支出'].includes(form.value.type)) return uni.showToast({ title: '类型必须是收入或支出', icon: 'none' })
   saving.value = true
   try {
-    const r = await api.post('/class-expenses', {
+    const r = await createClassExpense({
       classId: classId.value, type: form.value.type, category: form.value.category,
       amount: (form.value.type === '支出' ? -1 : 1) * Math.abs(Number(form.value.amount) || 0), handler: form.value.handler,
       date: form.value.date, description: form.value.description,
@@ -109,7 +110,7 @@ async function del(it) {
   uni.showModal({ title: '删除', content: String(it.amount), success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…', mask: true })
-    try { await api.del('/class-expenses/' + it.id); list.value = list.value.filter((x) => x.id !== it.id) }
+    try { await removeClassExpense(it.id); list.value = list.value.filter((x) => x.id !== it.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })

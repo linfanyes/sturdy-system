@@ -12,3 +12,11 @@ export function parseFile(fileName, fileData) {
 export function ocrImage(image) {
   return api.post('/ai/ocr', { image })
 }
+/** AI 生成图片 */
+export function genImage(payload) {
+  return api.post('/ai/gen-image', payload)
+}
+/** AI 生成视频 */
+export function genVideo(payload) {
+  return api.post('/ai/gen-video', payload)
+}

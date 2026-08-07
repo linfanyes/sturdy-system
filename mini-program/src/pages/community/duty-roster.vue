@@ -81,7 +81,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listDutyRosters, createDutyRoster, updateDutyRoster, removeDutyRoster } from '@/api/duty-roster'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isNonEmpty } from '../../common/validators'
@@ -102,13 +103,13 @@ const selName = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadRoster()
 }
 async function loadRoster() {
   if (!classId.value) { rosters.value = []; return }
-  const list = await api.getList('/duty-rosters?classId=' + encodeURIComponent(classId.value), { silent: true })
+  const list = await listDutyRosters({ classId: classId.value, silent: true })
   rosters.value = list.map((r) => ({
     ...r,
     type: dutyTypeLabel(r.type),
@@ -189,11 +190,11 @@ async function save() {
   saving.value = true
   try {
     if (editId.value) {
-      const r = await api.patch('/duty-rosters/' + editId.value, payload)
+      const r = await updateDutyRoster(editId.value, payload)
       Object.assign(rosters.value.find((x) => x.id === editId.value), r)
       uni.showToast({ title: '已更新', icon: 'none' })
     } else {
-      const r = await api.post('/duty-rosters', payload)
+      const r = await createDutyRoster(payload)
       rosters.value.push({ ...r, assignments: payload.assignments })
       uni.showToast({ title: '已创建', icon: 'none' })
     }
@@ -210,7 +211,7 @@ function remove(r) {
     success: async (res) => {
       if (!res.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
-      try { await api.del('/duty-rosters/' + r.id); rosters.value = rosters.value.filter((x) => x.id !== r.id); uni.showToast({ title: '已删除', icon: 'none' }) }
+      try { await removeDutyRoster(r.id); rosters.value = rosters.value.filter((x) => x.id !== r.id); uni.showToast({ title: '已删除', icon: 'none' }) }
       catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
       finally { uni.hideLoading() }
     }

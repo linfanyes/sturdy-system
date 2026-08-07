@@ -22,7 +22,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listPickerHistory, removePickerHistory } from '@/api/picker-history'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
@@ -30,10 +31,10 @@ const list = ref([])
 const classMap = ref({})
 
 async function load() {
-  const classes = await api.getList('/classes', { silent: true })
+  const classes = await listClasses({ silent: true })
   classMap.value = {}
   for (const c of classes) classMap.value[c.id] = c.name
-  list.value = await api.getList('/picker-history', { loading: true, loadingText: '加载抽签历史' })
+  list.value = await listPickerHistory({ loading: true, loadingText: '加载抽签历史' })
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -55,7 +56,7 @@ function clearAll() {
   uni.showModal({ title: '清空', content: '确定清空全部抽签历史？', success: async (m) => {
     if (!m.confirm) return
     try {
-      for (const it of list.value) await api.del('/picker-history/' + it.id)
+      for (const it of list.value) await removePickerHistory(it.id)
       list.value = []
       uni.showToast({ title: '已清空', icon: 'none' })
     } catch (e) { uni.showToast({ title: '清空失败', icon: 'none' }) }

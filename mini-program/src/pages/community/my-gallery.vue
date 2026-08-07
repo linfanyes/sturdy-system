@@ -74,7 +74,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listMyGalleries, createMyGallery, updateMyGalleryPhotos, removeMyGallery } from '@/api/my-gallery'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { pickAndCompressImage } from '../../common/image'
@@ -105,7 +105,7 @@ function findAlbum(photoSrc) {
 }
 
 async function load() {
-  const arr = await api.getList('/my-galleries', { loading: true, loadingText: '加载相册' })
+  const arr = await listMyGalleries({ loading: true, loadingText: '加载相册' })
   list.value = arr || []
 }
 
@@ -128,7 +128,7 @@ async function saveAlbum() {
   if (!form.value.title) return uni.showToast({ title: '请输入相册标题', icon: 'none' })
   saving.value = true
   try {
-    const r = await api.post('/my-galleries', { ...form.value })
+    const r = await createMyGallery({ ...form.value })
     list.value.unshift(r)
     showAdd.value = false
     form.value = { title: '', date: new Date().toISOString().slice(0, 10), description: '', photos: [] }
@@ -153,8 +153,8 @@ async function commitMove(toId) {
   try {
     const fPhotos = (from.photos || []).filter((p) => p !== movePhotoId.value)
     const tPhotos = [...(to.photos || []), movePhotoId.value]
-    await api.patch('/my-galleries/' + from.id, { photos: fPhotos })
-    await api.patch('/my-galleries/' + to.id, { photos: tPhotos })
+    await updateMyGalleryPhotos(from.id, fPhotos)
+    await updateMyGalleryPhotos(to.id, tPhotos)
     from.photos = fPhotos; to.photos = tPhotos
     uni.showToast({ title: '已移动', icon: 'none' })
   } catch (e) {
@@ -166,7 +166,7 @@ async function commitMove(toId) {
 function del(it) {
   uni.showModal({ title: '删除相册', content: '确定删除「' + it.title + '」？', success: async (m) => {
     if (!m.confirm) return
-    try { await api.del('/my-galleries/' + it.id); list.value = list.value.filter((x) => x.id !== it.id) }
+    try { await removeMyGallery(it.id); list.value = list.value.filter((x) => x.id !== it.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
   }})
 }

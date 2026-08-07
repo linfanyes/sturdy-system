@@ -10,7 +10,6 @@
     </view>
 
     <view class="toolbar">
-      <text v-if="tab === 'inbox' && unreadCount" class="act" @click="markAllRead">📭 一键全部已读</text>
       <text class="act" @click="showCompose = true">✏️ 写留言</text>
     </view>
 
@@ -60,7 +59,7 @@
         </view>
         <view class="btn-row">
           <button class="btn cancel" @click="showCompose = false">取消</button>
-          <button class="btn send" :disabled="sending" @click="sendMessage">{{ sending ? '发送中…' : '发送' }}</button>
+          <button class="btn send" :disabled="sending" @click="doSend">{{ sending ? '发送中…' : '发送' }}</button>
         </view>
       </view>
     </view>
@@ -88,6 +87,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { listMessages, listSentMessages, listRecipients, sendMessage, markMessageRead, markAllRead, removeMessage } from '@/api/message'
 import { theme, auth } from '../../common/store'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
@@ -157,8 +157,8 @@ async function load() {
   loading.value = true
   try {
     const [inbox, sent] = await Promise.all([
-      api.get('/messages?skip=0&take=20').catch(() => []),
-      api.get('/messages/sent?skip=0&take=20').catch(() => []),
+      listMessages({ skip: 0, take: 20 }).catch(() => []),
+      listSentMessages({ skip: 0, take: 20 }).catch(() => []),
     ])
     inboxList.value = Array.isArray(inbox) ? inbox : (inbox.items || [])
     sentList.value = Array.isArray(sent) ? sent : (sent.items || [])
@@ -172,14 +172,14 @@ async function load() {
 
 async function loadRecipients() {
   try {
-    const r = await api.get('/messages/recipients').catch(() => [])
+    const r = await listRecipients().catch(() => [])
     recipients.value = Array.isArray(r) ? r : (r.items || [])
   } catch (e) {
     recipients.value = []
   }
 }
 
-async function sendMessage() {
+async function doSend() {
   if (sending.value) return
   if (!composeForm.value.title.trim()) return uni.showToast({ title: '请填写标题', icon: 'none' })
   if (!composeForm.value.content.trim()) return uni.showToast({ title: '请填写内容', icon: 'none' })
@@ -207,7 +207,7 @@ async function sendMessage() {
       payload.recipientId = composeForm.value.recipientId
       payload.recipientRole = composeForm.value.recipientRole
     }
-    await api.post('/messages', payload)
+    await sendMessage(payload)
     showCompose.value = false
     composeForm.value = { recipientId: '', recipientRole: 'teacher', title: '', content: '' }
     uni.showToast({ title: '留言已发送', icon: 'success' })
@@ -221,7 +221,7 @@ async function sendMessage() {
 
 async function markRead(msg) {
   try {
-    await api.patch('/messages/' + msg.id + '/read')
+    await markMessageRead(msg.id)
     msg.read = true
     const item = inboxList.value.find(m => m.id === msg.id)
     if (item) item.read = true
@@ -230,10 +230,10 @@ async function markRead(msg) {
   }
 }
 
-async function markAllRead() {
+async function doMarkAllRead() {
   uni.showLoading({ title: '标记中…', mask: true })
   try {
-    await api.patch('/messages/mark-all-read')
+    await markAllRead()
     inboxList.value.forEach(m => { m.read = true })
     uni.showToast({ title: '已全部标记为已读', icon: 'success' })
   } catch (e) {
@@ -251,7 +251,7 @@ async function deleteMsg(msg) {
     success: async (r) => {
       if (!r.confirm) return
       try {
-        await api.del('/messages/' + msg.id)
+        await removeMessage(msg.id)
         if (tab.value === 'inbox') {
           inboxList.value = inboxList.value.filter(m => m.id !== msg.id)
         } else {

@@ -97,7 +97,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { getTeacherDetail } from '@/api/teacher'
 import { theme } from '../../common/store'
 
 const loading = ref(false)
@@ -118,7 +118,7 @@ async function loadDetail() {
   loading.value = true
   try {
     // 后端 GET /teachers/:id/detail?userId=xxx 聚合账号 + 通讯录 + 任课班级
-    detail.value = await api.get('/teachers/' + id + '/detail', { params: { userId: userId || id } })
+    detail.value = await getTeacherDetail(id, { params: { userId: userId || id } })
   } catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
     detail.value = null

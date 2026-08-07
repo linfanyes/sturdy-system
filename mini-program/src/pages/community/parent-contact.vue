@@ -68,7 +68,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listParentContacts, createParentContact, updateParentContact, removeParentContact } from '@/api/parent-contact'
 import { isPhone } from '../../common/validators'
 import { theme } from '../../common/store'
 
@@ -95,7 +96,7 @@ function pickBatchClass(e) {
   const c = classList.value[e.detail.value]
   batchClassName.value = c.name
   batchSel.value = new Set()
-  api.get('/students?classId=' + encodeURIComponent(c.id))
+  listStudents(c.id)
     .then((arr) => {
       batchStudents.value = (arr || []).filter((s) => s.parentPhone)
     })
@@ -126,7 +127,7 @@ function sendBatch() {
       uni.showToast({ title: '已复制 ' + selStudents.length + ' 条通知', icon: 'success' })
       // 自动生成家长联系记录
       Promise.all(selStudents.map((s) =>
-        api.post('/parent-contacts', {
+        createParentContact({
           studentId: s.id, studentName: s.name, parentName: s.parentName || '',
           phone: s.parentPhone || '', method: '通知', date: new Date().toISOString().slice(0, 10),
           content: batchMsg.value.replace(/{{name}}/g, s.name).replace(/{{parent}}/g, s.parentName || '家长'),
@@ -165,15 +166,14 @@ const classNameOf = (id) => {
 }
 
 async function loadClasses() {
-  classList.value = await api.getList('/classes', { silent: true })
+  classList.value = await listClasses({ silent: true })
 }
 
 async function load() {
   const sel = classOptions.value[classIdx.value]
   const cid = sel ? sel.value : ''
-  list.value = await api.getList(
-    cid ? '/parent-contacts?classId=' + encodeURIComponent(cid) : '/parent-contacts',
-    { loading: true, loadingText: '加载联系记录' },
+  list.value = await listParentContacts(
+    cid ? { classId: cid, loading: true, loadingText: '加载联系记录' } : { loading: true, loadingText: '加载联系记录' }
   )
 }
 
@@ -217,7 +217,7 @@ async function add() {
   const cls = classList.value[formClassIdx.value]
   saving.value = true
   try {
-    const r = await api.post('/parent-contacts', {
+    const r = await createParentContact({
       ...form.value,
       classId: cls.id,
       method: form.value.phone ? '电话' : '微信',
@@ -236,7 +236,7 @@ async function follow(p) {
     success: async (m) => {
       if (!m.confirm) return
       uni.showLoading({ title: '保存中…', mask: true })
-      try { const r = await api.patch('/parent-contacts/' + p.id, { followUp: m.content }); p.followUp = r.followUp; uni.showToast({ title: '已更新', icon: 'none' }) }
+      try { const r = await updateParentContact(p.id, { followUp: m.content }); p.followUp = r.followUp; uni.showToast({ title: '已更新', icon: 'none' }) }
       catch (e) { uni.showToast({ title: '失败', icon: 'none' }) }
       finally { uni.hideLoading() }
     },
@@ -246,7 +246,7 @@ async function del(p) {
   uni.showModal({ title: '删除', content: p.studentName, success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…', mask: true })
-    try { await api.del('/parent-contacts/' + p.id); list.value = list.value.filter((x) => x.id !== p.id) }
+    try { await removeParentContact(p.id); list.value = list.value.filter((x) => x.id !== p.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })

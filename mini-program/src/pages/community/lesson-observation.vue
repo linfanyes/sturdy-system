@@ -60,7 +60,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listLessonObservations, createLessonObservation, updateLessonObservation, removeLessonObservation } from '@/api/lesson-observation'
 import { theme } from '../../common/store'
 
 const ratings = ['优秀', '良好', '一般', '待改进']
@@ -82,8 +83,8 @@ function today() {
 }
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
-  const arr = await api.getList('/lesson-observations', { loading: true, loadingText: '加载听课' })
+  classes.value = await listClasses({ silent: true })
+  const arr = await listLessonObservations({ loading: true, loadingText: '加载听课' })
   arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   list.value = arr
 }
@@ -116,10 +117,10 @@ async function save() {
   const payload = { ...form.value }
   try {
     if (editing.value) {
-      const r = await api.patch('/lesson-observations/' + editing.value.id, payload)
+      const r = await updateLessonObservation(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/lesson-observations', payload)
+      const r = await createLessonObservation(payload)
       list.value.unshift(r)
     }
     show.value = false
@@ -133,7 +134,7 @@ async function save() {
 function del(o) {
   uni.showModal({ title: '删除', content: '确定删除此听课记录？', success: async (m) => {
     if (!m.confirm) return
-    try { await api.del('/lesson-observations/' + o.id); list.value = list.value.filter((x) => x.id !== o.id) }
+    try { await removeLessonObservation(o.id); list.value = list.value.filter((x) => x.id !== o.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
   } })
 }

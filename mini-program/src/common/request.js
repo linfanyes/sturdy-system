@@ -190,12 +190,13 @@ export const api = {
    * @returns {Promise<any[]>} 永远返回数组（失败/非数组时返回 []）
    */
   async getList(p, opts = {}) {
-    const { loading = false, loadingText = '加载中', silent = false } = opts
+    const { loading = false, loadingText = '加载中', silent = false, ...queryParams } = opts
+    const path = p + queryString(queryParams)
     if (loading) {
       try { uni.showLoading({ title: loadingText, mask: false }) } catch (e) { console.error('[mini catch]', e) }
     }
     try {
-      const data = await request(p)
+      const data = await request(path)
       // 兼容纯数组 / { list: [] } / { items: [], total: N } 三种格式
       return Array.isArray(data) ? data : (data && (data.items || data.list)) || []
     } catch (e) {

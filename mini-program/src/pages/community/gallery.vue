@@ -71,7 +71,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses } from '@/api/teaching'
+import { listGalleries, createGallery, updateGalleryPhotos, removeGallery } from '@/api/gallery'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { compressImage } from '../../common/image'
@@ -107,14 +108,14 @@ const totalCount = computed(() => list.value.reduce((s, it) => s + photosOf(it).
 const targetAlbums = computed(() => list.value.filter((x) => x.id !== (movePhoto.value && movePhoto.value.albumId)))
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadList()
 }
 async function loadList() {
   if (!classId.value) return
   // 服务端按 classId 过滤，避免拉全量再前端 filter
-  const arr = await api.getList('/class-galleries?classId=' + encodeURIComponent(classId.value), { silent: true })
+  const arr = await listGalleries({ classId: classId.value, silent: true })
   list.value = arr.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 onShow(load)
@@ -140,8 +141,8 @@ async function doMove(album) {
   const tPhotos = [...photosOf(to), src]
   uni.showLoading({ title: '移动中…' })
   try {
-    await api.patch('/class-galleries/' + fromId, { photos: fPhotos })
-    await api.patch('/class-galleries/' + toId, { photos: tPhotos })
+    await updateGalleryPhotos(fromId, fPhotos)
+    await updateGalleryPhotos(toId, tPhotos)
     from.photos = fPhotos
     to.photos = tPhotos
     movePhoto.value = null
@@ -179,7 +180,7 @@ async function add() {
   if (!form.value.photos.length) return uni.showToast({ title: '请添加照片', icon: 'none' })
   saving.value = true
   try {
-    const r = await api.post('/class-galleries', {
+    const r = await createGallery({
       classId: classId.value, title: form.value.title, date: form.value.date,
       description: form.value.description, photos: form.value.photos,
     })
@@ -193,7 +194,7 @@ async function add() {
 async function del(it) {
   uni.showModal({ title: '删除相册', content: it.title, success: async (m) => {
     if (!m.confirm) return
-    try { await api.del('/class-galleries/' + it.id); list.value = list.value.filter((x) => x.id !== it.id) }
+    try { await removeGallery(it.id); list.value = list.value.filter((x) => x.id !== it.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
   } })
 }

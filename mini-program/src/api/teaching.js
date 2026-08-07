@@ -4,6 +4,10 @@ import api from '../common/request'
 export function listClasses(opts = {}) {
   return api.getList('/classes', opts)
 }
+/** 创建班级 */
+export function createClass(payload) {
+  return api.post('/classes', payload)
+}
 /** 学生列表 */
 export function listStudents(opts = {}) {
   return api.getList('/students', opts)

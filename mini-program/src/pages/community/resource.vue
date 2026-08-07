@@ -85,7 +85,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
-import api from '../../common/request'
+import { listResources, createResource, removeResource } from '@/api/resource'
 import { theme } from '../../common/store'
 import { isNonEmpty, isUrl, clip, MAX_LEN } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
@@ -173,7 +173,7 @@ const shown = computed(() => {
 })
 
 async function load() {
-  const apiList = await api.getList('/resources', { loading: true, loadingText: '加载资源' })
+  const apiList = await listResources({ loading: true, loadingText: '加载资源' })
   list.value = [...presetResources, ...apiList]
 }
 
@@ -246,7 +246,7 @@ async function save() {
   form.value.url = clip(form.value.url, MAX_LEN.URL)
   saving.value = true
   try {
-    await api.post('/resources', { ...form.value })
+    await createResource({ ...form.value })
     showAdd.value = false
     form.value = { title: '', url: '', image: '', category: '教学素材', tags: [], description: '' }
     uni.showToast({ title: '已添加', icon: 'none' })
@@ -265,7 +265,7 @@ async function del(r) {
       if (!m.confirm) return
       uni.showLoading({ title: '删除中…', mask: true })
       try {
-        await api.del('/resources/' + r.id)
+        await removeResource(r.id)
         list.value = list.value.filter((x) => x.id !== r.id)
       } catch (e) {
         uni.showToast({ title: '删除失败', icon: 'none' })

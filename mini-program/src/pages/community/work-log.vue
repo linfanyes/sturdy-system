@@ -64,7 +64,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listWorkLogs, createWorkLog, updateWorkLog, removeWorkLog } from '@/api/work-log'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
@@ -84,7 +84,7 @@ const totalClasses = computed(() => list.value.reduce((s, l) => s + (l.classCoun
 const totalHomework = computed(() => list.value.reduce((s, l) => s + (l.homeworkCount || 0), 0))
 
 async function load() {
-  const arr = await api.getList('/work-logs', { loading: true, loadingText: '加载工作日志' })
+  const arr = await listWorkLogs({ loading: true, loadingText: '加载工作日志' })
   arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   list.value = arr
 }
@@ -117,10 +117,10 @@ async function save() {
   }
   try {
     if (editing.value) {
-      const r = await api.patch('/work-logs/' + editing.value.id, payload)
+      const r = await updateWorkLog(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/work-logs', payload)
+      const r = await createWorkLog(payload)
       list.value.unshift(r)
     }
     show.value = false
@@ -134,7 +134,7 @@ async function save() {
 function del(l) {
   uni.showModal({ title: '删除', content: '确定删除此条工作日志？', success: async (m) => {
     if (!m.confirm) return
-    try { await api.del('/work-logs/' + l.id); list.value = list.value.filter((x) => x.id !== l.id) }
+    try { await removeWorkLog(l.id); list.value = list.value.filter((x) => x.id !== l.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
   } })
 }

@@ -141,7 +141,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listTeachers, createTeacher, updateTeacher, removeTeacher } from '@/api/teacher'
+import { listClasses } from '@/api/teaching'
 import { isPhone, isEmail } from '../../common/validators'
 import { theme } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -190,7 +191,7 @@ async function commitImport() {
   let ok = 0, fail = 0
   for (const row of importPreview.value) {
     try {
-      const r = await api.post('/teachers', { name: row.name, position: row.position, phone: row.phone, email: row.email })
+      const r = await createTeacher({ name: row.name, position: row.position, phone: row.phone, email: row.email })
       list.value.push(r)
       ok++
     } catch (e) { fail++ }
@@ -244,7 +245,7 @@ function teachSummary(t) {
 }
 
 async function load() {
-  const [t, c] = await Promise.all([api.getList('/teachers', { loading: true, loadingText: '加载通讯录' }), api.getList('/classes', { silent: true })])
+  const [t, c] = await Promise.all([listTeachers({ loading: true, loadingText: '加载通讯录' }), listClasses({ silent: true })])
   list.value = t || []
   classes.value = c || []
 }
@@ -258,7 +259,7 @@ function call(p) {
   uni.makePhoneCall({ phoneNumber: p, fail: () => {} })
 }
 async function star(t, v) {
-  try { const r = await api.patch('/teachers/' + t.id, { isStarred: v }); t.isStarred = r.isStarred }
+  try { const r = await updateTeacher(t.id, { isStarred: v }); t.isStarred = r.isStarred }
   catch (e) { uni.showToast({ title: '失败', icon: 'none' }) }
 }
 function goDetail(t) {
@@ -314,11 +315,11 @@ async function save() {
   saving.value = true
   try {
     if (editId.value) {
-      const r = await api.patch('/teachers/' + editId.value, { ...draft.value })
+      const r = await updateTeacher(editId.value, { ...draft.value })
       Object.assign(list.value.find((t) => t.id === editId.value), r)
       uni.showToast({ title: '已更新', icon: 'none' })
     } else {
-      const r = await api.post('/teachers', { ...draft.value })
+      const r = await createTeacher({ ...draft.value })
       list.value.push(r)
       uni.showToast({ title: '已添加同事', icon: 'none' })
     }
@@ -334,7 +335,7 @@ function remove(t) {
     title: '删除同事', content: '确定删除「' + t.name + ' 老师」吗？',
     success: async (r) => {
       if (!r.confirm) return
-      try { await api.del('/teachers/' + t.id); list.value = list.value.filter((x) => x.id !== t.id); uni.showToast({ title: '已删除', icon: 'none' }) }
+      try { await removeTeacher(t.id); list.value = list.value.filter((x) => x.id !== t.id); uni.showToast({ title: '已删除', icon: 'none' }) }
       catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     }
   })

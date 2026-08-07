@@ -65,7 +65,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClassActivities, createClassActivity, updateClassActivity, removeClassActivity } from '@/api/class-activities'
 import { theme } from '../../common/store'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
@@ -85,7 +85,7 @@ function photos(it) {
 async function load() {
   loading.value = true
   try {
-    const arr = await api.get('/class-activities').catch(() => [])
+    const arr = await listClassActivities().catch(() => [])
     list.value = Array.isArray(arr) ? arr.sort((a, b) => (b.date || '').localeCompare(a.date || '')) : (arr.items || [])
   } catch (e) { list.value = [] } finally { loading.value = false }
 }
@@ -138,9 +138,9 @@ async function save() {
   }
   try {
     if (editingId.value) {
-      await api.patch('/class-activities/' + editingId.value, payload)
+      await updateClassActivity(editingId.value, payload)
     } else {
-      await api.post('/class-activities', payload)
+      await createClassActivity(payload)
     }
     showForm.value = false
     form.value = { title: '', date: '', description: '', photos: [] }
@@ -156,7 +156,7 @@ async function del(it) {
     success: async (m) => {
       if (!m.confirm) return
       try {
-        await api.del('/class-activities/' + it.id)
+        await removeClassActivity(it.id)
         list.value = list.value.filter(x => x.id !== it.id)
         uni.showToast({ title: '已删除', icon: 'success' })
       } catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }

@@ -89,7 +89,8 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
 import { formatDateTime } from '@gardener/shared/utils'
 import { auth, theme } from '../../common/store'
-import api from '../../common/request'
+import { listStudentInfoUpdates, reviewStudentInfoUpdate } from '@/api/student-info-review'
+import { listClasses } from '@/api/teaching'
 
 const dark = computed(() => theme.mode === 'dark')
 const loading = ref(false)
@@ -148,7 +149,7 @@ async function loadList() {
     if (statusIdx.value === 1) params.status = 'pending'
     else if (statusIdx.value === 2) params.status = 'approved'
     else if (statusIdx.value === 3) params.status = 'rejected'
-    const res = await api.get('/student-info-updates', { params })
+    const res = await listStudentInfoUpdates({ params })
     list.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -160,7 +161,7 @@ async function loadList() {
 
 async function loadClasses() {
   try {
-    const res = await api.get('/classes')
+    const res = await listClasses()
     classList.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e) {
     classList.value = []
@@ -194,7 +195,7 @@ async function handleApprove(item) {
   if (!res.confirm) return
   reviewing.value = true
   try {
-    await api.post(`/student-info-updates/${item.id}/review`, { action: 'approve' })
+    await reviewStudentInfoUpdate(item.id, { action: 'approve' })
     uni.showToast({ title: '已通过', icon: 'success' })
     await loadList()
   } catch (e) {
@@ -214,7 +215,7 @@ async function submitReject() {
   if (!rejectTarget.value || reviewing.value) return
   reviewing.value = true
   try {
-    await api.post(`/student-info-updates/${rejectTarget.value.id}/review`, {
+    await reviewStudentInfoUpdate(rejectTarget.value.id, {
       action: 'reject',
       note: rejectNote.value.trim() || undefined,
     })

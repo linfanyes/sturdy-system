@@ -68,7 +68,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listAwardRecords, createAwardRecord, updateAwardRecord, removeAwardRecord } from '@/api/award-record'
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
@@ -88,7 +88,7 @@ function today() {
 }
 
 async function load() {
-  const arr = await api.getList('/award-records', { loading: true, loadingText: '加载获奖记录' })
+  const arr = await listAwardRecords({ loading: true, loadingText: '加载获奖记录' })
   arr.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   list.value = arr
 }
@@ -142,10 +142,10 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      const r = await api.patch('/award-records/' + editing.value.id, payload)
+      const r = await updateAwardRecord(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/award-records', payload)
+      const r = await createAwardRecord(payload)
       list.value.unshift(r)
     }
     show.value = false
@@ -160,7 +160,7 @@ function del(a) {
   uni.showModal({ title: '删除', content: '确定删除「' + a.name + '」？', success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…', mask: true })
-    try { await api.del('/award-records/' + a.id); list.value = list.value.filter((x) => x.id !== a.id) }
+    try { await removeAwardRecord(a.id); list.value = list.value.filter((x) => x.id !== a.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })

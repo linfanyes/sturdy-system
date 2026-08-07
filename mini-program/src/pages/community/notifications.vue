@@ -32,7 +32,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/api/notifications'
 import { theme } from '../../common/store'
 const dark = computed(() => theme.mode === 'dark')
 
@@ -56,7 +56,7 @@ function fmt(ts) {
 function open(n) {
   if (!n.read) {
     n.read = true
-    api.patch('/notifications/' + n.id + '/read').catch(() => {})
+    markNotificationRead(n.id).catch(() => {})
   }
   if (n.link) {
     uni.navigateTo({ url: n.link })
@@ -66,7 +66,7 @@ function open(n) {
 async function load() {
   loading.value = true
   try {
-    const r = await api.get('/notifications').catch(() => [])
+    const r = await listNotifications().catch(() => [])
     list.value = Array.isArray(r) ? r : (r.items || [])
   } finally {
     loading.value = false
@@ -75,7 +75,7 @@ async function load() {
 
 async function markAll() {
   list.value.forEach(n => (n.read = true))
-  api.post('/notifications/mark-all-read').catch(() => {})
+  markAllNotificationsRead().catch(() => {})
 }
 
 onShow(load)

@@ -121,6 +121,14 @@ import api, { batchRun, setMockMode } from '../../common/request'
 import { getMe, updateMe } from '@/api/user'
 import { getAiSettings, updateAiSettings, getAppConfig, updateAppConfig, getAiProviders } from '@/api/config'
 import { listBackups, createBackup as createBackupApi, getBackup, removeBackup, autoBackup } from '@/api/backup'
+import { createClass } from '@/api/teaching'
+import { createStudent } from '@/api/students'
+import { createNote } from '@/api/notes'
+import { createTeacher } from '@/api/teacher'
+import { createExam } from '@/api/exams'
+import { createAwardRecord } from '@/api/award-record'
+import { createTodo } from '@/api/todos'
+import { mergeGrades } from '@/api/grades'
 import { isPhone, isEmail } from '../../common/validators'
 import { DEMO_MODE_ENABLED } from '../../common/config'
 import { theme, auth, setUser, setAuth, setColorScheme, logout as doLogout } from '../../common/store'
@@ -308,14 +316,14 @@ async function doImport(data) {
   if (data.aiSettings) tasks.push(() => updateAiSettings(data.aiSettings))
   if (data.ai_settings) tasks.push(() => updateAiSettings(data.ai_settings))
   if (data.app_config) tasks.push(() => updateAppConfig(data.app_config))
-  if (Array.isArray(data.classes)) data.classes.forEach(c => tasks.push(() => api.post('/classes', c)))
-  if (Array.isArray(data.students)) data.students.forEach(s => tasks.push(() => api.post('/students', s)))
-  if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => api.post('/notes', n)))
-  if (Array.isArray(data.teachers)) data.teachers.forEach(t => tasks.push(() => api.post('/teachers', t)))
-  if (Array.isArray(data.exams)) data.exams.forEach(e => tasks.push(() => api.post('/exams', e)))
-  if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => api.post('/award-records', a)))
-  if (Array.isArray(data.todos)) data.todos.forEach(t => tasks.push(() => api.post('/todos', t)))
-  if (Array.isArray(data.grades)) data.grades.forEach(g => tasks.push(() => api.post('/grades/merge', g)))
+  if (Array.isArray(data.classes)) data.classes.forEach(c => tasks.push(() => createClass(c)))
+  if (Array.isArray(data.students)) data.students.forEach(s => tasks.push(() => createStudent(s)))
+  if (Array.isArray(data.notes)) data.notes.forEach(n => tasks.push(() => createNote(n)))
+  if (Array.isArray(data.teachers)) data.teachers.forEach(t => tasks.push(() => createTeacher(t)))
+  if (Array.isArray(data.exams)) data.exams.forEach(e => tasks.push(() => createExam(e)))
+  if (Array.isArray(data.awards)) data.awards.forEach(a => tasks.push(() => createAwardRecord(a)))
+  if (Array.isArray(data.todos)) data.todos.forEach(t => tasks.push(() => createTodo(t)))
+  if (Array.isArray(data.grades)) data.grades.forEach(g => tasks.push(() => mergeGrades(g)))
 
   const parts = []
   if (data.user) parts.push('用户资料')

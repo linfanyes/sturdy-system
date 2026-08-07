@@ -44,7 +44,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listGrowthEntries, createGrowthEntry, removeGrowthEntry } from '@/api/growth'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 
@@ -78,7 +78,7 @@ function chipStyle(t) {
 }
 
 async function load() {
-  list.value = await api.getList('/growth-entries', { loading: true, loadingText: '加载档案' })
+  list.value = await listGrowthEntries({ loading: true, loadingText: '加载档案' })
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -92,7 +92,7 @@ async function add() {
   if (!isNonEmpty(form.value.content)) return uni.showToast({ title: '请填写内容', icon: 'none' })
   saving.value = true
   try {
-    const r = await api.post('/growth-entries', { ...form.value })
+    const r = await createGrowthEntry({ ...form.value })
     list.value.unshift(r)
     showAdd.value = false
     form.value = { studentName: '', title: '', type: '', date: '', content: '' }
@@ -107,7 +107,7 @@ async function del(g) {
   uni.showModal({ title: '删除', content: g.title, success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…', mask: true })
-    try { await api.del('/growth-entries/' + g.id); list.value = list.value.filter((x) => x.id !== g.id) }
+    try { await removeGrowthEntry(g.id); list.value = list.value.filter((x) => x.id !== g.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })

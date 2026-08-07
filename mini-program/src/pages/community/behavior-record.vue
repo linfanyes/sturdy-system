@@ -64,7 +64,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listBehaviorRecords, createBehaviorRecord, updateBehaviorRecord, removeBehaviorRecord } from '@/api/behavior-record'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
@@ -107,10 +108,10 @@ function today() {
 }
 
 async function load() {
-  classes.value = await api.getList('/classes', { silent: true })
+  classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   if (classId.value) await loadStudents()
-  records.value = await api.getList('/behavior-records', { loading: true, loadingText: '加载行为记录' })
+  records.value = await listBehaviorRecords({ loading: true, loadingText: '加载行为记录' })
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -119,7 +120,7 @@ onPullDownRefresh(async () => {
 })
 
 async function loadStudents() {
-  students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+  students.value = await listStudents(classId.value, { silent: true })
 }
 function pickClass(ev) {
   classId.value = classes.value[ev.detail.value].id
@@ -149,10 +150,10 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      const r = await api.patch('/behavior-records/' + editing.value.id, payload)
+      const r = await updateBehaviorRecord(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/behavior-records', payload)
+      const r = await createBehaviorRecord(payload)
       records.value.unshift(r)
     }
     show.value = false
@@ -167,7 +168,7 @@ function del(b) {
   uni.showModal({ title: '删除', content: '确定删除此条记录？', success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…', mask: true })
-    try { await api.del('/behavior-records/' + b.id); records.value = records.value.filter((x) => x.id !== b.id) }
+    try { await removeBehaviorRecord(b.id); records.value = records.value.filter((x) => x.id !== b.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })

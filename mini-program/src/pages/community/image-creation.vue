@@ -70,7 +70,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { getAiSettings } from '@/api/config'
+import { listMyGalleries, createMyGallery, updateMyGalleryPhotos } from '@/api/my-gallery'
+import { genImage, genVideo } from '@/api/ai'
 import { theme } from '../../common/store'
 
 const tab = ref('image')
@@ -120,7 +122,7 @@ function categorize(p) {
 
 async function loadConfig() {
   try {
-    aiConfig.value = await api.get('/config/ai')
+    aiConfig.value = await getAiSettings()
   } catch (_) {
     aiConfig.value = {}
   }
@@ -128,7 +130,7 @@ async function loadConfig() {
 
 async function loadAlbums() {
   try {
-    albumList.value = await api.getList('/my-galleries', { silent: true })
+    albumList.value = await listMyGalleries({ silent: true })
   } catch (_) {
     albumList.value = []
   }
@@ -145,7 +147,7 @@ async function generateImage() {
   if (loading.value || !prompt.value) return
   loading.value = true; resultSrc.value = ''
   try {
-    const res = await api.post('/ai/gen-image', {
+    const res = await genImage({
       prompt: prompt.value,
       model: currentModel.value || 'GLM-4.6V-Flash',
       size: '1024x1024',
@@ -166,7 +168,7 @@ async function generateVideo() {
   if (loading.value || !prompt.value) return
   loading.value = true; resultSrc.value = ''
   try {
-    const res = await api.post('/ai/gen-video', {
+    const res = await genVideo({
       prompt: prompt.value,
       model: currentModel.value || 'CogVideoX-Flash',
     })
@@ -195,7 +197,7 @@ async function doAddToAlbum(albumId) {
   try {
     const album = albumList.value.find((a) => a.id === albumId)
     const photos = [...(album.photos || []), resultSrc.value]
-    await api.patch('/my-galleries/' + albumId, { photos })
+    await updateMyGalleryPhotos(albumId, { photos })
     uni.showToast({ title: '已添加到相册', icon: 'success' })
     showAlbumPicker.value = false
   } catch (e) {
@@ -205,7 +207,7 @@ async function doAddToAlbum(albumId) {
 
 async function createAndAdd() {
   try {
-    const r = await api.post('/my-galleries', {
+    const r = await createMyGallery({
       title: autoCategory.value,
       date: new Date().toISOString().slice(0, 10),
       description: '由 AI 图像创造自动生成',

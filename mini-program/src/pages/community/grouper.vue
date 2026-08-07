@@ -53,8 +53,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listClasses, listStudents } from '@/api/teaching'
+import { listSeatLayouts } from '@/api/seat'
 import { theme } from '../../common/store'
+import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
 const classes = ref([])
 const classId = ref('')
@@ -76,7 +78,7 @@ const selName = computed(() => {
 })
 
 async function load() {
-  classes.value = await api.getList('/classes', { loading: true, loadingText: '加载分组班级' })
+  classes.value = await listClasses({ loading: true, loadingText: '加载分组班级' })
 }
 onShow(load)
 onPullDownRefresh(async () => {
@@ -110,14 +112,14 @@ async function run() {
   loading.value = true
   try {
     // 服务端按 classId 过滤，避免拉全量再前端 filter
-    students.value = await api.getList('/students?classId=' + encodeURIComponent(classId.value), { silent: true })
+    students.value = await listStudents(classId.value, { silent: true })
     if (!students.value.length) {
       loading.value = false
       return uni.showToast({ title: '该班暂无学生', icon: 'none' })
     }
 
     if (mode.value === 'column') {
-      const layouts = (await api.get('/seat-layouts?classId=' + encodeURIComponent(classId.value))).filter(
+      const layouts = (await listSeatLayouts(classId.value)).filter(
         (l) => l.classId === classId.value && l.active
       )
       if (!layouts.length || !layouts[0].seats || !layouts[0].seats.length) {

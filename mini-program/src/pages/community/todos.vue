@@ -40,7 +40,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import api from '../../common/request'
+import { listTodos } from '@/api/teaching'
+import { createTodo, updateTodo, removeTodo } from '@/api/todos'
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 
@@ -61,7 +62,7 @@ const sorted = computed(() => [...list.value].sort((a, b) => {
   return (a.date || '').localeCompare(b.date || '')
 }))
 
-async function load() { list.value = await api.getList('/todos', { loading: true, loadingText: '加载待办' }) }
+async function load() { list.value = await listTodos({ loading: true, loadingText: '加载待办' }) }
 onShow(load)
 onPullDownRefresh(async () => {
   await load()
@@ -80,7 +81,7 @@ function openEdit(t) {
 }
 async function toggle(t) {
   uni.showLoading({ title: '处理中…', mask: true })
-  try { const r = await api.patch('/todos/' + t.id, { done: !t.done }); t.done = r.done }
+  try { const r = await updateTodo(t.id, { done: !t.done }); t.done = r.done }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
   finally { uni.hideLoading() }
 }
@@ -90,10 +91,10 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      const r = await api.patch('/todos/' + editing.value.id, payload)
+      const r = await updateTodo(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/todos', payload)
+      const r = await createTodo(payload)
       list.value.unshift(r)
     }
     show.value = false
@@ -108,7 +109,7 @@ function del(t) {
   uni.showModal({ title: '删除', content: '确定删除此待办？', success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…' })
-    try { await api.del('/todos/' + t.id); list.value = list.value.filter((x) => x.id !== t.id) }
+    try { await removeTodo(t.id); list.value = list.value.filter((x) => x.id !== t.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })
