@@ -10,7 +10,11 @@
  */
 import { ref, watch } from 'vue'
 
-export function usePagedList(loadFn: (params: Record<string, any>) => Promise<any[]>, defaultPageSize = 10) {
+export function usePagedList(
+  loadFn: (params: Record<string, any>) => Promise<any[]>,
+  defaultPageSize = 10,
+  totalRef?: { value: number },
+) {
   const page = ref(0)
   const pageSize = ref(defaultPageSize)
   const total = ref(0)
@@ -41,7 +45,9 @@ export function usePagedList(loadFn: (params: Record<string, any>) => Promise<an
   watch(keyword, resetAndReload)
 
   function goPage(p: number) {
-    page.value = Math.min(Math.max(0, p), Math.max(0, Math.ceil((allItems.value.length || 0) / pageSize.value) - 1))
+    const totalItems = totalRef?.value ?? allItems.value.length
+    const maxPage = Math.max(0, Math.ceil((totalItems || 0) / pageSize.value) - 1)
+    page.value = Math.min(Math.max(0, p), maxPage)
     if (!keyword.value.trim()) {
       loadList()
     }
