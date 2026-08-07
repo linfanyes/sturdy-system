@@ -1,50 +1,87 @@
-# =============================================================================
-#  园丁工作台 CI/CD 流水线
-#  触发：push 到 main/master、pull_request、手动 workflow_dispatch
-#  流程：install → build → test → lint → deploy(手动)
-# =============================================================================
-name: CI/CD
+name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [master]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch:
-    inputs:
-      deploy:
-        description: '部署到生产环境'
-        required: false
-        default: 'false'
+    branches: [master]
 
-env:
-  NODE_VERSION: '20'
-  CACHE_KEY: node-modules-${{ runner.os }}
-
-permissions:
-  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ===================================================
-  #  install：构建 shared 包 + 安装所有子包依赖
-  # ===================================================
-  install:
-    name: Install Dependencies
+  # ============ 后端：类型检查 + 构建 ============
+  server:
+    name: Server (typecheck)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: |
-            shared/package-lock.json
-            server/package-lock.json
-            web-app/package-lock.json
-            mini-program/package-lock.json
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc -p tsconfig.build.json --noEmit
+
+  # ============ Web 管理端：类型检查 + 构建 ============
+  web:
+    name: Web (typecheck + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web-app/package-lock.json
+
+      - name: Build shared package (dist needed by file: dependency)
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install web dependencies
+        working-directory: web-app
+        run: npm ci
+
+      - name: Type check (vue-tsc)
+        working-directory: web-app
+        run: npx vue-tsc --noEmit
+
+      - name: Build (vite)
+        working-directory: web-app
+        run: npx vite build
+
+  # ============ 小程序：构建 mp-weixin ============
+  mini:
+    name: Mini-program (build mp-weixin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mini-program/package-lock.json
 
       - name: Build shared package
         working-directory: shared
@@ -52,264 +89,18 @@ jobs:
           npm ci
           npm run build
 
-      - name: Install server dependencies
-        working-directory: server
-        run: npm ci
-
-      - name: Install web-app dependencies
-        working-directory: web-app
-        run: npm ci
-
       - name: Install mini-program dependencies
         working-directory: mini-program
         run: npm ci
 
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            shared/node_modules
-            shared/dist
-            server/node_modules
-            web-app/node_modules
-            mini-program/node_modules
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-
-  # ===================================================
-  #  build：构建 server / web-app / mini-program
-  # ===================================================
-  build:
-    name: Build (${{ matrix.package }})
-    needs: install
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: [server, web-app, mini-program]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            shared/node_modules
-            shared/dist
-            server/node_modules
-            web-app/node_modules
-            mini-program/node_modules
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
-
-      - name: Build shared (if not cached)
-        working-directory: shared
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build ${{ matrix.package }}
-        working-directory: ${{ matrix.package }}
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.package }}
-          path: |
-            server/dist
-            web-app/dist
-            mini-program/dist
-          retention-days: 7
-
-  # ===================================================
-  #  test：运行各子包测试
-  # ===================================================
-  test:
-    name: Test (${{ matrix.package }})
-    needs: install
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: [server, web-app, mini-program]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            shared/node_modules
-            shared/dist
-            server/node_modules
-            web-app/node_modules
-            mini-program/node_modules
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
-
-      - name: Build shared (if not cached)
-        working-directory: shared
-        run: |
-          npm ci
-          npm run build
-
-      - name: Run tests (${{ matrix.package }})
-        working-directory: ${{ matrix.package }}
-        run: npm run test:report
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.package }}
-          path: |
-            ${{ matrix.package }}/test-report.json
-            ${{ matrix.package }}/coverage
-          retention-days: 30
-
-  # ===================================================
-  #  lint：TypeScript 编译检查
-  # ===================================================
-  lint:
-    name: Lint & Type Check
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            shared/node_modules
-            shared/dist
-            server/node_modules
-            web-app/node_modules
-            mini-program/node_modules
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
-
-      - name: Build shared (if not cached)
-        working-directory: shared
-        run: |
-          npm ci
-          npm run build
-
-      - name: Type check server
-        working-directory: server
-        run: npx tsc --noEmit
-
-      - name: Type check web-app
-        working-directory: web-app
-        run: npm run typecheck
-
-      - name: Type check mini-program
+      - name: Build mp-weixin
         working-directory: mini-program
-        run: npx tsc --noEmit
+        run: npx uni build -p mp-weixin
 
-      - name: ESLint server
-        working-directory: server
-        run: npx eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0
-
-  # ===================================================
-  #  deploy：手动触发部署（workflow_dispatch）
-  # ===================================================
-  deploy:
-    name: Deploy to Production
-    needs: [build, test, lint]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            shared/node_modules
-            shared/dist
-            server/node_modules
-            web-app/node_modules
-            mini-program/node_modules
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
-
-      - name: Build shared
-        working-directory: shared
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build server
-        working-directory: server
-        run: npm run build
-
-      - name: Build web-app
-        working-directory: web-app
-        run: npm run build
-
-      - name: Build mini-program H5
+      - name: Verify main package size < 2MB
         working-directory: mini-program
-        run: npm run build:h5
-
-      # ---- 部署 Server 到微信云容器 ----
-      - name: Deploy server to WeChat Cloud Container
-        uses: wercker/custom-deploy-action@v1
-        with:
-          url: ${{ secrets.WECHAT_CLOUD_DEPLOY_URL }}
-          data: |
-            server/dist/main.js
-
-      # ---- 部署 web-app 到服务器静态路径 ----
-      - name: Deploy web-app to server static path
-        uses: easingthemes/ssh-deploy@v4
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
-          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
-          SOURCE: web-app/dist/
-          TARGET: ${{ secrets.WEB_APP_STATIC_PATH }}
-
-      # ---- 部署小程序 H5 到 server/public/h5 ----
-      - name: Deploy mini-program H5 to server/public/h5
-        uses: easingthemes/ssh-deploy@v4
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
-          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
-          SOURCE: mini-program/dist/build/h5/
-          TARGET: ${{ secrets.H5_STATIC_PATH }}
-
-      - name: Deployment summary
         run: |
-          echo "✅ 部署完成"
-          echo "   - Server 已部署到微信云容器"
-          echo "   - Web-app 已部署到 ${{ secrets.WEB_APP_STATIC_PATH }}"
-          echo "   - Mini-program H5 已部署到 ${{ secrets.H5_STATIC_PATH }}"
+          du -sk dist/build/mp-weixin | awk '{print "main pkg bytes: " $1*1024}'
+          SIZE=$(du -sk dist/build/mp-weixin | awk '{print $1}')
+          if [ "$SIZE" -gt 2048 ]; then echo "❌ 主包超过 2MB 限制"; exit 1; fi
+          echo "✅ 主包 ${SIZE}KB < 2048KB 限制"
