@@ -10,7 +10,7 @@ import request from '@/api/request'
 import { useClasses } from '@/composables/useClasses'
 import {
   ArrowLeft, Users, GraduationCap, CheckCircle, Award,
-  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen,
+  TrendingUp, AlertTriangle, BarChart3, Trophy, Loader2, BookOpen, Printer,
 } from 'lucide-vue-next'
 import {
   getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
@@ -268,6 +268,10 @@ watch([examId, classId], () => {
 function goBack() {
   router.push('/teacher/exams')
 }
+
+function goPrint() {
+  window.print()
+}
 </script>
 
 <template>
@@ -275,6 +279,13 @@ function goBack() {
     <!-- 顶部标题栏 -->
     <div class="flex items-center justify-between gap-4 flex-wrap">
       <div class="flex items-center gap-3 min-w-0">
+        <button
+          class="p-2 rounded-xl bg-cream-100 hover:bg-cream-200 text-cocoa-700 transition-colors shrink-0"
+          title="打印"
+          @click="goPrint"
+        >
+          <Printer class="w-5 h-5" />
+        </button>
         <button
           class="p-2 rounded-xl bg-cream-100 hover:bg-cream-200 text-cocoa-700 transition-colors shrink-0"
           title="返回"
@@ -633,3 +644,12 @@ function goBack() {
     </template>
   </div>
 </template>
+
+<style scoped>
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .shadow-softer { box-shadow: none !important; }
+  .bg-surface { background: #fff !important; }
+}
+</style>

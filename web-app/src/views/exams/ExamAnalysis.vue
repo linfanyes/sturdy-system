@@ -76,6 +76,60 @@ const compareClassId = ref('')
 const analysisB = ref<any>(null)
 const compareLoading = ref(false)
 
+/* ============ 学生成绩矩阵 ============ */
+const scoreMatrix = computed(() => {
+  if (!rankData.value?.length || !examStats.value?.subjects?.length) return []
+  const subjects = examStats.value.subjects.map((s: any) => s.subject)
+  const maxScore = Math.max(...examStats.value.subjects.map((s: any) => s.fullScore || 100), 100)
+  return rankData.value.map((r: any) => {
+    const row: any = { studentId: r.studentId, name: r.studentName, rank: r.rank }
+    subjects.forEach((subj: string) => {
+      const subjScores = r.subjectScores || {}
+      row[subj] = subjScores[subj] ?? null
+    })
+    return row
+  })
+})
+
+function scoreColor(score: number | null, fullScore: number = 100): string {
+  if (score == null) return 'rgb(var(--cream-200))'
+  const pct = score / fullScore
+  if (pct >= 0.9) return '#67c23a'      // green - excellent
+  if (pct >= 0.8) return '#e6a23c'      // orange - good
+  if (pct >= 0.6) return '#f5d342'      // yellow - pass
+  if (pct >= 0.5) return '#f5b342'      // butter - borderline
+  return '#f56c6c'                       // red - fail
+}
+
+function scoreTextColor(score: number | null): string {
+  if (score == null) return 'text-cocoa-400'
+  if (score >= 90) return 'text-mint-600'
+  if (score >= 80) return 'text-butter-600'
+  if (score >= 60) return 'text-cocoa-700'
+  return 'text-red-500'
+}
+
+/* ============ 各科分数段统计 ============ */
+const segmentStats = computed(() => {
+  if (!examStats.value?.subjects?.length || !rankData.value?.length) return []
+  return examStats.value.subjects.map((s: any) => {
+    const scores = rankData.value
+      .map((r: any) => (r.subjectScores || {})[s.subject])
+      .filter((v: any) => v != null) as number[]
+    const full = s.fullScore || 100
+    const seg = {
+      subject: s.subject,
+      excellent: scores.filter(v => v >= full * 0.9).length,
+      good: scores.filter(v => v >= full * 0.8 && v < full * 0.9).length,
+      pass: scores.filter(v => v >= full * 0.6 && v < full * 0.8).length,
+      borderline: scores.filter(v => v >= full * 0.5 && v < full * 0.6).length,
+      fail: scores.filter(v => v < full * 0.5).length,
+      total: scores.length,
+    }
+    return seg
+  })
+})
+
 const compareClasses = computed(() => {
   if (!classId.value || !classes.value.length) return []
   const current = classes.value.find(c => c.id === classId.value)
@@ -437,6 +491,98 @@ function goCompare() {
                   <td class="px-3 py-2 font-medium text-cocoa-900">{{ r.studentName }}</td>
                   <td class="px-3 py-2 text-cocoa-700">{{ r.score }}</td>
                   <td class="px-3 py-2 text-cocoa-500">{{ r.percentile != null ? r.percentile.toFixed(1) + '%' : '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 学生成绩矩阵（热力图） -->
+        <div v-if="scoreMatrix.length" class="bg-surface rounded-2xl p-4 shadow-softer">
+          <h3 class="text-sm font-medium text-cocoa-700 mb-3 flex items-center gap-1">
+            <BarChart3 class="w-4 h-4 text-butter-500" /> 学生成绩矩阵
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-cream-100">
+                  <th class="px-2 py-2 font-medium text-cocoa-500 sticky left-0 bg-cream-100 z-10">排名</th>
+                  <th class="px-2 py-2 font-medium text-cocoa-500 sticky left-12 bg-cream-100 z-10">姓名</th>
+                  <th v-for="subj in examStats.subjects" :key="subj.subject" class="px-2 py-2 font-medium text-cocoa-500 text-center min-w-16">
+                    {{ subj.subject }}
+                  </th>
+                  <th class="px-2 py-2 font-medium text-cocoa-500 text-center">总分</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-cream-100">
+                <tr v-for="row in scoreMatrix" :key="row.studentId" class="hover:bg-cream-50">
+                  <td class="px-2 py-1.5 text-cocoa-500 text-xs sticky left-0 bg-white z-10">{{ row.rank }}</td>
+                  <td class="px-2 py-1.5 font-medium text-cocoa-900 text-sm sticky left-12 bg-white z-10 min-w-20">{{ row.name }}</td>
+                  <td v-for="subj in examStats.subjects" :key="subj.subject" class="px-2 py-1.5 text-center">
+                    <span
+                      class="inline-block px-2 py-0.5 rounded text-xs font-medium min-w-10"
+                      :style="{ background: scoreColor(row[subj.subject], subj.fullScore || 100), color: row[subj.subject] != null ? '#fff' : '#999' }"
+                    >
+                      {{ row[subj.subject] != null ? row[subj.subject].toFixed(0) : '-' }}
+                    </span>
+                  </td>
+                  <td class="px-2 py-1.5 text-center font-semibold text-cocoa-900 text-sm">
+                    {{ row.totalScore != null ? row.totalScore.toFixed(0) : '-' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center gap-3 mt-3 text-xs text-cocoa-500">
+            <span>颜色说明：</span>
+            <span class="inline-block w-3 h-3 rounded" style="background:#67c23a"></span>优秀(≥90%)
+            <span class="inline-block w-3 h-3 rounded" style="background:#e6a23c"></span>良好(≥80%)
+            <span class="inline-block w-3 h-3 rounded" style="background:#f5d342"></span>及格(≥60%)
+            <span class="inline-block w-3 h-3 rounded" style="background:#f5b342"></span>临界(≥50%)
+            <span class="inline-block w-3 h-3 rounded" style="background:#f56c6c"></span>不及格(<50%)
+          </div>
+        </div>
+
+        <!-- 分数段统计 -->
+        <div v-if="segmentStats.length" class="bg-surface rounded-2xl p-4 shadow-softer">
+          <h3 class="text-sm font-medium text-cocoa-700 mb-3 flex items-center gap-1">
+            <BarChart3 class="w-4 h-4 text-butter-500" /> 各科分数段统计
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-cream-100 text-cocoa-500 text-left">
+                <tr>
+                  <th class="px-3 py-2 font-medium">科目</th>
+                  <th class="px-3 py-2 font-medium text-center text-mint-600">优秀(≥90%)</th>
+                  <th class="px-3 py-2 font-medium text-center text-butter-600">良好(≥80%)</th>
+                  <th class="px-3 py-2 font-medium text-center text-cocoa-600">及格(≥60%)</th>
+                  <th class="px-3 py-2 font-medium text-center text-cocoa-500">临界(≥50%)</th>
+                  <th class="px-3 py-2 font-medium text-center text-red-500">不及格(<50%)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-cream-100">
+                <tr v-for="seg in segmentStats" :key="seg.subject" class="hover:bg-cream-50">
+                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ seg.subject }}</td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="text-mint-600 font-medium">{{ seg.excellent }}</span>
+                    <span class="text-cocoa-400 text-xs ml-1">({{ seg.total ? pct(seg.excellent / seg.total) : '0%' }})</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="text-butter-600 font-medium">{{ seg.good }}</span>
+                    <span class="text-cocoa-400 text-xs ml-1">({{ seg.total ? pct(seg.good / seg.total) : '0%' }})</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="text-cocoa-600 font-medium">{{ seg.pass }}</span>
+                    <span class="text-cocoa-400 text-xs ml-1">({{ seg.total ? pct(seg.pass / seg.total) : '0%' }})</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="text-cocoa-500 font-medium">{{ seg.borderline }}</span>
+                    <span class="text-cocoa-400 text-xs ml-1">({{ seg.total ? pct(seg.borderline / seg.total) : '0%' }})</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="text-red-500 font-medium">{{ seg.fail }}</span>
+                    <span class="text-cocoa-400 text-xs ml-1">({{ seg.total ? pct(seg.fail / seg.total) : '0%' }})</span>
+                  </td>
                 </tr>
               </tbody>
             </table>

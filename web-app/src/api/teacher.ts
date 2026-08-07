@@ -503,6 +503,13 @@ export function removeGrade(id: string) {
   return request.delete<any, void>('/grades/' + id)
 }
 
+/* ============ 班级排行榜（积分榜） ============ */
+
+/** 班级积分排行榜（加分/减分/奖励汇总） */
+export function getLeaderboard(classId: string) {
+  return request.get<any, { classId: string; total: number; items: Array<{ rank: number; studentId: string; name: string; total: number; count: number }> }>('/leaderboard', { params: { classId } })
+}
+
 /* ============ 通用 CRUD 辅助 ============ */
 
 /** 通用列表查询 */

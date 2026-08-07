@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import { getClass, deleteClass, listSchoolNotices, type ClassItem } from '@/api/school-admin'
 import { listClassMembers, type ClassMember } from '@/api/teacher'
-import { Users, Crown, BookOpen, Calendar, TrendingUp, Edit3, Trash2, ArrowLeft, GraduationCap, Megaphone } from 'lucide-vue-next'
+import { listExams, getExamAnalysis, getLeaderboard } from '@/api/teacher'
+import { Users, Crown, BookOpen, Calendar, TrendingUp, Edit3, Trash2, ArrowLeft, GraduationCap, Megaphone, Trophy, BarChart3 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,12 +19,19 @@ const notices = ref<any[]>([])
 const membersLoading = ref(false)
 const noticesLoading = ref(false)
 
+/* 学业表现 */
+const recentExams = ref<any[]>([])
+const examStats = ref<any>(null)
+const currentExamId = ref('')
+const leaderboard = ref<any[]>([])
+const academicLoading = ref(false)
+
 async function load() {
   loading.value = true
   try {
     const res = await getClass(classId)
     cls.value = res
-    await Promise.all([loadMembers(), loadNotices()])
+    await Promise.all([loadMembers(), loadNotices(), loadAcademic()])
   } catch (e: any) {
     toast.error(e?.message || '加载班级详情失败')
   } finally {
@@ -55,6 +63,46 @@ async function loadNotices() {
   }
 }
 
+/* ============ 学业表现 ============ */
+async function loadAcademic() {
+  academicLoading.value = true
+  try {
+    // 1. 加载最近考试列表
+    const examsRes = await listExams({ classId, take: 10 })
+    recentExams.value = Array.isArray(examsRes) ? examsRes : (examsRes?.items || [])
+    if (recentExams.value.length && !currentExamId.value) {
+      currentExamId.value = recentExams.value[0].id
+    }
+    // 2. 加载最近一次考试统计
+    if (currentExamId.value) {
+      const fullScoreMap = recentExams.value[0]?.subjectFullScores
+        ? Object.fromEntries(Object.entries(recentExams.value[0].subjectFullScores).map(([k, v]) => [k, Number(v)]))
+        : undefined
+      examStats.value = await getExamAnalysis(classId, currentExamId.value, fullScoreMap)
+    }
+    // 3. 加载班级积分榜
+    const lb = await getLeaderboard(classId)
+    leaderboard.value = (lb as any)?.items || lb || []
+  } catch {
+    recentExams.value = []
+    examStats.value = null
+    leaderboard.value = []
+  } finally {
+    academicLoading.value = false
+  }
+}
+
+function onExamChange() {
+  if (!currentExamId.value) { examStats.value = null; return }
+  const exam = recentExams.value.find(e => e.id === currentExamId.value)
+  const fullScoreMap = exam?.subjectFullScores
+    ? Object.fromEntries(Object.entries(exam.subjectFullScores).map(([k, v]) => [k, Number(v)]))
+    : undefined
+  getExamAnalysis(classId, currentExamId.value, fullScoreMap)
+    .then(r => { examStats.value = r })
+    .catch(() => { examStats.value = null })
+}
+
 const headTeacher = computed(() => members.value.find(m => m.role === 'head'))
 const subjectTeachers = computed(() => members.value.filter(m => m.role === 'subject'))
 const activeNotices = computed(() => notices.value.filter(n => !n.ended).length)
@@ -84,6 +132,12 @@ async function handleDelete() {
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
   }
+}
+
+function fmtScore(n: number | undefined) { return n != null ? Number(n).toFixed(1) : '-' }
+function pct(n: number | undefined) {
+  if (n == null) return '-'
+  return (n <= 1 ? n * 100 : n).toFixed(1) + '%'
 }
 
 onMounted(load)
@@ -162,6 +216,104 @@ onMounted(load)
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Megaphone class="w-4 h-4 text-sakura-500" /> 公告</div>
           <div class="text-xs text-cocoa-400">发布/管理</div>
         </div>
+      </div>
+
+      <!-- 学业表现 -->
+      <div v-if="academicLoading" class="bg-surface rounded-2xl p-6 shadow-softer text-center text-cocoa-400">
+        加载学业数据…
+      </div>
+      <div v-else-if="recentExams.length" class="space-y-4">
+        <!-- 最近一次考试概览 -->
+        <div class="bg-surface rounded-2xl p-5 shadow-softer">
+          <div class="flex items-center gap-2 mb-4">
+            <Trophy class="w-5 h-5 text-butter-500" />
+            <h2 class="text-lg font-semibold text-cocoa-900">学业表现</h2>
+            <span class="text-sm text-cocoa-400 ml-auto">最近考试</span>
+          </div>
+          <div class="flex items-center gap-3 mb-4">
+            <select v-model="currentExamId" class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="onExamChange">
+              <option v-for="e in recentExams" :key="e.id" :value="e.id">{{ e.name }} ({{ e.date }})</option>
+            </select>
+          </div>
+          <div v-if="examStats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div class="bg-cream-50 rounded-xl p-3 text-center">
+              <div class="text-xs text-cocoa-500 mb-1">班级均分</div>
+              <div class="text-sm font-semibold text-cocoa-900">{{ fmtScore(examStats.classAvg) }}</div>
+            </div>
+            <div class="bg-cream-50 rounded-xl p-3 text-center">
+              <div class="text-xs text-cocoa-500 mb-1">总人数</div>
+              <div class="text-sm font-semibold text-cocoa-900">{{ examStats.totalStudents || '-' }}</div>
+            </div>
+            <div class="bg-cream-50 rounded-xl p-3 text-center">
+              <div class="text-xs text-cocoa-500 mb-1">及格率</div>
+              <div class="text-sm font-semibold text-cocoa-900">{{ pct(examStats.avgPassRate) }}</div>
+            </div>
+            <div class="bg-cream-50 rounded-xl p-3 text-center">
+              <div class="text-xs text-cocoa-500 mb-1">优秀率</div>
+              <div class="text-sm font-semibold text-cocoa-900">{{ pct(examStats.avgExcellentRate) }}</div>
+            </div>
+          </div>
+          <div v-if="examStats?.subjects?.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-cream-100 text-cocoa-500 text-left">
+                <tr>
+                  <th class="px-3 py-2 font-medium">科目</th>
+                  <th class="px-3 py-2 font-medium text-right">均分</th>
+                  <th class="px-3 py-2 font-medium text-right">最高</th>
+                  <th class="px-3 py-2 font-medium text-right">最低</th>
+                  <th class="px-3 py-2 font-medium text-right">及格率</th>
+                  <th class="px-3 py-2 font-medium text-right">优秀率</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-cream-100">
+                <tr v-for="s in examStats.subjects" :key="s.subject">
+                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ s.subject }}</td>
+                  <td class="px-3 py-2 text-right text-butter-600 font-semibold">{{ fmtScore(s.avg) }}</td>
+                  <td class="px-3 py-2 text-right text-mint-600">{{ fmtScore(s.max) }}</td>
+                  <td class="px-3 py-2 text-right text-red-500">{{ fmtScore(s.min) }}</td>
+                  <td class="px-3 py-2 text-right text-cocoa-700">{{ pct(s.passRate) }}</td>
+                  <td class="px-3 py-2 text-right text-cocoa-700">{{ pct(s.excellentRate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 班级积分榜 -->
+        <div v-if="leaderboard.length" class="bg-surface rounded-2xl p-5 shadow-softer">
+          <div class="flex items-center gap-2 mb-3">
+            <Crown class="w-5 h-5 text-butter-500" />
+            <h2 class="text-lg font-semibold text-cocoa-900">班级积分榜</h2>
+            <span class="text-sm text-cocoa-400 ml-auto">德育积分</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-cream-100 text-cocoa-500 text-left">
+                <tr>
+                  <th class="px-3 py-2 font-medium w-16">名次</th>
+                  <th class="px-3 py-2 font-medium">姓名</th>
+                  <th class="px-3 py-2 font-medium text-right">积分</th>
+                  <th class="px-3 py-2 font-medium text-right">记录数</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-cream-100">
+                <tr v-for="item in leaderboard.slice(0, 20)" :key="item.studentId" class="hover:bg-cream-50">
+                  <td class="px-3 py-2">
+                    <span :class="['font-bold', item.rank <= 3 ? 'text-butter-600' : 'text-cocoa-700']">{{ item.rank }}</span>
+                  </td>
+                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ item.name }}</td>
+                  <td class="px-3 py-2 text-right font-semibold" :class="item.total >= 0 ? 'text-mint-600' : 'text-red-500'">
+                    {{ item.total > 0 ? '+' : '' }}{{ item.total }}
+                  </td>
+                  <td class="px-3 py-2 text-right text-cocoa-500">{{ item.count }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div v-else class="bg-surface rounded-2xl p-6 shadow-softer text-center text-cocoa-400">
+        暂无考试数据
       </div>
 
       <!-- 班级成员 -->
