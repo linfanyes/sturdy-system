@@ -8,33 +8,38 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
+import { usePagedList } from '@/composables/usePagedList'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
 
 const router = useRouter()
 
 const { classes } = useClasses()
+const form = ref<Record<string, any>>({})
 const loading = ref(false)
-const items = ref<any[]>([])
-const keyword = ref('')
-const classId = ref('')
 const showForm = ref(false)
 const editing = ref<any | null>(null)
 const formLoading = ref(false)
 
 const SUBJECTS = ['语文', '数学', '英语', '科学', '物理', '化学', '生物', '政治', '历史', '地理', '音乐', '体育', '美术', '信息技术', '道德与法治']
 
-const form = ref<Record<string, any>>({})
-
-/** 当前学期：9月-次年2月为第一学期，3-8月为第二学期 */
-function currentTerm() {
-  const d = new Date()
-  const y = d.getFullYear()
-  return d.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
-}
+const {
+  page,
+  pageSize,
+  keyword,
+  classId,
+  allItems,
+  loadList,
+  prevPage,
+  nextPage,
+  goPage,
+} = usePagedList(async (params: Record<string, any>) => {
+  const res = await request.get('/exams', { params })
+  return Array.isArray(res) ? res : (res?.items || [])
+})
 
 const filtered = computed(() => {
-  let list = items.value
+  let list = allItems.value
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
     list = list.filter(e =>
@@ -45,18 +50,18 @@ const filtered = computed(() => {
   return list
 })
 
-async function loadList() {
-  loading.value = true
-  try {
-    const params: Record<string, any> = { take: 500 }
-    if (classId.value) params.classId = classId.value
-    const res = await request.get('/exams', { params })
-    items.value = Array.isArray(res) ? res : (res?.items || [])
-  } catch (e: any) {
-    alert(e?.message || '加载失败')
-  } finally {
-    loading.value = false
-  }
+const totalFiltered = computed(() => filtered.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / pageSize.value)))
+const displayedItems = computed(() => {
+  const start = page.value * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+/** 当前学期：9月-次年2月为第一学期，3-8月为第二学期 */
+function currentTerm() {
+  const d = new Date()
+  const y = d.getFullYear()
+  return d.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
 }
 
 onMounted(async () => {
@@ -95,11 +100,11 @@ async function submitForm() {
   try {
     if (editing.value) {
       const res = await request.patch(`/exams/${editing.value.id}`, form.value)
-      const idx = items.value.findIndex(x => x.id === editing.value.id)
-      if (idx >= 0) items.value[idx] = { ...items.value[idx], ...form.value, ...res }
+      const idx = allItems.value.findIndex(x => x.id === editing.value.id)
+      if (idx >= 0) allItems.value[idx] = { ...allItems.value[idx], ...form.value, ...res }
     } else {
       const res = await request.post('/exams', form.value)
-      if (res?.id) items.value.unshift(res)
+      if (res?.id) allItems.value.unshift(res)
     }
     showForm.value = false
   } catch (e: any) {
@@ -113,7 +118,7 @@ async function handleDelete(row: any) {
   if (!await confirm(`确定删除考试「${row.name}」？`)) return
   try {
     await request.delete(`/exams/${row.id}`)
-    items.value = items.value.filter(x => x.id !== row.id)
+    allItems.value = allItems.value.filter(x => x.id !== row.id)
   } catch (e: any) {
     alert(e?.message || '删除失败')
   }
@@ -222,11 +227,11 @@ function onRowDblClick(row: any) {
           <tr v-if="loading" class="text-center text-cocoa-400">
             <td colspan="6" class="py-8">加载中…</td>
           </tr>
-          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
+          <tr v-else-if="totalFiltered === 0" class="text-center text-cocoa-400">
             <td colspan="6" class="py-8">暂无考试数据</td>
           </tr>
           <tr
-            v-for="row in filtered"
+            v-for="row in displayedItems"
             :key="row.id"
             class="hover:bg-cream-50 transition-colors cursor-pointer"
             @dblclick="onRowDblClick(row)"
@@ -255,6 +260,35 @@ function onRowDblClick(row: any) {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="totalFiltered > pageSize" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFiltered }} 条</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="page === 0"
+          @click="prevPage"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ page + 1 }}/{{ totalPages }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="page + 1 >= totalPages"
+          @click="nextPage"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
   </div>
 

@@ -53,6 +53,7 @@ const props = defineProps<{
 
 const loading = ref(false)
 const items = ref<any[]>([])
+const allItems = ref<any[]>([])
 const keyword = ref('')
 const classId = ref('')
 const showForm = ref(false)
@@ -60,16 +61,18 @@ const editing = ref<any | null>(null)
 const formLoading = ref(false)
 const form = ref<Record<string, any>>({})
 
-/** 班级选项：自动从 useClasses 加载，用于 classId 字段下拉与顶部筛选 */
-const { classes } = useClasses()
-const classOptions = computed<{ value: string; label: string }[]>(() =>
-  classes.value.map(c => ({ value: c.id, label: c.name })),
-)
+/** 分页状态 */
+const page = ref(0)
+const pageSize = ref(10)
+const total = ref(0)
 
+const skip = computed(() => page.value * pageSize.value)
+
+/** 前端搜索过滤（保留，因后端暂不支持通用 term 搜索） */
 const filtered = computed(() => {
-  if (!keyword.value) return items.value
+  if (!keyword.value) return allItems.value
   const kw = keyword.value.toLowerCase()
-  return items.value.filter(row =>
+  return allItems.value.filter(row =>
     props.fields.some(f => {
       const v = row[f.key]
       if (v == null) return false
@@ -79,15 +82,38 @@ const filtered = computed(() => {
   )
 })
 
+const totalFiltered = computed(() => filtered.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / pageSize.value)))
+
+/** 当前页展示的数据切片 */
+const displayedItems = computed(() => {
+  const start = page.value * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+/** 班级选项：自动从 useClasses 加载，用于 classId 字段下拉与顶部筛选 */
+const { classes } = useClasses()
+const classOptions = computed<{ value: string; label: string }[]>(() =>
+  classes.value.map(c => ({ value: c.id, label: c.name })),
+)
+
 const listFields = computed(() => props.fields.filter(f => !f.hideInList))
 
 async function loadList() {
   loading.value = true
   try {
-    const params: Record<string, any> = { take: props.take ?? 500 }
+    const isSearching = !!keyword.value.trim()
+    const params: Record<string, any> = {
+      skip: isSearching ? 0 : page.value * pageSize.value,
+      take: isSearching ? 500 : pageSize.value,
+    }
     if (classId.value) params.classId = classId.value
     const res = await import('@/api/request').then(m => m.default.get(props.apiPath, { params }))
-    items.value = Array.isArray(res) ? res : (res?.items || [])
+    const arr = Array.isArray(res) ? res : (res?.items || [])
+    allItems.value = arr
+    items.value = arr
+    total.value = res?.total ?? arr.length
+    page.value = 0
   } catch (e: any) {
     alert(e?.message || '加载失败')
   } finally {
@@ -99,7 +125,23 @@ onMounted(() => {
   loadClasses()
   loadList()
 })
-watch(classId, loadList)
+
+function resetAndReload() {
+  page.value = 0
+  loadList()
+}
+watch(classId, resetAndReload)
+watch(keyword, resetAndReload)
+
+function goPage(p: number) {
+  const maxPage = Math.max(0, Math.ceil(totalFiltered.value / pageSize.value) - 1)
+  page.value = Math.min(Math.max(0, p), maxPage)
+  if (!keyword.value.trim()) {
+    loadList()
+  }
+}
+function prevPage() { goPage(page.value - 1) }
+function nextPage() { goPage(page.value + 1) }
 
 /** 解析字段选项为统一 {value,label} 形式 */
 function getOptions(f: FieldDef): { value: string; label: string }[] {
@@ -264,7 +306,7 @@ defineExpose({ reload: loadList })
               </div>
             </td>
           </tr>
-          <tr v-for="row in filtered" :key="row.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="row in displayedItems" :key="row.id" class="hover:bg-cream-50 transition-colors">
             <td v-for="f in listFields" :key="f.key" class="px-4 py-3 text-cocoa-700">{{ fmtVal(row, f) }}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap">
               <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" aria-label="编辑" @click="openEdit(row)">
@@ -283,6 +325,35 @@ defineExpose({ reload: loadList })
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="totalFiltered > pageSize" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFiltered }} 条</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="page === 0"
+          @click="prevPage"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ page + 1 }}/{{ totalPages }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="page + 1 >= totalPages"
+          @click="nextPage"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
   </div>
 

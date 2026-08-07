@@ -66,6 +66,8 @@ async function loadStudents() {
 watch(classId, loadStudents)
 
 /* ============ 成绩列表 ============ */
+const pageGrades = ref(0)
+const pageSizeGrades = ref(10)
 const filtered = computed(() => {
   let list = grades.value
   if (selectedSubject.value) {
@@ -80,13 +82,26 @@ const filtered = computed(() => {
   }
   return list
 })
+const totalFilteredGrades = computed(() => filtered.value.length)
+const totalPagesGrades = computed(() => Math.max(1, Math.ceil(totalFilteredGrades.value / pageSizeGrades.value)))
+const displayedGrades = computed(() => {
+  const start = pageGrades.value * pageSizeGrades.value
+  return filtered.value.slice(start, start + pageSizeGrades.value)
+})
+
+function resetGradesPage() {
+  pageGrades.value = 0
+}
+watch(selectedSubject, resetGradesPage)
+watch(keyword, resetGradesPage)
 
 async function loadGrades() {
   if (!classId.value) { grades.value = []; return }
   loading.value = true
   try {
-    const res = await request.get('/grades', { params: { classId: classId.value, take: 500 } })
+    const res = await request.get('/grades', { params: { classId: classId.value, take: 200 } })
     grades.value = Array.isArray(res) ? res : (res?.items || [])
+    pageGrades.value = 0
   } catch (e: any) {
     alert(e?.message || '加载失败')
   } finally {
@@ -631,10 +646,10 @@ function onStudentDblClick(studentId: string) {
           <tr v-else-if="!classId" class="text-center text-cocoa-400">
             <td colspan="6" class="py-8">请先选择班级</td>
           </tr>
-          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
+          <tr v-else-if="totalFilteredGrades === 0" class="text-center text-cocoa-400">
             <td colspan="6" class="py-8">暂无成绩数据</td>
           </tr>
-          <tr v-for="g in filtered" :key="g.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="g in displayedGrades" :key="g.id" class="hover:bg-cream-50 transition-colors">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ g.examName }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ g.subject }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ className(g.classId) }}</td>
@@ -648,6 +663,35 @@ function onStudentDblClick(studentId: string) {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="totalFilteredGrades > pageSizeGrades" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFilteredGrades }} 条</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageGrades === 0"
+          @click="pageGrades--"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ pageGrades + 1 }}/{{ totalPagesGrades }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageGrades + 1 >= totalPagesGrades"
+          @click="pageGrades++"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSizeGrades" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="pageGrades = 0">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
 
     <!-- 学生成绩矩阵（双击查看学生详情） -->

@@ -4,7 +4,7 @@
  * 由 shared/schemas/subject-schema 的 SUBJECT_LIST 驱动。
  */
 import { useRouter } from 'vue-router'
-import { SUBJECT_LIST } from '@gardener/shared/subject-schema'
+import { SUBJECT_LIST } from '@gardener/shared/schemas/subject-schema'
 
 const router = useRouter()
 

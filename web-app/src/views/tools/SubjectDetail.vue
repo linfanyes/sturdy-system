@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getToolsBySubject, getSubjectTool } from '@gardener/shared/subject-schema'
+import { getToolsBySubject, getSubjectTool } from '@gardener/shared/schemas/subject-schema'
 
 const route = useRoute()
 const router = useRouter()

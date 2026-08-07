@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import request from '@/api/request'
 import { loadClasses, useClasses, classNameById } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
@@ -31,6 +31,8 @@ const loading = ref(false)
 const notices = ref<NoticeItem[]>([])
 const keyword = ref('')
 const classFilter = ref('')
+const pageNotices = ref(0)
+const pageSizeNotices = ref(10)
 
 const filtered = computed(() => {
   let list = notices.value
@@ -53,11 +55,25 @@ const filtered = computed(() => {
   })
 })
 
+const totalFilteredNotices = computed(() => filtered.value.length)
+const totalPagesNotices = computed(() => Math.max(1, Math.ceil(totalFilteredNotices.value / pageSizeNotices.value)))
+const displayedNotices = computed(() => {
+  const start = pageNotices.value * pageSizeNotices.value
+  return filtered.value.slice(start, start + pageSizeNotices.value)
+})
+
+function resetNoticesPage() {
+  pageNotices.value = 0
+}
+watch(classFilter, resetNoticesPage)
+watch(keyword, resetNoticesPage)
+
 async function loadNotices() {
   loading.value = true
   try {
-    const res: any = await request.get('/notices', { params: { take: 500 } })
+    const res: any = await request.get('/notices', { params: { take: 100 } })
     notices.value = Array.isArray(res) ? res : (res?.items || [])
+    pageNotices.value = 0
   } catch (e: any) {
     alert(e?.message || '加载公告失败')
     notices.value = []
@@ -281,12 +297,12 @@ function applyTemplate(t: any) {
       <div v-if="loading" class="py-12 flex items-center justify-center text-cocoa-400">
         <Loader2 class="w-5 h-5 animate-spin mr-2" /> 加载中…
       </div>
-      <div v-else-if="filtered.length === 0" class="py-12 text-center text-cocoa-400">
+      <div v-else-if="totalFilteredNotices === 0" class="py-12 text-center text-cocoa-400">
         暂无公告
       </div>
       <ul v-else class="divide-y divide-cream-100">
         <li
-          v-for="n in filtered"
+          v-for="n in displayedNotices"
           :key="n.id"
           :class="['px-5 py-4 hover:bg-cream-50 transition-colors', n.ended ? 'opacity-60' : '']"
         >
@@ -356,6 +372,35 @@ function applyTemplate(t: any) {
           </div>
         </li>
       </ul>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="totalFilteredNotices > pageSizeNotices" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFilteredNotices }} 条</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageNotices === 0"
+          @click="pageNotices--"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ pageNotices + 1 }}/{{ totalPagesNotices }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageNotices + 1 >= totalPagesNotices"
+          @click="pageNotices++"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSizeNotices" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="pageNotices = 0">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
   </div>
 

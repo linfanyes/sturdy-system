@@ -7,7 +7,7 @@ import {
   SUBJECT_LIST,
   MATH_TOOLS,
   type SubjectListItem,
-} from '@gardener/shared/subject-schema'
+} from '@gardener/shared/schemas/subject-schema'
 
 const subjects: (SubjectListItem & { path: string })[] = SUBJECT_LIST.map((s) => ({
   ...s,

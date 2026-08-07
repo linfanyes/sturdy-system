@@ -4,7 +4,7 @@
  * 班主任和科任老师均可管理学生：单个录入、编辑、删除、家长登录开关。
  * 数据来自后端 /students（按 teacherId 隔离，支持 classId 过滤）。
  */
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { loadClasses, useClasses, type MyClass } from '@/composables/useClasses'
 import {
   listAllStudents, createStudent, updateStudent, deleteStudent,
@@ -33,18 +33,34 @@ const filtered = computed(() => {
     list = list.filter(s =>
       s.name?.toLowerCase().includes(kw) ||
       s.studentNo?.includes(kw) ||
-      s.parentName?.includes(kw) ||
+      s.parentName?.toLowerCase().includes(kw) ||
       s.parentPhone?.includes(kw),
     )
   }
   return list
 })
 
+const pageStudents = ref(0)
+const pageSizeStudents = ref(10)
+const totalFilteredStudents = computed(() => filtered.value.length)
+const totalPagesStudents = computed(() => Math.max(1, Math.ceil(totalFilteredStudents.value / pageSizeStudents.value)))
+const displayedStudents = computed(() => {
+  const start = pageStudents.value * pageSizeStudents.value
+  return filtered.value.slice(start, start + pageSizeStudents.value)
+})
+
+function resetStudentsPage() {
+  pageStudents.value = 0
+}
+watch(classFilter, resetStudentsPage)
+watch(keyword, resetStudentsPage)
+
 async function loadStudents() {
   loading.value = true
   try {
-    const res = await listAllStudents({ take: 500 })
+    const res = await listAllStudents({ take: 200 })
     students.value = Array.isArray(res) ? res : (res?.items || [])
+    pageStudents.value = 0
   } catch (e: any) {
     alert(e?.message || '加载失败')
   } finally {
@@ -297,10 +313,10 @@ function downloadTemplate() {
           <tr v-if="loading" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">加载中…</td>
           </tr>
-          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
+          <tr v-else-if="totalFilteredStudents === 0" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">暂无学生数据</td>
           </tr>
-          <tr v-for="s in filtered" :key="s.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="s in displayedStudents" :key="s.id" class="hover:bg-cream-50 transition-colors">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ s.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.studentNo || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.gender || '-' }}</td>
@@ -333,6 +349,35 @@ function downloadTemplate() {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="totalFilteredStudents > pageSizeStudents" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFilteredStudents }} 名学生</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageStudents === 0"
+          @click="pageStudents--"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ pageStudents + 1 }}/{{ totalPagesStudents }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageStudents + 1 >= totalPagesStudents"
+          @click="pageStudents++"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSizeStudents" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="pageStudents = 0">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
 
     <!-- 底部统计 -->

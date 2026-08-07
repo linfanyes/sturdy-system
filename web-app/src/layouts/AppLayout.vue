@@ -779,19 +779,9 @@ function navigateTo(to: string) {
               <h1 class="text-2xl font-bold text-cocoa-900">{{ displayName }}</h1>
               <span class="chip bg-butter-100 text-butter-700">{{ greeting }}</span>
             </div>
-            <!-- 二级瓷砖面板（showTilesPanel）时隐藏整条面包屑：面板标题已直接显示菜单名，避免冗余的"返回工作台" -->
-            <!-- 面包屑首级「工作台」仅在处于可展开业务分类下才渲染；直达分类页面（如超管审计日志，activeCategory 为空）只显示当前页名，避免冗余的"返回工作台"路径 -->
-            <nav v-if="!showTilesPanel" aria-label="breadcrumb" class="mt-1.5 flex items-center gap-1.5 text-xs text-cocoa-500">
-              <template v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')">
-                <Home class="h-3.5 w-3.5" />
-                <button class="transition-colors hover:text-cocoa-700" @click="backToDashboard">{{ auth.role === 'super' ? '工作台' : auth.role === 'school_admin' ? '校管工作台' : '园丁工作台' }}</button>
-                <ChevronRight class="h-3 w-3 text-cocoa-300" />
-                <button class="transition-colors hover:text-cocoa-700" @click="backToTiles">{{ activeCategory }}</button>
-              </template>
-              <template v-if="!isHome">
-                <ChevronRight v-if="activeCategory && (auth.role === 'teacher' || auth.role === 'super' || auth.role === 'school_admin')" class="h-3 w-3 text-cocoa-300" />
-                <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
-              </template>
+            <!-- 子页面显示简洁面包屑：仅保留当前页标题，去掉「工作台 > 分类」冗余路径 -->
+            <nav v-if="!showTilesPanel && !isHome" aria-label="breadcrumb" class="mt-1.5 flex items-center text-xs text-cocoa-500">
+              <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
             </nav>
           </div>
           <div class="text-right">
@@ -841,11 +831,11 @@ function navigateTo(to: string) {
               <button
                 type="button"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200 active:scale-95 transition-all text-sm font-medium shadow-sm"
-                :title="activeCategory ? `返回「${activeCategory}」菜单` : '返回工作台'"
+                title="返回上级"
                 @click="goBackUp"
               >
                 <ChevronLeft class="w-4 h-4 shrink-0" />
-                <span class="hidden sm:inline">返回</span>{{ activeCategory ? activeCategory : '工作台' }}
+                <span class="hidden sm:inline">返回</span>
               </button>
               <span class="text-xs text-cocoa-400 truncate">{{ pageTitle || '' }}</span>
             </div>
