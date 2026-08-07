@@ -25,6 +25,7 @@ const stats = ref({
   pendingHomework: 0,
   attendanceRate: null as number | null,
   subjectDistribution: [] as any[],
+  parentEnabled: 0,
 })
 
 const chartTeacherStudent = computed(() => [
@@ -196,6 +197,16 @@ function iconWrapClass(c: string) {
         <div class="text-xs text-mint-500 mt-1 flex items-center gap-1">
           <TrendingUp class="w-3 h-3" /> {{ stats.attendanceRate ?? '—' }}% 出勤
         </div>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
+          <Users class="w-4 h-4 text-butter-500" /> 家长开通
+        </div>
+        <div class="text-3xl font-bold text-cocoa-900">
+          <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
+          <template v-else>{{ stats.parentEnabled }}</template>
+        </div>
+        <div class="text-xs text-cocoa-400 mt-1">已开通家长端</div>
       </div>
     </div>
 

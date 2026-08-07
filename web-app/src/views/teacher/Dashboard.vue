@@ -25,10 +25,14 @@ const chartLoading = ref(true)
 const students = ref<any[]>([])
 const recentExams = ref<any[]>([])
 const awards = ref<any[]>([])
+const homeworkList = ref<any[]>([])
+const attendanceList = ref<any[]>([])
 
 function unwrap(res: any): any[] {
   return Array.isArray(res) ? res : (res?.items || [])
 }
+
+const todayStr = new Date().toISOString().slice(0, 10)
 
 async function load() {
   loading.value = true
@@ -42,14 +46,18 @@ async function load() {
 
 async function loadCharts() {
   chartLoading.value = true
-  const [stu, exams, aw] = await Promise.allSettled([
+  const [stu, exams, aw, hw, att] = await Promise.allSettled([
     listAllStudents({ take: 500 }),
     crudList('/exams', { take: 5 }),
     crudList('/award-records', { take: 200 }),
+    crudList('/homework', { take: 200 }),
+    crudList('/attendances', { params: { date: todayStr } }),
   ])
   if (stu.status === 'fulfilled') students.value = unwrap(stu.value)
   if (exams.status === 'fulfilled') recentExams.value = unwrap(exams.value)
   if (aw.status === 'fulfilled') awards.value = unwrap(aw.value)
+  if (hw.status === 'fulfilled') homeworkList.value = unwrap(hw.value)
+  if (att.status === 'fulfilled') attendanceList.value = unwrap(att.value)
   loadGradeTrend()
   chartLoading.value = false
 }
@@ -86,6 +94,27 @@ onMounted(() => { load(); loadCharts() })
 /* —— 概览统计 —— */
 const totalStudents = computed(() => students.value.length || classes.value.length)
 const totalExams = computed(() => recentExams.value.length)
+
+/* 待批改作业数 */
+const pendingHomeworkCount = computed(() => {
+  if (!homeworkList.value.length) return 0
+  return homeworkList.value.filter((h: any) => h.status !== '已批改' && h.status !== '已发还').length
+})
+
+/* 今日出勤率 */
+const todayAttendanceRate = computed(() => {
+  if (!attendanceList.value.length) return null
+  let total = 0
+  let present = 0
+  attendanceList.value.forEach((a: any) => {
+    const recs = Array.isArray(a.records) ? a.records : []
+    recs.forEach((r: any) => {
+      total++
+      if (r.status === '出勤' || r.status === 'present') present++
+    })
+  })
+  return total ? Math.round((present / total) * 100) : null
+})
 
 /* —— 图表 1：各班学生分布（横向条形） —— */
 const classDist = computed(() => {
@@ -168,6 +197,20 @@ const shortcutTools = [
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/rewards')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-sakura-500" /> 奖励记录</div>
         <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="loading" class="w-6 h-6 animate-spin" /><template v-else>{{ awards.length }}</template></div>
+        <div class="text-xs text-cocoa-400 mt-1">条奖励记录</div>
+      </div>
+      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/homework')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-butter-500" /> 待批作业</div>
+        <div class="text-3xl font-bold text-cocoa-900"><Loader2 v-if="chartLoading" class="w-6 h-6 animate-spin" /><template v-else>{{ pendingHomeworkCount }}</template></div>
+        <div class="text-xs text-cocoa-400 mt-1">份待批改</div>
+      </div>
+      <div class="stat-card">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-mint-500" /> 今日出勤</div>
+        <div class="text-3xl font-bold text-cocoa-900">
+          <Loader2 v-if="chartLoading" class="w-6 h-6 animate-spin" />
+          <template v-else>{{ todayAttendanceRate ?? '—' }}<span v-if="todayAttendanceRate !== null" class="text-lg">%</span></template>
+        </div>
+        <div class="text-xs text-cocoa-400 mt-1">出勤率</div>
       </div>
     </div>
 

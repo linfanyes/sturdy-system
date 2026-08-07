@@ -49,6 +49,8 @@ const activeTrend = ref<{ label: string; value: number }[]>([])
 const topSchools = ref<{ name: string; count: number; pct: number }[]>([])
 // ④ 各校操作热度（横向条形）
 const schoolHot = ref<{ name: string; count: number; pct: number }[]>([])
+const recentLogs = ref<any[]>([])
+const schoolName = new Map<string, string>()
 
 async function load() {
   loading.value = true
@@ -76,7 +78,6 @@ async function load() {
     ]
 
     // 学校 id → 名称映射
-    const schoolName = new Map<string, string>()
     for (const s of schools) schoolName.set(s.id, s.name || s.id)
 
     // ① 操作类型分布（审计 action 聚合，Top 5 + 其他）
@@ -126,6 +127,14 @@ async function load() {
       .map(([sid, cnt]) => ({ name: sid === '__global__' ? '全局操作' : schoolName.get(sid) || sid, count: cnt }))
     const maxH = Math.max(1, ...hotArr.map((h) => h.count))
     schoolHot.value = hotArr.map((h) => ({ ...h, pct: Math.round((h.count / maxH) * 100) }))
+
+    // ⑤ 最近操作记录（取最新 10 条）
+    const sorted = [...logs].sort((a, b) => {
+      const ta = new Date((a.createdAt ?? a.created_at) || 0).getTime()
+      const tb = new Date((b.createdAt ?? b.created_at) || 0).getTime()
+      return tb - ta
+    })
+    recentLogs.value = sorted.slice(0, 10)
   } catch { /* ignore */ }
   finally { loading.value = false }
 }
@@ -142,6 +151,19 @@ function isToday(t?: string): boolean {
 function dayKey(offset: number): string {
   const d = new Date(Date.now() + offset * 86400000)
   return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function formatDate(t?: string): string {
+  if (!t) return '-'
+  const d = new Date(t)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  if (isToday) return `${hh}:${mm}`
+  const M = d.getMonth() + 1
+  const D = d.getDate()
+  return `${M}/${D} ${hh}:${mm}`
 }
 
 </script>
@@ -271,6 +293,33 @@ function dayKey(offset: number): string {
         ]"
         title="平台核心指标"
       />
+    </div>
+
+    <!-- 最近操作记录 -->
+    <div v-if="recentLogs.length" class="bg-surface rounded-2xl p-6 shadow-softer">
+      <div class="font-medium text-cocoa-700 mb-4">最近操作记录</div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-cream-100 text-cocoa-500 text-left">
+            <tr>
+              <th class="px-4 py-3 font-medium">时间</th>
+              <th class="px-4 py-3 font-medium">操作人</th>
+              <th class="px-4 py-3 font-medium">动作</th>
+              <th class="px-4 py-3 font-medium">对象</th>
+              <th class="px-4 py-3 font-medium">学校</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-cream-100">
+            <tr v-for="l in recentLogs" :key="l.id" class="hover:bg-cream-50">
+              <td class="px-4 py-3 text-cocoa-500 whitespace-nowrap">{{ formatDate(l.createdAt || l.created_at) }}</td>
+              <td class="px-4 py-3 font-medium text-cocoa-900">{{ l.operatorName || l.userName || '-' }}</td>
+              <td class="px-4 py-3">{{ ACTION_NAMES[l.action] || l.action || '-' }}</td>
+              <td class="px-4 py-3 text-cocoa-700">{{ l.targetName || l.targetType || '-' }}</td>
+              <td class="px-4 py-3 text-cocoa-500">{{ l.schoolName || schoolName.get(l.schoolId) || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
