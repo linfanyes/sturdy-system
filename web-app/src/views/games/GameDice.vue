@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Gamepad2, Flame, Trophy } from 'lucide-vue-next'
+import { rand } from '@gardener/shared/utils/game-helpers'
 
 const router = useRouter()
 
@@ -48,9 +49,6 @@ function setAmount(a: number) {
   betAmount.value = a
 }
 
-function rand(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
 
 function roll() {
   if (rolling.value || chips.value <= 0) return

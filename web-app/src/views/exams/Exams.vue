@@ -8,7 +8,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import { usePagedList } from '@/composables/usePagedList'
+import { usePagedList } from '@gardener/shared/composables'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
@@ -38,6 +38,11 @@ const {
   const res = await request.get('/exams', { params })
   return Array.isArray(res) ? res : (res?.items || [])
 })
+
+// vue-tsc 对外部 composable 返回的 Ref 在模板中自动解包支持有限，
+// 用 computed 包裹一层 ref 值，保证模板类型检查通过。
+const pageNum = computed(() => page.value)
+const pageSizeNum = computed(() => pageSize.value)
 
 const filtered = computed(() => {
   let list = allItems.value
@@ -264,26 +269,26 @@ function onRowDblClick(row: any) {
     </div>
 
     <!-- 分页栏 -->
-    <div v-if="totalFiltered > pageSize" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+    <div v-if="totalFiltered > pageSizeNum" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
       <span class="text-xs text-cocoa-400">共 {{ totalFiltered }} 条</span>
       <div class="flex items-center gap-2">
         <button
           type="button"
           class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
-          :disabled="page === 0"
+          :disabled="pageNum === 0"
           @click="prevPage"
         >上一页</button>
-        <span class="text-xs text-cocoa-500">第 {{ page + 1 }}/{{ totalPages }} 页</span>
+        <span class="text-xs text-cocoa-500">第 {{ pageNum + 1 }}/{{ totalPages }} 页</span>
         <button
           type="button"
           class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
-          :disabled="page + 1 >= totalPages"
+          :disabled="pageNum + 1 >= totalPages"
           @click="nextPage"
         >下一页</button>
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs text-cocoa-400">每页</span>
-        <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
+        <select v-model.number="pageSizeNum" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
           <option :value="5">5 条</option>
           <option :value="10">10 条</option>
           <option :value="20">20 条</option>

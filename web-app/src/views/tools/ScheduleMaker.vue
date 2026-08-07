@@ -10,6 +10,7 @@ import { loadClasses, useClasses } from '@/composables/useClasses'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
 import request from '@/api/request'
 import Modal from '@/components/Modal.vue'
+import { shuffle } from '@gardener/shared/utils/game-helpers'
 
 const { classes } = useClasses()
 const classId = ref('')
@@ -191,14 +192,6 @@ async function clearAll() {
 }
 
 /* ============ 一键自动编排 ============ */
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
   '语文': 8, '数学': 6, '英语': 4,

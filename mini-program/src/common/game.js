@@ -120,27 +120,8 @@ export function pickColors(dark) {
   return dark ? GAME_COLORS.dark : GAME_COLORS.light
 }
 
-// ========== 通用工具 ==========
-export function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-export function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-export function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v))
-}
-export function fmtTime(ms) {
-  const s = Math.floor(ms / 1000)
-  const m = Math.floor(s / 60)
-  const ss = s % 60
-  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
-}
+// ========== 通用工具（从 shared 引入，与 Web 端共用同一份实现） ==========
+export { rand, randInt, shuffle, clamp, fmtTime } from '@gardener/shared/utils/game-helpers'
 
 // ========== 游戏顶部状态条通用工具 ==========
 export function useGame(gameKey) {

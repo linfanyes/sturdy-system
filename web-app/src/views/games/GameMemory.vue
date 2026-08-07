@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, RefreshCw, Trophy } from 'lucide-vue-next'
+import { shuffle } from '@gardener/shared/utils/game-helpers'
 
 const router = useRouter()
 const emojis = ['🍎', '🍌', '🍇', '🍓', '🍑', '🍒', '🥝', '🍍']
@@ -14,14 +15,6 @@ const moves = ref(0)
 const matched = ref(0)
 const best = ref(parseInt(localStorage.getItem('web_game_memory_highscore') || '999'))
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 function reset() {
   const pairs = shuffle([...emojis, ...emojis])

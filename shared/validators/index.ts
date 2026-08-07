@@ -273,6 +273,44 @@ export function isStudentNo(studentNo: string | null | undefined): boolean {
 }
 
 /**
+ * 邮箱校验：标准格式。
+ * @param s 邮箱字符串
+ * @returns true = 合法
+ */
+export function isEmail(s: string | null | undefined): boolean {
+  if (s == null || s === '') return false
+  return /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/.test(String(s))
+}
+
+/**
+ * 数字范围校验：min/max 均为闭区间；非数字返回 false。
+ * @param num 待校验值
+ * @param min 最小值（含），可选
+ * @param max 最大值（含），可选
+ * @returns true = 在范围内
+ */
+export function inRange(num: number | string, min: number | null, max: number | null): boolean {
+  const n = Number(num)
+  if (Number.isNaN(n)) return false
+  if (min != null && n < min) return false
+  if (max != null && n > max) return false
+  return true
+}
+
+/**
+ * 整数范围校验（含负数）。
+ * @param num 待校验值
+ * @param min 最小值（含），可选
+ * @param max 最大值（含），可选
+ * @returns true = 合法整数且在范围内
+ */
+export function isInt(num: number | string, min: number | null = null, max: number | null = null): boolean {
+  const n = Number(num)
+  if (!Number.isInteger(n)) return false
+  return inRange(n, min, max)
+}
+
+/**
  * 校验金额：最多两位小数的正数
  * @param amount 金额
  * @returns true = 合法

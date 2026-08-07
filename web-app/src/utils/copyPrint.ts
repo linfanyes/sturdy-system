@@ -4,8 +4,12 @@
  * - copyText: 写入剪贴板（优先 navigator.clipboard，非安全上下文降级 execCommand）
  * - printHtml: 用隐藏 iframe 渲染指定 HTML 并调起打印（避免受 SPA 样式/弹窗拦截影响）
  * - notify: 轻量顶部提示
- * - escapeHtml: HTML 转义，构建打印内容时使用
+ * - escapeHtml: HTML 转义，从 shared 引入
  */
+
+import { escapeHtml } from '@gardener/shared/utils/export-data'
+
+export { escapeHtml }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -58,15 +62,6 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/** HTML 转义，构建打印内容时防止内容破坏标签结构 */
-export function escapeHtml(s: string): string {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
 
 const PRINT_STYLE = `
   body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#222;padding:24px;line-height:1.7;max-width:800px;margin:0 auto;}

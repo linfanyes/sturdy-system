@@ -16,10 +16,12 @@ export function sanitizeFilename(name: string): string {
 
 /** HTML 实体转义（防内容中的 <>& 破坏 doc 结构） */
 export function escapeHtml(s: string): string {
-  return String(s)
+  return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 export interface BuildWordHtmlOptions {

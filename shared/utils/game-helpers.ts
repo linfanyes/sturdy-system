@@ -7,6 +7,14 @@
  * 来源对齐：mini-program/common/game.js::rand/shuffle/clamp/fmtTime
  */
 
+/**
+ * 整数随机 [min, max] 闭区间（自动交换 min/max）
+ */
+export function randInt(min: number, max: number): number {
+  if (max < min) [min, max] = [max, min]
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
 /** 整数随机 [min, max] 闭区间 */
 export function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min

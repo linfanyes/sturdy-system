@@ -64,12 +64,12 @@ export function usePagedList(
   function nextPage() { goPage(page.value + 1) }
 
   return {
-    page: page as Ref<number>,
-    pageSize: pageSize as Ref<number>,
-    total: total as Ref<number>,
-    allItems: allItems as Ref<any[]>,
-    keyword: keyword as Ref<string>,
-    classId: classId as Ref<string>,
+    page,
+    pageSize,
+    total,
+    allItems,
+    keyword,
+    classId,
     loadList,
     resetAndReload,
     goPage,

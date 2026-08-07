@@ -14,17 +14,14 @@ const errorIdx = ref(-1)
 const best = ref(parseFloat(localStorage.getItem('web_game_sequence_highscore') || '0') || 0)
 let timer: ReturnType<typeof setInterval> | null = null
 
-function shuffle(): number[] {
+
+function reset() {
   const arr = Array.from({ length: total }, (_, i) => i + 1)
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
-  return arr
-}
-
-function reset() {
-  numbers.value = shuffle()
+  numbers.value = arr
   next.value = 1
   elapsed.value = 0
   finished.value = false

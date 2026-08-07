@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Palette } from 'lucide-vue-next'
+import { rand } from '@gardener/shared/utils/game-helpers'
 
 const router = useRouter()
 
@@ -53,9 +54,6 @@ function hslToHex(h: number, s: number, l: number): string {
   return '#' + to(r) + to(g) + to(b)
 }
 
-function rand(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
 
 // 生成一轮
 function genRound() {

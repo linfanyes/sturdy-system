@@ -6,6 +6,7 @@
 import { ref, onMounted } from 'vue'
 import { Calculator, RefreshCw, Printer, Copy } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
+import { randInt } from '@gardener/shared/utils/game-helpers'
 
 type OpType = 'add' | 'sub' | 'mul' | 'div' | 'mix'
 
@@ -43,10 +44,6 @@ function saveConfig() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config.value)) } catch { /* ignore */ }
 }
 
-function randInt(min: number, max: number) {
-  if (max < min) [min, max] = [max, min]
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
 
 function genOne(op: OpType): Question {
   const lo = Math.min(config.value.min, config.value.max)

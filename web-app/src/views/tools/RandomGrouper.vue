@@ -11,6 +11,7 @@ import { useClasses } from '@/composables/useClasses'
 import { listClassStudents, type TeacherStudent } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
 import { Users, Shuffle, Download, RefreshCw } from 'lucide-vue-next'
+import { shuffle } from '@gardener/shared/utils/game-helpers'
 
 const { classes, loadClasses } = useClasses()
 loadClasses()
@@ -37,14 +38,6 @@ function groupColor(i: number) {
   return [groupBgColors[i % groupBgColors.length], groupTextColors[i % groupTextColors.length]]
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 function doGroup() {
   const list = namesList.value

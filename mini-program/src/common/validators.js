@@ -28,6 +28,9 @@ import {
   PHONE_REGEX,
   PHONE_HINT,
   CLASS_NAMING_RULE,
+  isEmail,
+  inRange,
+  isInt,
 } from '@gardener/shared/validators'
 
 // 重新导出所有共享校验器（保持向后兼容）
@@ -54,26 +57,7 @@ export {
   PHONE_REGEX,
   PHONE_HINT,
   CLASS_NAMING_RULE,
-}
-
-/** 邮箱校验：标准格式。 */
-export function isEmail(s) {
-  if (s == null || s === '') return false
-  return /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/.test(String(s))
-}
-
-/** 数字范围校验：min/max 均为闭区间；非数字返回 false。 */
-export function inRange(num, min, max) {
-  const n = Number(num)
-  if (Number.isNaN(n)) return false
-  if (min != null && n < min) return false
-  if (max != null && n > max) return false
-  return true
-}
-
-/** 整数范围校验（含负数）。 */
-export function isInt(num, min, max) {
-  const n = Number(num)
-  if (!Number.isInteger(n)) return false
-  return inRange(n, min, max)
+  isEmail,
+  inRange,
+  isInt,
 }
