@@ -310,6 +310,13 @@
           }
         },
         {
+          "path": "exam-compare",
+          "style": {
+            "navigationBarTitleText": "进退步对比",
+            "enablePullDownRefresh": false
+          }
+        },
+        {
           "path": "student-grades",
           "style": {
             "navigationBarTitleText": "学生成绩",

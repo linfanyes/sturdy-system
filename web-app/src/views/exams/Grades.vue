@@ -15,7 +15,7 @@ import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
-import { listClassStudents, type TeacherStudent } from '@/api/teacher'
+import { listClassStudents, listAllStudents, listExams, listGrades, importGradesPreview, importGradesCommit, importGradesAi, removeGrade, type TeacherStudent } from '@/api/teacher'
 import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2, User, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 
@@ -37,7 +37,7 @@ const examSubjects = computed(() => selectedExam.value?.subjects || [])
 async function loadExams() {
   if (!classId.value) { exams.value = []; return }
   try {
-    const res = await request.get('/exams', { params: { classId: classId.value, take: 100 } })
+    const res = await listExams({ classId: classId.value, take: 100 })
     exams.value = Array.isArray(res) ? res : (res?.items || [])
   } catch { exams.value = [] }
 }
@@ -59,7 +59,7 @@ const students = ref<TeacherStudent[]>([])
 async function loadStudents() {
   if (!classId.value) { students.value = []; return }
   try {
-    const res = await request.get('/students', { params: { classId: classId.value, take: 500 } })
+    const res = await listAllStudents({ classId: classId.value, take: 500 })
     students.value = Array.isArray(res) ? res : (res?.items || [])
   } catch { students.value = [] }
 }
@@ -100,7 +100,7 @@ async function loadGrades() {
   if (!classId.value) { grades.value = []; return }
   loading.value = true
   try {
-    const res = await request.get('/grades', { params: { classId: classId.value, take: 200 } })
+    const res = await listGrades({ classId: classId.value, take: 200 })
     grades.value = Array.isArray(res) ? res : (res?.items || [])
     pageGrades.value = 0
   } catch (e: any) {
@@ -214,7 +214,7 @@ async function submitEntry() {
 async function handleDelete(g: any) {
   if (!await confirm(`确定删除「${g.examName} - ${g.subject}」的成绩记录？`)) return
   try {
-    await request.delete(`/grades/${g.id}`)
+    await removeGrade(g.id)
     grades.value = grades.value.filter(x => x.id !== g.id)
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -263,11 +263,21 @@ async function onPickFile(e: Event) {
   importLoading.value = true
   try {
     const dataUrl = await readFileAsBase64(file)
-    const endpoint = importMode.value === 'ai' ? '/grades/import-ai' : '/grades/import-preview'
-    const body = importMode.value === 'ai'
-      ? { classId: classId.value, mode: file.type.startsWith('image/') ? 'image' : 'file', data: dataUrl, filename: file.name }
-      : { classId: classId.value, filename: file.name, data: dataUrl }
-    const res = await request.post(endpoint, body)
+    let res: any
+    if (importMode.value === 'ai') {
+      res = await importGradesAi({
+        classId: classId.value,
+        mode: file.type.startsWith('image/') ? 'image' : 'file',
+        data: dataUrl,
+        filename: file.name,
+      })
+    } else {
+      res = await importGradesPreview({
+        classId: classId.value,
+        filename: file.name,
+        data: dataUrl,
+      })
+    }
     importPreview.value = res.rows || []
     importStats.value = { valid: res.validCount || 0, error: res.errorCount || 0 }
   } catch (err: any) {
@@ -296,13 +306,17 @@ async function commitImport() {
   if (!validRows.length) { toast.warning('没有可导入的有效数据'); return }
   importLoading.value = true
   try {
-    await request.post('/grades/import-commit', {
+    await importGradesCommit({
       classId: classId.value,
-      examName: selectedExam.value?.name,
-      examId: selectedExam.value?.id,
+      examName: selectedExam.value?.name || '',
+      examId: selectedExam.value?.id || '',
       subject: selectedSubject.value,
       date: selectedExam.value?.date || new Date().toISOString().slice(0, 10),
-      rows: validRows,
+      rows: validRows.map(r => ({
+        studentId: r.studentId,
+        score: r.score,
+        valid: true,
+      })),
     })
     showImport.value = false
     await loadGrades()

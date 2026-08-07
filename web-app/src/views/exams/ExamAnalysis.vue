@@ -10,6 +10,9 @@ import { toast } from '@/utils/feedback'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
+import {
+  listExams, getExamAnalysis, getClassRank, getExamTrend, aiAnalyzeExam,
+} from '@/api/teacher'
 import { Sparkles, FileText, BarChart3, TrendingUp, Trophy, ArrowLeft, Users, Target, Award, AlertTriangle } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -27,7 +30,7 @@ const selectedExamId = ref('')
 async function loadExams() {
   if (!classId.value) { exams.value = []; return }
   try {
-    const res = await request.get('/exams', { params: { classId: classId.value, take: 100 } })
+    const res = await listExams({ classId: classId.value, take: 100 })
     exams.value = Array.isArray(res) ? res : (res?.items || [])
     selectedExamId.value = ''
   } catch { exams.value = [] }
@@ -49,11 +52,9 @@ async function loadExamStats() {
   examStats.value = null
   try {
     const fullScoreMap = selectedExam.value?.subjectFullScores
-      ? Object.fromEntries(Object.entries(selectedExam.value.subjectFullScores).map(([k, v]) => [k, String(v)]))
+      ? Object.fromEntries(Object.entries(selectedExam.value.subjectFullScores).map(([k, v]) => [k, Number(v)]))
       : undefined
-    const params: Record<string, any> = { classId: classId.value, examId: selectedExamId.value }
-    if (fullScoreMap) params.fullScoreMap = JSON.stringify(fullScoreMap)
-    examStats.value = await request.get('/grades/analysis/exam', { params })
+    examStats.value = await getExamAnalysis(classId.value, selectedExamId.value, fullScoreMap)
   } catch (e: any) {
   } finally {
     examLoading.value = false
@@ -63,15 +64,54 @@ async function loadExamStats() {
 async function loadRank() {
   if (!classId.value || !selectedExamId.value) { rankData.value = []; return }
   try {
-    const params: Record<string, any> = { classId: classId.value, examId: selectedExamId.value }
-    if (rankSubject.value) params.subject = rankSubject.value
-    const res = await request.get('/grades/analysis/rank', { params })
-    rankData.value = res?.ranks || []
+    rankData.value = (await getClassRank(classId.value, selectedExamId.value, rankSubject.value || undefined))?.ranks || []
   } catch { rankData.value = [] }
 }
 
 watch(selectedExamId, () => { loadExamStats(); loadRank() })
 watch(rankSubject, loadRank)
+
+/* ============ 班级对比 ============ */
+const compareClassId = ref('')
+const analysisB = ref<any>(null)
+const compareLoading = ref(false)
+
+const compareClasses = computed(() => {
+  if (!classId.value || !classes.value.length) return []
+  const current = classes.value.find(c => c.id === classId.value)
+  const grade = current?.grade || ''
+  return classes.value.filter(c => c.id !== classId.value && c.grade === grade)
+})
+
+watch([classId, selectedExamId, compareClassId], () => {
+  if (classId.value && selectedExamId.value && compareClassId.value) {
+    loadCompare()
+  } else {
+    analysisB.value = null
+  }
+})
+
+async function loadCompare() {
+  if (!classId.value || !selectedExamId.value || !compareClassId.value) return
+  compareLoading.value = true
+  analysisB.value = null
+  try {
+    const fullScoreMap = selectedExam.value?.subjectFullScores
+      ? Object.fromEntries(Object.entries(selectedExam.value.subjectFullScores).map(([k, v]) => [k, Number(v)]))
+      : undefined
+    analysisB.value = await getExamAnalysis(compareClassId.value, selectedExamId.value, fullScoreMap)
+  } catch {
+    analysisB.value = null
+  } finally {
+    compareLoading.value = false
+  }
+}
+
+function fmt1(n: number | undefined) { return n != null ? n.toFixed(1) : '-' }
+function pct(n: number | undefined) {
+  if (n == null) return '-'
+  return (n <= 1 ? n * 100 : n).toFixed(1) + '%'
+}
 
 /* 统计计算 */
 const avgPassRate = computed(() => {
@@ -85,11 +125,16 @@ const avgExcellentRate = computed(() => {
   return rates.reduce((a: number, b: number) => a + b, 0) / rates.length
 })
 
-function fmt1(n: number | undefined) { return n != null ? n.toFixed(1) : '-' }
-function pct(n: number | undefined) {
-  if (n == null) return '-'
-  return (n <= 1 ? n * 100 : n).toFixed(1) + '%'
-}
+const compareBPassRate = computed(() => {
+  if (!analysisB.value?.subjects?.length) return 0
+  const rates = analysisB.value.subjects.map((s: any) => s.passRate || 0)
+  return rates.reduce((a: number, b: number) => a + b, 0) / rates.length
+})
+const compareBExcellentRate = computed(() => {
+  if (!analysisB.value?.subjects?.length) return 0
+  const rates = analysisB.value.subjects.map((s: any) => s.excellentRate || 0)
+  return rates.reduce((a: number, b: number) => a + b, 0) / rates.length
+})
 
 /* 分数分布柱状图数据 */
 const distSubject = ref('')
@@ -120,9 +165,7 @@ async function loadTrend() {
   if (!classId.value) { trendData.value = null; return }
   trendLoading.value = true
   try {
-    const params: Record<string, any> = { classId: classId.value }
-    if (trendSubject.value) params.subject = trendSubject.value
-    trendData.value = await request.get('/grades/analysis/trend', { params })
+    trendData.value = await getExamTrend(classId.value, trendSubject.value || undefined)
   } catch { trendData.value = null }
   finally { trendLoading.value = false }
 }
@@ -191,7 +234,7 @@ async function aiAnalyze() {
   aiLoading.value = true
   aiResult.value = ''
   try {
-    const res = await request.post('/ai/analyze-exam', { examId: selectedExamId.value })
+    const res = await aiAnalyzeExam(selectedExamId.value)
     aiResult.value = res?.content || '（无分析结果）'
   } catch (e: any) {
     aiResult.value = `分析失败：${e?.message || '未知错误'}`
@@ -203,6 +246,10 @@ async function aiAnalyze() {
 function goExamDetail() {
   if (!selectedExamId.value || !classId.value) return
   router.push({ path: '/teacher/exam-detail', query: { examId: selectedExamId.value, classId: classId.value } })
+}
+function goCompare() {
+  if (!classId.value) return
+  router.push({ path: '/teacher/exam-compare', query: { classId: classId.value } })
 }
 </script>
 
@@ -225,6 +272,9 @@ function goExamDetail() {
         </select>
         <button v-if="selectedExamId" class="px-3 py-2 rounded-xl bg-butter-100 text-butter-600 text-sm hover:bg-butter-200 flex items-center gap-1" @click="goExamDetail">
           <ArrowLeft class="w-4 h-4 rotate-180" /> 考试详情
+        </button>
+        <button v-if="selectedExamId" class="px-3 py-2 rounded-xl bg-mint-100 text-mint-600 text-sm hover:bg-mint-200 flex items-center gap-1" @click="goCompare">
+          <TrendingUp class="w-4 h-4" /> 进退步对比
         </button>
       </div>
     </div>
@@ -495,6 +545,90 @@ function goExamDetail() {
         <div class="text-sm text-cocoa-900 whitespace-pre-wrap leading-relaxed">{{ aiResult }}</div>
       </div>
     </template>
+
+    <!-- 班级对比 -->
+    <div v-if="classId && selectedExamId" class="bg-surface rounded-2xl p-6 shadow-softer">
+      <div class="flex items-center gap-3 mb-4 flex-wrap">
+        <div class="font-medium text-cocoa-700 flex items-center gap-2">
+          <Users class="w-4 h-4 text-butter-500" /> 班级对比
+        </div>
+        <select v-if="compareClasses.length" v-model="compareClassId" class="px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400">
+          <option value="">选择对比班级</option>
+          <option v-for="c in compareClasses" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <span v-else class="text-xs text-cocoa-400">同年级暂无其他班级可对比</span>
+      </div>
+
+      <div v-if="compareLoading" class="text-center py-8 text-cocoa-400">加载对比数据…</div>
+
+      <div v-else-if="compareClassId && analysisB" class="space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="stat-card">
+            <div class="text-xs text-cocoa-400">班级均分</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-lg font-bold text-cocoa-900">{{ fmt1(examStats.classAvg) }}</span>
+              <span class="text-xs text-cocoa-500">vs</span>
+              <span class="text-lg font-bold" :class="analysisB.classAvg >= (examStats.classAvg || 0) ? 'text-red-500' : 'text-mint-500'">{{ fmt1(analysisB.classAvg) }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="text-xs text-cocoa-400">总人数</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-lg font-bold text-cocoa-900">{{ examStats.totalStudents }}</span>
+              <span class="text-xs text-cocoa-500">vs</span>
+              <span class="text-lg font-bold text-cocoa-900">{{ analysisB.totalStudents }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="text-xs text-cocoa-400">及格率</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-lg font-bold text-mint-500">{{ pct(avgPassRate) }}</span>
+              <span class="text-xs text-cocoa-500">vs</span>
+              <span class="text-lg font-bold" :class="compareBPassRate >= avgPassRate ? 'text-red-500' : 'text-mint-500'">{{ pct(compareBPassRate) }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="text-xs text-cocoa-400">优秀率</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-lg font-bold text-butter-500">{{ pct(avgExcellentRate) }}</span>
+              <span class="text-xs text-cocoa-500">vs</span>
+              <span class="text-lg font-bold" :class="compareBExcellentRate >= avgExcellentRate ? 'text-red-500' : 'text-mint-500'">{{ pct(compareBExcellentRate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 各科对比 -->
+        <div class="bg-surface rounded-2xl p-4 shadow-softer">
+          <h3 class="text-sm font-medium text-cocoa-700 mb-3">各科对比</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-cream-100 text-cocoa-500 text-left">
+                <tr>
+                  <th class="px-3 py-2 font-medium">科目</th>
+                  <th class="px-3 py-2 font-medium text-right">均分（本班）</th>
+                  <th class="px-3 py-2 font-medium text-right">均分（对比班）</th>
+                  <th class="px-3 py-2 font-medium text-right">及格率（本班）</th>
+                  <th class="px-3 py-2 font-medium text-right">及格率（对比班）</th>
+                  <th class="px-3 py-2 font-medium text-right">优秀率（本班）</th>
+                  <th class="px-3 py-2 font-medium text-right">优秀率（对比班）</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-cream-100">
+                <tr v-for="s in examStats.subjects" :key="s.subject" class="hover:bg-cream-50">
+                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ s.subject }}</td>
+                  <td class="px-3 py-2 text-right">{{ fmt1(s.avg) }}</td>
+                  <td class="px-3 py-2 text-right">{{ fmt1(analysisB.subjects?.find((x: any) => x.subject === s.subject)?.avg) }}</td>
+                  <td class="px-3 py-2 text-right">{{ pct(s.passRate) }}</td>
+                  <td class="px-3 py-2 text-right">{{ pct(analysisB.subjects?.find((x: any) => x.subject === s.subject)?.passRate) }}</td>
+                  <td class="px-3 py-2 text-right">{{ pct(s.excellentRate) }}</td>
+                  <td class="px-3 py-2 text-right">{{ pct(analysisB.subjects?.find((x: any) => x.subject === s.subject)?.excellentRate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

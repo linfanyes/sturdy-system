@@ -454,6 +454,55 @@ export function getWeakStudents(classId: string, examId?: string) {
   return request.get<any, any>('/grades/analysis/weak', { params })
 }
 
+/* ============ 成绩 CRUD API ============ */
+
+/** 考试列表 */
+export function listExams(params?: Record<string, any>) {
+  return request.get<any, any>('/exams', { params })
+}
+
+/** 单个考试详情 */
+export function getExam(id: string) {
+  return request.get<any, any>('/exams/' + id)
+}
+
+/** 成绩列表（支持 classId / studentId / examId / subject 等过滤） */
+export function listGrades(params?: Record<string, any>) {
+  return request.get<any, any>('/grades', { params })
+}
+
+/** 导入预览 */
+export function importGradesPreview(payload: { classId: string; filename: string; data: string }) {
+  return request.post<any, any>('/grades/import-preview', payload)
+}
+
+/** 导入确认提交 */
+export function importGradesCommit(payload: {
+  classId: string
+  examName: string
+  examId: string
+  subject: string
+  date: string
+  rows: Array<{ studentId: string; score: number; valid?: boolean }>
+}) {
+  return request.post<any, any>('/grades/import-commit', payload)
+}
+
+/** AI 导入 */
+export function importGradesAi(payload: {
+  classId: string
+  mode: 'image' | 'file'
+  data: string
+  filename: string
+}) {
+  return request.post<any, any>('/grades/import-ai', payload)
+}
+
+/** 删除单条成绩记录 */
+export function removeGrade(id: string) {
+  return request.delete<any, void>('/grades/' + id)
+}
+
 /* ============ 通用 CRUD 辅助 ============ */
 
 /** 通用列表查询 */

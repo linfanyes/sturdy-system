@@ -99,7 +99,7 @@
           :class="rankClass(r.rank)"
         >
           <text class="td rk">{{ r.rank }}</text>
-          <text class="td nm">{{ r.studentName || '—' }}</text>
+          <text class="td nm" @click="goStudentGrades(r.studentId)">{{ r.studentName || '—' }}</text>
           <text class="td sc">{{ fmt1(r.score) }}</text>
           <text class="td pc">{{ pctNum(r.percentile) }}</text>
         </view>
@@ -113,7 +113,7 @@
           <view v-else class="mini-list">
             <view class="mini-row" v-for="(r, i) in top5" :key="'t' + i">
               <text class="mini-rk" :class="rankClass(r.rank)">{{ r.rank }}</text>
-              <text class="mini-nm">{{ r.studentName || '—' }}</text>
+              <text class="mini-nm" @click="goStudentGrades(r.studentId)">{{ r.studentName || '—' }}</text>
               <text class="mini-sc">{{ fmt1(r.score) }}</text>
             </view>
           </view>
@@ -124,7 +124,7 @@
           <view v-else class="mini-list">
             <view class="mini-row" v-for="(r, i) in bottom5" :key="'b' + i">
               <text class="mini-rk">{{ r.rank }}</text>
-              <text class="mini-nm">{{ r.studentName || '—' }}</text>
+              <text class="mini-nm" @click="goStudentGrades(r.studentId)">{{ r.studentName || '—' }}</text>
               <text class="mini-sc low">{{ fmt1(r.score) }}</text>
             </view>
           </view>
@@ -142,7 +142,7 @@
           <text class="td pc">班级均分</text>
         </view>
         <view class="tr" v-for="(w, i) in weakStudents" :key="'w' + i">
-          <text class="td nm">{{ w.studentName || w.name || '—' }}</text>
+          <text class="td nm" @click="goStudentGrades(w.studentId || w.id)">{{ w.studentName || w.name || '—' }}</text>
           <text class="td sc">
             <text v-if="w.weakSubjects?.length" v-for="s in w.weakSubjects" :key="s" class="tag weak">{{ s }}</text>
             <text v-else>-</text>
@@ -280,6 +280,11 @@ function rankClass(rank) {
   if (rank === 2) return 'r2'
   if (rank === 3) return 'r3'
   return ''
+}
+
+function goStudentGrades(studentId) {
+  if (!classId.value) return
+  uni.navigateTo({ url: '/pages/teaching/student-grades?studentId=' + encodeURIComponent(studentId) + '&classId=' + encodeURIComponent(classId.value) })
 }
 
 function onDistChange(e) {

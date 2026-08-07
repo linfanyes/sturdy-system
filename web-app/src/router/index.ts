@@ -94,6 +94,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'data-dashboard', name: 'teacher-data-dashboard', component: () => import('@/views/exams/DataDashboard.vue'), meta: { title: '数据看板', feature: 'analysis' } },
       { path: 'radar', name: 'teacher-radar', component: () => import('@/views/exams/Radar.vue'), meta: { title: '雷达图', feature: 'analysis' } },
       { path: 'exam-detail', name: 'teacher-exam-detail', component: () => import('@/views/exams/ExamDetail.vue'), meta: { title: '考试详情', feature: 'analysis' } },
+      { path: 'exam-compare', name: 'teacher-exam-compare', component: () => import('@/views/exams/ExamCompare.vue'), meta: { title: '进退步对比', feature: 'analysis' } },
       { path: 'student-grades', name: 'teacher-student-grades', component: () => import('@/views/exams/StudentGrades.vue'), meta: { title: '学生成绩', feature: 'grades' } },
       { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'attendances' }, meta: { title: '考勤', feature: 'attendance' } },
       { path: 'homework', name: 'teacher-homework', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'homework' }, meta: { title: '作业', feature: 'homework' } },

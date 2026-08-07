@@ -3,12 +3,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import {
-  getStudent, listAwards, type TeacherStudent,
+  getStudent, listAwards, listGrades, getStudentHistory, type TeacherStudent,
 } from '@/api/teacher'
 import request from '@/api/request'
 import {
   ArrowLeft, User, Phone, Users, BookOpen, Trophy, Calendar,
-  Mail, MapPin, IdCard,
+  Mail, MapPin, IdCard, TrendingUp,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -19,6 +19,8 @@ const loading = ref(false)
 const student = ref<TeacherStudent | null>(null)
 const awards = ref<any[]>([])
 const recentGrades = ref<any[]>([])
+const history = ref<any[]>([])
+const trendLoading = ref(false)
 
 const className = computed(() => {
   // Reuse class name lookup from classes store
@@ -27,13 +29,71 @@ const className = computed(() => {
   return found?.name || student.value?.classId || '-'
 })
 
+/* ============ 成绩趋势图 ============ */
+const examTrend = computed(() => {
+  const map = new Map<string, { examName: string; date: string; scores: number[]; classAvgs: number[] }>()
+  for (const h of history.value) {
+    if (!h.examId) continue
+    const key = h.examId
+    if (!map.has(key)) {
+      map.set(key, { examName: h.examName || '', date: h.date || '', scores: [], classAvgs: [] })
+    }
+    const entry = map.get(key)!
+    if (h.score != null) entry.scores.push(Number(h.score))
+    if (h.classAvg != null) entry.classAvgs.push(Number(h.classAvg))
+  }
+  return Array.from(map.values())
+    .map(e => ({
+      ...e,
+      avg: e.scores.length ? Math.round(e.scores.reduce((a, b) => a + b, 0) / e.scores.length * 10) / 10 : null,
+      classAvg: e.classAvgs.length ? Math.round(e.classAvgs.reduce((a, b) => a + b, 0) / e.classAvgs.length * 10) / 10 : null,
+    }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+})
+
+const CHART_W = 700
+const CHART_H = 200
+const CHART_PAD = { top: 20, right: 20, bottom: 30, left: 40 }
+
+const trendChart = computed(() => {
+  const data = examTrend.value
+  if (!data.length) return null
+  const n = data.length
+  const plotW = CHART_W - CHART_PAD.left - CHART_PAD.right
+  const plotH = CHART_H - CHART_PAD.top - CHART_PAD.bottom
+  const scores = data.flatMap(d => [d.avg, d.classAvg].filter((s): s is number => s != null))
+  const maxY = Math.max(100, ...scores)
+  const minY = Math.min(0, ...scores)
+  const yRange = maxY - minY || 100
+
+  const studentPoints = data.map((d, i) => {
+    const x = n <= 1 ? CHART_PAD.left + plotW / 2 : CHART_PAD.left + (i / (n - 1)) * plotW
+    const y = d.avg != null ? CHART_PAD.top + plotH - ((d.avg - minY) / yRange) * plotH : null
+    return { x, y, label: d.examName, avg: d.avg }
+  }).filter((p): p is { x: number; y: number; label: string; avg: number } => p.y != null)
+
+  const classPoints = data.map((d, i) => {
+    const x = n <= 1 ? CHART_PAD.left + plotW / 2 : CHART_PAD.left + (i / (n - 1)) * plotW
+    const y = d.classAvg != null ? CHART_PAD.top + plotH - ((d.classAvg - minY) / yRange) * plotH : null
+    return { x, y }
+  }).filter((p): p is { x: number; y: number } => p.y != null)
+
+  const studentPath = studentPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  const classPath = classPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+
+  const ticks = [0, 25, 50, 75, 100].map(v => ({ v, y: CHART_PAD.top + plotH - ((v - minY) / yRange) * plotH }))
+
+  return { CHART_W, CHART_H, CHART_PAD, plotW, plotH, studentPoints, classPoints, studentPath, classPath, ticks, maxY, minY, data }
+})
+
 async function load() {
   loading.value = true
   try {
-    const [stu, aw, grd] = await Promise.allSettled([
+    const [stu, aw, grd, hist] = await Promise.allSettled([
       getStudent(studentId.value),
       listAwards(student.value?.classId || ''),
-      request.get('/grades', { params: { studentId: studentId.value, take: 10 } }),
+      listGrades({ studentId: studentId.value, take: 10 }),
+      loadHistory(),
     ])
     if (stu.status === 'fulfilled') student.value = stu.value
     else toast.error('加载学生信息失败')
@@ -44,6 +104,18 @@ async function load() {
     toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function loadHistory() {
+  trendLoading.value = true
+  try {
+    const data = await getStudentHistory(studentId.value)
+    history.value = data?.history || []
+  } catch {
+    history.value = []
+  } finally {
+    trendLoading.value = false
   }
 }
 
@@ -154,6 +226,38 @@ function goBack() {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- 成绩趋势 -->
+        <div v-if="trendLoading" class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200 text-center text-cocoa-400">
+          加载趋势中…
+        </div>
+        <div v-else-if="!trendChart" class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200 text-center text-cocoa-400 text-sm">
+          暂无趋势数据
+        </div>
+        <div v-else class="bg-surface rounded-2xl p-6 shadow-softer border border-cream-200">
+          <div class="flex items-center gap-2 text-cocoa-900 mb-3">
+            <TrendingUp class="w-5 h-5 text-butter-500" /> 成绩趋势
+          </div>
+          <svg :viewBox="`0 0 ${trendChart.CHART_W} ${trendChart.CHART_H}`" class="w-full h-auto">
+            <g v-for="t in trendChart.ticks" :key="'y' + t.v">
+              <line :x1="trendChart.CHART_PAD.left" :x2="trendChart.CHART_W - trendChart.CHART_PAD.right" :y1="t.y" :y2="t.y" stroke="#f5f0e8" stroke-dasharray="3 3" />
+              <text :x="trendChart.CHART_PAD.left - 6" :y="t.y + 4" text-anchor="end" class="fill-cocoa-400" style="font-size: 10px;">{{ t.v }}</text>
+            </g>
+            <g v-for="(p, i) in trendChart.studentPoints" :key="'x' + i">
+              <text :x="p.x" :y="trendChart.CHART_H - 6" text-anchor="middle" class="fill-cocoa-400" style="font-size: 9px;">{{ p.label.length > 5 ? p.label.slice(0, 5) + '…' : p.label }}</text>
+            </g>
+            <path v-if="trendChart.classPoints.length > 1" :d="trendChart.classPath" stroke="#c0c4cc" stroke-width="1.5" fill="none" stroke-dasharray="4 2" />
+            <path v-if="trendChart.studentPoints.length > 1" :d="trendChart.studentPath" stroke="#e6a23c" stroke-width="2" fill="none" />
+            <g v-for="(p, i) in trendChart.studentPoints" :key="'p' + i">
+              <circle :cx="p.x" :cy="p.y" r="3" fill="#e6a23c" />
+              <text v-if="p.avg != null" :x="p.x" :y="p.y - 6" text-anchor="middle" class="fill-cocoa-700" style="font-size: 9px; font-weight: 600;">{{ p.avg.toFixed(1) }}</text>
+            </g>
+          </svg>
+          <div class="flex items-center justify-center gap-4 mt-2 text-xs text-cocoa-500">
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-butter-500 rounded"></span> 本人均分</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-gray-300 rounded" style="border-bottom: 1px dashed #c0c4cc;"></span> 班级均分</span>
+          </div>
         </div>
       </div>
 

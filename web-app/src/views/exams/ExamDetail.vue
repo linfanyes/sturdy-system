@@ -211,6 +211,11 @@ function studentName(r: any): string {
   return s?.name || r.studentId || '-'
 }
 
+function goStudentGrades(studentId: string) {
+  if (!classId.value) return
+  router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
+}
+
 const top10 = computed(() =>
   ranks.value
     .filter(r => r.rank != null)
@@ -525,7 +530,7 @@ function goBack() {
                   </span>
                   <span v-else>{{ r.rank }}</span>
                 </td>
-                <td class="px-4 py-2.5 font-medium text-cocoa-900">{{ studentName(r) }}</td>
+                <td class="px-4 py-2.5 font-medium text-butter-600 cursor-pointer hover:underline" @click="goStudentGrades(r.studentId)">{{ studentName(r) }}</td>
                 <td class="px-4 py-2.5 text-butter-600 font-semibold">{{ fmt1(r.score) }}</td>
                 <td class="px-4 py-2.5 text-cocoa-700">{{ pctNum(r.percentile) }}</td>
               </tr>
@@ -554,7 +559,7 @@ function goBack() {
               <tbody class="divide-y divide-cream-100">
                 <tr v-for="r in top10" :key="'t' + r.rank" class="hover:bg-cream-50">
                   <td class="px-3 py-2" :class="rankClass(r.rank)">{{ r.rank }}</td>
-                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ studentName(r) }}</td>
+                  <td class="px-3 py-2 font-medium text-butter-600 cursor-pointer hover:underline" @click="goStudentGrades(r.studentId)">{{ studentName(r) }}</td>
                   <td class="px-3 py-2 text-right text-butter-600 font-semibold">{{ fmt1(r.score) }}</td>
                 </tr>
               </tbody>
@@ -580,7 +585,7 @@ function goBack() {
               <tbody class="divide-y divide-cream-100">
                 <tr v-for="r in bottom10" :key="'bt' + r.rank" class="hover:bg-cream-50">
                   <td class="px-3 py-2 text-cocoa-700">{{ r.rank }}</td>
-                  <td class="px-3 py-2 font-medium text-cocoa-900">{{ studentName(r) }}</td>
+                  <td class="px-3 py-2 font-medium text-butter-600 cursor-pointer hover:underline" @click="goStudentGrades(r.studentId)">{{ studentName(r) }}</td>
                   <td class="px-3 py-2 text-right text-red-500 font-semibold">{{ fmt1(r.score) }}</td>
                 </tr>
               </tbody>
@@ -611,7 +616,7 @@ function goBack() {
             </thead>
             <tbody class="divide-y divide-cream-100">
               <tr v-for="(w, i) in weakStudents" :key="'w' + i" class="hover:bg-cream-50">
-                <td class="px-3 py-2 font-medium text-cocoa-900">{{ w.studentName || w.name || '-' }}</td>
+                <td class="px-3 py-2 font-medium text-butter-600 cursor-pointer hover:underline" @click="goStudentGrades(w.studentId || w.id)">{{ w.studentName || w.name || '-' }}</td>
                 <td class="px-3 py-2">
                   <span v-if="w.weakSubjects?.length" class="flex flex-wrap gap-1">
                     <span v-for="s in w.weakSubjects" :key="s" class="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-500">{{ s }}</span>
