@@ -102,49 +102,61 @@
 
     <!-- 统计卡（2×2 微信风格，4 列太挤） -->
     <view class="ov-grid">
-      <view class="ov" @click="goCrud('classes')">
-        <view class="ov-ic" style="background:#fff3d6">🏫</view>
-        <view class="ov-num">{{ classList.length }}</view>
-        <view class="ov-lb">班级</view>
+      <view v-if="loading" class="ov skel-card" v-for="i in 4" :key="'sk'+i">
+        <view class="skel-block w50"></view>
+        <view class="skel-block w70" style="margin-top:16rpx"></view>
       </view>
-      <view class="ov" @click="goCrud('students')">
-        <view class="ov-ic" style="background:#e8f9e8">🧒</view>
-        <view class="ov-num">{{ studentList.length }}</view>
-        <view class="ov-lb">学生</view>
-      </view>
-      <view class="ov" @click="goCrud('notes')">
-        <view class="ov-ic" style="background:#fde8ea">📒</view>
-        <view class="ov-num">{{ noteList.length }}</view>
-        <view class="ov-lb">笔记</view>
-      </view>
-      <view class="ov" @click="goPage('/pages/teaching/grades')">
-        <view class="ov-ic" style="background:#e8f1fb">📊</view>
-        <view class="ov-num">{{ gradeList.length }}</view>
-        <view class="ov-lb">考试</view>
-      </view>
+      <template v-else>
+        <view class="ov" @click="goCrud('classes')">
+          <view class="ov-ic" style="background:#fff3d6">🏫</view>
+          <view class="ov-num">{{ classList.length }}</view>
+          <view class="ov-lb">班级</view>
+        </view>
+        <view class="ov" @click="goCrud('students')">
+          <view class="ov-ic" style="background:#e8f9e8">🧒</view>
+          <view class="ov-num">{{ studentList.length }}</view>
+          <view class="ov-lb">学生</view>
+        </view>
+        <view class="ov" @click="goCrud('notes')">
+          <view class="ov-ic" style="background:#fde8ea">📒</view>
+          <view class="ov-num">{{ noteList.length }}</view>
+          <view class="ov-lb">笔记</view>
+        </view>
+        <view class="ov" @click="goPage('/pages/teaching/grades')">
+          <view class="ov-ic" style="background:#e8f1fb">📊</view>
+          <view class="ov-num">{{ gradeList.length }}</view>
+          <view class="ov-lb">考试</view>
+        </view>
+      </template>
     </view>
 
     <!-- 今日教学实时指标 -->
     <view class="ov-grid today-stats">
-      <view class="ov ts-card">
-        <view class="ov-ic" style="background:#e8f1fb">📋</view>
-        <view class="ov-num ts-num">{{ todayStats.attendanceRate }}%</view>
-        <view class="ov-lb">今日出勤率</view>
+      <view v-if="loading" class="ov skel-card" v-for="i in 3" :key="'sk2'+i">
+        <view class="skel-block w50"></view>
+        <view class="skel-block w70" style="margin-top:16rpx"></view>
       </view>
-      <view class="ov ts-card">
-        <view class="ov-ic" style="background:#fff3d6">📝</view>
-        <view class="ov-num ts-num" :class="todayStats.pendingHomework > 0 && 'warn'">{{ todayStats.pendingHomework }}</view>
-        <view class="ov-lb">待批改作业</view>
-      </view>
-      <view class="ov ts-card">
-        <view class="ov-ic" style="background:#e8f9e8">🔔</view>
-        <view class="ov-num ts-num">{{ todayStats.lessonCount }}</view>
-        <view class="ov-lb">今日课程节数</view>
-      </view>
+      <template v-else>
+        <view class="ov ts-card">
+          <view class="ov-ic" style="background:#e8f1fb">📋</view>
+          <view class="ov-num ts-num">{{ todayStats.attendanceRate }}%</view>
+          <view class="ov-lb">今日出勤率</view>
+        </view>
+        <view class="ov ts-card">
+          <view class="ov-ic" style="background:#fff3d6">📝</view>
+          <view class="ov-num ts-num" :class="todayStats.pendingHomework > 0 && 'warn'">{{ todayStats.pendingHomework }}</view>
+          <view class="ov-lb">待批改作业</view>
+        </view>
+        <view class="ov ts-card">
+          <view class="ov-ic" style="background:#e8f9e8">🔔</view>
+          <view class="ov-num ts-num">{{ todayStats.lessonCount }}</view>
+          <view class="ov-lb">今日课程节数</view>
+        </view>
+      </template>
     </view>
 
     <!-- 班级人数分布（数据可视化，对齐 Web 工作台图表区） -->
-    <view class="card" v-if="classDist.length">
+    <view class="card" v-if="!loading && classDist.length">
       <view class="card-h">
         <text class="ch-t">🏫 班级人数分布</text>
         <text class="ch-m">{{ studentList.length }} 人</text>
@@ -153,6 +165,12 @@
         <text class="dist-name">{{ d.name }}</text>
         <view class="dist-bar"><view class="dist-fill" :style="{ width: d.pct + '%' }" /></view>
         <text class="dist-num">{{ d.count }}</text>
+      </view>
+    </view>
+    <view v-else-if="loading" class="card skel-card">
+      <view class="skel-block w60" style="margin:20rpx"></view>
+      <view v-for="i in 3" :key="'sk3'+i" style="margin:16rpx 20rpx">
+        <view class="skel-block w80"></view>
       </view>
     </view>
 
@@ -347,8 +365,6 @@
     <view class="switch-role" v-if="parent.parentToken" @tap="switchToParent">
       🔄 切换到家长端
     </view>
-
-    <view v-if="loading" class="loadtip">加载中…</view>
   </view>
 </template>
 
@@ -958,4 +974,14 @@ function switchToParent() {
 .lb { margin-top: 12rpx; color: var(--c-title); font-size: 26rpx; }
 .loadtip { text-align: center; color: var(--c-sub); font-size: 24rpx; padding: 20rpx 0; }
 .switch-role { text-align:center; padding:20rpx 0; font-size:26rpx; color:#07c160; border-top:1rpx solid var(--c-border); margin-top:20rpx; }
+
+/* 骨架屏 */
+.skel-card { pointer-events: none; }
+.skel-block { height: 48rpx; border-radius: 16rpx; background: #e5e5e5; animation: skelPulse 1.2s infinite; }
+.w50 { width: 50%; }
+.w60 { width: 60%; }
+.w70 { width: 70%; }
+.w80 { width: 80%; }
+.dark .skel-block { background: #3a3a3a; }
+@keyframes skelPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
 </style>

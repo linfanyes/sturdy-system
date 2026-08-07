@@ -1,22 +1,28 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="list">
-      <view
-        v-for="c in list"
-        :key="c.id"
-        class="item"
-      >
-        <view class="info" @click="open(c)">
-          <view class="name"><text class="dot" :style="{ background: c.color || '#07c160' }"></text>{{ c.name }}</view>
-          <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}<text class="stu"> · {{ c.studentCount ?? '0' }} 名学生</text><text v-if="c.slogan" class="slogan"> · {{ c.slogan }}</text></view>
-        </view>
-        <view class="ops">
-          <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
-          <text class="op edit" @click.stop="edit(c)">编辑</text>
-          <text class="op del" @click.stop="deleteClass(c)">删除</text>
-        </view>
+      <view v-if="pageLoading" v-for="i in 5" :key="'sk'+i" class="item skel">
+        <view class="skel-block w60"></view>
+        <view class="skel-block w40"></view>
       </view>
-      <EmptyState v-if="!list.length" icon="🏫" text="还没有班级" hint="点下方按钮新建第一个班级" />
+      <template v-else>
+        <view
+          v-for="c in list"
+          :key="c.id"
+          class="item"
+        >
+          <view class="info" @click="open(c)">
+            <view class="name"><text class="dot" :style="{ background: c.color || '#07c160' }"></text>{{ c.name }}</view>
+            <view class="meta">{{ c.grade }} · {{ c.term || '未设学期' }}<text class="stu"> · {{ c.studentCount ?? '0' }} 名学生</text><text v-if="c.slogan" class="slogan"> · {{ c.slogan }}</text></view>
+          </view>
+          <view class="ops">
+            <text class="op detail" @click.stop="showDetailOf(c)">详情</text>
+            <text class="op edit" @click.stop="edit(c)">编辑</text>
+            <text class="op del" @click.stop="deleteClass(c)">删除</text>
+          </view>
+        </view>
+        <EmptyState v-if="!list.length" icon="🏫" text="还没有班级" hint="点下方按钮新建第一个班级" />
+      </template>
     </view>
 
     <button class="add" @click="toggleForm">{{ showForm && !editingId ? '收起' : '＋ 新建班级' }}</button>
@@ -206,6 +212,7 @@ import { auth, theme, flushTabBarStyle, switchTabParams } from '../../common/sto
 import { batchRun } from '../../common/request'
 
 const list = ref([])
+const pageLoading = ref(false)
 const showForm = ref(false)
 const editingId = ref('')
 const saving = ref(false)
@@ -238,6 +245,7 @@ const className = computed(() => grades[form.value.gradeIdx] + (form.value.class
 const autoTermName = computed(() => years[form.value.yearIdx] + '年' + quarters[form.value.quarterIdx] + '学期')
 
 async function load() {
+  pageLoading.value = true
   list.value = await listClasses({ loading: true, loadingText: '加载班级' })
   try {
     const pub = await getPublicConfig()
@@ -245,6 +253,7 @@ async function load() {
   } catch (e) {
     pubSubjects.value = []
   }
+  finally { pageLoading.value = false }
 }
 const pubSubjects = ref([])
 onShow(async () => {
@@ -661,4 +670,12 @@ async function confirmAddMember() {
 .member-subj { font-size: 22rpx; color: var(--c-sub); }
 .member-del { font-size: 24rpx; color: var(--c-danger); padding: 8rpx 18rpx; background: rgba(230, 67, 64, 0.12); border-radius: 24rpx; flex-shrink: 0; }
 .empty-members { text-align: center; color: var(--c-sub); padding: 40rpx 0; font-size: 26rpx; }
+
+/* 骨架屏 */
+.skel { pointer-events: none; }
+.skel-block { height: 48rpx; border-radius: 16rpx; background: #e5e5e5; animation: skelPulse 1.2s infinite; }
+.w60 { width: 60%; }
+.w40 { width: 40%; }
+.dark .skel-block { background: #3a3a3a; }
+@keyframes skelPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
 </style>

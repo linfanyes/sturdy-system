@@ -295,12 +295,27 @@ function handlePrint() {
           </tr>
         </thead>
         <tbody class="divide-y divide-cream-100">
-          <tr v-if="loading" class="text-center text-cocoa-400">
-            <td colspan="7" class="py-8">加载中…</td>
-          </tr>
-          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
-            <td colspan="7" class="py-8">暂无班级数据</td>
-          </tr>
+          <template v-if="loading">
+            <tr v-for="i in 6" :key="'sk'+i">
+              <td colspan="7" class="py-3">
+                <div class="animate-pulse flex items-center gap-4 px-4">
+                  <div class="h-5 bg-cream-100 rounded flex-1"></div>
+                  <div class="h-5 bg-cream-100 rounded w-20"></div>
+                  <div class="h-5 bg-cream-100 rounded w-16"></div>
+                  <div class="h-5 bg-cream-100 rounded w-24"></div>
+                  <div class="h-5 bg-cream-100 rounded w-16"></div>
+                  <div class="h-5 bg-cream-100 rounded w-28"></div>
+                  <div class="h-5 bg-cream-100 rounded w-20"></div>
+                </div>
+              </td>
+            </tr>
+          </template>
+          <template v-else-if="filtered.length === 0">
+            <tr class="text-center text-cocoa-400">
+              <td colspan="7" class="py-8">暂无班级数据</td>
+            </tr>
+          </template>
+          <template v-else>
           <tr v-for="c in filtered" :key="c.id" class="hover:bg-cream-50 transition-colors cursor-pointer" @dblclick="router.push('/school-admin/classes/' + c.id)">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ c.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ c.grade || '-' }}</td>
@@ -334,6 +349,7 @@ function handlePrint() {
               </button>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>
