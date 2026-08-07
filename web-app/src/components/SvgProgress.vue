@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-interface ProgressItem { label: string; value: number; total: number; color?: string }
+interface ProgressItem { label: string; value: number; total?: number | null; color?: string }
 
 const props = withDefaults(defineProps<{
   data: ProgressItem[]
@@ -11,11 +11,15 @@ const props = withDefaults(defineProps<{
 
 const colors = ['#e6a23c', '#67c23a', '#409eff', '#e06c75', '#8e7cc3', '#40c9c6', '#ff9800', '#2196f3']
 
-const items = computed(() => props.data.map((d, i) => ({
-  ...d,
-  color: d.color || colors[i % colors.length],
-  pct: d.total > 0 ? Math.min((d.value / d.total) * 100, 100) : 0,
-})))
+const items = computed(() => props.data.map((d, i) => {
+  const total = d.total ?? 0
+  return {
+    ...d,
+    color: d.color || colors[i % colors.length],
+    pct: total > 0 ? Math.min((d.value / total) * 100, 100) : 0,
+    hasTotal: total > 0,
+  }
+}))
 </script>
 
 <template>
@@ -26,7 +30,7 @@ const items = computed(() => props.data.map((d, i) => ({
         <div class="flex items-center justify-between text-xs mb-1">
           <span class="text-cocoa-700 font-medium truncate flex-1">{{ it.label }}</span>
           <span class="text-cocoa-500 tabular-nums">
-            {{ it.value }}<template v-if="showPercent"> / {{ it.total }} ({{ Math.round(it.pct) }}%)</template>
+            {{ it.value }}<template v-if="showPercent && it.hasTotal"> / {{ it.total }} ({{ Math.round(it.pct) }}%)</template>
           </span>
         </div>
         <div class="h-2 bg-cream-100 rounded-full overflow-hidden">

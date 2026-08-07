@@ -92,7 +92,8 @@ async function loadGradeTrend() {
 onMounted(() => { load(); loadCharts() })
 
 /* —— 概览统计 —— */
-const totalStudents = computed(() => students.value.length || classes.value.length)
+const totalStudents = computed(() => students.value.length)
+const totalClasses = computed(() => classes.value.length)
 const totalExams = computed(() => recentExams.value.length)
 
 /* 待批改作业数 */

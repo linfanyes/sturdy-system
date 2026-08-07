@@ -70,10 +70,10 @@ const attendanceTrend = computed(() => {
 
 // 核心指标
 const coreMetrics = computed(() => [
-  { label: '教师配齐率', value: stats.value.totalTeachers, total: Math.max(stats.value.totalClasses * 2, 1), color: '#e6a23c' },
-  { label: '学生入学率', value: stats.value.totalStudents, total: Math.max(stats.value.totalClasses * 35, 1), color: '#67c23a' },
-  { label: '作业批改率', value: stats.value.pendingHomework > 0 ? 100 : 0, total: 100, color: '#1C6FB3' },
-  { label: '班级活跃率', value: stats.value.totalClasses, total: Math.max(stats.value.totalTeachers, 1), color: '#8e7cc3' }
+  { label: '教师数', value: stats.value.totalTeachers, total: null, color: '#e6a23c' },
+  { label: '班级数', value: stats.value.totalClasses, total: null, color: '#1C6FB3' },
+  { label: '学生数', value: stats.value.totalStudents, total: null, color: '#67c23a' },
+  { label: '待批改作业', value: stats.value.pendingHomework, total: null, color: '#E6A23C' },
 ])
 
 async function load() {
