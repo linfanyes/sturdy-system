@@ -4,6 +4,7 @@
  * 覆盖小学人教版语文、人教版数学、外研版三起英语三科
  */
 import { ref, computed, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import { BookOpen, Plus, Edit2, Trash2, ChevronRight, ChevronDown, Sparkles, Loader2, Download, X, Database } from 'lucide-vue-next'
 import {
   listTextbooks, createTextbook, updateTextbook, deleteTextbook,
@@ -35,7 +36,7 @@ async function load() {
   try {
     textbooks.value = await listTextbooks()
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -95,10 +96,10 @@ async function doSeedDefaults() {
   seeding.value = true
   try {
     const res = await seedDefaultTextbooks()
-    alert(`初始化完成：新增 ${res.created} 本教材${res.skipped ? `，跳过 ${res.skipped} 本已存在` : ''}；共 ${res.totalUnits} 个单元、${res.totalPoints} 个知识点。`)
+    toast.success(`初始化完成：新增 ${res.created} 本教材${res.skipped ? `，跳过 ${res.skipped} 本已存在` : ''}；共 ${res.totalUnits} 个单元、${res.totalPoints} 个知识点。`)
     await load()
   } catch (e: any) {
-    alert(e?.message || '初始化失败')
+    toast.error(e?.message || '初始化失败')
   } finally {
     seeding.value = false
   }
@@ -106,18 +107,18 @@ async function doSeedDefaults() {
 
 async function doAiGenerate() {
   const f = aiForm.value
-  if (!f.publisher || !f.subject || !f.grade || !f.term) { alert('请填全出版社、学科、年级、册次'); return }
+  if (!f.publisher || !f.subject || !f.grade || !f.term) { toast.warning('请填全出版社、学科、年级、册次'); return }
   aiGenerating.value = true
   try {
     const res = await aiGenerateTextbook(f)
-    alert(`生成成功：${res.unitCount} 个单元，${res.pointCount} 个知识点`)
+    toast.success(`生成成功：${res.unitCount} 个单元，${res.pointCount} 个知识点`)
     showAiModal.value = false
     await load()
     expandedTextbooks.value = new Set([res.textbookId])
     const { listUnits } = await import('@/api/textbook')
     unitsMap.value[res.textbookId] = await listUnits(res.textbookId)
   } catch (e: any) {
-    alert(e?.message || 'AI 生成失败')
+    toast.error(e?.message || 'AI 生成失败')
   } finally {
     aiGenerating.value = false
   }
@@ -171,7 +172,7 @@ async function saveEdit() {
     editing.value = null
     if (kind === 'textbook') await load()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   }
 }
 
@@ -189,7 +190,7 @@ async function remove(kind: 'textbook' | 'unit' | 'point', id: string, parentId?
       if (parentId) pointsMap.value[parentId] = await (await import('@/api/textbook')).listPoints(parentId)
     }
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

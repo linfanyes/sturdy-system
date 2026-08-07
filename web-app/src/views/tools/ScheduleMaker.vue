@@ -5,6 +5,7 @@
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import { CalendarDays, Save, Printer, Trash2, Wand2, Loader2, Download, Pencil } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
 import request from '@/api/request'
@@ -207,7 +208,7 @@ const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
 }
 
 function autoArrange() {
-  if (!classId.value) { alert('请先选择班级'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
   const cls = activeClass.value
   const subjects: string[] = (cls?.subjects && cls.subjects.length) ? cls.subjects : COMMON_SUBJECTS
   const stMap: Record<string, string> = cls?.subjectTeachers || {}
@@ -285,7 +286,7 @@ function collectCells() {
 }
 
 async function saveToServer() {
-  if (!classId.value) { alert('请先选择班级'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
   saving.value = true
   try {
     // 1. 删除该班旧课表
@@ -295,9 +296,9 @@ async function saveToServer() {
     await Promise.all(payload.map(c => request.post('/schedules', c)))
     // 3. 重新加载，刷新 id
     await load()
-    alert('已保存到服务器')
+    toast.success('已保存到服务器')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -315,7 +316,7 @@ function cellText(c: Cell | null | undefined): string {
 }
 
 function exportCsv() {
-  if (!classId.value) { alert('请先选择班级'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
   const name = activeClass.value?.name || classId.value
   const header = ['节次', ...days.value]
   const rows = ROWS.map(r => [r.label, ...days.value.map((_, d) => cellText(grid.value[r.key]?.[d]))])

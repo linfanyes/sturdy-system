@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import request from '@/api/request'
 import { Image as ImageIcon, Download, Sparkles } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const prompt = ref('')
 const size = ref('1024x1024')
@@ -9,15 +10,15 @@ const generating = ref(false)
 const imageUrl = ref('')
 
 async function generate() {
-  if (!prompt.value.trim()) { alert('请输入图片描述'); return }
+  if (!prompt.value.trim()) { toast.warning('请输入图片描述'); return }
   generating.value = true
   imageUrl.value = ''
   try {
     const res = await request.post('/ai/gen-image', { prompt: prompt.value, size: size.value })
     imageUrl.value = res?.url || res?.image || ''
-    if (!imageUrl.value) alert('未返回图片地址')
+    if (!imageUrl.value) toast.warning('未返回图片地址')
   } catch (e: any) {
-    alert(e?.message || '生成失败')
+    toast.error(e?.message || '生成失败')
   } finally {
     generating.value = false
   }

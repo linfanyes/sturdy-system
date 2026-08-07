@@ -163,7 +163,9 @@ async function tryLoadServer() {
       }))
       saveLocal()
     }
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 
 async function loadClasses() {

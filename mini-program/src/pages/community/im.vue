@@ -257,7 +257,9 @@ async function initTim(sdkAppId, userSig) {
     if (sdkReady && !connected.value) {
       try {
         await tim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
-      } catch (e) { console.error('[mini catch]', e) }
+      } catch {
+        // ignore
+      }
     }
     return
   }
@@ -276,7 +278,6 @@ async function initTim(sdkAppId, userSig) {
   tim.on(TIM.EVENT.SDK_READY, onSdkReady)
   tim.on(TIM.EVENT.MESSAGE_RECEIVED, onMessageReceived)
   tim.on(TIM.EVENT.MESSAGE_READ_BY_PEER, onPeerRead)
-  tim.on(TIM.EVENT.ERROR, (e) => console.error('[IM] error', e))
   try {
     await tim.login({ userID: loginUser.value, userSig: decodeURIComponent(userSig) })
   } catch (e) {
@@ -297,10 +298,14 @@ async function openConv(id) {
   try {
     const res = await tim.getMessageList({ conversationID: id })
     conv.messages = res.data.messageList.map(normMsg)
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
   try {
     await tim.setMessageRead({ conversationID: id })
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
   scrollToBottom()
 }
 
@@ -315,14 +320,20 @@ async function openByTo(to, name, type, sub = '') {
   if (!demoMode.value) {
     try {
       await tim.getConversationProfile({ conversationID: id })
-    } catch (e) { console.error('[mini catch]', e) }
+    } catch {
+      // ignore
+    }
     try {
       const res = await tim.getMessageList({ conversationID: id })
       conv.messages = res.data.messageList.map(normMsg)
-    } catch (e) { console.error('[mini catch]', e) }
+    } catch {
+      // ignore
+    }
     try {
       await tim.setMessageRead({ conversationID: id })
-    } catch (e) { console.error('[mini catch]', e) }
+    } catch {
+      // ignore
+    }
   }
   scrollToBottom()
 }
@@ -488,7 +499,9 @@ async function createClassGroup() {
     uni.showToast({ title: '班级群已创建', icon: 'success' })
     try {
       await api.post('/im/class-group', { classId: cls.id, groupId: gid })
-    } catch (e) { console.error('[mini catch]', e) }
+    } catch {
+      // ignore
+    }
     const idx = classes.value.findIndex((c) => c.id === cls.id)
     if (idx >= 0) classes.value[idx].imGroupId = gid
     openByTo(gid, classLabel(cls), 'GROUP')

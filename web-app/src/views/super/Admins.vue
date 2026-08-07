@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import { Users, Plus, Edit3, Trash2, KeyRound, Power, Loader2 } from 'lucide-vue-next'
 import {
   listSchoolAdmins, createSchoolAdmin, updateSchoolAdmin,
@@ -49,7 +50,7 @@ async function load() {
     }
     teacherCountBySchool.value = map
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -84,11 +85,11 @@ function openEdit(row: any) {
 }
 
 async function submit() {
-  if (!form.value.schoolId) { alert('请选择所属学校'); return }
-  if (!form.value.name) { alert('请填写姓名'); return }
+  if (!form.value.schoolId) { toast.warning('请选择所属学校'); return }
+  if (!form.value.name) { toast.warning('请填写姓名'); return }
   if (!editingId.value) {
-    if (!form.value.username) { alert('请填写用户名'); return }
-    if (!form.value.password) { alert('请填写密码'); return }
+    if (!form.value.username) { toast.warning('请填写用户名'); return }
+    if (!form.value.password) { toast.warning('请填写密码'); return }
   }
   submitting.value = true
   try {
@@ -108,7 +109,7 @@ async function submit() {
     showForm.value = false
     await load()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     submitting.value = false
   }
@@ -130,9 +131,9 @@ async function submitReset(password: string) {
   try {
     const res: any = await resetSchoolAdminPassword(resetTarget.value.id, password)
     showReset.value = false
-    alert('密码已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
+    toast.success('密码已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
-    alert(e?.message || '重置失败')
+    toast.error(e?.message || '重置失败')
   } finally {
     resetting.value = false
   }
@@ -145,7 +146,7 @@ async function toggleEnabled(row: any) {
     await toggleSchoolAdminEnabled(row.id, next)
     row.enabled = next
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -156,7 +157,7 @@ async function handleDelete(row: any) {
     await deleteSchoolAdmin(row.id)
     await load()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

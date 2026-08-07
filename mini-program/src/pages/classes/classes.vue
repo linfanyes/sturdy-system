@@ -485,7 +485,9 @@ async function loadSchoolTeachers() {
     // 班主任特权接口：查询本校教师列表（供添加科任老师时选择）
     const res = await api.post('/classes/school-teachers')
     if (Array.isArray(res)) schoolTeachers.value = res
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 
 async function openMembers(c) {

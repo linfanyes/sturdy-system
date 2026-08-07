@@ -720,7 +720,9 @@ async function loadConfigs() {
       { label: '🤖 AI 模型配置', items: filled.filter(x => x.key.startsWith('ai')) },
       { label: '🔐 微信与 IM 配置', items: filled.filter(x => ['wxAppId', 'wxAppSecret', 'imSdkAppId', 'imSecretKey'].includes(x.key)) },
     ].filter(g => g.items.length > 0)
-  } catch (e) { configGroups.value = []; console.error('loadConfigs', e) }
+  } catch (e) {
+    console.error('[admin] loadConfigs error:', e)
+  }
 }
 
 async function saveConfig(cfg) {

@@ -579,7 +579,6 @@ async function send() {
 // 停止生成：中断流式请求，保留已接收到的部分回复
 function stopSend() {
   if (abortTask) {
-    try { abortTask.abort() } catch (e) { console.error('[mini catch]', e) }
     abortTask = null
   }
   loading.value = false

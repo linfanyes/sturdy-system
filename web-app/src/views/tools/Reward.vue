@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import request from '@/api/request'
+import { toast } from '@/utils/feedback'
 const students = ref<any[]>([])
 const selected = ref('')
 const points = ref('5')
 const reason = ref('')
 async function loadStudents() {
-  try { const d = await request.get('/students'); students.value = (d?.items || d || []).slice(0, 50) } catch (e) { console.error(e) }
+  try {
+    const d = await request.get('/students')
+    students.value = (d?.items || d || []).slice(0, 50)
+  } catch (e: any) {
+    console.error('[Reward] loadStudents error:', e)
+  }
 }
 async function award() {
   if (!selected.value) return
-  try { await request.post('/reward-records', { studentId: selected.value, points: parseInt(points.value) || 1, reason: reason.value }); selected.value=''; reason.value=''; alert('已奖励！') } catch (e) { console.error(e) }
+  try {
+    await request.post('/reward-records', {
+      studentId: selected.value,
+      points: parseInt(points.value) || 1,
+      reason: reason.value,
+    })
+    selected.value = ''
+    reason.value = ''
+    toast.success('已奖励！')
+  } catch (e: any) {
+    console.error('[Reward] award error:', e)
+    toast.error(e?.message || '奖励失败')
+  }
 }
 loadStudents()
 </script>

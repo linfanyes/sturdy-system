@@ -167,9 +167,7 @@ function dayKey(offset: number): string {
           <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
           <template v-else>{{ schoolTotal }}</template>
         </div>
-        <div class="text-xs text-mint-500 mt-1 flex items-center gap-1">
-          <TrendingUp class="w-3 h-3" /> +3 本周
-        </div>
+        <div class="text-xs text-cocoa-400 mt-1">所学校</div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/admins')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
@@ -179,9 +177,7 @@ function dayKey(offset: number): string {
           <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
           <template v-else>{{ adminTotal }}</template>
         </div>
-        <div class="text-xs text-mint-500 mt-1 flex items-center gap-1">
-          <TrendingUp class="w-3 h-3" /> +1 本周
-        </div>
+        <div class="text-xs text-cocoa-400 mt-1">位管理员</div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/super/audit-logs')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">

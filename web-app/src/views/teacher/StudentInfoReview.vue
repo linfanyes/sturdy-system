@@ -4,6 +4,7 @@
  * 列表来自 GET /student-info-updates（按班级/状态过滤），审核走 POST /student-info-updates/:id/review。
  */
 import { ref, onMounted, computed } from 'vue'
+import { toast } from '@/utils/feedback'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
@@ -72,7 +73,7 @@ async function loadList() {
     const res = await request.get('/student-info-updates', { params })
     list.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -96,7 +97,7 @@ async function handleApprove(item: InfoUpdate) {
     await request.post(`/student-info-updates/${item.id}/review`, { action: 'approve' })
     await loadList()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     reviewing.value = false
   }
@@ -119,7 +120,7 @@ async function submitReject() {
     showReject.value = false
     await loadList()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     reviewing.value = false
   }

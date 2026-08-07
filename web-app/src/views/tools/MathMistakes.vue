@@ -5,6 +5,7 @@
  */
 import { ref, onMounted, watch } from 'vue'
 import { Plus, Trash2, BookX, Loader2 } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 import Modal from '@/components/Modal.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listClassStudents, listMathMistakes, createMathMistake, deleteMathMistake, type TeacherStudent } from '@/api/teacher'
@@ -33,7 +34,7 @@ async function loadList() {
     const res: any = await listMathMistakes(classId.value || undefined)
     items.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -58,8 +59,8 @@ function openCreate() {
 }
 
 async function submit() {
-  if (!form.value.studentName) { alert('请选择学生'); return }
-  if (!form.value.question) { alert('请输入题目'); return }
+  if (!form.value.studentName) { toast.warning('请选择学生'); return }
+  if (!form.value.question) { toast.warning('请输入题目'); return }
   saving.value = true
   try {
     const payload = { ...form.value, classId: classId.value }
@@ -68,7 +69,7 @@ async function submit() {
     else await loadList()
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -80,7 +81,7 @@ async function remove(row: any) {
     await deleteMathMistake(row.id)
     items.value = items.value.filter(x => x.id !== row.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

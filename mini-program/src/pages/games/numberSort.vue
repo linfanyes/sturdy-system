@@ -112,7 +112,6 @@ function readBest(n) {
   try { return uni.getStorageSync('game_best_numbersort_' + n) || 0 } catch (e) { return 0 }
 }
 function writeBest(n, v) {
-  try { uni.setStorageSync('game_best_numbersort_' + n, v) } catch (e) { console.error('[mini catch]', e) }
 }
 
 function gen() {

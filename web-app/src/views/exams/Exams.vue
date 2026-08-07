@@ -11,6 +11,7 @@ import { loadClasses, useClasses } from '@/composables/useClasses'
 import { usePagedList } from '@/composables/usePagedList'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const router = useRouter()
 
@@ -94,8 +95,8 @@ function openEdit(row: any) {
 }
 
 async function submitForm() {
-  if (!form.value.name) { alert('请填写考试名称'); return }
-  if (!form.value.classId) { alert('请选择班级'); return }
+  if (!form.value.name) { toast.warning('请填写考试名称'); return }
+  if (!form.value.classId) { toast.warning('请选择班级'); return }
   formLoading.value = true
   try {
     if (editing.value) {
@@ -108,7 +109,7 @@ async function submitForm() {
     }
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     formLoading.value = false
   }
@@ -120,7 +121,7 @@ async function handleDelete(row: any) {
     await request.delete(`/exams/${row.id}`)
     allItems.value = allItems.value.filter(x => x.id !== row.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -166,7 +167,7 @@ async function openSummary(row: any) {
       }
     })
   } catch (e: any) {
-    alert(e?.message || '加载汇总失败')
+    toast.error(e?.message || '加载汇总失败')
   } finally {
     summaryLoading.value = false
   }

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Plus, Copy, Edit3, Trash2, FileText } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const router = useRouter()
 
@@ -61,8 +62,8 @@ async function remove(t: Template) {
 async function copyContent(t: Template) {
   try {
     await navigator.clipboard.writeText(t.content)
-    alert('已复制到剪贴板')
-  } catch { alert('复制失败，请手动复制') }
+    toast.success('已复制到剪贴板')
+  } catch { toast.error('复制失败，请手动复制') }
 }
 
 load()

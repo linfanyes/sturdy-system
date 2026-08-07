@@ -9,6 +9,7 @@
 import { ref, computed } from 'vue'
 import { useClasses } from '@/composables/useClasses'
 import { listClassStudents, type TeacherStudent } from '@/api/teacher'
+import { toast } from '@/utils/feedback'
 import { Users, Shuffle, Download, RefreshCw } from 'lucide-vue-next'
 
 const { classes, loadClasses } = useClasses()
@@ -48,7 +49,7 @@ function shuffle<T>(arr: T[]): T[] {
 function doGroup() {
   const list = namesList.value
   if (list.length === 0) {
-    alert('请先输入名单')
+    toast.warning('请先输入名单')
     return
   }
   const shuffled = shuffle(list)
@@ -76,21 +77,21 @@ function reshuffle() {
 
 async function importFromClass() {
   if (!classId.value) {
-    alert('请先选择班级')
+    toast.warning('请先选择班级')
     return
   }
   try {
     const res = await listClassStudents(classId.value)
     const list: TeacherStudent[] = Array.isArray(res) ? res : []
     if (!list.length) {
-      alert('该班级暂无学生')
+      toast.info('该班级暂无学生')
       return
     }
     const existing = namesList.value
     const merged = Array.from(new Set([...existing, ...list.map(s => s.name)]))
     namesText.value = merged.join('\n')
   } catch (e: any) {
-    alert(e?.message || '导入失败')
+    toast.error(e?.message || '导入失败')
   }
 }
 </script>

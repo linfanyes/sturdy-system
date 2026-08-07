@@ -7,6 +7,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit3, Calendar } from 'lucide-vue-next'
 import Modal from '@/components/Modal.vue'
 import request from '@/api/request'
+import { toast } from '@/utils/feedback'
 
 const items = ref<any[]>([])
 const loading = ref(false)
@@ -77,7 +78,7 @@ async function loadList() {
     const res = await request.get('/teaching-calendar', { params: { take: 500 } })
     items.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -103,8 +104,8 @@ function onTypeChange() {
 }
 
 async function submit() {
-  if (!form.value.title) { alert('请填写标题'); return }
-  if (!form.value.date) { alert('请选择日期'); return }
+  if (!form.value.title) { toast.warning('请填写标题'); return }
+  if (!form.value.date) { toast.warning('请选择日期'); return }
   saving.value = true
   try {
     if (editing.value) {
@@ -116,7 +117,7 @@ async function submit() {
     await loadList()
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -128,7 +129,7 @@ async function del(item: any) {
     await request.delete(`/teaching-calendar/${item.id}`)
     items.value = items.value.filter(x => x.id !== item.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

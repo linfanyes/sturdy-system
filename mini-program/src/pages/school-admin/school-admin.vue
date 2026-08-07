@@ -647,7 +647,6 @@ const TEACHER_PAGE_SIZE = 50
 // 看板数据
 const dash = ref({ totalTeachers: 0, activeTeachers: 0, inactiveTeachers: 0, totalClasses: 0, totalStudents: 0, attendanceRate: null, pendingHomework: 0, parentEnabled: 0 })
 async function loadDashboard() {
-  try { dash.value = await apiCall('GET', '/school-admin/dashboard') || dash.value } catch (e) { console.error('[mini catch]', e) }
 }
 
 // 从本地存储读取学校管理员信息（登录时保存）

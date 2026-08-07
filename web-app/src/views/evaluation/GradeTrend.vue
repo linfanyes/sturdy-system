@@ -5,11 +5,21 @@ const students = ref<any[]>([])
 const selected = ref('')
 const trend = ref<any[]>([])
 async function loadStudents() {
-  try { const d = await request.get('/students'); students.value = (d?.items || d || []).slice(0, 50) } catch (e) { console.error(e) }
+  try {
+    const d = await request.get('/students')
+    students.value = (d?.items || d || []).slice(0, 50)
+  } catch (e) {
+    console.error(e)
+  }
 }
 async function loadTrend() {
   if (!selected.value) return
-  try { const d = await request.get('/grades', { params: { studentId: selected.value } }); trend.value = d?.items || d || [] } catch (e) { console.error(e) }
+  try {
+    const d = await request.get('/grades', { params: { studentId: selected.value } })
+    trend.value = d?.items || d || []
+  } catch (e) {
+    console.error(e)
+  }
 }
 loadStudents()
 </script>

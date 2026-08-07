@@ -265,7 +265,9 @@ function loadStock() {
       })
       return
     }
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
   // 默认全部无限
   stockList.value = PRESET_ITEMS.map((it) => ({ name: it.name, points: it.points, stock: UNLIMITED }))
 }

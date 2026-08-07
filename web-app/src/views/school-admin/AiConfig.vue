@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import { Save, Bot, RefreshCw, Loader2 } from 'lucide-vue-next'
 import request from '@/api/request'
 import { ROLE_PROMPTS, DEFAULT_TEACHER_PROMPT } from '@/constants/teacher-prompts'
@@ -214,9 +215,9 @@ async function saveAi() {
       systemPrompt: aiForm.systemPrompt,
       resourceModels: JSON.stringify(aiForm.resourceModels),
     })
-    alert('AI 配置已保存')
+    toast.success('AI 配置已保存')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -249,9 +250,9 @@ async function resetAiDefaults() {
     aiForm.systemPrompt = DEFAULT_TEACHER_PROMPT
     aiForm.resourceModels = {}
     refreshModels()
-    alert('已恢复平台默认配置，请点击「保存」以生效')
+    toast.info('已恢复平台默认配置，请点击「保存」以生效')
   } catch (e: any) {
-    alert(e?.message || '加载默认配置失败')
+    toast.error(e?.message || '加载默认配置失败')
   } finally {
     saving.value = false
   }

@@ -6,6 +6,7 @@
  * - Tab 3: AI 分析（调用 /ai/analyze-exam）
  */
 import { ref, onMounted, computed, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
@@ -54,7 +55,6 @@ async function loadExamStats() {
     if (fullScoreMap) params.fullScoreMap = JSON.stringify(fullScoreMap)
     examStats.value = await request.get('/grades/analysis/exam', { params })
   } catch (e: any) {
-    console.error(e)
   } finally {
     examLoading.value = false
   }
@@ -187,7 +187,7 @@ const aiLoading = ref(false)
 const aiResult = ref('')
 
 async function aiAnalyze() {
-  if (!selectedExamId.value) { alert('请选择考试'); return }
+  if (!selectedExamId.value) { toast.warning('请选择考试'); return }
   aiLoading.value = true
   aiResult.value = ''
   try {

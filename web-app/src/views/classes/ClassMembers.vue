@@ -6,6 +6,7 @@
  * 点击班主任 / 科任老师可查看教师详情（从 /teachers 同步）。
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listClassMembers, listTeachers, type ClassMember } from '@/api/teacher'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
@@ -27,7 +28,7 @@ async function loadMembers(classId: string) {
     const res = await listClassMembers(classId)
     members.value = Array.isArray(res) ? res : []
   } catch (e: any) {
-    alert(e?.message || '加载成员失败')
+    toast.error(e?.message || '加载成员失败')
     members.value = []
   } finally {
     loading.value = false

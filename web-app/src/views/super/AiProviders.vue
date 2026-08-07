@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import { Plus, Save, Trash2, Loader2, Star, Bot, RefreshCw } from 'lucide-vue-next'
 import request from '@/api/request'
 
@@ -42,7 +43,7 @@ async function load() {
   try {
     list.value = await request.get('/ai-providers')
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -79,7 +80,7 @@ function startAdd() {
 }
 
 async function save() {
-  if (!form.name || !form.baseUrl) return alert('名称与接口地址必填')
+  if (!form.name || !form.baseUrl) return toast.warning('名称与接口地址必填')
   saving.value = true
   try {
     const body = {
@@ -102,7 +103,7 @@ async function save() {
     editing.value = null
     await load()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -114,7 +115,7 @@ async function remove(p: Provider) {
     await request.delete(`/ai-providers/${p.code}`)
     await load()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -123,7 +124,7 @@ async function setDefault(p: Provider) {
     await request.patch(`/ai-providers/${p.code}`, { isDefault: true })
     await load()
   } catch (e: any) {
-    alert(e?.message || '设置失败')
+    toast.error(e?.message || '设置失败')
   }
 }
 

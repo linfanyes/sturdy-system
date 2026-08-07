@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { toast } from '@/utils/feedback'
 import { useRouter } from 'vue-router'
 import {
   listTeachers, createTeacher, updateTeacher, deleteTeacher,
@@ -46,7 +47,7 @@ async function loadTeachers() {
     teachers.value = res.items
     total.value = res.total
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -106,7 +107,7 @@ const phoneError = computed(() =>
 async function submitForm() {
   if (!form.value.name) return
   if (form.value.phone && !isValidPhone(form.value.phone)) {
-    alert(PHONE_HINT)
+    toast.warning(PHONE_HINT)
     return
   }
   formLoading.value = true
@@ -138,7 +139,7 @@ async function submitForm() {
     showForm.value = false
     await loadTeachers()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
@@ -164,7 +165,7 @@ async function saveFeatures() {
     featuresTeacher.value.features = [...selectedFeatures.value]
     showFeatures.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     featuresLoading.value = false
   }
@@ -235,9 +236,9 @@ async function submitReset(password: string) {
   try {
     const r: any = await resetTeacherPassword(resetTarget.value.id, password)
     showReset.value = false
-    alert('密码已重置' + (r?.defaultPassword ? `，新密码：${r.defaultPassword}\n请通知老师用此密码登录，并尽快修改。` : ''))
+    toast.success('密码已重置' + (r?.defaultPassword ? `，新密码：${r.defaultPassword}\n请通知老师用此密码登录，并尽快修改。` : ''))
   } catch (e: any) {
-    alert(e?.message || '重置失败')
+    toast.error(e?.message || '重置失败')
   } finally {
     resetting.value = false
   }
@@ -250,7 +251,7 @@ async function handleDelete(t: TeacherItem) {
     await deleteTeacher(t.id)
     await loadTeachers()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -261,7 +262,7 @@ async function handleExport() {
   try {
     await exportTeachersCsv()
   } catch (e: any) {
-    alert(e?.message || '导出失败')
+    toast.error(e?.message || '导出失败')
   } finally {
     exporting.value = false
   }
@@ -273,7 +274,7 @@ async function handleExportXls() {
   try {
     await exportTeachersXls()
   } catch (e: any) {
-    alert(e?.message || '导出失败')
+    toast.error(e?.message || '导出失败')
   } finally {
     exportingXls.value = false
   }

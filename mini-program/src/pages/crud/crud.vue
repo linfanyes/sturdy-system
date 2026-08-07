@@ -337,7 +337,6 @@ function chooseImage() {
           }),
         )
         .catch((e) => {
-          console.error('[mini catch]', e)
           uni.showToast({ title: '图片读取失败', icon: 'none' })
         })
       uni.showToast({ title: '已压缩 ' + Math.round(finalSize / 1024) + 'KB', icon: 'none' })
@@ -365,7 +364,6 @@ function chooseFile() {
           }),
         )
         .catch((e) => {
-          console.error('[mini catch]', e)
           uni.showToast({ title: '文件读取失败', icon: 'none' })
         })
     },

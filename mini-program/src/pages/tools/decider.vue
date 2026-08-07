@@ -138,7 +138,9 @@ function loadDrawDraft() {
     const raw = uni.getStorageSync(sk()) || {}
     optsText.value = raw.optsText || ''
     drawHist.value = Array.isArray(raw.drawHist) ? raw.drawHist : []
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 function saveDrawDraft() {
   try {
@@ -146,7 +148,9 @@ function saveDrawDraft() {
       optsText: optsText.value,
       drawHist: (drawHist.value || []).slice(-30),
     })
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 loadDrawDraft()
 watch([optsText, drawHist], saveDrawDraft, { deep: true })

@@ -8,6 +8,7 @@ import { Sparkles, Save, Copy, FileText, Loader2, Download } from 'lucide-vue-ne
 import { aiChatSync } from '@/api/teacher'
 import request from '@/api/request'
 import { downloadText } from '@/utils/download'
+import { toast } from '@/utils/feedback'
 
 const props = defineProps<{
   /** 工具标题 */
@@ -29,7 +30,7 @@ const saving = ref(false)
 
 async function generate() {
   const prompt = props.buildPrompt(form.value)
-  if (!prompt.trim()) { alert('请填写必要内容'); return }
+  if (!prompt.trim()) { toast.warning('请填写必要内容'); return }
   generating.value = true
   result.value = ''
   try {
@@ -50,9 +51,9 @@ async function saveResult() {
       ? props.buildSavePayload(form.value, result.value)
       : { title: props.title, content: result.value }
     await request.post(props.savePath, payload)
-    alert('已保存')
+    toast.success('已保存')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -61,9 +62,9 @@ async function saveResult() {
 async function copyResult() {
   try {
     await navigator.clipboard.writeText(result.value)
-    alert('已复制')
+    toast.success('已复制')
   } catch {
-    alert('复制失败，请手动选择')
+    toast.error('复制失败，请手动选择')
   }
 }
 

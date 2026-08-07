@@ -3,6 +3,7 @@
  * 通知中心：展示当前教师的所有通知，支持分页、单条已读、全部已读。
  */
 import { ref, computed, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import {
   Bell, ClipboardList, Megaphone, Award, Settings, CheckCheck, ChevronLeft, ChevronRight, Loader2,
 } from 'lucide-vue-next'
@@ -55,7 +56,7 @@ async function loadList() {
       total.value = res?.total || items.value.length
     }
   } catch (e: any) {
-    alert(e?.message || '加载通知失败')
+    toast.error(e?.message || '加载通知失败')
     items.value = []
   } finally {
     loading.value = false
@@ -78,7 +79,7 @@ async function handleMarkRead(item: AppNotification) {
     item.read = true
     if (unreadCount.value > 0) unreadCount.value -= 1
   } catch (e: any) {
-    alert(e?.message || '标记已读失败')
+    toast.error(e?.message || '标记已读失败')
   }
 }
 
@@ -89,7 +90,7 @@ async function handleMarkAllRead() {
     items.value.forEach(it => { it.read = true })
     unreadCount.value = 0
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 

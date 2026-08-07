@@ -9,6 +9,7 @@ import { useRoute } from 'vue-router'
 import request from '@/api/request'
 import { Sparkles, Save, Copy, FileText, Download } from 'lucide-vue-next'
 import { downloadDoc } from '@/utils/download'
+import { toast } from '@/utils/feedback'
 
 const props = defineProps<{
   /** 'lesson' | 'knowledge' | 'paper' */
@@ -60,7 +61,7 @@ watch(() => props.type, () => { result.value = ''; form.value = {} }, { immediat
 
 async function generate() {
   const input = cfg.value.fields.map(f => `${f.label}：${form.value[f.key] || ''}`).join('\n')
-  if (!input.trim()) { alert('请填写至少一项内容'); return }
+  if (!input.trim()) { toast.warning('请填写至少一项内容'); return }
   generating.value = true
   result.value = ''
   try {
@@ -86,9 +87,9 @@ async function saveResult() {
       topic: form.value.topic || '',
       content: result.value,
     })
-    alert('已保存到历史记录')
+    toast.success('已保存到历史记录')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -97,9 +98,9 @@ async function saveResult() {
 async function copyResult() {
   try {
     await navigator.clipboard.writeText(result.value)
-    alert('已复制到剪贴板')
+    toast.success('已复制到剪贴板')
   } catch {
-    alert('复制失败，请手动选择文本')
+    toast.error('复制失败，请手动选择文本')
   }
 }
 

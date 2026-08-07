@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Plus, Edit3, Trash2, ClipboardList, Star, RefreshCw } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const router = useRouter()
 
@@ -63,7 +64,7 @@ function openEdit(rec: LessonRecord) {
 
 function save() {
   if (!form.value.teacherName.trim() || !form.value.topic.trim()) {
-    alert('请填写授课教师和听课主题')
+    toast.warning('请填写授课教师和听课主题')
     return
   }
   if (editing.value) {

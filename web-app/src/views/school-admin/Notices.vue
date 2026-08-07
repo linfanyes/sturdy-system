@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import {
   listSchoolNotices, createSchoolNotice, deleteSchoolNotice,
 } from '@/api/school-admin'
@@ -24,7 +25,7 @@ async function loadNotices() {
     const res = await listSchoolNotices(0, 100)
     notices.value = res.items
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -43,7 +44,7 @@ function openCreate() {
 
 async function submitForm() {
   if (!form.value.title) {
-    alert('请输入公告标题')
+    toast.warning('请输入公告标题')
     return
   }
   formLoading.value = true
@@ -52,7 +53,7 @@ async function submitForm() {
     showForm.value = false
     await loadNotices()
   } catch (e: any) {
-    alert(e?.message || '发布失败')
+    toast.error(e?.message || '发布失败')
   } finally {
     formLoading.value = false
   }
@@ -65,7 +66,7 @@ async function handleDelete(n: NoticeItem) {
     await deleteSchoolNotice(n.id)
     await loadNotices()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

@@ -12,6 +12,7 @@ import {
   type Poem, type MathFormula, type EnglishWord,
 } from '@/api/resource-library'
 import { copyText, printHtml, notify, escapeHtml } from '@/utils/copyPrint'
+import { toast } from '@/utils/feedback'
 
 type Tab = 'poems' | 'formulas' | 'words'
 const tab = ref<Tab>('poems')
@@ -33,10 +34,10 @@ async function doSeedDefaults() {
   seeding.value = true
   try {
     const res = await seedDefaultResources()
-    alert(`初始化完成：古诗词新增 ${res.poems.created}（跳过 ${res.poems.skipped}），数学公式新增 ${res.formulas.created}（跳过 ${res.formulas.skipped}），英语单词新增 ${res.words.created}（跳过 ${res.words.skipped}）。`)
+    toast.success(`初始化完成：古诗词新增 ${res.poems.created}（跳过 ${res.poems.skipped}），数学公式新增 ${res.formulas.created}（跳过 ${res.formulas.skipped}），英语单词新增 ${res.words.created}（跳过 ${res.words.skipped}）。`)
     await reloadCurrent()
   } catch (e: any) {
-    alert(e?.message || '初始化失败')
+    toast.error(e?.message || '初始化失败')
   } finally {
     seeding.value = false
   }
@@ -146,24 +147,24 @@ async function saveEdit() {
     }
     editing.value = null
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   }
 }
 
 async function removePoem(id: string) {
   if (!await confirm('确定删除该诗词？')) return
   try { await adminDeletePoem(id); await loadPoems() }
-  catch (e: any) { alert(e?.message || '删除失败') }
+  catch (e: any) { toast.error(e?.message || '删除失败') }
 }
 async function removeFormula(id: string) {
   if (!await confirm('确定删除该公式？')) return
   try { await adminDeleteFormula(id); await loadFormulas() }
-  catch (e: any) { alert(e?.message || '删除失败') }
+  catch (e: any) { toast.error(e?.message || '删除失败') }
 }
 async function removeWord(id: string) {
   if (!await confirm('确定删除该单词？')) return
   try { await adminDeleteWord(id); await loadWords() }
-  catch (e: any) { alert(e?.message || '删除失败') }
+  catch (e: any) { toast.error(e?.message || '删除失败') }
 }
 
 const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400'

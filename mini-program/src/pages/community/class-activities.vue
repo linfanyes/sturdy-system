@@ -120,7 +120,9 @@ async function pickImg() {
             uni.getFileSystemManager().readFile({ filePath: path, encoding: 'base64', success: resolve, fail: reject })
           })
           form.value.photos.push('data:image/jpeg;base64,' + r.data)
-        } catch (e) { console.error('[mini catch]', e) }
+        } catch {
+          // ignore
+        }
       }
     },
   })

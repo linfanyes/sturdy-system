@@ -96,7 +96,9 @@ function saveDraft() {
       excludePicked: excludePicked.value,
       picked: picked.value,
     })
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 
 const remainCount = computed(() => {

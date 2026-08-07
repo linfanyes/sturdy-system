@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { toast } from '@/utils/feedback'
 import {
   listSchoolStudents, updateStudent, deleteStudent, exportStudentsCsv, exportStudentsXls,
   listClasses, toggleParentLogin as apiToggleParentLogin, resetParentPassword,
@@ -40,7 +41,7 @@ async function loadStudents() {
     const res = await listSchoolStudents()
     students.value = res.items
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -68,10 +69,10 @@ async function toggleParentLogin(s: StudentItem) {
     const res = await apiToggleParentLogin(s.id)
     s.parentLoginEnabled = res.parentLoginEnabled
     if (res.parentLoginEnabled && res.initialPassword) {
-      alert(`已开通家长登录，默认口令：${res.initialPassword}（请通知家长登录后尽快修改）`)
+      toast.success(`已开通家长登录，默认口令：${res.initialPassword}（请通知家长登录后尽快修改）`)
     }
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -91,9 +92,9 @@ async function submitReset(password: string) {
   try {
     const res: any = await resetParentPassword(resetTarget.value.id, password)
     showReset.value = false
-    alert('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
+    toast.success('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
-    alert(e?.message || '重置失败')
+    toast.error(e?.message || '重置失败')
   } finally {
     resetting.value = false
   }
@@ -123,7 +124,7 @@ const phoneError = computed(() =>
 async function submitForm() {
   if (!editing.value) return
   if (form.value.parentPhone && !isValidPhone(form.value.parentPhone)) {
-    alert(PHONE_HINT)
+    toast.warning(PHONE_HINT)
     return
   }
   formLoading.value = true
@@ -143,7 +144,7 @@ async function submitForm() {
     })
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     formLoading.value = false
   }
@@ -156,7 +157,7 @@ async function handleExport() {
   try {
     await exportStudentsCsv()
   } catch (e: any) {
-    alert(e?.message || '导出失败')
+    toast.error(e?.message || '导出失败')
   } finally {
     exporting.value = false
   }
@@ -168,7 +169,7 @@ async function handleExportXls() {
   try {
     await exportStudentsXls()
   } catch (e: any) {
-    alert(e?.message || '导出失败')
+    toast.error(e?.message || '导出失败')
   } finally {
     exportingXls.value = false
   }
@@ -188,9 +189,9 @@ async function handleDelete(s: StudentItem) {
   try {
     await deleteStudent(s.id)
     students.value = students.value.filter(x => x.id !== s.id)
-    alert('已删除')
+    toast.info('已删除')
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 </script>

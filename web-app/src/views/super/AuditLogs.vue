@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { toast } from '@/utils/feedback'
 import { FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-vue-next'
 import { listAuditLogs, listSchools } from '@/api/admin'
 
@@ -31,7 +32,7 @@ async function load() {
     items.value = (res?.items || [])
     total.value = res?.total || 0
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }

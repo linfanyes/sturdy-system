@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { Settings, Save, Loader2, Bot, MessageCircle, Boxes, RefreshCw, Plus, X, Check } from 'lucide-vue-next'
 import request from '@/api/request'
 
@@ -222,7 +223,7 @@ async function load() {
     form.aiProvider = providerName.value
     await refreshModels()
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -244,9 +245,9 @@ async function save() {
     await request.put('/config/app', { items })
     // 保存后把已填写的密钥标记为已修改（不再视为脱敏跳过）
     for (const k of SECRET_KEYS) if ((form as any)[k]) secretMasked[k] = false
-    alert('保存成功')
+    toast.success('保存成功')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -320,7 +321,7 @@ function addCustomSubject() {
   const name = newCustomSubject.value.trim()
   if (!name) return
   if (ALL_PRESET_SUBJECTS.includes(name) || selectedSubjects.value.includes(name)) {
-    alert('该学科已存在')
+    toast.warning('该学科已存在')
     return
   }
   const list = new Set(selectedSubjects.value)

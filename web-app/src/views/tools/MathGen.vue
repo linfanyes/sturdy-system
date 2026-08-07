@@ -5,6 +5,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { Calculator, RefreshCw, Printer, Copy } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 type OpType = 'add' | 'sub' | 'mul' | 'div' | 'mix'
 
@@ -90,8 +91,8 @@ function copyAll() {
     .map((q, i) => `${i + 1}. ${q.expr}${config.value.showAnswer ? ` = ${q.answer}` : ''}`)
     .join('\n')
   navigator.clipboard.writeText(text)
-    .then(() => alert('已复制'))
-    .catch(() => alert('复制失败，请手动选择'))
+    .then(() => toast.success('已复制'))
+    .catch(() => toast.error('复制失败，请手动选择'))
 }
 
 function printList() {

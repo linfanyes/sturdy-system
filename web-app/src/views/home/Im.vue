@@ -7,6 +7,7 @@
 import { ref, onMounted } from 'vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import request from '@/api/request'
+import { toast } from '@/utils/feedback'
 import { MessageCircle, Phone, Users, Copy, Check } from 'lucide-vue-next'
 
 const { classes } = useClasses()
@@ -25,7 +26,7 @@ async function loadParents() {
     const res = await request.get('/im/parents', { params: { classId: classId.value } })
     parents.value = Array.isArray(res) ? res : []
   } catch (e: any) {
-    alert(e?.message || '加载家长列表失败')
+    toast.error(e?.message || '加载家长列表失败')
     parents.value = []
   } finally {
     loading.value = false
@@ -46,9 +47,9 @@ async function saveGroup() {
   savingGroup.value = true
   try {
     await request.post('/im/class-group', { classId: classId.value, groupId: classGroup.value })
-    alert('群号已保存')
+    toast.success('群号已保存')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     savingGroup.value = false
   }

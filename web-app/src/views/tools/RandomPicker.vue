@@ -16,6 +16,7 @@ import {
   clearPickerHistory,
   type TeacherStudent,
 } from '@/api/teacher'
+import { toast } from '@/utils/feedback'
 import { Shuffle, Users, History, Trash2, Download, Sparkles } from 'lucide-vue-next'
 
 const { classes, loadClasses } = useClasses()
@@ -55,21 +56,21 @@ watch(classId, loadNamesFromLS)
 
 async function importFromClass() {
   if (!classId.value) {
-    alert('请先选择班级')
+    toast.warning('请先选择班级')
     return
   }
   try {
     const res = await listClassStudents(classId.value)
     const list: TeacherStudent[] = Array.isArray(res) ? res : []
     if (!list.length) {
-      alert('该班级暂无学生')
+      toast.info('该班级暂无学生')
       return
     }
     const existing = namesList.value
     const merged = Array.from(new Set([...existing, ...list.map(s => s.name)]))
     namesText.value = merged.join('\n')
   } catch (e: any) {
-    alert(e?.message || '导入失败')
+    toast.error(e?.message || '导入失败')
   }
 }
 
@@ -84,15 +85,15 @@ function stopTimer() {
 function startRoll() {
   const pool = remaining.value.length && mode.value === 'unique' ? remaining.value : namesList.value
   if (pool.length === 0) {
-    alert('请先输入学生名单')
+    toast.warning('请先输入学生名单')
     return
   }
   if (mode.value === 'multi' && pool.length < pickCount.value) {
-    alert(`名单人数不足 ${pickCount.value} 人`)
+    toast.warning(`名单人数不足 ${pickCount.value} 人`)
     return
   }
   if (mode.value === 'unique' && pool.length === 0) {
-    alert('抽签池已空，请重置后再抽')
+    toast.warning('抽签池已空，请重置后再抽')
     return
   }
   rolling.value = true

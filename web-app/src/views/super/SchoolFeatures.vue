@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { ToggleLeft, Loader2, Save, School, Check, Info } from 'lucide-vue-next'
 import { listSchools } from '@/api/admin'
 import { getSchoolFeatures, updateSchoolFeatures } from '@/api/feature'
@@ -52,7 +53,7 @@ async function loadSchools() {
       selectedSchoolId.value = schools.value[0].id
     }
   } catch (e: any) {
-    alert(e?.message || '加载学校列表失败')
+    toast.error(e?.message || '加载学校列表失败')
   } finally {
     loadingSchools.value = false
   }
@@ -74,7 +75,7 @@ async function loadFeatures() {
     const res = await getSchoolFeatures(selectedSchoolId.value)
     applyFlags(res?.featureFlags)
   } catch (e: any) {
-    alert(e?.message || '加载功能包开关失败')
+    toast.error(e?.message || '加载功能包开关失败')
   } finally {
     loading.value = false
   }
@@ -107,9 +108,9 @@ async function save() {
     const enabled = currentEnabled()
     await updateSchoolFeatures(selectedSchoolId.value, enabled)
     dirty.value = false
-    alert('保存成功')
+    toast.success('保存成功')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }

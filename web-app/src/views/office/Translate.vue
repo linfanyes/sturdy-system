@@ -6,7 +6,12 @@ const result = ref('')
 const lang = ref('en')
 async function doTranslate() {
   if (!input.value.trim()) return
-  try { const d = await request.post('/ai/translate', { text: input.value, targetLang: lang.value }); result.value = d?.result || d?.text || '' } catch (e) { console.error(e) }
+  try {
+    const d = await request.post('/ai/translate', { text: input.value, targetLang: lang.value })
+    result.value = d?.result || d?.text || ''
+  } catch (e) {
+    console.error(e)
+  }
 }
 </script>
 <template>

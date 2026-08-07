@@ -211,7 +211,6 @@ function qs(params) {
 
 // 列表加载帮手：loading 提示 + 失败 toast + 数组兜底
 async function fetchList(path, loadingText) {
-  try { uni.showLoading({ title: loadingText || '加载中', mask: false }) } catch (e) { console.error('[mini catch]', e) }
   try {
     const data = await api.get(path)
     if (Array.isArray(data)) return data
@@ -222,7 +221,6 @@ async function fetchList(path, loadingText) {
     uni.showToast({ title: e.message || '加载失败', icon: 'none' })
     return []
   } finally {
-    try { uni.hideLoading() } catch (e) { console.error('[mini catch]', e) }
   }
 }
 

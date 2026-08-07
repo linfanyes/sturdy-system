@@ -12,6 +12,7 @@ import {
   type TeacherStudent,
 } from '@/api/teacher'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
+import { toast } from '@/utils/feedback'
 import Modal from '@/components/Modal.vue'
 import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
@@ -62,7 +63,7 @@ async function loadStudents() {
     students.value = Array.isArray(res) ? res : (res?.items || [])
     pageStudents.value = 0
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -119,10 +120,10 @@ const phoneError = computed(() =>
 )
 
 async function submitForm() {
-  if (!form.value.name) { alert('请填写姓名'); return }
-  if (!form.value.classId) { alert('请选择班级'); return }
+  if (!form.value.name) { toast.warning('请填写姓名'); return }
+  if (!form.value.classId) { toast.warning('请选择班级'); return }
   if (form.value.parentPhone && !isValidPhone(form.value.parentPhone)) {
-    alert(PHONE_HINT)
+    toast.warning(PHONE_HINT)
     return
   }
   formLoading.value = true
@@ -147,7 +148,7 @@ async function submitForm() {
     }
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     formLoading.value = false
   }
@@ -163,7 +164,7 @@ async function handleDelete(s: TeacherStudent) {
     await deleteStudent(s.id)
     students.value = students.value.filter(x => x.id !== s.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -173,10 +174,10 @@ async function handleToggleParentLogin(s: TeacherStudent) {
     const res = await toggleStudentParentLogin(s.id)
     s.parentLoginEnabled = res.parentLoginEnabled
     if (res.parentLoginEnabled && res.initialPassword) {
-      alert(`已开通家长登录，默认口令：${res.initialPassword}\n请通知家长登录后尽快修改。`)
+      toast.info(`已开通家长登录，默认口令：${res.initialPassword}\n请通知家长登录后尽快修改。`)
     }
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -196,9 +197,9 @@ async function submitReset(password: string) {
   try {
     const res: any = await resetStudentParentPassword(resetTarget.value.id, password)
     showReset.value = false
-    alert('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
+    toast.success('家长登录口令已重置' + (res?.defaultPassword ? `，新密码：${res.defaultPassword}` : ''))
   } catch (e: any) {
-    alert(e?.message || '重置失败')
+    toast.error(e?.message || '重置失败')
   } finally {
     resetting.value = false
   }
@@ -207,7 +208,7 @@ async function submitReset(password: string) {
 /* ============ 导出 CSV ============ */
 function exportCsv() {
   const rows = filtered.value
-  if (!rows.length) { alert('暂无数据可导出'); return }
+  if (!rows.length) { toast.warning('暂无数据可导出'); return }
   const header = ['姓名', '学号', '性别', '班级', '家长', '家长电话']
   const lines = [header.join(',')]
   for (const s of rows) {

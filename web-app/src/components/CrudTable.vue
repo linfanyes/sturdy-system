@@ -8,6 +8,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { Plus, Search, Edit3, Trash2, Inbox } from 'lucide-vue-next'
 import Modal from './Modal.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
+import { toast } from '@/utils/feedback'
 
 /** 选项：支持纯字符串或 {value,label} 对象（value 为真实存储值，label 为展示文本） */
 export type SelectOption = string | { value: string; label: string }
@@ -115,7 +116,7 @@ async function loadList() {
     total.value = res?.total ?? arr.length
     page.value = 0
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -179,14 +180,14 @@ async function submitForm() {
   // 校验必填
   for (const f of props.fields) {
     if (f.required && (form.value[f.key] == null || form.value[f.key] === '')) {
-      alert(`${f.label}必填`)
+      toast.warning(`${f.label}必填`)
       return
     }
     // 格式校验（仅当值非空时）
     if (f.pattern && form.value[f.key]) {
       const val = String(form.value[f.key]).trim()
       if (val && !f.pattern.test(val)) {
-        alert(f.patternHint || `${f.label}格式不正确`)
+        toast.warning(f.patternHint || `${f.label}格式不正确`)
         return
       }
     }
@@ -206,7 +207,7 @@ async function submitForm() {
     }
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     formLoading.value = false
   }
@@ -219,7 +220,7 @@ async function handleDelete(row: any) {
     await request.delete(`${props.apiPath}/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 

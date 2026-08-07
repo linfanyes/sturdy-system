@@ -211,7 +211,9 @@ function onTheme(e) {
   try {
     api.patch('/config/app-config', { theme: mode }).catch(() => {})
     api.patch('/users/me', { theme: mode }).catch(() => {})
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
 }
 
 function cycle() {
@@ -219,7 +221,9 @@ function cycle() {
   try {
     api.patch('/config/app-config', { colorScheme: next }).catch(() => {})
     api.patch('/users/me', { colorScheme: next }).catch(() => {})
-  } catch (e) { console.error('[mini catch]', e) }
+  } catch {
+    // ignore
+  }
   uni.showToast({ title: '主题色：' + (SCHEMES.find((s) => s.value === next) || {}).label, icon: 'none' })
 }
 

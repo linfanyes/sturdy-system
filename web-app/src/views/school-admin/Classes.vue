@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { toast } from '@/utils/feedback'
 import {
   listClasses, createClass, updateClass, deleteClass,
   listTeachers, exportClassesXls,
@@ -34,7 +35,7 @@ async function loadClasses() {
     classes.value = res.items
     total.value = res.total
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -158,11 +159,11 @@ function buildSubjectTeachers(): { teacherId: string; subjects: string[] }[] {
 
 async function submitForm() {
   if (!className.value) {
-    alert('请选择年级并填写班级序号（班级名称将自动生成为「年级+序号+班」）')
+    toast.warning('请选择年级并填写班级序号（班级名称将自动生成为「年级+序号+班」）')
     return
   }
   if (!form.value.headTeacherId) {
-    alert('请选择班主任')
+    toast.warning('请选择班主任')
     return
   }
   formLoading.value = true
@@ -195,7 +196,7 @@ async function submitForm() {
     showForm.value = false
     await loadClasses()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     formLoading.value = false
   }
@@ -208,7 +209,7 @@ async function handleDelete(c: ClassItem) {
     await deleteClass(c.id)
     await loadClasses()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -222,7 +223,7 @@ async function handleExportXls() {
   try {
     await exportClassesXls()
   } catch (e: any) {
-    alert(e?.message || '导出失败')
+    toast.error(e?.message || '导出失败')
   } finally {
     exportingXls.value = false
   }

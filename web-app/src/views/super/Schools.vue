@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { School, Plus, Edit3, Trash2, Power, Loader2 } from 'lucide-vue-next'
 import { listSchools, createSchool, updateSchool, deleteSchool } from '@/api/admin'
 import Modal from '@/components/Modal.vue'
@@ -18,7 +19,7 @@ async function load() {
     items.value = (res?.items || [])
     total.value = res?.total || 0
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -61,11 +62,11 @@ function openEdit(row: any) {
 
 async function submit() {
   if (!form.value.name) {
-    alert('请填写学校名称')
+    toast.warning('请填写学校名称')
     return
   }
   if (!editingId.value && !/^[A-Z0-9]{2}$/.test(form.value.prefix)) {
-    alert('请填写 2 位学校编号前缀（大写字母或数字）')
+    toast.warning('请填写 2 位学校编号前缀（大写字母或数字）')
     return
   }
   submitting.value = true
@@ -88,7 +89,7 @@ async function submit() {
     showForm.value = false
     await load()
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   } finally {
     submitting.value = false
   }
@@ -101,7 +102,7 @@ async function toggleStatus(row: any) {
     await updateSchool(row.id, { status: next })
     row.status = next
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -112,7 +113,7 @@ async function handleDelete(row: any) {
     await deleteSchool(row.id)
     await load()
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 </script>

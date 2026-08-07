@@ -9,6 +9,7 @@
  */
 import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import { Timer, Play, Pause, RotateCcw, Bell } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const presets = [1, 3, 5, 10, 15]
 const customMinutes = ref<number | null>(null)
@@ -86,7 +87,7 @@ function finish() {
   running.value = false
   stopTimer()
   flashing.value = true
-  alert('⏰ 时间到！')
+  toast.success('⏰ 时间到！')
   // 闪烁 6 次（约 3 秒）后自动停止
   window.setTimeout(() => { flashing.value = false }, 3000)
 }

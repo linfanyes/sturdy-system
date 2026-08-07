@@ -8,6 +8,7 @@
  * - 自动保存到学生信息（student.comment 字段，作为最新评语）
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import { Sparkles, Save, Loader2, Users, FileText, Download } from 'lucide-vue-next'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listClassStudents, aiChatSync, type TeacherStudent } from '@/api/teacher'
@@ -175,8 +176,8 @@ async function generateForStudent(stu: TeacherStudent): Promise<string> {
 }
 
 async function generate() {
-  if (!classId.value) { alert('请先选择班级'); return }
-  if (!students.value.length) { alert('该班级暂无学生'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
+  if (!students.value.length) { toast.warning('该班级暂无学生'); return }
 
   const targets = studentId.value
     ? students.value.filter(s => s.id === studentId.value)
@@ -213,15 +214,15 @@ async function saveAll() {
     }
   }
   saving.value = false
-  alert(`保存完成：成功 ${ok} 条${fail ? `，失败 ${fail} 条` : ''}`)
+  toast.success(`保存完成：成功 ${ok} 条${fail ? `，失败 ${fail} 条` : ''}`)
 }
 
 async function saveOne(r: { studentId: string; name: string; comment: string }) {
   try {
     await saveCommentToStudent(r.studentId, r.comment)
-    alert(`已保存${r.name}的评语${selectedExam.value ? `（已同步到《${selectedExam.value.name}》）` : ''}`)
+    toast.success(`已保存${r.name}的评语${selectedExam.value ? `（已同步到《${selectedExam.value.name}》）` : ''}`)
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   }
 }
 
@@ -246,7 +247,7 @@ async function saveCommentToStudent(studentId: string, comment: string) {
 }
 
 function copyComment(text: string) {
-  navigator.clipboard.writeText(text).then(() => alert('已复制')).catch(() => alert('复制失败'))
+  navigator.clipboard.writeText(text).then(() => toast.success('已复制')).catch(() => toast.error('复制失败'))
 }
 
 /** 下载单个学生评语为 Word 文档（.doc） */

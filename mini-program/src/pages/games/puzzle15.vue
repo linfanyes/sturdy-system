@@ -109,7 +109,6 @@ function readBest(n) {
   try { return uni.getStorageSync('game_best_puzzle15_' + n) || 0 } catch (e) { return 0 }
 }
 function writeBest(n, v) {
-  try { uni.setStorageSync('game_best_puzzle15_' + n, v) } catch (e) { console.error('[mini catch]', e) }
 }
 
 // 生成可解局面：从已解决态做随机有效滑动 N*N*20 次

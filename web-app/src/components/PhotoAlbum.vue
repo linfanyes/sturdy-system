@@ -9,6 +9,7 @@ import Modal from './Modal.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { compressImages } from '@/composables/usePhotoUpload'
 import request from '@/api/request'
+import { toast } from '@/utils/feedback'
 
 const props = defineProps<{
   apiPath: string
@@ -39,7 +40,7 @@ async function loadList() {
     const res = await request.get(props.apiPath, { params })
     items.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -80,8 +81,8 @@ function removePhoto(idx: number) {
 }
 
 async function submit() {
-  if (!form.value.title) { alert('请填写标题'); return }
-  if (props.classFilterable !== false && !form.value.classId) { alert('请选择班级'); return }
+  if (!form.value.title) { toast.warning('请填写标题'); return }
+  if (props.classFilterable !== false && !form.value.classId) { toast.warning('请选择班级'); return }
   saving.value = true
   try {
     const payload: any = { ...form.value }
@@ -95,7 +96,7 @@ async function submit() {
     }
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -107,7 +108,7 @@ async function del(row: any) {
     await request.delete(`${props.apiPath}/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 </script>

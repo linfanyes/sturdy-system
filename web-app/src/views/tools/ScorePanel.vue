@@ -16,6 +16,7 @@ import {
   createScoreRecord,
   type TeacherStudent,
 } from '@/api/teacher'
+import { toast } from '@/utils/feedback'
 import Modal from '@/components/Modal.vue'
 import { Award, Minus, Plus, Trophy, Medal, X, Save } from 'lucide-vue-next'
 
@@ -107,7 +108,7 @@ async function applyScore(delta: number) {
     reason.value = ''
     customScore.value = null
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }

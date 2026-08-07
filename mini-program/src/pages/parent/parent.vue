@@ -964,19 +964,14 @@ async function load() {
     me.value = meResult.value
     kids.value = (meResult.value && meResult.value.kids) || []
     activeKidId.value = meResult.value?.studentId || ''
-  } else console.error('[parent] me error:', meResult.reason)
+  }
   if (edata.status === 'fulfilled') exams.value = (edata.value && edata.value.exams) || []
-  else console.error('[parent] exams error:', edata.reason)
   if (ns.status === 'fulfilled') notices.value = Array.isArray(ns.value) ? ns.value : []
   if (hw.status === 'fulfilled') homework.value = Array.isArray(hw.value) ? hw.value : []
   if (att.status === 'fulfilled') attendance.value = att.value || null
-  else console.error('[parent] attendance error:', att.reason)
   if (beh.status === 'fulfilled') behavior.value = beh.value || null
-  else console.error('[parent] behavior error:', beh.reason)
   if (sch.status === 'fulfilled') schedule.value = sch.value || null
-  else console.error('[parent] schedule error:', sch.reason)
   if (comm.status === 'fulfilled') communications.value = comm.value || null
-  else console.error('[parent] communications error:', comm.reason)
   // 身份/核心数据拉取失败 → 标记为可重试错误态
   loadError.value = meResult.status !== 'fulfilled'
   loading.value = false

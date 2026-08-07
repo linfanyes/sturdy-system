@@ -17,6 +17,7 @@ import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { listClassStudents, type TeacherStudent } from '@/api/teacher'
 import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2, User, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 const router = useRouter()
 
@@ -103,7 +104,7 @@ async function loadGrades() {
     grades.value = Array.isArray(res) ? res : (res?.items || [])
     pageGrades.value = 0
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -140,8 +141,8 @@ const entryProgress = computed(() => {
 })
 
 function openEntry() {
-  if (!selectedExamId.value) { alert('请先选择考试'); return }
-  if (!selectedSubject.value) { alert('请先选择科目'); return }
+  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
+  if (!selectedSubject.value) { toast.warning('请先选择科目'); return }
   // 预填已有成绩
   entryScores.value = {}
   entryMode.value = 'table'
@@ -157,7 +158,7 @@ function openEntry() {
 
 /** 解析批量粘贴文本：每行「学号,分数」或「姓名,分数」，自动匹配学生填入 */
 function parsePaste() {
-  if (!pasteText.value.trim()) { alert('请先粘贴成绩内容'); return }
+  if (!pasteText.value.trim()) { toast.warning('请先粘贴成绩内容'); return }
   const lines = pasteText.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
   let matched = 0
   let unmatched = 0
@@ -175,7 +176,7 @@ function parsePaste() {
       unmatched++
     }
   }
-  alert(`解析完成：匹配 ${matched} 人，未匹配 ${unmatched} 行。可切换到「逐个录入」核对。`)
+  toast.info(`解析完成：匹配 ${matched} 人，未匹配 ${unmatched} 行。可切换到「逐个录入」核对。`)
 }
 
 async function submitEntry() {
@@ -203,7 +204,7 @@ async function submitEntry() {
     showEntryForm.value = false
     await loadGrades()
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     entryLoading.value = false
   }
@@ -216,7 +217,7 @@ async function handleDelete(g: any) {
     await request.delete(`/grades/${g.id}`)
     grades.value = grades.value.filter(x => x.id !== g.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -228,9 +229,9 @@ const importPreview = ref<any[]>([])
 const importStats = ref({ valid: 0, error: 0 })
 
 function openImport(mode: 'file' | 'ai') {
-  if (!classId.value) { alert('请先选择班级'); return }
-  if (!selectedExamId.value) { alert('请先选择考试'); return }
-  if (!selectedSubject.value) { alert('请先选择科目'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
+  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
+  if (!selectedSubject.value) { toast.warning('请先选择科目'); return }
   importMode.value = mode
   importPreview.value = []
   importStats.value = { valid: 0, error: 0 }
@@ -270,7 +271,7 @@ async function onPickFile(e: Event) {
     importPreview.value = res.rows || []
     importStats.value = { valid: res.validCount || 0, error: res.errorCount || 0 }
   } catch (err: any) {
-    alert(err?.message || '解析失败')
+    toast.error(err?.message || '解析失败')
   } finally {
     importLoading.value = false
     input.value = ''
@@ -292,7 +293,7 @@ function readFileAsBase64(file: File): Promise<string> {
 
 async function commitImport() {
   const validRows = importPreview.value.filter(r => r.valid)
-  if (!validRows.length) { alert('没有可导入的有效数据'); return }
+  if (!validRows.length) { toast.warning('没有可导入的有效数据'); return }
   importLoading.value = true
   try {
     await request.post('/grades/import-commit', {
@@ -306,7 +307,7 @@ async function commitImport() {
     showImport.value = false
     await loadGrades()
   } catch (e: any) {
-    alert(e?.message || '导入失败')
+    toast.error(e?.message || '导入失败')
   } finally {
     importLoading.value = false
   }
@@ -339,9 +340,9 @@ function ensureMatrixInit() {
 
 /** 打开矩阵录入：预填已有成绩 */
 function openMatrixEntry() {
-  if (!selectedExamId.value) { alert('请先选择考试'); return }
-  if (!examSubjects.value.length) { alert('该考试未设置科目，请先在考试设置中添加科目'); return }
-  if (!students.value.length) { alert('该班级暂无学生'); return }
+  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
+  if (!examSubjects.value.length) { toast.warning('该考试未设置科目，请先在考试设置中添加科目'); return }
+  if (!students.value.length) { toast.warning('该班级暂无学生'); return }
   matrixScores.value = {}
   matrixErrorCells.value = new Set()
   matrixUnmatched.value = []
@@ -365,7 +366,7 @@ function openMatrixEntry() {
 async function submitMatrix() {
   if (!selectedExam.value) return
   const subjects = examSubjects.value
-  if (!subjects.length) { alert('该考试未设置科目'); return }
+  if (!subjects.length) { toast.warning('该考试未设置科目'); return }
   if (matrixUnmatched.value.length && !await confirm(`有 ${matrixUnmatched.value.length} 行学生未匹配，将不会被导入。仍要继续？`)) return
   entryLoading.value = true
   let committed = 0
@@ -400,9 +401,9 @@ async function submitMatrix() {
     showMatrixEntry.value = false
     await loadGrades()
     if (failed.length) {
-      alert(`已保存 ${committed}/${subjects.length} 个科目，以下科目失败：\n${failed.join('\n')}`)
+      toast.success(`已保存 ${committed}/${subjects.length} 个科目，以下科目失败：\n${failed.join('\n')}`)
     } else {
-      alert(`已全部保存：${committed} 个科目 ✅`)
+      toast.success(`已全部保存：${committed} 个科目 ✅`)
     }
   } finally {
     entryLoading.value = false
@@ -414,9 +415,9 @@ const showMatrixImport = ref(false)
 const matrixImportLoading = ref(false)
 
 function openMatrixImport() {
-  if (!classId.value) { alert('请先选择班级'); return }
-  if (!selectedExamId.value) { alert('请先选择考试'); return }
-  if (!examSubjects.value.length) { alert('该考试未设置科目，请先在考试设置中添加科目'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
+  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
+  if (!examSubjects.value.length) { toast.warning('该考试未设置科目，请先在考试设置中添加科目'); return }
   matrixScores.value = {}
   matrixErrorCells.value = new Set()
   matrixUnmatched.value = []
@@ -462,7 +463,7 @@ async function onPickMatrixFile(e: Event) {
     const text = await readFileAsText(file)
     parseMatrixText(text, file.name)
   } catch (err: any) {
-    alert(err?.message || '文件读取失败')
+    toast.error(err?.message || '文件读取失败')
   } finally {
     matrixImportLoading.value = false
     input.value = ''
@@ -472,14 +473,14 @@ async function onPickMatrixFile(e: Event) {
 /** 解析矩阵文件：行=学生，列=科目（表头需含 学号/姓名 + 与考试科目同名的列） */
 function parseMatrixText(text: string, filename: string) {
   const lines = text.replace(/^﻿/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-  if (lines.length < 2) { alert('文件至少需包含表头行和一行数据'); return }
+  if (lines.length < 2) { toast.warning('文件至少需包含表头行和一行数据'); return }
   const header = lines[0].split(/[,，\t]+/).map(c => c.trim())
   const subjects = examSubjects.value
 
   const noCol = Math.max(header.findIndex(h => h === '学号'), header.findIndex(h => /student\s*no/i.test(h)))
   const nameCol = Math.max(header.findIndex(h => h === '姓名'), header.findIndex(h => /^name$/i.test(h)))
   const keyCol = noCol >= 0 ? noCol : nameCol
-  if (keyCol < 0) { alert('未找到「学号」或「姓名」列，请使用下载的模板'); return }
+  if (keyCol < 0) { toast.warning('未找到「学号」或「姓名」列，请使用下载的模板'); return }
 
   const subCols: { subject: string; idx: number }[] = []
   for (const sub of subjects) {
@@ -487,7 +488,7 @@ function parseMatrixText(text: string, filename: string) {
     if (idx >= 0) subCols.push({ subject: sub, idx })
   }
   if (!subCols.length) {
-    alert(`表头中未匹配到任何考试科目（${subjects.join('、')}），请使用下载的模板，科目列名需与考试设置一致。`)
+    toast.warning(`表头中未匹配到任何考试科目（${subjects.join('、')}），请使用下载的模板，科目列名需与考试设置一致。`)
     return
   }
 

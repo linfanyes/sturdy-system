@@ -17,6 +17,7 @@ import {
   activateSeatLayout,
   type TeacherStudent,
 } from '@/api/teacher'
+import { toast } from '@/utils/feedback'
 import request from '@/api/request'
 import { LayoutGrid, Save, Download, Monitor, RefreshCw, Trash2 } from 'lucide-vue-next'
 
@@ -213,8 +214,8 @@ function arrangeAlternatingGender() {
 
 /** 按成绩排名：调 /grades/analysis/rank 取各科分数，按学生汇总总分降序；无成绩者按学号置后 */
 async function arrangeByGrade() {
-  if (!classId.value) { alert('请先选择班级'); return }
-  if (!examId.value) { alert('请先选择考试'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
+  if (!examId.value) { toast.warning('请先选择考试'); return }
   try {
     const res: any = await request.get('/grades/analysis/rank', {
       params: { classId: classId.value, examId: examId.value },
@@ -234,12 +235,12 @@ async function arrangeByGrade() {
     const restIds = sortByStudentNo(students.value.filter(s => !rankedSet.has(s.id))).map(s => s.id)
     fillGridByIds([...rankedIds, ...restIds])
   } catch (e: any) {
-    alert('获取成绩排名失败：' + (e?.message || '请重试'))
+    toast.error('获取成绩排名失败：' + (e?.message || '请重试'))
   }
 }
 
 async function autoArrange() {
-  if (!students.value.length) { alert('该班级暂无学生'); return }
+  if (!students.value.length) { toast.info('该班级暂无学生'); return }
   if (arrangeMode.value === 'studentNo') arrangeByStudentNo()
   else if (arrangeMode.value === 'random') arrangeRandom()
   else if (arrangeMode.value === 'gender') arrangeAlternatingGender()
@@ -247,7 +248,7 @@ async function autoArrange() {
 }
 
 async function save() {
-  if (!classId.value) { alert('请先选择班级'); return }
+  if (!classId.value) { toast.warning('请先选择班级'); return }
   saving.value = true
   try {
     await saveSeatLayout({
@@ -257,10 +258,10 @@ async function save() {
       seats: grid.value,
       name: `${rows.value}×${cols.value} 座位表`,
     })
-    alert('座位表已保存，可在「加载历史」中启用')
+    toast.success('座位表已保存，可在「加载历史」中启用')
     await loadLayouts(classId.value)
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }
@@ -271,10 +272,10 @@ async function activate(layout: any) {
   activatingId.value = layout.id
   try {
     await activateSeatLayout(layout.id)
-    alert(`已启用「${layout.name || ''}」，学生座位已回写`)
+    toast.success(`已启用「${layout.name || ''}」，学生座位已回写`)
     await loadLayouts(classId.value)
   } catch (e: any) {
-    alert('启用失败：' + (e?.message || '请重试'))
+    toast.error('启用失败：' + (e?.message || '请重试'))
   } finally {
     activatingId.value = ''
   }

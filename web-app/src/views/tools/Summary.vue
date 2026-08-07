@@ -6,6 +6,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { Sparkles, Save, Copy, FileText, Loader2, Download } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { aiChatSync } from '@/api/teacher'
 import { downloadText } from '@/utils/download'
@@ -36,7 +37,7 @@ function buildPrompt(): string {
 
 async function generate() {
   const prompt = buildPrompt()
-  if (!form.value.classId) { alert('请选择班级'); return }
+  if (!form.value.classId) { toast.warning('请选择班级'); return }
   generating.value = true
   result.value = ''
   try {
@@ -52,9 +53,9 @@ async function generate() {
 async function copyResult() {
   try {
     await navigator.clipboard.writeText(result.value)
-    alert('已复制')
+    toast.success('已复制')
   } catch {
-    alert('复制失败，请手动选择')
+    toast.error('复制失败，请手动选择')
   }
 }
 

@@ -323,7 +323,6 @@ async function switchToKid(studentId: string) {
       load()
     }
   } catch (e) {
-    console.error('切换孩子失败', e)
   }
 }
 
@@ -444,7 +443,6 @@ async function load() {
     // 默认选中最近一次考试
     selectedExamIndex.value = Math.max(0, exams.value.length - 1)
   } catch (e) {
-    console.error('[parent] load error:', e)
   } finally {
     loading.value = false
   }
@@ -462,7 +460,6 @@ async function subscribeNotifications() {
     setTimeout(() => { subscribeStatus.value = 'none' }, 3000)
   } catch (e) {
     subscribeStatus.value = 'none'
-    console.error('订阅失败', e)
   }
 }
 </script>

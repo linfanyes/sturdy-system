@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { toast } from '@/utils/feedback'
 import { useAuthStore } from '@/stores/auth'
 import request from '@/api/request'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
@@ -58,7 +59,7 @@ async function loadProfile() {
       school: res.school || '',
     }
   } catch (e: any) {
-    alert(e?.message || '加载失败')
+    toast.error(e?.message || '加载失败')
   } finally {
     loading.value = false
   }
@@ -80,7 +81,7 @@ function toggleSubject(subj: string) {
 
 async function save() {
   if (form.value.phone && !isValidPhone(form.value.phone)) {
-    alert(PHONE_HINT)
+    toast.warning(PHONE_HINT)
     return
   }
   saving.value = true
@@ -93,9 +94,9 @@ async function save() {
       gender: form.value.gender,
     })
     auth.updateUser({ name: form.value.name })
-    alert('已保存')
+    toast.success('已保存')
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     saving.value = false
   }

@@ -152,7 +152,6 @@ function parseJson(text) {
   // 去除 markdown 代码块
   let t = text.replace(/```json/gi, '').replace(/```/g, '').trim()
   // 先直接尝试解析（最稳）
-  try { return JSON.parse(t) } catch (e) { console.error('[mini catch]', e) }
   // 退回：非贪婪提取首个 {...}（避免贪婪吞掉 JSON 后噪声的 }）
   const m = t.match(/\{[\s\S]*?\}/)
   if (!m) return null
@@ -173,7 +172,6 @@ function speak() {
   if (!text) return
   // 复用单例：先销毁旧实例再创建，避免底层音频对象累积
   if (audioCtx) {
-    try { audioCtx.destroy() } catch (e) { console.error('[mini catch]', e) }
     audioCtx = null
   }
   // 使用百度 TTS 公共接口（在线）

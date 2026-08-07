@@ -100,7 +100,6 @@ function pickBatchClass(e) {
       batchStudents.value = (arr || []).filter((s) => s.parentPhone)
     })
     .catch((e) => {
-      console.error('[mini catch]', e)
       batchStudents.value = []
     })
 }
@@ -133,7 +132,6 @@ function sendBatch() {
           content: batchMsg.value.replace(/{{name}}/g, s.name).replace(/{{parent}}/g, s.parentName || '家长'),
         }).catch(() => {}),
       )).then(() => load()).catch((e) => {
-        console.error('[mini catch]', e)
         load()
       })
     },

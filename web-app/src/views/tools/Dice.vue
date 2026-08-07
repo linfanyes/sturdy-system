@@ -8,6 +8,7 @@
  */
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Dice5, Plus, X, Play, History, Trash2, Settings2 } from 'lucide-vue-next'
+import { toast } from '@/utils/feedback'
 
 interface Option {
   text: string
@@ -72,7 +73,7 @@ function stopTimer() {
 
 function startRoll() {
   if (options.value.length === 0) {
-    alert('请先添加选项')
+    toast.warning('请先添加选项')
     return
   }
   rolling.value = true

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { toast } from '@/utils/feedback'
 import request from '@/api/request'
 import { loadClasses, useClasses, classNameById } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
@@ -75,7 +76,7 @@ async function loadNotices() {
     notices.value = Array.isArray(res) ? res : (res?.items || [])
     pageNotices.value = 0
   } catch (e: any) {
-    alert(e?.message || '加载公告失败')
+    toast.error(e?.message || '加载公告失败')
     notices.value = []
   } finally {
     loading.value = false
@@ -126,7 +127,7 @@ function openEdit(n: NoticeItem) {
 
 async function submitForm() {
   if (!form.value.title.trim()) {
-    alert('请输入公告标题')
+    toast.warning('请输入公告标题')
     return
   }
   formLoading.value = true
@@ -155,7 +156,7 @@ async function submitForm() {
     }
     showForm.value = false
   } catch (e: any) {
-    alert(e?.message || '保存失败')
+    toast.error(e?.message || '保存失败')
   } finally {
     formLoading.value = false
   }
@@ -167,7 +168,7 @@ async function handleDelete(n: NoticeItem) {
     await request.delete('/notices/' + n.id)
     notices.value = notices.value.filter(x => x.id !== n.id)
   } catch (e: any) {
-    alert(e?.message || '删除失败')
+    toast.error(e?.message || '删除失败')
   }
 }
 
@@ -177,7 +178,7 @@ async function togglePin(n: NoticeItem) {
     await request.patch('/notices/' + n.id, { pinned: !n.pinned })
     n.pinned = !n.pinned
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -186,7 +187,7 @@ async function setEnded(n: NoticeItem, ended: boolean) {
     await request.patch('/notices/' + n.id, { ended })
     n.ended = ended
   } catch (e: any) {
-    alert(e?.message || '操作失败')
+    toast.error(e?.message || '操作失败')
   }
 }
 
@@ -198,9 +199,9 @@ async function pushToParents(n: NoticeItem) {
   pushing.value[n.id] = true
   try {
     await request.post('/security/push-notice', { noticeId: n.id })
-    alert('已推送给家长')
+    toast.success('已推送给家长')
   } catch (e: any) {
-    alert(e?.message || '推送失败')
+    toast.error(e?.message || '推送失败')
   } finally {
     pushing.value[n.id] = false
   }
@@ -210,7 +211,7 @@ async function pushToParents(n: NoticeItem) {
 const polishing = ref(false)
 async function aiPolish() {
   if (!form.value.content.trim()) {
-    alert('请先输入公告内容')
+    toast.warning('请先输入公告内容')
     return
   }
   if (polishing.value) return
@@ -221,9 +222,9 @@ async function aiPolish() {
     })
     const out = res?.content
     if (out) form.value.content = out
-    else alert('AI 未返回内容')
+    else toast.warning('AI 未返回内容')
   } catch (e: any) {
-    alert(e?.message || 'AI 润色失败')
+    toast.error(e?.message || 'AI 润色失败')
   } finally {
     polishing.value = false
   }
@@ -242,7 +243,7 @@ async function openTemplates() {
     const res: any = await request.get('/notice-templates', { params: { take: 200 } })
     templates.value = Array.isArray(res) ? res : (res?.items || [])
   } catch (e: any) {
-    alert(e?.message || '加载模板失败')
+    toast.error(e?.message || '加载模板失败')
   } finally {
     templateLoading.value = false
   }
