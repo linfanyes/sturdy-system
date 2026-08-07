@@ -79,6 +79,9 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api from '../../common/request'
+import { listNotes, createNote, updateNote, removeNote, toggleNotePinned, toggleNoteFavorite } from '@/api/notes'
+import { speechToText, parseFile, ocrImage } from '@/api/ai'
+import { checkText, checkImage } from '@/api/security'
 import { isNonEmpty } from '../../common/validators'
 import { theme } from '../../common/store'
 import { pickAndCompressImage } from '../../common/image'
@@ -169,7 +172,7 @@ function startVoiceNative() {
     try {
       const fs = uni.getFileSystemManager()
       const data = fs.readFileSync(res.tempFilePath, 'base64')
-      const r = await api.post('/ai/asr', { audio: data, format: 'wav' })
+      const r = await speechToText(data, 'wav')
       if (r.text) {
         form.value.content += (form.value.content ? '\n' : '') + r.text
         voiceTip.value = ''
@@ -256,7 +259,7 @@ function pickPdf() {
       try {
         const fs = uni.getFileSystemManager()
         const data = fs.readFileSync(file.path, 'base64')
-        const r = await api.post('/ai/parse-file', { fileName: file.name, fileData: data })
+        const r = await parseFile(file.name, data)
         if (r.text && r.text !== '未识别到文字') {
           form.value.content += (form.value.content ? '\n' : '') + r.text
           uni.showToast({ title: '已导入：' + file.name, icon: 'success' })
@@ -293,7 +296,7 @@ async function pickImageOcr() {
     try {
       const fs = uni.getFileSystemManager()
       const data = fs.readFileSync(path, 'base64')
-      const r = await api.post('/ai/parse-file', { fileName: 'image.jpg', fileData: data })
+      const r = await parseFile('image.jpg', data)
       if (r.text && r.text !== '未识别到文字') {
         form.value.content += (form.value.content ? '\n' : '') + r.text
         uni.showToast({ title: '文字已提取', icon: 'success' })
@@ -353,7 +356,7 @@ async function pickOcr() {
     try {
       const fs = uni.getFileSystemManager()
       const data = fs.readFileSync(path, 'base64')
-      const r = await api.post('/ai/ocr', { image: data })
+      const r = await ocrImage(data)
       if (r.text && r.text !== '未识别到文字') {
         form.value.content += (form.value.content ? '\n' : '') + r.text
         uni.showToast({ title: '文字已提取', icon: 'success' })
@@ -466,7 +469,7 @@ function md2html(src) {
 }
 
 async function load() {
-  const arr = await api.getList('/notes', { loading: true, loadingText: '加载笔记' })
+  const arr = await listNotes({ loading: true, loadingText: '加载笔记' })
   arr.sort((a, b) => {
     if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1
     return (b.updatedAt || '').localeCompare(a.updatedAt || '')
@@ -522,7 +525,7 @@ async function save() {
   // 微信内容安全审核（后端已配置则审核，未配置/异常放行，不阻塞保存）
   try {
     if (form.value.content && form.value.content.trim()) {
-      const r = await api.post('/security/msg-check', { content: form.value.content })
+      const r = await checkText(form.value.content)
       if (r && r.pass === false) {
         return uni.showToast({ title: '内容未通过安全审核：' + (r.reason || ''), icon: 'none' })
       }
@@ -530,7 +533,7 @@ async function save() {
     if (form.value.images && form.value.images.length) {
       for (const img of form.value.images) {
         const b64 = img.split(',')[1] || img
-        const r = await api.post('/security/img-check', { image: b64 })
+        const r = await checkImage(b64)
         if (r && r.pass === false) {
           return uni.showToast({ title: '图片未通过安全审核：' + (r.reason || ''), icon: 'none' })
         }
@@ -543,10 +546,10 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      const r = await api.patch('/notes/' + editing.value.id, payload)
+      const r = await updateNote(editing.value.id, payload)
       Object.assign(editing.value, r)
     } else {
-      const r = await api.post('/notes', payload)
+      const r = await createNote(payload)
       list.value.unshift(r)
     }
     show.value = false
@@ -559,13 +562,13 @@ async function save() {
 }
 async function togglePin(n) {
   uni.showLoading({ title: '处理中…', mask: true })
-  try { const r = await api.patch('/notes/' + n.id, { pinned: !n.pinned }); n.pinned = r.pinned; load() }
+  try { const r = await toggleNotePinned(n.id); n.pinned = r.pinned; load() }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
   finally { uni.hideLoading() }
 }
 async function toggleFav(n) {
   uni.showLoading({ title: '处理中…', mask: true })
-  try { const r = await api.patch('/notes/' + n.id, { favorite: !n.favorite }); n.favorite = r.favorite }
+  try { const r = await toggleNoteFavorite(n.id); n.favorite = r.favorite }
   catch (e) { uni.showToast({ title: '操作失败', icon: 'none' }) }
   finally { uni.hideLoading() }
 }
@@ -573,7 +576,7 @@ function del(n) {
   uni.showModal({ title: '删除', content: '确定删除「' + n.title + '」？', success: async (m) => {
     if (!m.confirm) return
     uni.showLoading({ title: '删除中…' })
-    try { await api.del('/notes/' + n.id); list.value = list.value.filter((x) => x.id !== n.id) }
+    try { await removeNote(n.id); list.value = list.value.filter((x) => x.id !== n.id) }
     catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }) }
     finally { uni.hideLoading() }
   } })
