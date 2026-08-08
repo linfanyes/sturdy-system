@@ -1,6 +1,9 @@
 import 'reflect-metadata'
 import { BadRequestException, UnauthorizedException } from '@nestjs/common'
+import * as crypto from 'node:crypto'
 import { ParentAuthService } from '../src/parent-auth/parent-auth.service'
+
+const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex')
 
 /** 构造一个包含常用 Repository 方法的 mock 对象 */
 function mockRepo(): any {
@@ -44,6 +47,8 @@ describe('ParentAuthService', () => {
     config = { get: jest.fn() }
     wechat = { code2Session: jest.fn() }
     service = new ParentAuthService(
+      mockRepo(), // parentRepo
+      mockRepo(), // usersRepo
       pcRepo,
       studentRepo,
       noticeRepo,
@@ -51,10 +56,16 @@ describe('ParentAuthService', () => {
       gradeRepo,
       examRepo,
       classRepo,
+      mockRepo(), // checkinRepo
+      mockRepo(), // scheduleRepo
+      mockRepo(), // behaviorRepo
+      mockRepo(), // dutyRepo
+      mockRepo(), // classMemberRepo
       jwt as any,
       im as any,
       config as any,
       wechat as any,
+      {} as any, // studentParentSvc 占位
     )
   })
 
@@ -66,6 +77,8 @@ describe('ParentAuthService', () => {
       studentNo: '20240001',
       parentName: '张爸爸',
       parentLoginEnabled: true,
+      // 家长登录不再支持默认弱密码，必须初始化真实密码哈希
+      parentPasswordHash: sha256('123456'),
     }
 
     it('空密码应抛出 BadRequestException "请输入密码"', async () => {
@@ -74,14 +87,14 @@ describe('ParentAuthService', () => {
     })
 
     it('错误密码应抛出 UnauthorizedException "密码错误"（而非 BadRequest）', async () => {
-      studentRepo.findOne.mockResolvedValue({ ...stubStudent })
+      studentRepo.find.mockResolvedValue([{ ...stubStudent }])
       // 类型必须是 UnauthorizedException（安全修复关键点）
       await expect(service.login('20240001', 'wrong')).rejects.toThrow(UnauthorizedException)
       await expect(service.login('20240001', 'wrong')).rejects.toThrow('密码错误')
     })
 
     it('正确学号 + 正确密码(123456) 返回 token', async () => {
-      studentRepo.findOne.mockResolvedValue({ ...stubStudent })
+      studentRepo.find.mockResolvedValue([{ ...stubStudent }])
       jwt.sign.mockReturnValue('token-xyz')
 
       const res = await service.login('20240001', '123456')
@@ -104,13 +117,13 @@ describe('ParentAuthService', () => {
     })
 
     it('学号不存在应抛出 BadRequestException', async () => {
-      studentRepo.findOne.mockResolvedValue(null)
+      studentRepo.find.mockResolvedValue([])
       await expect(service.login('99999999', '123456')).rejects.toThrow(BadRequestException)
       await expect(service.login('99999999', '123456')).rejects.toThrow('未找到该学号')
     })
 
     it('parentLoginEnabled=false 应抛出 BadRequestException', async () => {
-      studentRepo.findOne.mockResolvedValue({ ...stubStudent, parentLoginEnabled: false })
+      studentRepo.find.mockResolvedValue([{ ...stubStudent, parentLoginEnabled: false }])
       await expect(service.login('20240001', '123456')).rejects.toThrow(BadRequestException)
       await expect(service.login('20240001', '123456')).rejects.toThrow('尚未被老师授权')
     })
@@ -166,6 +179,8 @@ describe('ParentAuthService', () => {
         },
       ])
       studentRepo.find.mockResolvedValue([{ id: 's1' }, { id: 's2' }])
+      // getExams 现会校验 studentId 是否属于该班级（studentRepo.findOne），需放行
+      studentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' })
 
       const res = await service.getExams({ classId: 'c1', studentId: 's1' })
 
@@ -180,8 +195,9 @@ describe('ParentAuthService', () => {
       expect(exam.subjects[0].classRank).toBe(2)
 
       // buildDistribution 输出：85 落在 80-89 段，95 落在 90-99 段
+      // 注：班级级分布（computeExams 传 studentTotal=null），isStudent 恒为 false
       expect(exam.distribution).toEqual([
-        { label: '80-89', count: 1, pct: 100, isStudent: true },
+        { label: '80-89', count: 1, pct: 100, isStudent: false },
         { label: '90-99', count: 1, pct: 100, isStudent: false },
       ])
     })
@@ -199,6 +215,8 @@ describe('ParentAuthService', () => {
       ])
       gradeRepo.find.mockResolvedValue([])
       studentRepo.find.mockResolvedValue([])
+      // getExams 现会校验 studentId 是否属于该班级（studentRepo.findOne），需放行
+      studentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' })
 
       const res = await service.getExams({ classId: 'c1', studentId: 's1' })
       expect(res.exams).toHaveLength(1)

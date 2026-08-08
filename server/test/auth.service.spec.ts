@@ -13,13 +13,14 @@ const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex'
 describe('AuthService', () => {
   let service: AuthService
   let users: Record<keyof UsersService, jest.Mock>
-  let wechat: { code2Session: jest.Mock }
+  let wechat: { code2Session: jest.Mock; wechatLogin: jest.Mock }
   let jwt: { sign: jest.Mock }
   let config: { get: jest.Mock }
   let saRepo: { findOne: jest.Mock; save: jest.Mock }
-  let studentRepo: { findOne: jest.Mock; save: jest.Mock }
+  let studentRepo: { find: jest.Mock; findOne: jest.Mock; save: jest.Mock }
   let schoolRepo: { findOne: jest.Mock }
   let entityManager: { transaction: jest.Mock; findOne: jest.Mock }
+  let feature: { buildProfile: jest.Mock }
 
   beforeEach(() => {
     users = {
@@ -30,24 +31,30 @@ describe('AuthService', () => {
       create: jest.fn(),
       update: jest.fn(),
     }
-    wechat = { code2Session: jest.fn() }
+    wechat = { code2Session: jest.fn(), wechatLogin: jest.fn() }
     jwt = { sign: jest.fn().mockReturnValue('mock-token') }
     // config.get 默认返回 undefined，触发超管默认账号 admin/admin
     config = { get: jest.fn().mockReturnValue(undefined) }
     saRepo = { findOne: jest.fn(), save: jest.fn() }
-    studentRepo = { findOne: jest.fn(), save: jest.fn() }
+    studentRepo = { find: jest.fn().mockResolvedValue([]), findOne: jest.fn(), save: jest.fn() }
     schoolRepo = { findOne: jest.fn() }
     entityManager = { transaction: jest.fn(), findOne: jest.fn().mockResolvedValue(null) }
+    // 所有角色登录都会调用 feature.buildProfile 计算 effectiveFeatures
+    feature = { buildProfile: jest.fn().mockResolvedValue({ effectiveFeatures: [], rawFeatures: [], schoolFeatureFlags: [] }) }
 
     service = new AuthService(
       users as unknown as UsersService,
-      wechat as unknown as WechatService,
       jwt as any,
       config as any,
+      wechat as any,
       saRepo as any,
       studentRepo as any,
       schoolRepo as any,
+      // parentRepo / entityManager / auditService 为后续新增依赖，单测仅需占位
+      {} as any,
       entityManager as any,
+      {} as any,
+      feature as any,
     )
   })
 
@@ -99,6 +106,7 @@ describe('AuthService', () => {
         contact: '',
         phone: '',
         status: 'active',
+        featureFlags: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -188,22 +196,26 @@ describe('AuthService', () => {
       seatCol: null,
       parentName: '王妈妈',
       parentPhone: '',
-      parentOpenId: '',
+      studentPhone: '',
+      address: '',
+      parentId: '',
       parentNickName: '',
       parentLoginEnabled: true,
-      parentPasswordHash: null,
+      // 家长登录不再支持默认弱密码，必须初始化真实密码哈希
+      parentPasswordHash: sha256('123456'),
       note: null,
       tags: [],
       duty: null,
       comment: null,
+      examComments: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
-    it('正确学号+默认密码123456 返回 role=parent', async () => {
+    it('正确学号+密码123456 返回 role=parent', async () => {
       saRepo.findOne.mockResolvedValue(null)
       users.findByUsername.mockResolvedValue(null)
-      studentRepo.findOne.mockResolvedValue(studentRow)
+      studentRepo.find.mockResolvedValue([studentRow])
 
       const res = await service.unifiedLogin('S001', '123456')
 
@@ -221,7 +233,7 @@ describe('AuthService', () => {
     it('parentLoginEnabled=false 抛出未授权', async () => {
       saRepo.findOne.mockResolvedValue(null)
       users.findByUsername.mockResolvedValue(null)
-      studentRepo.findOne.mockResolvedValue({ ...studentRow, parentLoginEnabled: false })
+      studentRepo.find.mockResolvedValue([{ ...studentRow, parentLoginEnabled: false }])
 
       await expect(service.unifiedLogin('S001', '123456')).rejects.toThrow(
         UnauthorizedException,
@@ -232,7 +244,7 @@ describe('AuthService', () => {
     it('错误密码抛出“密码错误”', async () => {
       saRepo.findOne.mockResolvedValue(null)
       users.findByUsername.mockResolvedValue(null)
-      studentRepo.findOne.mockResolvedValue(studentRow)
+      studentRepo.find.mockResolvedValue([studentRow])
 
       await expect(service.unifiedLogin('S001', 'wrong')).rejects.toThrow('密码错误')
     })

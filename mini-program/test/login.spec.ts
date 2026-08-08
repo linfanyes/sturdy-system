@@ -47,7 +47,8 @@ describe('教师/超管登录页安全属性', () => {
   describe('login.vue 统一登录逻辑', () => {
     it('存在统一登录逻辑', () => {
       expect(loginContent).toMatch(/function\s+doLogin\s*\(/)
-      expect(loginContent).toContain('/auth/unified-login')
+      // 统一登录入口：调用 unifiedLogin wrapper（而非分散的 teacher/parent 端点）
+      expect(loginContent).toContain('unifiedLogin')
     })
   })
 })

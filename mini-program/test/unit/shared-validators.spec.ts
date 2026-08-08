@@ -278,9 +278,9 @@ describe('shared validators - 角色与权限校验', () => {
   })
 
   describe('hasFeature', () => {
-    it('should return true for empty features array (allow all)', () => {
-      expect(hasFeature([], 'exams')).toBe(true)
-      expect(hasFeature([], 'anything')).toBe(true)
+    it('should return false for empty features array (fail-closed)', () => {
+      expect(hasFeature([], 'exams')).toBe(false)
+      expect(hasFeature([], 'anything')).toBe(false)
     })
 
     it('should return true when feature is present', () => {
@@ -293,9 +293,9 @@ describe('shared validators - 角色与权限校验', () => {
       expect(hasFeature(['homework'], 'exams')).toBe(false)
     })
 
-    it('should handle non-array input', () => {
-      expect(hasFeature(null as any, 'exams')).toBe(true) // null 视为空数组 = 全放行
-      expect(hasFeature(undefined as any, 'exams')).toBe(true)
+    it('should return false for non-array input (fail-closed)', () => {
+      expect(hasFeature(null as any, 'exams')).toBe(false)
+      expect(hasFeature(undefined as any, 'exams')).toBe(false)
     })
   })
 })

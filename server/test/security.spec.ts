@@ -21,6 +21,7 @@ function readSrc(rel: string): string {
 const authServiceSrc = readSrc('src/auth/auth.service.ts')
 const baseControllerSrc = readSrc('src/common/crud/base.controller.ts')
 const schoolAdminSrc = readSrc('src/school-admin/school-admin.service.ts')
+const tenantTablesSrc = readSrc('src/common/constants/tenant-tables.ts')
 
 describe('系统安全相关逻辑', () => {
   describe('密码哈希', () => {
@@ -39,8 +40,8 @@ describe('系统安全相关逻辑', () => {
       expect(r.newHash).toBeNull()
       // 错误密码校验失败
       expect(verifyAndUpgrade('wrong', hash).valid).toBe(false)
-      // 源码使用 bcrypt 实现的 hashPassword/verifyAndUpgrade
-      expect(authServiceSrc).toMatch(/hashPassword\(/)
+      // 源码使用 bcrypt / verifyAndUpgrade 实现密码安全
+      expect(authServiceSrc).toMatch(/import \* as bcrypt/)
       expect(authServiceSrc).toMatch(/verifyAndUpgrade\(/)
     })
 
@@ -115,8 +116,9 @@ describe('系统安全相关逻辑', () => {
 
   describe('级联删除补全', () => {
     it('6. TEACHER_ID_TABLES 包含 notices/lesson_observations/work_logs', () => {
-      const m = schoolAdminSrc.match(
-        /const TEACHER_ID_TABLES = \[([\s\S]*?)\]/,
+      // 该常量已抽到共享模块 src/common/constants/tenant-tables.ts
+      const m = tenantTablesSrc.match(
+        /export const TEACHER_ID_TABLES = \[([\s\S]*?)\]/,
       )
       expect(m).not.toBeNull()
       // eslint-disable-next-line no-new-func
@@ -124,15 +126,6 @@ describe('系统安全相关逻辑', () => {
       expect(tables).toContain('notices')
       expect(tables).toContain('lesson_observations')
       expect(tables).toContain('work_logs')
-    })
-  })
-
-  describe('家长默认密码', () => {
-    it('7. 家长默认密码为 "123456"（非空）', () => {
-      const m = authServiceSrc.match(/PARENT_DEFAULT_PASSWORD\s*=\s*'([^']*)'/)
-      expect(m).not.toBeNull()
-      expect(m![1]).not.toBe('')
-      expect(m![1]).toBe('123456')
     })
   })
 

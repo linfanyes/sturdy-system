@@ -255,23 +255,38 @@ describe('业务逻辑 - 家长端', () => {
 
 describe('业务逻辑 - 成绩管理', () => {
   it('TC-BIZ-050: 成绩统计（平均/最高/最低/中位数/及格率/优秀率）', () => {
+    // 口径对齐真实实现 src/grades/grades.module.ts -> computeSubjectStat()
+    // - 及格线 = 满分 * 0.6，优秀线 = 满分 * 0.85（均为 >= 判定）
+    // - 分母为有效成绩条数 count
+    // - avg 四舍五入保留 1 位小数；passRate/excellentRate 为百分比且保留 1 位小数
     const scores = [85, 92, 78, 95, 60, 45, 88, 72, 91, 83]
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+    const fullScore = 100
+
+    const count = scores.length
+    const total = scores.reduce((a, b) => a + b, 0)
+    const avg = Math.round((total / count) * 10) / 10
     const max = Math.max(...scores)
     const min = Math.min(...scores)
+
+    const passLine = fullScore * 0.6 // 60
+    const excellentLine = fullScore * 0.85 // 85
+    const passCount = scores.filter(s => s >= passLine).length
+    const excellentCount = scores.filter(s => s >= excellentLine).length
+    const passRate = Math.round((passCount / count) * 1000) / 10
+    const excellentRate = Math.round((excellentCount / count) * 1000) / 10
+
+    // 中位数：偶数个取中间两数均值（实现中暂未提供该指标，此处为纯算法校验）
     const sorted = [...scores].sort((a, b) => a - b)
     const median = sorted.length % 2 === 0
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)]
-    const passRate = scores.filter(s => s >= 60).length / scores.length
-    const excellentRate = scores.filter(s => s >= 85).length / scores.length
 
-    expect(avg).toBeCloseTo(78.9, 1)
+    expect(avg).toBe(78.9)
     expect(max).toBe(95)
     expect(min).toBe(45)
     expect(median).toBe(84)
-    expect(passRate).toBeCloseTo(0.9, 1)
-    expect(excellentRate).toBeCloseTo(0.4, 1)
+    expect(passRate).toBe(90) // 9/10 -> 90%
+    expect(excellentRate).toBe(50) // 85/92/95/88/91 共 5 条 >= 85 -> 50%
   })
 
   it('TC-BIZ-051: 成绩分数不超过满分', () => {

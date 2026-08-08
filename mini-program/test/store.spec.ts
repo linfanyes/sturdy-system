@@ -91,7 +91,7 @@ describe('store 状态管理', () => {
       expect(auth.token).toBe('test-token')
       expect(auth.user).toEqual({ id: 1, name: '张老师' })
       expect(uni.setStorageSync).toHaveBeenCalledWith('g_token', 'test-token')
-      expect(uni.setStorageSync).toHaveBeenCalledWith('g_user', { id: 1, name: '张老师' })
+      expect(uni.setStorageSync).toHaveBeenCalledWith('g_user', JSON.stringify({ id: 1, name: '张老师' }))
     })
 
     it('setUser 设置 user 并提取 features', () => {
@@ -220,7 +220,7 @@ describe('store 状态管理', () => {
       expect(parent.token).toBe('parent-token')
       expect(parent.user).toEqual({ id: 1, name: '家长' })
       expect(uni.setStorageSync).toHaveBeenCalledWith('g_parent_token', 'parent-token')
-      expect(uni.setStorageSync).toHaveBeenCalledWith('g_parent_user', { id: 1, name: '家长' })
+      expect(uni.setStorageSync).toHaveBeenCalledWith('g_parent_user', JSON.stringify({ id: 1, name: '家长' }))
     })
 
     it('logoutParent 清理家长登录态', () => {
@@ -257,7 +257,7 @@ describe('store 状态管理', () => {
       setAuth('persist-token', { id: 1, name: '持久化用户' })
       expect(uni.setStorageSync).toHaveBeenCalledTimes(2)
       expect(uni.setStorageSync).toHaveBeenCalledWith('g_token', 'persist-token')
-      expect(uni.setStorageSync).toHaveBeenCalledWith('g_user', { id: 1, name: '持久化用户' })
+      expect(uni.setStorageSync).toHaveBeenCalledWith('g_user', JSON.stringify({ id: 1, name: '持久化用户' }))
     })
 
     it('setTheme 持久化 theme 到存储', () => {

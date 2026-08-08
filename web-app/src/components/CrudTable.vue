@@ -259,6 +259,7 @@ defineExpose({ reload: loadList })
         <select
           v-if="classFilterable !== false"
           v-model="classId"
+          aria-label="按班级筛选"
           class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         >
           <option value="">全部班级</option>
@@ -269,6 +270,7 @@ defineExpose({ reload: loadList })
           <input
             v-model="keyword"
             placeholder="搜索"
+            aria-label="搜索"
             class="w-full sm:w-56 pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           />
         </div>
@@ -292,7 +294,7 @@ defineExpose({ reload: loadList })
         </thead>
         <tbody class="divide-y divide-cream-100">
           <tr v-if="loading" class="text-center text-cocoa-400">
-            <td :colspan="listFields.length + 1" class="py-12">
+            <td :colspan="listFields.length + 1" class="py-12" role="status" aria-live="polite">
               <div class="flex flex-col items-center gap-2">
                 <div class="w-6 h-6 border-2 border-butter-500 border-t-transparent rounded-full animate-spin" />
                 <span class="text-sm">加载中…</span>
@@ -300,7 +302,7 @@ defineExpose({ reload: loadList })
             </td>
           </tr>
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
-            <td :colspan="listFields.length + 1" class="py-12">
+            <td :colspan="listFields.length + 1" class="py-12" role="status" aria-live="polite">
               <div class="flex flex-col items-center gap-1">
                 <Inbox class="w-8 h-8 text-cocoa-300" />
                 <span class="text-sm">暂无数据</span>
@@ -348,7 +350,7 @@ defineExpose({ reload: loadList })
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs text-cocoa-400">每页</span>
-        <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
+        <select v-model.number="pageSize" aria-label="每页条数" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
           <option :value="5">5 条</option>
           <option :value="10">10 条</option>
           <option :value="20">20 条</option>
@@ -372,6 +374,7 @@ defineExpose({ reload: loadList })
             :type="f.type === 'date' ? 'date' : (f.type === 'datetime' ? 'datetime-local' : 'text')"
             :placeholder="f.placeholder"
             :readonly="f.readonly"
+            :aria-label="f.label"
             class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
           />
           <input
@@ -379,11 +382,13 @@ defineExpose({ reload: loadList })
             v-model.number="form[f.key]"
             type="number"
             :placeholder="f.placeholder"
+            :aria-label="f.label"
             class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
           />
           <select
             v-else-if="f.type === 'select'"
             v-model="form[f.key]"
+            :aria-label="f.label"
             class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400"
           >
             <option value="">请选择</option>
@@ -394,6 +399,7 @@ defineExpose({ reload: loadList })
             v-model="form[f.key]"
             rows="4"
             :placeholder="f.placeholder"
+            :aria-label="f.label"
             class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 resize-none"
           />
           <div v-else-if="f.type === 'tags'">

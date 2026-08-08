@@ -194,3 +194,15 @@
   table { width: 100% !important; border-collapse: collapse !important; }
   th, td { border: 1px solid #e5ddd0 !important; }
 }
+
+/* ============ 无障碍：尊重「减少动态效果」系统偏好 ============ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

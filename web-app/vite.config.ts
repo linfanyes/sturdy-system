@@ -29,6 +29,10 @@ export default defineConfig({
     sourcemap: false,
     outDir: 'dist',
     emptyOutDir: false,
+    // 生产构建剥离 console.log/info/debug/table（保留 error/warn 用于线上错误监控上报）
+    esbuild: {
+      pure: ['console.log', 'console.info', 'console.debug', 'console.table'],
+    },
     // 关闭压缩体积统计：对 120+ chunk 逐个算 gzip 是纯耗时，无构建价值
     reportCompressedSize: false,
     cssCodeSplit: true,

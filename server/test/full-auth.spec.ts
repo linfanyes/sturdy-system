@@ -17,13 +17,14 @@ const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex'
 describe('AuthService - 全量测试', () => {
   let service: AuthService
   let users: Record<string, jest.Mock>
-  let wechat: { code2Session: jest.Mock }
+  let wechat: { code2Session: jest.Mock; wechatLogin: jest.Mock; bindByNumber: jest.Mock; bindWechatTeacher: jest.Mock }
   let jwt: { sign: jest.Mock }
   let config: { get: jest.Mock }
   let saRepo: { findOne: jest.Mock; save: jest.Mock }
-  let studentRepo: { findOne: jest.Mock; save: jest.Mock }
+  let studentRepo: { find: jest.Mock; findOne: jest.Mock; save: jest.Mock }
   let schoolRepo: { findOne: jest.Mock }
   let entityManager: { transaction: jest.Mock; findOne: jest.Mock }
+  let feature: { buildProfile: jest.Mock }
 
   beforeEach(() => {
     users = {
@@ -34,23 +35,28 @@ describe('AuthService - 全量测试', () => {
       create: jest.fn(),
       update: jest.fn(),
     }
-    wechat = { code2Session: jest.fn() }
+    wechat = { code2Session: jest.fn(), wechatLogin: jest.fn(), bindByNumber: jest.fn(), bindWechatTeacher: jest.fn() }
     jwt = { sign: jest.fn().mockReturnValue('mock-token') }
     config = { get: jest.fn().mockReturnValue(undefined) }
     saRepo = { findOne: jest.fn(), save: jest.fn() }
-    studentRepo = { findOne: jest.fn(), save: jest.fn() }
+    studentRepo = { find: jest.fn().mockResolvedValue([]), findOne: jest.fn(), save: jest.fn() }
     schoolRepo = { findOne: jest.fn() }
     entityManager = { transaction: jest.fn(), findOne: jest.fn().mockResolvedValue(null) }
+    // 所有角色登录都会调用 feature.buildProfile 计算 effectiveFeatures
+    feature = { buildProfile: jest.fn().mockResolvedValue({ effectiveFeatures: [], rawFeatures: [], schoolFeatureFlags: [] }) }
 
     service = new AuthService(
       users as unknown as UsersService,
-      wechat as unknown as WechatService,
       jwt as any,
       config as any,
+      wechat as any,
       saRepo as any,
       studentRepo as any,
       schoolRepo as any,
+      {} as any,
       entityManager as any,
+      {} as any,
+      feature as any,
     )
   })
 
@@ -114,7 +120,8 @@ describe('AuthService - 全量测试', () => {
     })
 
     it('TC-AUTH-013: sha256 密码透明升级为 bcrypt', async () => {
-      saRepo.findOne.mockResolvedValue({ ...mockAdmin })
+      // 使用新鲜 sha256 密码，避免被前序测试（TC-AUTH-010）原地升级为 bcrypt 污染
+      saRepo.findOne.mockResolvedValue({ ...mockAdmin, passwordHash: sha256('123456') })
       schoolRepo.findOne.mockResolvedValue({ id: 'school-001', name: '测试学校', code: 'TS00001H' })
       await service.unifiedLogin('sa1', '123456')
       // 验证 save 被调用（升级密码哈希）
@@ -184,23 +191,24 @@ describe('AuthService - 全量测试', () => {
       name: '小明',
       classId: 'class-001',
       parentLoginEnabled: true,
-      parentPasswordHash: null, // 默认密码 123456
+      // 家长登录不再支持默认弱密码，必须初始化真实密码哈希
+      parentPasswordHash: sha256('123456'),
     }
 
-    it('TC-AUTH-030: 家长使用默认密码登录成功', async () => {
-      studentRepo.findOne.mockResolvedValue(mockStudent)
+    it('TC-AUTH-030: 家长使用密码登录成功', async () => {
+      studentRepo.find.mockResolvedValue([mockStudent])
       const res = await service.unifiedLogin('2024001', '123456')
       expect(res.role).toBe('parent')
-      expect(res.user.studentName).toBe('小明')
+      expect(res.parent.studentName).toBe('小明')
     })
 
     it('TC-AUTH-031: 家长登录未启用', async () => {
-      studentRepo.findOne.mockResolvedValue({ ...mockStudent, parentLoginEnabled: false })
+      studentRepo.find.mockResolvedValue([{ ...mockStudent, parentLoginEnabled: false }])
       await expect(service.unifiedLogin('2024001', '123456')).rejects.toThrow()
     })
 
     it('TC-AUTH-032: 家长密码错误（非默认密码）', async () => {
-      studentRepo.findOne.mockResolvedValue({ ...mockStudent, parentLoginEnabled: true })
+      studentRepo.find.mockResolvedValue([{ ...mockStudent, parentLoginEnabled: true }])
       await expect(service.unifiedLogin('2024001', 'wrong')).rejects.toThrow()
     })
   })
@@ -257,39 +265,30 @@ describe('AuthService - 全量测试', () => {
   })
 
   // ============ 微信登录 ============
+  // 注意：AuthService.wechatLogin 已委托给 WechatAuthService，单测中直接 mock 该委托方法
   describe('微信登录', () => {
     it('TC-AUTH-050: 已绑定教师直接登录', async () => {
-      wechat.code2Session.mockResolvedValue({ openid: 'ox-001', session_key: 'sk' })
-      users.findByOpenid.mockResolvedValue({
-        id: 't-001', name: '张老师', schoolId: 'school-001', enabled: true,
-      })
-      const res = await service.wechatLogin('valid-code', '张老师')
+      wechat.wechatLogin.mockResolvedValue({ role: 'teacher', needsBind: undefined })
+      const res = await service.wechatLogin('valid-code')
       expect(res.role).toBe('teacher')
       expect(res.needsBind).toBeUndefined()
     })
 
     it('TC-AUTH-051: 未绑定返回 needsBind + openid', async () => {
-      wechat.code2Session.mockResolvedValue({ openid: 'ox-new', session_key: 'sk' })
-      users.findByOpenid.mockResolvedValue(null)
-      entityManager.findOne.mockResolvedValue(null)
-      const res = await service.wechatLogin('valid-code', '新用户')
+      wechat.wechatLogin.mockResolvedValue({ needsBind: true, openid: 'ox-new' })
+      const res = await service.wechatLogin('valid-code')
       expect(res.needsBind).toBe(true)
       expect(res.openid).toBe('ox-new')
     })
 
-    it('TC-AUTH-052: 微信 code 无效（code2Session 失败）', async () => {
-      wechat.code2Session.mockRejectedValue(new Error('invalid code'))
-      await expect(service.wechatLogin('bad-code', '')).rejects.toThrow()
+    it('TC-AUTH-052: 微信 code 无效（wechatAuth 失败）', async () => {
+      wechat.wechatLogin.mockRejectedValue(new Error('invalid code'))
+      await expect(service.wechatLogin('bad-code')).rejects.toThrow()
     })
 
     it('TC-AUTH-053: 已绑定家长直接登录', async () => {
-      wechat.code2Session.mockResolvedValue({ openid: 'ox-parent', session_key: 'sk' })
-      users.findByOpenid.mockResolvedValue(null)
-      studentRepo.findOne.mockResolvedValue({
-        id: 'stu-001', studentNo: '2024001', name: '小明',
-        classId: 'class-001', parentLoginEnabled: true, parentOpenId: 'ox-parent',
-      })
-      const res = await service.wechatLogin('valid-code', '')
+      wechat.wechatLogin.mockResolvedValue({ role: 'parent' })
+      const res = await service.wechatLogin('valid-code')
       expect(res.role).toBe('parent')
     })
   })
@@ -306,12 +305,13 @@ describe('AuthService - 全量测试', () => {
           lock: jest.fn().mockReturnThis(),
         })
       })
-      // 绑定逻辑在 transaction 内
-      // 验证默认密码设置
+      wechat.bindByNumber.mockResolvedValue({ ok: true })
+      await service.bindByNumber('ox-001', 'sk', 'JS00001', '昵称')
     })
 
     it('TC-AUTH-061: 微信已绑定其他账号时拒绝绑定', async () => {
       users.findByOpenid.mockResolvedValue({ id: 't-other', name: '其他老师' })
+      wechat.bindByNumber.mockRejectedValue(new Error('该微信已绑定其他账号'))
       await expect(
         service.bindByNumber('ox-001', 'sk', 'JS00001', '昵称')
       ).rejects.toThrow('该微信已绑定其他账号')

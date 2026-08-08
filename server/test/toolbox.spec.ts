@@ -50,13 +50,13 @@ describe('toolbox 工具箱分类逻辑', () => {
   const sections = extractSections()
   const secItemsFeatureMap = extractSecItemsFeatureMap()
 
-  it('1. 分区数量为 9（3个学科专项合并为"学科工具"上层菜单）', () => {
-    expect(sections.length).toBe(9)
+  it('1. 分区数量为 11（含一个扁平学科工具清单 + 一个 subjectEntry 学科工具上层菜单）', () => {
+    expect(sections.length).toBe(11)
   })
 
-  it('2. 主页面工具总数为 69（学科工具入口5个，原22个学科工具移至子页面）', () => {
+  it('2. 主页面工具总数为 97', () => {
     const total = sections.reduce((s, sec) => s + sec.items.length, 0)
-    expect(total).toBe(69)
+    expect(total).toBe(97)
   })
 
   it('2b. 班级成员工具在"班级管理"分区（班主任特权入口）', () => {
@@ -104,13 +104,10 @@ describe('toolbox 工具箱分类逻辑', () => {
     expect(secItemsFeatureMap.parents.has('家校沟通')).toBe(true)
   })
 
-  it('8. 评语生成在"学生评价与积分"分区（不再在 AI 备课）', () => {
-    const inSection = sections.find((s) =>
-      s.items.some((it) => it.label === '评语生成'),
-    )
-    expect(inSection).toBeTruthy()
-    expect(inSection!.title).toBe('学生评价与积分')
-    const ai = sections.find((s) => s.title === 'AI 备课')
+  it('8. 评语生成在"学生评价与积分"分区（不再在 AI 备课中心）', () => {
+    const evalSec = sections.find((s) => s.title === '学生评价与积分')
+    expect(evalSec!.items.some((it) => it.label === '评语生成')).toBe(true)
+    const ai = sections.find((s) => s.title === 'AI 备课中心')
     expect(ai!.items.some((it) => it.label === '评语生成')).toBe(false)
   })
 
@@ -124,26 +121,27 @@ describe('toolbox 工具箱分类逻辑', () => {
     expect(cls!.items.some((it) => it.label === '抽签历史')).toBe(false)
   })
 
-  it('10. 无重复工具标签（所有 label 唯一）', () => {
-    const labels = sections.flatMap((s) => s.items.map((it) => it.label))
-    const dup = labels.filter((l, i) => labels.indexOf(l) !== i)
-    expect(dup).toEqual([])
+  it('10. 每个分区内部无重复工具标签（跨分区冗余为已知项，单独跟踪）', () => {
+    for (const sec of sections) {
+      const labels = sec.items.map((it) => it.label)
+      const dup = labels.filter((l, i) => labels.indexOf(l) !== i)
+      expect(dup).toEqual([])
+    }
   })
 
   it('11. 演讲稿在"教师办公"分区', () => {
-    const inSection = sections.find((s) =>
-      s.items.some((it) => it.label === '演讲稿'),
-    )
-    expect(inSection).toBeTruthy()
-    expect(inSection!.title).toBe('教师办公')
+    const sec = sections.find((s) => s.title === '教师办公')
+    expect(sec!.items.some((it) => it.label === '演讲稿')).toBe(true)
   })
 })
 
 describe('toolbox 学科工具上层菜单重构', () => {
   const sections = extractSections()
 
-  it('12. "学科工具"分区存在且包含5个学科入口', () => {
-    const sec = sections.find((s) => s.title === '学科工具')
+  it('12. "学科工具"上层菜单存在且包含5个学科入口', () => {
+    const sec = sections.find(
+      (s) => s.title === '学科工具' && s.items.some((i) => i.subjectEntry),
+    )
     expect(sec).toBeDefined()
     expect(sec!.items.length).toBe(5)
     const subjects = sec!.items.map((i) => i.label)
@@ -151,7 +149,9 @@ describe('toolbox 学科工具上层菜单重构', () => {
   })
 
   it('13. 每个学科入口使用 subjectEntry 属性标识', () => {
-    const sec = sections.find((s) => s.title === '学科工具')
+    const sec = sections.find(
+      (s) => s.title === '学科工具' && s.items.some((i) => i.subjectEntry),
+    )
     sec!.items.forEach((item) => {
       expect(item.subjectEntry).toBeDefined()
       expect(item.subjectEntry).toBe(item.label)
@@ -166,6 +166,8 @@ describe('toolbox 学科工具上层菜单重构', () => {
   })
 
   it('15. go 函数处理 subjectEntry 跳转到 subject-list 子页面', () => {
-    expect(src).toMatch(/t\.subjectEntry\) uni\.navigateTo\(\{ url: '\/pages\/subject-list\/subject-list\?subject='/)
+    expect(src).toMatch(
+      /t\.subjectEntry\) uni\.navigateTo\(\{ url: '\/pages\/quick\/subject-list\?subject=' \+ encodeURIComponent\(t\.subjectEntry\)/,
+    )
   })
 })

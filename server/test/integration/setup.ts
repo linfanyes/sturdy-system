@@ -342,7 +342,7 @@ export class TestDataFactory {
       tags: [],
       parentName: '测试家长',
       parentPhone: '13800138002',
-      parentOpenId: '',
+      parentId: '',
       parentLoginEnabled: true,
       ...overrides,
     });

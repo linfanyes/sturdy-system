@@ -29,6 +29,10 @@ function buildService() {
     classRepo as any,
     studentRepo as any,
     entityManager as any,
+    // 后续新增依赖占位：auditService / resourceLibrarySvc / textbookSvc
+    {} as any,
+    {} as any,
+    {} as any,
   )
   return { service, saRepo, schoolRepo }
 }

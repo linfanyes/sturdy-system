@@ -158,8 +158,8 @@ describe('mini-program: shared constants export', () => {
     })
 
     it('should have all features defined in constants', () => {
-      // 31 features defined in FEATURE_FLAGS
-      expect(FEATURE_FLAGS.length).toBe(31)
+      // 40 features defined in FEATURE_FLAGS
+      expect(FEATURE_FLAGS.length).toBe(40)
     })
   })
 

@@ -1,25 +1,9 @@
-import fs from 'fs'
-import path from 'path'
-
-const schemaPath = path.resolve(__dirname, '../shared/schemas/subject-schema.ts')
-
-// 提取 SUBJECT_TOOLS 对象字面量（TS 版：SUBJECT_TOOLS: SubjectToolSchema = { ... }）
-const toolsMatch = src.match(/export const SUBJECT_TOOLS:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\{[\s\S]*?\n\})/)
-if (!toolsMatch) throw new Error('未能从 subject-schema.ts 提取 SUBJECT_TOOLS')
-// eslint-disable-next-line no-new-func
-const SUBJECT_TOOLS: Record<string, any> = new Function('GRADE', 'return ' + toolsMatch[1])(GRADE)
-
-// 提取 SUBJECT_LIST 数组（TS 版：SUBJECT_LIST: SubjectListItem[] = [ ... ]）
-const listMatch = src.match(/export const SUBJECT_LIST:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\[[\s\S]*?\n\])/)
-if (!listMatch) throw new Error('未能从 subject-schema.ts 提取 SUBJECT_LIST')
-// eslint-disable-next-line no-new-func
-const SUBJECT_LIST: Record<string, any> = new Function('return ' + listMatch[1])()
-
-// 提取 MATH_TOOLS 数组（TS 版：MATH_TOOLS: MathToolItem[] = [ ... ]）
-const mathMatch = src.match(/export const MATH_TOOLS:\s*[\w\{\}\[\]<>\s,]+\s*=\s*(\[[\s\S]*?\n\])/)
-if (!mathMatch) throw new Error('未能从 subject-schema.ts 提取 MATH_TOOLS')
-// eslint-disable-next-line no-new-func
-const MATH_TOOLS: Record<string, any> = new Function('return ' + mathMatch[1])()
+import {
+  SUBJECT_TOOLS,
+  SUBJECT_LIST,
+  MATH_TOOLS,
+  getToolsBySubject,
+} from '@gardener/shared/schemas/subject-schema'
 
 describe('学科工具配置 subject-schema', () => {
   describe('学科清单 SUBJECT_LIST', () => {
@@ -239,14 +223,8 @@ describe('学科工具配置 subject-schema', () => {
 })
 
 describe('getToolsBySubject 按学科分组函数', () => {
-  // 重新提取函数并执行
-  const fnMatch = src.match(/export function getToolsBySubject\(subject\) \{[\s\S]*?\n\}/)
-  if (!fnMatch) throw new Error('未能从 subject-schema.js 提取 getToolsBySubject')
-  // eslint-disable-next-line no-new-func
-  const getToolsBySubject = new Function('SUBJECT_TOOLS', 'MATH_TOOLS', fnMatch[0].replace('export function', 'function').replace('function getToolsBySubject', 'return function getToolsBySubject'))
-
   it('语文返回7个工具', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('语文')
+    const tools = getToolsBySubject('语文')
     expect(tools.length).toBe(7)
     tools.forEach((t: any) => {
       expect(t.subject).toBe('语文')
@@ -258,7 +236,7 @@ describe('getToolsBySubject 按学科分组函数', () => {
   })
 
   it('数学返回6个工具，每个有 path 跳转独立页面', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('数学')
+    const tools = getToolsBySubject('数学')
     expect(tools.length).toBe(6)
     tools.forEach((t: any) => {
       expect(t.subject).toBe('数学')
@@ -268,12 +246,12 @@ describe('getToolsBySubject 按学科分组函数', () => {
   })
 
   it('英语返回8个工具', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('英语')
+    const tools = getToolsBySubject('英语')
     expect(tools.length).toBe(8)
   })
 
   it('科学返回3个工具', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('科学')
+    const tools = getToolsBySubject('科学')
     expect(tools.length).toBe(3)
     const titles = tools.map((t: any) => t.title)
     expect(titles).toContain('实验设计助手')
@@ -282,7 +260,7 @@ describe('getToolsBySubject 按学科分组函数', () => {
   })
 
   it('道德与法治返回3个工具', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('道德与法治')
+    const tools = getToolsBySubject('道德与法治')
     expect(tools.length).toBe(3)
     const titles = tools.map((t: any) => t.title)
     expect(titles).toContain('案例分析')
@@ -291,7 +269,7 @@ describe('getToolsBySubject 按学科分组函数', () => {
   })
 
   it('不存在的学科返回空数组', () => {
-    const tools = getToolsBySubject(SUBJECT_TOOLS, MATH_TOOLS)('历史')
+    const tools = getToolsBySubject('历史')
     expect(tools).toEqual([])
   })
 })

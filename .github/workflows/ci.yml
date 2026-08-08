@@ -35,6 +35,9 @@ jobs:
       - name: Type check
         run: npx tsc -p tsconfig.build.json --noEmit
 
+      - name: Unit tests (jest, 排除需真实 DB 的 integration)
+        run: npx jest --forceExit --testPathIgnorePatterns="integration"
+
   # ============ Web 管理端：类型检查 + 构建 ============
   web:
     name: Web (typecheck + build)
@@ -104,3 +107,32 @@ jobs:
           SIZE=$(du -sk dist/build/mp-weixin | awk '{print $1}')
           if [ "$SIZE" -gt 2048 ]; then echo "❌ 主包超过 2MB 限制"; exit 1; fi
           echo "✅ 主包 ${SIZE}KB < 2048KB 限制"
+
+  # ============ 小程序：单元测试 ============
+  mini-test:
+    name: Mini-program (jest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mini-program/package-lock.json
+
+      - name: Build shared package (dist needed by @gardener/shared)
+        working-directory: shared
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install mini-program dependencies
+        working-directory: mini-program
+        run: npm ci
+
+      - name: Unit tests (jest)
+        working-directory: mini-program
+        run: npx jest --forceExit

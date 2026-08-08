@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { NotFoundException } from '@nestjs/common'
+import { NotFoundException, HttpException, HttpStatus } from '@nestjs/common'
 import { CrudService } from '../src/common/crud/base.service'
 
 /**
@@ -91,7 +91,12 @@ describe('CrudService - 全量测试', () => {
     })
 
     it('TC-CRUD-005: findOne 记录属于其他教师抛出 NotFoundException', async () => {
-      repo.findOne.mockResolvedValue({ id: '1', teacherId: 't-other', name: 'B' })
+      // 真实实现通过查询 where 中带上 teacherId 做隔离：他人记录会被数据库过滤掉，返回 null 后抛 NotFoundException
+      repo.findOne.mockImplementation((opts: any) => {
+        const w = opts?.where || {}
+        if (w.teacherId === 't1') return Promise.resolve(null) // 数据库按 teacherId 过滤，查不到他人记录
+        return Promise.resolve({ id: '1', teacherId: 't-other', name: 'B' })
+      })
       await expect(service.findOne('1', 't1')).rejects.toThrow(NotFoundException)
     })
   })
@@ -181,20 +186,32 @@ describe('CrudService - 全量测试', () => {
 
   // ============ 错误兜底 ============
   describe('错误兜底', () => {
-    it('TC-CRUD-030: 数据库查询异常返回空结果而非 500', async () => {
+    it('TC-CRUD-030: 数据库查询异常抛 500（不再静默返回空列表，避免把系统故障伪装成无数据）', async () => {
       repo.findAndCount.mockRejectedValue(new Error('Connection lost'))
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-      const res = await service.findAll('t1')
-      expect(res).toEqual({ items: [], total: 0 })
+      let thrown: any
+      try {
+        await service.findAll('t1')
+      } catch (e) {
+        thrown = e
+      }
       consoleSpy.mockRestore()
+      expect(thrown).toBeInstanceOf(HttpException)
+      expect(thrown.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR)
     })
 
-    it('TC-CRUD-031: 字段缺失异常兜底', async () => {
+    it('TC-CRUD-031: 字段缺失异常兜底抛 500（与查询异常一致，便于端侧感知）', async () => {
       repo.findAndCount.mockRejectedValue(new Error('Unknown column'))
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-      const res = await service.findAll('t1', 'class-001')
-      expect(res).toEqual({ items: [], total: 0 })
+      let thrown: any
+      try {
+        await service.findAll('t1', 'class-001')
+      } catch (e) {
+        thrown = e
+      }
       consoleSpy.mockRestore()
+      expect(thrown).toBeInstanceOf(HttpException)
+      expect(thrown.getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR)
     })
   })
 

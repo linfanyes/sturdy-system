@@ -12,9 +12,17 @@ function mockRepo(): any {
   repo.save = jest.fn()
   repo.remove = jest.fn()
   repo.create = jest.fn()
+  repo.update = jest.fn().mockResolvedValue(undefined)
   repo.delete = jest.fn()
   repo.count = jest.fn()
   repo.createQueryBuilder = jest.fn()
+  return repo
+}
+
+/** 构造一个带 manager.connection 的 mock Repo（service 内部会读 repo.manager.connection.options.type） */
+function mockRepoWithManager(): any {
+  const repo = mockRepo()
+  repo.manager = { connection: { options: { type: 'mysql' } } }
   return repo
 }
 
@@ -60,9 +68,10 @@ describe('SchoolAdminService', () => {
       parseFile: jest.fn().mockResolvedValue({ text: '' }),
     }
     // EntityManager mock：transaction 直接执行回调并传入自身
+    // 默认 getRepository 返回带 manager.connection 的通用 repo，供事务内部调用
     em = {
       transaction: jest.fn(async (cb: any) => cb(em)),
-      getRepository: jest.fn(),
+      getRepository: jest.fn(() => mockRepoWithManager()),
       query: jest.fn().mockResolvedValue(undefined),
     }
     service = new SchoolAdminService(
@@ -155,12 +164,17 @@ describe('SchoolAdminService', () => {
     it('删除教师时对新增级联表执行 DELETE 语句', async () => {
       const user = { id: 't1', name: '张老师', username: 'zhang' }
       userRepo.findOne.mockResolvedValue(user)
-      const classItemRepoEm = { delete: jest.fn().mockResolvedValue(undefined) }
+      const classItemRepoEm = { find: jest.fn().mockResolvedValue([]), delete: jest.fn().mockResolvedValue(undefined) }
       const userRepoEm = { remove: jest.fn().mockResolvedValue(undefined) }
       em.getRepository.mockImplementation((entity: any) => {
         if (entity && entity.name === 'ClassItem') return classItemRepoEm
         if (entity && entity.name === 'User') return userRepoEm
-        return { delete: jest.fn().mockResolvedValue(undefined), remove: jest.fn().mockResolvedValue(undefined) }
+        return {
+          find: jest.fn().mockResolvedValue([]),
+          update: jest.fn().mockResolvedValue(undefined),
+          delete: jest.fn().mockResolvedValue(undefined),
+          remove: jest.fn().mockResolvedValue(undefined),
+        }
       })
       em.query.mockResolvedValue(undefined)
 
@@ -173,18 +187,17 @@ describe('SchoolAdminService', () => {
       // User 被 remove
       expect(userRepoEm.remove).toHaveBeenCalledWith(user)
 
-      // 收集所有 em.query 执行的表名
+      // 收集所有 em.query 执行的表名（students 由 Student.update 处理，不在此列）
       const queriedTables = em.query.mock.calls.map((c: any[]) => {
         const sql = c[0] as string
         const m = sql.match(/`(\w+)`/)
         return m ? m[1] : ''
       })
-      // 关键：新增的表必须被级联删除
+      // 关键：级联删除表清单（TEACHER_ID_TABLES）必须包含安全关键的新表
       expect(queriedTables).toContain('notices')
       expect(queriedTables).toContain('lesson_observations')
       expect(queriedTables).toContain('work_logs')
       // 原有表也应被处理
-      expect(queriedTables).toContain('students')
       expect(queriedTables).toContain('grades')
       // 每条 DELETE 都带 teacherId 参数
       for (const c of em.query.mock.calls) {
@@ -204,8 +217,13 @@ describe('SchoolAdminService', () => {
     function setupEmForCreate(opts: { existUser: any; lastTeacher: any }) {
       const userRepoEm: any = {
         findOne: jest.fn().mockResolvedValue(opts.existUser),
+        find: jest.fn().mockResolvedValue([]),
         create: jest.fn((data: any) => ({ ...data })),
         save: jest.fn().mockImplementation(async (data: any) => ({ ...data, id: 'u-1' })),
+        update: jest.fn().mockResolvedValue(undefined),
+        delete: jest.fn().mockResolvedValue(undefined),
+        remove: jest.fn().mockResolvedValue(undefined),
+        manager: { connection: { options: { type: 'mysql' } } },
         createQueryBuilder: jest.fn(() => ({
           where: jest.fn().mockReturnThis(),
           orderBy: jest.fn().mockReturnThis(),
@@ -288,7 +306,7 @@ describe('SchoolAdminService', () => {
       )
     })
 
-    it('未传 password 时用统一默认密码 123456', async () => {
+    it('未传 password 时用统一默认密码 1314521（与重置密码一致）', async () => {
       setupEmForCreate({ existUser: null, lastTeacher: null })
       schoolRepo.findOne.mockResolvedValue(school)
 
@@ -296,9 +314,9 @@ describe('SchoolAdminService', () => {
       expect(res.ok).toBe(true)
       const userRepoEm = em.getRepository()
       const createCall = userRepoEm.create.mock.calls[0][0]
-      // 默认密码 123456 的 bcrypt 哈希应能校验通过
+      // 默认密码 1314521 的 bcrypt 哈希应能校验通过
       const { verifyAndUpgrade } = require('../src/common/utils/password.util')
-      expect(verifyAndUpgrade('123456', createCall.passwordHash).valid).toBe(true)
+      expect(verifyAndUpgrade('1314521', createCall.passwordHash).valid).toBe(true)
     })
 
     it('支持 gender 和 subject 字段', async () => {
@@ -562,11 +580,16 @@ describe('SchoolAdminService', () => {
       let savedCount = 0
       const userRepoEm: any = {
         findOne: jest.fn().mockResolvedValue(null), // 无重复
+        find: jest.fn().mockResolvedValue([]),
         create: jest.fn((data: any) => ({ ...data })),
         save: jest.fn().mockImplementation(async (data: any) => {
           savedCount++
           return { ...data, id: 'u-' + savedCount }
         }),
+        update: jest.fn().mockResolvedValue(undefined),
+        delete: jest.fn().mockResolvedValue(undefined),
+        remove: jest.fn().mockResolvedValue(undefined),
+        manager: { connection: { options: { type: 'mysql' } } },
         createQueryBuilder: jest.fn(() => ({
           where: jest.fn().mockReturnThis(),
           orderBy: jest.fn().mockReturnThis(),
@@ -602,17 +625,17 @@ describe('SchoolAdminService', () => {
       expect(res.results[1].username).toBe('lilaoshi')
     })
 
-    it('批量导入支持自定义 password', async () => {
+    it('批量导入支持自定义 password（长度≥6 时生效）', async () => {
       const userRepoEm = setupEmForBatch()
       schoolRepo.findOne.mockResolvedValue({ id: 's1', code: 'SCH001', name: '测试学校' })
 
       await service.batchCreateTeachers('s1', [
-        { name: '张老师', password: 'mypwd' },
+        { name: '张老师', password: 'custom666' },
       ])
 
       const createCall = userRepoEm.create.mock.calls[0][0]
       const { verifyAndUpgrade } = require('../src/common/utils/password.util')
-      expect(verifyAndUpgrade('mypwd', createCall.passwordHash).valid).toBe(true)
+      expect(verifyAndUpgrade('custom666', createCall.passwordHash).valid).toBe(true)
     })
 
     it('空列表应抛出 "请提供至少一位教师信息"', async () => {
