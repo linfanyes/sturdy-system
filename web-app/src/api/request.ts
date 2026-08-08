@@ -66,15 +66,7 @@ instance.interceptors.response.use(
         // 这类 401 不该清 token 踢登录——否则一个无权限接口就会拖垮整个登录态。
         const msgText = typeof err.response?.data?.message === 'string' ? err.response.data.message : ''
         if (isSessionInvalid(msgText)) {
-          localStorage.removeItem('trace_web_token')
-          localStorage.removeItem('trace_web_user')
-          // 同步清空 Pinia store，避免守卫 isLoggedIn 仍为 true 导致踢登录被重定向循环拦截
-          try {
-            const { useAuthStore } = await import('@/stores/auth')
-            const auth = useAuthStore()
-            if (auth.token) auth.logout()
-          } catch { /* store 未就绪时忽略，localStorage 已清 */ }
-          if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+          await handleUnauthorized()
         }
       }
     }
@@ -96,3 +88,24 @@ interface TypedAxios {
 const request = instance as unknown as TypedAxios
 
 export default request
+
+/**
+ * 统一处理「会话失效」：清除登录态 + 同步清空 Pinia store + 跳转登录页。
+ *
+ * 供两类场景共用：
+ *  1. axios 响应拦截器（已确认 isSessionInvalid，调用前即判定为真失效）；
+ *  2. 绕过拦截器的原生 fetch 流式接口（ai/chat 等非登录接口）在收到 401 时直接调用。
+ *
+ * 要点：同步清空 Pinia store 是为了避免路由守卫 isLoggedIn 仍为 true，
+ * 导致踢登录被重定向循环拦截。
+ */
+export async function handleUnauthorized(): Promise<void> {
+  localStorage.removeItem('trace_web_token')
+  localStorage.removeItem('trace_web_user')
+  try {
+    const { useAuthStore } = await import('@/stores/auth')
+    const auth = useAuthStore()
+    if (auth.token) auth.logout()
+  } catch { /* store 未就绪时忽略，localStorage 已清 */ }
+  if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+}

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import request, { getApiBase } from '@/api/request'
+import request, { getApiBase, handleUnauthorized } from '@/api/request'
 import { Send, Bot, User, Trash2, Plus, Pin, MessageSquare } from 'lucide-vue-next'
+import { createSSEParser } from '@gardener/shared/utils/sse-parser'
 import {
   createChatSession,
   fetchChatSessions,
@@ -139,32 +140,31 @@ async function send() {
     })
     // 与 request.ts 拦截器保持一致的 401 策略（ai/chat 非登录接口，失效即清登录态跳转）
     if (resp.status === 401) {
-      localStorage.removeItem('trace_web_token')
-      localStorage.removeItem('trace_web_user')
-      if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+      await handleUnauthorized()
       throw new Error('登录已失效，请重新登录')
     }
     if (!resp.body) throw new Error('无响应流')
     const reader = resp.body.getReader()
     const decoder = new TextDecoder()
-    let buf = ''
+    let errored = false
+    // 共享 SSE 解析：处理跨 chunk 断行、[DONE] 终止、delta/error 分片（三端同一实现）
+    const parser = createSSEParser({
+      onDelta: async (delta) => {
+        if (errored) return
+        assistantMsg.value.content += delta
+        await scrollToBottom()
+      },
+      onError: (msg) => {
+        errored = true
+        assistantMsg.value.content += `\n\n[错误] ${msg}`
+      },
+    })
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      buf += decoder.decode(value, { stream: true })
-      const lines = buf.split('\n')
-      buf = lines.pop() || ''
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6).trim()
-        if (data === '[DONE]') continue
-        try {
-          const obj = JSON.parse(data)
-          if (obj.error) { assistantMsg.value.content += `\n\n[错误] ${obj.error}`; break }
-          if (obj.delta) { assistantMsg.value.content += obj.delta; await scrollToBottom() }
-        } catch {}
-      }
+      parser.feed(decoder.decode(value, { stream: true }))
     }
+    parser.flush()
     if (!assistantMsg.value.content) assistantMsg.value.content = '（无响应内容，请检查 AI 配置）'
   } catch (e: any) {
     assistantMsg.value.content = `请求失败：${e?.message || '未知错误'}`

@@ -1,5 +1,5 @@
-import request, { getApiBase } from './request'
-import { parseSSELn } from '@gardener/shared/utils/sse-parser'
+import request, { getApiBase, handleUnauthorized } from './request'
+import { createSSEParser } from '@gardener/shared/utils/sse-parser'
 
 /**
  * 教师端 API 封装：对接小程序后端统一 CRUD 接口（base.controller.ts 模式）。
@@ -520,35 +520,23 @@ export async function aiChatStream(
   })
   // 与 request.ts 拦截器保持一致的 401 策略（ai/chat 非登录接口，失效即清登录态跳转）
   if (resp.status === 401) {
-    localStorage.removeItem('trace_web_token')
-    localStorage.removeItem('trace_web_user')
-    if (!location.hash.startsWith('#/login')) location.hash = '#/login'
+    await handleUnauthorized()
     throw new Error('登录已失效，请重新登录')
   }
   if (!resp.body) throw new Error('当前浏览器不支持流式响应')
   const reader = resp.body.getReader()
   const decoder = new TextDecoder()
-  let buf = ''
+  // 共享 SSE 解析：处理跨 chunk 断行、[DONE] 终止、delta/error 分片（三端同一实现）
+  const parser = createSSEParser({
+    onDelta,
+    onError,
+  })
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-    buf += decoder.decode(value, { stream: true })
-    const lines = buf.split('\n')
-    buf = lines.pop() || ''
-    for (const line of lines) {
-      // 共享 SSE 行解析：剥离 "data: " 前缀 + 识别 [DONE] 终止标记
-      const { data, done: evDone } = parseSSELn(line)
-      if (evDone) continue
-      if (data == null) continue
-      try {
-        const obj = JSON.parse(data)
-        if (obj.delta) onDelta(obj.delta)
-        if (obj.error && onError) onError(obj.error)
-      } catch {
-        /* 忽略解析错误 */
-      }
-    }
+    parser.feed(decoder.decode(value, { stream: true }))
   }
+  parser.flush()
 }
 
 /** AI 同步对话（非流式） */
