@@ -1,23 +1,63 @@
-# Gitee Go 流水线配置（与 GitHub Actions 语法兼容的子集）
-# 放置于仓库根 .workflow/ 目录，并在 Gitee 平台「DevOps > Gitee Go」中开启对应流水线。
-name: web-ci
-on:
+# ============================================================
+# Gitee Go 流水线配置（注意：这不是 GitHub Actions 语法！）
+# 放置于仓库根 .workflow/ 目录。
+# 启用方式：Gitee 仓库页「DevOps → Gitee Go → 新建流水线 → 选择已有 YAML」。
+# Gitee Go 会自动拉取代码到工作区，无需 checkout 步骤。
+# 若 build@nodejs 报 “nodeVersion 不存在”，把 18.18.0 改成 Gitee Go 支持的版本
+#   （常见：16.14.2 / 20.11.0 / 22.x；Vite5 需要 ≥18）。
+# npm ci 需要 package-lock.json 与依赖一致；若不一致改用 npm install。
+# 每个 commands 项为独立 shell 行，统一用「cd <目录> && ... && ...」从仓库根链式执行。
+# 注意：commands 值均用单引号包裹，避免其中的冒号(:)被 YAML 误判为映射分隔符。
+# ============================================================
+version: '1.0'
+name: gardener-ci
+displayName: '园丁工作台 CI'
+
+triggers:
   push:
     branches:
-      - master
-jobs:
-  build-and-test:
-    name: 单元测试 + 覆盖率
-    runs-on: ubuntu-latest
-    steps:
-      - name: 拉取代码
-        uses: actions/checkout@v3
-      - name: 配置 Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-      - name: 安装依赖并测试
-        run: |
-          cd web-app
-          npm ci
-          npm run test:coverage
+      precise:
+        - master
+  pr:
+    branches:
+      include:
+        - master
+
+stages:
+  # ============ 后端：类型检查 + 单测 ============
+  - stage:
+      name: server
+      displayName: '后端 (类型检查 + 单测)'
+      steps:
+        - step: build@nodejs
+          name: server_ci
+          displayName: 'Server: tsc --noEmit + jest'
+          nodeVersion: 18.18.0
+          commands:
+            - 'cd server && npm ci && npx tsc -p tsconfig.build.json --noEmit && npx jest --forceExit --testPathIgnorePatterns="integration"'
+
+  # ============ Web 管理端：构建 shared + 类型检查 + 构建 ============
+  - stage:
+      name: web
+      displayName: 'Web 管理端 (类型检查 + 构建)'
+      steps:
+        - step: build@nodejs
+          name: web_ci
+          displayName: 'Web: vue-tsc + vite build'
+          nodeVersion: 18.18.0
+          commands:
+            - 'cd shared && npm ci && npm run build && cd ../web-app && npm ci && npx vue-tsc --noEmit && npx vite build'
+
+  # ============ 小程序：构建 + 单测 + 主包体积门禁 ============
+  - stage:
+      name: mini
+      displayName: '小程序 (构建 + 单测 + 体积门禁)'
+      steps:
+        - step: build@nodejs
+          name: mini_ci
+          displayName: 'Mini: build + jest + size gate'
+          nodeVersion: 18.18.0
+          commands:
+            - 'cd shared && npm ci && npm run build && cd ../mini-program && npm ci && npx uni build -p mp-weixin'
+            - 'cd mini-program && npx jest --forceExit'
+            - 'cd mini-program && SIZE=$(du -sk dist/build/mp-weixin | cut -f1) && echo "主包体积: ${SIZE}KB" && if [ "$SIZE" -gt 2048 ]; then echo "FAIL: 主包超过 2MB 限制"; exit 1; fi && echo "OK: 主包体积达标"'
