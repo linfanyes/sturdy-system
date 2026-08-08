@@ -121,19 +121,19 @@ export function validateClassName(
  * 由年级+序号生成标准班级名
  * @param grade 年级（如 "五年级"、"初二"、"高一"）
  * @param classNo 序号（1-99），支持数字或数字字符串
- * @returns 标准班级名（如 "五年级1班"、"初二3班"、"高一5班"）
+ * @param opts.lenient 宽松模式：true 时非法输入返回 ''（不抛异常），用于表单中间态
+ * @returns 标准班级名（如 "五年级1班"、"初二3班"、"高一5班"）；宽松模式下非法输入返回 ''
  */
-export function generateClassName(grade: string, classNo: number | string): string {
+export function generateClassName(grade: string, classNo: number | string, opts?: { lenient?: boolean }): string {
   const gradeStr = String(grade)
   if (!GRADE_OPTIONS.includes(gradeStr)) {
+    if (opts?.lenient) return ''
     throw new Error(`非法年级：${gradeStr}，可选：${GRADE_OPTIONS.join('、')}`)
   }
   const classNoStr = String(classNo)
-  if (!/^\d+$/.test(classNoStr)) {
-    throw new Error('班级序号必须是 1-99 的整数')
-  }
   const classNoNum = Number.parseInt(classNoStr, 10)
-  if (!Number.isInteger(classNoNum) || classNoNum <= 0 || classNoNum > 99) {
+  if (!/^\d+$/.test(classNoStr) || !Number.isInteger(classNoNum) || classNoNum <= 0 || classNoNum > 99) {
+    if (opts?.lenient) return ''
     throw new Error('班级序号必须是 1-99 的整数')
   }
   return `${gradeStr}${classNoNum}班`

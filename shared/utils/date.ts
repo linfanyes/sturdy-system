@@ -71,3 +71,24 @@ export function formatMsToMinSec(ms: number): string {
   const s = totalSec % 60
   return m > 0 ? `${m}分${s}秒` : `${s}秒`
 }
+
+/**
+ * 当前学期：9月-次年2月为第一学期，3-8月为第二学期
+ * @param date 可传入 Date（便于测试/复用），默认当前时间
+ * @returns 如 "2025-2026学年第一学期"
+ */
+export function getCurrentTerm(date: Date = new Date()): string {
+  const y = date.getFullYear()
+  return date.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
+}
+
+/**
+ * 当前季节：秋季 / 春季（"YYYY秋季" / "YYYY春季"）
+ * @param date 可传入 Date（便于测试/复用），默认当前时间
+ * @param autumnFromMonth 判定为秋季的起始月份（0-11），默认 8（9 月起为秋季，与 getCurrentTerm 对齐）
+ * @returns 如 "2026春季"
+ */
+export function getCurrentSemester(date: Date = new Date(), autumnFromMonth = 8): string {
+  const y = date.getFullYear()
+  return date.getMonth() >= autumnFromMonth ? `${y}秋季` : `${y}春季`
+}

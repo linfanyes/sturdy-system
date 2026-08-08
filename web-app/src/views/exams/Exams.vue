@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 import { listExams, createExam, updateExam, deleteExam, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { usePagedList } from '@gardener/shared/composables'
+import { getCurrentTerm } from '@gardener/shared/utils/date'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
@@ -63,11 +64,9 @@ const displayedItems = computed(() => {
   return filtered.value.slice(start, start + pageSize.value)
 })
 
-/** 当前学期：9月-次年2月为第一学期，3-8月为第二学期 */
+/** 当前学期：9月-次年2月为第一学期，3-8月为第二学期（复用 shared） */
 function currentTerm() {
-  const d = new Date()
-  const y = d.getFullYear()
-  return d.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
+  return getCurrentTerm()
 }
 
 onMounted(async () => {

@@ -10,6 +10,8 @@ import {
 import Modal from '@/components/Modal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { generateClassName } from '@gardener/shared/validators'
+import { getCurrentSemester } from '@gardener/shared/utils/date'
 import { Plus, Search, Trash2, Edit3, Upload, Printer, Download, Users, Eye } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -89,18 +91,16 @@ const form = ref({
   subjectTeacherMap: {} as Record<string, string>,
 })
 
-/** 班级名称由「年级 + 班级序号 + 班」自动拼接，例如 五年级 + 1 → 五年级1班（不可手动编辑） */
+/** 班级名称由「年级 + 班级序号 + 班」自动拼接，例如 五年级 + 1 → 五年级1班（不可手动编辑）；宽松模式非法输入返回空 */
 const className = computed(() => {
   const g = form.value.grade
   const n = (form.value.classNo || '').trim()
-  return g && n ? `${g}${n}班` : ''
+  return generateClassName(g, n, { lenient: true })
 })
 
 function defaultTerm() {
-  const now = new Date()
-  const year = now.getFullYear()
-  const season = now.getMonth() >= 7 ? '秋季' : '春季' // 8月及之后算秋季
-  return `${year}${season}`
+  // 沿用原有边界：8月及之后算秋季（getMonth() >= 7）
+  return getCurrentSemester(new Date(), 7)
 }
 
 function openCreate() {

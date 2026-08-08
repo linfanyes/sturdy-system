@@ -4,6 +4,7 @@
  * 数据走后端 /class-duty-configs 接口，按班级筛选。
  */
 import { ref, onMounted, watch } from 'vue'
+import { getCurrentTerm } from '@gardener/shared/utils/date'
 import { Plus, Trash2, Edit3, Users, Loader2 } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 import Modal from '@/components/Modal.vue'
@@ -74,9 +75,7 @@ function openEdit(row: any) {
 }
 
 function currentTerm() {
-  const d = new Date()
-  const y = d.getFullYear()
-  return d.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
+  return getCurrentTerm()
 }
 
 async function submit() {

@@ -761,6 +761,7 @@ import { compressImage } from '../../common/image'
 import { copyText } from '../../common/print'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
 import { FEATURE_FLAG_LIST } from '@gardener/shared/constants'
+import { generateClassName } from '@gardener/shared/validators'
 
 // 年级选项（与 web 对齐）
 const GRADE_OPTIONS = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级', '初一', '初二', '初三']
@@ -1249,9 +1250,7 @@ const showClassForm = ref(false)
 const editingClassId = ref('')
 const classForm = ref({ name: '', grade: '', classNo: '', headTeacherId: '', term: '', subjectsText: '' })
 const className = computed(() => {
-  const g = classForm.value.grade
-  const n = classForm.value.classNo
-  return (g && n) ? g + n + '班' : ''
+  return generateClassName(classForm.value.grade, classForm.value.classNo, { lenient: true })
 })
 
 const teacherOptions = computed(() =>

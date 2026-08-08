@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { getCurrentSemester } from '@gardener/shared/utils/date'
 import { toast } from '@/utils/feedback'
 import { Save, Bot, Settings, RefreshCw, Loader2 } from 'lucide-vue-next'
 import {
@@ -316,11 +317,9 @@ const SEMESTER_OPTIONS = (() => {
   return opts
 })()
 
-/** 当前学期默认值：9-12月为秋季，其余为春季 */
+/** 当前学期默认值：9-12月为秋季，其余为春季（复用 shared） */
 function currentSemester(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  return d.getMonth() >= 8 ? `${y}秋季` : `${y}春季`
+  return getCurrentSemester()
 }
 
 /** 应用主题到 document，实现深色/浅色即时切换 */

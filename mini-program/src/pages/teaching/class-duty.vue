@@ -60,6 +60,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { listClasses, listStudents } from '@/api/teaching'
 import { listDutyConfigs, createDutyConfig, updateDutyConfig, removeDutyConfig } from '@/api/duty'
 import { theme } from '../../common/store'
+import { getCurrentTerm } from '@gardener/shared/utils/date'
 
 const loading = ref(false)
 const list = ref([])
@@ -130,9 +131,7 @@ function openEdit(it) {
 }
 
 function currentTerm() {
-  const d = new Date()
-  const y = d.getFullYear()
-  return d.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`
+  return getCurrentTerm()
 }
 
 async function submit() {
