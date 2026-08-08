@@ -14,8 +14,10 @@
 import { computed, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { aiChatSync } from '@/api/teacher'
+import { useAuthStore } from '@/stores/auth'
 import {
   getSubjectTool,
+  getTeacherSubjects,
   type SubjectToolDef,
   type SubjectToolFieldDef,
 } from '@gardener/shared/schemas/subject-schema'
@@ -26,6 +28,7 @@ import {
 } from '@gardener/shared/schemas/quicktool-schema'
 
 const route = useRoute()
+const auth = useAuthStore()
 const key = computed(() => (route.query.key as string) || '')
 const q = computed(() => (route.query.q as string) || '')
 
@@ -35,6 +38,21 @@ const quickDef = computed<QuickToolDef | null>(() => (q.value ? getQuickTool(q.v
 const isSubject = computed(() => !!subjectDef.value)
 const title = computed(() => subjectDef.value?.title || quickDef.value?.title || 'AI 工具')
 const hint = computed(() => quickDef.value?.hint || '')
+
+/** 教师任教学科（用于校验学科工具访问权限） */
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+
+/**
+ * 学科工具访问校验：非本学科教师不可使用该学科 AI 工具
+ * - subjectDef 且不在教师任教学科内 → 无权访问（拦截渲染与提交）
+ * - quick 通用工具（翻译/评语/总结等公共工具）→ 始终允许
+ */
+const accessible = computed(() => {
+  if (!subjectDef.value) return true
+  return teacherSubjects.value.includes(subjectDef.value.subject)
+})
 
 // 表单字段归一化
 interface NormField {
@@ -75,6 +93,11 @@ const result = ref('')
 const errorMsg = ref('')
 
 async function submit() {
+  // 学科工具访问守卫（配合模板层的 v-else-if 双重保护，防止绕过 UI 直接调用）
+  if (!accessible.value) {
+    errorMsg.value = '您无权使用该学科工具'
+    return
+  }
   // 必填校验
   for (const f of fields.value) {
     if (f.required && (form[f.k] === '' || form[f.k] == null)) {
@@ -89,7 +112,11 @@ async function submit() {
     const prompt = isSubject.value
       ? subjectDef.value!.build(form as Record<string, string>)
       : quickDef.value!.build(form as Record<string, string>)
-    const res = await aiChatSync([{ role: 'user', content: prompt }])
+    const res = await aiChatSync(
+      [{ role: 'user', content: prompt }],
+      // 学科工具附上 subjectKey，供后端做学科权限二次校验
+      { subjectKey: isSubject.value ? key.value : undefined },
+    )
     result.value = res?.content || ''
   } catch (e: any) {
     errorMsg.value = e?.message || 'AI 调用失败，请稍后重试'
@@ -123,6 +150,11 @@ function copyResult() {
     <div class="empty" v-if="!subjectDef && !quickDef">
       <p>未匹配到工具配置。</p>
       <p class="sub">请通过「学科工具」页面进入，或检查 query 参数（?key= / ?q=）是否正确。</p>
+    </div>
+
+    <div class="empty" v-else-if="!accessible">
+      <p>您无权使用「{{ subjectDef?.subject }}」学科工具。</p>
+      <p class="sub">学科 AI 工具仅对本学科任教教师开放，请联系管理员开通对应任教学科。</p>
     </div>
 
     <form class="form" v-else @submit.prevent="reset">

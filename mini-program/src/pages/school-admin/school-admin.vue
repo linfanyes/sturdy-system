@@ -15,6 +15,7 @@
       <text class="tab" :class="{ on: tab === 'classes' }" @click="switchTab('classes')">🏫 班级</text>
       <text class="tab" :class="{ on: tab === 'students' }" @click="switchTab('students')">🧑‍🎓 学生</text>
       <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI 配置</text>
+      <text class="tab" :class="{ on: tab === 'academic' }" @click="switchTab('academic')">📈 成绩</text>
     </view>
 
     <!-- ====== 看板 Tab ====== -->
@@ -576,6 +577,61 @@
       </view>
     </template>
 
+    <!-- ====== 成绩 Tab（只读，P2：校管可跨班级查看本校成绩/考试/汇总） ====== -->
+    <template v-if="tab === 'academic'">
+      <!-- 学科汇总分析 -->
+      <view class="notice-section">
+        <view class="notice-hd">
+          <text class="notice-title">📊 学科汇总分析</text>
+          <text class="act" @click="loadAcademic">{{ acadLoading ? '加载中…' : '刷新' }}</text>
+        </view>
+        <view v-if="acadSummary.subjects.length" class="acad-grid">
+          <view class="acad-card" v-for="s in acadSummary.subjects" :key="s.subject">
+            <view class="acad-s">{{ s.subject }}</view>
+            <view class="acad-line">样本 <text class="acad-v">{{ s.count }}</text></view>
+            <view class="acad-line">均分 <text class="acad-v">{{ s.avg }}</text></view>
+            <view class="acad-line">及格率 <text class="acad-v">{{ s.passRate }}%</text></view>
+            <view class="acad-line">高 / 低 <text class="acad-v">{{ s.max }} / {{ s.min }}</text></view>
+          </view>
+        </view>
+        <EmptyState v-else icon="📊" text="暂无成绩数据" hint="教师录入成绩后自动汇总" />
+      </view>
+
+      <!-- 考试列表 -->
+      <view class="notice-section">
+        <view class="notice-hd">
+          <text class="notice-title">📝 考试列表</text>
+          <text class="act-sub">{{ acadExams.length }} 场</text>
+        </view>
+        <view class="notice-list">
+          <EmptyState v-if="!acadExams.length" icon="📝" text="暂无考试" />
+          <view class="notice-item" v-for="e in acadExams" :key="e.id">
+            <view class="notice-item-hd">
+              <text class="notice-item-title">{{ e.name }}</text>
+            </view>
+            <text class="notice-item-content">{{ acadClassName(e.classId) }}{{ e.subjects && e.subjects.length ? ' · ' + e.subjects.join('、') : '' }} · {{ e.date || '' }} · {{ e.term || '' }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 成绩列表 -->
+      <view class="notice-section">
+        <view class="notice-hd">
+          <text class="notice-title">📈 成绩记录</text>
+          <text class="act-sub">{{ acadGrades.length }} 条</text>
+        </view>
+        <view class="notice-list">
+          <EmptyState v-if="!acadGrades.length" icon="📈" text="暂无成绩记录" />
+          <view class="notice-item" v-for="g in acadGrades" :key="g.id">
+            <view class="notice-item-hd">
+              <text class="notice-item-title">{{ g.examName }} · {{ g.subject }}</text>
+            </view>
+            <text class="notice-item-content">{{ acadClassName(g.classId) }} · {{ g.date || '' }} · {{ scoreSummary(g) }}</text>
+          </view>
+        </view>
+      </view>
+    </template>
+
     <!-- ====== 批量导入班级（全屏） ====== -->
     <view v-if="showClassImport" class="full-mask">
       <view class="full-page">
@@ -1033,7 +1089,40 @@ async function enterDemoMode() {
 
 // ===== Tab 切换 =====
 const tab = ref('dashboard')
-function switchTab(t) { tab.value = t; if (t === 'classes') loadClasses(); if (t === 'students') loadStudents(); if (t === 'ai') loadAi() }
+function switchTab(t) { tab.value = t; if (t === 'classes') loadClasses(); if (t === 'students') loadStudents(); if (t === 'ai') loadAi(); if (t === 'academic') loadAcademic() }
+
+// ===== 成绩 Tab（P2：校管只读，跨班级查看本校成绩/考试/汇总） =====
+const acadSummary = ref({ subjects: [], totalGrades: 0 })
+const acadExams = ref([])
+const acadGrades = ref([])
+const acadLoading = ref(false)
+function acadClassName(id) {
+  const c = classes.value.find(x => x.id === id)
+  return c ? c.name : (id || '')
+}
+function scoreSummary(g) {
+  const scores = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score))
+  if (!scores.length) return '暂无'
+  const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+  return `${scores.length}人 均${avg} 最高${Math.max(...scores)} 最低${Math.min(...scores)}`
+}
+async function loadAcademic() {
+  acadLoading.value = true
+  try {
+    const [sum, exams, grades] = await Promise.all([
+      apiCall('GET', '/school-admin/academic/summary'),
+      apiCall('GET', '/school-admin/academic/exams'),
+      apiCall('GET', '/school-admin/academic/grades'),
+    ])
+    acadSummary.value = (sum && Array.isArray(sum.subjects)) ? sum : { subjects: [], totalGrades: 0 }
+    acadExams.value = (exams && exams.items) || (Array.isArray(exams) ? exams : [])
+    acadGrades.value = (grades && grades.items) || (Array.isArray(grades) ? grades : [])
+  } catch (e) {
+    uni.showToast({ title: (e && e.message) || '加载失败', icon: 'none' })
+  } finally {
+    acadLoading.value = false
+  }
+}
 
 /** 进入本校功能包配置页（与 Web 端 /school-admin/features 对齐） */
 function goSchoolFeatures() {
@@ -1862,6 +1951,13 @@ onShow(async () => {
 .notice-item-title { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
 .notice-item-content { display: block; font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
 .notice-item-time { display: block; font-size: 20rpx; color: var(--c-sub2); margin-top: 4rpx; }
+/* 成绩 Tab（P2） */
+.act-sub { font-size: 23rpx; color: var(--c-sub); font-weight: 600; }
+.acad-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14rpx; margin-top: 8rpx; }
+.acad-card { background: var(--c-card2); border-radius: 16rpx; padding: 18rpx 20rpx; }
+.acad-s { font-size: 26rpx; font-weight: 700; color: var(--c-accent); margin-bottom: 10rpx; }
+.acad-line { display: flex; justify-content: space-between; font-size: 23rpx; color: var(--c-sub); line-height: 1.7; }
+.acad-v { color: var(--c-title); font-weight: 600; }
 /* 学期管理 */
 .semester-date-row { display: flex; gap: 10rpx; align-items: center; margin-top: 10rpx; }
 .sem-date { flex: 1; }

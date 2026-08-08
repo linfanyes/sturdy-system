@@ -306,3 +306,20 @@ function downloadBlob(blob: Blob, filename: string) {
 function downloadCsv(blob: Blob, filename: string) {
   downloadBlob(blob, filename)
 }
+
+/* ============ 校管只读：成绩 / 考试 / 汇总分析（P2）============ */
+
+/** 校管只读：本校考试列表 */
+export function listSchoolExams(params: { classId?: string } = {}) {
+  return request.get('/school-admin/academic/exams', { params })
+}
+
+/** 校管只读：本校成绩列表 */
+export function listSchoolGrades(params: { classId?: string; subject?: string; examName?: string } = {}) {
+  return request.get('/school-admin/academic/grades', { params })
+}
+
+/** 校管只读：成绩汇总分析（按学科聚合） */
+export function getSchoolGradeSummary(params: { classId?: string; examId?: string } = {}) {
+  return request.get('/school-admin/academic/summary', { params })
+}

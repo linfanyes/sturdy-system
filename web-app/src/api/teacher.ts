@@ -552,8 +552,8 @@ export async function aiChatStream(
 }
 
 /** AI 同步对话（非流式） */
-export function aiChatSync(messages: { role: string; content: string }[]) {
-  return request.post<any, { content: string }>('/ai/chat-sync', { messages })
+export function aiChatSync(messages: { role: string; content: string }[], opts?: { subjectKey?: string }) {
+  return request.post<any, { content: string }>('/ai/chat-sync', { messages, ...(opts?.subjectKey ? { subjectKey: opts.subjectKey } : {}) })
 }
 
 /** AI 解析（自由文本转结构化） */

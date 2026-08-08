@@ -12,7 +12,9 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { Student } from '../students/student.entity'
+import { User } from '../users/user.entity'
 import { BusinessException } from '../common/exceptions/business.exception'
+import { getSubjectTool } from '@gardener/shared/schemas/subject-schema'
 
 // AI 调用超时配置：环境变量 AI_TIMEOUT（默认 120000ms = 120s）
 const AI_TIMEOUT = Number(process.env.AI_TIMEOUT) || 120000
@@ -31,6 +33,7 @@ export class AiController {
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
     @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
   /** 非流式 AI 调用超时包装：用 Promise.race 实现 60s 强制超时，超时抛 BusinessException */
@@ -44,6 +47,26 @@ export class AiController {
         ),
       ),
     ]) as Promise<T>
+  }
+
+  /**
+   * 学科工具访问校验（P1）：
+   * - body.subjectKey 命中 shared/schemas/subject-schema 的学科工具时，
+   *   校验其所属学科是否在当前教师任教学科（subject/subjects）内。
+   * - 非学科工具（通用 quicktool 等）或 school_admin 不拦截。
+   */
+  private async assertSubjectToolAccess(role: string, teacherId: string, subjectKey?: string): Promise<void> {
+    if (!subjectKey || role === 'school_admin') return
+    const tool = getSubjectTool(subjectKey)
+    if (!tool) return // 非学科工具，不拦截
+    const teacher = await this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null)
+    if (!teacher) return
+    const allowed = Array.isArray(teacher.subjects) && teacher.subjects.length
+      ? teacher.subjects
+      : teacher.subject ? [teacher.subject] : []
+    if (!allowed.includes(tool.subject)) {
+      throw new BusinessException('SUBJECT_FORBIDDEN', `您无权使用「${tool.subject}」学科工具`)
+    }
   }
 
   /** 流式对话（SSE）。前端用 wx.request 监听分片 data: {...} */
@@ -96,6 +119,8 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   async chatSync(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    // P1：学科工具二次校验，防止前端绕过 UI 越权调用其他学科 AI 工具
+    await this.assertSubjectToolAccess(t.role, t.sub, body?.subjectKey)
     const content = await this.withAiTimeout(this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
     return { content }
   }

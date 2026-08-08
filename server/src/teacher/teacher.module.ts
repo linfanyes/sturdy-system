@@ -14,6 +14,14 @@ import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { ClassMembersModule, ClassMemberService } from '../class-members/class-members.module'
 
+/** P6：手机号脱敏 —— 保留前 3 后 4，中间用 * 代替；非合法号码原样返回 */
+function maskPhone(phone?: string): string {
+  if (!phone) return phone || ''
+  const p = String(phone).trim()
+  if (p.length < 7) return p
+  return p.slice(0, 3) + '****' + p.slice(-4)
+}
+
 class TeacherService extends CrudService<Teacher> {
   constructor(
     @InjectRepository(Teacher) repo: Repository<Teacher>,
@@ -25,12 +33,25 @@ class TeacherService extends CrudService<Teacher> {
   }
 
   /**
+   * 通讯录列表：对非本人记录的手机号脱敏（P6）。
+   * 本人记录（teacherId === viewerId）保留完整手机号，方便自己查看/编辑。
+   */
+  async findAll(viewerId: string, classId?: string, skip = 0, take = 500, term?: string, date?: string) {
+    const result = await super.findAll(viewerId, classId, skip, take, term, date)
+    const items = (result.items || []).map((it: any) => {
+      if (it.teacherId === viewerId) return it
+      return { ...it, phone: maskPhone(it.phone) }
+    })
+    return { items, total: result.total }
+  }
+
+  /**
    * 老师详情：聚合通讯录信息 + 学校账号（手机号/性别/邮箱/科目/教师编号）+ 任课班级明细 + 班主任身份。
    * 支持两种 ID：
    *   - 学校账号 id（?userId=xxx，推荐）：家长端和校管端通常持有 userId
    *   - 通讯录 id（/teachers/:id）：回退方案，再用 name/phone 在 User 表匹配账号
    */
-  async getDetail(id: string, _viewerId: string, userId?: string) {
+  async getDetail(id: string, viewerId: string, userId?: string) {
     // 1) 优先用 userId 查 User 账号（最常用）
     let user: User | null = null
     if (userId) {
@@ -54,19 +75,20 @@ class TeacherService extends CrudService<Teacher> {
     if (!user && !teacher) throw new NotFoundException('教师不存在')
     if (!user) {
       // 有通讯录但匹配不到 User 账号：仅返回通讯录信息
-      return this.buildFromTeacherOnly(teacher!)
+      return this.buildFromTeacherOnly(teacher!, viewerId)
     }
-    return this.buildFromUser(user)
+    return this.buildFromUser(user, viewerId)
   }
 
   /** 仅基于通讯录记录构建（无 User 账号匹配时） */
-  private buildFromTeacherOnly(t: Teacher) {
+  private buildFromTeacherOnly(t: Teacher, viewerId: string) {
+    const isSelf = !!t.teacherId && t.teacherId === viewerId
     return {
       id: t.id,
       teacherId: '',
       name: t.name,
       position: t.position,
-      phone: t.phone,
+      phone: isSelf ? t.phone : maskPhone(t.phone),
       email: t.email,
       gender: '',
       avatar: t.avatar || '🧑',
@@ -84,7 +106,7 @@ class TeacherService extends CrudService<Teacher> {
   }
 
   /** 基于 User 账号构建详情（含任课班级 + 班主任身份） */
-  private async buildFromUser(u: User) {
+  private async buildFromUser(u: User, viewerId: string) {
     let teachings: any[] = []
     let headClasses: any[] = []
     try {
@@ -109,7 +131,6 @@ class TeacherService extends CrudService<Teacher> {
       teacherId: u.id,
       name: u.name,
       position: '',
-      phone: u.phone,
       email: u.email,
       gender: u.gender,
       avatar: u.avatar || '🧑',
@@ -123,6 +144,7 @@ class TeacherService extends CrudService<Teacher> {
       schoolId: u.schoolId,
       teacherNo: u.teacherNo,
       motto: u.motto,
+      phone: u.id === viewerId ? u.phone : maskPhone(u.phone),
     }
   }
 }

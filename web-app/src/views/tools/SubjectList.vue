@@ -4,9 +4,17 @@
  * 由 shared/schemas/subject-schema 的 SUBJECT_LIST 驱动。
  */
 import { useRouter } from 'vue-router'
-import { SUBJECT_LIST } from '@gardener/shared/schemas/subject-schema'
+import { computed } from 'vue'
+import { SUBJECT_LIST, getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const auth = useAuthStore()
+
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+const visibleSubjects = computed(() => SUBJECT_LIST.filter((s) => teacherSubjects.value.includes(s.subject)))
 
 function go(subject: string) {
   router.push(`/teacher/subject-tools/${subject}`)
@@ -16,10 +24,10 @@ function go(subject: string) {
 <template>
   <div class="subject-list">
     <h2>学科列表</h2>
-    <p class="subtitle">共 {{ SUBJECT_LIST.length }} 个学科 · 由 shared schema 驱动</p>
+    <p class="subtitle">共 {{ visibleSubjects.length }} 个学科 · 由 shared schema 驱动</p>
     <div class="list">
       <div
-        v-for="s in SUBJECT_LIST"
+        v-for="s in visibleSubjects"
         :key="s.subject"
         class="item"
         @click="go(s.subject)"

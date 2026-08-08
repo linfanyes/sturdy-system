@@ -35,6 +35,7 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { auth, theme, flushTabBarStyle } from '../../common/store'
+import { getTeacherSubjects, isTeacherSubjectVisible } from '../../common/subject-schema'
 const dark = computed(() => theme.mode === 'dark')
 
 const HIDDEN_KEY = 'tb_hidden'
@@ -290,14 +291,21 @@ const viewSections = computed(() => {
   if (order.value && order.value.length) {
     secs = [...secs].sort((a, b) => order.value.indexOf(a.title) - order.value.indexOf(b.title))
   }
+  // 教师任教学科（P1：支持多学科，subjects 优先，回退 subject，都空=全部学科）
+  // 学科过滤始终生效（与 Web 端 Toolbox 对齐），不受功能包开关影响
+  const teacherSubjects = getTeacherSubjects(auth.user?.subject, auth.user?.subjects)
+  const bySubject = (it) => {
+    // 带 subject 的工具仅本学科可见；subjectEntry 学科入口同样按任教学科过滤
+    if (it.subject && !isTeacherSubjectVisible(it.subject, teacherSubjects)) return false
+    if (it.subjectEntry && !isTeacherSubjectVisible(it.subjectEntry, teacherSubjects)) return false
+    return true
+  }
   // 功能过滤：优先用后端下发的 effectiveFeatures（= 学校级 ∩ 教师级实际可用），
   // 未加载时回退旧的 auth.features（向后兼容）。本地仅做 UX 显隐，安全边界在后端 @Feature。
   const ftrs = (auth.effectiveFeatures && auth.effectiveFeatures.length)
     ? auth.effectiveFeatures
     : auth.features
   if (ftrs && ftrs.length) {
-    // 教师主学科（语数外三科老师一般只任一科；多学科时 subjects 数组优先）
-    const teacherSubject = (auth.user && (auth.user.subjects && auth.user.subjects[0])) || (auth.user && auth.user.subject) || ''
     secs = secs.filter((sec) => {
       // 我的工作台+教师办公始终可见
       if (sec.title === '我的工作台' || sec.title === '教师办公') return true
@@ -306,8 +314,8 @@ const viewSections = computed(() => {
       // 过滤分区内的具体工具
       const filteredItems = sec.items.filter((it) => {
         const label = it.label
-        // 学科工具按教师 subject 过滤：仅本学科可见
-        if (it.subject && teacherSubject && it.subject !== teacherSubject) return false
+        // 学科工具按教师任教学科过滤（带 subject / subjectEntry 的工具）
+        if (!bySubject(it)) return false
         // quicktool 工具不占用功能分区，始终保留（子页面单独处理权限）
         if (it.quicktool) return true
         // subjectEntry 学科入口按学科名走 feature 过滤
@@ -320,6 +328,9 @@ const viewSections = computed(() => {
       })
       return { ...sec, items: filteredItems }
     })
+  } else {
+    // 无功能包开关：仅按任教学科过滤，其余工具全部可见
+    secs = secs.map((sec) => ({ ...sec, items: sec.items.filter(bySubject) }))
   }
   return secs
     .map((sec) => {

@@ -8,6 +8,8 @@ import { User } from '../users/user.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { ClassItem } from '../classes/class.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
 import { Notice } from '../school/school.entity'
 import { Attendance } from '../school/school.entity'
 import { Homework } from '../school/school.entity'
@@ -35,6 +37,8 @@ export class SchoolAdminService {
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     @InjectRepository(Attendance) private readonly attRepo: Repository<Attendance>,
     @InjectRepository(Homework) private readonly hwRepo: Repository<Homework>,
+    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
+    @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     @InjectRepository(ClassMember) private readonly classMemberRepo: Repository<ClassMember>,
     private readonly classMemberSvc: ClassMemberService,
     private readonly audit: AuditService,
@@ -404,6 +408,88 @@ export class SchoolAdminService {
       }
     }
     return { items, total }
+  }
+
+  // ===== 校管只读：成绩 / 考试 / 汇总分析（P2）=====
+
+  /** 获取本校全部班级 id（通过本校教师绑定班级） */
+  private async getSchoolClassIds(schoolId: string): Promise<string[]> {
+    const teachers = await this.userRepo.find({ where: { schoolId }, select: ['id'] as any })
+    const ids = teachers.map(t => t.id)
+    if (!ids.length) return []
+    const classes = await this.classRepo.find({ where: ids.map(id => ({ teacherId: id })), select: ['id'] as any })
+    return classes.map(c => c.id)
+  }
+
+  /** 按 classIds 构造可叠加过滤条件的 where（OR 语义：任一班级满足即可） */
+  private buildClassWhere(classIds: string[], extra: Record<string, any> = {}): any {
+    const base = classIds.map(cid => ({ classId: cid }))
+    if (!Object.keys(extra).length) return base
+    return base.map(w => ({ ...w, ...extra }))
+  }
+
+  /** 校管只读：本校考试列表（可选按班级过滤） */
+  async listSchoolExams(schoolId: string, classId?: string) {
+    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    if (!classIds.length) return { items: [], total: 0 }
+    const [items, total] = await this.examRepo.findAndCount({
+      where: this.buildClassWhere(classIds),
+      order: { date: 'DESC' } as any,
+      take: 500,
+    })
+    return { items, total }
+  }
+
+  /** 校管只读：本校成绩列表（可选按班级 / 科目 / 考试名过滤） */
+  async listSchoolGrades(schoolId: string, classId?: string, subject?: string, examName?: string) {
+    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    if (!classIds.length) return { items: [], total: 0 }
+    const extra: Record<string, any> = {}
+    if (subject) extra.subject = subject
+    if (examName) extra.examName = examName
+    const [items, total] = await this.gradeRepo.findAndCount({
+      where: this.buildClassWhere(classIds, extra),
+      order: { date: 'DESC' } as any,
+      take: 500,
+    })
+    return { items, total }
+  }
+
+  /** 校管只读：成绩汇总分析（按学科聚合均分/及格率/高低分；可按班级/考试过滤） */
+  async schoolGradeSummary(schoolId: string, classId?: string, examId?: string) {
+    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    if (!classIds.length) return { subjects: [], classes: [], totalGrades: 0 }
+    const extra: Record<string, any> = {}
+    if (examId) extra.examId = examId
+    const grades = await this.gradeRepo.find({ where: this.buildClassWhere(classIds, extra), take: 2000 })
+    // 班级名称映射
+    const classList = classIds.length
+      ? await this.classRepo.find({ where: this.buildClassWhere(classIds), select: ['id', 'name'] as any })
+      : []
+    // 按学科聚合
+    const subjectMap = new Map<string, number[]>()
+    for (const g of grades) {
+      const scores = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score))
+      if (!scores.length) continue
+      if (!subjectMap.has(g.subject)) subjectMap.set(g.subject, [])
+      subjectMap.get(g.subject)!.push(...scores)
+    }
+    const subjects = [...subjectMap.entries()]
+      .map(([subject, scores]) => {
+        const total = scores.reduce((a, b) => a + b, 0)
+        const avg = total / scores.length
+        const passCount = scores.filter(v => v >= 60).length
+        return {
+          subject,
+          count: scores.length,
+          avg: Math.round(avg * 10) / 10,
+          max: Math.max(...scores),
+          min: Math.min(...scores),
+          passRate: Math.round((passCount / scores.length) * 1000) / 10,
+        }
+      })
+      .sort((a, b) => b.avg - a.avg)
+    return { subjects, classes: classList, totalGrades: grades.length }
   }
 
   /** 单个班级详情（校验班级属于本校） */

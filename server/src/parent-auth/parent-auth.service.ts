@@ -588,7 +588,7 @@ export class ParentAuthService {
         roleLabel: m.role === 'head' ? '班主任' : '科任老师',
         subjects: m.subjects || [],
         subject: t?.subject || '',
-        phone: t?.phone || '',
+        phone: maskPhone(t?.phone),
         avatar: t?.avatar || '',
       }
     })
@@ -691,6 +691,14 @@ export class ParentAuthService {
       }),
     }
   }
+}
+
+/** P8：教师手机号脱敏 —— 保留前 3 后 4，中间用 * 代替；非合法号码原样返回（与 teacher.module 一致） */
+function maskPhone(phone?: string): string {
+  if (!phone) return phone || ''
+  const p = String(phone).trim()
+  if (p.length < 7) return p
+  return p.slice(0, 3) + '****' + p.slice(-4)
 }
 
 /** 构建总分分布柱状图数据（10分一段） */

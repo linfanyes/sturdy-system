@@ -5,13 +5,21 @@
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getToolsBySubject, getSubjectTool } from '@gardener/shared/schemas/subject-schema'
+import { getToolsBySubject, getSubjectTool, getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const subject = computed(() => (route.params.subject as string) || route.query.subject as string || '')
-const tools = computed(() => getToolsBySubject(subject.value))
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+
+/** 当前学科是否对该教师可见（防止手动改 URL 访问其他学科详情页） */
+const accessible = computed(() => teacherSubjects.value.includes(subject.value))
+const tools = computed(() => (accessible.value ? getToolsBySubject(subject.value) : []))
 
 /** 工具跳转：统一走 query 参数进入工具箱详情页 */
 function openTool(key: string) {
@@ -30,8 +38,11 @@ function toolPath(t: { key: string; path?: string }): string {
     <h2>{{ subject || '学科' }}工具 <span class="count">共 {{ tools.length }} 项</span></h2>
     <p class="subtitle" v-if="tools.length">以下工具由 shared schema 配置，点击使用对应 AI 生成能力。</p>
     <div class="empty" v-if="!tools.length">
-      <p>该学科暂无配置工具。</p>
-      <p class="hint">请在 shared/schemas/subject-schema 的 SUBJECT_TOOLS 中添加该学科的工具定义。</p>
+      <p v-if="!accessible">您无权访问「{{ subject }}」学科工具。</p>
+      <template v-else>
+        <p>该学科暂无配置工具。</p>
+        <p class="hint">请在 shared/schemas/subject-schema 的 SUBJECT_TOOLS 中添加该学科的工具定义。</p>
+      </template>
     </div>
     <div class="grid" v-else>
       <div

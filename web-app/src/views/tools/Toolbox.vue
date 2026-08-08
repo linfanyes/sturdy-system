@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { getTeacherSubjects, isTeacherSubjectVisible } from '@gardener/shared/schemas/subject-schema'
 import {
   Sparkles, BookOpen, Calculator as CalcIcon, Languages, FileText,
   LayoutGrid, Bot, Briefcase, Gamepad2,
@@ -15,7 +16,7 @@ import {
 const auth = useAuthStore()
 
 interface ToolItem { label: string; icon: any; to: string; feature?: string }
-interface ToolSection { title: string; icon: any; items: ToolItem[] }
+interface ToolSection { title: string; icon: any; items: ToolItem[]; subject?: string }
 
 const sections: ToolSection[] = [
   {
@@ -31,7 +32,7 @@ const sections: ToolSection[] = [
     ],
   },
   {
-    title: '语文工具', icon: BookOpen,
+    title: '语文工具', icon: BookOpen, subject: '语文',
     items: [
       { label: '汉字笔顺', icon: PenTool, to: '/teacher/tools/strokeOrder', feature: 'tools' },
       { label: '作文素材', icon: FileText, to: '/teacher/tools/writingMaterials', feature: 'tools' },
@@ -44,7 +45,7 @@ const sections: ToolSection[] = [
     ],
   },
   {
-    title: '数学工具', icon: CalcIcon,
+    title: '数学工具', icon: CalcIcon, subject: '数学',
     items: [
       { label: '口算生成', icon: CalcIcon, to: '/teacher/tools/math', feature: 'tools' },
       { label: '竖式计算', icon: Hash, to: '/teacher/tools/verticalCalc', feature: 'tools' },
@@ -55,7 +56,7 @@ const sections: ToolSection[] = [
     ],
   },
   {
-    title: '英语工具', icon: Languages,
+    title: '英语工具', icon: Languages, subject: '英语',
     items: [
       { label: '单词卡片', icon: StickyNote, to: '/teacher/tools/wordCard', feature: 'tools' },
       { label: '句型练习', icon: AlignLeft, to: '/teacher/tools/sentencePractice', feature: 'tools' },
@@ -123,11 +124,26 @@ function hasFeature(feature?: string): boolean {
   return features.includes(feature)
 }
 
-/** 按 feature 过滤后的可见分区（自动隐藏空分区） */
+/**
+ * 教师任教学科（用于过滤学科工具分区）：
+ * - 语/数/英等学科分区仅对任教学科教师可见
+ * - 公共分区（课堂互动/文字工具/班级管理/AI备课/教师办公/小游戏）对所有人可见
+ */
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+
+/** 学科分区对当前教师是否可见 */
+function subjectVisible(sec: ToolSection): boolean {
+  if (!sec.subject) return true
+  return isTeacherSubjectVisible(sec.subject, teacherSubjects.value)
+}
+
+/** 按 feature + 学科过滤后的可见分区（自动隐藏空分区） */
 const visibleSections = computed<ToolSection[]>(() => {
   return sections
     .map(sec => ({ ...sec, items: sec.items.filter(it => hasFeature(it.feature)) }))
-    .filter(sec => sec.items.length > 0)
+    .filter(sec => sec.items.length > 0 && subjectVisible(sec))
 })
 </script>
 

@@ -6,4 +6,7 @@ export {
   ALL_SUBJECTS,
   MATH_TOOLS,
   getToolsBySubject,
+  // P1：教师任教学科计算 / 学科可见性判断（多学科支持）
+  getTeacherSubjects,
+  isTeacherSubjectVisible,
 } from '@gardener/shared/schemas/subject-schema'

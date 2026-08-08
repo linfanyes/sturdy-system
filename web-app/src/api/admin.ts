@@ -116,3 +116,20 @@ export function getPlatformConfig() {
 export function updatePlatformConfig(data: { items: any[] }) {
   return request.put<any, any>('/config/app', data)
 }
+
+/* ============ 超管只读：考试 / 成绩审计（P4）============ */
+
+/** 超管：全校考试审计列表 */
+export function listAuditExams(params: { schoolId?: string; classId?: string; skip?: number; take?: number } = {}) {
+  return request.get('/admin/audit-exams', { params })
+}
+
+/** 超管：全校成绩审计列表 */
+export function listAuditGrades(params: { schoolId?: string; classId?: string; subject?: string; examName?: string; skip?: number; take?: number } = {}) {
+  return request.get('/admin/audit-grades', { params })
+}
+
+/** 超管：成绩审计汇总（按学科聚合） */
+export function getAuditGradeSummary(params: { schoolId?: string; classId?: string } = {}) {
+  return request.get('/admin/audit-grade-summary', { params })
+}

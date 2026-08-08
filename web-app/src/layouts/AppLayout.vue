@@ -12,6 +12,7 @@ import {
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   Pencil, BookMarked, Languages, PencilLine, Calculator,
   Gamepad2, ScrollText, Trash2, ChevronLeft,
+  BarChart3,
 } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
@@ -290,6 +291,7 @@ const superMenu: MenuCategory[] = [
     label: '审计日志', color: 'cocoa', icon: ScrollText, direct: true,
     groups: [{ label: '', items: [
       { name: 'super-audit-logs', label: '审计日志', to: '/super/audit-logs', icon: ScrollText, color: 'cocoa' },
+      { name: 'super-grade-audit', label: '成绩审计', to: '/super/grade-audit', icon: BarChart3, color: 'indigo' },
     ] }],
   },
   {
@@ -319,6 +321,7 @@ const schoolAdminMenu: MenuCategory[] = [
       { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
       { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
       { name: 'school-admin-features', label: '学校功能包', to: '/school-admin/features', icon: ToggleLeft, color: 'purple' },
+      { name: 'school-admin-academic', label: '成绩查询与汇总', to: '/school-admin/academic', icon: BarChart3, color: 'indigo' },
     ] }],
   },
   {

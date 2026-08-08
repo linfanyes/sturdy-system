@@ -14,6 +14,8 @@ import { School } from '../school/school.entity'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
 import { AuditModule } from '../audit/audit.module'
 import { ResourceLibraryModule } from '../resource-library/resource-library.module'
 import { TextbookModule } from '../textbook/textbook.module'
@@ -32,7 +34,7 @@ class PlanController extends CrudController<LessonPlanTemplate> { constructor(s:
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student]),
+    TypeOrmModule.forFeature([LessonPlanTemplate, User, School, SchoolAdmin, ClassItem, Student, Grade, Exam]),
     AuditModule,
     // 资源库/教材初始化数据在 seedDemoData 中按校生成
     ResourceLibraryModule,

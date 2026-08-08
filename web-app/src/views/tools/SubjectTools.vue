@@ -5,15 +5,24 @@
  */
 import {
   SUBJECT_LIST,
-  MATH_TOOLS,
+  getTeacherSubjects,
   type SubjectListItem,
 } from '@gardener/shared/schemas/subject-schema'
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-const subjects: (SubjectListItem & { path: string })[] = SUBJECT_LIST.map((s) => ({
-  ...s,
-  path: `/teacher/subject-tools/${s.subject}`,
-}))
-// 数学口算等独立工具见 MATH_TOOLS（小程序路径；Web 端在 tools/ 目录下直接路由）
+const auth = useAuthStore()
+
+// 仅展示当前教师任教学科（无学科信息时不限制）
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+const subjects: (SubjectListItem & { path: string })[] = SUBJECT_LIST
+  .filter((s) => teacherSubjects.value.includes(s.subject))
+  .map((s) => ({
+    ...s,
+    path: `/teacher/subject-tools/${s.subject}`,
+  }))
 </script>
 
 <template>

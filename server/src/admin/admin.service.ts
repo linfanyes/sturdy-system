@@ -9,6 +9,8 @@ import { School } from '../school/school.entity'
 import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
+import { Grade } from '../grades/grade.entity'
+import { Exam } from '../exams/exam.entity'
 import { hashPassword } from '../common/utils/password.util'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { AuditService } from '../audit/audit.service'
@@ -27,6 +29,8 @@ export class AdminService implements OnModuleInit {
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
+    @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly audit: AuditService,
     private readonly resourceLibrarySvc: ResourceLibraryService,
@@ -548,6 +552,115 @@ export class AdminService implements OnModuleInit {
       }
     })
     return { items: list, total }
+  }
+
+  // ===== 超管只读：考试 / 成绩审计（P4）=====
+
+  /** 解析 schoolId 下的班级 id（通过班主任 teacherId 关联），供 exam/grade 审计按校过滤 */
+  private async resolveClassIdsBySchool(schoolId?: string): Promise<string[] | null> {
+    if (!schoolId) return null
+    const school = await this.schoolRepo.findOne({ where: { id: schoolId } })
+    if (!school) throw new NotFoundException('学校不存在')
+    const teachers = await this.userRepo.find({ where: { schoolId } })
+    const teacherIds = teachers.map(t => t.id)
+    if (!teacherIds.length) return []
+    const classes = await this.classRepo.find({ where: { teacherId: In(teacherIds) } })
+    return classes.map(c => c.id)
+  }
+
+  /** 超管只读：全校考试列表（可选按学校/班级过滤） */
+  async listAuditExams(schoolId?: string, classId?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (classId) {
+      where.classId = classId
+    } else if (schoolId) {
+      const classIds = await this.resolveClassIdsBySchool(schoolId)
+      if (!classIds || !classIds.length) return { items: [], total: 0 }
+      where.classId = In(classIds)
+    }
+    const [items, total] = await this.examRepo.findAndCount({
+      where, order: { createdAt: 'DESC' }, skip, take,
+    })
+    const enriched = await this.enrichClassContext(items, ['classId'])
+    return { items: enriched, total }
+  }
+
+  /** 超管只读：全校成绩列表（可选按学校/班级/科目/考试名过滤） */
+  async listAuditGrades(schoolId?: string, classId?: string, subject?: string, examName?: string, skip = 0, take = 500) {
+    const where: any = {}
+    if (classId) {
+      where.classId = classId
+    } else if (schoolId) {
+      const classIds = await this.resolveClassIdsBySchool(schoolId)
+      if (!classIds || !classIds.length) return { items: [], total: 0 }
+      where.classId = In(classIds)
+    }
+    if (subject) where.subject = subject
+    if (examName) where.examName = examName
+    const [items, total] = await this.gradeRepo.findAndCount({
+      where, order: { createdAt: 'DESC' }, skip, take,
+    })
+    const enriched = await this.enrichClassContext(items, ['classId'])
+    return { items: enriched, total }
+  }
+
+  /** 超管只读：成绩审计汇总（按学科聚合均分/及格率/高低分；可选按学校/班级过滤） */
+  async gradeAuditSummary(schoolId?: string, classId?: string) {
+    const where: any = {}
+    if (classId) {
+      where.classId = classId
+    } else if (schoolId) {
+      const classIds = await this.resolveClassIdsBySchool(schoolId)
+      if (!classIds || !classIds.length) return { subjects: [], totalGrades: 0 }
+      where.classId = In(classIds)
+    }
+    const grades = await this.gradeRepo.find({ where, take: 5000 })
+    const subjectMap = new Map<string, number[]>()
+    for (const g of grades) {
+      const scores = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score))
+      if (!scores.length) continue
+      if (!subjectMap.has(g.subject)) subjectMap.set(g.subject, [])
+      subjectMap.get(g.subject)!.push(...scores)
+    }
+    const subjects = [...subjectMap.entries()]
+      .map(([subject, scores]) => {
+        const total = scores.reduce((a, b) => a + b, 0)
+        const avg = total / scores.length
+        const passCount = scores.filter(v => v >= 60).length
+        return {
+          subject,
+          count: scores.length,
+          avg: Math.round(avg * 10) / 10,
+          max: Math.max(...scores),
+          min: Math.min(...scores),
+          passRate: Math.round((passCount / scores.length) * 1000) / 10,
+        }
+      })
+      .sort((a, b) => b.avg - a.avg)
+    return { subjects, totalGrades: grades.length }
+  }
+
+  /** 为带 classId 的记录回填班级名称与学校名称 */
+  private async enrichClassContext(items: any[], keys: string[]) {
+    const classIds = [...new Set(items.map(it => it.classId).filter(Boolean))]
+    const classes = classIds.length ? await this.classRepo.find({ where: { id: In(classIds) } }) : []
+    const classMap = new Map(classes.map(c => [c.id, c]))
+    const teacherIds = [...new Set(classes.map(c => c.teacherId).filter(Boolean))]
+    const teachers = teacherIds.length ? await this.userRepo.find({ where: { id: In(teacherIds) } }) : []
+    const teacherMap = new Map(teachers.map(t => [t.id, t]))
+    const schoolIds = [...new Set(teachers.map(t => t.schoolId).filter(Boolean))]
+    const schools = schoolIds.length ? await this.schoolRepo.find({ where: { id: In(schoolIds) } }) : []
+    const schoolMap = new Map(schools.map(s => [s.id, s.name]))
+    return items.map(it => {
+      const cls = classMap.get(it.classId)
+      const t = cls ? teacherMap.get(cls.teacherId) : null
+      return {
+        ...it,
+        className: cls?.name || '',
+        schoolId: t?.schoolId || '',
+        schoolName: schoolMap.get(t?.schoolId || '') || '',
+      }
+    })
   }
 
   /** 清除单个教师的业务数据（保留教师账号，仅清除其创建的记录） */

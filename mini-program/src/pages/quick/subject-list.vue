@@ -22,7 +22,7 @@
       </view>
     </view>
 
-    <view v-if="!tools.length" class="empty">该学科暂无工具</view>
+    <view v-if="!tools.length" class="empty">{{ accessible ? '该学科暂无工具' : '您无权访问「' + subject + '」学科工具' }}</view>
   </view>
 </template>
 
@@ -30,11 +30,16 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { auth, theme } from '../../common/store'
-import { SUBJECT_LIST, getToolsBySubject } from '../../common/subject-schema'
+import { SUBJECT_LIST, getToolsBySubject, getTeacherSubjects } from '../../common/subject-schema'
 
 const dark = computed(() => theme.mode === 'dark')
 const subject = ref('')
 const tools = ref([])
+
+// P1：教师任教学科（subjects 优先，回退 subject），用于学科入口访问校验
+const teacherSubjects = getTeacherSubjects(auth.user?.subject, auth.user?.subjects)
+// 学科入口访问守卫：非本学科任教教师不可进入该学科工具列表（与 Web 端 SubjectDetail 对齐）
+const accessible = computed(() => teacherSubjects.includes(subject.value))
 
 const subjectMeta = computed(() => {
   return SUBJECT_LIST.find((s) => s.subject === subject.value) || { icon: '📚', color: '#9aa0a6', desc: '' }
@@ -42,7 +47,7 @@ const subjectMeta = computed(() => {
 
 onLoad((q) => {
   subject.value = q && q.subject ? decodeURIComponent(q.subject) : ''
-  tools.value = getToolsBySubject(subject.value)
+  tools.value = accessible.value ? getToolsBySubject(subject.value) : []
   uni.setNavigationBarTitle({ title: subject.value + '工具' })
 })
 

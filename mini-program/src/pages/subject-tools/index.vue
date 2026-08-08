@@ -2,15 +2,31 @@
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
     <view class="topbar"><text class="mtitle">📚 学科工具</text></view>
     <view class="grid">
-      <view class="cell" @click="go('/pages/subject-tools/chinese')"><view class="ic">📖</view><view class="lb">语文工具</view></view>
-      <view class="cell" @click="go('/pages/subject-tools/english')"><view class="ic">🔤</view><view class="lb">英语工具</view></view>
-      <view class="cell" @click="go('/pages/subject-tools/math')"><view class="ic">🔢</view><view class="lb">数学工具</view></view>
+      <view
+        v-for="s in subjects"
+        :key="s.subject"
+        class="cell"
+        @click="go(s.subject)"
+      >
+        <view class="ic">{{ s.icon }}</view>
+        <view class="lb">{{ s.subject }}工具</view>
+      </view>
     </view>
+    <view v-if="!subjects.length" class="empty">暂无可用的学科工具</view>
   </view>
 </template>
 <script setup>
-import { theme } from '../../common/store'
-function go(path) { uni.navigateTo({ url: path }) }
+import { computed } from 'vue'
+import { auth, theme } from '../../common/store'
+import { SUBJECT_LIST, getTeacherSubjects } from '../../common/subject-schema'
+
+// P1：学科工具入口按教师任教学科过滤（subjects 优先，回退 subject，都空=全部学科）
+const teacherSubjects = getTeacherSubjects(auth.user?.subject, auth.user?.subjects)
+const subjects = computed(() => SUBJECT_LIST.filter((s) => teacherSubjects.includes(s.subject)))
+
+function go(subject) {
+  uni.navigateTo({ url: '/pages/quick/subject-list?subject=' + encodeURIComponent(subject) })
+}
 </script>
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; }
@@ -20,4 +36,5 @@ function go(path) { uni.navigateTo({ url: path }) }
 .cell { background: var(--c-card); border-radius: 16rpx; padding: 24rpx 16rpx; text-align: center; }
 .ic { font-size: 48rpx; margin-bottom: 8rpx; }
 .lb { font-size: 24rpx; color: var(--c-text); font-weight: 600; }
+.empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; font-size: 28rpx; }
 </style>

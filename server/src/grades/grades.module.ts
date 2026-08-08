@@ -74,11 +74,17 @@ class GradesService extends CrudService<Grade> {
 
   async findAll(teacherId: string, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
     const where: any = {}
+    let allowedSubjects: string[] | null = null
     if (classId) {
       // 班主任或同班科任老师均可访问该班级成绩
       const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
       if (!canAccess) return { items: [], total: 0 }
       where.classId = classId
+      // P5：科任老师仅能查看自己任教学科的成绩；班主任可见全部科目
+      const role = await this.classMemberSvc.getRole(teacherId, classId)
+      if (role !== 'head') {
+        allowedSubjects = await this.classMemberSvc.getAllSubjects(teacherId, classId)
+      }
     } else {
       where.teacherId = teacherId
     }
@@ -91,6 +97,11 @@ class GradesService extends CrudService<Grade> {
       skip,
       take,
     })
+    // 科任老师按任教学科收敛结果集
+    if (allowedSubjects && allowedSubjects.length) {
+      const filtered = items.filter((g) => allowedSubjects.includes(g.subject))
+      return { items: filtered, total: filtered.length }
+    }
     return { items, total }
   }
 
@@ -367,6 +378,26 @@ class GradesService extends CrudService<Grade> {
   }
 
   /**
+   * 加载教师「可见」的班级成绩（P3 一致性修复）：
+   * - 先按 classId 查全班成绩（同班协作，不再按 teacherId 隔离）
+   * - 班主任(head) → 可见全部科目
+   * - 科任老师(subject) → 仅可见自己任教学科
+   * 与 studentHistory 的可视规则保持一致，避免「个人成绩页 vs 汇总分析页」数据不一致。
+   */
+  private async loadVisibleClassGrades(teacherId: string, classId: string): Promise<Grade[]> {
+    await this.assertClassAccess(teacherId, classId)
+    const role = await this.classMemberSvc.getRole(teacherId, classId)
+    const allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(teacherId, classId)
+    const grades = await this.repo.find({
+      where: { classId } as any,
+      order: { date: 'ASC' } as any,
+      take: 1000,
+    })
+    if (!allowedSubjects) return grades
+    return grades.filter((g) => allowedSubjects.includes(g.subject))
+  }
+
+  /**
    * 单场考试统计：按班级+考试id聚合各学科指标
    * - 支持 fullScoreMap（每科满分）
    * - 返回各学科统计 + 班级总均分 + 薄弱学科 TopN + 优秀学科 TopN
@@ -377,11 +408,7 @@ class GradesService extends CrudService<Grade> {
     examId: string,
     fullScoreMap: Record<string, number> = {},
   ) {
-    await this.assertClassAccess(teacherId, classId)
-    const grades = await this.repo.find({
-      where: { classId, teacherId } as any,
-      take: 500,
-    })
+    const grades = await this.loadVisibleClassGrades(teacherId, classId)
     const byExam = grades.filter((g) => g.examId === examId)
     const subjectsStats: SubjectStat[] = []
     for (const g of byExam) {
@@ -413,12 +440,8 @@ class GradesService extends CrudService<Grade> {
    * 多场考试趋势：按班级+科目聚合多次考试的均分轨迹
    */
   async examTrend(teacherId: string, classId: string, subject?: string) {
-    await this.assertClassAccess(teacherId, classId)
-    const grades = await this.repo.find({
-      where: { classId, teacherId } as any,
-      order: { date: 'ASC' } as any,
-      take: 1000,
-    })
+    let grades = await this.loadVisibleClassGrades(teacherId, classId)
+    // subject 过滤参数与「教师可见科目」再取交集，避免科任老师越权看其他科目趋势
     const filtered = subject ? grades.filter((g) => g.subject === subject) : grades
     const trendBySubject: Record<string, { date: string; examName: string; avg: number; count: number }[]> = {}
     for (const g of filtered) {
@@ -445,11 +468,7 @@ class GradesService extends CrudService<Grade> {
     examId: string,
     subject?: string,
   ) {
-    await this.assertClassAccess(teacherId, classId)
-    const grades = await this.repo.find({
-      where: { classId, teacherId } as any,
-      take: 500,
-    })
+    const grades = await this.loadVisibleClassGrades(teacherId, classId)
     const byExam = grades.filter((g) => g.examId === examId)
     const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
     const studentMap = new Map(students.map((s) => [s.id, s]))
@@ -531,10 +550,8 @@ class GradesService extends CrudService<Grade> {
    * 薄弱知识点分析：按班级返回每门学科低于班级均分的学生
    */
   async weakStudents(teacherId: string, classId: string, examId?: string) {
-    await this.assertClassAccess(teacherId, classId)
-    const where: any = { classId, teacherId }
-    if (examId) where.examId = examId
-    const grades = await this.repo.find({ where, take: 500 })
+    let grades = await this.loadVisibleClassGrades(teacherId, classId)
+    if (examId) grades = grades.filter((g) => g.examId === examId)
     const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
     const studentMap = new Map(students.map((s) => [s.id, s]))
     const result: any[] = []

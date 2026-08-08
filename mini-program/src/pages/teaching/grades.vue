@@ -275,6 +275,7 @@ import {
   getPublicConfig, listSemesters, analyzeExam, diagnoseStudent,
 } from '@/api/grades'
 import { auth, theme } from '../../common/store'
+import { getTeacherSubjects } from '../../common/subject-schema'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { isScore } from '../../common/validators'
 import { copyText } from '../../common/print'
@@ -789,12 +790,10 @@ async function onExam(e) {
   examId.value = chosen.id
   examName.value = chosen.name
   let availableSubjects = chosen.subjects && chosen.subjects.length ? chosen.subjects : pubSubjects.value
-  // 科任老师只能看到自己教的科目
+  // 科任老师只能看到自己教的科目（P5：用共享 helper，支持多学科 + subject 回退，与 Web 端对齐）
   if (!isHomeroom.value) {
-    const mySubjects = auth.user?.subjects || []
-    if (mySubjects.length) {
-      availableSubjects = availableSubjects.filter(s => mySubjects.includes(s))
-    }
+    const mySubjects = getTeacherSubjects(auth.user?.subject, auth.user?.subjects)
+    availableSubjects = availableSubjects.filter(s => mySubjects.includes(s))
   }
   subjectOpts.value = availableSubjects
   subjectIdx.value = subjectOpts.value.length ? 0 : -1

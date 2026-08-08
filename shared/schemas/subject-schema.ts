@@ -321,3 +321,25 @@ export function getToolsBySubject(subject: string): ToolMenuItem[] {
       }
     })
 }
+
+/**
+ * 计算教师「可见」的任教学科（用于 Web / 小程序端按学科过滤工具入口）：
+ * - subjects 数组非空 → 以数组为准（可多学科任教的教师）
+ * - 否则回退到 subject 主学科
+ * - 两者都为空 → 返回全部学科（兼容超管/校管/无学科信息的历史账号，不做限制）
+ *
+ * 满足需求：语文老师只能看到语文对应工具 + 公共工具，看不到数学/英语等其他学科工具。
+ */
+export function getTeacherSubjects(subject?: string, subjects?: string[]): string[] {
+  if (Array.isArray(subjects) && subjects.length) return [...subjects]
+  if (subject) return [subject]
+  return ALL_SUBJECTS
+}
+
+/**
+ * 判断某学科是否为该教师可见学科之一（teacherSubjects 为空时视为可见）。
+ */
+export function isTeacherSubjectVisible(subject: string, teacherSubjects?: string[]): boolean {
+  if (!teacherSubjects || !teacherSubjects.length) return true
+  return teacherSubjects.includes(subject)
+}

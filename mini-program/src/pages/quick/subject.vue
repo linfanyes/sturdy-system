@@ -2,7 +2,8 @@
   <view class="page" :class="{ dark }">
     <view class="card">
       <view class="sec-title">{{ tool ? tool.icon + ' ' + tool.title : '学科练习' }}</view>
-      <view class="hint">填写下方信息，AI 生成贴合年级的练习内容，可复制使用。</view>
+      <view class="hint" v-if="!accessible">您无权使用「{{ tool?.subject }}」学科工具。学科 AI 工具仅对本学科任教教师开放。</view>
+      <view class="hint" v-else>填写下方信息，AI 生成贴合年级的练习内容，可复制使用。</view>
 
       <block v-for="fld in fields" :key="fld.k">
         <view class="field-label">{{ fld.label }}<text v-if="fld.required" class="req">*</text></view>
@@ -51,7 +52,7 @@ import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { chatSync } from '@/api/ai'
 import { auth, theme } from '../../common/store'
-import { getSubjectTool } from '../../common/subject-schema'
+import { getSubjectTool, getTeacherSubjects } from '../../common/subject-schema'
 const dark = computed(() => theme.mode === 'dark')
 
 const type = ref('')
@@ -63,6 +64,14 @@ const speaking = ref(false)
 let audioCtx = null
 
 const fields = computed(() => (tool.value ? tool.value.fields : []))
+
+// P1：教师任教学科（subjects 优先，回退 subject），用于学科工具访问校验
+const teacherSubjects = getTeacherSubjects(auth.user?.subject, auth.user?.subjects)
+// 学科工具访问守卫：非本学科任教教师不可使用该学科工具（与 Web 端 AIDetailPage 对齐）
+const accessible = computed(() => {
+  if (!tool.value) return true
+  return teacherSubjects.includes(tool.value.subject)
+})
 
 onLoad((q) => {
   type.value = q && q.type ? decodeURIComponent(q.type) : ''
@@ -82,6 +91,10 @@ function onPick(k, e) {
 
 async function gen() {
   if (loading.value || !tool.value) return
+  // 学科工具访问守卫：无权则拦截生成（后端亦会二次校验 subjectKey）
+  if (!accessible.value) {
+    return uni.showToast({ title: '您无权使用该学科工具', icon: 'none' })
+  }
   const required = tool.value.fields.filter((f) => f.required)
   for (const r of required) {
     if (!String(form.value[r.k] || '').trim()) {
@@ -94,6 +107,8 @@ async function gen() {
   try {
     const res = await chatSync({
       messages: [{ role: 'user', content: prompt }],
+      // 学科工具附上 subjectKey，供后端做学科权限二次校验（与 Web 端对齐）
+      ...(type.value ? { subjectKey: type.value } : {}),
     })
     content.value = res.content || ''
     if (!content.value) uni.showToast({ title: '生成内容为空', icon: 'none' })

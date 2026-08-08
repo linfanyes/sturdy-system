@@ -143,4 +143,36 @@ export class AdminController {
   auditLogs(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
     return this.audit.list(schoolId, Number(skip) || 0, Number(take) || 100)
   }
+
+  // ===== 超管只读：考试 / 成绩审计（P4） =====
+
+  @Get('audit-exams')
+  @UseGuards(JwtAuthGuard)
+  auditExams(
+    @Query('schoolId') schoolId?: string,
+    @Query('classId') classId?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.svc.listAuditExams(schoolId, classId, Number(skip) || 0, Number(take) || 500)
+  }
+
+  @Get('audit-grades')
+  @UseGuards(JwtAuthGuard)
+  auditGrades(
+    @Query('schoolId') schoolId?: string,
+    @Query('classId') classId?: string,
+    @Query('subject') subject?: string,
+    @Query('examName') examName?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.svc.listAuditGrades(schoolId, classId, subject, examName, Number(skip) || 0, Number(take) || 500)
+  }
+
+  @Get('audit-grade-summary')
+  @UseGuards(JwtAuthGuard)
+  auditGradeSummary(@Query('schoolId') schoolId?: string, @Query('classId') classId?: string) {
+    return this.svc.gradeAuditSummary(schoolId, classId)
+  }
 }

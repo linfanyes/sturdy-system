@@ -174,6 +174,106 @@
           </view>
         </view>
       </view>
+
+      <!-- ===== 成绩审计（超管只读 P4） ===== -->
+      <view v-else-if="subView === 'grade'">
+        <view class="filter-bar">
+          <picker class="audit-picker" mode="selector" :range="auditSchoolOptions" range-key="label" @change="onAuditSchoolPick">
+            <view class="picker-inp">{{ auditSchoolLabel }}</view>
+          </picker>
+        </view>
+
+        <!-- 汇总分析 -->
+        <view class="audit-section">
+          <view class="audit-hd">
+            <text class="audit-title">学科汇总分析</text>
+            <text class="audit-count">共 {{ auditSummary.totalGrades }} 条成绩</text>
+          </view>
+          <view v-if="auditLoading" class="audit-empty">加载中…</view>
+          <view v-else-if="!auditSummary.subjects || !auditSummary.subjects.length" class="audit-empty">暂无成绩数据</view>
+          <view v-else class="audit-grid">
+            <view class="audit-card" v-for="s in auditSummary.subjects" :key="s.subject">
+              <text class="audit-card-title">{{ s.subject }}</text>
+              <view class="audit-line"><text class="audit-k">样本</text><text class="audit-v">{{ s.count }}</text></view>
+              <view class="audit-line"><text class="audit-k">平均分</text><text class="audit-v ac">{{ s.avg }}</text></view>
+              <view class="audit-line"><text class="audit-k">及格率</text><text class="audit-v ag">{{ s.passRate }}%</text></view>
+              <view class="audit-line"><text class="audit-k">最高/最低</text><text class="audit-v">{{ s.max }} / {{ s.min }}</text></view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 考试列表 -->
+        <view class="audit-section">
+          <view class="audit-hd">
+            <text class="audit-title">考试列表</text>
+            <text class="audit-count">共 {{ auditExams.length }} 场</text>
+          </view>
+          <view v-if="!auditExams.length" class="audit-empty">暂无考试</view>
+          <view v-else class="audit-list">
+            <view class="audit-row" v-for="e in auditExams" :key="e.id">
+              <view class="audit-row-hd">
+                <text class="audit-nm">{{ e.name }}</text>
+                <text class="audit-date">{{ e.date || '-' }}</text>
+              </view>
+              <text class="audit-meta">学校：{{ e.schoolName || '-' }} · 班级：{{ e.className || '-' }}</text>
+              <text class="audit-meta">科目：{{ (e.subjects || []).join('、') || '-' }} · 学期：{{ e.term || '-' }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 成绩列表 -->
+        <view class="audit-section">
+          <view class="audit-hd">
+            <text class="audit-title">成绩列表</text>
+            <text class="audit-count">共 {{ auditGrades.length }} 条</text>
+          </view>
+          <view v-if="!auditGrades.length" class="audit-empty">暂无成绩记录</view>
+          <view v-else class="audit-list">
+            <view class="audit-row" v-for="g in auditGrades" :key="g.id">
+              <view class="audit-row-hd">
+                <text class="audit-nm">{{ g.examName }}</text>
+                <text class="audit-subject">{{ g.subject }}</text>
+              </view>
+              <text class="audit-meta">学校：{{ g.schoolName || '-' }} · 班级：{{ g.className || '-' }}</text>
+              <text class="audit-meta">日期：{{ g.date || '-' }}</text>
+              <text class="audit-meta audit-score">{{ scoreSummary(g) }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- ===== 审计日志（超管浏览操作审计，镜像 Web AuditLogs） ===== -->
+      <view v-else-if="subView === 'audit'">
+        <view class="filter-bar">
+          <picker class="audit-picker" mode="selector" :range="logSchoolOptions" range-key="label" @change="onLogSchoolPick">
+            <view class="picker-inp">{{ logSchoolLabel }}</view>
+          </picker>
+          <view class="filter-count">共 {{ logAuditTotal }} 条</view>
+        </view>
+
+        <view class="audit-section">
+          <view v-if="logAuditLoading" class="audit-empty">加载中…</view>
+          <view v-else-if="!logAuditItems.length" class="audit-empty">暂无审计日志</view>
+          <view v-else class="audit-list">
+            <view class="audit-row" v-for="l in logAuditItems" :key="l.id || l.createdAt">
+              <view class="audit-row-hd">
+                <text class="audit-nm">{{ formatLogAction(l.action) }}</text>
+                <text class="audit-date">{{ formatLogTime(l.createdAt || l.created_at) }}</text>
+              </view>
+              <text class="audit-meta">操作人：{{ l.operator || '-' }}</text>
+              <text class="audit-meta">目标：{{ l.target || '-' }}</text>
+              <text class="audit-meta" v-if="l.detail">详情：{{ l.detail }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 分页 -->
+        <view class="pager" v-if="logAuditTotal > LOG_PAGE_SIZE">
+          <view class="pg-btn" :class="{ dis: logAuditSkip <= 0 }" @click="prevAuditPage">‹ 上一页</view>
+          <text class="pg-info">{{ logAuditPage }} / {{ logAuditTotalPages }} 页</text>
+          <view class="pg-btn" :class="{ dis: logAuditSkip + LOG_PAGE_SIZE >= logAuditTotal }" @click="nextAuditPage">下一页 ›</view>
+        </view>
+      </view>
       </template>
 
       <!-- 一级列表态 -->
@@ -196,6 +296,8 @@
             <view class="dm" @click="quickOpen('account','schoolAdmin')"><text class="dm-ico">👤</text><text class="dm-txt">校管理员</text></view>
             <view class="dm" @click="quickOpen('settings','config')"><text class="dm-ico">⚙️</text><text class="dm-txt">平台配置</text></view>
             <view class="dm" @click="quickOpen('settings','ai')"><text class="dm-ico">🤖</text><text class="dm-txt">AI 服务商</text></view>
+            <view class="dm" @click="quickOpen('dashboard','grade')"><text class="dm-ico">📊</text><text class="dm-txt">成绩审计</text></view>
+            <view class="dm" @click="quickOpen('dashboard','audit')"><text class="dm-ico">📜</text><text class="dm-txt">审计日志</text></view>
           </view>
         </view>
 
@@ -569,6 +671,8 @@ function switchTab(t) {
   else if (t === 'admin') quickOpen('account', 'schoolAdmin')
   else if (t === 'config') quickOpen('settings', 'config')
   else if (t === 'ai') quickOpen('settings', 'ai')
+  else if (t === 'grade') quickOpen('dashboard', 'grade')
+  else if (t === 'audit') quickOpen('dashboard', 'audit')
 }
 
 async function loadSchools() {
@@ -593,6 +697,8 @@ function openSub(v) {
   else if (v === 'schoolAdmin') { subTitle.value = '校管理员'; loadAdmins() }
   else if (v === 'config') { subTitle.value = '平台配置'; loadConfigs() }
   else if (v === 'ai') { subTitle.value = 'AI 服务商'; loadProviders() }
+  else if (v === 'grade') { subTitle.value = '成绩审计'; loadAuditGrade() }
+  else if (v === 'audit') { subTitle.value = '审计日志'; loadAuditLogList() }
 }
 // 返回二级列表
 function back() { subView.value = '' }
@@ -632,6 +738,134 @@ async function loadAuditLogs() {
   }
   todayLogCount.value = today
   weekLogCount.value = week
+}
+
+// ===== 审计日志列表（超管浏览操作审计，镜像 Web AuditLogs） =====
+const LOG_PAGE_SIZE = 50
+const logAuditItems = ref([])
+const logAuditTotal = ref(0)
+const logAuditSkip = ref(0)
+const logAuditLoading = ref(false)
+const logAuditSchoolId = ref('')
+
+const logAuditPage = computed(() => Math.floor(logAuditSkip.value / LOG_PAGE_SIZE) + 1)
+const logAuditTotalPages = computed(() => Math.max(1, Math.ceil(logAuditTotal.value / LOG_PAGE_SIZE)))
+const logSchoolOptions = computed(() => [
+  { id: '', label: '全部学校' },
+  ...schools.value.map((s) => ({ id: s.id, label: s.name })),
+])
+const logSchoolLabel = computed(() => {
+  const cur = logSchoolOptions.value.find((o) => o.id === logAuditSchoolId.value)
+  return cur ? cur.label : '全部学校'
+})
+
+const LOG_ACTION_LABELS = {
+  create_teacher: '创建教师', delete_teacher: '删除教师', reset_password: '重置密码',
+  create_class: '创建班级', delete_class: '删除班级', promote_class: '班级升级',
+  create_school_admin: '创建校管', delete_school_admin: '删除校管',
+  batch_create_classes: '批量建班', batch_create_students: '批量导入学生',
+  delete_student: '删除学生', create_student: '创建学生',
+  toggle_parent_login: '开关家长登录', reset_parent_password: '重置家长密码',
+  batch_toggle_school: '批量启停学校', batch_toggle_admin: '批量启停校管',
+  bind_parent: '绑定家长微信', login: '登录', logout: '登出',
+  system_reset_all: '全量重置系统', clear_teacher_data: '清理教师业务数据',
+  deactivate_all_teachers: '批量停用教师',
+}
+function formatLogAction(action) {
+  if (!action) return '-'
+  return LOG_ACTION_LABELS[action] || action
+}
+function formatLogTime(t) {
+  if (!t) return '-'
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return String(t)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+function onLogSchoolPick(e) {
+  const opt = logSchoolOptions.value[e.detail.value]
+  logAuditSchoolId.value = opt ? opt.id : ''
+  logAuditSkip.value = 0
+  loadAuditLogList()
+}
+function prevAuditPage() {
+  if (logAuditSkip.value <= 0) return
+  logAuditSkip.value = Math.max(0, logAuditSkip.value - LOG_PAGE_SIZE)
+  loadAuditLogList()
+}
+function nextAuditPage() {
+  if (logAuditSkip.value + LOG_PAGE_SIZE >= logAuditTotal.value) return
+  logAuditSkip.value = logAuditSkip.value + LOG_PAGE_SIZE
+  loadAuditLogList()
+}
+
+async function loadAuditLogList() {
+  logAuditLoading.value = true
+  try {
+    const params = []
+    if (logAuditSchoolId.value) params.push('schoolId=' + encodeURIComponent(logAuditSchoolId.value))
+    params.push('skip=' + logAuditSkip.value)
+    params.push('take=' + LOG_PAGE_SIZE)
+    const r = await apiCall('GET', '/admin/audit-logs?' + params.join('&')) || { items: [], total: 0 }
+    logAuditItems.value = (r.items || r || [])
+    logAuditTotal.value = r.total || logAuditItems.value.length
+  } catch (e) {
+    uni.showToast({ title: String(e?.message || '加载失败').slice(0, 40), icon: 'none' })
+  } finally {
+    logAuditLoading.value = false
+  }
+}
+
+// ===== 成绩审计（超管只读 P4） =====
+const auditExams = ref([])
+const auditGrades = ref([])
+const auditSummary = ref({ subjects: [], totalGrades: 0 })
+const auditLoading = ref(false)
+const auditSchoolId = ref('')
+
+const auditSchoolOptions = computed(() => [
+  { id: '', label: '全部学校' },
+  ...schools.value.map((s) => ({ id: s.id, label: s.name })),
+])
+const auditSchoolLabel = computed(() => {
+  const cur = auditSchoolOptions.value.find((o) => o.id === auditSchoolId.value)
+  return cur ? cur.label : '全部学校'
+})
+
+function onAuditSchoolPick(e) {
+  const opt = auditSchoolOptions.value[e.detail.value]
+  auditSchoolId.value = opt ? opt.id : ''
+  loadAuditGrade()
+}
+
+function scoreSummary(g) {
+  if (!g.scores || !g.scores.length) return '暂无'
+  const valid = (g.scores || []).filter((s) => s && s.score != null).map((s) => Number(s.score))
+  if (!valid.length) return '暂无'
+  const avg = (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1)
+  return `${valid.length}人 均${avg} 最高${Math.max(...valid)} 最低${Math.min(...valid)}`
+}
+
+async function loadAuditGrade() {
+  auditLoading.value = true
+  try {
+    const params = auditSchoolId.value ? { schoolId: auditSchoolId.value } : {}
+    const q = Object.keys(params).map((k) => `${k}=${encodeURIComponent(params[k])}`).join('&')
+    const qs = q ? ('?' + q) : ''
+    const [examRes, gradeRes, sumRes] = await Promise.all([
+      apiCall('GET', '/admin/audit-exams' + qs + (qs ? '&' : '?') + 'take=500'),
+      apiCall('GET', '/admin/audit-grades' + qs + (qs ? '&' : '?') + 'take=500'),
+      apiCall('GET', '/admin/audit-grade-summary' + qs),
+    ])
+    auditExams.value = (examRes && (examRes.items || examRes)) || []
+    auditGrades.value = (gradeRes && (gradeRes.items || gradeRes)) || []
+    auditSummary.value = (sumRes && sumRes.subjects) ? sumRes : { subjects: [], totalGrades: 0 }
+  } catch (e) {
+    uni.showToast({ title: String(e?.message || '加载失败').slice(0, 40), icon: 'none' })
+  } finally {
+    auditLoading.value = false
+  }
 }
 
 function openCreateProvider() {
@@ -1152,5 +1386,33 @@ function confirmResetAll() {
 .subject-inp { flex: 1; border: 1px solid var(--c-input-border); border-radius: 14rpx; padding: 16rpx 20rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-height: 76rpx; }
 .subject-add-btn { flex-shrink: 0; font-size: 24rpx; color: #fff; font-weight: 600; padding: 16rpx 28rpx; background: var(--c-primary); border-radius: 30rpx; }
 .ndate { font-size: 20rpx; color: var(--c-sub2); margin-left: 10rpx; font-weight: 400; }
+/* 成绩审计（超管只读 P4） */
+.audit-picker { width: 100%; }
+.audit-section { background: var(--c-card); border-radius: 20rpx; padding: 26rpx 24rpx; margin-top: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
+.audit-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
+.audit-title { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
+.audit-count { font-size: 22rpx; color: var(--c-sub); }
+.audit-empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 48rpx 0; }
+.audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; }
+.audit-card { background: var(--c-card2); border-radius: 16rpx; padding: 20rpx; }
+.audit-card-title { font-size: 26rpx; font-weight: 700; color: var(--c-title); display: block; margin-bottom: 12rpx; }
+.audit-line { display: flex; justify-content: space-between; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
+.audit-k { color: var(--c-sub); }
+.audit-v { color: var(--c-title); font-weight: 600; }
+.audit-v.ac { color: var(--c-accent); }
+.audit-v.ag { color: var(--c-primary); }
+.audit-list { display: flex; flex-direction: column; gap: 12rpx; }
+.audit-row { background: var(--c-card2); border-radius: 14rpx; padding: 18rpx 20rpx; }
+.audit-row-hd { display: flex; justify-content: space-between; align-items: center; gap: 12rpx; }
+.audit-nm { font-size: 27rpx; font-weight: 700; color: var(--c-title); }
+.audit-subject { font-size: 22rpx; color: var(--c-accent); font-weight: 600; flex-shrink: 0; }
+.audit-date { font-size: 22rpx; color: var(--c-sub2); flex-shrink: 0; }
+.audit-meta { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; line-height: 1.5; }
+.audit-score { color: var(--c-primary); }
+.filter-count { font-size: 24rpx; color: var(--c-sub); margin-top: 12rpx; }
+.pager { display: flex; align-items: center; justify-content: space-between; margin-top: 20rpx; }
+.pg-btn { background: var(--c-card2); border-radius: 14rpx; padding: 14rpx 26rpx; font-size: 26rpx; color: var(--c-title); font-weight: 600; }
+.pg-btn.dis { opacity: 0.4; pointer-events: none; }
+.pg-info { font-size: 24rpx; color: var(--c-sub); }
 
 </style>

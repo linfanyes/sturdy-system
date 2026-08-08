@@ -321,4 +321,29 @@ export class SchoolAdminController {
   search(@CurrentSchoolAdmin() a: any, @Query('q') q?: string) {
     return this.svc.search(a.schoolId, q || '')
   }
+
+  // ===== 校管只读：成绩 / 考试 / 汇总分析（P2）=====
+
+  @Get('academic/exams')
+  @UseGuards(JwtAuthGuard)
+  listExams(@CurrentSchoolAdmin() a: any, @Query('classId') classId?: string) {
+    return this.svc.listSchoolExams(a.schoolId, classId || undefined)
+  }
+
+  @Get('academic/grades')
+  @UseGuards(JwtAuthGuard)
+  listGrades(
+    @CurrentSchoolAdmin() a: any,
+    @Query('classId') classId?: string,
+    @Query('subject') subject?: string,
+    @Query('examName') examName?: string,
+  ) {
+    return this.svc.listSchoolGrades(a.schoolId, classId || undefined, subject || undefined, examName || undefined)
+  }
+
+  @Get('academic/summary')
+  @UseGuards(JwtAuthGuard)
+  gradeSummary(@CurrentSchoolAdmin() a: any, @Query('classId') classId?: string, @Query('examId') examId?: string) {
+    return this.svc.schoolGradeSummary(a.schoolId, classId || undefined, examId || undefined)
+  }
 }

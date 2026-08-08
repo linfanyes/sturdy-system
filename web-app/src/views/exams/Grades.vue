@@ -14,11 +14,14 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
+import { useAuthStore } from '@/stores/auth'
+import { getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
 import { listClassStudents, listAllStudents, listExams, listGrades, importGradesPreview, importGradesCommit, importGradesAi, removeGrade, type TeacherStudent } from '@/api/teacher'
 import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2, User, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -26,12 +29,24 @@ const grades = ref<any[]>([])
 const classId = ref('')
 const keyword = ref('')
 
+/** 教师任教学科（用于按学科收敛考试科目与成绩查询） */
+const teacherSubjects = computed<string[]>(() =>
+  getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
+)
+
 /* ============ 考试与科目联动 ============ */
 const exams = ref<any[]>([])
 const selectedExamId = ref('')
 const selectedSubject = ref('')
 const selectedExam = computed(() => exams.value.find(e => e.id === selectedExamId.value))
-const examSubjects = computed(() => selectedExam.value?.subjects || [])
+// P5：考试科目仅展示教师任教学科（班主任可见全部，科任老师仅见自己所教科目）
+const examSubjects = computed(() => {
+  const subs = selectedExam.value?.subjects || []
+  if (teacherSubjects.value.length && teacherSubjects.value.length < 15) {
+    return subs.filter((s: string) => teacherSubjects.value.includes(s))
+  }
+  return subs
+})
 
 async function loadExams() {
   if (!classId.value) { exams.value = []; return }
