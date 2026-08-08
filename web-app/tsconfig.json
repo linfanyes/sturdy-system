@@ -5,7 +5,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@gardener/shared/*": ["../shared/*"]
+      "@gardener/shared/*": ["../shared/*"],
+      // 共享包 composables 在项目引用检查时从 ../shared 目录解析 vue，
+      // 需显式映射到本应用 node_modules，否则报 Cannot find module 'vue'
+      "vue": ["./node_modules/vue/dist/vue.d.ts"],
+      "vue/*": ["./node_modules/vue/*"]
     },
     "types": ["node", "vite/client"]
   },
