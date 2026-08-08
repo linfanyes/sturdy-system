@@ -25,14 +25,15 @@ export default defineConfig({
       },
     },
   },
+  // 生产构建剥离 console.log/info/debug/table（保留 error/warn 用于线上错误监控上报）
+  // vite 6 已将 build.esbuild 移除，改为顶层 esbuild 选项（esbuild TransformOptions.pure）
+  esbuild: {
+    pure: ['console.log', 'console.info', 'console.debug', 'console.table'],
+  },
   build: {
     sourcemap: false,
     outDir: 'dist',
     emptyOutDir: false,
-    // 生产构建剥离 console.log/info/debug/table（保留 error/warn 用于线上错误监控上报）
-    esbuild: {
-      pure: ['console.log', 'console.info', 'console.debug', 'console.table'],
-    },
     // 关闭压缩体积统计：对 120+ chunk 逐个算 gzip 是纯耗时，无构建价值
     reportCompressedSize: false,
     cssCodeSplit: true,
