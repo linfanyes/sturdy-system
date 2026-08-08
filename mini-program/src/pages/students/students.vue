@@ -187,6 +187,7 @@ import {
 } from '@/api/students'
 import { listGrades, getGrades } from '@/api/grades'
 import { isPhone, isStudentNo } from '../../common/validators'
+import { safeParse } from '../../common/util'
 import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
 import { compressImage } from '../../common/image'
@@ -701,7 +702,7 @@ async function computeProfile(s) {
   let total = 0
   let present = 0
   ;(atts || []).forEach((a) => {
-    const recs = typeof a.records === 'string' ? (() => { try { return JSON.parse(a.records) } catch (e) { return [] } })() : (a.records || [])
+    const recs = safeParse(a.records, [])
     recs.forEach((r) => { if (r.studentId === s.id) { total++; if (r.status === '出勤') present++ } })
   })
   const attRate = total ? Math.round((present / total) * 100) : 0

@@ -70,6 +70,7 @@ import { theme } from '../../common/store'
 import Skeleton from '../../components/Skeleton/Skeleton.vue'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 import { compressImage } from '../../common/image'
+import { safeParse } from '../../common/util'
 
 const list = ref([])
 const loading = ref(false)
@@ -79,7 +80,7 @@ const editingId = ref('')
 const form = ref({ title: '', date: '', description: '', photos: [] })
 
 function photos(it) {
-  try { return typeof it.photos === 'string' ? JSON.parse(it.photos) : (it.photos || []) } catch (e) { return [] }
+  return safeParse(it.photos, [])
 }
 
 async function load() {

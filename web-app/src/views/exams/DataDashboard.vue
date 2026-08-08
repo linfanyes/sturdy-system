@@ -10,6 +10,7 @@ import {
   GraduationCap, ListTodo, NotebookText, Megaphone,
   Download, Loader2, RefreshCw, Trophy, PieChart,
 } from 'lucide-vue-next'
+import { safeParse } from '@gardener/shared/utils/general'
 
 /* ============ 学期筛选 ============ */
 interface Semester { id: string; name: string; [k: string]: any }
@@ -71,13 +72,6 @@ function toArray(res: any): any[] {
   return []
 }
 
-/** 安全解析 JSON 字符串 */
-function safeParse(s: any): any[] {
-  if (Array.isArray(s)) return s
-  if (typeof s !== 'string') return []
-  try { return JSON.parse(s) } catch { return [] }
-}
-
 /** 公共参数：附加学期筛选 */
 function params(): Record<string, any> {
   const p: Record<string, any> = {}
@@ -105,7 +99,7 @@ async function loadAll() {
     let atTotal = 0
     let atPresent = 0
     attsRes.forEach((a: any) => {
-      const recs = safeParse(a.records)
+      const recs = safeParse(a.records, []) as any[]
       recs.forEach((r: any) => {
         atTotal++
         if (r.status === '出勤' || r.status === '迟到' || r.status === '请假') atPresent++

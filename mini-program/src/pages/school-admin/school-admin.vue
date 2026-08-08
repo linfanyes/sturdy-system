@@ -756,6 +756,7 @@ import { setMockMode } from '../../common/request'
 import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
 import { auth, setAuth, setFeatureProfile } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { safeParse } from '../../common/util'
 import { compressImage } from '../../common/image'
 import { copyText } from '../../common/print'
 import { ALL_SUBJECTS } from '../../common/subject-schema'
@@ -778,9 +779,7 @@ async function loadDashboard() {
 }
 
 // 从本地存储读取学校管理员信息（登录时保存）
-const saUser = (() => {
-  try { return JSON.parse(uni.getStorageSync('sa_user') || '{}') } catch (e) { return {} }
-})()
+const saUser = safeParse(uni.getStorageSync('sa_user') || '{}', {})
 const schoolName = ref(saUser.schoolName || '')
 const schoolCode = ref(saUser.schoolCode || '')
 

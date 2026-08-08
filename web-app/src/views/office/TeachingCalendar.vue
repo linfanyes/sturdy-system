@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2, Edit3, Calendar } from 'lucide
 import Modal from '@/components/Modal.vue'
 import { listTeachingCalendar, createTeachingCalendar, updateTeachingCalendar, deleteTeachingCalendar } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
+import { formatDate } from '@gardener/shared/utils/date'
 
 const items = ref<any[]>([])
 const loading = ref(false)
@@ -55,7 +56,7 @@ const calendarDays = computed(() => {
 })
 
 function fmtDate(d: Date) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  return formatDate(d)
 }
 
 function itemsOnDate(date: string) {

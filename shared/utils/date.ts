@@ -39,6 +39,21 @@ export function formatDateTime(ts: string | number | Date | null | undefined): s
 }
 
 /**
+ * 纯日期格式化：YYYY-MM-DD（不含时间）
+ * - 用于日历格子 / 纯日期 key 匹配等场景
+ * - 空值 / 无效日期返回 '-'
+ */
+export function formatDate(ts: string | number | Date | null | undefined): string {
+  if (!ts) return '-'
+  const d = new Date(ts)
+  if (isNaN(d.getTime())) return String(ts)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/**
  * ISO 时间简化：把 "2026-08-07T10:15:10.123Z" 变为 "2026-08-07 10:15:10"
  * 用于审计日志等后端返回的标准 ISO 字符串。
  */

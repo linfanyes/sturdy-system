@@ -52,6 +52,7 @@ import { ref } from 'vue'
 import { marked } from 'marked'
 import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
+import { safeParse } from '../../common/util'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -103,8 +104,7 @@ function copyResult() {
 function saveToNotes() {
   if (!result.value) return
   const notes = uni.getStorageSync('ai_notes') || '[]'
-  let arr = []
-  try { arr = JSON.parse(notes) } catch(e) { arr = [] }
+  const arr = safeParse(notes, [])
   arr.unshift({ title: '答疑：' + (form.value.question || '').slice(0, 30), content: result.value, time: new Date().toISOString().slice(0,16) })
   uni.setStorageSync('ai_notes', JSON.stringify(arr))
   uni.showToast({ title: '已存笔记', icon: 'none' })
