@@ -5,7 +5,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { FileText, RefreshCw, Printer, Eye, EyeOff } from 'lucide-vue-next'
-import { randInt } from '@gardener/shared/utils/game-helpers'
+import { randInt } from '@gardener/shared/games/helpers'
 
 type OpType = 'add' | 'sub' | 'mul' | 'div' | 'mix'
 

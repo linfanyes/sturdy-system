@@ -10,7 +10,7 @@ import { loadClasses, useClasses } from '@/composables/useClasses'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
 import { listSchedules, createSchedule, deleteSchedule } from '@/api/teacher'
 import Modal from '@/components/Modal.vue'
-import { shuffle } from '@gardener/shared/utils/game-helpers'
+import { shuffle } from '@gardener/shared/games/helpers'
 
 const { classes } = useClasses()
 const classId = ref('')

@@ -14,6 +14,7 @@ import { AuditService } from '../audit/audit.service'
 import { Parent } from '../parent/parent.entity'
 import { FeatureService } from '../common/feature/feature.service'
 import { WechatAuthService } from './wechat-auth.service'
+import { findStudentByNoForLogin } from '../common/utils/student.util'
 import * as bcrypt from 'bcrypt'
 
 @Injectable()
@@ -43,9 +44,7 @@ export class AuthService {
 
   /** 按学号查询学生用于家长登录：学号跨学校可能重复，优先返回已开启家长登录的记录 */
   private async findStudentByNoForLogin(studentNo: string) {
-    const all = await this.studentRepo.find({ where: { studentNo } })
-    if (!all.length) return null
-    return all.find((s) => s.parentLoginEnabled) || all[0]
+    return findStudentByNoForLogin(this.studentRepo, studentNo)
   }
 
   /** 统一登录：遍历超管→学校管理员→教师→家长，命中即返回 */

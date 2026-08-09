@@ -20,7 +20,7 @@
  * 冷启动入口：在 App.vue 的 onLaunch 中调用 initAuthMachineAuth()（store.js 导出）。
  */
 
-import { createAuthMachine } from '@gardener/shared/auth/factory'
+import { createAuthMachine, createKvPersistence } from '@gardener/shared/auth/factory'
 import { api } from './request'
 
 const TOKEN_KEY = 'g_token'
@@ -34,6 +34,17 @@ const PARENT_USER_KEY = 'g_parent_user'
 const MULTI_ROLE_KEY = '__auth_multi_role__'
 
 // wx 持久化：key 对齐 route-guard.getCurrentRole() 的角色优先级
+// saveLogin/loadLogin/clearLogin 需按角色分 key（对齐 route-guard），保留本地实现；
+// 多角色快照逻辑复用 shared createKvPersistence，避免重复。
+const multiRoleKv = createKvPersistence({
+  get: (k) => (uni.getStorageSync(k) == null || uni.getStorageSync(k) === '' ? null : String(uni.getStorageSync(k))),
+  set: (k, v) => uni.setStorageSync(k, v),
+  remove: (k) => uni.removeStorageSync(k),
+  tokenKey: '', // 本适配器不使用 tokenKey/userKey（saveLogin/loadLogin 走角色分 key 逻辑）
+  userKey: '',
+  multiRoleKey: MULTI_ROLE_KEY,
+})
+
 function makeWxPersistence() {
   return {
     saveLogin(result) {
@@ -94,25 +105,9 @@ function makeWxPersistence() {
       uni.removeStorageSync(MULTI_ROLE_KEY)
       // parent 双身份 key 由 store.logout 清理
     },
-    saveMultiRole(data) {
-      const safe = Object.fromEntries(
-        Object.entries(data).filter(([, v]) => v && v.token),
-      )
-      uni.setStorageSync(MULTI_ROLE_KEY, JSON.stringify(safe))
-    },
-    loadMultiRole() {
-      const raw = uni.getStorageSync(MULTI_ROLE_KEY)
-      if (raw == null || raw === '') return null
-      try {
-        const obj = JSON.parse(raw)
-        return Object.fromEntries(Object.entries(obj).filter(([, v]) => v && v.token))
-      } catch (e) {
-        return null
-      }
-    },
-    clearMultiRole() {
-      uni.removeStorageSync(MULTI_ROLE_KEY)
-    },
+    saveMultiRole: multiRoleKv.saveMultiRole,
+    loadMultiRole: multiRoleKv.loadMultiRole,
+    clearMultiRole: multiRoleKv.clearMultiRole,
   }
 }
 

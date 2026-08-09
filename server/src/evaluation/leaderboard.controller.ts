@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Query, UseGuards, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, In } from 'typeorm'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
@@ -27,13 +27,14 @@ export class LeaderboardController {
     @Query('classId') classId: string,
     @CurrentTeacher() t: any,
   ) {
+    // S07修复：使用 NestJS 异常而非 throw new Error，返回正确的 HTTP 状态码
     if (!classId) {
-      throw new Error('classId 必填')
+      throw new BadRequestException('classId 必填')
     }
     // 校验班级归属
     const cls = await this.classRepo.findOne({ where: { id: classId, teacherId: t.sub } as any })
     if (!cls) {
-      throw new Error('班级不存在或无权访问')
+      throw new ForbiddenException('班级不存在或无权访问')
     }
 
     // 并行查询加分和减分记录

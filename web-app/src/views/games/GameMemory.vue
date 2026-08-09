@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, RefreshCw, Trophy } from 'lucide-vue-next'
-import { shuffle } from '@gardener/shared/utils/game-helpers'
+import { shuffle } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 const emojis = ['🍎', '🍌', '🍇', '🍓', '🍑', '🍒', '🥝', '🍍']

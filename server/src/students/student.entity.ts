@@ -1,6 +1,5 @@
 import { Entity, Column, Index } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
-import { Parent } from '../parent/parent.entity'
 
 @Entity('students')
 export class Student extends BaseEntity {
@@ -8,6 +7,8 @@ export class Student extends BaseEntity {
   @Column() classId: string
   @Column() name: string
   @Column() gender: string
+  // P07修复：添加 studentNo 索引，加速登录查询
+  @Index('idx_stu_no')
   @Column() studentNo: string
   @Column({ type: 'varchar', nullable: true }) birthDate: string | null
   @Column({ type: 'int', default: 0 }) seatNo: number
@@ -20,6 +21,8 @@ export class Student extends BaseEntity {
   @Column({ nullable: true })
   parentId: string
   @Column({ default: '' }) parentNickName: string
+  // fix-8: 添加 parentLoginEnabled 索引，加速家长登录查询
+  @Index('idx_stu_parent_login')
   @Column({ default: false }) parentLoginEnabled: boolean
   @Column({ type: 'varchar', nullable: true }) parentPasswordHash: string | null
   @Column({ type: 'text', nullable: true }) note: string

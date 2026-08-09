@@ -2,7 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
 import { createCanvas } from '@napi-rs/canvas'
 import { ConfigService } from '../config/config.service'
-import { tlsAgent, assertAllowedAiUrl, getPdfjs } from './ai-file-parser.service'
+import { tlsAgent, getPdfjs } from './ai-file-parser.service'
+import { buildAiSettings } from './ai-settings.util'
 
 /**
  * 视觉识别服务：负责图片 OCR、PDF OCR（扫描件光栅化后多模态识别）、
@@ -14,17 +15,9 @@ export class AiVisionService {
     private readonly cfg: ConfigService,
   ) {}
 
-  private async buildSettings(ownerType: string, ownerId: string) {
-    const s = await this.cfg.getAiSettings(ownerType, ownerId)
-    if (!s.apiKey) {
-      throw new BadRequestException('未配置 AI 密钥，请到「后端配置」中填写')
-    }
-    if (!s.baseUrl) {
-      throw new BadRequestException('未配置 AI 接口地址')
-    }
-    // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
-    assertAllowedAiUrl(s.baseUrl)
-    return s
+  // A06修复：委托给共享工具函数
+  private buildSettings(ownerType: string, ownerId: string) {
+    return buildAiSettings(this.cfg, ownerType, ownerId)
   }
 
   /** 对外封装：传入图片 data URL，自动鉴权后调用多模态模型做 OCR 文字识别 */

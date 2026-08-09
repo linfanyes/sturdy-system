@@ -169,6 +169,8 @@ import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getExam, listClasses, getGradesAnalysisExam, getGradesAnalysisRank } from '@/api/teaching'
 import { getWeakStudents } from '@/api/grades'
 import { theme } from '../../common/store'
+import { fmt1, pct, pctNum } from '@gardener/shared/utils/format'
+import { normalizeDistribution, toSubjectNames } from '@gardener/shared/utils/score'
 
 const examId = ref('')
 const classId = ref('')
@@ -192,15 +194,9 @@ const className = computed(() => {
   return c?.name || classId.value || '-'
 })
 
-// weakSubjects / strongSubjects 兼容字符串数组与对象数组两种形式
-function toNames(arr) {
-  if (!Array.isArray(arr)) return []
-  return arr
-    .map((x) => (typeof x === 'string' ? x : x?.subject || x?.name || ''))
-    .filter(Boolean)
-}
-const strongNames = computed(() => toNames(analysis.value?.strongSubjects))
-const weakNames = computed(() => toNames(analysis.value?.weakSubjects))
+// weakSubjects / strongSubjects 兼容字符串数组与对象数组两种形式（复用 shared toSubjectNames）
+const strongNames = computed(() => toSubjectNames(analysis.value?.strongSubjects))
+const weakNames = computed(() => toSubjectNames(analysis.value?.weakSubjects))
 
 const avgPassRate = computed(() => {
   const s = subjects.value
@@ -213,58 +209,10 @@ const avgExcellentRate = computed(() => {
   return s.reduce((a, b) => a + (Number(b.excellentRate) || 0), 0) / s.length
 })
 
-/* ============ 格式化 ============ */
-/** 数字保留 1 位小数，空值返回 - */
-function fmt1(n) {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  return Number(n).toFixed(1)
-}
-/** 小数(0.9) 或 百分数(90) → 百分比字符串，兼容两种格式 */
-function pct(n) {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  const v = Number(n)
-  const p = v > 1 ? v : v * 100
-  return p.toFixed(1) + '%'
-}
-/** 已是百分数数值(如 97.5) → 直接加 % 后缀 */
-function pctNum(n) {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  return Number(n).toFixed(1) + '%'
-}
-
-/* ============ 分数分布归一化：兼容对象 {"0-10":0} 与数组 [{label,count}] ============ */
-function parseLo(label) {
-  const m = String(label).match(/^\s*(\d+)\s*[-~]/)
-  return m ? parseInt(m[1], 10) : null
-}
-function normalizeDist(dist) {
-  if (!dist) return []
-  let arr = []
-  if (Array.isArray(dist)) {
-    arr = dist.map((d, i) => {
-      const o = d && typeof d === 'object' ? d : { count: d }
-      const label = o.label || o.range || o.name || o.key || String(i + 1)
-      const value = Number(o.count != null ? o.count : o.value != null ? o.value : 0) || 0
-      return { label, value, lo: parseLo(label), idx: i }
-    })
-  } else if (typeof dist === 'object') {
-    arr = Object.entries(dist).map(([k, v], i) => ({
-      label: k,
-      value: Number(v) || 0,
-      lo: parseLo(k),
-      idx: i,
-    }))
-  }
-  // 仅当所有标签都是 "X-Y" 数字区间时按低位排序，否则保留原序（后端数组已排好）
-  if (arr.length && arr.every((x) => x.lo !== null)) {
-    arr.sort((a, b) => a.lo - b.lo)
-  }
-  return arr
-}
-
+/* ============ 格式化 / 分布归一化（复用 shared） ============ */
 const curDist = computed(() => {
   const subj = subjects.value.find((s) => s.subject === distSubject.value)
-  return normalizeDist(subj?.distribution)
+  return normalizeDistribution(subj?.distribution)
 })
 
 const distBars = computed(() => {

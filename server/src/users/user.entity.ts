@@ -1,12 +1,23 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm'
+import { Entity, Column } from 'typeorm'
+import { BaseEntity } from '../common/entities/base.entity'
 
 /**
  * 教师（= 租户）账号。微信授权登录后按 openid 自动建档。
+ *
+ * 继承 BaseEntity 统一 id/createdAt/updatedAt 定义。
+ * User 表通过 schoolId 字段实现学校级隔离（非 teacherId），
+ * 故重写 teacherId 为可选字段（不使用 BaseEntity 的 tenant 隔离语义）。
  */
 @Entity('users')
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string
+export class User extends BaseEntity {
+
+  /**
+   * 重写 BaseEntity.teacherId：对 User 实体，
+   * teacherId 不充当 tenant isolation 键（User 表通过 schoolId 隔离），
+   * 保留此字段以兼容 BaseEntity 结构，由应用层按需填充。
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true, comment: '租户键：教师ID（User表不使用此字段隔离数据，保留以兼容BaseEntity）' })
+  teacherId: string
 
   @Column({ unique: true, nullable: true, comment: '微信 openid' })
   openid: string
@@ -85,10 +96,4 @@ export class User {
 
   @Column({ type: 'boolean', default: true, comment: '是否启用（学校管理员控制）' })
   enabled: boolean
-
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date
-
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-  updatedAt: Date
 }

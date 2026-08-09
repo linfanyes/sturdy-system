@@ -9,9 +9,6 @@ import { AiService } from './ai.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
-import { Grade } from '../grades/grade.entity'
-import { Exam } from '../exams/exam.entity'
-import { Student } from '../students/student.entity'
 import { User } from '../users/user.entity'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { getSubjectTool } from '@gardener/shared/schemas/subject-schema'
@@ -30,9 +27,6 @@ const NON_STREAMING_TIMEOUT = 60000
 export class AiController {
   constructor(
     private readonly ai: AiService,
-    @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
-    @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
-    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
@@ -175,62 +169,23 @@ export class AiController {
     return this.withAiTimeout(this.ai.parseFile(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
   }
 
-  /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成分析报告 */
+  /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成分析报告
+   * A01修复：业务逻辑已移到 AiService.analyzeExam，Controller 仅做 HTTP 适配
+   */
   @Post('analyze-exam')
   @UseGuards(JwtAuthGuard)
   async analyzeExam(@Body() b: { examId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    const exam = await this.examRepo.findOne({ where: { id: b.examId } })
-    if (!exam || exam.teacherId !== t.sub) return { content: '考试不存在或无权限' }
-    const grades = await this.gradeRepo.find({ where: { classId: exam.classId }, take: 500 })
-    const byExam = grades.filter(g => g.examId === exam.id || g.examName === exam.name)
-    const lines: string[] = [
-      `考试：${exam.name}（${exam.date}，${exam.term}）`,
-      `科目：${(exam.subjects || []).join('、')}`,
-      `班级人数：用于分析的学生来自该班考试记录`,
-    ]
-    for (const g of byExam) {
-      const scores = (g.scores || []).filter(s => s.score != null).map(s => s.score!)
-      if (!scores.length) continue
-      const total = scores.reduce((a, b) => a + b, 0)
-      const avg = (total / scores.length).toFixed(1)
-      const max = Math.max(...scores)
-      const min = Math.min(...scores)
-      const passCount = scores.filter(v => v >= 60).length
-      lines.push(
-        `${g.subject}：均${avg} / 最高${max} / 最低${min} / 及格${passCount}/${scores.length}人`,
-      )
-    }
-    const prompt = `你是资深教务分析师。请根据以下班级考试成绩数据，生成一份分析报告：
-1) 总体评价
-2) 各学科亮点与薄弱点
-3) 改进建议（具体、可操作）
-\n${lines.join('\n')}`
-    const content = await this.withAiTimeout(this.ai.chatSync('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }))
-    return { content }
+    return this.ai.analyzeExam(b.examId, t.sub)
   }
 
-  /** 学生个体学情 AI 诊断：取该生历次成绩 → 趋势 → 诊断建议 */
+  /** 学生个体学情 AI 诊断：取该生历次成绩 → 趋势 → 诊断建议
+   * A01修复：业务逻辑已移到 AiService.diagnose，Controller 仅做 HTTP 适配
+   */
   @Post('diagnose')
   @UseGuards(JwtAuthGuard)
   async diagnose(@Body() b: { studentId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    const stu = await this.studentRepo.findOne({ where: { id: b.studentId } })
-    if (!stu || stu.teacherId !== t.sub) return { content: '学生不存在或无权限' }
-    const grades = await this.gradeRepo.find({ where: { classId: stu.classId }, take: 500 })
-    const lines: string[] = [`学生：${stu.name}（${stu.gender}）`, `班级：${stu.classId}`]
-    for (const g of grades) {
-      const entry = (g.scores || []).find(s => s.studentId === b.studentId)
-      if (!entry || entry.score == null) continue
-      lines.push(`${g.examName || '测验'} ${g.subject}：${entry.score}分（${g.date}）`)
-    }
-    if (lines.length <= 2) return { content: '该生暂无成绩数据，无法生成诊断报告。' }
-    const prompt = `你是资深教育诊断师。请根据以下学生成绩记录，生成一份学情诊断报告：
-1) 学业趋势（上升/稳定/下滑）
-2) 优势学科与薄弱学科
-3) 针对性提升建议（具体、可操练）
-\n${lines.join('\n')}`
-    const content = await this.withAiTimeout(this.ai.chatSync('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }))
-    return { content }
+    return this.ai.diagnose(b.studentId, t.sub)
   }
 }

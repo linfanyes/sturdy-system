@@ -2,10 +2,14 @@ import { Controller, Get, Post, Body, Query, UseGuards, Param } from '@nestjs/co
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { Feature } from '../common/decorators/feature.decorator'
+import { FeatureGuard } from '../common/feature/feature.guard'
 import { GameScoresService } from './game-scores.service'
 
+// A02修复：添加 @Feature('game') 装饰器，使 game-scores 受功能包开关保护
 @Roles('teacher')
-@UseGuards(JwtAuthGuard)
+@Feature('game')
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('game-scores')
 export class GameScoresController {
   constructor(private readonly svc: GameScoresService) {}

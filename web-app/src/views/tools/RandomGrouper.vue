@@ -11,7 +11,7 @@ import { useClasses } from '@/composables/useClasses'
 import { listClassStudents, type TeacherStudent } from '@/api/teacher'
 import { toast } from '@/utils/feedback'
 import { Users, Shuffle, Download, RefreshCw } from 'lucide-vue-next'
-import { shuffle } from '@gardener/shared/utils/game-helpers'
+import { shuffle } from '@gardener/shared/games/helpers'
 
 const { classes, loadClasses } = useClasses()
 loadClasses()

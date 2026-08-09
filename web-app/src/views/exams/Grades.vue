@@ -6,9 +6,6 @@
  * - 单科文件导入（Excel/TXT/CSV）或 AI 识别导入
  * - 【新增】全部考试科目一起录入（矩阵：行=学生，列=科目），按科目逐科提交
  * - 【新增】全部科目批量导入（矩阵文件：学号,姓名,科目1,科目2…），按科目逐科落库
- *
- * 后端 /grades/import-commit 为单科接口（按 班级+考试+科目 upsert），
- * 因此「整场考试」的录入/导入均在「前端」拆成每科一组分别调用，无需后端改动。
  */
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -16,9 +13,12 @@ import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
-import { listClassStudents, listAllStudents, listExams, listGrades, importGradesPreview, importGradesCommit, importGradesAi, removeGrade, type TeacherStudent } from '@/api/teacher'
-import { Plus, Search, Edit3, Trash2, Upload, Sparkles, Camera, FileSpreadsheet, X, Loader2, User, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
+import { listAllStudents, listExams, listGrades, type TeacherStudent } from '@/api/teacher'
+import { Plus, Search, Upload, Sparkles, Loader2, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
+import GradeEntry from './components/GradeEntry.vue'
+import GradeStatistics from './components/GradeStatistics.vue'
+import ExamList from './components/ExamList.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -29,7 +29,7 @@ const grades = ref<any[]>([])
 const classId = ref('')
 const keyword = ref('')
 
-/** 教师任教学科（用于按学科收敛考试科目与成绩查询） */
+/** 教师任教学科 */
 const teacherSubjects = computed<string[]>(() =>
   getTeacherSubjects(auth.user?.subject as string | undefined, auth.user?.subjects as string[] | undefined),
 )
@@ -39,7 +39,6 @@ const exams = ref<any[]>([])
 const selectedExamId = ref('')
 const selectedSubject = ref('')
 const selectedExam = computed(() => exams.value.find(e => e.id === selectedExamId.value))
-// P5：考试科目仅展示教师任教学科（班主任可见全部，科任老师仅见自己所教科目）
 const examSubjects = computed(() => {
   const subs = selectedExam.value?.subjects || []
   if (teacherSubjects.value.length && teacherSubjects.value.length < 15) {
@@ -83,26 +82,6 @@ watch(classId, loadStudents)
 /* ============ 成绩列表 ============ */
 const pageGrades = ref(0)
 const pageSizeGrades = ref(10)
-const filtered = computed(() => {
-  let list = grades.value
-  if (selectedSubject.value) {
-    list = list.filter(g => g.subject === selectedSubject.value)
-  }
-  if (keyword.value) {
-    const kw = keyword.value.toLowerCase()
-    list = list.filter(g =>
-      g.examName?.toLowerCase().includes(kw) ||
-      g.subject?.toLowerCase().includes(kw),
-    )
-  }
-  return list
-})
-const totalFilteredGrades = computed(() => filtered.value.length)
-const totalPagesGrades = computed(() => Math.max(1, Math.ceil(totalFilteredGrades.value / pageSizeGrades.value)))
-const displayedGrades = computed(() => {
-  const start = pageGrades.value * pageSizeGrades.value
-  return filtered.value.slice(start, start + pageSizeGrades.value)
-})
 
 function resetGradesPage() {
   pageGrades.value = 0
@@ -132,231 +111,34 @@ function className(id: string) {
   return classes.value.find(c => c.id === id)?.name || id
 }
 
-/** 展开某条成绩记录的学生分数明细 */
-function scoreSummary(g: any): string {
-  if (!g.scores?.length) return '暂无'
-  const valid = g.scores.filter((s: any) => s.score != null).map((s: any) => s.score)
-  if (!valid.length) return '暂无'
-  const avg = (valid.reduce((a: number, b: number) => a + b, 0) / valid.length).toFixed(1)
-  return `${valid.length}人 均${avg} 最高${Math.max(...valid)} 最低${Math.min(...valid)}`
+function onStudentDblClick(studentId: string) {
+  router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
 }
 
-/* ============ 单个录入成绩（单科） ============ */
-const showEntryForm = ref(false)
-const entryLoading = ref(false)
-const entryScores = ref<Record<string, string>>({})  // studentId -> score string
-const entryMode = ref<'table' | 'paste'>('table')
-const pasteText = ref('')
-
-/** 录入进度：已填 / 总人数 */
-const entryProgress = computed(() => {
-  const filled = Object.values(entryScores.value).filter(v => v !== '' && v != null).length
-  return { filled, total: students.value.length }
-})
+const gradeEntryRef = ref<InstanceType<typeof GradeEntry> | null>(null)
 
 function openEntry() {
-  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
-  if (!selectedSubject.value) { toast.warning('请先选择科目'); return }
-  // 预填已有成绩
-  entryScores.value = {}
-  entryMode.value = 'table'
-  pasteText.value = ''
-  const existing = grades.value.find(g => g.examName === selectedExam.value?.name && g.subject === selectedSubject.value)
-  if (existing) {
-    for (const s of existing.scores) {
-      entryScores.value[s.studentId] = s.score != null ? String(s.score) : ''
-    }
-  }
-  showEntryForm.value = true
+  gradeEntryRef.value?.openEntry()
 }
-
-/** 解析批量粘贴文本：每行「学号,分数」或「姓名,分数」，自动匹配学生填入 */
-function parsePaste() {
-  if (!pasteText.value.trim()) { toast.warning('请先粘贴成绩内容'); return }
-  const lines = pasteText.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-  let matched = 0
-  let unmatched = 0
-  for (const line of lines) {
-    const parts = line.split(/[,，\t\s]+/).filter(Boolean)
-    if (parts.length < 2) { unmatched++; continue }
-    const key = parts[0].trim()
-    const score = parts[1].trim()
-    // 优先按学号匹配，再按姓名匹配
-    const student = students.value.find(s => s.studentNo === key) || students.value.find(s => s.name === key)
-    if (student) {
-      entryScores.value[student.id] = score
-      matched++
-    } else {
-      unmatched++
-    }
-  }
-  toast.info(`解析完成：匹配 ${matched} 人，未匹配 ${unmatched} 行。可切换到「逐个录入」核对。`)
-}
-
-async function submitEntry() {
-  if (!selectedExam.value || !selectedSubject.value) return
-  entryLoading.value = true
-  try {
-    const scores = students.value.map(s => ({
-      studentId: s.id,
-      score: entryScores.value[s.id] === '' || entryScores.value[s.id] == null ? null : Number(entryScores.value[s.id]),
-    }))
-    await importGradesCommit({
-      classId: classId.value,
-      examName: selectedExam.value.name,
-      examId: selectedExam.value.id,
-      subject: selectedSubject.value,
-      date: selectedExam.value.date || new Date().toISOString().slice(0, 10),
-      rows: scores.map(s => ({
-        studentId: s.studentId,
-        score: s.score,
-        valid: true,
-        name: students.value.find(st => st.id === s.studentId)?.name || '',
-        studentNo: students.value.find(st => st.id === s.studentId)?.studentNo || '',
-      })),
-    })
-    showEntryForm.value = false
-    await loadGrades()
-  } catch (e: any) {
-    toast.error(e?.message || '保存失败')
-  } finally {
-    entryLoading.value = false
-  }
-}
-
-/* ============ 删除 ============ */
-async function handleDelete(g: any) {
-  if (!await confirm(`确定删除「${g.examName} - ${g.subject}」的成绩记录？`)) return
-  try {
-    await removeGrade(g.id)
-    grades.value = grades.value.filter(x => x.id !== g.id)
-  } catch (e: any) {
-    toast.error(e?.message || '删除失败')
-  }
-}
-
-/* ============ 单科批量导入 ============ */
-const showImport = ref(false)
-const importMode = ref<'file' | 'ai'>('file')
-const importLoading = ref(false)
-const importPreview = ref<any[]>([])
-const importStats = ref({ valid: 0, error: 0 })
 
 function openImport(mode: 'file' | 'ai') {
-  if (!classId.value) { toast.warning('请先选择班级'); return }
-  if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
-  if (!selectedSubject.value) { toast.warning('请先选择科目'); return }
-  importMode.value = mode
-  importPreview.value = []
-  importStats.value = { valid: 0, error: 0 }
-  showImport.value = true
-}
-
-/** 下载 CSV 导入模板（含表头 + 当前班级学生预填行） */
-function downloadTemplate() {
-  const header = '学号,姓名,分数'
-  const rows = students.value.length
-    ? students.value.map(s => `${s.studentNo || ''},${s.name || ''},`)
-    : []
-  const csv = '\ufeff' + [header, ...rows].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `成绩导入模板_${selectedSubject.value || '成绩'}.csv`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
-
-async function onPickFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  if (!input.files?.length) return
-  const file = input.files[0]
-  importLoading.value = true
-  try {
-    const dataUrl = await readFileAsBase64(file)
-    let res: any
-    if (importMode.value === 'ai') {
-      res = await importGradesAi({
-        classId: classId.value,
-        mode: file.type.startsWith('image/') ? 'image' : 'file',
-        data: dataUrl,
-        filename: file.name,
-      })
-    } else {
-      res = await importGradesPreview({
-        classId: classId.value,
-        filename: file.name,
-        data: dataUrl,
-      })
-    }
-    importPreview.value = res.rows || []
-    importStats.value = { valid: res.validCount || 0, error: res.errorCount || 0 }
-  } catch (err: any) {
-    toast.error(err?.message || '解析失败')
-  } finally {
-    importLoading.value = false
-    input.value = ''
-  }
-}
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      const base64 = result.split(',')[1] || result
-      resolve(base64)
-    }
-    reader.onerror = () => reject(new Error('文件读取失败'))
-    reader.readAsDataURL(file)
-  })
-}
-
-async function commitImport() {
-  const validRows = importPreview.value.filter(r => r.valid)
-  if (!validRows.length) { toast.warning('没有可导入的有效数据'); return }
-  importLoading.value = true
-  try {
-    await importGradesCommit({
-      classId: classId.value,
-      examName: selectedExam.value?.name || '',
-      examId: selectedExam.value?.id || '',
-      subject: selectedSubject.value,
-      date: selectedExam.value?.date || new Date().toISOString().slice(0, 10),
-      rows: validRows.map(r => ({
-        studentId: r.studentId,
-        score: r.score,
-        valid: true,
-      })),
-    })
-    showImport.value = false
-    await loadGrades()
-  } catch (e: any) {
-    toast.error(e?.message || '导入失败')
-  } finally {
-    importLoading.value = false
-  }
+  gradeEntryRef.value?.openImport(mode)
 }
 
 /* ============ 全部科目一起录入（矩阵） ============ */
 const showMatrixEntry = ref(false)
-const matrixScores = ref<Record<string, string>>({})        // `${studentId}__${subject}` -> score string
-const matrixErrorCells = ref<Set<string>>(new Set())        // 解析出错的单元格
-const matrixUnmatched = ref<string[]>([])                   // 导入时未匹配的学生（行描述）
+const matrixScores = ref<Record<string, string>>({})
+const matrixErrorCells = ref<Set<string>>(new Set())
+const matrixUnmatched = ref<string[]>([])
 const matrixImportFileName = ref('')
 const matrixImportStats = ref({ valid: 0, error: 0 })
 
-/** 矩阵录入进度：已填单元格 / 总单元格 */
 const matrixProgress = computed(() => {
   const total = students.value.length * examSubjects.value.length
   const filled = Object.values(matrixScores.value).filter(v => v !== '' && v != null).length
   return { filled, total }
 })
 
-/** 保证所有 (学生×科目) 单元格都有初始值，便于 v-model 绑定 */
 function ensureMatrixInit() {
   for (const s of students.value) {
     for (const sub of examSubjects.value) {
@@ -366,7 +148,6 @@ function ensureMatrixInit() {
   }
 }
 
-/** 打开矩阵录入：预填已有成绩 */
 function openMatrixEntry() {
   if (!selectedExamId.value) { toast.warning('请先选择考试'); return }
   if (!examSubjects.value.length) { toast.warning('该考试未设置科目，请先在考试设置中添加科目'); return }
@@ -375,7 +156,6 @@ function openMatrixEntry() {
   matrixErrorCells.value = new Set()
   matrixUnmatched.value = []
   matrixImportFileName.value = ''
-  // 预填已有成绩（按 考试+科目 匹配）
   for (const g of grades.value) {
     if (g.examName !== selectedExam.value?.name && g.examId !== selectedExamId.value) continue
     if (!examSubjects.value.includes(g.subject)) continue
@@ -387,10 +167,8 @@ function openMatrixEntry() {
   showMatrixEntry.value = true
 }
 
-/**
- * 提交矩阵：按科目逐科调用 import-commit。
- * 后端按 (班级,考试,科目) upsert，因此逐科提交安全、可重导。
- */
+import { importGradesCommit } from '@/api/teacher'
+
 async function submitMatrix() {
   if (!selectedExam.value) return
   const subjects = examSubjects.value
@@ -438,6 +216,8 @@ async function submitMatrix() {
   }
 }
 
+const entryLoading = ref(false)
+
 /* ============ 全部科目批量导入（矩阵文件） ============ */
 const showMatrixImport = ref(false)
 const matrixImportLoading = ref(false)
@@ -454,7 +234,6 @@ function openMatrixImport() {
   showMatrixImport.value = true
 }
 
-/** 下载矩阵导入模板：表头 学号,姓名,科目1,科目2…（预填学生行） */
 function downloadMatrixTemplate() {
   const subjects = examSubjects.value
   const header = ['学号', '姓名', ...subjects].join(',')
@@ -498,7 +277,6 @@ async function onPickMatrixFile(e: Event) {
   }
 }
 
-/** 解析矩阵文件：行=学生，列=科目（表头需含 学号/姓名 + 与考试科目同名的列） */
 function parseMatrixText(text: string, filename: string) {
   const lines = text.replace(/^﻿/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
   if (lines.length < 2) { toast.warning('文件至少需包含表头行和一行数据'); return }
@@ -554,32 +332,6 @@ function resetMatrixImport() {
   matrixImportFileName.value = ''
   matrixImportStats.value = { valid: 0, error: 0 }
 }
-
-/* ============ 学生成绩矩阵（双击查看学生详情） ============ */
-const studentMatrix = computed(() => {
-  if (!classId.value || !selectedExamId.value || !students.value.length) return []
-  const examGrades = grades.value.filter(g => g.examName === selectedExam.value?.name || g.examId === selectedExamId.value)
-  const subjects = selectedExam.value?.subjects || [...new Set(examGrades.map(g => g.subject))]
-  return students.value.map(st => {
-    const scores: Record<string, number | null> = {}
-    let total = 0
-    let count = 0
-    for (const subj of subjects) {
-      const grade = examGrades.find(g => g.subject === subj)
-      const entry = grade?.scores?.find((s: any) => s.studentId === st.id)
-      scores[subj] = entry?.score ?? null
-      if (entry?.score != null) { total += entry.score; count++ }
-    }
-    return { student: st, scores, total, avg: count > 0 ? total / count : null, subjects }
-  })
-})
-
-const matrixSubjects = computed(() => selectedExam.value?.subjects || [])
-
-function onStudentDblClick(studentId: string) {
-  router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
-}
-
 </script>
 
 <template>
@@ -655,265 +407,44 @@ function onStudentDblClick(studentId: string) {
       </div>
     </div>
 
-    <!-- 列表 -->
-    <div class="table-wrap">
-      <table class="w-full text-sm">
-        <thead class="bg-cream-100 text-cocoa-500 text-left">
-          <tr>
-            <th class="px-4 py-3 font-medium">考试名称</th>
-            <th class="px-4 py-3 font-medium">科目</th>
-            <th class="px-4 py-3 font-medium">班级</th>
-            <th class="px-4 py-3 font-medium">日期</th>
-            <th class="px-4 py-3 font-medium">成绩汇总</th>
-            <th class="px-4 py-3 font-medium text-right">操作</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-cream-100">
-          <tr v-if="loading" class="text-center text-cocoa-400">
-            <td colspan="6" class="py-8">加载中…</td>
-          </tr>
-          <tr v-else-if="!classId" class="text-center text-cocoa-400">
-            <td colspan="6" class="py-8">请先选择班级</td>
-          </tr>
-          <tr v-else-if="totalFilteredGrades === 0" class="text-center text-cocoa-400">
-            <td colspan="6" class="py-8">暂无成绩数据</td>
-          </tr>
-          <tr v-for="g in displayedGrades" :key="g.id" class="hover:bg-cream-50 transition-colors">
-            <td class="px-4 py-3 font-medium text-cocoa-900">{{ g.examName }}</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ g.subject }}</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ className(g.classId) }}</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ g.date || '-' }}</td>
-            <td class="px-4 py-3 text-cocoa-500 text-xs">{{ scoreSummary(g) }}</td>
-            <td class="px-4 py-3 text-right">
-              <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="删除" @click="handleDelete(g)">
-                <Trash2 class="w-4 h-4" />
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- 成绩录入子组件 -->
+    <GradeEntry
+      ref="gradeEntryRef"
+      :class-id="classId"
+      :class-name="className(classId)"
+      :selected-exam="selectedExam"
+      :selected-subject="selectedSubject"
+      :students="students"
+      :exam-subjects="examSubjects"
+      :grades="grades"
+      @reload="loadGrades"
+    />
 
-    <!-- 分页栏 -->
-    <div v-if="totalFilteredGrades > pageSizeGrades" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
-      <span class="text-xs text-cocoa-400">共 {{ totalFilteredGrades }} 条</span>
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
-          :disabled="pageGrades === 0"
-          @click="pageGrades--"
-        >上一页</button>
-        <span class="text-xs text-cocoa-500">第 {{ pageGrades + 1 }}/{{ totalPagesGrades }} 页</span>
-        <button
-          type="button"
-          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
-          :disabled="pageGrades + 1 >= totalPagesGrades"
-          @click="pageGrades++"
-        >下一页</button>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-cocoa-400">每页</span>
-        <select v-model.number="pageSizeGrades" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="pageGrades = 0">
-          <option :value="5">5 条</option>
-          <option :value="10">10 条</option>
-          <option :value="20">20 条</option>
-          <option :value="50">50 条</option>
-        </select>
-      </div>
-    </div>
+    <!-- 考试列表子组件 -->
+    <ExamList
+      :loading="loading"
+      :class-id="classId"
+      :grades="grades"
+      :selected-subject="selectedSubject"
+      :keyword="keyword"
+      :page="pageGrades"
+      :page-size="pageSizeGrades"
+      :class-name="className"
+      @update:page="pageGrades = $event"
+      @update:page-size="pageSizeGrades = $event"
+      @reload="loadGrades"
+    />
 
-    <!-- 学生成绩矩阵（双击查看学生详情） -->
-    <div v-if="classId && selectedExamId && studentMatrix.length" class="bg-surface rounded-2xl p-4 shadow-softer">
-      <div class="flex items-center gap-2 mb-3">
-        <User class="w-4 h-4 text-butter-500" />
-        <h3 class="text-sm font-medium text-cocoa-700">学生成绩（双击行查看详情）</h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-cream-100 text-cocoa-500 text-left">
-            <tr>
-              <th class="px-3 py-2 font-medium">姓名</th>
-              <th v-for="s in matrixSubjects" :key="s" class="px-3 py-2 font-medium text-center">{{ s }}</th>
-              <th class="px-3 py-2 font-medium text-center">总分</th>
-              <th class="px-3 py-2 font-medium text-center">均分</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-cream-100">
-            <tr
-              v-for="row in studentMatrix"
-              :key="row.student.id"
-              class="hover:bg-cream-50 transition-colors cursor-pointer"
-              @dblclick="onStudentDblClick(row.student.id)"
-            >
-              <td class="px-3 py-2 font-medium text-cocoa-900">{{ row.student.name }}</td>
-              <td v-for="s in matrixSubjects" :key="s" class="px-3 py-2 text-center" :class="row.scores[s] == null ? 'text-cocoa-300' : row.scores[s] >= 85 ? 'text-mint-500 font-medium' : row.scores[s] < 60 ? 'text-red-400' : 'text-cocoa-700'">
-                {{ row.scores[s] ?? '缺' }}
-              </td>
-              <td class="px-3 py-2 text-center font-medium text-cocoa-900">{{ row.total || '-' }}</td>
-              <td class="px-3 py-2 text-center text-cocoa-700">{{ row.avg != null ? row.avg.toFixed(1) : '-' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <!-- 成绩统计子组件 -->
+    <GradeStatistics
+      :class-id="classId"
+      :selected-exam="selectedExam"
+      :selected-exam-id="selectedExamId"
+      :students="students"
+      :grades="grades"
+      @student-dbl-click="onStudentDblClick"
+    />
   </div>
-
-  <!-- 单科录入成绩弹窗 -->
-  <Modal v-model="showEntryForm" :title="`录入成绩 · ${selectedExam?.name || ''} · ${selectedSubject}`" width="max-w-2xl">
-    <div class="space-y-3">
-      <div class="text-sm text-cocoa-400 bg-cream-50 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
-        <span>班级：{{ className(classId) }} · 共 {{ students.length }} 名学生。留空表示缺考。</span>
-        <span class="text-xs whitespace-nowrap">
-          已填 <span class="text-butter-500 font-medium">{{ entryProgress.filled }}</span> / {{ entryProgress.total }} 人
-        </span>
-      </div>
-
-      <!-- 录入模式切换 -->
-      <div class="flex items-center gap-2">
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          :class="entryMode === 'table' ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-500 hover:bg-cream-200'"
-          @click="entryMode = 'table'"
-        >逐个录入</button>
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          :class="entryMode === 'paste' ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-500 hover:bg-cream-200'"
-          @click="entryMode = 'paste'"
-        >批量粘贴</button>
-      </div>
-
-      <!-- 批量粘贴模式 -->
-      <div v-if="entryMode === 'paste'" class="space-y-2">
-        <div class="text-xs text-cocoa-400 leading-relaxed">
-          每行一条，格式：「学号,分数」或「姓名,分数」（支持逗号、Tab、空格分隔）。点击「解析填充」自动匹配学生填入分数。
-        </div>
-        <textarea
-          v-model="pasteText"
-          rows="8"
-          class="w-full px-3 py-2 text-sm rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400 font-mono"
-          placeholder="例如：&#10;20240001,95&#10;张三,88&#10;20240003,76"
-        />
-        <div class="flex items-center gap-2 flex-wrap">
-          <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30"
-            @click="parsePaste"
-          >
-            <ClipboardPaste class="w-4 h-4" /> 解析填充
-          </button>
-          <button
-            class="px-3 py-1.5 rounded-lg text-cocoa-400 text-sm hover:bg-cream-100"
-            @click="pasteText = ''"
-          >清空</button>
-          <span class="text-xs text-cocoa-400">解析后可切换到「逐个录入」核对</span>
-        </div>
-      </div>
-
-      <!-- 逐个录入模式 -->
-      <div v-if="entryMode === 'table'" class="max-h-96 overflow-y-auto space-y-1">
-        <div v-for="s in students" :key="s.id" class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-cream-50">
-          <span class="flex-1 text-sm text-cocoa-900">{{ s.name }}</span>
-          <span class="text-xs text-cocoa-400 w-20">{{ s.studentNo || '-' }}</span>
-          <input
-            v-model="entryScores[s.id]"
-            type="number"
-            step="0.5"
-            class="w-20 px-2 py-1 text-sm rounded-lg border border-cream-200 focus:outline-none focus:border-butter-400"
-            placeholder="分数"
-          />
-        </div>
-      </div>
-    </div>
-    <template #footer>
-      <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showEntryForm = false">取消</button>
-      <button class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60" :disabled="entryLoading" @click="submitEntry">
-        {{ entryLoading ? '保存中…' : '保存' }}
-      </button>
-    </template>
-  </Modal>
-
-  <!-- 单科导入弹窗 -->
-  <Modal v-model="showImport" :title="importMode === 'ai' ? 'AI 识别导入成绩' : '文件导入成绩'" width="max-w-2xl">
-    <div class="space-y-3">
-      <div class="text-sm text-cocoa-400 bg-cream-50 rounded-xl px-3 py-2">
-        考试：{{ selectedExam?.name }} · 科目：{{ selectedSubject }} · 班级：{{ className(classId) }}
-      </div>
-
-      <!-- 文件选择 -->
-      <div v-if="!importPreview.length" class="border-2 border-dashed border-cream-300 rounded-xl p-8 text-center">
-        <div class="flex items-center justify-center gap-3 mb-2">
-          <component :is="importMode === 'ai' ? Sparkles : FileSpreadsheet" class="w-8 h-8 text-butter-500" />
-        </div>
-        <div class="text-sm text-cocoa-500 mb-3">
-          {{ importMode === 'ai' ? '支持成绩单图片（OCR识别）或 Excel/CSV 文件（AI结构化解析）' : '支持 Excel(.xlsx/.xls) 和 TXT/CSV 文件，格式：姓名/学号 + 分数' }}
-        </div>
-        <div class="flex items-center justify-center gap-2 flex-wrap">
-          <label class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 cursor-pointer">
-            <Upload class="w-4 h-4" />
-            {{ importMode === 'ai' ? '选择文件识别' : '选择文件导入' }}
-            <input type="file" class="hidden" accept=".xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg" @change="onPickFile" />
-          </label>
-          <button
-            v-if="importMode !== 'ai'"
-            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-mint-100 text-mint-500 text-sm font-medium hover:bg-mint-300/30"
-            @click="downloadTemplate"
-          >
-            <Download class="w-4 h-4" /> 下载模板
-          </button>
-        </div>
-        <div v-if="importLoading" class="mt-3 text-sm text-butter-500 flex items-center justify-center gap-1">
-          <Loader2 class="w-4 h-4 animate-spin" /> {{ importMode === 'ai' ? 'AI 识别中…' : '解析中…' }}
-        </div>
-      </div>
-
-      <!-- 预览 -->
-      <div v-else>
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-sm text-cocoa-500">
-            共 {{ importPreview.length }} 条 ·
-            <span class="text-mint-500">有效 {{ importStats.valid }}</span> ·
-            <span class="text-red-500">错误 {{ importStats.error }}</span>
-          </div>
-          <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="importPreview = []">重新选择</button>
-        </div>
-        <div class="max-h-72 overflow-auto border border-cream-200 rounded-xl">
-          <table class="w-full text-sm">
-            <thead class="bg-cream-100 text-cocoa-500 text-left sticky top-0">
-              <tr>
-                <th class="px-3 py-2 font-medium">行</th>
-                <th class="px-3 py-2 font-medium">姓名</th>
-                <th class="px-3 py-2 font-medium">学号</th>
-                <th class="px-3 py-2 font-medium">分数</th>
-                <th class="px-3 py-2 font-medium">状态</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-cream-100">
-              <tr v-for="r in importPreview" :key="r.line" :class="r.valid ? '' : 'bg-red-50/40'">
-                <td class="px-3 py-1.5 text-cocoa-400">{{ r.line }}</td>
-                <td class="px-3 py-1.5 text-cocoa-900">{{ r.name }}</td>
-                <td class="px-3 py-1.5 text-cocoa-500">{{ r.studentNo || '-' }}</td>
-                <td class="px-3 py-1.5 text-cocoa-700">{{ r.score ?? '缺考' }}</td>
-                <td class="px-3 py-1.5 text-xs" :class="r.valid ? 'text-mint-500' : 'text-red-500'">
-                  {{ r.valid ? '有效' : r.error }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <template #footer>
-      <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showImport = false">取消</button>
-      <button
-        v-if="importPreview.length"
-        class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-        :disabled="importLoading || !importStats.valid"
-        @click="commitImport"
-      >
-        {{ importLoading ? '导入中…' : `导入 ${importStats.valid} 条` }}
-      </button>
-    </template>
-  </Modal>
 
   <!-- 全部科目录入（矩阵）弹窗 -->
   <Modal v-model="showMatrixEntry" :title="`全部科目录入 · ${selectedExam?.name || ''}`" width="max-w-5xl">
@@ -924,7 +455,6 @@ function onStudentDblClick(studentId: string) {
           已填 <span class="text-butter-500 font-medium">{{ matrixProgress.filled }}</span> / {{ matrixProgress.total }} 格
         </span>
       </div>
-
       <div class="overflow-auto max-h-[60vh] border border-cream-200 rounded-xl">
         <table class="w-full text-sm border-collapse">
           <thead class="sticky top-0 z-10 bg-cream-100 text-cocoa-500">
@@ -957,7 +487,6 @@ function onStudentDblClick(studentId: string) {
           </tbody>
         </table>
       </div>
-
       <p v-if="matrixUnmatched.length" class="text-xs text-red-500">
         未匹配学生（将不会被导入）：{{ matrixUnmatched.slice(0, 5).join('；') }}{{ matrixUnmatched.length > 5 ? ' …' : '' }}
       </p>
@@ -980,8 +509,6 @@ function onStudentDblClick(studentId: string) {
       <div class="text-sm text-cocoa-400 bg-cream-50 rounded-xl px-3 py-2">
         考试：{{ selectedExam?.name }} · 班级：{{ className(classId) }} · 科目：{{ examSubjects.join('、') }}
       </div>
-
-      <!-- 文件选择 -->
       <div v-if="!matrixImportFileName" class="border-2 border-dashed border-cream-300 rounded-xl p-8 text-center">
         <div class="flex items-center justify-center gap-3 mb-2">
           <Table2 class="w-8 h-8 text-indigo-500" />
@@ -1006,8 +533,6 @@ function onStudentDblClick(studentId: string) {
           <Loader2 class="w-4 h-4 animate-spin" /> 解析中…
         </div>
       </div>
-
-      <!-- 解析后预览（可编辑修正） -->
       <div v-else>
         <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
           <div class="text-sm text-cocoa-500">
@@ -1017,11 +542,9 @@ function onStudentDblClick(studentId: string) {
           </div>
           <button class="text-xs text-cocoa-400 hover:text-butter-500" @click="resetMatrixImport">重新选择</button>
         </div>
-
         <p v-if="matrixUnmatched.length" class="text-xs text-red-500 mb-2">
           未匹配学生（不导入）：{{ matrixUnmatched.slice(0, 5).join('；') }}{{ matrixUnmatched.length > 5 ? ' …' : '' }}
         </p>
-
         <div class="overflow-auto max-h-[55vh] border border-cream-200 rounded-xl">
           <table class="w-full text-sm border-collapse">
             <thead class="sticky top-0 z-10 bg-cream-100 text-cocoa-500">

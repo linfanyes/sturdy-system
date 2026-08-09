@@ -1,16 +1,26 @@
 import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query, Res, BadRequestException } from '@nestjs/common'
 import { SchoolAdminService } from './school-admin.service'
+import { TeacherMgmtService } from './teacher-mgmt.service'
+import { ClassMgmtService } from './class-mgmt.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentSchoolAdmin } from './current-school-admin.decorator'
+import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 import {
   CreateTeacherDto, BatchCreateTeachersDto, CreateClassDto, CreateNoticeDto, UpdateStudentDto,
 } from './dto/school-admin.dto'
 
+// S01修复：学校管理员登录限流 10次/分钟/IP，防止暴力破解（与超管登录、教师登录同等级别防护）
+const SchoolAdminLoginRateLimit = createRateLimitGuard(60_000, 10)
+
 @Controller('school-admin')
 @Roles('school_admin')
 export class SchoolAdminController {
-  constructor(private readonly svc: SchoolAdminService) {}
+  constructor(
+    private readonly svc: SchoolAdminService,
+    private readonly teacherSvc: TeacherMgmtService,
+    private readonly classSvc: ClassMgmtService,
+  ) {}
 
   /** D9 修复：校验 base64 文件数据的合法性，非法数据直接 400（避免解析出乱码行） */
   private assertValidBase64(data: string) {
@@ -19,6 +29,7 @@ export class SchoolAdminController {
   }
 
   @Post('login')
+  @UseGuards(SchoolAdminLoginRateLimit)
   login(@Body() b: { username?: string; password?: string }) {
     return this.svc.login(b?.username || '', b?.password || '')
   }
@@ -39,20 +50,22 @@ export class SchoolAdminController {
     return this.svc.updateSchoolFeatures(a.schoolId, b.featureFlags ?? null)
   }
 
+  // ===== 教师管理（委托 TeacherMgmtService）=====
+
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
   listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200)
+    return this.teacherSvc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200)
   }
 
   @Post('teachers')
   @UseGuards(JwtAuthGuard)
-  createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: CreateTeacherDto) { return this.svc.createTeacher(a.schoolId, b) }
+  createTeacher(@CurrentSchoolAdmin() a: any, @Body() b: CreateTeacherDto) { return this.teacherSvc.createTeacher(a.schoolId, b) }
 
   @Post('teachers/batch')
   @UseGuards(JwtAuthGuard)
   batchCreateTeachers(@CurrentSchoolAdmin() a: any, @Body() b: BatchCreateTeachersDto) {
-    return this.svc.batchCreateTeachers(a.schoolId, b.teachers || [])
+    return this.teacherSvc.batchCreateTeachers(a.schoolId, b.teachers || [])
   }
 
   /** 从 CSV/Excel/JSON 文件导入教师（列：姓名,性别,学科,手机号） */
@@ -60,10 +73,10 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    const { rows } = await this.svc.parseTeacherFile(b.filename, b.data)
+    const { rows } = await this.teacherSvc.parseTeacherFile(b.filename, b.data)
     const valid = rows.filter((r) => r.valid).map((r) => ({ name: r.name, gender: r.gender, subject: r.subject, phone: r.phone }))
     if (!valid.length) throw new BadRequestException('文件中无有效教师数据')
-    return this.svc.batchCreateTeachers(a.schoolId, valid)
+    return this.teacherSvc.batchCreateTeachers(a.schoolId, valid)
   }
 
   /** 教师文件预览：解析并校验，返回明细（含错误行） */
@@ -72,7 +85,7 @@ export class SchoolAdminController {
   async importTeachersPreview(@Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
     this.assertValidBase64(b.data)
-    return await this.svc.parseTeacherFile(b.filename, b.data)
+    return await this.teacherSvc.parseTeacherFile(b.filename, b.data)
   }
 
   /** 教师文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
@@ -80,75 +93,75 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importTeachersAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return await this.svc.aiRecognizeTeachers(a.sub, b.filename, b.data)
+    return await this.teacherSvc.aiRecognizeTeachers(a.sub, b.filename, b.data)
   }
 
   @Patch('teachers/:id')
   @UseGuards(JwtAuthGuard)
   updateTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
-    return this.svc.updateTeacher(a.schoolId, id, b)
+    return this.teacherSvc.updateTeacher(a.schoolId, id, b)
   }
 
   @Patch('teachers/:id/features')
   @UseGuards(JwtAuthGuard)
   updateFeatures(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: { features?: string[] }) {
-    return this.svc.updateTeacherFeatures(a.schoolId, id, b?.features || [])
+    return this.teacherSvc.updateTeacherFeatures(a.schoolId, id, b?.features || [])
   }
 
   @Post('teachers/:id/reset-password')
   @UseGuards(JwtAuthGuard)
   resetPassword(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
-    return this.svc.resetPassword(a.schoolId, id, b?.password || '')
+    return this.teacherSvc.resetPassword(a.schoolId, id, b?.password || '')
   }
 
   @Delete('teachers/:id')
   @UseGuards(JwtAuthGuard)
-  deleteTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteTeacher(a.schoolId, id) }
+  deleteTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.teacherSvc.deleteTeacher(a.schoolId, id) }
 
   @Post('teachers/deactivate-all')
   @UseGuards(JwtAuthGuard)
-  deactivateAllTeachers(@CurrentSchoolAdmin() a: any) { return this.svc.deactivateAllTeachers(a.schoolId) }
+  deactivateAllTeachers(@CurrentSchoolAdmin() a: any) { return this.teacherSvc.deactivateAllTeachers(a.schoolId) }
 
   @Get('parent-logins')
   @UseGuards(JwtAuthGuard)
-  parentLogins(@CurrentSchoolAdmin() a: any) { return this.svc.listParentLogins(a.schoolId) }
+  parentLogins(@CurrentSchoolAdmin() a: any) { return this.teacherSvc.listParentLogins(a.schoolId) }
 
-  // ===== 班级管理 =====
+  // ===== 班级管理（委托 ClassMgmtService）=====
 
   @Get('classes')
   @UseGuards(JwtAuthGuard)
-  listClasses(@CurrentSchoolAdmin() a: any) { return this.svc.listClasses(a.schoolId) }
+  listClasses(@CurrentSchoolAdmin() a: any) { return this.classSvc.listClasses(a.schoolId) }
 
   @Get('classes/:id')
   @UseGuards(JwtAuthGuard)
-  getClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.getClass(a.schoolId, id) }
+  getClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.classSvc.getClass(a.schoolId, id) }
 
   @Post('classes')
   @UseGuards(JwtAuthGuard)
-  createClass(@CurrentSchoolAdmin() a: any, @Body() b: CreateClassDto) { return this.svc.createClass(a.schoolId, b) }
+  createClass(@CurrentSchoolAdmin() a: any, @Body() b: CreateClassDto) { return this.classSvc.createClass(a.schoolId, b) }
 
   @Patch('classes/:id')
   @UseGuards(JwtAuthGuard)
   updateClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
-    return this.svc.updateClass(a.schoolId, id, b)
+    return this.classSvc.updateClass(a.schoolId, id, b)
   }
 
   @Delete('classes/:id')
   @UseGuards(JwtAuthGuard)
-  deleteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.svc.deleteClass(a.schoolId, id) }
+  deleteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string) { return this.classSvc.deleteClass(a.schoolId, id) }
 
   /** 班级升级：三年级一班 → 四年级一班（年级+1，名称自动更新，学生和班主任保留） */
   @Post('classes/:id/promote')
   @UseGuards(JwtAuthGuard)
   promoteClass(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: { targetGrade?: string }) {
-    return this.svc.promoteClass(a.schoolId, id, b?.targetGrade)
+    return this.classSvc.promoteClass(a.schoolId, id, b?.targetGrade)
   }
 
   /** 批量创建班级（接收 classes 数组，逐条按班主任姓名解析为本校教师） */
   @Post('classes/batch')
   @UseGuards(JwtAuthGuard)
   batchCreateClasses(@CurrentSchoolAdmin() a: any, @Body() b: { classes: any[] }) {
-    return this.svc.batchCreateClasses(a.schoolId, b?.classes || [])
+    return this.classSvc.batchCreateClasses(a.schoolId, b?.classes || [])
   }
 
   /** 从 CSV/Excel/JSON 文件导入班级（列：班级名称,年级,班级序号,班主任姓名,学期） */
@@ -159,10 +172,10 @@ export class SchoolAdminController {
     @Body() b: { filename?: string; data?: string },
   ) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    const { rows } = await this.svc.parseClassFile(b.filename, b.data)
+    const { rows } = await this.classSvc.parseClassFile(b.filename, b.data)
     const valid = rows.filter((r) => r.valid).map((r) => ({ name: r.name, grade: r.grade, classNo: r.classNo, headTeacher: r.headTeacher, term: r.term }))
     if (!valid.length) throw new BadRequestException('文件中无有效班级数据')
-    return this.svc.batchCreateClasses(a.schoolId, valid)
+    return this.classSvc.batchCreateClasses(a.schoolId, valid)
   }
 
   /** 班级文件预览：解析并校验，返回明细（含错误行） */
@@ -170,7 +183,7 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importClassesPreview(@Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return await this.svc.parseClassFile(b.filename, b.data)
+    return await this.classSvc.parseClassFile(b.filename, b.data)
   }
 
   /** 班级文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
@@ -178,7 +191,7 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importClassesAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return await this.svc.aiRecognizeClasses(a.sub, b.filename, b.data)
+    return await this.classSvc.aiRecognizeClasses(a.sub, b.filename, b.data)
   }
 
   // ===== 学校公告 =====
@@ -204,9 +217,23 @@ export class SchoolAdminController {
   ) { return this.svc.updateSchoolNotice(a.schoolId, id, b) }
 
   // ===== 学生管理 =====
+
+  /** 全校学生列表（委托 ClassMgmtService；支持 skip/take 分页与可选 classId 过滤） */
   @Get('students')
   @UseGuards(JwtAuthGuard)
-  listStudents(@CurrentSchoolAdmin() a: any) { return this.svc.listSchoolStudents(a.schoolId) }
+  listStudents(
+    @CurrentSchoolAdmin() a: any,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('classId') classId?: string,
+  ) {
+    return this.classSvc.listSchoolStudents(
+      a.schoolId,
+      Number(skip) || 0,
+      Number(take) || 500,
+      classId || undefined,
+    )
+  }
 
   @Patch('students/:id')
   @UseGuards(JwtAuthGuard)
@@ -268,10 +295,11 @@ export class SchoolAdminController {
   }
 
   // ===== 数据导出 =====
+
   @Get('export/teachers')
   @UseGuards(JwtAuthGuard)
   async exportTeachers(@CurrentSchoolAdmin() a: any, @Res() res: any) {
-    const data = await this.svc.exportTeachers(a.schoolId)
+    const data = await this.teacherSvc.exportTeachers(a.schoolId)
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=teachers.csv')
     res.send('\uFEFF' + data)
@@ -291,7 +319,7 @@ export class SchoolAdminController {
   @Get('export/teachers-xls')
   @UseGuards(JwtAuthGuard)
   async exportTeachersXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
-    const buf = await this.svc.exportTeachersXls(a.schoolId)
+    const buf = await this.teacherSvc.exportTeachersXls(a.schoolId)
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename=teachers.xlsx')
     res.send(buf)
@@ -309,7 +337,7 @@ export class SchoolAdminController {
   @Get('export/classes-xls')
   @UseGuards(JwtAuthGuard)
   async exportClassesXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
-    const buf = await this.svc.exportClassesXls(a.schoolId)
+    const buf = await this.classSvc.exportClassesXls(a.schoolId)
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename=classes.xlsx')
     res.send(buf)

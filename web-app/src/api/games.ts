@@ -4,7 +4,7 @@ import {
   type GameScoreRecord,
   GAME_SCORES_PATHS,
 } from '@gardener/shared/api/endpoints'
-import { gameNameByKey, GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/utils/game-mappings'
+import { gameNameByKey, GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/games/mappings'
 
 export type { GameScoreSubmitDTO, GameScoreRecord }
 
@@ -82,5 +82,5 @@ export function installGameScoreReporter() {
 }
 
 // 向后兼容：保留 NAME_BY_KEY 别名（老代码可能 import { NAME_BY_KEY }）
-/** @deprecated 请直接从 @gardener/shared/utils/game-mappings 导入 GAME_KEY_TO_NAME */
+/** @deprecated 请直接从 @gardener/shared/games/mappings 导入 GAME_KEY_TO_NAME */
 export const NAME_BY_KEY: Record<string, string> = GAME_KEY_TO_NAME

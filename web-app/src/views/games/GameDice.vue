@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Gamepad2, Flame, Trophy } from 'lucide-vue-next'
-import { rand } from '@gardener/shared/utils/game-helpers'
+import { rand } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 

@@ -17,12 +17,13 @@ import { AuthModule } from '../auth/auth.module'
 import { StudentInfoUpdateModule } from '../student-info-update/student-info-update.module'
 import { StudentParentModule } from '../student-parent/student-parent.module'
 import { ParentAuthService } from './parent-auth.service'
+import { ParentQueryService } from './parent-query.service'
 import { ParentAuthController } from './parent-auth.controller'
 
 @Module({
   imports: [TypeOrmModule.forFeature([ParentContact, Student, User, Notice, Homework, ScheduleItem, Grade, Exam, ClassItem, Checkin, BehaviorRecord, DutyRoster, Parent, ClassMember]), ImModule, AuthModule, StudentInfoUpdateModule, StudentParentModule],
-  providers: [ParentAuthService],
+  providers: [ParentAuthService, ParentQueryService],
   controllers: [ParentAuthController],
-  exports: [ParentAuthService],
+  exports: [ParentAuthService, ParentQueryService],
 })
 export class ParentAuthModule {}

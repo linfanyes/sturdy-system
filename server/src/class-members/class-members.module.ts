@@ -18,15 +18,44 @@ import { ClassMember } from './class-member.entity'
 export class ClassMemberService {
   constructor(@InjectRepository(ClassMember) private readonly repo: Repository<ClassMember>) {}
 
+  /** 热路径缓存：30 秒 TTL 的进程内 Map 缓存（getClassIdsByTeacher / canAccess / getRole 每次 CRUD 请求都会调用） */
+  private readonly _hotCache = new Map<string, { ts: number; value: unknown }>()
+  private readonly HOT_CACHE_TTL = 30 * 1000 // 30 秒
+
+  /** 带热路径缓存的读取，key 格式区分方法与参数 */
+  private _hotGet<T>(key: string): T | undefined {
+    const hit = this._hotCache.get(key)
+    if (hit && Date.now() - hit.ts < this.HOT_CACHE_TTL) return hit.value as T
+    return undefined
+  }
+
+  private _hotSet<T>(key: string, value: T): void {
+    this._hotCache.set(key, { ts: Date.now(), value })
+  }
+
+  /** 当成员关系发生变更时，清除相关缓存 */
+  private _hotInvalidate(teacherId: string, classId?: string): void {
+    for (const key of this._hotCache.keys()) {
+      if (key.includes(`:${teacherId}:`) || (classId && key.includes(`:${classId}:`))) {
+        this._hotCache.delete(key)
+      }
+    }
+  }
+
   /**
    * 查询某教师参与的所有班级 id（含班主任 + 科任老师）。
    * @param term 可选，传则按学期过滤，不传返回所有学期（兼容旧前端）
    */
   async getClassIdsByTeacher(teacherId: string, term?: string): Promise<string[]> {
+    const cacheKey = `classes:${teacherId}:${term ?? '*'}`
+    const cached = this._hotGet<string[]>(cacheKey)
+    if (cached) return cached
     const where: any = { teacherId }
     if (term !== undefined) where.term = term
     const rows = await this.repo.find({ where, select: ['classId'] })
-    return [...new Set(rows.map(r => r.classId))]
+    const result = [...new Set(rows.map(r => r.classId))]
+    this._hotSet(cacheKey, result)
+    return result
   }
 
   /**
@@ -34,10 +63,15 @@ export class ClassMemberService {
    * @param term 可选，传则按学期过滤；不传返回最近一条记录的 role
    */
   async getRole(teacherId: string, classId: string, term?: string): Promise<string | null> {
+    const cacheKey = `role:${teacherId}:${classId}:${term ?? '*'}`
+    const cached = this._hotGet<string | null>(cacheKey)
+    if (cached !== undefined) return cached
     const where: any = { teacherId, classId }
     if (term !== undefined) where.term = term
     const row = await this.repo.findOne({ where, order: { createdAt: 'DESC' } })
-    return row?.role || null
+    const result = row?.role || null
+    this._hotSet(cacheKey, result)
+    return result
   }
 
   /**
@@ -45,10 +79,15 @@ export class ClassMemberService {
    * @param term 可选，传则按学期过滤；不传则只要有任一学期记录即可访问（兼容旧前端）
    */
   async canAccess(teacherId: string, classId: string, term?: string): Promise<boolean> {
+    const cacheKey = `access:${teacherId}:${classId}:${term ?? '*'}`
+    const cached = this._hotGet<boolean>(cacheKey)
+    if (cached !== undefined) return cached
     const where: any = { teacherId, classId }
     if (term !== undefined) where.term = term
     const count = await this.repo.count({ where })
-    return count > 0
+    const result = count > 0
+    this._hotSet(cacheKey, result)
+    return result
   }
 
   /**
@@ -114,11 +153,15 @@ export class ClassMemberService {
       existing.role = 'head'
       existing.className = className
       if (subjects.length) existing.subjects = subjects
-      return this.repo.save(existing)
+      const result = await this.repo.save(existing)
+      this._hotInvalidate(teacherId, classId)
+      return result
     }
-    return this.repo.save(this.repo.create({
+    const result = await this.repo.save(this.repo.create({
       teacherId, classId, className, role: 'head', subjects, term,
     }))
+    this._hotInvalidate(teacherId, classId)
+    return result
   }
 
   /** 校管/班主任把科任老师加入班级（按学期隔离） */
@@ -127,11 +170,15 @@ export class ClassMemberService {
     if (existing) {
       existing.role = existing.role === 'head' ? 'head' : 'subject'
       existing.subjects = subjects
-      return this.repo.save(existing)
+      const result = await this.repo.save(existing)
+      this._hotInvalidate(teacherId, classId)
+      return result
     }
-    return this.repo.save(this.repo.create({
+    const result = await this.repo.save(this.repo.create({
       teacherId, classId, className, role: 'subject', subjects, term,
     }))
+    this._hotInvalidate(teacherId, classId)
+    return result
   }
 
   /** 教师更新自己在某班级的任教学科（班主任可兼任本班科任） */
@@ -139,13 +186,18 @@ export class ClassMemberService {
     const row = await this.repo.findOne({ where: { teacherId, classId, term } })
     if (!row) throw new NotFoundException('您不是该班级成员，无法更新任教学科')
     row.subjects = subjects
-    return this.repo.save(row)
+    const result = await this.repo.save(row)
+    this._hotInvalidate(teacherId, classId)
+    return result
   }
 
   /** 教师离开班级（按学期） */
   async removeMember(teacherId: string, classId: string, term: string) {
     const row = await this.repo.findOne({ where: { teacherId, classId, term } })
-    if (row) await this.repo.remove(row)
+    if (row) {
+      await this.repo.remove(row)
+      this._hotInvalidate(teacherId, classId)
+    }
   }
 
   /** 查询某班级所有成员（可按学期过滤） */

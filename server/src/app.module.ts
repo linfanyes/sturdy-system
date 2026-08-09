@@ -58,6 +58,7 @@ import { ChatHistoryModule } from './chat-history/chat-history.module'
 import { MonitorModule } from './monitor/monitor.module'
 import { MathMistakesModule } from './math-mistakes/math-mistakes.module'
 import { HealthController } from './health.controller'
+import { AnalysisModule } from './analysis/analysis.module'
 
 @Module({
   imports: [
@@ -84,7 +85,8 @@ import { HealthController } from './health.controller'
           // 公网连接腾讯云数据库时可开启 SSL（内网/VPC 一般无需）
           ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
           extra: {
-            connectionLimit: 10,
+            // fix-7: 连接池上限从 10 提升到 20，适应微信云托管多实例并发
+            connectionLimit: 20,
             // 初始 TCP/TLS 握手 5 秒不成就放弃，避免挂死
             connectTimeout: 5000,
             // 业务连接不开启 multipleStatements，缩小 SQL 注入单点风险面；
@@ -166,6 +168,7 @@ import { HealthController } from './health.controller'
     OnlineResourcesModule,
     FeatureModule,
     CacheModule,
+    AnalysisModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

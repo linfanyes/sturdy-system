@@ -19,34 +19,37 @@
       <text class="tcount">共 {{ shown.length }} 人</text>
     </view>
 
-    <view class="list">
+    <scroll-view scroll-y class="list-scroll" :scroll-top="scrollTop" lower-threshold="150" @scrolltolower="loadMore">
       <Skeleton v-if="loading" :rows="4" />
-      <view v-else v-for="s in shown" :key="s.id" class="item" :class="batchMode && 'selectable'" @click="batchMode ? toggleSel(s) : openProfile(s)">
-        <view v-if="batchMode" class="check" :class="selected.has(s.id) && 'on'">✓</view>
-        <view class="top">
-          <text class="name">{{ s.name }}</text>
-          <text class="no">学号 {{ s.studentNo || '—' }}</text>
-          <text class="auth-badge" :class="s.parentLoginEnabled && 'on'">{{ s.parentLoginEnabled ? '家长已授权' : '未授权' }}</text>
+      <block v-else>
+        <view v-for="s in shown" :key="s.id" class="item" :class="batchMode && 'selectable'" @click="batchMode ? toggleSel(s) : openProfile(s)">
+          <view v-if="batchMode" class="check" :class="selected.has(s.id) && 'on'">✓</view>
+          <view class="top">
+            <text class="name">{{ s.name }}</text>
+            <text class="no">学号 {{ s.studentNo || '—' }}</text>
+            <text class="auth-badge" :class="s.parentLoginEnabled && 'on'">{{ s.parentLoginEnabled ? '家长已授权' : '未授权' }}</text>
+          </view>
+          <view class="meta">
+            <text>{{ s.gender }}</text>
+            <text v-if="s.duty" class="duty">· {{ s.duty }}</text>
+            <text v-if="s.seatRow" class="seat">· 座号{{ s.seatNo || '—' }}（第{{ s.seatRow }}行第{{ s.seatCol }}列）</text>
+            <text v-else class="seat">· 未排座</text>
+          </view>
+          <view class="tags" v-if="s.tags && s.tags.length">
+            <text v-for="t in s.tags" :key="t" class="tag">{{ t }}</text>
+          </view>
+          <view class="row-acts" v-if="s.parentPhone || s.parentLoginEnabled || !batchMode">
+            <text v-if="s.parentPhone" class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
+            <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
+            <text v-if="!batchMode" class="dial del" @click.stop="deleteOne(s)">🗑 删除</text>
+          </view>
+          <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
         </view>
-        <view class="meta">
-          <text>{{ s.gender }}</text>
-          <text v-if="s.duty" class="duty">· {{ s.duty }}</text>
-          <text v-if="s.seatRow" class="seat">· 座号{{ s.seatNo || '—' }}（第{{ s.seatRow }}行第{{ s.seatCol }}列）</text>
-          <text v-else class="seat">· 未排座</text>
-        </view>
-        <view class="tags" v-if="s.tags && s.tags.length">
-          <text v-for="t in s.tags" :key="t" class="tag">{{ t }}</text>
-        </view>
-        <view class="row-acts" v-if="s.parentPhone || s.parentLoginEnabled || !batchMode">
-          <text v-if="s.parentPhone" class="dial" @click.stop="dial(s.parentPhone)">📞 拨号家长</text>
-          <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
-          <text v-if="!batchMode" class="dial del" @click.stop="deleteOne(s)">🗑 删除</text>
-        </view>
-        <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
-      </view>
+      </block>
       <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
-      <view v-if="!loading && hasMore" class="load-more" @click="loadMore">加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
-    </view>
+      <view v-if="!loading && hasMore" class="load-more">下滑加载更多（剩余 {{ shownAll.length - shown.length }} 人）</view>
+      <view v-if="!loading && !hasMore && shown.length" class="load-more end">— 已经到底了 —</view>
+    </scroll-view>
 
     <view v-if="batchMode && selected.size" class="batchbar">
       <text class="bsel">已选 {{ selected.size }} 人</text>
@@ -187,6 +190,7 @@ import {
 } from '@/api/students'
 import { listGrades, getGrades } from '@/api/grades'
 import { isPhone, isStudentNo } from '../../common/validators'
+import { defaultParentPassword } from '@gardener/shared/utils/student'
 import { safeParse } from '../../common/util'
 import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -237,6 +241,8 @@ const batchMode = ref(false)
 const selected = ref(new Set())
 // 长列表分页：避免大班级一次渲染几十上百项卡顿
 const PAGE_SIZE = 20
+// scroll-view 滚动位置（搜索/筛选用）
+const scrollTop = ref(0)
 const page = ref(1)
 const loadingMore = ref(false)
 const shownAll = computed(() => {
@@ -257,7 +263,7 @@ const shownAll = computed(() => {
 const shown = computed(() => shownAll.value.slice(0, page.value * PAGE_SIZE))
 const hasMore = computed(() => shown.value.length < shownAll.value.length)
 // 筛选/搜索/排序变化时重置分页
-function resetPage() { page.value = 1 }
+function resetPage() { page.value = 1; scrollTop.value = 0 }
 function loadMore() {
   if (loadingMore.value) return
   loadingMore.value = true
@@ -419,9 +425,9 @@ async function doResetParentPwd() {
   finally { resetSaving.value = false }
 }
 
-// 家长默认口令 = 学号后6位（与后端规则一致，仅用于界面展示）
+// 家长默认口令 = 学号后6位（复用 shared，与后端规则一致，仅用于界面展示）
 function defaultPwd(s) {
-  return (s.studentNo || '').slice(-6)
+  return defaultParentPassword(s.studentNo)
 }
 
 function toggleSel(s) {
@@ -795,12 +801,12 @@ function drawRadar() {
 </script>
 
 <style scoped>
-.page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
-.bar { font-size: 34rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
-.toolbar { display: flex; gap: 12rpx; margin-bottom: 12rpx; }
+.page { padding: 30rpx; background: var(--c-bg); height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; }
+.bar { flex-shrink: 0; font-size: 34rpx; font-weight: 700; color: var(--c-title); margin-bottom: 20rpx; }
+.toolbar { flex-shrink: 0; display: flex; gap: 12rpx; margin-bottom: 12rpx; }
 .search { flex: 1; border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 26rpx; background: var(--c-input); color: var(--c-text); box-sizing: border-box; min-width: 0; }
 .mini-picker { border: 1px solid var(--c-input-border); border-radius: 30rpx; padding: 14rpx 24rpx; font-size: 24rpx; background: var(--c-card); color: var(--c-title); white-space: nowrap; }
-.toolbar2 { display: flex; align-items: center; gap: 20rpx; margin-bottom: 16rpx; }
+.toolbar2 { flex-shrink: 0; display: flex; align-items: center; gap: 20rpx; margin-bottom: 16rpx; }
 .tbtn { font-size: 26rpx; color: var(--c-blue); padding: 10rpx 22rpx; border-radius: 30rpx; background: var(--c-card); border: 1px solid var(--c-border); }
 .tbtn.on { background: #e8f1fb; color: #3a8ee6; }
 .tcount { margin-left: auto; font-size: 24rpx; color: var(--c-sub); }
@@ -821,12 +827,14 @@ function drawRadar() {
 .meta { color: var(--c-sub); font-size: 26rpx; margin-top: 8rpx; }
 .duty { color: var(--c-blue); }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 0; }
+.list-scroll { flex: 1; min-height: 0; overflow: hidden; padding: 4rpx; }
 .load-more { text-align: center; color: var(--c-accent); padding: 24rpx 0; font-size: 26rpx; border-top: 1px solid var(--c-border); }
-.actions { display: flex; gap: 20rpx; margin-top: 16rpx; }
+.load-more.end { color: var(--c-sub); }
+.actions { flex-shrink: 0; display: flex; gap: 20rpx; margin-top: 16rpx; }
 .add, .import { flex: 1; border-radius: 50rpx; color: #fff; font-size: 28rpx; }
 .add { background: var(--c-accent); }
 .import { background: var(--c-blue); }
-.form { margin-top: 24rpx; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.form { flex-shrink: 0; margin-top: 24rpx; background: var(--c-card); border-radius: 24rpx; padding: 30rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); max-height: 60vh; overflow-y: auto; }
 .form input, .picker { border: 1px solid var(--c-input-border); border-radius: 18rpx; padding: 16rpx 20rpx; margin-bottom: 18rpx; font-size: 28rpx; box-sizing: border-box; min-height: 80rpx; line-height: 44rpx; color: var(--c-text); background: var(--c-input); width: 100%; }
 .save { background: var(--c-primary); color: #fff; border-radius: 50rpx; margin-top: 6rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .field-err { display:block; font-size:22rpx; color:#e64340; margin-top:4rpx; }

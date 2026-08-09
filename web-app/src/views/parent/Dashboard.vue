@@ -5,10 +5,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, subscribeParentDemo } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentTeacher } from '@/api/parent'
-import { Sparkles, Star, TrendingUp, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, BarChart3, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
+import { Sparkles, Star, BookOpen, Bell, ChevronRight, Loader2, Award, ClipboardList, CalendarCheck, Scale, MessageCircle, Repeat, UserCog } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
-import SvgLineChart from '@/components/SvgLineChart.vue'
-import SvgBarChart from '@/components/SvgBarChart.vue'
+import GradeOverview from './components/GradeOverview.vue'
+import BehaviorRecord from './components/BehaviorRecord.vue'
+import NoticeList from './components/NoticeList.vue'
 
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
@@ -72,24 +73,8 @@ const selectedExam = computed(() => {
 const todayDow = ((new Date().getDay() + 6) % 7) + 1
 const todaySchedule = computed(() => (schedule.value?.week || []).find((d: any) => d.dayOfWeek === todayDow)?.items || [])
 
-// 语义色（与小程序端保持完全一致）
+// SECTION A — 行为表现常量
 const COLOR = { green: '#07c160', red: '#f56c6c', amber: '#E6A23C', blue: '#1C6FB3' }
-
-// SECTION A — 行为表现
-const behaviorChips = computed(() => {
-  const s = behavior.value?.summary
-  return [
-    { label: '表扬', value: s ? s.praise : 0, color: COLOR.green, bg: 'bg-[#07c160]/10' },
-    { label: '违纪', value: s ? s.violation : 0, color: COLOR.red, bg: 'bg-[#f56c6c]/10' },
-    { label: '其他', value: s ? s.other : 0, color: COLOR.amber, bg: 'bg-[#E6A23C]/10' },
-  ]
-})
-const behaviorByMonth = computed(() => {
-  const list = (behavior.value?.byMonth || []) as Array<{ month: string; count: number }>
-  const max = Math.max(1, ...list.map((m) => m.count))
-  return list.map((m) => ({ ...m, pct: Math.round((m.count / max) * 100), isMax: m.count === max }))
-})
-const behaviorRecent = computed(() => behavior.value?.recent || [])
 
 /* 成绩趋势：按日期取近 8 场考试，得分率 = totalScore/totalFullScore */
 const scoreTrend = computed(() => {
@@ -109,21 +94,23 @@ const monthTrend = computed(() => {
   if (!byMonth.length) return [{ label: '暂无数据', value: 0 }]
   return byMonth.slice(-6).map((m) => ({ label: m.month, value: m.count }))
 })
-const CATEGORY_COLOR: Record<string, string> = { praise: COLOR.green, violation: COLOR.red, other: COLOR.amber }
 
 // SECTION B — 课表 & 值日
-const WEEK_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const DUTY_TYPE_LABEL: Record<string, string> = { daily: '日常', weekly: '每周' }
+
 const weekStrip = computed(() =>
-  (schedule.value?.week || []).map((d: any) => ({ ...d, label: WEEK_LABELS[d.dayOfWeek - 1] || '' })),
+  (schedule.value?.week || []).map((d: any) => {
+    const WEEK_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    return { ...d, label: WEEK_LABELS[d.dayOfWeek - 1] || '' }
+  }),
 )
 const upcomingDuty = computed(() => schedule.value?.upcomingDuty || [])
-const DUTY_TYPE_LABEL: Record<string, string> = { daily: '日常', weekly: '每周' }
 
 // SECTION C — 家校沟通
 const commTotal = computed(() => communications.value?.total || 0)
 const commRecent = computed(() => communications.value?.recent || [])
 
-// 联系老师：本文件无既有 IM/TIM 逻辑，降级为提示（不新增 IM/TIM）
+// 联系老师
 const toastMsg = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 function contactTeacher() {
@@ -132,7 +119,7 @@ function contactTeacher() {
   toastTimer = setTimeout(() => { toastMsg.value = '' }, 2500)
 }
 
-/** 师兼家：切换到教师端（仅当 roleSwitchStore 有 parentToken 时启用） */
+/** 师兼家：切换到教师端 */
 const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
 async function switchToTeacher() {
   if (!await confirm('确定切换到教师端？')) return
@@ -149,66 +136,11 @@ const greeting = computed(() => {
 const studentName = computed(() => me.value?.studentName || auth.user?.studentName || '')
 const className = computed(() => me.value?.className || '')
 
-// 最近一次考试（用于概览卡「最新排名」）
 const latestExam = computed(() => exams.value.length ? exams.value[exams.value.length - 1] : null)
-
-// 待处理：未读通知 + 未完成作业
 const pendingNotices = computed(() => notices.value.filter(n => !n.ended).length)
 const pendingHomework = computed(() => homework.value.filter(h => h.status !== '已完成').length)
 
-// 优弱势学科（前端据所选考试各科得分率计算，与小程序端逻辑一致；支持科目筛选）
-const EXCELLENT_RATIO = 0.8
-interface RankedSubject { subject: string; score: number; fullScore: number; pct: number }
-const rankedSubjects = computed<RankedSubject[]>(() => {
-  const subs = (selectedExam.value?.subjects || []) as Array<{ subject: string; score: number | null; fullScore: number }>
-  return subs
-    .filter((s) => s.score != null && s.fullScore)
-    .filter((s) => !filterSubject.value || s.subject === filterSubject.value)
-    .map((s) => ({ subject: s.subject, score: s.score as number, fullScore: s.fullScore, pct: (s.score as number) / s.fullScore }))
-    .sort((a, b) => b.pct - a.pct)
-})
-const strengths = computed(() => rankedSubjects.value.filter((s) => s.pct >= EXCELLENT_RATIO).map((s) => s.subject))
-const weaknesses = computed(() => {
-  const below = rankedSubjects.value.filter((s) => s.pct < EXCELLENT_RATIO).sort((a, b) => a.pct - b.pct)
-  return below.slice(0, 3).map((s) => s.subject)
-})
-
-// 总分分布直方图（后端已带 isStudent 标记学生所在段）
-const histogram = computed(() => selectedExam.value?.distribution || [])
-
-// 当前选中考试要展示的科目（支持科目筛选：选「全部」展示所有科目）
-const displayedSubjects = computed(() => {
-  const subs = (selectedExam.value?.subjects || []) as Array<{ subject: string; score: number | null; fullScore: number; classRank?: number | null }>
-  if (!filterSubject.value) return subs
-  return subs.filter(s => s.subject === filterSubject.value)
-})
-
-// 历次考试总分趋势（mini 折线图，直观看到学生成绩走势；遵循当前筛选）
-const gradeTrend = computed(() => {
-  const list = (filteredExams.value || [])
-    .filter(e => e.totalScore != null)
-    .slice()
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-  if (list.length < 2) return { points: [], max: 0, min: 0, range: 1, lastRank: null as any }
-  const scores = list.map(e => Number(e.totalScore))
-  const max = Math.max(...scores)
-  const min = Math.min(...scores)
-  const range = max - min || 1
-  // mini 图尺寸：宽 240 高 56
-  const W = 240, H = 56, padX = 6, padY = 8
-  const innerW = W - padX * 2
-  const innerH = H - padY * 2
-  const points = list.map((e, i) => {
-    const x = padX + (list.length === 1 ? innerW / 2 : (i / (list.length - 1)) * innerW)
-    const y = padY + innerH - ((Number(e.totalScore) - min) / range) * innerH
-    return { x, y, score: Number(e.totalScore), label: e.examName, date: e.date, classRank: e.classRank, gradeRank: e.gradeRank }
-  })
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-  const lastRank = list[list.length - 1]?.classRank ?? null
-  return { points, path, max, min, range, W, H, padX, padY, lastRank }
-})
-
-// 考勤看板：打卡类型元信息 + 汇总卡片（与小程序端保持一致的类型/图标）
+// 考勤看板
 const ATTENDANCE_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
   reading: { label: '阅读', icon: '📚', color: 'bg-sky2-50 text-sky2-700' },
   sport: { label: '运动', icon: '🏃', color: 'bg-mint-50 text-mint-700' },
@@ -227,13 +159,13 @@ const attendanceByMonth = computed(() => {
   return list.map((m) => ({ ...m, pct: Math.round((m.count / max) * 100) }))
 })
 
-// 孩子在校健康度总览（5 维状态灯）+ 提醒中心（聚合已有数据，各维逐步点亮）
+// 孩子在校健康度总览
 const healthOverview = computed(() => {
   const att: any = attendance.value
   const attRecent = (att && att.recent) || []
   const attNegative = attRecent.some((r: any) => /旷课|缺勤|违纪|迟到/.test(r.note || ''))
   const attCount = (att && att.total) || 0
-  const subs = (latestExam.value && latestExam.value.subjects) || []
+  const subs = (latestExam && latestExam.value && latestExam.value.subjects) || []
   const weak = subs.filter((s: any) => s.score != null && s.fullScore && s.score / s.fullScore < 0.6).length
   const strong = subs.filter((s: any) => s.score != null && s.fullScore && s.score / s.fullScore >= 0.8).length
   const overdue = homework.value.filter((h: any) => h.status === '逾期' || h.status === '已逾期').length
@@ -258,13 +190,11 @@ const reminders = computed(() => {
   return list
 })
 
-// 公告/作业「查看全部」展开（与小程序端一致的交互）
+// 公告/作业「查看全部」展开
 const showAllNotices = ref(false)
 const showAllHomework = ref(false)
-const visibleNotices = computed(() => showAllNotices.value ? notices.value : notices.value.slice(0, 5))
-const visibleHomework = computed(() => showAllHomework.value ? homework.value : homework.value.slice(0, 5))
 
-// 看板卡片点击跳转：滚动到对应区块或打开弹窗
+// 看板卡片点击跳转
 const showExamListModal = ref(false)
 function scrollToSection(id: string) {
   const el = document.getElementById(id)
@@ -274,9 +204,8 @@ function clickNoticeCard() { scrollToSection('parent-notices-section') }
 function clickHomeworkCard() { scrollToSection('parent-homework-section') }
 function clickExamCountCard() { showExamListModal.value = true }
 function clickRankCard() { scrollToSection('parent-grades-section') }
-/** 从考试列表弹窗选择某次考试：重置筛选并定位到该考试 */
+/** 从考试列表弹窗选择某次考试 */
 function pickExam(indexInAll: number) {
-  // 重置筛选，确保该考试出现在 filteredExams 中
   filterTerm.value = ''
   filterExamName.value = ''
   filterSubject.value = ''
@@ -285,8 +214,7 @@ function pickExam(indexInAll: number) {
   scrollToSection('parent-grades-section')
 }
 
-// 科任老师信息弹窗：家长端 JWT 不能调 /teachers 接口，
-// 仅用课表里已有的姓名/科目字符串展示基础信息。
+// 科任老师信息弹窗
 const showTeacherModal = ref(false)
 const teacherModalInfo = ref<{ name: string; subject?: string; section?: string; className?: string } | null>(null)
 function openTeacherModal(it: any) {
@@ -300,7 +228,7 @@ function openTeacherModal(it: any) {
   showTeacherModal.value = true
 }
 
-// 修改密码（后端 change-password 已存在，补 Web 入口）
+// 修改密码
 const showPwdModal = ref(false)
 const oldPwd = ref('')
 const newPwd = ref('')
@@ -311,14 +239,11 @@ async function switchToKid(studentId: string) {
   if (studentId === activeKidId.value) return
   try {
     const result = await switchStudent(studentId)
-    // 替换 token
     auth.setAuth(result.token, auth.user!)
-    // 更新 me（走服务端）
     const freshMe = await getParentMe()
     if (freshMe) {
       me.value = freshMe
       activeKidId.value = freshMe.studentId
-      // 重载所有看板数据
       load()
     }
   } catch (e) {
@@ -437,9 +362,7 @@ async function load() {
     if (schData.status === 'fulfilled') schedule.value = schData.value as ParentSchedule
     if (commData.status === 'fulfilled') communications.value = commData.value as ParentCommunications
     if (tchData.status === 'fulfilled') teachers.value = Array.isArray(tchData.value) ? tchData.value : []
-    // 身份/核心数据拉取失败 → 标记为可重试错误态（其余分项失败仅显示各自空态）
     loadError.value = meData.status !== 'fulfilled'
-    // 默认选中最近一次考试
     selectedExamIndex.value = Math.max(0, exams.value.length - 1)
   } catch (e) {
   } finally {
@@ -475,7 +398,6 @@ async function subscribeNotifications() {
       >
         {{ kid.studentName }}
       </div>
-      <!-- 跨娃比对入口（>=2娃时显示） -->
       <router-link
         to="/parent/compare"
         class="shrink-0 px-3 py-1.5 rounded-full text-sm bg-[#E6A23C] text-white ml-auto"
@@ -500,12 +422,13 @@ async function subscribeNotifications() {
       </router-link>
     </div>
 
-    <!-- 错误/重试态（与小程序端一致） -->
+    <!-- 错误/重试态 -->
     <div
       v-if="loadError"
       class="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#E6A23C]/15 px-4 py-2 text-sm font-medium text-[#E6A23C]"
       @click="load()"
     >⚠️ 数据加载失败，点击重试</div>
+
     <!-- 欢迎横幅 -->
     <WelcomeHero
       :name="studentName ? studentName + '同学家长' : '家长'"
@@ -529,7 +452,7 @@ async function subscribeNotifications() {
       </template>
     </WelcomeHero>
 
-    <!-- 孩子卡片（与小程序端 kids 展示对齐） -->
+    <!-- 孩子卡片 -->
     <div v-if="!loading && me?.kids?.length" class="flex flex-wrap gap-3">
       <div
         v-for="k in me.kids"
@@ -551,7 +474,7 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 学生信息（查看 / 申请修改） -->
+    <!-- 学生信息 -->
     <div v-if="!loading && studentInfo" class="quick-card">
       <div class="section-title">
         <UserCog class="w-5 h-5 text-mint-400" />
@@ -595,7 +518,7 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 概览卡片（点击跳转详情） -->
+    <!-- 概览卡片 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Bell class="w-4 h-4 text-sakura-500" /> 待读通知</div>
@@ -659,142 +582,25 @@ async function subscribeNotifications() {
       ✅ 订阅成功，将及时收到通知
     </div>
 
-    <!-- 成长数据图表（成绩趋势 + 月度打卡） -->
-    <div v-if="!loading && (scoreTrend.length || monthTrend.length)" class="mt-4 px-4">
-      <div class="section-title">
-        <TrendingUp class="w-5 h-5 text-butter-400" />
-        <h2>成长数据</h2>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="quick-card !p-5">
-          <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700 mb-2">
-            <BarChart3 class="w-4 h-4 text-butter-500" /> 成绩趋势
-            <span class="ml-auto text-xs text-cocoa-400">得分率 %</span>
-          </div>
-          <SvgLineChart v-if="scoreTrend.length" :data="scoreTrend" :height="180" title="" series1Name="得分率" color="#f5b342" />
-          <div v-else class="text-sm text-cocoa-400 py-10 text-center">暂无成绩数据</div>
-        </div>
-        <div class="quick-card !p-5">
-          <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700 mb-2">
-            <CalendarCheck class="w-4 h-4 text-mint-500" /> 月度成长足迹
-            <span class="ml-auto text-xs text-cocoa-400">打卡次数</span>
-          </div>
-          <SvgBarChart :data="monthTrend" :height="180" title="" />
-        </div>
-      </div>
-    </div>
+    <!-- 成绩概览子组件 -->
+    <GradeOverview
+      :loading="loading"
+      :exams="exams"
+      :selected-exam="selectedExam"
+      :filter-term="filterTerm"
+      :filter-exam-name="filterExamName"
+      :filter-subject="filterSubject"
+      :term-options="termOptions"
+      :exam-name-options="examNameOptions"
+      :subject-options="subjectOptions"
+      :score-trend="scoreTrend"
+      :month-trend="monthTrend"
+      @update:filter-term="filterTerm = $event"
+      @update:filter-exam-name="filterExamName = $event"
+      @update:filter-subject="filterSubject = $event"
+    />
 
-    <!-- 成绩查询（学期/考试名称/科目筛选 + 分布 + 优弱势，与小程序端对齐） -->
-    <div v-if="!loading && exams.length" id="parent-grades-section">
-      <div class="section-title flex-wrap">
-        <BarChart3 class="w-5 h-5 text-mint-400" />
-        <h2>成绩查询</h2>
-        <!-- 筛选下拉框：学期 / 考试名称 / 科目（均支持「全部」） -->
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-          <select
-            v-model="filterTerm"
-            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
-          >
-            <option value="">全部学期</option>
-            <option v-for="t in termOptions" :key="t" :value="t">{{ t }}</option>
-          </select>
-          <select
-            v-model="filterExamName"
-            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
-          >
-            <option value="">全部考试</option>
-            <option v-for="n in examNameOptions" :key="n" :value="n">{{ n }}</option>
-          </select>
-          <select
-            v-model="filterSubject"
-            class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-700 focus:outline-none focus:border-butter-400"
-          >
-            <option value="">全部科目</option>
-            <option v-for="s in subjectOptions" :key="s" :value="s">{{ s }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div v-if="selectedExam" class="quick-card">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <div class="font-semibold text-cocoa-900 text-lg">{{ selectedExam.examName }}</div>
-            <div class="text-xs text-cocoa-500 mt-1">{{ selectedExam.date }} · 总分 {{ selectedExam.totalScore ?? '--' }} / {{ selectedExam.totalFullScore ?? '--' }}</div>
-          </div>
-          <div v-if="selectedExam.classRank || selectedExam.gradeRank" class="text-right space-y-1">
-            <div v-if="selectedExam.classRank" class="text-right">
-              <div class="text-2xl font-bold text-mint-600">第 {{ selectedExam.classRank }} 名</div>
-              <div class="text-xs text-cocoa-500">班级排名</div>
-            </div>
-            <div v-if="selectedExam.gradeRank" class="text-right">
-              <div class="text-2xl font-bold text-butter-600">第 {{ selectedExam.gradeRank }} 名</div>
-              <div class="text-xs text-cocoa-500">年级排名</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div v-for="s in displayedSubjects" :key="s.subject" class="bg-cocoa-50 rounded-lg p-3">
-            <div class="text-xs text-cocoa-500">{{ s.subject }}</div>
-            <div class="text-lg font-bold text-cocoa-900 mt-1">{{ s.score ?? '--' }} <span class="text-xs font-normal text-cocoa-400">/ {{ s.fullScore }}</span></div>
-            <div v-if="s.classRank" class="text-xs text-mint-600 mt-1">班级第 {{ s.classRank }} 名</div>
-          </div>
-        </div>
-
-        <!-- 优弱势学科 -->
-        <div v-if="strengths.length || weaknesses.length" class="flex flex-wrap gap-2 mt-3">
-          <span v-for="s in strengths" :key="'s-' + s" class="text-xs px-2 py-1 rounded-full bg-mint-50 text-mint-700">⬆️ {{ s }}</span>
-          <span v-for="s in weaknesses" :key="'w-' + s" class="text-xs px-2 py-1 rounded-full bg-sakura-50 text-sakura-700">⬇️ {{ s }}</span>
-        </div>
-
-        <!-- 总分分布直方图（学生所在段高亮） -->
-        <div v-if="histogram.length" class="mt-4">
-          <div class="text-xs text-cocoa-500 mb-2">总分分布（共 {{ histogram.length }} 段）</div>
-          <div class="flex items-end gap-1.5 h-32">
-            <div v-for="seg in histogram" :key="seg.label" class="flex-1 flex flex-col items-center justify-end h-full">
-              <div
-                class="w-full rounded-t-md transition-all"
-                :style="{ height: Math.max(4, seg.pct) + '%', background: seg.isStudent ? '#07c160' : '#c8e6c9' }"
-              ></div>
-              <div class="text-xs text-cocoa-400 mt-1 leading-none">{{ seg.label }}</div>
-              <div class="text-xs text-cocoa-400 leading-none">{{ seg.count }}人</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 历次考试总分趋势 mini 折线图（直观看到走势 + 最新班级排名） -->
-        <div v-if="gradeTrend.points.length >= 2" class="mt-4 bg-mint-50 rounded-lg p-3">
-          <div class="flex items-center justify-between mb-1">
-            <div class="text-xs font-medium text-mint-700 flex items-center gap-1"><TrendingUp class="w-3.5 h-3.5" /> 历次考试总分趋势</div>
-            <div v-if="gradeTrend.lastRank" class="text-xs text-mint-700">最新班级第 {{ gradeTrend.lastRank }} 名</div>
-          </div>
-          <svg :viewBox="`0 0 ${gradeTrend.W} ${gradeTrend.H}`" class="w-full" style="max-height: 56px;" preserveAspectRatio="xMidYMid meet">
-            <path :d="gradeTrend.path" fill="none" stroke="#07c160" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-            <circle
-              v-for="(p, i) in gradeTrend.points"
-              :key="i"
-              :cx="p.x"
-              :cy="p.y"
-              :r="i === gradeTrend.points.length - 1 ? 3.5 : 2.5"
-              :fill="i === gradeTrend.points.length - 1 ? '#07c160' : '#a5d6a7'"
-            >
-              <title>{{ p.label }}（{{ p.date }}）：{{ p.score }} 分<span v-if="p.classRank"> · 班第{{ p.classRank }}名</span></title>
-            </circle>
-          </svg>
-          <div class="flex items-center justify-between mt-1 text-xs text-mint-600">
-            <span>{{ gradeTrend.points[0].date }}</span>
-            <span class="font-medium">{{ gradeTrend.points[gradeTrend.points.length - 1].score }} 分</span>
-            <span>{{ gradeTrend.points[gradeTrend.points.length - 1].date }}</span>
-          </div>
-        </div>
-
-        <div v-if="selectedExam.analysisNote" class="mt-3 text-sm text-cocoa-600 bg-butter-50 rounded-lg p-3">
-          📝 {{ selectedExam.analysisNote }}
-        </div>
-      </div>
-    </div>
-
-    <!-- 考勤看板（打卡/考勤汇总，与小程序端对齐） -->
+    <!-- 考勤看板 -->
     <div v-if="!loading && attendance">
       <h2 class="section-title">
         <CalendarCheck class="w-5 h-5 text-mint-400" /> 考勤看板
@@ -807,8 +613,6 @@ async function subscribeNotifications() {
             <div class="text-xs">{{ c.label }}</div>
           </div>
         </div>
-
-        <!-- 近 6 个月打卡趋势 -->
         <div v-if="attendanceByMonth.length" class="mb-4">
           <div class="text-xs text-cocoa-500 mb-2">近 6 个月打卡趋势</div>
           <div class="space-y-1.5">
@@ -821,8 +625,6 @@ async function subscribeNotifications() {
             </div>
           </div>
         </div>
-
-        <!-- 最近打卡记录 -->
         <div v-if="attendanceRecent.length">
           <div class="text-xs text-cocoa-500 mb-2">最近打卡</div>
           <div class="space-y-2">
@@ -842,59 +644,15 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 行为表现（与小程序端对齐） -->
-    <div v-if="!loading && behavior">
-      <h2 class="section-title">
-        <Scale class="w-5 h-5 text-mint-400" /> 行为表现
-      </h2>
-      <div class="quick-card">
-        <!-- 汇总 chips -->
-        <div class="grid grid-cols-3 gap-3 mb-4">
-          <div v-for="c in behaviorChips" :key="c.label" class="rounded-xl p-3 flex flex-col items-center gap-1" :class="c.bg">
-            <div class="text-2xl font-bold" :style="{ color: c.color }">{{ c.value }}</div>
-            <div class="text-xs" :style="{ color: c.color }">{{ c.label }}</div>
-          </div>
-        </div>
+    <!-- 行为表现子组件 -->
+    <BehaviorRecord :loading="loading" :behavior="behavior" />
 
-        <!-- 近 6 月趋势（复用考勤 byMonth 横向条形样式，最高值高亮绿） -->
-        <div v-if="behaviorByMonth.length" class="mb-4">
-          <div class="text-xs text-cocoa-500 mb-2">近 6 月趋势</div>
-          <div class="space-y-1.5">
-            <div v-for="m in behaviorByMonth" :key="m.month" class="flex items-center gap-2">
-              <div class="text-xs text-cocoa-500 w-14 shrink-0">{{ m.month }}</div>
-              <div class="flex-1 h-3 bg-cocoa-50 rounded-full overflow-hidden">
-                <div class="h-full rounded-full" :style="{ width: Math.max(4, m.pct) + '%', background: m.isMax ? COLOR.green : '#c8e6c9' }"></div>
-              </div>
-              <div class="text-xs text-cocoa-500 w-10 text-right shrink-0">{{ m.count }}次</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 最近记录 -->
-        <div v-if="behaviorRecent.length">
-          <div class="text-xs text-cocoa-500 mb-2">最近记录</div>
-          <div class="space-y-2">
-            <div v-for="r in behaviorRecent.slice(0, 8)" :key="r.id" class="flex items-start gap-3">
-              <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" :style="{ background: CATEGORY_COLOR[r.category] || COLOR.amber }"></span>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm text-cocoa-900 font-medium">{{ r.behavior }}</div>
-                <div v-if="r.note" class="text-xs text-cocoa-500 truncate">{{ r.note }}</div>
-              </div>
-              <div class="text-xs text-cocoa-400 shrink-0">{{ r.date }}</div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="text-sm text-cocoa-500">暂无行为记录</div>
-      </div>
-    </div>
-
-    <!-- 课表 & 值日（与小程序端对齐） -->
+    <!-- 课表 & 值日 -->
     <div v-if="!loading && schedule">
       <h2 class="section-title">
         <CalendarCheck class="w-5 h-5 text-mint-400" /> 课表 &amp; 值日
       </h2>
       <div class="quick-card">
-        <!-- 7 天条 -->
         <div class="grid grid-cols-7 gap-1.5 mb-4">
           <div
             v-for="d in weekStrip"
@@ -905,8 +663,6 @@ async function subscribeNotifications() {
             {{ d.label }}
           </div>
         </div>
-
-        <!-- 今日课表 -->
         <div class="mb-4">
           <div class="text-xs text-cocoa-500 mb-2">今日课表</div>
           <div v-if="todaySchedule.length" class="space-y-2">
@@ -924,8 +680,6 @@ async function subscribeNotifications() {
           </div>
           <div v-else class="text-sm text-cocoa-500">今天没有排课</div>
         </div>
-
-        <!-- 本周值日 -->
         <div>
           <div class="text-xs text-cocoa-500 mb-2">本周值日</div>
           <div v-if="upcomingDuty.length" class="space-y-2">
@@ -942,7 +696,7 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 科任老师信息（按 classId 隔离，展示班主任 + 科任老师） -->
+    <!-- 科任老师 -->
     <div v-if="!loading && teachers.length">
       <h2 class="section-title">
         <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
@@ -969,20 +723,17 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 家校沟通（与小程序端对齐） -->
+    <!-- 家校沟通 -->
     <div v-if="!loading && communications">
       <h2 class="section-title">
         <MessageCircle class="w-5 h-5 text-mint-400" /> 家校沟通
       </h2>
       <div class="quick-card">
-        <!-- 次数 chip -->
         <div class="mb-4">
           <span class="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full text-white" :style="{ background: COLOR.blue }">
             💬 沟通 {{ commTotal }} 次
           </span>
         </div>
-
-        <!-- 最近沟通 -->
         <div v-if="commRecent.length">
           <div class="text-xs text-cocoa-500 mb-2">最近沟通</div>
           <div class="space-y-3">
@@ -998,8 +749,6 @@ async function subscribeNotifications() {
           </div>
         </div>
         <div v-else class="text-sm text-cocoa-500">暂无沟通记录</div>
-
-        <!-- 联系老师 -->
         <button
           class="mt-4 w-full rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600"
           @click="contactTeacher"
@@ -1012,31 +761,14 @@ async function subscribeNotifications() {
       <div class="bg-cocoa-900/90 text-white text-sm rounded-xl px-4 py-2 shadow-lg">{{ toastMsg }}</div>
     </div>
 
-    <!-- 班级公告 -->
-    <div v-if="!loading && notices.length > 0" id="parent-notices-section">
-      <h2 class="section-title"><Bell class="w-5 h-5 text-sakura-400" /> 班级公告</h2>
-      <div class="space-y-3">
-        <div v-for="n in visibleNotices" :key="n.id" class="quick-card">
-          <div class="flex items-center justify-between mb-1">
-            <div class="font-medium text-cocoa-900">{{ n.title }}</div>
-            <span v-if="n.pinned" class="text-xs bg-butter-100 text-butter-700 px-2 py-0.5 rounded-full">置顶</span>
-          </div>
-          <div class="text-sm text-cocoa-600 line-clamp-2">{{ n.content }}</div>
-          <div class="text-xs text-cocoa-400 mt-2">{{ n.createdAt }}</div>
-        </div>
-        <div v-if="notices.length > 5" class="text-center">
-          <button class="text-sm text-sakura-500 hover:text-sakura-600" @click="showAllNotices = !showAllNotices">
-            {{ showAllNotices ? '收起' : ('查看全部 ' + notices.length + ' 条公告') }} →
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 公告子组件 -->
+    <NoticeList :loading="loading" :notices="notices" @toggle-show-all="showAllNotices = !showAllNotices" />
 
     <!-- 作业列表 -->
     <div v-if="!loading && homework.length > 0" id="parent-homework-section">
       <h2 class="section-title"><BookOpen class="w-5 h-5 text-butter-400" /> 作业</h2>
       <div class="space-y-3">
-        <div v-for="h in visibleHomework" :key="h.id" class="quick-card">
+        <div v-for="h in (showAllHomework ? homework : homework.slice(0, 5))" :key="h.id" class="quick-card">
           <div class="flex items-center justify-between mb-1">
             <div class="font-medium text-cocoa-900">{{ h.subject }} · {{ h.title }}</div>
             <span class="text-xs px-2 py-0.5 rounded-full" :class="h.status === '已完成' ? 'bg-mint-50 text-mint-700' : 'bg-sakura-50 text-sakura-700'">{{ h.status || '待完成' }}</span>
@@ -1082,7 +814,7 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 考试详情弹窗（点击「考试次数」卡片打开） -->
+    <!-- 考试详情弹窗 -->
     <div v-if="showExamListModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showExamListModal = false">
       <div class="w-full max-w-2xl bg-surface rounded-2xl p-5 shadow-xl max-h-[80vh] overflow-auto">
         <div class="flex items-center justify-between mb-4">
@@ -1119,7 +851,6 @@ async function subscribeNotifications() {
                 <div class="font-bold text-sky2-600 mt-0.5">{{ (e.subjects || []).length }}科</div>
               </div>
             </div>
-            <!-- 各科成绩 -->
             <div v-if="e.subjects?.length" class="mt-2 flex flex-wrap gap-1.5">
               <span
                 v-for="s in e.subjects"
@@ -1133,7 +864,7 @@ async function subscribeNotifications() {
       </div>
     </div>
 
-    <!-- 科任老师信息弹窗（家长端：仅展示课表中已有的姓名/科目/班级） -->
+    <!-- 科任老师信息弹窗 -->
     <div v-if="showTeacherModal && teacherModalInfo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showTeacherModal = false">
       <div class="w-full max-w-sm bg-surface rounded-2xl p-5 shadow-xl">
         <div class="flex items-center justify-between mb-4">

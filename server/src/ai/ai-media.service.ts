@@ -1,7 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
 import { ConfigService } from '../config/config.service'
-import { tlsAgent, assertAllowedAiUrl } from './ai-file-parser.service'
+import { tlsAgent } from './ai-file-parser.service'
+import { buildAiSettings } from './ai-settings.util'
 
 /**
  * 媒体生成服务：负责 AI 文生图、文生视频、语音识别 ASR 等多媒体 AI 能力。
@@ -12,17 +13,9 @@ export class AiMediaService {
     private readonly cfg: ConfigService,
   ) {}
 
-  private async buildSettings(ownerType: string, ownerId: string) {
-    const s = await this.cfg.getAiSettings(ownerType, ownerId)
-    if (!s.apiKey) {
-      throw new BadRequestException('未配置 AI 密钥，请到「后端配置」中填写')
-    }
-    if (!s.baseUrl) {
-      throw new BadRequestException('未配置 AI 接口地址')
-    }
-    // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
-    assertAllowedAiUrl(s.baseUrl)
-    return s
+  // A06修复：委托给共享工具函数
+  private buildSettings(ownerType: string, ownerId: string) {
+    return buildAiSettings(this.cfg, ownerType, ownerId)
   }
 
   /** AI 文生图：调用服务商图片生成接口，返回图片 URL 数组 */

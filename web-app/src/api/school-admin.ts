@@ -169,8 +169,8 @@ export interface StudentItem {
   createdAt: string
 }
 
-export function listSchoolStudents() {
-  return request.get<any, { items: StudentItem[]; total: number }>('/school-admin/students')
+export function listSchoolStudents(params?: { skip?: number; take?: number; classId?: string }) {
+  return request.get<any, { items: StudentItem[]; total: number }>('/school-admin/students', { params: params || {} })
 }
 
 export function updateStudent(id: string, dto: Partial<Pick<StudentItem, 'name' | 'gender' | 'parentName' | 'parentPhone'>>) {

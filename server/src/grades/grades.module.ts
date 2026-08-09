@@ -27,6 +27,7 @@ import { ClassMemberService, ClassMembersModule } from '../class-members/class-m
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
+import { parseFileToRows } from '../common/file-parser.util'
 import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 
@@ -125,18 +126,10 @@ class GradesService extends CrudService<Grade> {
     return { created: true, id: g.id }
   }
 
+  // A07修复：抽取为共享工具 parseFileToRows，此处保留薄包装以兼容现有调用
   private async parseFile(filename: string, dataBase64: string): Promise<string[][]> {
-    const ext = (filename.split('.').pop() || '').toLowerCase()
-    const buf = Buffer.from(dataBase64, 'base64')
-    if (ext === 'xlsx' || ext === 'xls') {
-      return xlsxFirstSheetToRows(buf)
-    }
-    const text = buf.toString('utf-8')
-    return text
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => l.split(/\t|,/).map((c) => c.trim()))
+    const { rows } = await parseFileToRows(filename, dataBase64)
+    return rows
   }
 
   async importPreview(

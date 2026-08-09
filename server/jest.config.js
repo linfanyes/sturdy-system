@@ -10,6 +10,7 @@ module.exports = {
     '^@gardener/shared/constants$': '<rootDir>/../shared/constants/index.ts',
     '^@gardener/shared/validators$': '<rootDir>/../shared/validators/index.ts',
     '^@gardener/shared/types$': '<rootDir>/../shared/types/index.ts',
+    '^@gardener/shared/utils/(.*)$': '<rootDir>/../shared/utils/$1.ts',
   },
   collectCoverage: false,
   verbose: true,

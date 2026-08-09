@@ -18,6 +18,7 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { xlsxFirstSheetToRows } from '../common/excel.util'
 import { hashPassword } from '../common/utils/password.util'
+import { normalizeGender } from '@gardener/shared/utils/gender'
 import { AuditService } from '../audit/audit.service'
 import { AuditModule } from '../audit/audit.module'
 import { User } from '../users/user.entity'
@@ -111,8 +112,7 @@ class StudentsService extends CrudService<Student> {
       const parentName = String(r[3] || '').trim()
       const parentPhone = String(r[4] || '').trim()
       // 性别归一化
-      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
-      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      gender = normalizeGender(gender)
 
       let error = ''
       if (!name) error = '缺少姓名'
@@ -263,8 +263,7 @@ class StudentsService extends CrudService<Student> {
       const parentName = String(raw?.parentName || '').trim()
       let parentPhone = String(raw?.parentPhone || '').trim().replace(/[^\d]/g, '')
       // 性别归一化
-      if (gender === 'M' || gender === 'm' || gender === '男') gender = '男'
-      else if (gender === 'F' || gender === 'f' || gender === '女') gender = '女'
+      gender = normalizeGender(gender)
 
       let error = ''
       if (!name) error = '缺少姓名'

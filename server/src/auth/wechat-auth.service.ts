@@ -9,6 +9,7 @@ import { Parent } from '../parent/parent.entity'
 import { WechatService } from './wechat.service'
 import { WechatLoginDto } from './dto/wechat-login.dto'
 import { verifyAndUpgrade } from '../common/utils/password.util'
+import { findStudentByNoForLogin } from '../common/utils/student.util'
 import { AuditService } from '../audit/audit.service'
 import { FeatureService } from '../common/feature/feature.service'
 import { StudentParentService } from '../student-parent/student-parent.module'
@@ -39,9 +40,7 @@ export class WechatAuthService {
 
   /** 按学号查询学生用于家长登录/绑定：学号跨学校可能重复（历史残留），优先返回已开启家长登录的记录 */
   private async findStudentByNoForLogin(studentNo: string) {
-    const all = await this.studentRepo.find({ where: { studentNo } })
-    if (!all.length) return null
-    return all.find((s) => s.parentLoginEnabled) || all[0]
+    return findStudentByNoForLogin(this.studentRepo, studentNo)
   }
 
   /**

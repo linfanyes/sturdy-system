@@ -7,6 +7,7 @@ import { xlsxToCsvText } from '../common/excel.util'
 import { isSafeHttpUrl } from '../config/provider-models'
 import { ConfigService } from '../config/config.service'
 import { AiVisionService } from './ai-vision.service'
+import { buildAiSettings } from './ai-settings.util'
 
 // TLS 校验：默认严格校验（防中间人窃取 AI 密钥）；
 // 仅当显式设置 AI_TLS_INSECURE=true（如内网自签证书网关）时放宽
@@ -75,17 +76,9 @@ export class AiFileParserService {
     private readonly vision: AiVisionService,
   ) {}
 
-  private async buildSettings(ownerType: string, ownerId: string) {
-    const s = await this.cfg.getAiSettings(ownerType, ownerId)
-    if (!s.apiKey) {
-      throw new BadRequestException('未配置 AI 密钥，请到「后端配置」中填写')
-    }
-    if (!s.baseUrl) {
-      throw new BadRequestException('未配置 AI 接口地址')
-    }
-    // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
-    assertAllowedAiUrl(s.baseUrl)
-    return s
+  // A06修复：委托给共享工具函数
+  private buildSettings(ownerType: string, ownerId: string) {
+    return buildAiSettings(this.cfg, ownerType, ownerId)
   }
 
   /**

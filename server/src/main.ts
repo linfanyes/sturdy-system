@@ -190,6 +190,10 @@ async function bootstrap() {
     // eslint-disable-next-line no-console
     console.warn('⚠️  安全警告: 生产环境开启了 DB_SYNCHRONIZE=true，实体变更会隐式修改表结构，建议设置为 false 并仅通过迁移脚本管理表结构。')
   }
+  // S04修复：生产环境强制要求 ENCRYPTION_KEY，确保敏感配置加密存储
+  if (config.get('NODE_ENV') === 'production' && !config.get('ENCRYPTION_KEY')) {
+    throw new Error('ENCRYPTION_KEY 未配置，生产环境拒绝启动，请设置该环境变量以加密敏感配置（wxAppSecret、imSecretKey、aiApiKey 等）。')
+  }
 
   // 启动时自动执行未应用的 migration SQL（幂等，失败不阻塞）
   await runMigrations(app)

@@ -13,7 +13,7 @@ export abstract class BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @Column({ type: 'varchar', length: 64, comment: '租户键：教师ID' })
+  @Column({ type: 'varchar', length: 64, nullable: true, comment: '租户键：教师ID（默认 nullable，各实体按需覆盖 required 语义）' })
   teacherId: string
 
   @CreateDateColumn({ type: 'datetime' })

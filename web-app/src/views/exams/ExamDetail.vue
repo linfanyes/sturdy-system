@@ -16,6 +16,7 @@ import {
   getExam, getExamAnalysis, getClassRank, getWeakStudents, getStudentHistory,
   listAllStudents, updateExam,
 } from '@/api/teacher'
+import { fmt1, pct, pctNum } from '@gardener/shared/utils/format'
 
 const props = defineProps<{ examId?: string; classId?: string }>()
 const route = useRoute()
@@ -41,23 +42,7 @@ const className = computed(
   () => classes.value.find(c => c.id === classId.value)?.name || classId.value || '-',
 )
 
-/* ============ 格式化 ============ */
-function fmt1(n: any): string {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  return Number(n).toFixed(1)
-}
-/** 小数（0.9）或百分数（90）→ 百分比字符串，兼容两种形式 */
-function pct(n: any): string {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  const v = Number(n)
-  const p = v > 1 ? v : v * 100
-  return p.toFixed(1) + '%'
-}
-/** 已是百分数数值（如 97.5）→ 加 % 后缀 */
-function pctNum(n: any): string {
-  if (n == null || n === '' || isNaN(Number(n))) return '-'
-  return Number(n).toFixed(1) + '%'
-}
+/* ============ 格式化（复用 shared） ============ */
 
 const avgPassRate = computed(() => {
   const s = subjects.value

@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Body, Req, UseGuards, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { ParentAuthService } from './parent-auth.service'
+import { ParentQueryService } from './parent-query.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -15,6 +16,7 @@ const ParentLoginRateLimit = createRateLimitGuard(60_000, 10)
 export class ParentAuthController {
   constructor(
     private readonly s: ParentAuthService,
+    private readonly query: ParentQueryService,
     private readonly updateSvc: StudentInfoUpdateService,
   ) {}
 
@@ -60,56 +62,56 @@ export class ParentAuthController {
   @Get('notices')
   @UseGuards(JwtAuthGuard)
   notices(@CurrentParent() p: any) {
-    return this.s.getNotices(p.classId)
+    return this.query.getNotices(p.classId)
   }
 
   /** 考试成绩明细 + 趋势分析 */
   @Get('exams')
   @UseGuards(JwtAuthGuard)
   exams(@CurrentParent() p: any) {
-    return this.s.getExams(p)
+    return this.query.getExams(p)
   }
 
   /** 孩子所在班级的作业 */
   @Get('homework')
   @UseGuards(JwtAuthGuard)
   homework(@CurrentParent() p: any) {
-    return this.s.getHomework(p)
+    return this.query.getHomework(p)
   }
 
   /** 孩子打卡/考勤汇总（仅限当前家长绑定的学生，按 studentId 隔离） */
   @Get('attendance')
   @UseGuards(JwtAuthGuard)
   attendance(@CurrentParent() p: any) {
-    return this.s.getAttendance(p)
+    return this.query.getAttendance(p)
   }
 
   /** 孩子行为表现记录（仅限当前家长绑定的学生，按 studentId 隔离） */
   @Get('behavior')
   @UseGuards(JwtAuthGuard)
   behavior(@CurrentParent() p: any) {
-    return this.s.getBehavior(p)
+    return this.query.getBehavior(p)
   }
 
   /** 孩子课表&值日（按 classId 隔离，值日再按孩子姓名匹配） */
   @Get('schedule')
   @UseGuards(JwtAuthGuard)
   schedule(@CurrentParent() p: any) {
-    return this.s.getSchedule(p)
+    return this.query.getSchedule(p)
   }
 
   /** 家校沟通记录（仅限当前家长绑定的学生，按 studentId 隔离） */
   @Get('communications')
   @UseGuards(JwtAuthGuard)
   communications(@CurrentParent() p: any) {
-    return this.s.getCommunications(p)
+    return this.query.getCommunications(p)
   }
 
   /** 孩子所在班级的科任老师信息（按 classId 隔离） */
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
   teachers(@CurrentParent() p: any) {
-    return this.s.getTeachers(p)
+    return this.query.getTeachers(p)
   }
 
   /** 家长订阅微信通知（wx.login code → openId 落库） */
@@ -138,7 +140,7 @@ export class ParentAuthController {
   @Get('compare-kids')
   @UseGuards(JwtAuthGuard)
   async compareKids(@CurrentParent() p: any) {
-    return this.s.getKidsComparison(p)
+    return this.query.getKidsComparison(p)
   }
 
   /** 师兼家角色切换：教师激活家长身份（需已登录教师） */

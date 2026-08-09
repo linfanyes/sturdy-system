@@ -164,7 +164,8 @@ export class ConfigService implements OnModuleInit {
       },
       {
         key: 'wxAppId',
-        value: this.env.get('WX_APPID') || 'wx1e6d151c7eb428cc',
+        // S06修复：移除硬编码的默认 AppID，强制从环境变量读取
+        value: this.env.get('WX_APPID') || '',
         description: '微信小程序 AppID（内容安全审核用）',
       },
       {

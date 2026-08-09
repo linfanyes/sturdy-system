@@ -6,7 +6,7 @@
 import { ref, onMounted } from 'vue'
 import { Calculator, RefreshCw, Printer, Copy } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
-import { randInt } from '@gardener/shared/utils/game-helpers'
+import { randInt } from '@gardener/shared/games/helpers'
 
 type OpType = 'add' | 'sub' | 'mul' | 'div' | 'mix'
 

@@ -8,6 +8,8 @@ export interface GradeScore {
 
 @Index('idx_grd_tch_cls', ['teacherId', 'classId'])
 @Index('idx_grades_cov', ['teacherId', 'createdAt'])
+// P02修复：唯一索引防止并发提交同一班级同一考试同一科目的重复成绩
+@Index('idx_grades_unique_submission', ['classId', 'examName', 'subject'], { unique: true })
 @Entity('grades')
 export class Grade extends BaseEntity {
   @Column() classId: string

@@ -2,6 +2,7 @@ import 'reflect-metadata'
 import { BadRequestException, UnauthorizedException } from '@nestjs/common'
 import * as crypto from 'node:crypto'
 import { ParentAuthService } from '../src/parent-auth/parent-auth.service'
+import { ParentQueryService } from '../src/parent-auth/parent-query.service'
 
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex')
 
@@ -20,52 +21,35 @@ function mockRepo(): any {
   return repo
 }
 
-describe('ParentAuthService', () => {
+describe('ParentAuthService（A04拆分后只保留认证/绑定/切换逻辑）', () => {
   let service: ParentAuthService
-  let pcRepo: any
   let studentRepo: any
-  let noticeRepo: any
-  let homeworkRepo: any
-  let gradeRepo: any
-  let examRepo: any
-  let classRepo: any
   let jwt: any
   let im: any
   let config: any
   let wechat: any
+  let query: any
 
   beforeEach(() => {
-    pcRepo = mockRepo()
     studentRepo = mockRepo()
-    noticeRepo = mockRepo()
-    homeworkRepo = mockRepo()
-    gradeRepo = mockRepo()
-    examRepo = mockRepo()
-    classRepo = mockRepo()
     jwt = { sign: jest.fn().mockReturnValue('token-abc') }
     im = { getUserSig: jest.fn().mockResolvedValue({ sdkAppId: '1', userSig: 'sig' }) }
     config = { get: jest.fn() }
     wechat = { code2Session: jest.fn() }
+    // ParentQueryService mock
+    query = {
+      findStudentByNoForLogin: jest.fn(),
+    }
     service = new ParentAuthService(
       mockRepo(), // parentRepo
       mockRepo(), // usersRepo
-      pcRepo,
       studentRepo,
-      noticeRepo,
-      homeworkRepo,
-      gradeRepo,
-      examRepo,
-      classRepo,
-      mockRepo(), // checkinRepo
-      mockRepo(), // scheduleRepo
-      mockRepo(), // behaviorRepo
-      mockRepo(), // dutyRepo
-      mockRepo(), // classMemberRepo
       jwt as any,
       im as any,
       config as any,
       wechat as any,
       {} as any, // studentParentSvc 占位
+      query as any,
     )
   })
 
@@ -82,19 +66,19 @@ describe('ParentAuthService', () => {
     }
 
     it('空密码应抛出 BadRequestException "请输入密码"', async () => {
+      query.findStudentByNoForLogin.mockResolvedValue(stubStudent)
       await expect(service.login('20240001', '')).rejects.toThrow('请输入密码')
       await expect(service.login('20240001', '')).rejects.toThrow(BadRequestException)
     })
 
     it('错误密码应抛出 UnauthorizedException "密码错误"（而非 BadRequest）', async () => {
-      studentRepo.find.mockResolvedValue([{ ...stubStudent }])
-      // 类型必须是 UnauthorizedException（安全修复关键点）
+      query.findStudentByNoForLogin.mockResolvedValue(stubStudent)
       await expect(service.login('20240001', 'wrong')).rejects.toThrow(UnauthorizedException)
       await expect(service.login('20240001', 'wrong')).rejects.toThrow('密码错误')
     })
 
     it('正确学号 + 正确密码(123456) 返回 token', async () => {
-      studentRepo.find.mockResolvedValue([{ ...stubStudent }])
+      query.findStudentByNoForLogin.mockResolvedValue(stubStudent)
       jwt.sign.mockReturnValue('token-xyz')
 
       const res = await service.login('20240001', '123456')
@@ -117,13 +101,13 @@ describe('ParentAuthService', () => {
     })
 
     it('学号不存在应抛出 BadRequestException', async () => {
-      studentRepo.find.mockResolvedValue([])
+      query.findStudentByNoForLogin.mockResolvedValue(null)
       await expect(service.login('99999999', '123456')).rejects.toThrow(BadRequestException)
       await expect(service.login('99999999', '123456')).rejects.toThrow('未找到该学号')
     })
 
     it('parentLoginEnabled=false 应抛出 BadRequestException', async () => {
-      studentRepo.find.mockResolvedValue([{ ...stubStudent, parentLoginEnabled: false }])
+      query.findStudentByNoForLogin.mockResolvedValue({ ...stubStudent, parentLoginEnabled: false })
       await expect(service.login('20240001', '123456')).rejects.toThrow(BadRequestException)
       await expect(service.login('20240001', '123456')).rejects.toThrow('尚未被老师授权')
     })
@@ -137,92 +121,17 @@ describe('ParentAuthService', () => {
       await expect(service.login('', '123456')).rejects.toThrow('请输入正确的学号')
     })
   })
+})
 
-  describe('getExams', () => {
-    it('无 classId 时返回空数组 { exams: [] }', async () => {
-      const res = await service.getExams({})
-      expect(res).toEqual({ exams: [] })
-
-      const res2 = await service.getExams({ classId: '', studentId: 's1' })
-      expect(res2).toEqual({ exams: [] })
-
-      // 不应查询数据库
-      expect(examRepo.find).not.toHaveBeenCalled()
-      expect(gradeRepo.find).not.toHaveBeenCalled()
-    })
-
-    it('无 studentId 时也返回空数组', async () => {
-      const res = await service.getExams({ classId: 'c1' })
-      expect(res).toEqual({ exams: [] })
-    })
-
-    it('buildDistribution 间接测试：通过 getExams 验证 10 分一段分布与 isStudent 标记', async () => {
-      // buildDistribution 为模块私有函数（未 export），此处通过 getExams 间接验证其逻辑
-      examRepo.find.mockResolvedValue([
-        {
-          id: 'exam1',
-          name: '期中',
-          date: '2024-04-01',
-          term: '2024春',
-          subjectFullScores: { 语文: 100 },
-          analysisNote: '',
-        },
-      ])
-      gradeRepo.find.mockResolvedValue([
-        {
-          examId: 'exam1',
-          subject: '语文',
-          scores: [
-            { studentId: 's1', score: 85 },
-            { studentId: 's2', score: 95 },
-          ],
-        },
-      ])
-      studentRepo.find.mockResolvedValue([{ id: 's1' }, { id: 's2' }])
-      // getExams 现会校验 studentId 是否属于该班级（studentRepo.findOne），需放行
-      studentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' })
-
-      const res = await service.getExams({ classId: 'c1', studentId: 's1' })
-
-      expect(res.exams).toHaveLength(1)
-      const exam = res.exams[0]
-      expect(exam.examName).toBe('期中')
-      expect(exam.totalScore).toBe(85)
-      expect(exam.totalFullScore).toBe(100)
-      // 总分排名：s2(95) > s1(85) → s1 第 2 名
-      expect(exam.classRank).toBe(2)
-      // 语文单科排名：s2(95) > s1(85) → s1 第 2 名
-      expect(exam.subjects[0].classRank).toBe(2)
-
-      // buildDistribution 输出：85 落在 80-89 段，95 落在 90-99 段
-      // 注：班级级分布（computeExams 传 studentTotal=null），isStudent 恒为 false
-      expect(exam.distribution).toEqual([
-        { label: '80-89', count: 1, pct: 100, isStudent: false },
-        { label: '90-99', count: 1, pct: 100, isStudent: false },
-      ])
-    })
-
-    it('buildDistribution：空分数返回空数组', async () => {
-      examRepo.find.mockResolvedValue([
-        {
-          id: 'exam2',
-          name: '月考',
-          date: '2024-05-01',
-          term: '2024春',
-          subjectFullScores: {},
-          analysisNote: null,
-        },
-      ])
-      gradeRepo.find.mockResolvedValue([])
-      studentRepo.find.mockResolvedValue([])
-      // getExams 现会校验 studentId 是否属于该班级（studentRepo.findOne），需放行
-      studentRepo.findOne.mockResolvedValue({ id: 's1', classId: 'c1' })
-
-      const res = await service.getExams({ classId: 'c1', studentId: 's1' })
-      expect(res.exams).toHaveLength(1)
-      // 无任何成绩 → distribution 为空
-      expect(res.exams[0].distribution).toEqual([])
-      expect(res.exams[0].totalScore).toBeNull()
-    })
-  })
+describe('ParentQueryService 拆分验证（原 ParentAuthService 只读查询在此服务）', () => {
+  // getExams / getKids / getNotices 等方法已拆分至 ParentQueryService
+  // 拆分后的详细测试见 parent-auth-refactor.spec.ts
+  it.todo('getExams 行为验证见 parent-auth-refactor.spec.ts')
+  it.todo('getKids/findKids 孩子列表查询见 parent-auth-refactor.spec.ts')
+  it.todo('getNotices 通知列表查询见 parent-auth-refactor.spec.ts')
+  it.todo('getHomework 作业列表查询见 parent-auth-refactor.spec.ts')
+  it.todo('getAttendance 考勤查询见 parent-auth-refactor.spec.ts')
+  it.todo('getBehavior 行为记录查询见 parent-auth-refactor.spec.ts')
+  it.todo('getTeachers 班级老师查询见 parent-auth-refactor.spec.ts')
+  it.todo('getSchedule 课程表查询见 parent-auth-refactor.spec.ts')
 })

@@ -17,7 +17,7 @@ class AwardService extends CrudService<AwardRecord> {
   }
 }
 @Roles('teacher')
-@Feature('rewards')
+@Feature('reward')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('award-records')
 class AwardController extends CrudController<AwardRecord> {
@@ -32,7 +32,7 @@ class CategoryService extends CrudService<AwardCategory> {
   }
 }
 @Roles('teacher')
-@Feature('rewards')
+@Feature('reward')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('award-categories')
 class CategoryController extends CrudController<AwardCategory> {

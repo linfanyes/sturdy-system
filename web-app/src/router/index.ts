@@ -98,7 +98,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'exam-detail', name: 'teacher-exam-detail', component: () => import('@/views/exams/ExamDetail.vue'), meta: { title: '考试详情', feature: 'analysis' } },
       { path: 'exam-compare', name: 'teacher-exam-compare', component: () => import('@/views/exams/ExamCompare.vue'), meta: { title: '进退步对比', feature: 'analysis' } },
       { path: 'student-grades', name: 'teacher-student-grades', component: () => import('@/views/exams/StudentGrades.vue'), meta: { title: '学生成绩', feature: 'grades' } },
-      { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'attendances' }, meta: { title: '考勤', feature: 'attendance' } },
+      { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/attendance/Attendance.vue'), meta: { title: '考勤', feature: 'attendance' } },
       { path: 'homework', name: 'teacher-homework', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'homework' }, meta: { title: '作业', feature: 'homework' } },
       // 学生评价
       { path: 'rewards', name: 'teacher-rewards', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'reward-records' }, meta: { title: '奖励记录', feature: 'rewards' } },

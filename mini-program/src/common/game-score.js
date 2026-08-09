@@ -8,7 +8,7 @@
  * 与 Web 端（web-app/src/api/games.ts）共用同一份事实来源。
  */
 import { api } from './request'
-import { GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/utils/game-mappings'
+import { GAME_KEY_TO_NAME, GAME_SCORE_SUBMIT_THROTTLE_MS } from '@gardener/shared/games/mappings'
 import { GAME_SCORES_PATHS } from '@gardener/shared/api/endpoints'
 
 // 上报节流：同一游戏间隔内仅上报一次，避免游戏内多次调用 submitScore 高频请求

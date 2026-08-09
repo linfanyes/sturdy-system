@@ -7,39 +7,59 @@ import {
   type StudentItem, type ClassItem,
 } from '@/api/school-admin'
 import { isValidPhone, PHONE_HINT } from '@/utils/validators'
+import { usePagedList } from '@gardener/shared/composables'
 import Modal from '@/components/Modal.vue'
 import ResetPasswordModal from '@/components/ResetPasswordModal.vue'
 import BatchImportDialog from '@/components/BatchImportDialog.vue'
 import { Search, Download, Edit3, Phone, Users, Upload, Printer, Trash2 } from 'lucide-vue-next'
 
-/* ============ 列表 ============ */
+/* ============ 列表（P0-3：usePagedList 后端分页；搜索时拉取 500 条前端过滤） ============ */
 const loading = ref(false)
-const students = ref<StudentItem[]>([])
-const keyword = ref('')
-const classFilter = ref('')
+
+const {
+  page,
+  pageSize,
+  keyword,
+  classId,
+  allItems,
+  loadList,
+  prevPage,
+  nextPage,
+  goPage,
+} = usePagedList(async (params: Record<string, any>) => {
+  const res = await listSchoolStudents({ skip: params.skip, take: params.take, classId: params.classId })
+  return { items: res.items || [], total: res.total || 0 }
+})
+
+// vue-tsc 对 composable 返回的 Ref 在模板自动解包支持有限，用 computed 包裹一层 ref 值
+const pageNum = computed(() => page.value)
+const pageSizeNum = computed(() => pageSize.value)
 
 const filtered = computed(() => {
-  let list = students.value
-  if (classFilter.value) {
-    list = list.filter(s => s.classId === classFilter.value)
-  }
+  let list = allItems.value
   if (keyword.value) {
     const kw = keyword.value.toLowerCase()
     list = list.filter(s =>
-      s.name?.toLowerCase().includes(kw) ||
-      s.studentNo?.includes(kw) ||
-      s.parentName?.includes(kw) ||
-      s.parentPhone?.includes(kw),
+      (s.name || '').toLowerCase().includes(kw) ||
+      (s.studentNo || '').includes(kw) ||
+      (s.parentName || '').toLowerCase().includes(kw) ||
+      (s.parentPhone || '').includes(kw),
     )
   }
   return list
 })
 
+const totalFiltered = computed(() => filtered.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / pageSize.value)))
+const displayedStudents = computed(() => {
+  const start = page.value * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
 async function loadStudents() {
   loading.value = true
   try {
-    const res = await listSchoolStudents()
-    students.value = res.items
+    await loadList()
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
   } finally {
@@ -188,7 +208,7 @@ async function handleDelete(s: StudentItem) {
   if (!await confirm(`确定删除学生「${s.name}」（${s.studentNo || '无学号'}）？\n该操作将同时清理其家长联系记录，不可恢复。`)) return
   try {
     await deleteStudent(s.id)
-    students.value = students.value.filter(x => x.id !== s.id)
+    allItems.value = allItems.value.filter(x => x.id !== s.id)
     toast.info('已删除')
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -203,7 +223,7 @@ async function handleDelete(s: StudentItem) {
       <h1 class="text-2xl font-bold text-cocoa-900">学生管理</h1>
       <div class="flex items-center gap-2">
         <select
-          v-model="classFilter"
+          v-model="classId"
           class="px-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
         >
           <option value="">全部班级</option>
@@ -265,10 +285,10 @@ async function handleDelete(s: StudentItem) {
           <tr v-if="loading" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">加载中…</td>
           </tr>
-          <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
+          <tr v-else-if="totalFiltered === 0" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">暂无学生数据</td>
           </tr>
-          <tr v-for="s in filtered" :key="s.id" class="hover:bg-cream-50 transition-colors">
+          <tr v-for="s in displayedStudents" :key="s.id" class="hover:bg-cream-50 transition-colors">
             <td class="px-4 py-3 font-medium text-cocoa-900">{{ s.name }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.studentNo || '-' }}</td>
             <td class="px-4 py-3 text-cocoa-700">{{ s.gender || '-' }}</td>
@@ -304,10 +324,39 @@ async function handleDelete(s: StudentItem) {
       </table>
     </div>
 
+    <!-- 分页栏 -->
+    <div v-if="totalFiltered > pageSizeNum" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ totalFiltered }} 名学生</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageNum === 0"
+          @click="prevPage"
+        >上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ pageNum + 1 }}/{{ totalPages }} 页</span>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm"
+          :disabled="pageNum + 1 >= totalPages"
+          @click="nextPage"
+        >下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSizeNum" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="goPage(0)">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
+    </div>
+
     <!-- 底部统计 -->
     <div class="text-sm text-cocoa-500 flex items-center gap-2">
       <Users class="w-4 h-4" />
-      共 {{ filtered.length }} 名学生（全校 {{ students.length }} 名）
+      共 {{ totalFiltered }} 名学生
     </div>
   </div>
 

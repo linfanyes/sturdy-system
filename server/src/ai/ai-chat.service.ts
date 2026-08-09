@@ -13,7 +13,8 @@ import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { AwardRecord } from '../award/award.entity'
 import { NoteItem } from '../notes/notes.entity'
-import { tlsAgent, assertAllowedAiUrl } from './ai-file-parser.service'
+import { tlsAgent } from './ai-file-parser.service'
+import { buildAiSettings } from './ai-settings.util'
 
 /**
  * AI 对话核心服务：负责组装消息（含本地上下文注入）、模型选择、
@@ -38,17 +39,9 @@ export class AiChatService {
     @InjectRepository(NoteItem) private readonly noteRepo: Repository<NoteItem>,
   ) {}
 
-  private async buildSettings(ownerType: string, ownerId: string) {
-    const s = await this.cfg.getAiSettings(ownerType, ownerId)
-    if (!s.apiKey) {
-      throw new BadRequestException('未配置 AI 密钥，请到「后端配置」中填写')
-    }
-    if (!s.baseUrl) {
-      throw new BadRequestException('未配置 AI 接口地址')
-    }
-    // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
-    assertAllowedAiUrl(s.baseUrl)
-    return s
+  // A06修复：委托给共享工具函数
+  private buildSettings(ownerType: string, ownerId: string) {
+    return buildAiSettings(this.cfg, ownerType, ownerId)
   }
 
   /**
@@ -218,25 +211,34 @@ export class AiChatService {
     await this.pipeSse(resp.data, onDelta)
   }
 
-  /** 解析 OpenAI 流式响应（SSE） */
+  /**
+   * 解析 OpenAI 流式响应（SSE）
+   * SSE修复：协议分隔改用标准 '\n\n' (RFC 8800)，与 shared SSE 解析器对齐；
+   * OpenAI 格式 delta 提取保持兼容（choices[0].delta.content）。
+   */
   private pipeSse(stream: any, onDelta: (t: string) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       let buf = ''
       stream.on('data', (chunk: Buffer) => {
         buf += chunk.toString('utf8')
         let idx: number
-        while ((idx = buf.indexOf('\n')) >= 0) {
-          const line = buf.slice(0, idx).trim()
-          buf = buf.slice(idx + 1)
-          if (!line.startsWith('data:')) continue
-          const data = line.slice(5).trim()
-          if (data === '[DONE]') continue
-          try {
-            const json = JSON.parse(data)
-            const delta = json.choices?.[0]?.delta?.content
-            if (delta) onDelta(delta as string)
-          } catch {
-            /* 忽略非 JSON 行 */
+        // SSE修复：优先按 '\n\n' 分隔 (RFC 8800 标准)，回退到 '\n' 兼容非标准实现
+        while ((idx = buf.indexOf('\n\n')) >= 0 || (idx = buf.indexOf('\n')) >= 0) {
+          const raw = buf.slice(0, idx).trim()
+          buf = buf.slice(idx + (buf[idx] === '\n' && buf[idx + 1] === '\n' ? 2 : 1))
+          // 仅处理 data: 行，其他（event:/id:）忽略
+          for (const line of raw.split('\n')) {
+            const ln = line.trim()
+            if (!ln.startsWith('data:')) continue
+            const data = ln.slice(5).trim()
+            if (data === '[DONE]') continue
+            try {
+              const json = JSON.parse(data)
+              const delta = json.choices?.[0]?.delta?.content
+              if (delta) onDelta(delta as string)
+            } catch {
+              /* 忽略非 JSON 行 */
+            }
           }
         }
       })
@@ -275,7 +277,7 @@ export class AiChatService {
     return (
       resp.data?.choices?.[0]?.message?.content || fallback
     )
-    } catch (e) {
+    } catch {
       return fallback
     }
   }

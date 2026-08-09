@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
-import { rand, clamp } from '@gardener/shared/utils/game-helpers'
+import { rand, clamp } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 

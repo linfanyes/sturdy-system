@@ -10,6 +10,7 @@ import { listExams, createExam, updateExam, deleteExam, listGrades } from '@/api
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { usePagedList } from '@gardener/shared/composables'
 import { getCurrentTerm } from '@gardener/shared/utils/date'
+import { SUBJECT_VALUES } from '@gardener/shared/constants'
 import Modal from '@/components/Modal.vue'
 import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
@@ -23,7 +24,7 @@ const showForm = ref(false)
 const editing = ref<any | null>(null)
 const formLoading = ref(false)
 
-const SUBJECTS = ['语文', '数学', '英语', '科学', '物理', '化学', '生物', '政治', '历史', '地理', '音乐', '体育', '美术', '信息技术', '道德与法治']
+const SUBJECTS = SUBJECT_VALUES
 
 const {
   page,

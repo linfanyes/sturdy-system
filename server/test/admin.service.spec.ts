@@ -18,7 +18,13 @@ function buildService() {
   }
   const classRepo = { find: jest.fn() }
   const studentRepo = { findOne: jest.fn() }
+  const gradeRepo = { find: jest.fn() }
+  const examRepo = { find: jest.fn() }
   const entityManager = { transaction: jest.fn() }
+  const audit = { log: jest.fn() }
+  // ResourceLibraryService / TextbookService 占位（seed 测试不调用）
+  const resourceLib = { seedDefaults: jest.fn() }
+  const textbook = { seedDefaults: jest.fn() }
 
   const service = new AdminService(
     config as any,
@@ -28,11 +34,12 @@ function buildService() {
     saRepo as any,
     classRepo as any,
     studentRepo as any,
+    gradeRepo as any,
+    examRepo as any,
     entityManager as any,
-    // 后续新增依赖占位：auditService / resourceLibrarySvc / textbookSvc
-    {} as any,
-    {} as any,
-    {} as any,
+    audit as any,
+    resourceLib as any,
+    textbook as any,
   )
   return { service, saRepo, schoolRepo }
 }
