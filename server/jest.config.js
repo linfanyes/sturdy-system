@@ -11,6 +11,7 @@ module.exports = {
     '^@gardener/shared/validators$': '<rootDir>/../shared/validators/index.ts',
     '^@gardener/shared/types$': '<rootDir>/../shared/types/index.ts',
     '^@gardener/shared/utils/(.*)$': '<rootDir>/../shared/utils/$1.ts',
+    '^@gardener/shared/schemas/(.*)$': '<rootDir>/../shared/schemas/$1.ts',
   },
   collectCoverage: false,
   verbose: true,

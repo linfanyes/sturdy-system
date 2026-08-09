@@ -4,6 +4,7 @@ import path from 'path'
 import { SchoolAdminService } from '../src/school-admin/school-admin.service'
 import { TeacherMgmtService } from '../src/school-admin/teacher-mgmt.service'
 import { ClassMgmtService } from '../src/school-admin/class-mgmt.service'
+import { StudentOpsService } from '../src/school-admin/student-ops.service'
 import { SchoolAdminModule } from '../src/school-admin/school-admin.module'
 import { BadRequestException } from '@nestjs/common'
 import { hashPassword } from '../src/common/utils/password.util'
@@ -48,6 +49,7 @@ describe('SchoolAdminService 重构验证', () => {
     let saSrc: string
     let teacherSrc: string
     let classSrc: string
+    let studentOpsSrc: string
 
     beforeAll(() => {
       saSrc = fs.readFileSync(
@@ -60,6 +62,10 @@ describe('SchoolAdminService 重构验证', () => {
       )
       classSrc = fs.readFileSync(
         path.resolve(__dirname, '../src/school-admin/class-mgmt.service.ts'),
+        'utf8',
+      )
+      studentOpsSrc = fs.readFileSync(
+        path.resolve(__dirname, '../src/school-admin/student-ops.service.ts'),
         'utf8',
       )
     })
@@ -84,7 +90,14 @@ describe('SchoolAdminService 重构验证', () => {
       expect(saSrc).not.toMatch(/async listSchoolStudents/)
     })
 
-    it('SchoolAdminService 应保留 login / dashboard / 公告 / 学生 / 考试 / 成绩 等方法', () => {
+    it('SchoolAdminService 不应再包含学生增删改/导出方法（已拆至 StudentOpsService）', () => {
+      expect(saSrc).not.toMatch(/async updateStudent/)
+      expect(saSrc).not.toMatch(/async deleteStudent/)
+      expect(saSrc).not.toMatch(/async batchCreateStudents/)
+      expect(saSrc).not.toMatch(/async exportStudents/)
+    })
+
+    it('SchoolAdminService 应保留 login / dashboard / 公告 / 考试 / 成绩 等方法', () => {
       // login / dashboard
       expect(saSrc).toMatch(/async login/)
       expect(saSrc).toMatch(/async dashboard/)
@@ -93,28 +106,28 @@ describe('SchoolAdminService 重构验证', () => {
       expect(saSrc).toMatch(/async createSchoolNotice/)
       expect(saSrc).toMatch(/async deleteSchoolNotice/)
       expect(saSrc).toMatch(/async updateSchoolNotice/)
-      // 学生管理
-      expect(saSrc).toMatch(/async updateStudent/)
-      expect(saSrc).toMatch(/async deleteStudent/)
-      expect(saSrc).toMatch(/async batchCreateStudents/)
+      // 学生管理（A03 拆分第 3 步后位于 StudentOpsService）
+      expect(studentOpsSrc).toMatch(/async updateStudent/)
+      expect(studentOpsSrc).toMatch(/async deleteStudent/)
+      expect(studentOpsSrc).toMatch(/async batchCreateStudents/)
       // 成绩/考试只读
       expect(saSrc).toMatch(/async listSchoolExams/)
       expect(saSrc).toMatch(/async listSchoolGrades/)
       expect(saSrc).toMatch(/async schoolGradeSummary/)
       // 搜索
       expect(saSrc).toMatch(/async search/)
-      // 导出
-      expect(saSrc).toMatch(/async exportStudents/)
-      expect(saSrc).toMatch(/async exportStudentsXls/)
+      // 导出（随学生操作拆至 StudentOpsService）
+      expect(studentOpsSrc).toMatch(/async exportStudents/)
+      expect(studentOpsSrc).toMatch(/async exportStudentsXls/)
       // 功能包
       expect(saSrc).toMatch(/async getSchoolFeatures/)
       expect(saSrc).toMatch(/async updateSchoolFeatures/)
     })
 
-    it('SchoolAdminService 应注入并使用 ClassMgmtService', () => {
-      expect(saSrc).toMatch(/classMgmt: ClassMgmtService/)
+    it('StudentOpsService 应注入并使用 ClassMgmtService（导出学生）', () => {
+      expect(studentOpsSrc).toMatch(/classMgmt: ClassMgmtService/)
       // 导出学生时使用 classMgmt
-      expect(saSrc).toMatch(/classMgmt\.listSchoolStudents/)
+      expect(studentOpsSrc).toMatch(/classMgmt\.listSchoolStudents/)
     })
 
     it('TeacherMgmtService 应包含所有教师管理方法', () => {
@@ -155,6 +168,7 @@ describe('SchoolAdminService 重构验证', () => {
     let saService: SchoolAdminService
     let teacherSvc: TeacherMgmtService
     let classSvc: ClassMgmtService
+    let studentOps: StudentOpsService
 
     let jwt: any
     let saRepo: any
@@ -213,7 +227,12 @@ describe('SchoolAdminService 重构验证', () => {
       saService = new SchoolAdminService(
         jwt as any, saRepo, userRepo, studentRepo, schoolRepo, classRepo,
         noticeRepo, attRepo, hwRepo, gradeRepo, examRepo,
-        audit as any, ai as any, classMgmt, em as any,
+        audit as any,
+      )
+
+      studentOps = new StudentOpsService(
+        userRepo, studentRepo, classRepo,
+        em as any, audit as any, ai as any, classMgmt,
       )
 
       teacherSvc = new TeacherMgmtService(
@@ -263,7 +282,7 @@ describe('SchoolAdminService 重构验证', () => {
       expect(res.totalStudents).toBe(10)
     })
 
-    it('SchoolAdminService.updateStudent 仍然可用', async () => {
+    it('StudentOpsService.updateStudent 仍然可用（学生操作已拆出）', async () => {
       studentRepo.findOne.mockResolvedValue({
         id: 'stu-1', studentNo: 'S001', classId: 'c1', name: '小明', gender: '男',
       })
@@ -271,7 +290,7 @@ describe('SchoolAdminService 重构验证', () => {
       userRepo.findOne.mockResolvedValue({ id: 't1', schoolId: 'school-1' })
       studentRepo.save.mockImplementation(async (s: any) => s)
 
-      const res = await saService.updateStudent('school-1', 'stu-1', { name: '小明（更新）' })
+      const res = await studentOps.updateStudent('school-1', 'stu-1', { name: '小明（更新）' })
       expect(res.name).toBe('小明（更新）')
     })
 

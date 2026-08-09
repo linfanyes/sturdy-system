@@ -30,9 +30,9 @@ describe('A08 - normalizeGender 性别归一化', () => {
     expect(src).toMatch(/@gardener\/shared\/utils\/gender/)
   })
 
-  it('应在 school-admin.service.ts 中被引用', () => {
+  it('应在 student-ops.service.ts 中被引用（校管学生批量导入，A03 拆分后位置）', () => {
     const src = fs.readFileSync(
-      path.resolve(__dirname, '../src/school-admin/school-admin.service.ts'),
+      path.resolve(__dirname, '../src/school-admin/student-ops.service.ts'),
       'utf8',
     )
     expect(src).toMatch(/normalizeGender/)

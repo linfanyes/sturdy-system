@@ -25,7 +25,7 @@ import { User } from '../users/user.entity'
 import { StudentParentModule, StudentParentService } from '../student-parent/student-parent.module'
 import { Parent } from '../parent/parent.entity'
 import { CreateStudentDto, UpdateStudentDto } from './dto/students.dto'
-import { SchoolAdminService } from '../school-admin/school-admin.service'
+import { StudentOpsService } from '../school-admin/student-ops.service'
 import { SchoolAdminModule } from '../school-admin/school-admin.module'
 
 // 学生名单 AI 识别指令：约束模型输出 [{name,gender,studentNo,parentName,parentPhone}] 结构
@@ -444,7 +444,7 @@ class StudentsService extends CrudService<Student> {
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('students')
 class StudentsController extends CrudController<Student> {
-  constructor(s: StudentsService, private readonly saSvc: SchoolAdminService) {
+  constructor(s: StudentsService, private readonly studentOps: StudentOpsService) {
     super(s)
   }
 
@@ -477,7 +477,7 @@ class StudentsController extends CrudController<Student> {
   async importPreview(@Body() body: { filename: string; data: string }, @Req() req: any) {
     if (!body?.filename || !body?.data) throw new BadRequestException('缺少文件数据')
     if (req.user?.role === 'school_admin') {
-      return this.saSvc.parseStudentFile(body.filename, body.data)
+      return this.studentOps.parseStudentFile(body.filename, body.data)
     }
     return (this.service as StudentsService).parseFile(body.filename, body.data)
   }
@@ -501,7 +501,7 @@ class StudentsController extends CrudController<Student> {
         parentName: it.parentName, parentPhone: it.parentPhone,
         classId: it.classId || body.classId,
       }))
-      return this.saSvc.batchCreateStudents(req.user.schoolId, rows)
+      return this.studentOps.batchCreateStudents(req.user.schoolId, rows)
     }
     return (this.service as StudentsService).importStudents(
       t.sub,
@@ -529,7 +529,7 @@ class StudentsController extends CrudController<Student> {
       throw new BadRequestException('缺少识别数据')
     }
     if (req.user?.role === 'school_admin') {
-      return this.saSvc.aiRecognizeStudents(req.user.sub, body.filename || '', body.data)
+      return this.studentOps.aiRecognizeStudents(req.user.sub, body.filename || '', body.data)
     }
     return (this.service as StudentsService).importAi(
       t.sub,

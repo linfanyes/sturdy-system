@@ -1,6 +1,7 @@
 import 'reflect-metadata'
 import { BadRequestException } from '@nestjs/common'
 import { SchoolAdminService } from '../src/school-admin/school-admin.service'
+import { StudentOpsService } from '../src/school-admin/student-ops.service'
 
 /** 构造一个包含常用 Repository 方法的 mock 对象 */
 function mockRepo(): any {
@@ -20,6 +21,7 @@ function mockRepo(): any {
 
 describe('SchoolAdminService（A03拆分后保留公告/只读查询/学生管理/导出逻辑）', () => {
   let service: SchoolAdminService
+  let studentOps: StudentOpsService
   let jwt: any
   let saRepo: any
   let userRepo: any
@@ -67,8 +69,8 @@ describe('SchoolAdminService（A03拆分后保留公告/只读查询/学生管�
       getRepository: jest.fn(() => mockRepo()),
       query: jest.fn().mockResolvedValue(undefined),
     }
-    // SchoolAdminService constructor takes: jwt, saRepo, userRepo, studentRepo, schoolRepo, classRepo,
-    // noticeRepo, attRepo, hwRepo, gradeRepo, examRepo, audit, ai, classMgmt, entityManager
+    // SchoolAdminService 拆分后构造器：jwt, saRepo, userRepo, studentRepo, schoolRepo, classRepo,
+    // noticeRepo, attRepo, hwRepo, gradeRepo, examRepo, audit（ai/classMgmt/entityManager 随学生操作拆出）
     service = new SchoolAdminService(
       jwt as any,
       saRepo,
@@ -82,9 +84,16 @@ describe('SchoolAdminService（A03拆分后保留公告/只读查询/学生管�
       gradeRepo,
       examRepo,
       audit as any,
+    )
+    // 学生操作已拆分至 StudentOpsService（A03 拆分第 3 步）
+    studentOps = new StudentOpsService(
+      userRepo,
+      studentRepo,
+      classRepo,
+      em as any,
+      audit as any,
       ai as any,
       {} as any, // classMgmt 占位
-      em as any,
     )
   })
 
@@ -156,14 +165,14 @@ describe('SchoolAdminService（A03拆分后保留公告/只读查询/学生管�
     })
   })
 
-  describe('updateStudent / deleteStudent（学生管理保留在本服务）', () => {
+  describe('updateStudent / deleteStudent（已拆分至 StudentOpsService）', () => {
     it('updateStudent 应更新学生信息', async () => {
       studentRepo.findOne.mockResolvedValue({ id: 'stu-1', studentNo: 'S001' })
       classRepo.findOne.mockResolvedValue({ id: 'c1', teacherId: 't1' })
       userRepo.findOne.mockResolvedValue({ id: 't1', schoolId: 'school-1' })
       studentRepo.save.mockImplementation(async (s: any) => s)
 
-      await service.updateStudent('school-1', 'stu-1', { name: '新名字' })
+      await studentOps.updateStudent('school-1', 'stu-1', { name: '新名字' })
 
       expect(studentRepo.save).toHaveBeenCalled()
     })

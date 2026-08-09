@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import axios from 'axios'
+import { createSSEEventSplitter } from '@gardener/shared/utils/sse-parser'
 import { ConfigService } from '../config/config.service'
 import { CacheService } from '../common/cache/cache.service'
 import { AiFileParserService } from './ai-file-parser.service'
@@ -213,36 +214,27 @@ export class AiChatService {
 
   /**
    * 解析 OpenAI 流式响应（SSE）
-   * SSE修复：协议分隔改用标准 '\n\n' (RFC 8800)，与 shared SSE 解析器对齐；
+   * SSE统一修复：分片/切分语义收敛到 shared createSSEEventSplitter（RFC 8800 '\n\n' 事件分隔），
+   * 与前端 createSSEParser 共用同一内核，消除双端分隔符与容错策略漂移；
    * OpenAI 格式 delta 提取保持兼容（choices[0].delta.content）。
    */
   private pipeSse(stream: any, onDelta: (t: string) => void): Promise<void> {
     return new Promise((resolve, reject) => {
-      let buf = ''
-      stream.on('data', (chunk: Buffer) => {
-        buf += chunk.toString('utf8')
-        let idx: number
-        // SSE修复：优先按 '\n\n' 分隔 (RFC 8800 标准)，回退到 '\n' 兼容非标准实现
-        while ((idx = buf.indexOf('\n\n')) >= 0 || (idx = buf.indexOf('\n')) >= 0) {
-          const raw = buf.slice(0, idx).trim()
-          buf = buf.slice(idx + (buf[idx] === '\n' && buf[idx + 1] === '\n' ? 2 : 1))
-          // 仅处理 data: 行，其他（event:/id:）忽略
-          for (const line of raw.split('\n')) {
-            const ln = line.trim()
-            if (!ln.startsWith('data:')) continue
-            const data = ln.slice(5).trim()
-            if (data === '[DONE]') continue
-            try {
-              const json = JSON.parse(data)
-              const delta = json.choices?.[0]?.delta?.content
-              if (delta) onDelta(delta as string)
-            } catch {
-              /* 忽略非 JSON 行 */
-            }
-          }
+      const splitter = createSSEEventSplitter((data) => {
+        if (data === '[DONE]') return
+        try {
+          const json = JSON.parse(data)
+          const delta = json.choices?.[0]?.delta?.content
+          if (delta) onDelta(delta as string)
+        } catch {
+          /* 忽略非 JSON 行 */
         }
       })
-      stream.on('end', () => resolve())
+      stream.on('data', (chunk: Buffer) => splitter.feed(chunk.toString('utf8')))
+      stream.on('end', () => {
+        splitter.flush()
+        resolve()
+      })
       stream.on('error', (e: Error) => reject(e))
     })
   }

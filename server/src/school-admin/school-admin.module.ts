@@ -13,6 +13,7 @@ import { ClassMembersModule } from '../class-members/class-members.module'
 import { SchoolAdminService } from './school-admin.service'
 import { TeacherMgmtService } from './teacher-mgmt.service'
 import { ClassMgmtService } from './class-mgmt.service'
+import { StudentOpsService } from './student-ops.service'
 import { SchoolAdminController } from './school-admin.controller'
 import { AuditModule } from '../audit/audit.module'
 import { AiModule } from '../ai/ai.module'
@@ -24,8 +25,8 @@ import { AiModule } from '../ai/ai.module'
     ClassMembersModule,
     AiModule,
   ],
-  providers: [SchoolAdminService, TeacherMgmtService, ClassMgmtService],
+  providers: [SchoolAdminService, TeacherMgmtService, ClassMgmtService, StudentOpsService],
   controllers: [SchoolAdminController],
-  exports: [SchoolAdminService, TeacherMgmtService, ClassMgmtService],
+  exports: [SchoolAdminService, TeacherMgmtService, ClassMgmtService, StudentOpsService],
 })
 export class SchoolAdminModule {}

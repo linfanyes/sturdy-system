@@ -2,6 +2,7 @@ import { Controller, Post, Get, Delete, Patch, Body, Param, UseGuards, Query, Re
 import { SchoolAdminService } from './school-admin.service'
 import { TeacherMgmtService } from './teacher-mgmt.service'
 import { ClassMgmtService } from './class-mgmt.service'
+import { StudentOpsService } from './student-ops.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentSchoolAdmin } from './current-school-admin.decorator'
@@ -20,6 +21,7 @@ export class SchoolAdminController {
     private readonly svc: SchoolAdminService,
     private readonly teacherSvc: TeacherMgmtService,
     private readonly classSvc: ClassMgmtService,
+    private readonly studentOps: StudentOpsService,
   ) {}
 
   /** D9 修复：校验 base64 文件数据的合法性，非法数据直接 400（避免解析出乱码行） */
@@ -238,20 +240,20 @@ export class SchoolAdminController {
   @Patch('students/:id')
   @UseGuards(JwtAuthGuard)
   updateStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: UpdateStudentDto) {
-    return this.svc.updateStudent(a.schoolId, id, b)
+    return this.studentOps.updateStudent(a.schoolId, id, b)
   }
 
   @Delete('students/:id')
   @UseGuards(JwtAuthGuard)
   deleteStudent(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
-    return this.svc.deleteStudent(a.schoolId, id)
+    return this.studentOps.deleteStudent(a.schoolId, id)
   }
 
   /** 批量创建学生（接收 students 数组，可跨班级；校验所有 classId 属于本校） */
   @Post('students/batch')
   @UseGuards(JwtAuthGuard)
   batchCreateStudents(@CurrentSchoolAdmin() a: any, @Body() b: { students: any[] }) {
-    return this.svc.batchCreateStudents(a.schoolId, b?.students || [])
+    return this.studentOps.batchCreateStudents(a.schoolId, b?.students || [])
   }
 
   /**
@@ -268,14 +270,14 @@ export class SchoolAdminController {
   ) {
     if (!b?.classId) throw new BadRequestException('缺少班级ID')
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    const { rows } = await this.svc.parseStudentFile(b.filename, b.data)
+    const { rows } = await this.studentOps.parseStudentFile(b.filename, b.data)
     // 仅导入校验通过的有效行，统一填充 classId
     const valid = rows.filter((r) => r.valid).map((r) => ({
       name: r.name, gender: r.gender, studentNo: r.studentNo,
       parentName: r.parentName, parentPhone: r.parentPhone, classId: b.classId,
     }))
     if (!valid.length) throw new BadRequestException('文件中无有效学生数据')
-    return this.svc.batchCreateStudents(a.schoolId, valid)
+    return this.studentOps.batchCreateStudents(a.schoolId, valid)
   }
 
   /** 学生文件预览：解析并校验文件，不落库，返回明细（含错误行） */
@@ -283,7 +285,7 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importPreview(@Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return await this.svc.parseStudentFile(b.filename, b.data)
+    return await this.studentOps.parseStudentFile(b.filename, b.data)
   }
 
   /** 学生文件 AI 识别：图片走 OCR、表格转文本，再交给大模型结构化解析 */
@@ -291,7 +293,7 @@ export class SchoolAdminController {
   @UseGuards(JwtAuthGuard)
   async importStudentsAi(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
-    return await this.svc.aiRecognizeStudents(a.sub, b.filename, b.data)
+    return await this.studentOps.aiRecognizeStudents(a.sub, b.filename, b.data)
   }
 
   // ===== 数据导出 =====
@@ -308,7 +310,7 @@ export class SchoolAdminController {
   @Get('export/students')
   @UseGuards(JwtAuthGuard)
   async exportStudents(@CurrentSchoolAdmin() a: any, @Res() res: any) {
-    const data = await this.svc.exportStudents(a.schoolId)
+    const data = await this.studentOps.exportStudents(a.schoolId)
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=students.csv')
     res.send('\uFEFF' + data)
@@ -328,7 +330,7 @@ export class SchoolAdminController {
   @Get('export/students-xls')
   @UseGuards(JwtAuthGuard)
   async exportStudentsXls(@CurrentSchoolAdmin() a: any, @Res() res: any) {
-    const buf = await this.svc.exportStudentsXls(a.schoolId)
+    const buf = await this.studentOps.exportStudentsXls(a.schoolId)
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename=students.xlsx')
     res.send(buf)

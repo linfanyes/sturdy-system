@@ -25,9 +25,9 @@ describe('S01 - 学校管理员登录限速', () => {
 
 describe('S02 - 数据导出脱敏', () => {
   it('导出相关服务应包含 maskPhone 函数', () => {
-    // 由于拆分，maskPhone 存在于 school-admin.service 和 teacher-mgmt.service
+    // 拆分后学生导出（含 maskPhone）位于 student-ops.service，教师导出在 teacher-mgmt.service
     const saSrc = fs.readFileSync(
-      path.resolve(__dirname, '../src/school-admin/school-admin.service.ts'),
+      path.resolve(__dirname, '../src/school-admin/student-ops.service.ts'),
       'utf8',
     )
     const tmSrc = fs.readFileSync(
@@ -41,9 +41,9 @@ describe('S02 - 数据导出脱敏', () => {
   })
 
   it('导出方法应使用 maskPhone', () => {
-    // 检查 student 导出在 school-admin.service, teacher 导出在 teacher-mgmt.service
+    // 检查 student 导出在 student-ops.service, teacher 导出在 teacher-mgmt.service
     const saSrc = fs.readFileSync(
-      path.resolve(__dirname, '../src/school-admin/school-admin.service.ts'),
+      path.resolve(__dirname, '../src/school-admin/student-ops.service.ts'),
       'utf8',
     )
     const tmSrc = fs.readFileSync(

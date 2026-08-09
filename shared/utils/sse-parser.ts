@@ -156,3 +156,67 @@ export function parseSSELn(line: string): { data: string | null; done: boolean }
   if (data === DONE_TOKEN) return { data: null, done: true }
   return { data, done: false }
 }
+
+/**
+ * 协议无关的 SSE 事件切分器（服务端/消费上游流场景复用）。
+ *
+ * 与 createSSEParser 共享同一套 RFC 8800 切分内核（'\n\n' 事件分隔 + data: 行提取），
+ * 但不假设 payload 结构——每条 data: 行的原文（去掉 data: 前缀并 trim）通过 onData 回调抛出，
+ * 由调用方自行解释（OpenAI choices[].delta.content、本系统 {delta,error} 协议等）。
+ *
+ * 【背景】server 端 ai-chat.service.ts 的 pipeSse（消费 OpenAI 兼容上游流）
+ * 曾独立维护一套缓冲/切分逻辑，与本文件存在分隔符与容错策略漂移的风险；
+ * 统一后 SSE 分片语义收敛到 shared 单一实现。
+ *
+ * 【使用】
+ *   const splitter = createSSEEventSplitter((payload) => {
+ *     if (payload === '[DONE]') return
+ *     const json = JSON.parse(payload) // 调用方决定如何解释
+ *   })
+ *   stream.on('data', (c) => splitter.feed(c.toString('utf8')))
+ *   stream.on('end', () => splitter.flush())
+ */
+export interface SSEEventSplitter {
+  /** 喂入增量 chunk */
+  feed: (chunk: string) => void
+  /** 流结束时调用，处理残留缓冲（无结束符的尾部事件） */
+  flush: () => void
+}
+
+export function createSSEEventSplitter(onData: (payload: string) => void): SSEEventSplitter {
+  let buf = ''
+
+  function handleEvent(raw: string) {
+    for (const line of raw.split('\n')) {
+      const t = line.trim()
+      if (!t.startsWith(DATA_PREFIX)) continue
+      onData(t.slice(DATA_PREFIX.length).trim())
+    }
+  }
+
+  function processBuffer(flush: boolean) {
+    while (true) {
+      const idx = buf.indexOf(EVENT_DELIMITER)
+      if (idx === -1) break
+      const raw = buf.slice(0, idx)
+      buf = buf.slice(idx + EVENT_DELIMITER.length)
+      if (raw.trim()) handleEvent(raw)
+    }
+    if (flush && buf.trim()) {
+      const tail = buf
+      buf = ''
+      handleEvent(tail)
+    }
+  }
+
+  return {
+    feed(chunk: string) {
+      if (!chunk) return
+      buf += chunk
+      processBuffer(false)
+    },
+    flush() {
+      processBuffer(true)
+    },
+  }
+}
