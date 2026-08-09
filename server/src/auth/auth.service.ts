@@ -216,9 +216,19 @@ export class AuthService {
     const { valid, newHash } = verifyAndUpgrade(password, user.passwordHash)
     if (!valid) throw new UnauthorizedException('密码错误')
     if (newHash) { user.passwordHash = newHash; await this.users.update(user.id, { passwordHash: newHash }) }
+    // 安全修复：仅返回安全字段，避免泄露 passwordHash / sessionKey / openid 等敏感信息
+    const safeUser = {
+      id: user.id, name: user.name, username: user.username,
+      school: user.school, schoolId: user.schoolId, phone: user.phone,
+      features: user.features, enabled: user.enabled,
+      avatar: user.avatar, teacherNo: user.teacherNo,
+      position: user.position || '',
+      subject: user.subject || '',
+      subjects: user.subjects || [],
+    }
     return {
       token: this.jwt.sign({ sub: user.id, role: 'teacher', schoolId: user.schoolId || '' }),
-      user,
+      user: safeUser,
       effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }),
     }
   }

@@ -25,6 +25,8 @@ function readSrc(rel: string): string {
 const classesModuleSrc = readSrc('src/classes/classes.module.ts')
 const classMemberModuleSrc = readSrc('src/class-members/class-members.module.ts')
 const schoolAdminSrc = readSrc('src/school-admin/school-admin.service.ts')
+// createClass/updateClass 已重构拆分至 class-mgmt.service.ts（校管班级管理专职服务）
+const classMgmtSrc = readSrc('src/school-admin/class-mgmt.service.ts')
 
 describe('班主任特权相关逻辑', () => {
   describe('班级写操作仅限班主任', () => {
@@ -259,8 +261,8 @@ describe('班主任特权相关逻辑', () => {
     })
 
     it('23. 校管 createClass 调用 classMemberSvc 写入 head 记录并前置校验一师一班', () => {
-      // school-admin.service.ts 的 createClass 改用 classMemberSvc 复用校验与写入逻辑
-      const m = schoolAdminSrc.match(
+      // createClass 已重构至 class-mgmt.service.ts，复用 classMemberSvc 的校验与写入逻辑
+      const m = classMgmtSrc.match(
         /async createClass\(schoolId: string, dto: \{[\s\S]*?\}\)\s*\{([\s\S]*?)\n  \}/,
       )
       expect(m).not.toBeNull()

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { unifiedLogin, buildParentUser } from '@/api/auth'
 import type { UnifiedLoginResult } from '@/api/auth'
-import { Loader2, Sparkles, RefreshCw } from 'lucide-vue-next'
+import { Loader2, Sparkles, RefreshCw, Eye, EyeOff } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
@@ -16,6 +16,13 @@ const route = useRoute()
 const loading = ref(false)
 const errMsg = ref('')
 const form = ref({ username: '', password: '' })
+// 密码可见性开关：默认密文，点击眼睛图标切换（type 变化不触发重新聚焦丢失，保持输入连续）
+const showPassword = ref(false)
+// 大写锁定提示：避免"密码明明输对了却登不上"的经典困扰
+const capsLockOn = ref(false)
+function checkCapsLock(e: KeyboardEvent) {
+  capsLockOn.value = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock')
+}
 
 /* ============ 师兼家双角色选择 ============ */
 const showRoleChoiceModal = ref(false)
@@ -324,13 +331,30 @@ function selectRole(role: 'teacher' | 'parent') {
               <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-cocoa-600">
                 <span>🔒</span> 密码
               </label>
-              <input
-                v-model="form.password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="请输入密码"
-                class="input-soft"
-              />
+              <div class="relative">
+                <input
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  placeholder="请输入密码"
+                  class="input-soft pr-11"
+                  @keydown="checkCapsLock"
+                  @keyup="checkCapsLock"
+                />
+                <button
+                  type="button"
+                  tabindex="-1"
+                  :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                  class="absolute inset-y-0 right-3 flex items-center text-cocoa-400 transition hover:text-cocoa-600"
+                  @click="showPassword = !showPassword"
+                >
+                  <EyeOff v-if="showPassword" class="h-5 w-5" />
+                  <Eye v-else class="h-5 w-5" />
+                </button>
+              </div>
+              <p v-if="capsLockOn" class="mt-1 text-xs text-amber-500">
+                ⚠️ 大写锁定已开启
+              </p>
             </div>
 
             <!-- 错误提示 -->
