@@ -40,7 +40,7 @@ const studentMatrix = computed(() => {
       scores[subj] = entry?.score ?? null
       if (entry?.score != null) { total += entry.score; count++ }
     }
-    return { student: st, scores, total, avg: count > 0 ? total / count : null, subjects }
+    return { student: st, scores, total, avg: count > 0 ? total / count : null, examCount: count, totalSubjects: subjects.length, subjects }
   })
 })
 
@@ -62,6 +62,7 @@ const matrixSubjects = computed(() => props.selectedExam?.subjects || [])
             <th v-for="s in matrixSubjects" :key="s" class="px-3 py-2 font-medium text-center">{{ s }}</th>
             <th class="px-3 py-2 font-medium text-center">总分</th>
             <th class="px-3 py-2 font-medium text-center">均分</th>
+            <th class="px-3 py-2 font-medium text-center">已考</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-cream-100">
@@ -77,6 +78,7 @@ const matrixSubjects = computed(() => props.selectedExam?.subjects || [])
             </td>
             <td class="px-3 py-2 text-center font-medium text-cocoa-900">{{ row.total || '-' }}</td>
             <td class="px-3 py-2 text-center text-cocoa-700">{{ row.avg != null ? row.avg.toFixed(1) : '-' }}</td>
+            <td class="px-3 py-2 text-center text-xs text-cocoa-400">{{ row.examCount }}/{{ row.totalSubjects }}</td>
           </tr>
         </tbody>
       </table>

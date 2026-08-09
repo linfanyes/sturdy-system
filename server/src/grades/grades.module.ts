@@ -107,6 +107,8 @@ class GradesService extends CrudService<Grade> {
   }
 
   async mergeGrade(teacherId: string, dto: any) {
+    // 校验学科权限
+    await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
     const existing = await this.repo.findOne({
       where: {
         classId: dto.classId,
@@ -184,6 +186,8 @@ class GradesService extends CrudService<Grade> {
   }
 
   async importGrades(teacherId: string, dto: any) {
+    // 校验学科权限
+    await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
     return await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Grade)
       const scores: GradeScore[] = (dto.rows || [])
@@ -370,6 +374,22 @@ class GradesService extends CrudService<Grade> {
     if (!canAccess) throw new BadRequestException('无权访问该班级成绩')
   }
 
+
+  /**
+   * 校验教师是否有权操作指定学科的成绩
+   * - 班主任(head)：可操作所有学科
+   * - 科任老师(subject)：只能操作自己任教学科
+   */
+  private async assertSubjectPermission(teacherId: string, classId: string, subject: string): Promise<void> {
+    const role = await this.classMemberSvc.getRole(teacherId, classId)
+    if (role === 'head') return  // 班主任全学科权限
+    // 科任老师校验是否教授该学科
+    const allowedSubjects = await this.classMemberSvc.getAllSubjects(teacherId, classId)
+    if (!allowedSubjects.includes(subject)) {
+      throw new BadRequestException(`无权操作学科「${subject}」的成绩`)
+    }
+  }
+
   /**
    * 加载教师「可见」的班级成绩（P3 一致性修复）：
    * - 先按 classId 查全班成绩（同班协作，不再按 teacherId 隔离）
@@ -473,7 +493,19 @@ class GradesService extends CrudService<Grade> {
         .filter((s) => s.score != null)
         .sort((a, b) => Number(b.score) - Number(a.score))
       const total = sorted.length
+      // 同分同名次计算：标准竞赛排名法（1224型）
+      let prevScore: number | null = null
+      let prevRank = 0
       sorted.forEach((entry, idx) => {
+        const score = Number(entry.score)
+        let rank: number
+        if (prevScore === null || score !== prevScore) {
+          rank = idx + 1
+          prevScore = score
+          prevRank = rank
+        } else {
+          rank = prevRank
+        }
         const stu = studentMap.get(entry.studentId)
         result.push({
           examId,
@@ -482,7 +514,7 @@ class GradesService extends CrudService<Grade> {
           studentName: stu?.name || '',
           studentNo: stu?.studentNo || '',
           score: entry.score,
-          rank: idx + 1,
+          rank,
           total,
           percentile: Math.round(((total - idx - 1) / total) * 1000) / 10,
         })

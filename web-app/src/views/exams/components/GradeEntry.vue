@@ -17,6 +17,7 @@ interface Exam {
   subjects?: string[]
 }
 
+
 const props = defineProps<{
   classId: string
   className: string
@@ -25,6 +26,7 @@ const props = defineProps<{
   students: Student[]
   examSubjects: string[]
   grades: any[]
+  subjectFullScore?: number
 }>()
 
 const emit = defineEmits<{
@@ -38,10 +40,35 @@ const entryScores = ref<Record<string, string>>({})
 const entryMode = ref<'table' | 'paste'>('table')
 const pasteText = ref('')
 
+
 const entryProgress = computed(() => {
   const filled = Object.values(entryScores.value).filter(v => v !== '' && v != null).length
   return { filled, total: props.students.length }
 })
+
+// 分数范围校验：0 ~ 满分（默认100）
+const fullScore = computed(() => props.subjectFullScore || 100)
+
+function validateScore(val: string): { valid: boolean; error?: string } {
+  if (val === '' || val == null) return { valid: true }  // 空值=缺考，允许
+  if (!/^\d+(\.\d+)?$/.test(val)) return { valid: false, error: '须为数字' }
+  const num = Number(val)
+  if (num < 0) return { valid: false, error: '不能为负' }
+  if (num > fullScore.value) return { valid: false, error: `超过满分${fullScore.value}` }
+  return { valid: true }
+}
+
+const invalidScores = computed(() => {
+  const invalid: string[] = []
+  for (const [sid, val] of Object.entries(entryScores.value)) {
+    if (!validateScore(val as string).valid) {
+      const stu = props.students.find(s => s.id === sid)
+      invalid.push(stu?.name || sid)
+    }
+  }
+  return invalid
+})
+
 
 function openEntry() {
   if (!props.selectedExam) { toast.warning('请先选择考试'); return }
@@ -81,6 +108,11 @@ function parsePaste() {
 
 async function submitEntry() {
   if (!props.selectedExam || !props.selectedSubject) return
+  // 前端校验：检查是否有无效分数
+  if (invalidScores.value.length) {
+    toast.warning(`以下学生分数无效：${invalidScores.value.slice(0, 3).join('、')}${invalidScores.value.length > 3 ? '等' : ''}`)
+    return
+  }
   entryLoading.value = true
   try {
     const { importGradesCommit } = await import('@/api/teacher')
@@ -270,7 +302,9 @@ defineExpose({ openEntry, openImport })
             v-model="entryScores[s.id]"
             type="number"
             step="0.5"
-            class="w-20 px-2 py-1 text-sm rounded-lg border border-cream-200 focus:outline-none focus:border-butter-400"
+            class="w-20 px-2 py-1 text-sm rounded-lg border focus:outline-none focus:border-butter-400"
+            :class="validateScore(entryScores[s.id]).valid ? 'border-cream-200' : 'border-red-400 bg-red-50'"
+            :title="validateScore(entryScores[s.id]).error || ''"
             placeholder="分数"
           />
         </div>

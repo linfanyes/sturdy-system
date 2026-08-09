@@ -58,19 +58,32 @@ class ExamsService extends CrudService<Exam> {
 
   /** 创建考试计划时，为每个科目自动建一条空成绩记录 */
   async create(teacherId: string, dto: any): Promise<Exam> {
+    // 检查是否有同名考试，避免唯一索引冲突
+    const existingExam = await this.repo.findOne({
+      where: { classId: dto.classId, name: dto.name } as any,
+    })
+    if (existingExam) {
+      throw new BadRequestException('该班级已存在同名考试，请修改考试名称')
+    }
     const exam = await super.create(teacherId, dto)
-    for (const subject of dto.subjects || []) {
-      await this.gradeRepo.save(
-        this.gradeRepo.create({
-          teacherId,
-          classId: dto.classId,
-          subject,
-          examName: dto.name,
-          examId: exam.id,
-          date: dto.date,
-          scores: [],
-        } as any),
-      )
+    try {
+      for (const subject of dto.subjects || []) {
+        await this.gradeRepo.save(
+          this.gradeRepo.create({
+            teacherId,
+            classId: dto.classId,
+            subject,
+            examName: dto.name,
+            examId: exam.id,
+            date: dto.date,
+            scores: [],
+          } as any),
+        )
+      }
+    } catch (e) {
+      // 如果创建成绩记录失败，删除已创建的考试
+      await super.remove(exam.id, teacherId)
+      throw e
     }
     return exam
   }
@@ -82,6 +95,12 @@ class ExamsService extends CrudService<Exam> {
     // 班主任可删除同班任何考试
     const isHead = await this.classMemberSvc.getRole(teacherId, exam.classId) === 'head'
     if (!isHead && exam.teacherId !== teacherId) throw new NotFoundException('无权删除此考试')
+    // 检查是否有其他老师录入的成绩（避免误删他人数据）
+    const relatedGrades = await this.gradeRepo.find({ where: { examId: id } as any, select: ['teacherId'] })
+    const otherTeacherGrades = relatedGrades.filter(g => g.teacherId !== teacherId)
+    if (otherTeacherGrades.length > 0 && !isHead) {
+      throw new BadRequestException('该考试下有其他老师录入的成绩，无法删除。请联系班主任处理。')
+    }
     await this.gradeRepo.delete({ examId: id } as any)
     return super.remove(id, teacherId)
   }

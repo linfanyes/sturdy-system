@@ -24,7 +24,7 @@ import { findStudentByNoForLogin } from '../common/utils/student.util'
  */
 @Injectable()
 export class ParentQueryService {
-  private readonly EXAM_CACHE_TTL = 5 * 60 * 1000  // 5 分钟缓存
+  private readonly EXAM_CACHE_TTL = 60 * 1000  // 1 分钟缓存（缩短缓存时间，提高数据实时性）
   private readonly MAX_RECENT_EXAMS = 10  // 最多返回最近 10 次考试
 
   constructor(
@@ -301,23 +301,91 @@ export class ParentQueryService {
     const examPromises = kids.map(async (kid) => {
       const kidPayload = { classId: kid.classId, studentId: kid.id }
       const result = await this.getExams(kidPayload)
-      return { studentId: kid.id, exams: result.exams || [] }
+      return { studentId: kid.id, classId: kid.classId, exams: result.exams || [] }
     })
     const results = await Promise.all(examPromises)
 
-    const examMap = new Map<string, any>()
+    // 智能匹配：按考试名称+日期范围（7天内）组合匹配
+    // 不同班级的同名考试如果日期接近，视为同一次考试
+    const examGroups: any[] = []
+    const allExams: Array<{ studentId: string; classId: string; exam: any }> = []
     for (const r of results) {
       for (const e of (r.exams || [])) {
-        const key = e.examName
-        if (!examMap.has(key)) examMap.set(key, { examName: e.examName, date: e.date, term: e.term, rows: {} })
-        examMap.get(key).rows[r.studentId] = e
+        allExams.push({ studentId: r.studentId, classId: r.classId, exam: e })
       }
+    }
+
+    // 按日期排序
+    allExams.sort((a, b) => (a.exam.date || '').localeCompare(b.exam.date || ''))
+
+    // 分组匹配：同名且日期相差7天内视为同一次考试
+    const used = new Set<number>()
+    for (let i = 0; i < allExams.length; i++) {
+      if (used.has(i)) continue
+      const current = allExams[i]
+      const group: any = {
+        examName: current.exam.examName,
+        date: current.exam.date,
+        term: current.exam.term,
+        rows: {},
+        classDates: {},  // 记录每个孩子的考试日期
+      }
+      group.rows[current.studentId] = current.exam
+      group.classDates[current.studentId] = current.exam.date
+      used.add(i)
+
+      // 查找匹配的其他考试
+      for (let j = i + 1; j < allExams.length; j++) {
+        if (used.has(j)) continue
+        const other = allExams[j]
+        if (other.exam.examName !== current.exam.examName) continue
+        // 检查日期是否在7天内
+        const dateDiff = Math.abs(this.dateDiffDays(current.exam.date, other.exam.date))
+        if (dateDiff <= 7) {
+          group.rows[other.studentId] = other.exam
+          group.classDates[other.studentId] = other.exam.date
+          used.add(j)
+        }
+      }
+      examGroups.push(group)
     }
 
     return {
       kids: kids.map(k => ({ studentId: k.id, studentName: k.name, classId: k.classId })),
-      exams: Array.from(examMap.values()),
+      exams: examGroups.sort((a, b) => (b.date || '').localeCompare(a.date || '')),
     }
+  }
+
+  /** 计算两个日期字符串的天数差 */
+  private dateDiffDays(date1: string, date2: string): number {
+    if (!date1 || !date2) return 999
+    const d1 = new Date(date1)
+    const d2 = new Date(date2)
+    return Math.floor((d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24))
+  }
+
+
+  /**
+   * 计算同分同名次排名映射（标准竞赛排名法：1224型）
+   * @param arr 已按分数降序排列的数组，每项包含 studentId 和 score
+   * @returns Map<studentId, rank>
+   */
+  private computeRankMap(arr: Array<{ studentId: string; score: number }>): Map<string, number> {
+    const rankMap = new Map<string, number>()
+    let prevScore: number | null = null
+    let prevRank = 0
+    arr.forEach((item, idx) => {
+      let rank: number
+      if (prevScore === null || item.score !== prevScore) {
+        rank = idx + 1
+        prevScore = item.score
+        prevRank = rank
+      } else {
+        rank = prevRank
+      }
+      rankMap.set(item.studentId, rank)
+    })
+    return rankMap
   }
 
   /** 本地日期字符串 YYYY-MM-DD */
@@ -355,12 +423,20 @@ export class ParentQueryService {
         .map(([sid, d]) => ({ studentId: sid, total: d.total }))
         .filter(x => x.total > 0)
         .sort((a, b) => b.total - a.total)
+      // 预计算总分排名（同分同名次）
+      const totalRankMap = this.computeRankMap(totalRanks.map(r => ({ studentId: r.studentId, score: r.total })))
       const distribution = buildDistribution([...totalRanks.map(r => r.total)], '', null)
       for (const [sid, data] of studentScoreMap) {
-        const totalRank = totalRanks.findIndex(r => r.studentId === sid) + 1
+        const totalRank = totalRankMap.get(sid) || 0
         for (const sub of data.subjects) {
           const arr = subjectRanks.get(sub.subject) || []
-          sub.classRank = sub.score != null ? arr.findIndex(r => r.studentId === sid) + 1 : null
+          // 单科排名：同分同名次
+          if (sub.score != null) {
+            const subRankMap = this.computeRankMap(arr)
+            sub.classRank = subRankMap.get(sid) ?? null
+          } else {
+            sub.classRank = null
+          }
         }
         ;(data as any).classRank = totalRank > 0 ? totalRank : null
         ;(data as any).studentId = sid

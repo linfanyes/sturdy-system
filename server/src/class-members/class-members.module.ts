@@ -20,7 +20,7 @@ export class ClassMemberService {
 
   /** 热路径缓存：30 秒 TTL 的进程内 Map 缓存（getClassIdsByTeacher / canAccess / getRole 每次 CRUD 请求都会调用） */
   private readonly _hotCache = new Map<string, { ts: number; value: unknown }>()
-  private readonly HOT_CACHE_TTL = 30 * 1000 // 30 秒
+  private readonly HOT_CACHE_TTL = 10 * 1000 // 10 秒（缩短缓存时间，权限变更更快生效）
 
   /** 带热路径缓存的读取，key 格式区分方法与参数 */
   private _hotGet<T>(key: string): T | undefined {
