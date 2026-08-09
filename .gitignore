@@ -48,18 +48,43 @@ e2e/qa/qa-env.json
 .repair-tmp2/
 scripts/mini-sa.env
 scripts/mini-test-tokens.json
-# QA 测试脚本与结果产物（含生产地址/账号口令/令牌，勿入库）
-scripts/mini-api-test-results.json
-scripts/mini-api-test.mjs
-scripts/mini-healthcheck.mjs
-scripts/mini-login.mjs
-scripts/mini-page-extract.mjs
-scripts/mini-pages.json
-scripts/mini-provision.mjs
-scripts/gen-mini-report.mjs
-scripts/gen-test-case-doc.mjs
-scripts/gen-test-data.mjs
-scripts/repair-e2e.mjs
+# Playwright CLI 临时截图快照（本地调试产物，勿入库）
+.playwright-cli/
+
+# Swagger 临时拉取文件
+.fetch/
+
+# Lighthouse / 诊断产物（本地生成，勿入库）
+web-app/lighthouse-smoke.png
+web-app/lighthouse-summary.json
+web-app/scripts/lighthouse-smoke.mjs
+web-app/public/diag.html
+web-app/cross-end-consistency-report.json
+
+# 一次性补丁脚本（已执行完毕，勿入库）
+e2e/qa/patch-tests.cjs
+e2e/qa/patch-tests2.cjs
+
+# 一次性页面/脚本生成器（已执行完毕，勿入库）
+scripts/all_phases.py
+scripts/create_missing_pages.py
+scripts/fix_api_paths.py
+scripts/phase1.py
+
+# 全量测试用例文档（随测试代码维护，不再单独存档）
+web-app/test/Test-Cases-Full.md
+server/test/Test-Cases-Full.md
+mini-program/test/Test-Cases-Full.md
+
+# 历史审计/报告文档（已清理，不再入库）
+web-app/PRELAUNCH_QA_REPORT.md
+web-app/TEST_CASES.md
+web-app/TEST_REPORT.md
+web-app/CONSISTENCY_AUDIT.md
+web-app/OPTIMIZE_CHECKLIST.md
+web-app/CI.md
+server/test/perf-benchmark.ts
+server/test/frontend-static-analysis.js
 # 本机 H5 重建时的旧产物备份目录（rename 大法绕过 safe-delete 用）
 .h5-old-*/
 
