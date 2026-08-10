@@ -19,7 +19,8 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "paths": {
-      "@gardener/shared/*": ["../shared/*"]
+      "@gardener/shared": ["../shared/dist", "node_modules/@gardener/shared/dist"],
+      "@gardener/shared/*": ["../shared/*", "node_modules/@gardener/shared/dist/*"]
     }
   },
   "include": ["src/**/*"],
