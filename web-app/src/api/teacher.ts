@@ -764,3 +764,8 @@ export function aiTeacherStudentsImport(payload: { mode: string; data: string; f
 export function commitTeacherStudentsImport(payload: { classId: string; items: any[] }) {
   return request.post('/students/import-commit', payload)
 }
+
+/** 已登录教师自助修改密码（校验原密码） */
+export function changeMyPassword(oldPassword: string, newPassword: string) {
+  return request.post<any, { ok: boolean }>('/auth/change-password', { oldPassword, newPassword })
+}

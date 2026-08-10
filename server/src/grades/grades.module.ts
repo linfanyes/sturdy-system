@@ -190,9 +190,14 @@ class GradesService extends CrudService<Grade> {
     await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
     return await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(Grade)
+      // 边界校验 1：本班学生集合，拒绝跨班学生混入（防越权写入他班成绩）
+      const classStudents = await this.stuRepo.find({ where: { classId: dto.classId }, select: ['id'] as any })
+      const classStudentIds = new Set(classStudents.map((s) => s.id))
+      // 边界校验 2：分数范围（null=缺考允许；数值须在 0-1000，杜绝负分/异常值落库）
+      const inRange = (v: any) => v == null || (typeof v === 'number' && v >= 0 && v <= 1000)
       const scores: GradeScore[] = (dto.rows || [])
-        .filter((r: any) => r.valid && r.studentId)
-        .map((r: any) => ({ studentId: r.studentId, score: r.score }))
+        .filter((r: any) => r.valid && r.studentId && classStudentIds.has(r.studentId) && inRange(r.score))
+        .map((r: any) => ({ studentId: r.studentId, score: r.score == null ? null : Number(r.score) }))
       if (!scores.length) throw new BadRequestException('没有可导入的有效成绩')
       const existing = await repo.findOne({
         where: {

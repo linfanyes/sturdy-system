@@ -139,6 +139,23 @@ describe('UX-LOGIN 登录页交互体验', () => {
     expect(push).toHaveBeenCalledWith('/parent')
   })
 
+  it('UX-LOGIN-10 旧版对象格式历史账号自动兼容（边界）', async () => {
+    // 重构前的存储格式 { 角色: string[] }，升级后不应报错且可展平
+    localStorage.setItem('g_recent_accounts', JSON.stringify({ teacher: ['old_a'], super: ['old_b'] }))
+    wrapper.unmount()
+    wrapper = mount(Login)
+    await flushPromises()
+    const chips = wrapper.findAll('button').map((b) => b.text())
+    expect(chips).toEqual(expect.arrayContaining(['old_a', 'old_b']))
+    // 再次登录不应抛 recent.filter 异常
+    unifiedLogin.mockResolvedValueOnce({ token: 't', user: { role: 'teacher', name: 'T' } })
+    await inputs()[0].setValue('old_a')
+    await inputs()[1].setValue('pwd12345')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(push).toHaveBeenCalledWith('/teacher')
+  })
+
   it('UX-LOGIN-09 选择表情头像持久化到本地', async () => {
     const btn = wrapper.findAll('button').find((b) => b.attributes('aria-label') === '选择头像 🌈')
     expect(btn).toBeTruthy()

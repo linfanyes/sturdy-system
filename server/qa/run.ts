@@ -12,6 +12,7 @@ process.env.WECHAT_RATE_LIMIT_MAX = process.env.WECHAT_RATE_LIMIT_MAX || '100000
 import { startQaApp } from './harness'
 import { seedDataset } from './seed'
 import { registerFunctionalCases } from './functional'
+import { registerEdgeCases } from './edge'
 import { registerPerfCases } from './performance'
 import { runAll, summarize } from './framework'
 import * as fs from 'fs'
@@ -28,6 +29,7 @@ async function main() {
   console.log(`[qa] 数据集就绪：学生 ${seed.studentCount} / 考试 ${seed.examCount} / 成绩记录 ${seed.gradeRowCount}，耗时 ${seed.durationMs}ms`)
 
   registerFunctionalCases(qa.baseUrl, seed)
+  registerEdgeCases(qa.baseUrl, seed)
   registerPerfCases(qa.baseUrl, seed)
 
   // eslint-disable-next-line no-console

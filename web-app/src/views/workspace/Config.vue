@@ -2,17 +2,17 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { getCurrentSemester } from '@gardener/shared/utils/date'
 import { toast } from '@/utils/feedback'
-import { Save, Bot, Settings, RefreshCw, Loader2 } from 'lucide-vue-next'
+import { Save, Bot, Settings, RefreshCw, Loader2, Lock } from 'lucide-vue-next'
 import {
   listAiProviders, saveAiModels, getTeacherAiDefaults, getAiSettings,
-  updateAiSettings, getAppConfig, updateAppConfig, updateMe,
+  updateAiSettings, getAppConfig, updateAppConfig, updateMe, changeMyPassword,
 } from '@/api/teacher'
 import { useAuthStore } from '@/stores/auth'
 import { ROLE_PROMPTS, DEFAULT_TEACHER_PROMPT } from '@/constants/teacher-prompts'
 
 const auth = useAuthStore()
 
-const tab = ref<'ai' | 'app'>('ai')
+const tab = ref<'ai' | 'app' | 'account'>('ai')
 const loading = ref(false)
 const saving = ref(false)
 
@@ -364,6 +364,27 @@ onMounted(() => {
   load() // 加载 AI 配置（修复：原先未调用 load）
 })
 
+// ==================== 账号安全：修改密码 ====================
+const pwdForm = reactive({ oldPassword: '', newPassword: '', confirm: '' })
+const pwdSaving = ref(false)
+const pwdOk = ref(false)
+async function submitChangePwd() {
+  pwdOk.value = false
+  if (!pwdForm.oldPassword || !pwdForm.newPassword) { toast.warning('请填写原密码与新密码'); return }
+  if (pwdForm.newPassword.length < 8 || pwdForm.newPassword.length > 20) { toast.warning('新密码长度须为 8-20 位'); return }
+  if (pwdForm.newPassword !== pwdForm.confirm) { toast.warning('两次输入的新密码不一致'); return }
+  pwdSaving.value = true
+  try {
+    await changeMyPassword(pwdForm.oldPassword, pwdForm.newPassword)
+    pwdOk.value = true
+    pwdForm.oldPassword = ''; pwdForm.newPassword = ''; pwdForm.confirm = ''
+  } catch (e: any) {
+    toast.error(e?.message || '修改失败，请重试')
+  } finally {
+    pwdSaving.value = false
+  }
+}
+
 async function saveApp() {
   saving.value = true
   try {
@@ -399,6 +420,10 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
         :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'app' ? 'bg-butter-500 text-white' : 'bg-surface text-cocoa-500 hover:bg-cream-100']"
         @click="tab = 'app'"
       ><Settings class="w-4 h-4" /> 应用配置</button>
+      <button
+        :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors', tab === 'account' ? 'bg-butter-500 text-white' : 'bg-surface text-cocoa-500 hover:bg-cream-100']"
+        @click="tab = 'account'"
+      ><Lock class="w-4 h-4" /> 账号安全</button>
     </div>
 
     <div v-if="loading" class="text-cocoa-400 text-sm py-4 flex items-center gap-2">
@@ -518,7 +543,7 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
     </div>
 
     <!-- ==================== 应用配置 ==================== -->
-    <div v-else class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
+    <div v-else-if="tab === 'app'" class="bg-surface rounded-2xl p-6 shadow-softer max-w-4xl space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="text-sm text-cocoa-500">主题</label>
@@ -539,6 +564,30 @@ function defaultModelName(key: string) { return aiForm.textModel || '默认文�
       <div class="flex justify-end">
         <button class="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60" :disabled="saving" @click="saveApp">
           <Save class="w-4 h-4" /> {{ saving ? '保存中…' : '保存' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== 账号安全 ==================== -->
+    <div v-else-if="tab === 'account'" class="bg-surface rounded-2xl p-6 shadow-softer max-w-xl space-y-4">
+      <div class="text-sm font-medium text-cocoa-800">修改登录密码</div>
+      <div class="text-xs text-cocoa-400">密码长度须为 8-20 位；修改成功后请使用新密码登录。</div>
+      <div v-if="pwdOk" class="text-sm text-mint-700 bg-mint-50 rounded-lg px-3 py-2">✅ 密码修改成功</div>
+      <div>
+        <label class="text-sm text-cocoa-500">原密码</label>
+        <input v-model="pwdForm.oldPassword" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入当前密码" />
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">新密码（8-20 位）</label>
+        <input v-model="pwdForm.newPassword" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请输入新密码" />
+      </div>
+      <div>
+        <label class="text-sm text-cocoa-500">确认新密码</label>
+        <input v-model="pwdForm.confirm" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" placeholder="请再次输入新密码" />
+      </div>
+      <div class="flex justify-end">
+        <button class="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60" :disabled="pwdSaving" @click="submitChangePwd">
+          <Loader2 v-if="pwdSaving" class="w-4 h-4 animate-spin" /> {{ pwdSaving ? '提交中…' : '确认修改' }}
         </button>
       </div>
     </div>

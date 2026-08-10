@@ -9,7 +9,7 @@ import { SchoolAdmin } from '../school-admin/school-admin.entity'
 import { Student } from '../students/student.entity'
 import { School } from '../school/school.entity'
 import { parentImUserId } from '../im/parent-im.util'
-import { verifyAndUpgrade, isBcryptHash } from '../common/utils/password.util'
+import { verifyAndUpgrade, isBcryptHash, hashPassword } from '../common/utils/password.util'
 import { AuditService } from '../audit/audit.service'
 import { Parent } from '../parent/parent.entity'
 import { FeatureService } from '../common/feature/feature.service'
@@ -252,6 +252,26 @@ export class AuthService {
       user: safeUser,
       effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: user.schoolId, teacherFeatures: user.features }),
     }
+  }
+
+  /**
+   * 已登录用户自助修改密码（校验原密码）。
+   * 补齐产品缺口：此前教师仅能由校管重置密码，无自助改密入口。
+   * 适用于以用户名+密码登录的账号（teacher / school_admin）；
+   * 微信登录等无密码账号调用会返回明确错误。
+   */
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    const user = await this.users.findById(userId)
+    if (!user) throw new UnauthorizedException('账号不存在')
+    if (!user.passwordHash) throw new BadRequestException('当前账号未设置登录密码，无法修改')
+    const { valid } = verifyAndUpgrade(oldPassword, user.passwordHash)
+    if (!valid) throw new UnauthorizedException('原密码错误')
+    await this.users.update(user.id, { passwordHash: hashPassword(newPassword) })
+    // 审计日志（尽力而为，不影响主流程）
+    try {
+      await this.auditService.log(user.schoolId || '', 'change_password', user.id, user.username || user.id, '自助修改登录密码')
+    } catch { /* ignore */ }
+    return { ok: true }
   }
 
   /**

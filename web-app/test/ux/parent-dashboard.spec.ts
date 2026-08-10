@@ -233,6 +233,18 @@ describe('UX-PAR 家长看板交互体验', () => {
     expect(wrapper.text()).toContain('数据加载失败，点击重试')
   })
 
+  it('UX-PAR-12 作业无截止日期：显示"未设置"不崩溃', async () => {
+    wrapper = await mountDashboard({ homework: [{ id: 'hx', subject: '语文', title: '无截止作业', content: '内容', startDate: today, deadline: '', status: '待批改' }] })
+    expect(wrapper.text()).toContain('截止：未设置')
+  })
+
+  it('UX-PAR-13 考试无排名/分数：概览卡显示"--"不崩溃', async () => {
+    wrapper = await mountDashboard({ exams: { exams: [{ examId: 'e9', examName: '无分数考试', term: '上学期', date: today, subjects: [] }] } })
+    const text = wrapper.text()
+    expect(text).toContain('--')
+    expect(text).toContain('最近考试')
+  })
+
   it('UX-PAR-11 消息订阅引导可关闭且本地记忆', async () => {
     wrapper = await mountDashboard()
     const closeBtn = wrapper.findAll('button').find((b) => b.attributes('title') === '不再提示')

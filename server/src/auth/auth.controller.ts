@@ -2,6 +2,7 @@ import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { WechatLoginDto } from './dto/wechat-login.dto'
 import { UnifiedLoginDto, AdminLoginDto } from './dto/unified-login.dto'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 
@@ -55,6 +56,14 @@ export class AuthController {
   @UseGuards(LoginRateLimit)
   passwordLogin(@Body() b: { username?: string; password?: string }) {
     return this.auth.passwordLogin(b?.username || '', b?.password || '')
+  }
+
+  /** 已登录用户自助修改密码（校验原密码；补齐教师自助改密能力） */
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard, LoginRateLimit)
+  changePassword(@Req() req: any, @Body() b: ChangePasswordDto) {
+    const userId = req.user?.sub || ''
+    return this.auth.changePassword(userId, b?.oldPassword || '', b?.newPassword || '')
   }
 
   /**
