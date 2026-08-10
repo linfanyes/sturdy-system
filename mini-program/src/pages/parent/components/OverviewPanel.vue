@@ -23,7 +23,7 @@
     <view class="sec" v-if="teachers.length">
       <view class="st">👨‍🏫 科任老师</view>
       <view class="teacher-list">
-        <view v-for="t in teachers" :key="t.teacherId" class="teacher-card">
+        <view v-for="t in teachers" :key="t.teacherId" class="teacher-card" @tap="emit('open-teacher', t)">
           <view class="teacher-avatar">{{ t.name ? t.name.charAt(0) : '师' }}</view>
           <view class="teacher-main">
             <view class="teacher-name">
@@ -75,7 +75,7 @@ const props = defineProps({
   exams: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['edit-student-info', 'view-requests'])
+const emit = defineEmits(['edit-student-info', 'view-requests', 'open-teacher'])
 
 const studentInfo = computed(() => props.me && props.me.studentInfo)
 const latestExam = computed(() => props.exams.length ? props.exams[props.exams.length - 1] : null)

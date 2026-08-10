@@ -10,6 +10,7 @@
     <view class="hd">
       <view class="t">🏡 {{ me?.studentName ? me.studentName + '同学家长' : '家长中心' }}</view>
       <view class="hd-actions">
+        <text class="out" @click="openMessageCenter">💬 留言</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -110,6 +111,7 @@
       :exams="exams"
       @edit-student-info="openEditStudentInfo"
       @view-requests="openStudentRequests"
+      @open-teacher="openTeacher"
     />
 
     <!-- ===== Tab 5：教材知识点 ===== -->
@@ -194,6 +196,71 @@
         <button class="pwd-btn" @click="showStudentRequestsModal = false">关闭</button>
       </view>
     </view>
+
+    <!-- 科任老师详情弹窗 -->
+    <view v-if="showTeacherModal" class="pwd-mask" @click="showTeacherModal = false">
+      <view class="pwd-box" @click.stop>
+        <view class="pwd-head">
+          <text class="pwd-title">老师详情</text>
+          <text class="pwd-close" @click="showTeacherModal = false">✕</text>
+        </view>
+        <view v-if="teacherDetail" class="teacher-detail">
+          <view class="td-avatar">{{ teacherDetail.name ? teacherDetail.name.charAt(0) : '师' }}</view>
+          <view class="td-name">
+            {{ teacherDetail.name }}
+            <text class="teacher-role" :class="teacherDetail.role === 'head' ? 'head' : 'subject'">{{ teacherDetail.roleLabel }}</text>
+          </view>
+          <view class="td-row" v-if="teacherDetail.subjects && teacherDetail.subjects.length">
+            <text class="td-label">任教科目</text><text class="td-val">{{ teacherDetail.subjects.join('、') }}</text>
+          </view>
+          <view class="td-row" v-else-if="teacherDetail.subject">
+            <text class="td-label">任教科目</text><text class="td-val">{{ teacherDetail.subject }}</text>
+          </view>
+          <view class="td-row" v-if="teacherDetail.phone">
+            <text class="td-label">联系电话</text><text class="td-val">{{ teacherDetail.phone }}</text>
+          </view>
+          <button class="pwd-btn" @click="messageThisTeacher(teacherDetail)">给TA留言</button>
+          <button class="pwd-btn ghost" v-if="teacherDetail.phone" @click="callTeacher(teacherDetail)">拨打电话</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 家长留言弹窗 -->
+    <view v-if="showMsgModal" class="pwd-mask" @click="showMsgModal = false">
+      <view class="pwd-box" @click.stop>
+        <view class="pwd-head">
+          <text class="pwd-title">给老师留言</text>
+          <text class="pwd-close" @click="showMsgModal = false">✕</text>
+        </view>
+        <view v-if="msgViewSent">
+          <view v-if="!sentMessages.length" class="req-empty">暂无留言记录</view>
+          <scroll-view scroll-y v-else class="req-list">
+            <view v-for="(m, i) in sentMessages" :key="m.id || i" class="req-item">
+              <view class="req-head">
+                <text class="req-name">致：{{ (m.recipient && (m.recipient.name || m.recipient.nickname)) || '老师' }}</text>
+                <text class="req-status" :class="m.read ? 'rs-approved' : 'rs-pending'">{{ m.read ? '已读' : '未读' }}</text>
+              </view>
+              <text class="req-msg">{{ m.content }}</text>
+              <text v-if="m.createdAt" class="req-reviewed">发送于 {{ m.createdAt }}</text>
+            </view>
+          </scroll-view>
+          <button class="pwd-btn ghost" @click="msgViewSent = false">返回写留言</button>
+        </view>
+        <view v-else>
+          <text class="pwd-label">选择老师</text>
+          <picker mode="selector" :range="teacherOptions" @change="onMsgTeacherChange">
+            <view class="pwd-input">{{ selectedTeacherName }}</view>
+          </picker>
+          <text class="pwd-label">留言内容</text>
+          <textarea class="pwd-textarea" placeholder="请输入要告诉老师的内容" v-model="msgContent" />
+          <view v-if="msgOk" class="pwd-ok">✅ 留言已发送</view>
+          <view v-if="msgError" class="pwd-err">{{ msgError }}</view>
+          <button class="pwd-btn" :disabled="msgSending" @click="submitMessage">{{ msgSending ? '发送中…' : '发送留言' }}</button>
+          <button class="pwd-btn ghost" @click="loadSentMessages">查看我发出的</button>
+        </view>
+      </view>
+    </view>
+
   </view>
 </template>
 
@@ -381,6 +448,76 @@ function loadTextbooks() {
   nextTick(() => { textbookPanelRef.value && textbookPanelRef.value.load && textbookPanelRef.value.load() })
 }
 
+// 科任老师详情弹窗
+const showTeacherModal = ref(false)
+const teacherDetail = ref(null)
+function openTeacher(t) {
+  teacherDetail.value = t
+  showTeacherModal.value = true
+}
+function callTeacher(t) {
+  if (t && t.phone) uni.makePhoneCall({ phoneNumber: String(t.phone) })
+}
+function messageThisTeacher(t) {
+  showTeacherModal.value = false
+  openMessageTeacher(t)
+}
+
+// 家长留言功能（给科任/班主任留言，复用后端 /messages）
+const showMsgModal = ref(false)
+const msgTeacherIdx = ref(0)
+const msgContent = ref('')
+const msgSending = ref(false)
+const msgError = ref('')
+const msgOk = ref(false)
+const sentMessages = ref([])
+const msgViewSent = ref(false)
+
+const teacherOptions = computed(() => (teachers.value || []).map(t => `${t.name}（${t.roleLabel || '老师'}）`))
+const selectedTeacherName = computed(() => {
+  const t = (teachers.value || [])[msgTeacherIdx.value]
+  return t ? `${t.name}（${t.roleLabel || '老师'}）` : '请选择老师'
+})
+function openMessageCenter() {
+  msgViewSent.value = false
+  msgContent.value = ''
+  msgError.value = ''
+  msgOk.value = false
+  if ((teachers.value || []).length) msgTeacherIdx.value = 0
+  showMsgModal.value = true
+}
+function openMessageTeacher(t) {
+  const idx = (teachers.value || []).findIndex(x => x.teacherId === (t && t.teacherId))
+  msgTeacherIdx.value = idx >= 0 ? idx : 0
+  msgViewSent.value = false
+  msgContent.value = ''
+  msgError.value = ''
+  msgOk.value = false
+  showMsgModal.value = true
+}
+function onMsgTeacherChange(e) { msgTeacherIdx.value = e.detail.value }
+async function submitMessage() {
+  msgError.value = ''; msgOk.value = false
+  const t = (teachers.value || [])[msgTeacherIdx.value]
+  if (!t) { msgError.value = '暂无可留言的老师，请稍后重试'; return }
+  if (!msgContent.value.trim()) { msgError.value = '请输入留言内容'; return }
+  msgSending.value = true
+  try {
+    await parentApi.post('/messages', { recipientId: t.teacherId, recipientRole: 'teacher', content: msgContent.value.trim() })
+    msgOk.value = true
+    msgContent.value = ''
+    setTimeout(() => { showMsgModal.value = false; msgOk.value = false }, 1200)
+  } catch (e) { msgError.value = (e && e.message) || '发送失败，请重试' }
+  finally { msgSending.value = false }
+}
+async function loadSentMessages() {
+  msgViewSent.value = true
+  try {
+    const list = await parentApi.get('/messages/sent')
+    sentMessages.value = Array.isArray(list) ? list : (list && list.items) || []
+  } catch (e) { sentMessages.value = []; uni.showToast({ title: '加载留言失败', icon: 'none' }) }
+}
+
 async function load() {
   loading.value = true; loadError.value = false
   const [meResult, edata, ns, hw, att, beh, sch, comm, tch] = await Promise.allSettled([
@@ -473,4 +610,15 @@ onShow(() => { if (!parent.token) { uni.reLaunch({ url: '/pages/parent-login/par
 .req-review { font-size: 22rpx; color: #e06c75; background: #fde8e8; border-radius: 8rpx; padding: 8rpx 12rpx; display: block; margin-top: 6rpx; }
 .req-reviewed { font-size: 20rpx; color: #9aa0a6; display: block; margin-top: 6rpx; }
 .req-empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; }
+.req-msg { font-size: 24rpx; color: var(--c-title); display: block; line-height: 1.6; margin-top: 6rpx; }
+.pwd-btn.ghost { background: var(--c-input); color: var(--c-title); }
+.teacher-detail { display: flex; flex-direction: column; align-items: center; gap: 16rpx; padding: 10rpx 0; }
+.td-avatar { width: 96rpx; height: 96rpx; border-radius: 50%; background: #fdf6ec; color: #E6A23C; display: flex; align-items: center; justify-content: center; font-size: 40rpx; font-weight: 600; }
+.td-name { font-size: 32rpx; font-weight: 800; color: var(--c-title); display: flex; align-items: center; gap: 12rpx; }
+.teacher-role { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 20rpx; }
+.teacher-role.head { background: #fdf6ec; color: #E6A23C; }
+.teacher-role.subject { background: #e8f4fd; color: #1C6FB3; }
+.td-row { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
+.td-label { font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
+.td-val { font-size: 24rpx; color: var(--c-title); font-weight: 600; text-align: right; flex: 1; margin-left: 16rpx; }
 </style>
