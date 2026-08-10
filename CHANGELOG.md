@@ -113,6 +113,26 @@
 - CI：Web 阶段补上 `jest` 门禁；小程序体积门禁修正为仅统计主包（扣除分包），实测主包 1540KB 达标。
 - 健壮性：AiProviders / 教师设置页对 `listAiProviders` 返回做数组归一化，异常形状不再崩溃。
 
+### 2026-08-10 · 系统上线清理：移除测试遗留，仓库瘦身
+
+系统已上线，按「仅保留系统说明书与部署文档」原则清理：
+
+**删除的测试基建**
+- 三端全部测试代码与配置：`web-app/test/`、`mini-program/test/`、`server/test/`、`server/src/qa/`（本地自动化专用模块）、`e2e/`、`jest.config.*`、`babel.config.cjs`
+- 三端 package.json 移除 test 脚本与 jest / supertest / @vue/test-utils 等测试依赖（lockfile 同步重生成，`npm ci` 验证通过）
+- 开发校验脚本：`scripts/check-*.mjs`、`scripts/validate-sfc.cjs`
+- CI 移除三端 jest 步骤，保留类型检查 + 构建 + 主包体积门禁
+
+**删除的报告与分析文档**
+- `TEST_REPORT.md`、`TEST_CASES.md`、`SYSTEM-DEFECT-ANALYSIS-REPORT.md`、`delivery-summary.md`、`overview-optimization-2026-08-08.md`
+- `deliverables/`（审计/PRD/评审产物）、`docs/`（差异分析、修复报告等过程文档）、`Architecture-Design.md`、`DESIGN.md`、`Audit-PRD.md`、`复用可行性分析报告.md`、`复用改造实施计划.md`
+
+**保留**
+- `系统说明书.md`、`小程序简介.md`、`微信小程序云托管部署手册.md`、`README.md`、`CHANGELOG.md`
+- 小程序 `src/mock/`（产品演示模式的运行时数据，非测试遗留）、server 种子数据脚本
+
+清理后验证：三端 `npm ci` + 类型检查 + 构建全部通过，小程序主包 1540KB 达标。历史版本中的测试与文档均可通过 git 历史找回。
+
 ---
 
 ## [3.0.0] - 2025-08-01

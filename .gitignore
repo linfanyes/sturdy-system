@@ -21,13 +21,6 @@ app.pid
 .env.local
 !.env.example
 seed-runner.js
-tester.js
-test-results.json
-test-report.json
-
-# 测试覆盖率报告（本地生成，勿入库）
-coverage/
-.nyc_output/
 
 # WorkBuddy 项目数据（非源码）
 .workbuddy/
@@ -55,11 +48,7 @@ scripts/mini-test-tokens.json
 .fetch/
 
 # Lighthouse / 诊断产物（本地生成，勿入库）
-web-app/lighthouse-smoke.png
-web-app/lighthouse-summary.json
-web-app/scripts/lighthouse-smoke.mjs
 web-app/public/diag.html
-web-app/cross-end-consistency-report.json
 
 # 一次性补丁脚本（已执行完毕，勿入库）
 e2e/qa/patch-tests.cjs

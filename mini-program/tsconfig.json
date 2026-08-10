@@ -13,6 +13,6 @@
       "@gardener/shared/*": ["../shared/*"]
     }
   },
-  "include": ["test/**/*.ts", "src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

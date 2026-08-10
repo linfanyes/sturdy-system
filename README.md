@@ -2,7 +2,7 @@
 
 > 教师专用一站式教学管理系统：Web 管理端（Vue 3 + TypeScript + Vite + Pinia + Tailwind CSS）、NestJS 后端（MySQL）、微信小程序（uni-app）、共享类型包。
 
-本文档为仓库总览；架构与设计见 [Architecture-Design.md](./Architecture-Design.md)，产品说明见 [系统说明书.md](./系统说明书.md)，部署流程见 [微信小程序云托管部署手册.md](./微信小程序云托管部署手册.md)。
+本文档为仓库总览；产品说明见 [系统说明书.md](./系统说明书.md)，部署流程见 [微信小程序云托管部署手册.md](./微信小程序云托管部署手册.md)。
 
 ---
 
@@ -14,9 +14,6 @@ workSystem/
 ├── server/                     # 后端服务（NestJS + MySQL，云托管部署）
 ├── mini-program/               # 微信小程序（uni-app）
 ├── shared/                     # 跨端共享的类型 / 常量 / 校验器
-├── docs/                       # 项目文档（架构、测试、部署）
-├── e2e/                        # 端到端测试
-├── qa/                         # QA 测试用例与产物
 ├── scripts/                    # 辅助脚本
 ├── start.bat / stop.bat        # 一键启动 / 停止（Windows）
 └── README.md                   # 本文件
