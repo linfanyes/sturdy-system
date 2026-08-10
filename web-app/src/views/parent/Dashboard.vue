@@ -6,6 +6,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, subscribeParentDemo } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentTeacher } from '@/api/parent'
+import { sendMessage, listSentMessages, type MessageItem } from '@/api/message'
+import { useParentKids } from '@/composables/useParentKids'
 import { Sparkles, BookOpen, Bell, ChevronRight, Loader2, ClipboardList, CalendarCheck, MessageCircle, Repeat, UserCog, Phone, TrendingUp, TrendingDown } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import GradeOverview from './components/GradeOverview.vue'
@@ -15,6 +17,7 @@ import NoticeList from './components/NoticeList.vue'
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
+const parentKids = useParentKids()
 
 const loading = ref(true)
 const loadError = ref(false)
@@ -309,6 +312,78 @@ function openTeacherModal(it: any) {
   showTeacherModal.value = true
 }
 
+// 科任老师详情弹窗（点击老师卡片查看详情）
+const showTeacherDetailModal = ref(false)
+const teacherDetail = ref<ParentTeacher | null>(null)
+function openTeacherDetail(t: ParentTeacher) {
+  teacherDetail.value = t
+  showTeacherDetailModal.value = true
+}
+
+// 家长留言（可选择科任老师）
+const showMessageModal = ref(false)
+const msgRecipientId = ref('')
+const msgTitle = ref('')
+const msgContent = ref('')
+const msgSending = ref(false)
+const msgError = ref('')
+const msgOk = ref(false)
+const sentMessages = ref<MessageItem[]>([])
+const sentLoading = ref(false)
+
+const subjectTeachers = computed(() => teachers.value.filter((t) => t.role === 'subject'))
+function findRecipient(id: string): ParentTeacher | null {
+  return teachers.value.find((t) => t.teacherId === id) || null
+}
+async function openMessageModal() {
+  msgError.value = ''
+  msgOk.value = false
+  msgTitle.value = ''
+  msgContent.value = ''
+  // 默认选中第一位科任老师（无则取首位老师）
+  const def = msgRecipientId.value && findRecipient(msgRecipientId.value)
+    ? findRecipient(msgRecipientId.value)
+    : (subjectTeachers.value[0] || teachers.value[0] || null)
+  msgRecipientId.value = def ? def.teacherId : ''
+  showMessageModal.value = true
+  await loadSentMessages()
+}
+async function loadSentMessages() {
+  sentLoading.value = true
+  try {
+    const res = await listSentMessages(0, 10)
+    sentMessages.value = Array.isArray(res?.items) ? res.items : []
+  } catch (e) {
+    sentMessages.value = []
+  } finally {
+    sentLoading.value = false
+  }
+}
+async function submitMessage() {
+  msgError.value = ''
+  const recipient = findRecipient(msgRecipientId.value)
+  if (!recipient) { msgError.value = '请选择接收老师'; return }
+  if (!msgContent.value.trim()) { msgError.value = '请输入留言内容'; return }
+  msgSending.value = true
+  try {
+    await sendMessage({
+      recipientId: recipient.teacherId,
+      recipientRole: 'teacher',
+      title: msgTitle.value.trim() || ('来自' + (me.value?.parentName || '家长') + '的留言'),
+      content: msgContent.value.trim(),
+      type: 'direct',
+    })
+    msgOk.value = true
+    msgContent.value = ''
+    await loadSentMessages()
+    setTimeout(() => { showMessageModal.value = false; msgOk.value = false }, 1200)
+  } catch (e: any) {
+    msgError.value = e?.message || '发送失败，请重试'
+  } finally {
+    msgSending.value = false
+  }
+}
+
 // 修改密码
 const showPwdModal = ref(false)
 const oldPwd = ref('')
@@ -436,6 +511,7 @@ async function load() {
     if (meData.status === 'fulfilled') {
       me.value = meData.value
       activeKidId.value = meData.value.studentId || ''
+      parentKids.setKidCount((meData.value?.kids?.length) || 0)
     }
     if (noticeData.status === 'fulfilled') notices.value = Array.isArray(noticeData.value) ? noticeData.value : []
     if (examData.status === 'fulfilled') exams.value = (examData.value && examData.value.exams) || []
@@ -860,10 +936,14 @@ function dismissSubscribe() {
       <div v-if="teachers.length">
         <h2 class="section-title">
           <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
+          <button
+            class="ml-auto text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
+            @click="openMessageModal"
+          >✉️ 给老师留言</button>
         </h2>
         <div class="quick-card">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div v-for="t in teachers" :key="t.teacherId" class="flex items-center gap-3 p-3 rounded-xl bg-cream-50 border border-cream-100">
+            <div v-for="t in teachers" :key="t.teacherId" class="flex items-center gap-3 p-3 rounded-xl bg-cream-50 border border-cream-100 cursor-pointer hover:border-mint-300 hover:shadow-sm transition-all" @click="openTeacherDetail(t)">
               <div class="w-10 h-10 rounded-full bg-butter-100 flex items-center justify-center text-butter-600 font-semibold shrink-0">
                 {{ t.name ? t.name.charAt(0) : '师' }}
               </div>
@@ -875,7 +955,7 @@ function dismissSubscribe() {
                 <div class="text-xs text-cocoa-500 mt-0.5">
                   <span v-if="t.subjects && t.subjects.length">任教：{{ t.subjects.join('、') }}</span>
                   <span v-else-if="t.subject">任教：{{ t.subject }}</span>
-                  <a v-if="t.phone" :href="'tel:' + t.phone" class="ml-2 text-mint-600 hover:underline">📞 {{ t.phone }}</a>
+                  <a v-if="t.phone" :href="'tel:' + t.phone" class="ml-2 text-mint-600 hover:underline" @click.stop>📞 {{ t.phone }}</a>
                 </div>
               </div>
             </div>
@@ -909,10 +989,16 @@ function dismissSubscribe() {
             </div>
           </div>
           <div v-else class="text-sm text-cocoa-500">暂无沟通记录</div>
-          <button
-            class="mt-4 w-full rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600 flex items-center justify-center gap-1.5"
-            @click="contactTeacher"
-          ><Phone class="w-4 h-4" /> 联系老师</button>
+          <div class="mt-4 flex gap-2">
+            <button
+              class="flex-1 rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600 flex items-center justify-center gap-1.5"
+              @click="contactTeacher"
+            ><Phone class="w-4 h-4" /> 联系老师</button>
+            <button
+              class="flex-1 rounded-xl border border-mint-300 bg-mint-50 text-mint-700 font-semibold py-2.5 hover:bg-mint-100 flex items-center justify-center gap-1.5"
+              @click="openMessageModal"
+            >✉️ 给老师留言</button>
+          </div>
         </div>
       </div>
 
@@ -1204,6 +1290,105 @@ function dismissSubscribe() {
           class="mt-4 w-full rounded-xl bg-cocoa-100 text-cocoa-700 font-semibold py-2.5 hover:bg-cocoa-200"
           @click="showStudentRequestsModal = false"
         >关闭</button>
+      </div>
+    </div>
+
+    <!-- 科任老师详情弹窗 -->
+    <div v-if="showTeacherDetailModal && teacherDetail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showTeacherDetailModal = false">
+      <div class="w-full max-w-sm bg-surface rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-lg font-semibold text-cocoa-900">老师详情</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showTeacherDetailModal = false">✕</button>
+        </div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-14 h-14 rounded-xl bg-butter-100 text-butter-600 flex items-center justify-center text-2xl font-bold">
+            {{ (teacherDetail.name || '?').slice(0, 1) }}
+          </div>
+          <div>
+            <div class="font-semibold text-cocoa-900">{{ teacherDetail.name }}</div>
+            <div class="mt-0.5">
+              <span class="text-xs px-1.5 py-0.5 rounded-full" :class="teacherDetail.role === 'head' ? 'bg-butter-100 text-butter-700' : 'bg-sky2-50 text-sky2-600'">{{ teacherDetail.roleLabel }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div v-if="(teacherDetail.subjects && teacherDetail.subjects.length) || teacherDetail.subject" class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+            <span class="text-cocoa-500">任教科目</span>
+            <span class="font-medium text-cocoa-900 text-right">{{ (teacherDetail.subjects && teacherDetail.subjects.length) ? teacherDetail.subjects.join('、') : teacherDetail.subject }}</span>
+          </div>
+          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
+            <span class="text-cocoa-500">联系电话</span>
+            <span class="font-medium text-cocoa-900">{{ teacherDetail.phone || '未留电话' }}</span>
+          </div>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <a
+            v-if="teacherDetail.phone"
+            :href="'tel:' + teacherDetail.phone"
+            class="flex-1 rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600 flex items-center justify-center gap-1.5"
+          ><Phone class="w-4 h-4" /> 拨打电话</a>
+          <button
+            class="flex-1 rounded-xl border border-mint-300 bg-mint-50 text-mint-700 font-semibold py-2.5 hover:bg-mint-100"
+            @click="showTeacherDetailModal = false; openMessageModal()"
+          >✉️ 给TA留言</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 家长留言弹窗 -->
+    <div v-if="showMessageModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" @click.self="showMessageModal = false">
+      <div class="w-full max-w-md bg-surface rounded-2xl p-5 shadow-xl max-h-[85vh] overflow-auto">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-lg font-semibold text-cocoa-900">给老师留言</div>
+          <button class="text-cocoa-400 hover:text-cocoa-600" @click="showMessageModal = false">✕</button>
+        </div>
+        <div class="text-xs text-cocoa-400 mb-3">选择老师并留言，老师会在其端收到您的消息</div>
+        <div v-if="!teachers.length" class="text-sm text-cocoa-500 text-center py-4">暂无可选老师</div>
+        <template v-else>
+          <div class="mb-3">
+            <label class="block text-sm text-cocoa-600 mb-1">接收老师</label>
+            <select v-model="msgRecipientId" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400 bg-surface">
+              <option v-for="t in teachers" :key="t.teacherId" :value="t.teacherId">
+                {{ t.name }}（{{ t.roleLabel }}）{{ (t.subjects && t.subjects.length) ? '· ' + t.subjects.join('、') : (t.subject ? '· ' + t.subject : '') }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm text-cocoa-600 mb-1">标题（选填）</label>
+            <input v-model="msgTitle" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400" placeholder="如：关于孩子最近作业的沟通" />
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm text-cocoa-600 mb-1">留言内容</label>
+            <textarea v-model="msgContent" rows="4" class="w-full rounded-xl border border-cream-200 px-3 py-2 text-cocoa-800 focus:outline-none focus:border-butter-400 resize-none" placeholder="请输入想对老师说的话…"></textarea>
+          </div>
+        </template>
+        <div v-if="msgOk" class="mb-3 text-sm text-mint-700 bg-mint-50 rounded-lg p-3">✅ 留言已发送</div>
+        <div v-if="msgError" class="mb-3 text-sm text-sakura-700 bg-sakura-50 rounded-lg p-3">{{ msgError }}</div>
+        <button
+          class="w-full rounded-xl bg-mint-500 text-white font-semibold py-2.5 hover:bg-mint-600 disabled:opacity-60"
+          :disabled="msgSending || !teachers.length"
+          @click="submitMessage"
+        >
+          <Loader2 v-if="msgSending" class="w-4 h-4 inline animate-spin" /> {{ msgSending ? '发送中…' : '发送留言' }}
+        </button>
+
+        <!-- 已发送留言 -->
+        <div v-if="teachers.length" class="mt-5">
+          <div class="text-sm font-semibold text-cocoa-800 mb-2 flex items-center gap-1.5">
+            <MessageCircle class="w-4 h-4 text-mint-500" /> 我发出的留言
+          </div>
+          <div v-if="sentLoading" class="text-xs text-cocoa-400 py-2 flex items-center gap-2"><Loader2 class="w-3.5 h-3.5 animate-spin" /> 加载中…</div>
+          <div v-else-if="!sentMessages.length" class="text-xs text-cocoa-400 py-2">暂无已发送留言</div>
+          <div v-else class="space-y-2">
+            <div v-for="m in sentMessages" :key="m.id" class="border border-cream-200 rounded-xl p-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-cocoa-900 truncate">{{ m.title }}</span>
+                <span class="text-xs text-cocoa-400 shrink-0 ml-2">{{ m.createdAt }}</span>
+              </div>
+              <div class="text-xs text-cocoa-600 whitespace-pre-wrap break-words">{{ m.content }}</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

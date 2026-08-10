@@ -7,6 +7,7 @@ import { LayoutDashboard, School, LogOut, User, Repeat, Users, GraduationCap, To
 import { teacherMenu, superMenu, schoolAdminMenu, flatNavItems, palette, roleLabel } from '../layoutMenus'
 import type { Role } from '@/types/user'
 import type { MenuCategory, MenuItem } from '../layoutMenus'
+import { useParentKids } from '@/composables/useParentKids'
 
 const auth = useAuthStore()
 const roleSwitchStore = useRoleSwitchStore()
@@ -38,6 +39,17 @@ const visibleTeacherMenu = computed<MenuCategory[]>(() => {
 })
 
 const flatItems = computed<MenuItem[]>(() => (auth.role && auth.role !== 'teacher' ? flatNavItems[auth.role] : []))
+
+// 跨娃比对仅在家长关联 ≥2 名学生（同手机号多娃）时出现，否则默认隐藏
+const parentKids = useParentKids()
+const showCompare = computed(() => {
+  if (auth.role !== 'parent') return true
+  const c = parentKids.kidCount.value
+  return c !== null && c > 1
+})
+const visibleFlatItems = computed<MenuItem[]>(() =>
+  flatItems.value.filter((i) => i.name !== 'parent-compare' || showCompare.value),
+)
 
 const activeCategory = ref<string>('')
 const openCats = ref<string[]>([])
@@ -73,6 +85,11 @@ function syncActiveCat() {
 }
 onMounted(syncActiveCat)
 watch(() => route.name, syncActiveCat)
+
+// 家长端：预取关联孩子数，驱动「跨娃比对」菜单显隐
+onMounted(() => {
+  if (auth.role === 'parent') parentKids.ensure()
+})
 
 function toggleCat(label: string) {
   const role = auth.role
@@ -203,7 +220,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
       <!-- 其他非教师扁平菜单（家长） -->
       <template v-else>
         <router-link
-          v-for="item in flatItems"
+          v-for="item in visibleFlatItems"
           :key="item.name"
           :to="item.to"
           replace
