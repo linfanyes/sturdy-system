@@ -1,0 +1,107 @@
+"use strict";
+/**
+ * shared/utils/date —— 跨端通用日期时间格式化
+ *
+ * 纯函数，无平台依赖，可在 Web / 小程序 / 后端共用。
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatRelativeTime = formatRelativeTime;
+exports.formatDateTime = formatDateTime;
+exports.formatDate = formatDate;
+exports.formatISOTime = formatISOTime;
+exports.formatMsToMinSec = formatMsToMinSec;
+exports.getCurrentTerm = getCurrentTerm;
+exports.getCurrentSemester = getCurrentSemester;
+/**
+ * 相对时间格式化：刚刚 / X分钟前 / X小时前 / X天前 / X周前
+ */
+function formatRelativeTime(ts) {
+    const dt = new Date(ts);
+    if (isNaN(dt.getTime()))
+        return '';
+    const diff = Date.now() - dt.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    if (diff < minute)
+        return '刚刚';
+    if (diff < hour)
+        return `${Math.floor(diff / minute)}分钟前`;
+    if (diff < day)
+        return `${Math.floor(diff / hour)}小时前`;
+    if (diff < week)
+        return `${Math.floor(diff / day)}天前`;
+    return `${Math.floor(diff / week)}周前`;
+}
+/**
+ * 日期时间格式化：YYYY-MM-DD HH:mm
+ * - 空值 / 无效日期返回 '-'
+ */
+function formatDateTime(ts) {
+    if (!ts)
+        return '-';
+    const d = new Date(ts);
+    if (isNaN(d.getTime()))
+        return String(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${day} ${hh}:${mm}`;
+}
+/**
+ * 纯日期格式化：YYYY-MM-DD（不含时间）
+ * - 用于日历格子 / 纯日期 key 匹配等场景
+ * - 空值 / 无效日期返回 '-'
+ */
+function formatDate(ts) {
+    if (!ts)
+        return '-';
+    const d = new Date(ts);
+    if (isNaN(d.getTime()))
+        return String(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+/**
+ * ISO 时间简化：把 "2026-08-07T10:15:10.123Z" 变为 "2026-08-07 10:15:10"
+ * 用于审计日志等后端返回的标准 ISO 字符串。
+ */
+function formatISOTime(ts) {
+    if (!ts)
+        return '-';
+    return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19);
+}
+/**
+ * 毫秒转分秒显示：如 125000 → "2分5秒"
+ */
+function formatMsToMinSec(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return m > 0 ? `${m}分${s}秒` : `${s}秒`;
+}
+/**
+ * 当前学期：9月-次年2月为第一学期，3-8月为第二学期
+ * @param date 可传入 Date（便于测试/复用），默认当前时间
+ * @returns 如 "2025-2026学年第一学期"
+ */
+function getCurrentTerm(date = new Date()) {
+    const y = date.getFullYear();
+    return date.getMonth() >= 8 ? `${y}-${y + 1}学年第一学期` : `${y - 1}-${y}学年第二学期`;
+}
+/**
+ * 当前季节：秋季 / 春季（"YYYY秋季" / "YYYY春季"）
+ * @param date 可传入 Date（便于测试/复用），默认当前时间
+ * @param autumnFromMonth 判定为秋季的起始月份（0-11），默认 8（9 月起为秋季，与 getCurrentTerm 对齐）
+ * @returns 如 "2026春季"
+ */
+function getCurrentSemester(date = new Date(), autumnFromMonth = 8) {
+    const y = date.getFullYear();
+    return date.getMonth() >= autumnFromMonth ? `${y}秋季` : `${y}春季`;
+}
+//# sourceMappingURL=date.js.map

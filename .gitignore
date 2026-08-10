@@ -88,3 +88,9 @@ server/dist/
 
 # QA 构建产物
 server/.qa-dist/
+
+# Docker 构建依赖：放行 server/vendor/gardener-shared/dist（@gardener/shared 编译产物）。
+# 该目录须随仓库提交，否则云端构建上下文取不到 dist，TS 会报 Cannot find module '@gardener/shared/...'。
+# 注意：否定规则必须放在 dist/ 忽略规则之后才生效。
+!server/vendor/gardener-shared/dist/
+!server/vendor/gardener-shared/dist/**
