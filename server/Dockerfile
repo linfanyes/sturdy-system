@@ -35,10 +35,16 @@ COPY package*.json ./
 # 运行阶段 COPY --from=prod-deps 复制的就是残缺 node_modules，导致运行时 MODULE_NOT_FOUND。
 COPY vendor ./vendor
 RUN npm install --production --ignore-scripts
-# 兜底：无论 npm 对 file: 依赖的打包是否携带 dist，都显式确保 node_modules/@gardener/shared/dist 存在
+# 兜底：确保 node_modules/@gardener/shared 包含完整 dist，且不依赖 npm 对 file: 依赖的软链行为。
+# 注意：npm 对 file: 依赖默认会创建软链 node_modules/@gardener/shared -> vendor/gardener-shared。
+# 若直接 rm -rf 其 dist，会顺链误删 vendor 源目录的 dist，导致后续 cp 源缺失而构建失败（见 2026-08-10 构建 #14 报错）。
+# 因此先移除软链（不跟随），再以真实目录整体复制，保证运行阶段 node_modules 自包含、无需 vendor/。
 RUN if [ -d vendor/gardener-shared/dist ]; then \
-      rm -rf node_modules/@gardener/shared/dist && \
-      cp -r vendor/gardener-shared/dist node_modules/@gardener/shared/dist; \
+      if [ -L node_modules/@gardener/shared ]; then \
+        rm -f node_modules/@gardener/shared; \
+      fi; \
+      rm -rf node_modules/@gardener/shared && \
+      cp -r vendor/gardener-shared node_modules/@gardener/shared; \
     fi
 
 # ---- 运行阶段 ----
