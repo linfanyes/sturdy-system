@@ -42,9 +42,18 @@ export class CrudService<T extends { id: string; teacherId: string }> {
         const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, term)
         if (!canAccess) return { items: [], total: 0 }
       }
-      (where as any)[this.classScopeField()] = classId
-      // 班级维度：按班级字段过滤，不再按 teacherId 过滤（同班协作）
-      if (!this.isClassScopedEntity()) {
+      // 缺陷修复：部分实体（如 checkins 按学生记录）没有 classId 列，
+      // 原实现无条件附加 classScopeField 过滤导致查询恒 500。
+      // 仅当实体确有该列时按班级过滤，否则回退 teacherId 严格隔离。
+      const scopeField = this.classScopeField()
+      const hasClassCol = this.repo.metadata.columns.some((c) => c.propertyName === scopeField)
+      if (hasClassCol) {
+        (where as any)[scopeField] = classId
+        // 班级维度：按班级字段过滤，不再按 teacherId 过滤（同班协作）
+        if (!this.isClassScopedEntity()) {
+          (where as any).teacherId = teacherId
+        }
+      } else {
         (where as any).teacherId = teacherId
       }
     } else if (this.isClassScopedEntity() && this.classMemberSvc) {

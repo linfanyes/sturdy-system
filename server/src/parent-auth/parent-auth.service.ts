@@ -12,6 +12,7 @@ import { WechatService } from '../auth/wechat.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 import { StudentParentService } from '../student-parent/student-parent.module'
 import { ParentQueryService } from './parent-query.service'
+import { isStudentNo } from '@gardener/shared/validators'
 
 /**
  * 家长端：登录相关 + 协调逻辑。
@@ -36,7 +37,9 @@ export class ParentAuthService {
 
   /** 学号 + 密码登录 */
   async login(studentNo: string, password: string) {
-    if (!studentNo || !/^\d+$/.test(studentNo.trim()))
+    // 缺陷修复：原先仅允许纯数字学号，但学号管理/统一登录允许字母数字（isStudentNo: [A-Za-z0-9]{2,32}），
+    // 导致字母学号的学生家长无法从小程序专用登录页登录（跨端不一致）。统一采用共享校验器口径。
+    if (!studentNo || !isStudentNo(studentNo.trim()) || studentNo.trim().length < 2)
       throw new BadRequestException('请输入正确的学号')
     if (!password) throw new BadRequestException('请输入密码')
     const no = studentNo.trim()

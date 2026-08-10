@@ -214,9 +214,10 @@ export class SchoolAdminService {
     if (examId) extra.examId = examId
     // P03修复：降低单次查询上限（2000→1000），避免大内存占用
     const grades = await this.gradeRepo.find({ where: this.buildClassWhere(classIds, extra), take: 1000 })
-    // 班级名称映射
+    // 班级名称映射（缺陷修复：此处误用 buildClassWhere 生成 {classId} 条件，
+    // ClassItem 实体无 classId 字段导致 academic/summary 恒 500；应按主键 id 查询）
     const classList = classIds.length
-      ? await this.classRepo.find({ where: this.buildClassWhere(classIds), select: ['id', 'name'] as any })
+      ? await this.classRepo.find({ where: classIds.map(id => ({ id })), select: ['id', 'name'] as any })
       : []
     // 按学科聚合
     const subjectMap = new Map<string, number[]>()

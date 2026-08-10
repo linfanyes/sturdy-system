@@ -177,11 +177,32 @@ export class AuthService {
         await this.studentRepo.save(stu)
       }
       const pn = stu.parentName || '家长'
+      // 缺陷修复：纯家长分支此前签发的 JWT 缺少 parentId，导致 /parent-auth/me、
+      // 切换孩子、跨娃比对等依赖 parentId 的家长端功能全部拿到空数据。
+      // 与「教师开启家长登录（toggle D6）」逻辑对齐：复用/创建 Parent 记录并回填 student.parentId。
+      let parentId: string | undefined = stu.parentId || undefined
+      if (!parentId) {
+        try {
+          const phone = (stu.parentPhone || '').trim()
+          if (phone) {
+            let parentRecord = await this.parentRepo.findOne({ where: { phone } })
+            if (!parentRecord) {
+              parentRecord = await this.parentRepo.save(this.parentRepo.create({ phone, parentName: pn }))
+            }
+            parentId = parentRecord.id
+            stu.parentId = parentRecord.id
+            await this.studentRepo.save(stu)
+          }
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn(`[unified-login] 回填家长 parentId 失败（不影响登录）: ${(e as Error)?.message}`)
+        }
+      }
       return {
         role: 'parent',
-        token: this.jwt.sign({ sub: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), type: 'parent', studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u }),
+        token: this.jwt.sign({ sub: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), type: 'parent', parentId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u }),
         effectiveFeatures: await this.effectiveFeaturesFor('parent', { studentId: stu.id }),
-        parent: { imUserId: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u },
+        parent: { imUserId: parentImUserId({ studentId: stu.id, relation: '家长', parentName: pn }), parentId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: u },
       }
     }
 

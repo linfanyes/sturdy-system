@@ -6,9 +6,10 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { createRateLimitGuard } from '../common/guards/rate-limit.guard'
 
 // 密码登录类接口：每分钟最多 10 次（按 IP + 用户名 防暴力破解）
-const LoginRateLimit = createRateLimitGuard(60_000, 10)
+// QA/压测场景可通过 LOGIN_RATE_LIMIT_MAX 环境变量放宽（生产默认 10，保持安全基线）
+const LoginRateLimit = createRateLimitGuard(60_000, +(process.env.LOGIN_RATE_LIMIT_MAX || 10))
 // 微信登录/绑定类接口：每分钟最多 30 次（防枚举学号与滥用）
-const WechatRateLimit = createRateLimitGuard(60_000, 30)
+const WechatRateLimit = createRateLimitGuard(60_000, +(process.env.WECHAT_RATE_LIMIT_MAX || 30))
 
 @Controller('auth')
 export class AuthController {

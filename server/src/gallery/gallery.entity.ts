@@ -18,5 +18,6 @@ export class ClassGallery extends BaseEntity {
   @Column({ type: 'text', nullable: true }) description: string
   @Column({ default: '' }) date: string
   // 图片以 base64 dataURL 数组直存，用 LONGTEXT 容纳多张照片（TEXT 仅 64KB 会溢出）
-  @Column({ type: 'longtext', nullable: true, transformer: jsonArrayTransformer }) photos: string[]
+  // QA/SQLite 兼容：longtext 为 MySQL 专有类型，内存库（better-sqlite3）降级为 text（run.ts 设 QA_MODE=1）
+  @Column({ type: (process.env.QA_MODE === '1' ? 'text' : 'longtext') as any, nullable: true, transformer: jsonArrayTransformer }) photos: string[]
 }

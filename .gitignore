@@ -85,3 +85,6 @@ mini-program/src/_deprecated_orphan_pages/
 
 # TypeORM 无需提交编译产物
 server/dist/
+
+# QA 构建产物
+server/.qa-dist/

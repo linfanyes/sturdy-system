@@ -43,7 +43,7 @@
             <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
             <text v-if="!batchMode" class="dial del" @click.stop="deleteOne(s)">🗑 删除</text>
           </view>
-          <text v-if="s.parentLoginEnabled" class="hint">默认口令：学号后6位（{{ defaultPwd(s) }}）</text>
+          <text v-if="s.parentLoginEnabled" class="hint">默认口令：123456（{{ defaultPwd(s) }}）</text>
         </view>
       </block>
       <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />
@@ -190,7 +190,7 @@ import {
 } from '@/api/students'
 import { listGrades, getGrades } from '@/api/grades'
 import { isPhone, isStudentNo } from '../../common/validators'
-import { defaultParentPassword } from '@gardener/shared/utils/student'
+
 import { safeParse } from '../../common/util'
 import { theme, flushTabBarStyle, switchTabParams } from '../../common/store'
 import { copyText } from '../../common/print'
@@ -388,7 +388,7 @@ async function batchAuthParent(enabled) {
     uni.hideLoading()
     uni.showToast({
       title: enabled
-        ? `已开通 ${success} 人，默认口令为学号后6位${failed ? '，失败 ' + failed + ' 人' : ''}`
+        ? `已开通 ${success} 人，默认口令为 123456${failed ? '，失败 ' + failed + ' 人' : ''}`
         : `操作完成：成功 ${success} 条${failed ? '，失败 ' + failed + ' 条' : ''}`,
       icon: 'none',
     })
@@ -425,9 +425,10 @@ async function doResetParentPwd() {
   finally { resetSaving.value = false }
 }
 
-// 家长默认口令 = 学号后6位（复用 shared，与后端规则一致，仅用于界面展示）
+// 家长默认口令：与后端 toggleParentLogin 实际设置值一致（统一 123456）。
+// 修复：原展示「学号后6位」与后端不符，家长按界面提示登录会失败。
 function defaultPwd(s) {
-  return defaultParentPassword(s.studentNo)
+  return '123456'
 }
 
 function toggleSel(s) {

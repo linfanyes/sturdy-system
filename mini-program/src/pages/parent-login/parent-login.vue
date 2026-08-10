@@ -3,7 +3,7 @@
     <view class="logo">🎒</view>
     <view class="title">家长中心</view>
     <view class="sub">输入孩子学号与密码，即可查看成绩、班级通知，并与老师沟通</view>
-    <input v-model="studentNo" class="inp" type="number" maxlength="20" placeholder="请输入学生学号" />
+    <input v-model="studentNo" class="inp" type="text" maxlength="32" placeholder="请输入学生学号" />
     <input v-model="password" class="inp" password placeholder="请输入密码（默认 123456）" />
     <button class="btn" :disabled="loading" @click="login">{{ loading ? '登录中…' : '用学号登录' }}</button>
     <view class="tip-row">
@@ -30,7 +30,8 @@ const loading = ref(false)
 
 async function login() {
   const no = studentNo.value.trim()
-  if (!no || !/^\d+$/.test(no)) {
+  // 学号规则与后端/共享校验器一致：2-32 位字母或数字（修复：原仅允许纯数字，字母学号无法登录）
+  if (!no || !/^[A-Za-z0-9]{2,32}$/.test(no)) {
     return uni.showToast({ title: '请输入正确的学号', icon: 'none' })
   }
   if (!password.value) {
