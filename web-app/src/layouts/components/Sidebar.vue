@@ -206,6 +206,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
           v-for="item in flatItems"
           :key="item.name"
           :to="item.to"
+          replace
           class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
           :class="route.name === item.name ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
         >

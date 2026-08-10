@@ -351,8 +351,8 @@ async function submitChangePwd() {
   }
 }
 
-// 学生信息查看 / 申请修改
-const studentInfo = computed(() => me.value?.studentInfo)
+// 学生信息查看 / 申请修改（兜底 {}，避免未返回 studentInfo 时模板访问 .xxx 报错）
+const studentInfo = computed(() => me.value?.studentInfo || {})
 const showStudentInfoModal = ref(false)
 const showStudentRequestsModal = ref(false)
 const studentRequests = ref<StudentUpdateRequest[]>([])
@@ -530,6 +530,11 @@ function dismissSubscribe() {
             class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
             @click="showPwdModal = true"
           >⚙️ 修改密码</button>
+          <button
+            v-if="me"
+            class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
+            @click="openEditStudentInfo"
+          >👤 维护学生信息</button>
         </template>
       </WelcomeHero>
     </div>
@@ -912,7 +917,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 学生信息 -->
-      <div v-if="studentInfo" class="quick-card">
+      <div v-if="me" class="quick-card">
         <div class="section-title">
           <UserCog class="w-5 h-5 text-mint-400" />
           <h2>学生信息</h2>
@@ -920,7 +925,7 @@ function dismissSubscribe() {
             <button
               class="text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
               @click="openEditStudentInfo"
-            >修改信息</button>
+            >维护学生信息</button>
             <button
               class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-600 hover:bg-cocoa-50 transition-colors"
               @click="openStudentRequests"

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-[100dvh] bg-cream-50 p-4">
     <!-- 返回 -->
-    <button class="flex items-center gap-1 text-sm text-cocoa-500 mb-4 cursor-pointer hover:text-cocoa-700" @click="router.back()">
+    <button class="flex items-center gap-1 text-sm text-cocoa-500 mb-4 cursor-pointer hover:text-cocoa-700" @click="goBack">
       ← 返回看板
     </button>
 
@@ -69,6 +69,10 @@ import { useRouter } from 'vue-router'
 import { getKidsComparison } from '@/api/parent'
 
 const router = useRouter()
+function goBack() {
+  // 使用 replace 而非 back：避免刷新/直访本页时 history 仅 1 条导致 back() 失效（即“点击无效”）
+  router.replace('/parent')
+}
 const data = ref<any>(null)
 const loading = ref(true)
 const error = ref(false)

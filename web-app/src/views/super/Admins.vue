@@ -33,11 +33,16 @@ function schoolName(id: string) {
   return schools.value.find(s => s.id === id)?.name || '-'
 }
 
+/* 分页状态（默认 10 / 可选 5,10,20,50，后端 MAX_TAKE=500） */
+const page = ref(0)
+const pageSize = ref(10)
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+
 async function load() {
   loading.value = true
   try {
     const [adminsRes, teachersRes] = await Promise.all([
-      listSchoolAdmins(0, 500),
+      listSchoolAdmins(page.value * pageSize.value, pageSize.value),
       listTeachers(0, 500).catch(() => ({ items: [] as any[], total: 0 })),
     ])
     items.value = (adminsRes?.items || [])
@@ -56,6 +61,14 @@ async function load() {
     loading.value = false
   }
 }
+
+function goPage(p: number) {
+  page.value = Math.min(Math.max(0, p), totalPages.value - 1)
+  load()
+}
+function prevPage() { goPage(page.value - 1) }
+function nextPage() { goPage(page.value + 1) }
+function changePageSize() { page.value = 0; load() }
 
 onMounted(async () => {
   await loadSchools()
@@ -108,6 +121,7 @@ async function submit() {
       })
     }
     showForm.value = false
+    page.value = 0
     await load()
   } catch (e: any) {
     toast.error(e?.message || '操作失败')
@@ -156,6 +170,7 @@ async function handleDelete(row: any) {
   if (!await confirm('确定删除？')) return
   try {
     await deleteSchoolAdmin(row.id)
+    page.value = 0
     await load()
   } catch (e: any) {
     toast.error(e?.message || '删除失败')
@@ -256,6 +271,25 @@ function formatTime(t?: string) {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页栏 -->
+    <div v-if="total > pageSize" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ total }} 条</span>
+      <div class="flex items-center gap-2">
+        <button type="button" class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm" :disabled="page === 0" @click="prevPage">上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ page + 1 }}/{{ totalPages }} 页</span>
+        <button type="button" class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm" :disabled="page + 1 >= totalPages" @click="nextPage">下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSize" aria-label="每页条数" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400" @change="changePageSize">
+          <option :value="5">5 条</option>
+          <option :value="10">10 条</option>
+          <option :value="20">20 条</option>
+          <option :value="50">50 条</option>
+        </select>
+      </div>
     </div>
 
     <!-- 新增/编辑 Modal -->
