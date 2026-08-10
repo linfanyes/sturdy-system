@@ -97,6 +97,15 @@ export class ConfigService implements OnModuleInit {
 
   /** 用环境变量首次填充平台配置（仅当 key 不存在时） */
   private async seed() {
+    // 登录码 fail-closed：生产环境未配置 LOGIN_CODE 时拒绝启动，
+    // 避免回退到可猜测的弱默认值（历史上曾用 '1314520'）导致超管/家长面被撞库登录。
+    const isProd = this.env.get('NODE_ENV') === 'production'
+    const loginCode = (this.env.get('LOGIN_CODE') || '').trim()
+    if (isProd && !loginCode) {
+      throw new Error(
+        '生产环境必须配置 LOGIN_CODE（小程序/超管登录码），请在 .env 设置强随机值（≥8 位），服务拒绝启动。',
+      )
+    }
     const defaults: Array<{ key: string; value: string; description: string }> = [
       {
         key: 'defaultSubjects',
@@ -107,8 +116,9 @@ export class ConfigService implements OnModuleInit {
       },
       {
         key: 'loginCode',
-        value: this.env.get('LOGIN_CODE') || '1314520',
-        description: '小程序登录码',
+        // 开发/预览环境允许弱默认值便于演示；生产已在上方 fail-closed
+        value: loginCode || '1314520',
+        description: '小程序登录码（生产环境必须显式配置）',
       },
       {
         key: 'aiBaseUrl',

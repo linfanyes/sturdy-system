@@ -138,6 +138,8 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
           :key="cat.label"
           class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
           :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+          :aria-label="cat.label"
+          :aria-expanded="activeCategory === cat.label"
           @click="toggleCat(cat.label)"
         >
           <div
@@ -158,6 +160,8 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             @click="activeCategory = ''; openCats = []"
             class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
             :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            :aria-label="cat.label"
+            :aria-current="route.name === (cat.groups[0]?.items[0]?.name) ? 'page' : undefined"
           >
             <div
               class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
@@ -192,6 +196,8 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             @click="activeCategory = ''; openCats = []"
             class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
             :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            :aria-label="cat.label"
+            :aria-current="route.name === (cat.groups[0]?.items[0]?.name) ? 'page' : undefined"
           >
             <div
               class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"

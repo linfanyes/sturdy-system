@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { MonitorService, MonitorLogInput } from './monitor.service'
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
+import { Roles } from '../common/decorators/roles.decorator'
 
 /**
  * 前端监控上报端点（公开，受全局 Throttler 限速保护）。
@@ -21,7 +23,9 @@ export class MonitorController {
     return { ok: true, count: Math.min(items.length, 20) }
   }
 
-  /** 最近日志（超管排查；简单限制，生产可加鉴权） */
+  /** 最近日志（仅超管可读；日志含堆栈/SQL/PII，必须鉴权防信息泄露） */
+  @Roles('super')
+  @UseGuards(JwtAuthGuard)
   @Get('logs')
   async list(@Query('limit') limit?: string, @Query('type') type?: string) {
     return { items: await this.monitor.list(Number(limit) || 50, type || undefined) }

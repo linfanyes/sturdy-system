@@ -14,6 +14,19 @@ import {
 // 超管登录：每分钟最多 6 次
 const AdminLoginRateLimit = createRateLimitGuard(60_000, 6)
 
+/**
+ * 分页上限（与 base.controller 的 MAX_TAKE 对齐）：客户端 take 超 500 截断，
+ * 防超管审计大查询（如 grades 5000 级拉取）拖垮数据库。
+ */
+const MAX_TAKE = 500
+function clampTake(take?: string, def = 100): number {
+  const v = Number(take) || def
+  return Math.min(v, MAX_TAKE)
+}
+function clampSkip(skip?: string): number {
+  return Math.max(0, Number(skip) || 0)
+}
+
 @Controller('admin')
 @Roles('super')
 export class AdminController {
@@ -32,7 +45,7 @@ export class AdminController {
   @Get('schools')
   @UseGuards(JwtAuthGuard)
   listSchools(@Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listSchools(Number(skip) || 0, Number(take) || 100)
+    return this.svc.listSchools(clampSkip(skip), clampTake(take, 100))
   }
 
   @Get('schools/:id')
@@ -76,7 +89,7 @@ export class AdminController {
   @Get('school-admins')
   @UseGuards(JwtAuthGuard)
   listAdmins(@Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listAdmins(Number(skip) || 0, Number(take) || 100)
+    return this.svc.listAdmins(clampSkip(skip), clampTake(take, 100))
   }
 
   @Post('school-admins')
@@ -117,21 +130,21 @@ export class AdminController {
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
   listTeachers(@Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listTeachers(Number(skip) || 0, Number(take) || 500)
+    return this.svc.listTeachers(clampSkip(skip), clampTake(take, 500))
   }
 
   /* ===== 班级管理（超管审计视图：跨校查看班级） ===== */
   @Get('classes')
   @UseGuards(JwtAuthGuard)
   listClasses(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listClasses(schoolId, Number(skip) || 0, Number(take) || 500)
+    return this.svc.listClasses(schoolId, clampSkip(skip), clampTake(take, 500))
   }
 
   /* ===== 学生管理（超管审计视图：跨校查看学生） ===== */
   @Get('students')
   @UseGuards(JwtAuthGuard)
   listStudents(@Query('schoolId') schoolId?: string, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.svc.listStudents(schoolId, classId, Number(skip) || 0, Number(take) || 500)
+    return this.svc.listStudents(schoolId, classId, clampSkip(skip), clampTake(take, 500))
   }
 
   @Post('teachers/:id/clear-data')
@@ -141,7 +154,7 @@ export class AdminController {
   @Get('audit-logs')
   @UseGuards(JwtAuthGuard)
   auditLogs(@Query('schoolId') schoolId?: string, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.audit.list(schoolId, Number(skip) || 0, Number(take) || 100)
+    return this.audit.list(schoolId, clampSkip(skip), clampTake(take, 100))
   }
 
   // ===== 超管只读：考试 / 成绩审计（P4） =====
@@ -154,7 +167,7 @@ export class AdminController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.svc.listAuditExams(schoolId, classId, Number(skip) || 0, Number(take) || 500)
+    return this.svc.listAuditExams(schoolId, classId, clampSkip(skip), clampTake(take, 500))
   }
 
   @Get('audit-grades')
@@ -167,7 +180,7 @@ export class AdminController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.svc.listAuditGrades(schoolId, classId, subject, examName, Number(skip) || 0, Number(take) || 500)
+    return this.svc.listAuditGrades(schoolId, classId, subject, examName, clampSkip(skip), clampTake(take, 500))
   }
 
   @Get('audit-grade-summary')

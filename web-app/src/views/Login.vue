@@ -324,6 +324,7 @@ function selectRole(role: 'teacher' | 'parent') {
                 type="text"
                 autocomplete="username"
                 placeholder="请输入用户名"
+                aria-label="用户名"
                 class="input-soft"
               />
             </div>
@@ -337,6 +338,7 @@ function selectRole(role: 'teacher' | 'parent') {
                   :type="showPassword ? 'text' : 'password'"
                   autocomplete="current-password"
                   placeholder="请输入密码"
+                  aria-label="密码"
                   class="input-soft pr-11"
                   @keydown="checkCapsLock"
                   @keyup="checkCapsLock"

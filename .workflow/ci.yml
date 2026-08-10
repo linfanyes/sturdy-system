@@ -35,6 +35,7 @@ stages:
           nodeVersion: 18.18.0
           commands:
             - 'cd server && npm ci && npx tsc -p tsconfig.build.json --noEmit'
+            - 'node scripts/check-shared-vendor.mjs'
 
   # ============ Web 管理端：构建 shared + 类型检查 + 构建 ============
   - stage:
@@ -46,7 +47,7 @@ stages:
           displayName: 'Web: vue-tsc + vite build'
           nodeVersion: 18.18.0
           commands:
-            - 'cd shared && npm ci && npm run build && cd ../web-app && npm ci --legacy-peer-deps && npx vue-tsc --noEmit && npx vite build'
+            - 'cd shared && npm ci && npm run build && cd ../web-app && npm install --package-lock-only --legacy-peer-deps && npm ci --legacy-peer-deps && npx vue-tsc --noEmit && npx vite build'
 
   # ============ 小程序：构建 + 主包体积门禁 ============
   - stage:

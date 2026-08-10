@@ -23,6 +23,7 @@ function clampTake(take?: string): number {
   const v = Number(take) || MAX_TAKE
   return Math.min(v, MAX_TAKE)
 }
+export { clampTake }
 
 /**
  * 剔除客户端不应自行写入的字段（租户键/主键/角色/时间戳等），
@@ -38,6 +39,7 @@ function stripUnsafe(dto: any): any {
   }
   return out
 }
+export { stripUnsafe }
 
 /**
  * 通用 CRUD 控制器基类。子类用 @Controller('path') 标注路径并继承即可。

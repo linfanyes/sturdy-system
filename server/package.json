@@ -7,7 +7,10 @@
   "scripts": {
     "build": "nest build",
     "vendor:shared": "node ../scripts/sync-shared-vendor.mjs",
+    "check:vendor": "node ../scripts/check-shared-vendor.mjs",
     "qa": "tsc -p tsconfig.qa.json && node .qa-dist/server/qa/run.js",
+    "test": "jest",
+    "test:cov": "jest --coverage",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
