@@ -49,7 +49,9 @@ describe('超管端页面完整性', () => {
 
   it('PlatformConfig.vue 调用配置接口', () => {
     const content = readFile('super/PlatformConfig.vue')
-    expect(content).toMatch(/\/config\/app/)
+    // 页面通过 @/api/admin 的 getPlatformConfig/updatePlatformConfig 间接调用 /config/app
+    expect(content).toMatch(/@\/api\/admin/)
+    expect(content).toMatch(/getPlatformConfig|updatePlatformConfig/)
   })
 })
 
@@ -69,28 +71,78 @@ describe('家长端页面完整性', () => {
     const content = readFile('parent/Dashboard.vue')
     expect(content).toMatch(/家长中心|welcome/)
   })
+
+  it('Dashboard.vue 今日需关注提醒置顶', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/今日需关注/)
+    expect(content).toMatch(/reminders/)
+  })
+
+  it('Dashboard.vue 健康度总览为可点击彩色卡片', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/孩子在校健康度总览/)
+    expect(content).toMatch(/HEALTH_TONE_CLS/)
+    expect(content).toMatch(/scrollToSection/)
+  })
+
+  it('Dashboard.vue 作业含截止倒计时与逾期高亮', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/deadlineChip/)
+    expect(content).toMatch(/已逾期|今天截止/)
+  })
+
+  it('Dashboard.vue 每周小结卡片', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/每周小结/)
+    expect(content).toMatch(/weekSummary/)
+  })
+
+  it('Dashboard.vue 联系老师展示电话可拨号', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/联系老师/)
+    expect(content).toMatch(/tel:/)
+  })
+
+  it('Dashboard.vue 课表含明日预览与值日倒计时', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/明日课程预览/)
+    expect(content).toMatch(/dutyDaysLeft/)
+  })
+
+  it('GradeOverview.vue 展示较上次变化与得分率进度条', () => {
+    const content = readFile('parent/components/GradeOverview.vue')
+    expect(content).toMatch(/deltaInfo/)
+    expect(content).toMatch(/较上次/)
+    expect(content).toMatch(/subjectPct/)
+  })
 })
 
-describe('作业管理教学化', () => {
-  it('Homework.vue 实现了双视图切换', () => {
-    const content = readFile('exams/Homework.vue')
-    expect(content).toMatch(/teaching|list|view/)
-    expect(content).toMatch(/教学视图|列表管理/)
+describe('作业管理（schema 驱动 CRUD）', () => {
+  // 架构重构后，作业管理由通用 SchemaCrudPage 渲染（router entity: homework），
+  // 字段与状态定义集中在 shared/schemas/crud-schema.ts。
+  const routerContent = fs.readFileSync(path.resolve(__dirname, '../src/router/index.ts'), 'utf-8')
+  const schemaContent = fs.readFileSync(path.resolve(__dirname, '../../shared/schemas/crud-schema.ts'), 'utf-8')
+
+  it('作业路由接入 SchemaCrudPage 通用 CRUD', () => {
+    expect(routerContent).toMatch(/entity: 'homework'/)
+    expect(routerContent).toMatch(/SchemaCrudPage\.vue/)
   })
 
-  it('Homework.vue 实现了班级分组', () => {
-    const content = readFile('exams/Homework.vue')
-    expect(content).toMatch(/groupedByClass|groupBy|classId/)
+  it('作业 schema 定义了核心字段（标题/学科/日期/状态）', () => {
+    expect(schemaContent).toMatch(/'homework'/)
+    expect(schemaContent).toMatch(/deadline/)
+    expect(schemaContent).toMatch(/startDate/)
   })
 
-  it('Homework.vue 实现了逾期列表', () => {
-    const content = readFile('exams/Homework.vue')
-    expect(content).toMatch(/overdue|逾期/)
+  it('作业状态支持逾期与已批改', () => {
+    expect(schemaContent).toMatch(/逾期/)
+    expect(schemaContent).toMatch(/已批改/)
   })
 
-  it('Homework.vue 实现了标记已批改', () => {
-    const content = readFile('exams/Homework.vue')
-    expect(content).toMatch(/markGraded|标记已批改|已批改/)
+  it('家长看板作业列表区分逾期/完成/进行中', () => {
+    const content = readFile('parent/Dashboard.vue')
+    expect(content).toMatch(/isHwOverdue/)
+    expect(content).toMatch(/DONE_HW_STATUSES/)
   })
 })
 

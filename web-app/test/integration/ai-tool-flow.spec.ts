@@ -30,6 +30,20 @@ jest.mock('@/api/teacher', () => ({
   aiChatSync: (...a: any[]) => mockAiChatSync(...a),
 }))
 
+// Mock 全局反馈（AiTextTool 用 toast 替代原生 alert）
+const mockToastSuccess = jest.fn()
+const mockToastWarning = jest.fn()
+const mockToastError = jest.fn()
+jest.mock('@/utils/feedback', () => ({
+  toast: {
+    success: (...a: any[]) => mockToastSuccess(...a),
+    info: jest.fn(),
+    warning: (...a: any[]) => mockToastWarning(...a),
+    error: (...a: any[]) => mockToastError(...a),
+  },
+  confirm: jest.fn().mockResolvedValue(true),
+}))
+
 // Mock lucide-vue-next icons
 jest.mock('lucide-vue-next', () => ({
   Sparkles: { template: '<span data-testid="sparkles" />' },
@@ -209,8 +223,8 @@ describe('功能流程: AI 工具调用流程 (AiTextTool组件)', () => {
         await flushPromises()
 
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('AI 生成内容')
-        // 实际组件使用 alert('已复制')
-        expect(global.alert).toHaveBeenCalledWith('已复制')
+        // 实际组件使用 toast.success('已复制')
+        expect(mockToastSuccess).toHaveBeenCalledWith('已复制')
       }
     })
 
@@ -228,7 +242,7 @@ describe('功能流程: AI 工具调用流程 (AiTextTool组件)', () => {
         await copyBtn.trigger('click')
         await flushPromises()
 
-        expect(global.alert).toHaveBeenCalledWith(expect.stringMatching(/复制失败|请手动复制|不支持复制/))
+        expect(mockToastError).toHaveBeenCalledWith(expect.stringMatching(/复制失败|请手动/))
       }
     })
 
@@ -255,7 +269,7 @@ describe('功能流程: AI 工具调用流程 (AiTextTool组件)', () => {
       await flushPromises()
 
       expect(mockAiChatSync).not.toHaveBeenCalled()
-      expect(global.alert).toHaveBeenCalledWith(expect.stringMatching(/请填写必要内容/))
+      expect(mockToastWarning).toHaveBeenCalledWith('请填写必要内容')
     })
 
     it('完整流程_仅空白字符_仍会调用API但提示内容', async () => {

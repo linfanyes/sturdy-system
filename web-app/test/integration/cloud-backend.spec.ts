@@ -8,6 +8,11 @@
  * 约定（来自实时侦察）：该后端对 GET 返回 200、对 POST/登录返回 201、PATCH/DELETE 返回 200。
  * 若断言期望正确契约（200 + 结构）却得到错误响应，即为「源码缺陷」，不会被弱化以掩盖问题。
  *
+ * 运行门控：生产后端禁止默认弱口令 admin/admin（启动即拒绝），需通过环境变量提供
+ * 超管凭据才会真正执行：
+ *   CLOUD_SUPER_USER / CLOUD_SUPER_PASSWORD
+ * 未提供时整个套件跳过（skip），避免在本地/CI 无凭据环境下产生大面积假失败。
+ *
  * 云基址： https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
  */
 import {
@@ -23,6 +28,17 @@ import {
 } from '../data/cloud-helpers'
 
 jest.setTimeout(120000)
+
+// ---------- 运行门控：需通过环境变量提供超管凭据 ----------
+const CLOUD_SUPER_USER = process.env.CLOUD_SUPER_USER || ''
+const CLOUD_SUPER_PASSWORD = process.env.CLOUD_SUPER_PASSWORD || ''
+const HAS_CLOUD_CREDS = !!(CLOUD_SUPER_USER && CLOUD_SUPER_PASSWORD)
+// 未提供凭据时整套件跳过，避免本地/CI 无凭据环境产生大面积假失败
+const describeCloud = HAS_CLOUD_CREDS ? describe : describe.skip
+if (!HAS_CLOUD_CREDS) {
+  // eslint-disable-next-line no-console
+  console.log('[cloud-backend] 未设置 CLOUD_SUPER_USER / CLOUD_SUPER_PASSWORD，跳过云后端集成测试')
+}
 
 // ---------- 种子状态 ----------
 interface SeedState {
@@ -78,11 +94,11 @@ async function loginTeacher(username: string, password: string) {
   return apiRequest('/auth/password-login', 'POST', { username, password })
 }
 
-describe('直连云托管后端 · 全角色自播种集成测试', () => {
+describeCloud('直连云托管后端 · 全角色自播种集成测试', () => {
   // ====================== 自播种 ======================
   beforeAll(async () => {
     // 1) 超管登录
-    const adminLogin = await loginUnified('admin', 'admin')
+    const adminLogin = await loginUnified(CLOUD_SUPER_USER, CLOUD_SUPER_PASSWORD)
     expectCreated(adminLogin, 'unified-login(admin)')
     expect(adminLogin.body.role).toBe('super')
     S.ST = adminLogin.body.token
@@ -221,14 +237,14 @@ describe('直连云托管后端 · 全角色自播种集成测试', () => {
   // ====================== 认证模块 ======================
   describe('认证模块: 统一登录', () => {
     it('POST /auth/unified-login (admin) → 200/201 + role=super', async () => {
-      const res = await loginUnified('admin', 'admin')
+      const res = await loginUnified(CLOUD_SUPER_USER, CLOUD_SUPER_PASSWORD)
       expectCreated(res, 'unified-login')
       expect(res.body.role).toBe('super')
       expect(typeof res.body.token).toBe('string')
     })
 
     it('错误密码 → 401', async () => {
-      const res = await apiRequest('/auth/unified-login', 'POST', { username: 'admin', password: 'wrong-password' })
+      const res = await apiRequest('/auth/unified-login', 'POST', { username: CLOUD_SUPER_USER, password: 'wrong-password' })
       expect(res.status).toBe(401)
     })
 

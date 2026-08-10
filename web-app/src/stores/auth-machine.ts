@@ -19,6 +19,7 @@ import {
 } from '@gardener/shared/auth/factory'
 import type { AuthUser, Role } from '@/types/user'
 import * as authApi from '@/api/auth'
+import { isViteDev } from '@/config/viteEnv'
 
 // 保持旧 key，避免冷启动时与已有登录态不兼容
 const TOKEN_KEY = 'trace_web_token'
@@ -55,7 +56,7 @@ function getMachine() {
       multiRoleKey: MULTI_ROLE_KEY,
     }),
     revokeFn: undefined,
-    debug: import.meta.env.DEV,
+    debug: isViteDev(),
   })
   return _machine
 }

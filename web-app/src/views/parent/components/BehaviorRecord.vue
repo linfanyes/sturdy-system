@@ -27,7 +27,7 @@ interface BehaviorData {
   recent: BehaviorRecentItem[]
 }
 
-const COLOR = { green: '#07c160', red: '#f56c6c', amber: '#E6A23C' }
+const COLOR = { green: '#2e8b57', red: '#c9436d', amber: '#f5b342' } // 与设计令牌 mint/sakura/butter 对齐
 const CATEGORY_COLOR: Record<string, string> = { praise: COLOR.green, violation: COLOR.red, other: COLOR.amber }
 
 const props = defineProps<{
@@ -38,9 +38,9 @@ const props = defineProps<{
 const behaviorChips = computed(() => {
   const s = props.behavior?.summary
   return [
-    { label: '表扬', value: s ? s.praise : 0, color: COLOR.green, bg: 'bg-[#07c160]/10' },
-    { label: '违纪', value: s ? s.violation : 0, color: COLOR.red, bg: 'bg-[#f56c6c]/10' },
-    { label: '其他', value: s ? s.other : 0, color: COLOR.amber, bg: 'bg-[#E6A23C]/10' },
+    { label: '表扬', value: s ? s.praise : 0, color: COLOR.green, bg: 'bg-mint-50' },
+    { label: '违纪', value: s ? s.violation : 0, color: COLOR.red, bg: 'bg-sakura-50' },
+    { label: '其他', value: s ? s.other : 0, color: COLOR.amber, bg: 'bg-butter-50' },
   ]
 })
 

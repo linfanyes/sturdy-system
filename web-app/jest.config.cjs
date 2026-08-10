@@ -5,6 +5,10 @@ module.exports = {
   roots: ['<rootDir>/test'],
   testMatch: ['**/*.spec.ts', '**/*.spec.js'],
   moduleNameMapper: {
+    // viteEnv 使用 import.meta（ESM-only），CJS 测试环境映射到安全 stub（须在 @/* 通配之前）
+    '^@/config/viteEnv$': '<rootDir>/test/stubs/viteEnv.ts',
+    // shared 包内部使用 ESM 风格 './xxx.js' 引用 .ts 模块，CJS 下需去掉 .js 后缀
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@gardener/shared/(.*)$': '<rootDir>/../shared/$1',
   },

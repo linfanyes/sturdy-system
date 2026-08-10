@@ -12,6 +12,18 @@ jest.mock('@/api/request', () => ({
   default: { post: (...a: any[]) => mockPost(...a), get: jest.fn(), patch: jest.fn(), delete: jest.fn() },
 }))
 
+// AiTextTool 用 toast 替代原生 alert 做空输入提示
+const mockToastWarning = jest.fn()
+jest.mock('@/utils/feedback', () => ({
+  toast: {
+    success: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+    warning: (...a: any[]) => mockToastWarning(...a),
+  },
+  confirm: jest.fn().mockResolvedValue(true),
+}))
+
 beforeAll(() => {
   Object.defineProperty(navigator, 'clipboard', {
     value: { writeText: jest.fn().mockResolvedValue(undefined) },
@@ -29,6 +41,7 @@ describe('AiTextTool 通用 AI 文本工具（覆盖全部 AI 工具页）', () 
   beforeEach(() => {
     mockAiChatSync.mockReset()
     mockPost.mockReset()
+    mockToastWarning.mockReset()
     mockAiChatSync.mockResolvedValue({ content: 'AI 生成内容' })
     ;(navigator.clipboard.writeText as jest.Mock).mockClear()
   })
@@ -56,7 +69,7 @@ describe('AiTextTool 通用 AI 文本工具（覆盖全部 AI 工具页）', () 
     await wrapper.findAll('button').find((b) => b.text() === '生成')!.trigger('click')
     await flushPromises()
     expect(mockAiChatSync).not.toHaveBeenCalled()
-    expect(global.alert).toHaveBeenCalled()
+    expect(mockToastWarning).toHaveBeenCalledWith('请填写必要内容')
   })
 
   it('有 savePath 时显示保存按钮，点击调用 POST', async () => {

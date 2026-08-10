@@ -36,7 +36,8 @@ const providerLoading = ref(false)
 async function loadProviders() {
   providerLoading.value = true
   try {
-    providers.value = await listAiProviders()
+    const res = await listAiProviders()
+    providers.value = Array.isArray(res) ? res : []
   } catch {
     providers.value = []
   } finally {

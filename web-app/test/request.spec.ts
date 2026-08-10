@@ -102,16 +102,17 @@ describe('HTTP 请求封装 - 行为单测', () => {
       const { onRejected } = getResponseInterceptors()
       const err: any = {
         response: { status: 401, data: { message: '登录已过期' } },
+        config: { url: '/grades' },
       }
       expect(localStorage.getItem('trace_web_token')).toBe('expired')
       const promise = onRejected(err)
+      // handleUnauthorized 为异步（动态 import store），须先等 reject 落定再断言副作用
+      await expect(promise).rejects.toThrow('登录已过期')
       // 跳转
       expect(location.hash).toBe('#/login')
       // 清除登录态
       expect(localStorage.getItem('trace_web_token')).toBeNull()
       expect(localStorage.getItem('trace_web_user')).toBeNull()
-      // 抛出解包后的错误信息
-      await expect(promise).rejects.toThrow('登录已过期')
     })
 
     it('401 且已在登录页时，不重复设置 hash 触发守卫循环', async () => {

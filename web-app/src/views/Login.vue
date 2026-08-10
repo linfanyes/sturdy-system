@@ -202,7 +202,7 @@ function selectRole(role: 'teacher' | 'parent') {
       />
     </div>
 
-    <!-- 右侧竖排装饰文字（复刻旧版 app） -->
+    <!-- 右侧竖排装饰文字 -->
     <div
       class="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 select-none lg:block"
     >
@@ -210,7 +210,7 @@ function selectRole(role: 'teacher' | 'parent') {
         class="text-lg font-semibold tracking-[0.35em] text-cocoa-300/35"
         style="writing-mode: vertical-rl"
       >
-        我命由天不由我
+        用心看见每一个孩子
       </div>
     </div>
 
@@ -374,54 +374,70 @@ function selectRole(role: 'teacher' | 'parent') {
               <Loader2 v-if="loading" class="mr-2 inline h-4 w-4 animate-spin" />
               {{ loading ? '登录中…' : '开始工作 →' }}
             </button>
+
+            <!-- 忘记密码引导：账号由老师/管理员创建，找回需联系老师 -->
+            <p class="text-center text-xs text-cocoa-400">
+              忘记密码？请联系班主任或学校管理员重置
+            </p>
           </form>
 
-          <!-- 头像选择（复刻 4×4 网格） -->
-          <div class="mt-6">
-            <div class="mb-2 text-xs font-medium text-cocoa-500">
-              选择一个表情头像
-            </div>
-            <div class="grid grid-cols-8 gap-2">
-              <button
-                v-for="a in avatarOptions"
-                :key="a"
-                type="button"
-                @click="pickAvatar(a)"
-                :aria-label="`选择头像 ${a}`"
-                :class="[
-                  'flex h-9 w-9 items-center justify-center rounded-full text-lg transition',
-                  selectedAvatar === a
-                    ? 'bg-butter-100 ring-2 ring-butter-400'
-                    : 'hover:bg-cream-100',
-                ]"
-              >
-                {{ a }}
-              </button>
-            </div>
-          </div>
+          <!-- 个性化（头像 / 格言）默认收起，减少登录页干扰 -->
+          <details class="mt-6 group">
+            <summary
+              class="cursor-pointer select-none text-xs font-medium text-cocoa-500 hover:text-cocoa-700 transition-colors list-none flex items-center gap-1"
+            >
+              🎨 个性化登录页
+              <span class="text-cocoa-300 group-open:hidden">（头像 / 格言）</span>
+              <span class="ml-auto text-cocoa-300 group-open:rotate-90 transition-transform">›</span>
+            </summary>
 
-          <!-- 教育格言（复刻输入框 + 刷新按钮） -->
-          <div class="mt-5">
-            <div class="mb-2 flex items-center justify-between">
-              <span class="text-xs font-medium text-cocoa-500">教育格言（可选）</span>
-              <button
-                type="button"
-                @click="nextMotto"
-                class="rounded-full p-1 text-cocoa-400 transition hover:bg-cream-100 hover:text-cocoa-600"
-                title="换一句"
-              >
-                <RefreshCw class="h-3.5 w-3.5" />
-              </button>
+            <!-- 头像选择（复刻 4×4 网格） -->
+            <div class="mt-3">
+              <div class="mb-2 text-xs font-medium text-cocoa-500">
+                选择一个表情头像
+              </div>
+              <div class="grid grid-cols-8 gap-2">
+                <button
+                  v-for="a in avatarOptions"
+                  :key="a"
+                  type="button"
+                  @click="pickAvatar(a)"
+                  :aria-label="`选择头像 ${a}`"
+                  :class="[
+                    'flex h-9 w-9 items-center justify-center rounded-full text-lg transition',
+                    selectedAvatar === a
+                      ? 'bg-butter-100 ring-2 ring-butter-400'
+                      : 'hover:bg-cream-100',
+                  ]"
+                >
+                  {{ a }}
+                </button>
+              </div>
             </div>
-            <input
-              :value="mottos[mottoIdx] + ' 🌱'"
-              readonly
-              class="w-full cursor-default rounded-xl border border-cream-200 bg-cream-50/70 px-3 py-2 text-center text-sm text-cocoa-700 outline-none transition focus:border-butter-300"
-            />
-          </div>
+
+            <!-- 教育格言（复刻输入框 + 刷新按钮） -->
+            <div class="mt-4">
+              <div class="mb-2 flex items-center justify-between">
+                <span class="text-xs font-medium text-cocoa-500">教育格言（可选）</span>
+                <button
+                  type="button"
+                  @click="nextMotto"
+                  class="rounded-full p-1 text-cocoa-400 transition hover:bg-cream-100 hover:text-cocoa-600"
+                  title="换一句"
+                >
+                  <RefreshCw class="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <input
+                :value="mottos[mottoIdx] + ' 🌱'"
+                readonly
+                class="w-full cursor-default rounded-xl border border-cream-200 bg-cream-50/70 px-3 py-2 text-center text-sm text-cocoa-700 outline-none transition focus:border-butter-300"
+              />
+            </div>
+          </details>
 
           <div class="mt-5 text-center text-xs leading-relaxed text-cocoa-400">
-            登录后 token 将持久化到本地，关闭浏览器后无需重新登录
+            登录后本机将记住登录状态，再次打开无需重复登录
           </div>
         </div>
       </div>

@@ -24,6 +24,19 @@ jest.mock('@/api/request', () => ({
   },
 }))
 
+// Mock 全局反馈（CrudTable 用 toast 替代原生 alert）
+const mockToastWarning = jest.fn()
+const mockToastError = jest.fn()
+jest.mock('@/utils/feedback', () => ({
+  toast: {
+    success: jest.fn(),
+    info: jest.fn(),
+    error: (...a: any[]) => mockToastError(...a),
+    warning: (...a: any[]) => mockToastWarning(...a),
+  },
+  confirm: jest.fn().mockResolvedValue(true),
+}))
+
 // Mock useClasses composable
 jest.mock('@/composables/useClasses', () => ({
   loadClasses: jest.fn(),
@@ -60,6 +73,8 @@ describe('功能流程: CRUD 标准流程', () => {
     mockPost.mockReset()
     mockPatch.mockReset()
     mockDelete.mockReset()
+    mockToastWarning.mockReset()
+    mockToastError.mockReset()
     mockGet.mockResolvedValue(listResponse(crudSampleRows))
   })
 
@@ -149,7 +164,8 @@ describe('功能流程: CRUD 标准流程', () => {
       await flushPromises()
 
       expect(mockPost).not.toHaveBeenCalled()
-      expect(global.alert).toHaveBeenCalledWith('标题必填')
+      // CrudTable 用 toast.warning 替代原生 alert 做必填提示
+      expect(mockToastWarning).toHaveBeenCalledWith('标题必填')
     })
   })
 

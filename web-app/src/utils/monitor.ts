@@ -10,6 +10,7 @@
  * 上报端点：POST /monitor/log（后端 MonitorModule，公开 + Throttler 限速）
  */
 import { getApiBase } from '@/api/request'
+import { isViteDev } from '@/config/viteEnv'
 
 type MonitorType = 'error' | 'unhandledrejection' | 'vitals' | 'perf'
 
@@ -26,7 +27,7 @@ let timer: ReturnType<typeof setTimeout> | null = null
 let initialized = false
 
 /** 开发环境（vite dev）不上报，避免本地噪声；构建预览走生产逻辑 */
-const ENABLED = typeof window !== 'undefined' && !import.meta.env.DEV
+const ENABLED = typeof window !== 'undefined' && !isViteDev()
 
 function currentPage(): string {
   try {
@@ -114,7 +115,7 @@ export function reportMonitor(entry: MonitorEntry) {
   if (!ENABLED) {
     // dev 下仅控制台提示，便于本地调试
     // eslint-disable-next-line no-console
-    if (import.meta.env.DEV) console.warn('[monitor]', entry.type, entry.message)
+    if (isViteDev()) console.warn('[monitor]', entry.type, entry.message)
     return
   }
   enqueue(entry)

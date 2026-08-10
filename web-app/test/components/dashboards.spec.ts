@@ -7,6 +7,7 @@ import ParentDashboard from '@/views/parent/Dashboard.vue'
 import * as teacherApi from '@/api/teacher'
 import {
   schools, schoolAdmins, schoolAdminDashboard, classes,
+  parentMe, parentNotices,
 } from '../data/fixtures'
 
 let mockAuthUser: any = {}
@@ -19,6 +20,21 @@ jest.mock('@/stores/auth', () => ({
     loginByUsername: jest.fn(),
   }),
 }))
+
+// roleSwitch store：测试未安装 pinia，模块级 mock（与 auth mock 对齐）
+jest.mock('@/stores/roleSwitch', () => ({
+  useRoleSwitchStore: () => ({
+    teacherToken: '',
+    parentToken: '',
+    teacherUser: null,
+    parentUser: null,
+    currentRole: null,
+    setTokens: jest.fn(),
+    switchTo: jest.fn(),
+    clear: jest.fn(),
+  }),
+}))
+
 
 // 各角色依赖的 API 模块
 jest.mock('@/api/admin', () => ({
@@ -44,6 +60,9 @@ jest.mock('@/api/school-admin', () => ({
 jest.mock('@/api/teacher', () => ({
   __esModule: true,
   listMyClasses: jest.fn(() => Promise.resolve(classes)),
+  listAllStudents: jest.fn(() => Promise.resolve([])),
+  listGrades: jest.fn(() => Promise.resolve([])),
+  crudList: jest.fn(() => Promise.resolve({ items: [], total: 0 })),
 }))
 jest.mock('@/api/notification', () => ({
   __esModule: true,
@@ -53,8 +72,13 @@ jest.mock('@/api/parent', () => ({
   __esModule: true,
   getParentMe: jest.fn(() => Promise.resolve(parentMe)),
   getParentNotices: jest.fn(() => Promise.resolve(parentNotices)),
-  getParentExams: jest.fn(() => Promise.resolve(parentExams)),
-  getParentHomework: jest.fn(() => Promise.resolve(parentHomework)),
+  getParentExams: jest.fn(() => Promise.resolve({ exams: [] })),
+  getParentHomework: jest.fn(() => Promise.resolve([])),
+  getParentAttendance: jest.fn(() => Promise.resolve(null)),
+  getParentBehavior: jest.fn(() => Promise.resolve(null)),
+  getParentSchedule: jest.fn(() => Promise.resolve(null)),
+  getParentCommunications: jest.fn(() => Promise.resolve(null)),
+  getParentTeachers: jest.fn(() => Promise.resolve([])),
 }))
 
 function withRole(role: string, user: any = {}) {
@@ -68,8 +92,8 @@ describe('四角色 Dashboard 渲染（SUP-01 / SA-01 / TCH-01 / PAR-01）', () 
     await flushPromises()
     expect(wrapper.text()).toContain('学校')
     expect(wrapper.text()).toContain('管理员')
-    // 有最近日志区域
-    expect(wrapper.text()).toContain('审计日志')
+    // 有最近日志区域（现版 UI 文案为「审计记录」）
+    expect(wrapper.text()).toContain('审计记录')
   })
 
   it('校管工作台：渲染四项统计', async () => {

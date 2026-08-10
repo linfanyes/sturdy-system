@@ -16,3 +16,16 @@ export function getViteEnvApiBase(): string | undefined {
   }
   return undefined
 }
+
+/**
+ * 是否 Vite 开发模式（import.meta.env.DEV 的 CJS 安全封装）。
+ * Jest 下通过 moduleNameMapper 映射到 test/stubs/viteEnv.ts，恒返回 false。
+ */
+export function isViteDev(): boolean {
+  try {
+    // @ts-ignore Vite 注入的 import.meta.env
+    return !!(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV
+  } catch {
+    return false
+  }
+}

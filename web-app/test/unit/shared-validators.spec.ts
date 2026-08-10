@@ -188,10 +188,11 @@ describe('shared validators', () => {
   })
 
   describe('hasFeature', () => {
-    it('should return true for empty features (all allowed)', () => {
-      expect(hasFeature([], 'exams')).toBe(true)
-      expect(hasFeature(null as any, 'exams')).toBe(true)
-      expect(hasFeature(undefined as any, 'exams')).toBe(true)
+    // fail-closed（安全修复后语义）：缺失 / 空数组 / 非数组 = 拒绝
+    it('should return false for empty features (fail-closed)', () => {
+      expect(hasFeature([], 'exams')).toBe(false)
+      expect(hasFeature(null as any, 'exams')).toBe(false)
+      expect(hasFeature(undefined as any, 'exams')).toBe(false)
     })
 
     it('should check feature in array', () => {

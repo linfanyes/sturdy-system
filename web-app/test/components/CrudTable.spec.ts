@@ -23,6 +23,18 @@ jest.mock('@/composables/useClasses', () => ({
   useClasses: () => ({ classes: ref(mockClasses), loading: ref(false), loadClasses: jest.fn() }),
 }))
 
+// CrudTable 用 toast 替代原生 alert 做必填提示
+const mockToastWarning = jest.fn()
+jest.mock('@/utils/feedback', () => ({
+  toast: {
+    success: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+    warning: (...a: any[]) => mockToastWarning(...a),
+  },
+  confirm: jest.fn().mockResolvedValue(true),
+}))
+
 // Modal 改为内联 stub，便于在 wrapper 内查询表单
 const ModalStub = {
   props: ['modelValue', 'title'],
@@ -49,6 +61,7 @@ describe('CrudTable 通用增删改查组件（覆盖全部 CRUD 页面）', () 
     mockPost.mockReset()
     mockPatch.mockReset()
     mockDelete.mockReset()
+    mockToastWarning.mockReset()
     // 默认 list 返回样例数据
     mockGet.mockResolvedValue(listResponse(crudSampleRows))
   })
@@ -104,7 +117,7 @@ describe('CrudTable 通用增删改查组件（覆盖全部 CRUD 页面）', () 
     await modal.findAll('button').find((b) => b.text() === '保存')!.trigger('click')
     await flushPromises()
     expect(mockPost).not.toHaveBeenCalled()
-    expect(global.alert).toHaveBeenCalledWith('标题必填')
+    expect(mockToastWarning).toHaveBeenCalledWith('标题必填')
   })
 
   it('点击编辑打开模态框并预填，保存调用 PATCH', async () => {

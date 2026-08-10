@@ -23,6 +23,21 @@ jest.mock('@/stores/auth', () => ({
     loginByUsername: jest.fn(),
     setAuth: jest.fn(),
     updateUser: jest.fn(),
+    fetchMe: jest.fn().mockResolvedValue(null),
+  }),
+}))
+
+// roleSwitch store 未在此测试安装 pinia，需要与 auth 一样做模块级 mock
+jest.mock('@/stores/roleSwitch', () => ({
+  useRoleSwitchStore: () => ({
+    teacherToken: '',
+    parentToken: '',
+    teacherUser: null,
+    parentUser: null,
+    currentRole: null,
+    setTokens: jest.fn(),
+    switchTo: jest.fn(),
+    clear: jest.fn(),
   }),
 }))
 

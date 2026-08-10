@@ -6,7 +6,7 @@ import {
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
-  ToggleLeft, Home,
+  ToggleLeft, Home, Library, BarChart3,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -311,5 +311,7 @@ export const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
   parent: [
     { name: 'parent-dashboard', label: '孩子动态', to: '/parent', icon: Home, color: 'butter' },
     { name: 'parent-textbook', label: '教材知识点', to: '/parent/textbook', icon: BookOpen, color: 'green' },
+    { name: 'parent-resource-library', label: '专项资源库', to: '/parent/resources', icon: Library, color: 'sky' },
+    { name: 'parent-compare', label: '跨娃比对', to: '/parent/compare', icon: BarChart3, color: 'purple' },
   ],
 }

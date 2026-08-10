@@ -67,6 +67,34 @@ const weaknesses = computed(() => {
   return below.slice(0, 3).map((s) => s.subject)
 })
 
+/* 与上一次考试的对比：总分变化 / 班级排名变化 */
+const deltaInfo = computed(() => {
+  const sel = props.selectedExam
+  if (!sel) return null
+  const sorted = [...props.exams].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+  const idx = sorted.findIndex((e) =>
+    (sel.examId && e.examId === sel.examId) || (e.examName === sel.examName && e.date === sel.date),
+  )
+  if (idx <= 0) return null
+  const prev = sorted[idx - 1]
+  const dScore = sel.totalScore != null && prev.totalScore != null ? Number(sel.totalScore) - Number(prev.totalScore) : null
+  const dRank = sel.classRank != null && prev.classRank != null ? Number(prev.classRank) - Number(sel.classRank) : null
+  return { prev, dScore, dRank }
+})
+
+/* 单科得分率与配色：≥80% 优势绿 / 60%~80% 中等黄 / <60% 偏弱红 */
+function subjectPct(s: ExamSubject): number | null {
+  if (s.score == null || !s.fullScore) return null
+  return Math.round((s.score / s.fullScore) * 1000) / 10
+}
+function subjectBarColor(s: ExamSubject): string {
+  const p = subjectPct(s)
+  if (p == null) return '#e7e0d6'
+  if (p >= EXCELLENT_RATIO) return '#2e8b57'
+  if (p >= 0.6) return '#f5b342'
+  return '#c9436d'
+}
+
 const histogram = computed(() => props.selectedExam?.distribution || [])
 
 const gradeTrend = computed(() => {
@@ -153,10 +181,28 @@ const gradeTrend = computed(() => {
     </div>
 
     <div v-if="selectedExam" class="quick-card">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div>
           <div class="font-semibold text-cocoa-900 text-lg">{{ selectedExam.examName }}</div>
           <div class="text-xs text-cocoa-500 mt-1">{{ selectedExam.date }} · 总分 {{ selectedExam.totalScore ?? '--' }} / {{ selectedExam.totalFullScore ?? '--' }}</div>
+          <!-- 较上次考试变化 -->
+          <div v-if="deltaInfo" class="flex flex-wrap items-center gap-2 mt-2">
+            <span
+              v-if="deltaInfo.dScore != null"
+              class="text-xs px-2 py-0.5 rounded-full font-medium"
+              :class="deltaInfo.dScore > 0 ? 'bg-mint-50 text-mint-700' : deltaInfo.dScore < 0 ? 'bg-sakura-50 text-sakura-700' : 'bg-cream-100 text-cocoa-500'"
+            >
+              总分较上次 {{ deltaInfo.dScore > 0 ? '+' : '' }}{{ deltaInfo.dScore }} 分
+            </span>
+            <span
+              v-if="deltaInfo.dRank != null && deltaInfo.dRank !== 0"
+              class="text-xs px-2 py-0.5 rounded-full font-medium"
+              :class="deltaInfo.dRank > 0 ? 'bg-mint-50 text-mint-700' : 'bg-sakura-50 text-sakura-700'"
+            >
+              班级排名{{ deltaInfo.dRank > 0 ? '上升' : '下降' }} {{ Math.abs(deltaInfo.dRank) }} 名
+            </span>
+            <span v-if="deltaInfo.prev" class="text-xs text-cocoa-400">上次：{{ deltaInfo.prev.examName }}（{{ deltaInfo.prev.date }}）</span>
+          </div>
         </div>
         <div v-if="selectedExam.classRank || selectedExam.gradeRank" class="text-right space-y-1">
           <div v-if="selectedExam.classRank" class="text-right">
@@ -172,9 +218,16 @@ const gradeTrend = computed(() => {
 
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div v-for="s in displayedSubjects" :key="s.subject" class="bg-cocoa-50 rounded-lg p-3">
-          <div class="text-xs text-cocoa-500">{{ s.subject }}</div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-cocoa-500">{{ s.subject }}</div>
+            <div v-if="subjectPct(s) != null" class="text-xs font-semibold" :style="{ color: subjectBarColor(s) }">{{ subjectPct(s) }}%</div>
+          </div>
           <div class="text-lg font-bold text-cocoa-900 mt-1">{{ s.score ?? '--' }} <span class="text-xs font-normal text-cocoa-400">/ {{ s.fullScore }}</span></div>
-          <div v-if="s.classRank" class="text-xs text-mint-600 mt-1">班级第 {{ s.classRank }} 名</div>
+          <!-- 得分率进度条 -->
+          <div class="mt-2 h-1.5 rounded-full bg-cream-200 overflow-hidden">
+            <div class="h-full rounded-full transition-all" :style="{ width: Math.max(0, Math.min(100, subjectPct(s) ?? 0)) + '%', background: subjectBarColor(s) }"></div>
+          </div>
+          <div v-if="s.classRank" class="text-xs text-mint-600 mt-1.5">班级第 {{ s.classRank }} 名</div>
         </div>
       </div>
 
@@ -191,7 +244,7 @@ const gradeTrend = computed(() => {
           <div v-for="seg in histogram" :key="seg.label" class="flex-1 flex flex-col items-center justify-end h-full">
             <div
               class="w-full rounded-t-md transition-all"
-              :style="{ height: Math.max(4, seg.pct) + '%', background: seg.isStudent ? '#07c160' : '#c8e6c9' }"
+              :style="{ height: Math.max(4, seg.pct) + '%', background: seg.isStudent ? '#2e8b57' : '#c8e6c9' }"
             ></div>
             <div class="text-xs text-cocoa-400 mt-1 leading-none">{{ seg.label }}</div>
             <div class="text-xs text-cocoa-400 leading-none">{{ seg.count }}人</div>
@@ -206,14 +259,14 @@ const gradeTrend = computed(() => {
           <div v-if="gradeTrend.lastRank" class="text-xs text-mint-700">最新班级第 {{ gradeTrend.lastRank }} 名</div>
         </div>
         <svg :viewBox="`0 0 ${gradeTrend.W} ${gradeTrend.H}`" class="w-full" style="max-height: 56px;" preserveAspectRatio="xMidYMid meet">
-          <path :d="gradeTrend.path" fill="none" stroke="#07c160" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+          <path :d="gradeTrend.path" fill="none" stroke="#2e8b57" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
           <circle
             v-for="(p, i) in gradeTrend.points"
             :key="i"
             :cx="p.x"
             :cy="p.y"
             :r="i === gradeTrend.points.length - 1 ? 3.5 : 2.5"
-            :fill="i === gradeTrend.points.length - 1 ? '#07c160' : '#a5d6a7'"
+            :fill="i === gradeTrend.points.length - 1 ? '#2e8b57' : '#a5d6a7'"
           >
             <title>{{ p.label }}（{{ p.date }}）：{{ p.score }} 分<span v-if="p.classRank"> · 班第{{ p.classRank }}名</span></title>
           </circle>

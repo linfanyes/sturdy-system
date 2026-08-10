@@ -36,17 +36,17 @@ stages:
           commands:
             - 'cd server && npm ci && npx tsc -p tsconfig.build.json --noEmit && npx jest --forceExit --testPathIgnorePatterns="integration"'
 
-  # ============ Web 管理端：构建 shared + 类型检查 + 构建 ============
+  # ============ Web 管理端：构建 shared + 类型检查 + 单测 + 构建 ============
   - stage:
       name: web
-      displayName: 'Web 管理端 (类型检查 + 构建)'
+      displayName: 'Web 管理端 (类型检查 + 单测 + 构建)'
       steps:
         - step: build@nodejs
           name: web_ci
-          displayName: 'Web: vue-tsc + vite build'
+          displayName: 'Web: vue-tsc + jest + vite build'
           nodeVersion: 18.18.0
           commands:
-            - 'cd shared && npm ci && npm run build && cd ../web-app && npm ci && npx vue-tsc --noEmit && npx vite build'
+            - 'cd shared && npm ci && npm run build && cd ../web-app && npm ci --legacy-peer-deps --include=dev && npx vue-tsc --noEmit && npx jest --forceExit && npx vite build'
 
   # ============ 小程序：构建 + 单测 + 主包体积门禁 ============
   - stage:
@@ -60,4 +60,4 @@ stages:
           commands:
             - 'cd shared && npm ci && npm run build && cd ../mini-program && npm ci && npx uni build -p mp-weixin'
             - 'cd mini-program && npx jest --forceExit'
-            - 'cd mini-program && SIZE=$(du -sk dist/build/mp-weixin | cut -f1) && echo "主包体积: ${SIZE}KB" && if [ "$SIZE" -gt 2048 ]; then echo "FAIL: 主包超过 2MB 限制"; exit 1; fi && echo "OK: 主包体积达标"'
+            - 'cd mini-program && TOTAL=$(du -sk dist/build/mp-weixin | cut -f1) && SUB=0 && for d in $(node -e "const p=require(`./dist/build/mp-weixin/app.json`);(p.subPackages||[]).forEach(s=>console.log(s.root))"); do SUB=$((SUB + $(du -sk dist/build/mp-weixin/$d 2>/dev/null | cut -f1))); done && MAIN=$((TOTAL - SUB)) && echo "主包体积: ${MAIN}KB (总体积 ${TOTAL}KB, 分包 ${SUB}KB)" && if [ "$MAIN" -gt 2048 ]; then echo "FAIL: 主包超过 2MB 限制"; exit 1; fi && echo "OK: 主包体积达标"'

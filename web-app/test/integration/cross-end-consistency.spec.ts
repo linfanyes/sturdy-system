@@ -603,7 +603,7 @@ const BUSINESS_RULES: BusinessRuleCheck[] = [
   },
   {
     ruleName: '权限特性 (FEATURE_FLAGS 教师功能标识)',
-    sharedSource: '@gardener/shared/constants::FEATURE_FLAGS (29个特性)',
+    sharedSource: '@gardener/shared/constants::FEATURE_FLAGS (40个特性，fail-closed)',
     webImplementation: 'web-app/src/constants/features.ts + router meta.feature 守卫',
     miniImplementation: 'mini-program 校管配置下发 features 数组',
     backendImplementation: 'teacher.entity.features 字段 + TeacherGuard',
@@ -1084,19 +1084,19 @@ describe('跨端一致性验证测试', () => {
 
     // 3.6 权限特性
     describe('权限特性 (FEATURE_FLAGS) 一致性', () => {
-      it('FEATURE_FLAGS 应包含 31 个教师功能特性（与共享常量一致）', () => {
-        expect(FEATURE_FLAGS.length).toBe(31)
+      it('FEATURE_FLAGS 应包含 40 个教师功能特性（与共享常量一致）', () => {
+        expect(FEATURE_FLAGS.length).toBe(40)
       })
 
       it('FEATURE_FLAGS_SET 应为 Set 且包含所有特性', () => {
-        expect(FEATURE_FLAGS_SET.size).toBe(31)
+        expect(FEATURE_FLAGS_SET.size).toBe(40)
         for (const f of FEATURE_FLAGS) {
           expect(FEATURE_FLAGS_SET.has(f)).toBe(true)
         }
       })
 
-      it('hasFeature 权限检查', () => {
-        expect(hasFeature([], 'classes')).toBe(true) // 空数组 = 全放行
+      it('hasFeature 权限检查（fail-closed：空数组 = 拒绝）', () => {
+        expect(hasFeature([], 'classes')).toBe(false) // 空数组 = 拒绝（安全修复后语义）
         expect(hasFeature(['classes'], 'classes')).toBe(true)
         expect(hasFeature(['classes'], 'students')).toBe(false)
         expect(hasFeature(['classes', 'students'], 'students')).toBe(true)

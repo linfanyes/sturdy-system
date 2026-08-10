@@ -26,6 +26,18 @@ jest.mock('@/composables/usePhotoUpload', () => ({
   readFileAsDataURL: jest.fn(),
 }))
 
+// PhotoAlbum 用 toast 替代原生 alert 做必填提示
+const mockToastWarning = jest.fn()
+jest.mock('@/utils/feedback', () => ({
+  toast: {
+    success: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+    warning: (...a: any[]) => mockToastWarning(...a),
+  },
+  confirm: jest.fn().mockResolvedValue(true),
+}))
+
 const ModalStub = {
   props: ['modelValue', 'title'],
   template: `<div class="modal-stub"><div class="modal-title">{{ title }}</div><slot /><slot name="footer" /></div>`,
@@ -46,6 +58,7 @@ function mountAlbum(props: Record<string, any> = {}) {
 describe('PhotoAlbum 通用相册组件（覆盖班级活动/风采/我的相册）', () => {
   beforeEach(() => {
     ;[mockGet, mockPost, mockPatch, mockDelete].forEach((m) => m.mockReset())
+    mockToastWarning.mockReset()
     mockGet.mockResolvedValue(listResponse(albums))
   })
 
@@ -71,11 +84,11 @@ describe('PhotoAlbum 通用相册组件（覆盖班级活动/风采/我的相册
     await nextTick()
     const modal = wrapper.find('.modal-stub')
     expect(modal.exists()).toBe(true)
-    // 未填标题直接保存 -> alert 且不 POST
+    // 未填标题直接保存 -> toast 提示且不 POST
     await modal.findAll('button').find((b) => b.text() === '保存')!.trigger('click')
     await flushPromises()
     expect(mockPost).not.toHaveBeenCalled()
-    expect(global.alert).toHaveBeenCalledWith('请填写标题')
+    expect(mockToastWarning).toHaveBeenCalledWith('请填写标题')
 
     // 填标题，选择班级（modal 内第一个 select 为班级）
     const titleInput = modal.findAll('input')[0]

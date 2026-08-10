@@ -42,7 +42,8 @@ function parseList(s: string): string[] {
 async function load() {
   loading.value = true
   try {
-    list.value = await listAiProviders()
+    const res = await listAiProviders()
+    list.value = Array.isArray(res) ? res : []
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
   } finally {

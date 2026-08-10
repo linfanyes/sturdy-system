@@ -35,12 +35,18 @@
         <view class="stat-value">{{ stats.homework }}</view>
       </view>
       <view class="stat-card clickable" @tap="tab = 'scores'">
-        <view class="stat-label">📊 考试次数</view>
-        <view class="stat-value">{{ stats.exams }}</view>
+        <view class="stat-label">📊 最近考试</view>
+        <view class="stat-value">{{ stats.pct }}</view>
+        <view v-if="stats.pctDelta != null && stats.pctDelta !== 0" class="stat-delta" :class="stats.pctDelta > 0 ? 'up' : 'down'">
+          较上次 {{ stats.pctDelta > 0 ? '+' : '' }}{{ stats.pctDelta }}%
+        </view>
       </view>
       <view class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">🏆 最新排名</view>
         <view class="stat-value">{{ stats.rank }}</view>
+        <view v-if="stats.rankDelta != null && stats.rankDelta !== 0" class="stat-delta" :class="stats.rankDelta > 0 ? 'up' : 'down'">
+          较上次 {{ stats.rankDelta > 0 ? '上升' : '下降' }}{{ Math.abs(stats.rankDelta) }}名
+        </view>
       </view>
     </view>
 
@@ -242,20 +248,61 @@ const termOptions = computed(() => { const set = new Set(); for (const e of exam
 const examNameOptions = computed(() => { const set = new Set(); for (const e of exams.value) { if (e.examName) set.add(e.examName) }; return Array.from(set) })
 const subjectOptions = computed(() => { const set = new Set(); for (const e of exams.value) { for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) } }; return Array.from(set) })
 
-const pendingHomework = computed(() => homework.value.filter(h => h.status !== '已完成').length)
-const latestExam = computed(() => exams.value.length ? exams.value[exams.value.length - 1] : null)
+// 作业「已完成」口径与 Web 端一致：已批改/已发还 同样视为完成
+const DONE_HW_STATUSES = ['已完成', '已批改', '已发还']
+const pendingHomework = computed(() => homework.value.filter(h => !DONE_HW_STATUSES.includes(h.status)).length)
+
+// 考试按日期排序，取最近两次（用于「较上次」变化量，与 Web 端口径一致）
+const examsByDate = computed(() => [...exams.value].sort((a, b) => (a.date || '').localeCompare(b.date || '')))
+const latestExam = computed(() => examsByDate.value.length ? examsByDate.value[examsByDate.value.length - 1] : null)
+const prevExam = computed(() => examsByDate.value.length > 1 ? examsByDate.value[examsByDate.value.length - 2] : null)
+function scorePct(e) {
+  if (!e || e.totalScore == null || !e.totalFullScore) return null
+  return Math.round((e.totalScore / e.totalFullScore) * 1000) / 10
+}
+const latestPct = computed(() => scorePct(latestExam.value))
+const pctDelta = computed(() => {
+  const a = scorePct(latestExam.value)
+  const b = scorePct(prevExam.value)
+  if (a == null || b == null) return null
+  return Math.round((a - b) * 10) / 10
+})
+const rankDelta = computed(() => {
+  const l = latestExam.value && latestExam.value.classRank
+  const p = prevExam.value && prevExam.value.classRank
+  if (l == null || p == null) return null
+  return p - l // 正数 = 名次上升
+})
 
 const stats = computed(() => {
   const noticeCount = (notices.value || []).filter(n => n.pinned).length || notices.value.length || 0
   const homeworkCount = pendingHomework.value
-  const examCount = exams.value.length || 0
+  const pct = latestPct.value != null ? latestPct.value + '%' : '--'
   const rank = latestExam.value
     ? latestExam.value.classRank ? `第${latestExam.value.classRank}名` : latestExam.value.gradeRank ? `年级第${latestExam.value.gradeRank}名` : '--'
     : '--'
-  return { notices: noticeCount, homework: homeworkCount, exams: examCount, rank }
+  return { notices: noticeCount, homework: homeworkCount, pct, pctDelta: pctDelta.value, rank, rankDelta: rankDelta.value }
 })
 
-function contactTeacher() { uni.showToast({ title: '请在「消息」中联系老师', icon: 'none' }) }
+// 联系老师：直接拨打班主任（或任一有电话的老师）号码，与 Web 端一致不再空提示
+function contactTeacher() {
+  const head = teachers.value.find(t => t.role === 'head' && t.phone)
+  const anyWithPhone = teachers.value.find(t => t.phone)
+  const target = head || anyWithPhone
+  if (!target) {
+    return uni.showToast({ title: '暂无老师联系方式，请联系班主任', icon: 'none' })
+  }
+  uni.showModal({
+    title: '联系老师',
+    content: `${target.name}（${target.roleLabel || '老师'}）\n电话：${target.phone}`,
+    confirmText: '拨号',
+    success: (res) => {
+      if (res.confirm) {
+        uni.makePhoneCall({ phoneNumber: String(target.phone) })
+      }
+    },
+  })
+}
 
 // 修改密码
 const showPwdModal = ref(false)
@@ -382,6 +429,9 @@ onShow(() => { if (!parent.token) { uni.reLaunch({ url: '/pages/parent-login/par
 .stat-card.clickable:active { transform: scale(0.96); }
 .stat-label { font-size: 22rpx; color: var(--c-sub); margin-bottom: 6rpx; }
 .stat-value { font-size: 28rpx; font-weight: 800; color: var(--c-title); }
+.stat-delta { font-size: 18rpx; margin-top: 4rpx; line-height: 1.2; }
+.stat-delta.up { color: #07c160; }
+.stat-delta.down { color: #f56c6c; }
 .subscribe-card { display: flex; align-items: center; gap: 12rpx; background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius: 14rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; position: relative; }
 .sub-icon { font-size: 36rpx; flex-shrink: 0; }
 .sub-text { flex: 1; min-width: 0; }
