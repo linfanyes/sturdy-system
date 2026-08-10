@@ -17,11 +17,11 @@ export default defineConfig({
     host: 'localhost',
     hmr: false,
     proxy: {
-      // 开发模式代理到本地后端
+      // 开发模式代理到微信云托管后端（外网已开启，直连线上服务）
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
