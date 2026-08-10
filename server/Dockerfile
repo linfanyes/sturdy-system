@@ -30,7 +30,16 @@ RUN npm run build
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package*.json ./
+# 必须带上 vendor/gardener-shared（file: 依赖的目标目录）。
+# 否则 npm install --production 时 file: 目标不存在，会装到残缺包（无 dist），
+# 运行阶段 COPY --from=prod-deps 复制的就是残缺 node_modules，导致运行时 MODULE_NOT_FOUND。
+COPY vendor ./vendor
 RUN npm install --production --ignore-scripts
+# 兜底：无论 npm 对 file: 依赖的打包是否携带 dist，都显式确保 node_modules/@gardener/shared/dist 存在
+RUN if [ -d vendor/gardener-shared/dist ]; then \
+      rm -rf node_modules/@gardener/shared/dist && \
+      cp -r vendor/gardener-shared/dist node_modules/@gardener/shared/dist; \
+    fi
 
 # ---- 运行阶段 ----
 FROM node:20-alpine

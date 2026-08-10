@@ -158,6 +158,9 @@
     "utils"
   ],
   "license": "MIT",
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "typescript": "^5.9.3",
     "vue": "^3.5.41"
