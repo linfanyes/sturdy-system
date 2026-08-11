@@ -12,7 +12,9 @@ import { useAuthStore } from '@/stores/auth'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listSchoolExams, listSchoolGrades, getSchoolGradeSummary } from '@/api/school-admin'
 import { toast } from '@/utils/feedback'
-import { BookOpen, BarChart3, Loader2, FileText, RefreshCw } from 'lucide-vue-next'
+import { BookOpen, BarChart3, Loader2, FileText, RefreshCw, TrendingUp, ChevronDown, ChevronRight } from 'lucide-vue-next'
+import SvgBarChart from '@/components/SvgBarChart.vue'
+import SvgLineChart from '@/components/SvgLineChart.vue'
 
 const auth = useAuthStore()
 const { classes } = useClasses()
@@ -58,6 +60,47 @@ async function loadAll() {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 function goPage(p: number) { page.value = p; loadAll() }
+
+// 年级分组（用于对比和趋势）
+const gradeOptions = computed(() => [...new Set(exams.value.map(e => e.grade || className(e.classId).replace(/\d+班$/, '')).filter(Boolean))])
+
+// 各班横向对比数据（按选择的考试）
+const selectedCompareExam = ref('')
+const compareData = computed(() => {
+  if (!selectedCompareExam.value) return []
+  const examGrades = grades.value.filter(g => g.examName === selectedCompareExam.value || g.examId === selectedCompareExam.value)
+  const classMap = new Map<string, { avg: number; count: number }>()
+  examGrades.forEach(g => {
+    const cn = className(g.classId)
+    const cur = classMap.get(cn) || { avg: 0, count: 0 }
+    const scores = (g.scores || []).filter((s: any) => s.score != null)
+    if (scores.length) {
+      cur.avg += scores.reduce((a: number, s: any) => a + s.score, 0) / scores.length
+      cur.count++
+    }
+    classMap.set(cn, cur)
+  })
+  return [...classMap.entries()].map(([label, v]) => ({
+    label, value: Math.round(v.avg / Math.max(1, v.count) * 10) / 10
+  }))
+})
+
+// 趋势数据（按学期分组，取各次考试的各班均分）
+const trendExam = ref('')
+const trendData = computed(() => {
+  const map = new Map<string, { label: string; total: number; count: number }>()
+  grades.value.forEach(g => {
+    const key = g.examName || g.id
+    const cur = map.get(key) || { label: g.date?.slice(0,7) || g.examName || key, total: 0, count: 0 }
+    const scores = (g.scores || []).filter((s: any) => s.score != null)
+    if (scores.length) {
+      cur.total += scores.reduce((a: number, s: any) => a + s.score, 0) / scores.length
+      cur.count++
+    }
+    map.set(key, cur)
+  })
+  return [...map.values()].map(v => ({ label: v.label.slice(0,6), value: Math.round(v.total / Math.max(1, v.count) * 10) / 10 }))
+})
 
 function className(id: string) {
   return classes.value.find(c => c.id === id)?.name || id
@@ -201,6 +244,32 @@ onMounted(async () => {
           </tbody>
         </table>
       </div>
+
+      <!-- 各班横向对比 -->
+      <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer mt-4">
+        <div class="flex items-center gap-2 mb-4">
+          <TrendingUp class="w-5 h-5 text-butter-500" />
+          <h2 class="text-lg font-semibold text-cocoa-900">各班横向对比</h2>
+          <select v-model="selectedCompareExam" class="ml-auto px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm">
+            <option value="">选择考试</option>
+            <option v-for="e in [...new Set(exams.map(x=>x.name))]" :key="e" :value="e">{{ e }}</option>
+          </select>
+        </div>
+        <div v-if="!selectedCompareExam" class="text-center text-cocoa-400 py-8">请选择一场考试查看各班对比</div>
+        <SvgBarChart v-else-if="compareData.length" :data="compareData" :height="200" title="各班平均分对比" color="#f5b342" />
+        <div v-else class="text-center text-cocoa-400 py-8">暂无对比数据</div>
+      </section>
+
+      <!-- 趋势分析 -->
+      <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer mt-4">
+        <div class="flex items-center gap-2 mb-4">
+          <TrendingUp class="w-5 h-5 text-mint-500" />
+          <h2 class="text-lg font-semibold text-cocoa-900">成绩趋势</h2>
+          <span class="text-sm text-cocoa-400 ml-auto">按考试时间排序</span>
+        </div>
+        <SvgLineChart v-if="trendData.length" :data="trendData" :height="200" title="" series1Name="均分" color="#67c23a" />
+        <div v-else class="text-center text-cocoa-400 py-8">暂无趋势数据</div>
+      </section>
 
       <!-- 分页 -->
       <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
