@@ -379,7 +379,7 @@ function applyTemplate(t: any) {
     </div>
 
     <!-- 分页栏 -->
-    <div v-if="totalFilteredNotices > pageSizeNotices" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+    <div v-if="totalFilteredNotices > 0 && pageSizeNotices < totalFilteredNotices" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
       <span class="text-xs text-cocoa-400">共 {{ totalFilteredNotices }} 条</span>
       <div class="flex items-center gap-2">
         <button

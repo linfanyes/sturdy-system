@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { listExams, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { BarChart3, TrendingUp } from 'lucide-vue-next'
+import SvgBarChart from '@/components/SvgBarChart.vue'
 
 const { classes } = useClasses()
 onMounted(() => loadClasses())
@@ -99,31 +100,45 @@ async function onClassChange() {
 
     <div v-if="loading" class="text-cocoa-400 text-sm py-4 text-center">加载中…</div>
 
-    <div v-else-if="stats.length" class="table-wrap">
-      <table class="w-full text-sm">
-        <thead class="bg-cream-100 text-cocoa-500 text-left">
-          <tr>
-            <th class="px-4 py-3 font-medium">科目</th>
-            <th class="px-4 py-3 font-medium">参考人数</th>
-            <th class="px-4 py-3 font-medium">平均分</th>
-            <th class="px-4 py-3 font-medium">最高分</th>
-            <th class="px-4 py-3 font-medium">最低分</th>
-            <th class="px-4 py-3 font-medium">及格率</th>
-            <th class="px-4 py-3 font-medium">优秀率</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-cream-100">
-          <tr v-for="s in stats" :key="s.subject" class="hover:bg-cream-50">
-            <td class="px-4 py-3 font-medium text-cocoa-900">{{ s.subject }}</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ s.count }}</td>
-            <td class="px-4 py-3 text-butter-600 font-semibold">{{ s.avg }}</td>
-            <td class="px-4 py-3 text-mint-500">{{ s.max }}</td>
-            <td class="px-4 py-3 text-red-500">{{ s.min }}</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ s.passRate }}%</td>
-            <td class="px-4 py-3 text-cocoa-700">{{ s.excellentRate }}%</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- 各科平均分柱状图 -->
+    <div v-else-if="stats.length" class="bg-surface rounded-2xl p-5 shadow-softer">
+      <SvgBarChart
+        :data="stats.map(s => ({ label: s.subject, value: s.avg }))"
+        :height="220"
+        title="各科平均分对比"
+        color="#f5b342"
+      />
+      <div class="mt-4">
+        <div class="text-sm font-medium text-cocoa-700 mb-2 flex items-center gap-2">
+          <TrendingUp class="w-4 h-4 text-butter-500" /> 详细数据
+        </div>
+        <div class="table-wrap">
+          <table class="w-full text-sm">
+            <thead class="bg-cream-100 text-cocoa-500 text-left">
+              <tr>
+                <th class="px-4 py-3 font-medium">科目</th>
+                <th class="px-4 py-3 font-medium">参考人数</th>
+                <th class="px-4 py-3 font-medium">平均分</th>
+                <th class="px-4 py-3 font-medium">最高分</th>
+                <th class="px-4 py-3 font-medium">最低分</th>
+                <th class="px-4 py-3 font-medium">及格率</th>
+                <th class="px-4 py-3 font-medium">优秀率</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cream-100">
+              <tr v-for="s in stats" :key="s.subject" class="hover:bg-cream-50">
+                <td class="px-4 py-3 font-medium text-cocoa-900">{{ s.subject }}</td>
+                <td class="px-4 py-3 text-cocoa-700">{{ s.count }}</td>
+                <td class="px-4 py-3 text-butter-600 font-semibold">{{ s.avg }}</td>
+                <td class="px-4 py-3 text-mint-500">{{ s.max }}</td>
+                <td class="px-4 py-3 text-red-500">{{ s.min }}</td>
+                <td class="px-4 py-3 text-cocoa-700">{{ s.passRate }}%</td>
+                <td class="px-4 py-3 text-cocoa-700">{{ s.excellentRate }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="selectedExamId" class="text-cocoa-400 text-sm py-8 text-center">

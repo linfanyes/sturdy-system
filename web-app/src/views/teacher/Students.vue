@@ -363,7 +363,7 @@ function downloadTemplate() {
     </div>
 
     <!-- 分页栏 -->
-    <div v-if="totalFilteredStudents > pageSizeStudents" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+    <div v-if="totalFilteredStudents > 0 && pageSizeStudents < totalFilteredStudents" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
       <span class="text-xs text-cocoa-400">共 {{ totalFilteredStudents }} 名学生</span>
       <div class="flex items-center gap-2">
         <button

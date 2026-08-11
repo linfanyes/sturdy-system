@@ -154,6 +154,24 @@ const genderDist = computed(() => {
 
 /* —— 图表 3：考试均分趋势（见 loadGradeTrend / gradeAvgTrend） —— */
 
+/* —— 图表 4：家长开通率 —— */
+const parentEnabled = computed(() => {
+  return students.value.filter((s: any) => s.parentEnabled || s.parentLogin === '已开通' || s.parentLogin === true || s.parentId).length
+})
+const parentEnabledPct = computed(() => {
+  return students.value.length ? Math.round((parentEnabled.value / students.value.length) * 100) : 0
+})
+
+/* —— 各班家长开通率 —— */
+const classParentRates = computed(() => {
+  if (!classes.value.length || !students.value.length) return []
+  return classes.value.map(c => {
+    const classStudents = students.value.filter((s: any) => s.classId === c.id)
+    const enabled = classStudents.filter((s: any) => s.parentEnabled || s.parentLogin === '已开通' || s.parentLogin === true || s.parentId).length
+    return { name: c.name, count: enabled, total: classStudents.length, pct: classStudents.length ? Math.round((enabled / classStudents.length) * 100) : 0 }
+  }).filter(c => c.total > 0)
+})
+
 const shortcutTools = [
   { label: '记考勤', icon: '✅', to: '/teacher/attendance', color: '#e8f9e8' },
   { label: '布置作业', icon: '📝', to: '/teacher/homework', color: '#fff3d6' },
@@ -319,6 +337,53 @@ const shortcutTools = [
             <SvgLineChart :data="gradeAvgTrend" :height="200" title="" series1Name="平均分" color="#f5b342" />
           </div>
           <EmptyState v-else icon="📈" title="暂无成绩数据" desc="录入成绩后这里展示均分变化趋势" />
+        </div>
+
+        <!-- 图表 5：家长开通率 -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><Users class="w-4 h-4 text-butter-500" /> 家长开通率</div>
+            <span class="text-xs text-cocoa-400">{{ parentEnabled }} / {{ students.length }} 人</span>
+          </div>
+          <div v-if="chartLoading" class="py-2">
+            <div class="h-6 rounded-lg bg-cream-100 animate-pulse" />
+          </div>
+          <div v-else-if="students.length > 0" class="space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <div class="w-full bg-cream-100 rounded-full h-4 overflow-hidden">
+                  <div class="h-4 rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700"
+                    :style="{ width: parentEnabledPct + '%' }"></div>
+                </div>
+              </div>
+              <span class="text-sm font-bold text-cocoa-800 whitespace-nowrap">{{ parentEnabledPct }}%</span>
+            </div>
+            <div class="text-xs text-cocoa-400">
+              已开通 {{ parentEnabled }} 人，共 {{ students.length }} 名学生
+              <span v-if="parentEnabledPct >= 80" class="text-mint-500 ml-1">✅ 开通率良好</span>
+              <span v-else-if="parentEnabledPct >= 50" class="text-butter-500 ml-1">⚠️ 建议提升</span>
+              <span v-else class="text-sakura-500 ml-1">❗ 需关注</span>
+            </div>
+          </div>
+          <EmptyState v-else icon="👨‍👩‍👧" title="暂无学生数据" desc="导入学生后展示家长开通情况" />
+        </div>
+
+        <!-- 各班家长开通率明细 -->
+        <div v-if="classParentRates.length > 1" class="stat-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700"><BarChart3 class="w-4 h-4 text-mint-500" /> 各班家长开通率</div>
+            <span class="text-xs text-cocoa-400">{{ classParentRates.length }} 个班级</span>
+          </div>
+          <div class="space-y-2.5">
+            <div v-for="c in classParentRates" :key="c.name" class="flex items-center gap-2">
+              <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
+              <div class="flex-1 h-5 rounded-full bg-cream-100 overflow-hidden">
+                <div class="h-full rounded-full bg-gradient-to-r from-mint-300 to-mint-500 transition-all duration-700"
+                  :style="{ width: c.pct + '%' }"></div>
+              </div>
+              <span class="w-20 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}/{{ c.total }} ({{ c.pct }}%)</span>
+            </div>
+          </div>
         </div>
 
         <!-- 图表 4：数据速览 -->

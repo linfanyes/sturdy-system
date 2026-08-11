@@ -198,16 +198,24 @@ function iconWrapClass(c: string) {
           <TrendingUp class="w-3 h-3" /> {{ stats.attendanceRate ?? '—' }}% 出勤
         </div>
       </div>
-      <div class="stat-card">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1">
-          <Users class="w-4 h-4 text-butter-500" /> 家长开通
-        </div>
-        <div class="text-3xl font-bold text-cocoa-900">
-          <Loader2 v-if="loading" class="w-6 h-6 animate-spin" />
-          <template v-else>{{ stats.parentEnabled }}</template>
-        </div>
-        <div class="text-xs text-cocoa-400 mt-1">已开通家长端</div>
-      </div>
+	    <!-- 家长开通率：按班级进度条展示 -->
+	    <div class="stat-card col-span-full" v-if="stats.parentEnabled >= 0">
+	      <div class="text-sm text-cocoa-500 mb-3 font-medium">家长开通率</div>
+	      <div class="space-y-2">
+	        <div class="flex items-center gap-2">
+	          <div class="flex-1">
+	            <div class="flex justify-between text-xs text-cocoa-500 mb-1">
+	              <span>全校已开通</span>
+	              <span>{{ stats.parentEnabled }} / {{ stats.totalStudents }} 人 ({{ stats.totalStudents ? Math.round(stats.parentEnabled / stats.totalStudents * 100) : 0 }}%)</span>
+	            </div>
+	            <div class="w-full bg-cream-100 rounded-full h-3 overflow-hidden">
+	              <div class="h-3 rounded-full bg-butter-400 transition-all duration-500"
+	                :style="{ width: stats.totalStudents ? Math.round(stats.parentEnabled / stats.totalStudents * 100) + '%' : '0%' }"></div>
+	            </div>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
     </div>
 
     <!-- 考试均分趋势（真实成绩聚合） -->

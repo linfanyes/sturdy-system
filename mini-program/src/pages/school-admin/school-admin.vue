@@ -38,8 +38,14 @@
         <text class="dash-l">待批改</text>
       </view>
       <view class="dash-card">
-        <text class="dash-n">{{ dash.parentEnabled || 0 }}</text>
-        <text class="dash-l">家长开通</text>
+        <view class="dash-pg-row">
+          <text class="dash-pg-n">{{ dash.parentEnabled || 0 }}/{{ dash.totalStudents || 0 }}</text>
+          <text class="dash-pg-pct">{{ dash.totalStudents ? Math.round(dash.parentEnabled / dash.totalStudents * 100) : 0 }}%</text>
+        </view>
+        <view class="dash-pg-bar">
+          <view class="dash-pg-fill" :style="{ width: (dash.totalStudents ? Math.round(dash.parentEnabled / dash.totalStudents * 100) : 0) + '%' }"></view>
+        </view>
+        <text class="dash-l">家长开通率</text>
       </view>
     </view>
 
@@ -822,7 +828,7 @@ const studentShown = computed(() => filteredStudents.value.slice(0, studentPage.
 // 还有更多 = 虚拟滚动未到头 或 服务端还有未拉取数据
 const studentHasMore = computed(() =>
   studentShown.value.length < filteredStudents.value.length ||
-  schoolStudents.value.length < studentTotal.value
+  (studentTotal.value > 0 && schoolStudents.value.length < studentTotal.value)
 )
 async function loadStudents() {
   const take = studentFilter.value ? 500 : STUDENT_PAGE_SIZE
@@ -943,6 +949,11 @@ onShow(async () => { await Promise.all([loadTeachers(), loadDashboard(), loadNot
 .dash-n.warn { color: #d48806; }
 .dash-row2 { margin-top: -10rpx; }
 .dash-l { display: block; font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
+.dash-pg-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0 12rpx; margin-bottom: 6rpx; }
+.dash-pg-n { font-size: 28rpx; font-weight: 700; color: var(--c-primary); }
+.dash-pg-pct { font-size: 22rpx; color: var(--c-sub); }
+.dash-pg-bar { width: 80%; height: 10rpx; background: var(--c-card2); border-radius: 10rpx; margin: 0 auto; overflow: hidden; }
+.dash-pg-fill { height: 100%; border-radius: 10rpx; background: linear-gradient(90deg, #f5b342, #67c23a); transition: width 0.5s; }
 .notice-section { margin-top: 24rpx; background: var(--c-card); border-radius: 20rpx; padding: 26rpx 24rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
 .notice-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .notice-title { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
