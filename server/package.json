@@ -18,6 +18,7 @@
     "seed": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/seed-data.js",
     "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/clear-data.js",
     "dedupe:grades": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/dedupe-grades.js",
+    "seed:comprehensive": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/seed-comprehensive.js",
     "slow-query-monitor": "node scripts/slow-query-monitor.js"
   },
   "dependencies": {
