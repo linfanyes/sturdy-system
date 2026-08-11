@@ -109,6 +109,7 @@ function toggleCat(label: string) {
 }
 
 const showProfile = ref(false)
+const userAvatar = ref(localStorage.getItem('g_login_avatar') || '🍎')
 const showManualPreview = ref(false)
 const manualContent = ref('')
 
@@ -296,11 +297,11 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
     <!-- 用户头像+弹出面板 -->
     <div class="relative border-t border-cream-200/60 pt-3 w-full flex flex-col items-center">
       <button
-        class="w-10 h-10 rounded-full bg-butter-300 hover:bg-butter-400 flex items-center justify-center transition-colors"
+        class="w-10 h-10 rounded-full bg-butter-300 hover:bg-butter-400 flex items-center justify-center transition-colors text-lg"
         :title="auth.user?.name || roleLabel[auth.role || 'teacher']"
         @click="toggleProfile"
       >
-        <User class="w-5 h-5 text-cocoa-700" />
+        {{ userAvatar }}
       </button>
 
       <!-- 弹出面板 -->
@@ -310,8 +311,8 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
       >
         <!-- 个人信息 -->
         <div class="flex items-center gap-3 mb-3 pb-3 border-b border-cream-100">
-          <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0">
-            <User class="w-5 h-5 text-cocoa-700" />
+          <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0 text-lg">
+            {{ userAvatar }}
           </div>
           <div class="min-w-0">
             <div class="text-sm font-semibold text-cocoa-900 truncate">{{ auth.user?.name || '用户' }}</div>
