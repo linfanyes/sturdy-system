@@ -143,28 +143,6 @@ function downloadManual() {
 }
 
 // Simple markdown-to-HTML renderer
-function renderMarkdown(md: string): string {
-  if (!md) return ''
-  let html = md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold mt-4 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-5 mb-2 border-b pb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-6 mb-3">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code class="bg-cream-100 px-1 rounded text-xs">$1</code>')
-    .replace(/^\- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-butter-300 pl-3 italic text-cocoa-500 my-2">$1</blockquote>')
-    .replace(/\n\n/g, '<br/><br/>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-butter-600 underline">$1</a>')
-    .replace(/\|(.+)\|/g, (match) => {
-      const cells = match.split('|').filter(c => c.trim())
-      if (cells.length < 3) return match
-      return '<div class="flex gap-2 my-1">' + cells.map(c => '<span class="flex-1 text-xs px-2 py-1 bg-cream-50 rounded">' + c.trim() + '</span>').join('') + '</div>'
-    })
-  return html
-}
-
 const emit = defineEmits<{
   (e: 'logout'): void
   (e: 'activeCategoryChange', value: string): void
@@ -367,7 +345,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             </div>
           </div>
           <div class="flex-1 overflow-y-auto px-5 py-4">
-            <div v-if="manualContent" class="prose prose-sm max-w-none text-cocoa-800" v-html="renderMarkdown(manualContent)" />
+            <div v-if="manualContent" class="text-sm text-cocoa-800 whitespace-pre-wrap" style="font-family: monospace; line-height: 1.6;">{{ manualContent }}</div>
             <div v-else class="text-cocoa-400 py-10 text-center">加载中…</div>
           </div>
         </div>
