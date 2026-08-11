@@ -194,7 +194,7 @@ onMounted(() => {
         </table>
       </div>
 
-      <div v-if="total > PAGE_SIZE" class="flex items-center justify-between pt-4">
+      <div v-if="total > 0 && PAGE_SIZE < total" class="flex items-center justify-between pt-4">
         <button
           class="px-3 py-1.5 rounded-lg bg-surface border border-cream-200 text-sm text-cocoa-700 hover:bg-cream-100 disabled:opacity-50 flex items-center gap-1"
           :disabled="page === 0"

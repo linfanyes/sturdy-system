@@ -218,7 +218,7 @@ async function handleDelete(row: any) {
     </div>
 
     <!-- 分页栏 -->
-    <div v-if="total > pageSize" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+    <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
       <span class="text-xs text-cocoa-400">共 {{ total }} 条</span>
       <div class="flex items-center gap-2">
         <button type="button" class="px-3 py-1.5 rounded-xl border border-cream-200 text-cocoa-600 hover:bg-cream-100 disabled:opacity-40 text-sm" :disabled="page === 0" @click="prevPage">上一页</button>
