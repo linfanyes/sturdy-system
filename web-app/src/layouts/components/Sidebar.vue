@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { teacherMenu, superMenu, schoolAdminMenu, flatNavItems, palette, roleLabel } from '../layoutMenus'
@@ -109,11 +109,21 @@ function toggleCat(label: string) {
 }
 
 const showProfile = ref(false)
+const profilePanel = ref<HTMLElement | null>(null)
 const userAvatar = ref(localStorage.getItem('g_login_avatar') || '🍎')
 const showManualPreview = ref(false)
 const manualContent = ref('')
 
 function toggleProfile() { showProfile.value = !showProfile.value }
+function closeProfile() { showProfile.value = false }
+
+function onDocumentClick(e: MouseEvent) {
+  if (showProfile.value && profilePanel.value && !profilePanel.value.contains(e.target as Node)) {
+    closeProfile()
+  }
+}
+onMounted(() => document.addEventListener('click', onDocumentClick))
+onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 const manualMap: Record<string, string> = {
   super: '/docs/super-admin-guide.md',
@@ -307,6 +317,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
       <!-- 弹出面板 -->
       <div
         v-if="showProfile"
+        ref="profilePanel"
         class="absolute bottom-14 left-2 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4 z-50 text-left"
       >
         <!-- 个人信息 -->
