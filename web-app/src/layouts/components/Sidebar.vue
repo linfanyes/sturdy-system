@@ -3,7 +3,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { LayoutDashboard, School, LogOut, User, Repeat, Users, GraduationCap, ToggleLeft, Trash2, Bot, Settings } from 'lucide-vue-next'
+import { LayoutDashboard, School, LogOut, User, Repeat, Users, GraduationCap, ToggleLeft, Trash2, Bot, Settings, BookOpen } from 'lucide-vue-next'
 import { teacherMenu, superMenu, schoolAdminMenu, flatNavItems, palette, roleLabel } from '../layoutMenus'
 import type { Role } from '@/types/user'
 import type { MenuCategory, MenuItem } from '../layoutMenus'
@@ -112,6 +112,17 @@ function toggleCat(label: string) {
 }
 
 const canSwitchToParent = computed(() => !!roleSwitchStore.teacherToken && auth.role === 'teacher')
+
+const manualMap: Record<string, string> = {
+  super: '/docs/super-admin-guide.md',
+  school_admin: '/docs/school-admin-guide.md',
+  teacher: '/docs/teacher-guide.md',
+  parent: '/docs/parent-guide.md',
+}
+function openManual() {
+  const url = manualMap[auth.role || 'teacher'] || '/docs/teacher-guide.md'
+  window.open(url, '_blank')
+}
 
 const emit = defineEmits<{
   (e: 'logout'): void
@@ -259,6 +270,9 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
         <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-cocoa-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
           切换至家长端
         </span>
+      </button>
+      <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="操作手册" @click="openManual">
+        <BookOpen class="w-4 h-4" />
       </button>
       <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="退出登录" @click="emit('logout')">
         <LogOut class="w-4 h-4" />
