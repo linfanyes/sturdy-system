@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { teacherMenu, superMenu, schoolAdminMenu, flatNavItems, palette, roleLabel } from '../layoutMenus'
@@ -109,21 +109,12 @@ function toggleCat(label: string) {
 }
 
 const showProfile = ref(false)
-const profilePanel = ref<HTMLElement | null>(null)
 const userAvatar = ref(localStorage.getItem('g_login_avatar') || '🍎')
 const showManualPreview = ref(false)
 const manualContent = ref('')
 
-function toggleProfile() { showProfile.value = !showProfile.value }
+function toggleProfile(e: Event) { e.stopPropagation(); showProfile.value = !showProfile.value }
 function closeProfile() { showProfile.value = false }
-
-function onDocumentClick(e: MouseEvent) {
-  if (showProfile.value && profilePanel.value && !profilePanel.value.contains(e.target as Node)) {
-    closeProfile()
-  }
-}
-onMounted(() => document.addEventListener('click', onDocumentClick))
-onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 const manualMap: Record<string, string> = {
   super: '/docs/super-admin-guide.md',
@@ -314,12 +305,17 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
         {{ userAvatar }}
       </button>
 
-      <!-- 弹出面板 -->
-      <div
-        v-if="showProfile"
-        ref="profilePanel"
-        class="absolute bottom-14 left-2 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4 z-50 text-left"
-      >
+      <!-- 弹出面板 + 点击遮罩关闭 -->
+      <Teleport to="body">
+        <div
+          v-if="showProfile"
+          class="fixed inset-0 z-50"
+          @click="closeProfile"
+        >
+          <div
+            class="absolute bottom-16 left-6 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4"
+            @click.stop
+          >
         <!-- 个人信息 -->
         <div class="flex items-center gap-3 mb-3 pb-3 border-b border-cream-100">
           <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0 text-lg">
@@ -349,6 +345,8 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
           <span>退出登录</span>
         </button>
       </div>
+        </div>
+      </Teleport>
     </div>
 
     <!-- 手册预览弹窗 -->
