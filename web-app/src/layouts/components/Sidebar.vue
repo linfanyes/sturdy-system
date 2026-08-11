@@ -330,13 +330,6 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
           <ChevronRight class="w-3 h-3 ml-auto text-cocoa-300" />
         </button>
         <button
-          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-cocoa-700 hover:bg-cream-50 transition-colors"
-          @click="downloadManual"
-        >
-          <Download class="w-4 h-4 text-mint-500" />
-          <span>下载手册</span>
-        </button>
-        <button
           class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors mt-1"
           @click="emit('logout')"
         >
