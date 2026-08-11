@@ -17,6 +17,8 @@ RUN set -e; \
       rm -rf vendor/gardener-shared/dist; \
       cp -r _shared/dist vendor/gardener-shared/dist; \
       rm -rf _shared; \
+      echo "[build] Removing ../shared to prevent tsc rootDir expansion"; \
+      rm -rf ../shared; \
     elif [ ! -d "vendor/gardener-shared/dist" ]; then \
       echo "[build] ERROR: @gardener/shared dist 缺失。请将 server/vendor/gardener-shared/dist 入库，或以仓库根为构建上下文重新构建。"; \
       exit 1; \
@@ -61,6 +63,6 @@ COPY --from=build /app/migrations ./migrations
 RUN chown -R node:node /app
 USER node
 EXPOSE 3000
-# 启动命令：实际编译产物在 dist/server/src/main.js（tsconfig paths 含 ../shared/* 导致 rootDir 被推断为仓库根）。
-# 详见 server/tsconfig.json + package.json start:prod。若后续将 rootDir 显式收敛到 ./src，可改回 dist/main.js。
-CMD ["node", "dist/server/src/main.js"]
+# 启动命令：移除 ../shared 后，tsc rootDir 正确推断为 server/src/，输出到 dist/main.js。
+# 详见 dockerfile 构建阶段末尾的 `rm -rf ../shared`。
+CMD ["node", "dist/main.js"]
