@@ -144,6 +144,22 @@ function downloadManual() {
 }
 
 // Simple markdown-to-HTML renderer
+function md2html(md: string): string {
+  if (!md) return ''
+  return md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+  .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+  .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+  .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  .replace(/`([^`]+)`/g, '<code>$1</code>')
+  .replace(/^\- (.+)$/gm, '<li>$1</li>')
+  .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+  .replace(/^---$/gm, '<hr>')
+  .replace(/\n\n/g, '<br><br>')
+}
+
 const emit = defineEmits<{
   (e: 'logout'): void
   (e: 'activeCategoryChange', value: string): void
@@ -346,7 +362,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             </div>
           </div>
           <div class="flex-1 overflow-y-auto px-5 py-4">
-            <div v-if="manualContent" class="text-sm text-cocoa-800 whitespace-pre-wrap" style="font-family: monospace; line-height: 1.6;">{{ manualContent }}</div>
+            <div v-if="manualContent" class="prose prose-sm max-w-none text-cocoa-800" v-html="md2html(manualContent)" />
             <div v-else class="text-cocoa-400 py-10 text-center">加载中…</div>
           </div>
         </div>
