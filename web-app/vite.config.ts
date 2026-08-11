@@ -2,9 +2,37 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import os from 'os'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// 读取 web-app/public/config.js 中的 API_BASE_URL，决定开发期 /api 代理目标。
+// - config.js 已配置 API_BASE_URL（云端地址）→ 代理到云端（直连线上后端，外网已开启）
+// - config.js 未配置 / 已注释（local 模式由 set-web-env.js 切换）→ 代理到本地 localhost:3000
+// 这样 start-web-local.bat（node scripts/set-web-env.js local）与 start-web-cloud.bat 各自生效，
+// 不再需要在 vite.config.ts 里硬编码云端地址。
+const CLOUD_TARGET = 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com'
+const LOCAL_TARGET = 'http://localhost:3000'
+
+function resolveProxyTarget(): string {
+  const configPath = path.resolve(__dirname, 'public', 'config.js')
+  try {
+    if (!fs.existsSync(configPath)) return LOCAL_TARGET
+    const content = fs.readFileSync(configPath, 'utf8')
+    // 仅当未注释的 window.__APP_CONFIG__.API_BASE_URL 命中云端地址时，代理到云端
+    const activeLine = content
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.startsWith('API_BASE_URL') && !l.startsWith('//'))
+    if (activeLine && activeLine.includes(CLOUD_TARGET)) return CLOUD_TARGET
+    return LOCAL_TARGET
+  } catch {
+    return LOCAL_TARGET
+  }
+}
+
+const proxyTarget = resolveProxyTarget()
 
 export default defineConfig({
   base: './',
@@ -17,11 +45,14 @@ export default defineConfig({
     host: 'localhost',
     hmr: false,
     proxy: {
-      // 开发模式代理到微信云托管后端（外网已开启，直连线上服务）
+      // 开发模式代理目标由 public/config.js 自动决定：
+      //   - local 模式（start-web-local.bat）→ localhost:3000 本地后端
+      //   - cloud 模式（start-web-cloud.bat）→ 微信云托管后端
+      // 见上方 resolveProxyTarget() 实现。
       '/api': {
-        target: 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com',
+        target: proxyTarget,
         changeOrigin: true,
-        secure: true,
+        secure: proxyTarget.startsWith('https'),
       },
     },
   },

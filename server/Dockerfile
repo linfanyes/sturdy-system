@@ -61,4 +61,6 @@ COPY --from=build /app/migrations ./migrations
 RUN chown -R node:node /app
 USER node
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+# 启动命令：实际编译产物在 dist/server/src/main.js（tsconfig paths 含 ../shared/* 导致 rootDir 被推断为仓库根）。
+# 详见 server/tsconfig.json + package.json start:prod。若后续将 rootDir 显式收敛到 ./src，可改回 dist/main.js。
+CMD ["node", "dist/server/src/main.js"]

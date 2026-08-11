@@ -13,10 +13,11 @@
     "test:cov": "jest --coverage",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main.js",
+    "start:prod": "node dist/server/src/main.js",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "seed": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/seed-data.js",
-    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/clear-data.js",
+    "seed": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/seed-data.js",
+    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/clear-data.js",
+    "dedupe:grades": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/dedupe-grades.js",
     "slow-query-monitor": "node scripts/slow-query-monitor.js"
   },
   "dependencies": {

@@ -1,0 +1,5 @@
+# TypeScript 编译产物（仅在开发期临时生成，不应入库）
+# 正常构建产物在 dist/，由根目录 .gitignore 统一排除。
+*.js
+*.js.map
+*.d.ts

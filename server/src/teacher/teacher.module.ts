@@ -149,7 +149,7 @@ class TeacherService extends CrudService<Teacher> {
   }
 }
 
-@Roles('teacher')
+@Roles('teacher', 'school_admin')
 @Feature('teachers')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('teachers')
