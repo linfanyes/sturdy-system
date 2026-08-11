@@ -94,6 +94,50 @@ export class SchoolAdminResourceLibraryController {
   deleteWord(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
     return this.svc.deleteWord(a.schoolId, id)
   }
+
+  // ---- 科学资源 ----
+  @Get('science')
+  @UseGuards(JwtAuthGuard)
+  listScience(@CurrentSchoolAdmin() a: any, @Query('grade') grade?: string, @Query('category') category?: string, @Query('keyword') keyword?: string) {
+    return this.svc.listScience(a.schoolId, { grade, category, keyword })
+  }
+  @Post('science')
+  @UseGuards(JwtAuthGuard)
+  createScience(@CurrentSchoolAdmin() a: any, @Body() b: any) {
+    return this.svc.createScience(a.schoolId, b)
+  }
+  @Patch('science/:id')
+  @UseGuards(JwtAuthGuard)
+  updateScience(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.updateScience(a.schoolId, id, b)
+  }
+  @Delete('science/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteScience(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
+    return this.svc.deleteScience(a.schoolId, id)
+  }
+
+  // ---- 道德与法治资源 ----
+  @Get('moral')
+  @UseGuards(JwtAuthGuard)
+  listMoral(@CurrentSchoolAdmin() a: any, @Query('grade') grade?: string, @Query('category') category?: string, @Query('keyword') keyword?: string) {
+    return this.svc.listMoral(a.schoolId, { grade, category, keyword })
+  }
+  @Post('moral')
+  @UseGuards(JwtAuthGuard)
+  createMoral(@CurrentSchoolAdmin() a: any, @Body() b: any) {
+    return this.svc.createMoral(a.schoolId, b)
+  }
+  @Patch('moral/:id')
+  @UseGuards(JwtAuthGuard)
+  updateMoral(@CurrentSchoolAdmin() a: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.updateMoral(a.schoolId, id, b)
+  }
+  @Delete('moral/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteMoral(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
+    return this.svc.deleteMoral(a.schoolId, id)
+  }
 }
 
 /**
@@ -161,6 +205,34 @@ export class ResourceLibraryController {
     return this.svc.searchWords(schoolId, keyword || '')
   }
 
+  // ---- 科学资源 ----
+  @Get('science')
+  @UseGuards(JwtAuthGuard)
+  async listScience(@CurrentTeacher() user: any, @Query('grade') grade?: string, @Query('category') category?: string, @Query('keyword') keyword?: string) {
+    const schoolId = await this.resolveSchoolId(user)
+    return this.svc.listScience(schoolId, { grade, category, keyword })
+  }
+  @Get('science/search')
+  @UseGuards(JwtAuthGuard)
+  async searchScience(@CurrentTeacher() user: any, @Query('keyword') keyword?: string) {
+    const schoolId = await this.resolveSchoolId(user)
+    return this.svc.searchScience(schoolId, keyword || '')
+  }
+
+  // ---- 道德与法治资源 ----
+  @Get('moral')
+  @UseGuards(JwtAuthGuard)
+  async listMoral(@CurrentTeacher() user: any, @Query('grade') grade?: string, @Query('category') category?: string, @Query('keyword') keyword?: string) {
+    const schoolId = await this.resolveSchoolId(user)
+    return this.svc.listMoral(schoolId, { grade, category, keyword })
+  }
+  @Get('moral/search')
+  @UseGuards(JwtAuthGuard)
+  async searchMoral(@CurrentTeacher() user: any, @Query('keyword') keyword?: string) {
+    const schoolId = await this.resolveSchoolId(user)
+    return this.svc.searchMoral(schoolId, keyword || '')
+  }
+
   // ============ 学科组长编辑接口 ============
 
   @Patch('poems/:id')
@@ -179,5 +251,17 @@ export class ResourceLibraryController {
   @UseGuards(JwtAuthGuard)
   async editWord(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
     return this.svc.teacherUpdateWord(user, id, b)
+  }
+
+  @Patch('science/:id')
+  @UseGuards(JwtAuthGuard)
+  async editScience(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.teacherUpdateScience(user, id, b)
+  }
+
+  @Patch('moral/:id')
+  @UseGuards(JwtAuthGuard)
+  async editMoral(@CurrentTeacher() user: any, @Param('id') id: string, @Body() b: any) {
+    return this.svc.teacherUpdateMoral(user, id, b)
   }
 }

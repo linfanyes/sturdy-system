@@ -98,12 +98,16 @@ const termOptions = computed(() => {
 })
 const examNameOptions = computed(() => {
   const set = new Set()
-  for (const e of props.exams) { if (e.examName) set.add(e.examName) }
+  for (const e of props.exams) {
+    if (props.filterTerm && e.term !== props.filterTerm) continue
+    if (e.examName) set.add(e.examName)
+  }
   return Array.from(set)
 })
 const subjectOptions = computed(() => {
   const set = new Set()
   for (const e of props.exams) {
+    if (props.filterTerm && e.term !== props.filterTerm) continue
     for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) }
   }
   return Array.from(set)

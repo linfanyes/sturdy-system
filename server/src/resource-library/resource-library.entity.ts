@@ -90,3 +90,57 @@ export class EnglishWord {
   @CreateDateColumn({ type: 'datetime' }) createdAt: Date
   @UpdateDateColumn({ type: 'datetime' }) updatedAt: Date
 }
+
+/**
+ * 科学资源库（小学科学知识、实验、观察记录等）
+ * 字段与英语单词类似走通用结构：标题 / 分类 / 内容 / 年级 / 关键词 / 排序 / 状态。
+ */
+@Entity('resource_science')
+@Index('idx_science_school', ['schoolId'])
+@Index('idx_science_school_grade', ['schoolId', 'grade'])
+@Index('idx_science_school_category', ['schoolId', 'category'])
+export class Science {
+  @PrimaryGeneratedColumn('uuid')
+  id: string
+
+  @Column({ type: 'varchar', length: 36, comment: '归属学校ID' })
+  schoolId: string
+
+  @Column({ length: 100 }) title: string            // 标题：水的三态变化
+  @Column({ length: 30, default: '' }) category: string   // 分类：物质科学/生命科学/地球与宇宙/技术与工程
+  @Column({ type: 'text' }) content: string         // 知识内容 / 实验说明
+  @Column({ length: 20, default: '通用' }) grade: string
+  @Column({ length: 200, default: '' }) keywords: string
+  @Column({ type: 'int', default: 0 }) sortOrder: number
+  @Column({ default: 'published' }) status: string
+
+  @CreateDateColumn({ type: 'datetime' }) createdAt: Date
+  @UpdateDateColumn({ type: 'datetime' }) updatedAt: Date
+}
+
+/**
+ * 道德与法治资源库（案例、讨论、价值观等）
+ * 字段同样走通用结构：标题 / 主题分类 / 内容 / 年级 / 关键词 / 排序 / 状态。
+ */
+@Entity('resource_moral')
+@Index('idx_moral_school', ['schoolId'])
+@Index('idx_moral_school_grade', ['schoolId', 'grade'])
+@Index('idx_moral_school_category', ['schoolId', 'category'])
+export class Moral {
+  @PrimaryGeneratedColumn('uuid')
+  id: string
+
+  @Column({ type: 'varchar', length: 36, comment: '归属学校ID' })
+  schoolId: string
+
+  @Column({ length: 100 }) title: string            // 标题：诚实的花盆
+  @Column({ length: 30, default: '' }) category: string   // 主题：个人品德/家庭美德/社会公德/国家情怀
+  @Column({ type: 'text' }) content: string         // 案例 / 讨论 / 价值观内容
+  @Column({ length: 20, default: '通用' }) grade: string
+  @Column({ length: 200, default: '' }) keywords: string
+  @Column({ type: 'int', default: 0 }) sortOrder: number
+  @Column({ default: 'published' }) status: string
+
+  @CreateDateColumn({ type: 'datetime' }) createdAt: Date
+  @UpdateDateColumn({ type: 'datetime' }) updatedAt: Date
+}

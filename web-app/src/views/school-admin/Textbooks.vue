@@ -43,6 +43,63 @@ async function load() {
 }
 onMounted(load)
 
+// ============ 按年级 / 学科分类展示 ============
+// 管理页保留扁平 CRUD 行（便于编辑删除），在其上叠加「学科 + 年级」筛选与年级分组标题，
+// 与家长端/教师端教材知识库的分组浏览体验保持一致。
+const filterSubject = ref('')
+const filterGrade = ref('')
+
+/** 当前教材实际出现过的学科（按 SUBJECT_OPTIONS 预设顺序，未预设的追加在后） */
+const subjectTabs = computed(() => {
+  const present = new Set(textbooks.value.map(t => t.subject).filter(Boolean))
+  const ordered = SUBJECT_OPTIONS.map(s => s.value).filter(v => present.has(v))
+  for (const s of present) if (!ordered.includes(s)) ordered.push(s)
+  return ordered
+})
+
+/** 当前教材实际出现过的年级（按 GRADE_OPTIONS 预设顺序） */
+const gradeTabs = computed(() => {
+  const present = new Set(textbooks.value.map(t => t.grade).filter(Boolean))
+  const ordered = GRADE_OPTIONS.filter(g => present.has(g))
+  for (const g of present) if (!ordered.includes(g)) ordered.push(g)
+  return ordered
+})
+
+const filteredTextbooks = computed(() =>
+  textbooks.value.filter(t =>
+    (!filterSubject.value || t.subject === filterSubject.value) &&
+    (!filterGrade.value || t.grade === filterGrade.value),
+  ),
+)
+
+/** 分组结构：年级 → 学科 → 教材列表 */
+const groupedTextbooks = computed(() => {
+  const map = new Map<string, Map<string, Textbook[]>>()
+  for (const t of filteredTextbooks.value) {
+    const g = t.grade || '未分年级'
+    const s = t.subject || '未分学科'
+    if (!map.has(g)) map.set(g, new Map())
+    const sub = map.get(g)!
+    if (!sub.has(s)) sub.set(s, [])
+    sub.get(s)!.push(t)
+  }
+  // 年级、学科均按预设顺序输出
+  const gradeOrder = [...GRADE_OPTIONS, '未分年级']
+  const subjectOrder = [...SUBJECT_OPTIONS.map(s => s.value), '未分学科']
+  const sortKeys = (keys: string[], order: string[]) =>
+    keys.slice().sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b)
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib)
+    })
+  return sortKeys([...map.keys()], gradeOrder).map(grade => ({
+    grade,
+    subjects: sortKeys([...map.get(grade)!.keys()], subjectOrder).map(subject => ({
+      subject,
+      items: map.get(grade)!.get(subject)!,
+    })),
+  }))
+})
+
 // ============ 展开/折叠 + 懒加载 ============
 async function toggleTextbook(t: Textbook) {
   const set = new Set(expandedTextbooks.value)
@@ -236,15 +293,58 @@ function exportTextbook(t: Textbook) {
       </div>
     </div>
 
-    <!-- 教材列表 -->
+    <!-- 学科 / 年级 筛选 -->
+    <div v-if="!loading && textbooks.length" class="bg-surface rounded-2xl p-3 shadow-softer space-y-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-cocoa-400 w-10 shrink-0">学科</span>
+        <button
+          class="px-2.5 py-1 rounded-lg text-xs"
+          :class="!filterSubject ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-600 hover:bg-cream-200'"
+          @click="filterSubject = ''"
+        >全部</button>
+        <button
+          v-for="s in subjectTabs" :key="s"
+          class="px-2.5 py-1 rounded-lg text-xs"
+          :class="filterSubject === s ? 'bg-butter-500 text-white' : 'bg-cream-100 text-cocoa-600 hover:bg-cream-200'"
+          @click="filterSubject = s"
+        >{{ s }}</button>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-cocoa-400 w-10 shrink-0">年级</span>
+        <button
+          class="px-2.5 py-1 rounded-lg text-xs"
+          :class="!filterGrade ? 'bg-sky2-500 text-white' : 'bg-cream-100 text-cocoa-600 hover:bg-cream-200'"
+          @click="filterGrade = ''"
+        >全部</button>
+        <button
+          v-for="g in gradeTabs" :key="g"
+          class="px-2.5 py-1 rounded-lg text-xs"
+          :class="filterGrade === g ? 'bg-sky2-500 text-white' : 'bg-cream-100 text-cocoa-600 hover:bg-cream-200'"
+          @click="filterGrade = g"
+        >{{ g }}</button>
+      </div>
+    </div>
+
+    <!-- 教材列表（按年级 → 学科 分组） -->
     <div v-if="loading" class="text-cocoa-400 py-8 text-center">加载中…</div>
     <div v-else-if="!textbooks.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
       <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
       <p>暂无教材，点击「AI 批量生成」快速生成三科教材知识点</p>
     </div>
+    <div v-else-if="!filteredTextbooks.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+      <BookOpen class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
+      <p>当前筛选条件下暂无教材</p>
+    </div>
 
-    <div v-else class="space-y-2">
-      <div v-for="t in textbooks" :key="t.id" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
+    <div v-else class="space-y-5">
+      <div v-for="g in groupedTextbooks" :key="g.grade">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2.5 py-1 rounded-lg bg-butter-100 text-butter-700 text-sm font-semibold">{{ g.grade }}</span>
+        </div>
+        <div v-for="s in g.subjects" :key="s.subject" class="mb-3">
+          <div class="text-xs text-cocoa-500 mb-1.5 pl-0.5">{{ s.subject }} · {{ s.items.length }} 本</div>
+          <div class="space-y-2">
+      <div v-for="t in s.items" :key="t.id" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
         <!-- 教材行 -->
         <div class="flex items-center gap-3 p-4 hover:bg-cream-50">
           <button class="text-cocoa-400" @click="toggleTextbook(t)">
@@ -295,6 +395,9 @@ function exportTextbook(t: Textbook) {
           <button class="w-full text-left px-6 py-2 text-sm text-butter-600 hover:bg-cream-100/50 flex items-center gap-1" @click="editUnit(t.id)">
             <Plus class="w-4 h-4" /> 添加单元
           </button>
+        </div>
+      </div>
+          </div>
         </div>
       </div>
     </div>

@@ -21,6 +21,15 @@ export interface SeedEnglishWord {
   example?: string; grade: string;
 }
 
+// ============ 科学资源（小学科学知识点 / 实验 / 观察） ============
+export interface SeedScience {
+  title: string; category: string; content: string; grade: string; keywords: string;
+}
+// ============ 道德与法治资源（案例 / 讨论 / 价值观） ============
+export interface SeedMoral {
+  title: string; category: string; content: string; grade: string; keywords: string;
+}
+
 // ============ 古诗词（小学必背） ============
 
 export const SEED_POEMS: SeedPoem[] = [
@@ -518,4 +527,76 @@ export const SEED_ENGLISH_WORDS: SeedEnglishWord[] = [
   { word: 'truck', phonetic: '/trʌk/', meaning: '卡车', category: '交通', example: 'The truck carries goods.', grade: '五年级' },
   { word: 'airplane', phonetic: '/ˈeəpleɪn/', meaning: '飞机', category: '交通', example: 'The airplane flies high.', grade: '五年级' },
   { word: 'motorcycle', phonetic: '/ˈməʊtəsaɪkl/', meaning: '摩托车', category: '交通', example: 'He rides a motorcycle.', grade: '六年级' },
+]
+
+// ============ 科学资源（小学科学知识点 / 实验 / 观察） ============
+// 字段：title 标题 / category 分类 / content 知识内容 / grade 年级 / keywords 关键词
+
+export const SEED_SCIENCE: SeedScience[] = [
+  {
+    title: '水的三态变化', category: '物质科学', grade: '三年级',
+    content: '水在常温常压下有三种状态：固态（冰）、液态（水）、气态（水蒸气）。\n加热时冰融化成水，水沸腾变成水蒸气；冷却时水蒸气凝结成水，水凝固成冰。三态变化属于物理变化，物质本身没有变成新物质。',
+    keywords: '水,三态,熔化,凝固,汽化,凝结',
+  },
+  {
+    title: '植物的一生', category: '生命科学', grade: '二年级',
+    content: '一株绿色开花植物通常会经历：种子萌发→幼苗生长→开花→传粉受精→结果→产生新种子。\n种子萌发需要水分、空气和适宜的温度；植物的根吸收水分和无机盐，叶通过光合作用制造养料。',
+    keywords: '植物,种子,光合作用,萌发,开花',
+  },
+  {
+    title: '太阳与影子', category: '地球与宇宙', grade: '三年级',
+    content: '影子是光沿直线传播时被不透明物体挡住形成的暗区。\n一天中，阳光下物体的影子方向和长短会随时间变化：早晨影子朝西且长，正午影子朝北（北半球）且最短，傍晚影子朝东且长。古人用日晷计时正是利用了这一规律。',
+    keywords: '光,直线传播,影子,日晷',
+  },
+  {
+    title: '磁铁的两极', category: '物质科学', grade: '四年级',
+    content: '磁铁有两个磁性最强的部分，叫磁极，分别称为南极（S）和北极（N）。\n同名磁极相互排斥，异名磁极相互吸引。磁铁能隔着一段距离吸引铁、镍等材料，指南针就是利用磁铁指示南北的性质制成的。',
+    keywords: '磁铁,磁极,吸引,排斥,指南针',
+  },
+  {
+    title: '简单电路', category: '技术与工程', grade: '四年级',
+    content: '一个能正常工作的简单电路通常包含：电源（如电池）、导线、用电器（如小灯泡）和开关。\n电流从电池正极流出，经过导线和用电器回到负极，形成闭合回路；开关断开时电路断开，灯泡不亮。短路会使电流过大，十分危险。',
+    keywords: '电路,电源,导线,开关,短路',
+  },
+  {
+    title: '垃圾分类与回收', category: '地球与宇宙', grade: '五年级',
+    content: '生活垃圾一般分为四类：可回收物（纸、塑料、金属、玻璃）、厨余垃圾、有害垃圾（电池、灯管、药品）、其他垃圾。\n分类回收能减少污染、节约资源。例如废纸回收再造可少砍树木，废电池随意丢弃会污染土壤和地下水。',
+    keywords: '垃圾,分类,回收,环保',
+  },
+]
+
+// ============ 道德与法治资源（案例 / 讨论 / 价值观） ============
+// 字段：title 标题 / category 主题 / content 案例与讨论 / grade 年级 / keywords 关键词
+
+export const SEED_MORAL: SeedMoral[] = [
+  {
+    title: '诚实的花盆', category: '个人品德', grade: '二年级',
+    content: '故事：国王给每个孩子发了一粒煮熟的种子，说谁能种出最美的花就选谁做继承人。大多数孩子端来了鲜艳的花，只有一个孩子捧着空花盆——因为他诚实，种子根本不会发芽。\n讨论：为什么国王选择了空花盆的孩子？诚实为什么比一时的漂亮更重要？',
+    keywords: '诚实,守信,故事,讨论',
+  },
+  {
+    title: '我的家庭责任', category: '家庭美德', grade: '三年级',
+    content: '家庭成员各有分工：父母工作养家、照顾我们，我们作为孩子可以整理自己的房间、帮着摆碗筷、照顾弟妹。\n讨论：你在家能做哪些力所能及的事？为什么孝敬长辈、分担家务是家庭美德的体现？',
+    keywords: '家庭,责任,孝敬,分担',
+  },
+  {
+    title: '排队与规则', category: '社会公德', grade: '一年级',
+    content: '在食堂打饭、上下公交车、买票时都要排队，不插队、不拥挤。\n规则让大家都公平、安全、有效率。讨论：如果大家都插队会怎样？我们怎样做一个遵守公共秩序的好公民？',
+    keywords: '规则,排队,公共秩序,公民',
+  },
+  {
+    title: '爱护公共财物', category: '社会公德', grade: '四年级',
+    content: '学校的课桌椅、图书馆的图书、公园的健身器材都是公共财物，属于大家共同使用。\n不乱涂乱画、不故意损坏、用完归位是爱护公共财物的表现。讨论：看到有人损坏公物，我们该怎么劝阻或报告？',
+    keywords: '公共财物,爱护,责任,劝导',
+  },
+  {
+    title: '我们的国旗与国徽', category: '国家情怀', grade: '三年级',
+    content: '中华人民共和国国旗是五星红旗，红色象征革命，五颗星象征全国各族人民团结在党中央周围；国徽中间是五星照耀下的天安门，周围是谷穗和齿轮。\n升旗时要肃立、行注目礼，唱国歌时态度庄重。这是我们对祖国的尊重与热爱。',
+    keywords: '国旗,国徽,爱国,尊重',
+  },
+  {
+    title: '身边的劳动者', category: '国家情怀', grade: '五年级',
+    content: '农民种粮、工人造物、教师教书、医生治病、环卫工人保洁……各行各业劳动者用双手建设国家、服务社会。\n讨论：你最想感谢哪一种劳动者？为什么劳动值得尊重，我们要怎样珍惜他人的劳动成果？',
+    keywords: '劳动,尊重,感恩,社会',
+  },
 ]

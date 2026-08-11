@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-vue-next'
 
 const route = useRoute()
 
-const isHome = computed(() => route.name === 'super-dashboard' || route.name === 'school-admin-dashboard' || route.name === 'teacher-dashboard')
+const isHome = computed(() => route.name === 'super-dashboard' || route.name === 'school-admin-dashboard' || route.name === 'teacher-dashboard' || route.name === 'parent-dashboard')
 const pageTitle = computed(() => (route.meta.title as string | undefined) || '')
 
 const props = defineProps<{

@@ -589,12 +589,15 @@ async function saveForm(formData, editingId) {
   saving.value = false
 }
 async function doResetPwd(user, pwd) {
-  if (!pwd) return uni.showToast({ title: '请输入新密码', icon: 'none' })
-  if (pwd.length < 6 || pwd.length > 20) return uni.showToast({ title: '密码须为6-20位字符', icon: 'none' })
+  // 与 Web 端保持一致：留空则由后端生成随机密码；填写则必须 6-20 位
+  const raw = (pwd || '').trim()
+  if (raw && (raw.length < 6 || raw.length > 20)) {
+    return uni.showToast({ title: '密码须为6-20位字符', icon: 'none' })
+  }
   saving.value = true
   try {
-    const r = await apiCall('POST', '/school-admin/teachers/' + user.id + '/reset-password', { password: pwd })
-    const actualPwd = (r && r.defaultPassword) || pwd
+    const r = await apiCall('POST', '/school-admin/teachers/' + user.id + '/reset-password', { password: raw })
+    const actualPwd = (r && r.defaultPassword) || raw
     uni.showModal({ title: '密码已重置', content: '新密码：' + actualPwd + '\n请将此密码告知教师', showCancel: false, confirmText: '知道了' })
   } catch (e) { uni.showToast({ title: e.message || '重置失败', icon: 'none' }) }
   saving.value = false

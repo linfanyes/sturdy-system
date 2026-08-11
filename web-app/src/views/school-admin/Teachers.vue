@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { useRouter } from 'vue-router'
 import {
@@ -29,6 +29,9 @@ const loading = ref(false)
 const teachers = ref<TeacherItem[]>([])
 const total = ref(0)
 const keyword = ref('')
+// 分页状态：默认每页 10 条，可选 5/10/20/50
+const page = ref(1)
+const pageSize = ref(10)
 
 const filtered = computed(() => {
   if (!keyword.value) return teachers.value
@@ -39,6 +42,17 @@ const filtered = computed(() => {
     t.phone?.includes(kw),
   )
 })
+
+// 当前页展示数据（基于前端过滤结果做客户端分页）
+const pagedTeachers = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
+
+// 关键字变化或重新加载后回到第一页
+watch(keyword, () => { page.value = 1 })
+watch(teachers, () => { page.value = 1 })
 
 async function loadTeachers() {
   loading.value = true
@@ -362,7 +376,7 @@ function handlePrint() {
           <tr v-else-if="filtered.length === 0" class="text-center text-cocoa-400">
             <td colspan="8" class="py-8">暂无教师数据</td>
           </tr>
-          <tr v-for="t in filtered" :key="t.id" class="hover:bg-cream-50 transition-colors" @dblclick="goDetail(t)">
+          <tr v-for="t in pagedTeachers" :key="t.id" class="hover:bg-cream-50 transition-colors" @dblclick="goDetail(t)">
             <td class="px-4 py-3 font-medium text-cocoa-900">
               <button class="hover:text-butter-600 hover:underline transition-colors text-left" @click="goDetail(t)">{{ t.name }}</button>
             </td>
@@ -410,6 +424,25 @@ function handlePrint() {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="flex items-center justify-between gap-3 flex-wrap no-print mt-4" v-if="filtered.length > 0">
+      <div class="flex items-center gap-2 text-sm text-cocoa-500">
+        <span>每页</span>
+        <select v-model="pageSize" class="px-2 py-1 rounded-lg border border-cream-200 bg-surface" @change="page = 1">
+          <option :value="5">5</option>
+          <option :value="10">10</option>
+          <option :value="20">20</option>
+          <option :value="50">50</option>
+        </select>
+        <span>条，共 {{ filtered.length }} 条</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="px-3 py-1.5 rounded-lg border border-cream-200 text-sm disabled:opacity-40" :disabled="page <= 1" @click="page--">上一页</button>
+        <span class="px-3 py-1.5 text-sm text-cocoa-600">第 {{ page }} / {{ totalPages }} 页</span>
+        <button class="px-3 py-1.5 rounded-lg border border-cream-200 text-sm disabled:opacity-40" :disabled="page >= totalPages" @click="page++">下一页</button>
+      </div>
     </div>
   </div>
 
@@ -573,7 +606,6 @@ function handlePrint() {
   <ResetPasswordModal
     v-model="showReset"
     :target-name="resetTarget?.name"
-    default-password="1314521"
     @confirm="submitReset"
   />
 </template>

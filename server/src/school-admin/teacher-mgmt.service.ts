@@ -173,16 +173,16 @@ export class TeacherMgmtService {
   }
 
   /** 重置教师密码
-   * S03修复：未提供合规密码（8-20 位）时，生成8位随机密码。
+   * 未提供合规密码（6-20 位）时，生成8位随机密码（仍满足不少于6位）。
    */
   async resetPassword(schoolId: string, teacherId: string, newPassword: string) {
     const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
     if (!user) throw new BadRequestException('教师不存在或不属于本校')
-    // S03修复：密码长度下限从6提升到8，更安全
+    // 密码长度下限不少于6位（用户要求），上限20位
     const raw = (newPassword || '').trim()
     let pwd: string
     if (raw) {
-      if (raw.length < 8 || raw.length > 20) throw new BadRequestException('密码长度须为 8-20 位')
+      if (raw.length < 6 || raw.length > 20) throw new BadRequestException('密码长度须为 6-20 位')
       pwd = raw
     } else {
       pwd = this.generateRandomPassword() // 未提供则生成随机密码

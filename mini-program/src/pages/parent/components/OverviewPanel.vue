@@ -1,25 +1,5 @@
 <template>
   <scroll-view scroll-y class="tab-body">
-    <view class="sec">
-      <view class="st">📝 学生信息</view>
-      <view v-if="studentInfo" class="info-card">
-        <view class="info-row"><text class="info-label">家长姓名</text><text class="info-val">{{ studentInfo.parentName || '--' }}</text></view>
-        <view class="info-row"><text class="info-label">家长电话</text><text class="info-val">{{ studentInfo.parentPhone || '--' }}</text></view>
-        <view class="info-row"><text class="info-label">学生电话</text><text class="info-val">{{ studentInfo.studentPhone || '--' }}</text></view>
-        <view class="info-row"><text class="info-label">出生日期</text><text class="info-val">{{ studentInfo.birthDate || '--' }}</text></view>
-        <view class="info-row"><text class="info-label">地址</text><text class="info-val">{{ studentInfo.address || '--' }}</text></view>
-        <view class="info-row" v-if="studentInfo.note"><text class="info-label">备注</text><text class="info-val">{{ studentInfo.note }}</text></view>
-        <view class="info-actions">
-          <view class="info-btn primary" @click="emit('edit-student-info')">修改信息</view>
-          <view class="info-btn" @click="emit('view-requests')">查看申请记录</view>
-        </view>
-      </view>
-      <view v-else class="empty-card">
-        <text class="empty-icon">📄</text>
-        <text class="empty-text">暂无学生信息</text>
-      </view>
-    </view>
-
     <view class="sec" v-if="teachers.length">
       <view class="st">👨‍🏫 科任老师</view>
       <view class="teacher-list">

@@ -8,7 +8,10 @@
         <view v-if="keyword" class="tb-search-clear" @click="clearSearch">✕</view>
       </view>
       <view class="tb-filter-row">
-        <view v-for="s in ['', '语文', '数学', '英语']" :key="s" class="tb-chip" :class="{ on: filterSubject === s }" @click="filterSubject = s; load()">{{ s || '全部' }}</view>
+        <view v-for="s in SUBJECTS" :key="s" class="tb-chip" :class="{ on: filterSubject === s }" @click="filterSubject = s; load()">{{ s || '全部学科' }}</view>
+      </view>
+      <view class="tb-filter-row">
+        <view v-for="g in GRADES" :key="g" class="tb-chip" :class="{ on: filterGrade === g }" @click="filterGrade = g; load()">{{ g || '全部年级' }}</view>
       </view>
       <view v-if="searchResults.length" class="tb-search-results">
         <view class="tb-search-title">🔍 搜索结果（{{ searchResults.length }} 条）</view>
@@ -25,27 +28,33 @@
           <text class="empty-text">暂无教材知识点，请联系学校管理员导入</text>
         </view>
         <view v-else>
-          <view v-for="t in textbooks" :key="t.id" class="tb-textbook">
-            <view class="tb-textbook-head" @click="toggleTextbook(t.id)">
-              <text class="tb-arrow">{{ expandedTextbooks[t.id] ? '▾' : '▸' }}</text>
-              <text class="tb-emoji">{{ t.subject === '语文' ? '📜' : t.subject === '数学' ? '🔢' : t.subject === '英语' ? '🔤' : '📚' }}</text>
-              <view class="tb-textbook-info">
-                <text class="tb-textbook-name">{{ t.name }}</text>
-                <text class="tb-textbook-sub">{{ t.publisher }} · {{ t.grade }} · {{ t.term }}</text>
-              </view>
-            </view>
-            <view v-if="expandedTextbooks[t.id]" class="tb-units">
-              <view v-if="!t.units || !t.units.length" class="tb-empty">暂无单元</view>
-              <view v-for="u in t.units" :key="u.id" class="tb-unit">
-                <view class="tb-unit-head" @click="toggleUnit(u.id)">
-                  <text class="tb-arrow-sm">{{ expandedUnits[u.id] ? '▾' : '▸' }}</text>
-                  <text class="tb-unit-title">{{ u.title }}</text>
+          <view v-for="g in groupedTree" :key="g.grade" class="tb-grade">
+            <view class="tb-grade-title">🎓 {{ g.grade }}</view>
+            <view v-for="sub in g.subjects" :key="sub.subject" class="tb-subject">
+              <view class="tb-subject-title">{{ subjectIcon(sub.subject) }} {{ sub.subject }}</view>
+              <view v-for="t in sub.textbooks" :key="t.id" class="tb-textbook">
+                <view class="tb-textbook-head" @click="toggleTextbook(t.id)">
+                  <text class="tb-arrow">{{ expandedTextbooks[t.id] ? '▾' : '▸' }}</text>
+                  <text class="tb-emoji">{{ subjectIcon(t.subject) }}</text>
+                  <view class="tb-textbook-info">
+                    <text class="tb-textbook-name">{{ t.name }}</text>
+                    <text class="tb-textbook-sub">{{ t.publisher }} · {{ t.grade }} · {{ t.term }}</text>
+                  </view>
                 </view>
-                <view v-if="expandedUnits[u.id]" class="tb-points">
-                  <view v-if="!u.knowledgePoints || !u.knowledgePoints.length" class="tb-empty">暂无知识点</view>
-                  <view v-for="p in u.knowledgePoints" :key="p.id" class="tb-kp-card">
-                    <view class="tb-kp-title">{{ p.title }}<text class="tb-kp-type">{{ p.type }}</text><text v-if="p.difficulty" class="tb-kp-diff">{{ p.difficulty }}</text></view>
-                    <view class="tb-kp-content">{{ p.content }}</view>
+                <view v-if="expandedTextbooks[t.id]" class="tb-units">
+                  <view v-if="!t.units || !t.units.length" class="tb-empty">暂无单元</view>
+                  <view v-for="u in t.units" :key="u.id" class="tb-unit">
+                    <view class="tb-unit-head" @click="toggleUnit(u.id)">
+                      <text class="tb-arrow-sm">{{ expandedUnits[u.id] ? '▾' : '▸' }}</text>
+                      <text class="tb-unit-title">{{ u.title }}</text>
+                    </view>
+                    <view v-if="expandedUnits[u.id]" class="tb-points">
+                      <view v-if="!u.knowledgePoints || !u.knowledgePoints.length" class="tb-empty">暂无知识点</view>
+                      <view v-for="p in u.knowledgePoints" :key="p.id" class="tb-kp-card">
+                        <view class="tb-kp-title">{{ p.title }}<text class="tb-kp-type">{{ p.type }}</text><text v-if="p.difficulty" class="tb-kp-diff">{{ p.difficulty }}</text></view>
+                        <view class="tb-kp-content">{{ p.content }}</view>
+                      </view>
+                    </view>
                   </view>
                 </view>
               </view>
@@ -58,28 +67,76 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { parentApi } from '../../../common/request'
 
 const textbooks = ref([])
 const loading = ref(false)
 const filterSubject = ref('')
+const filterGrade = ref('')
 const keyword = ref('')
 const searchResults = ref([])
 const expandedTextbooks = ref({})
 const expandedUnits = ref({})
 
+// 学科/年级选项（与共享常量保持一致）
+const SUBJECTS = ['', '语文', '数学', '英语']
+const GRADES = ['', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
+
 async function load() {
   if (keyword.value) return
   loading.value = true
   try {
-    let url = '/textbooks/tree'
-    if (filterSubject.value) {
-      url += '?subject=' + encodeURIComponent(filterSubject.value)
-    }
+    // 同时按学科/年级过滤，传给后端 GET /textbooks/tree
+    const params = []
+    if (filterSubject.value) params.push('subject=' + encodeURIComponent(filterSubject.value))
+    if (filterGrade.value) params.push('grade=' + encodeURIComponent(filterGrade.value))
+    const url = '/textbooks/tree' + (params.length ? '?' + params.join('&') : '')
     textbooks.value = await parentApi.get(url)
   } catch (e) { textbooks.value = [] }
   finally { loading.value = false }
+}
+
+/**
+ * 按 年级 → 学科 → 教材 → 单元 → 知识点 分组（前端基于 tree 接口返回数据分组，
+ * 后端 GET /textbooks/tree 已支持 subject/grade/term 过滤，此处仅做展示分组）。
+ */
+function buildSubjects(bySubject) {
+  const subjects = []
+  for (const s of SUBJECTS) {
+    if (!s || !bySubject[s]) continue
+    subjects.push({ subject: s, textbooks: bySubject[s] })
+  }
+  for (const s of Object.keys(bySubject)) {
+    if (SUBJECTS.includes(s)) continue
+    subjects.push({ subject: s, textbooks: bySubject[s] })
+  }
+  return subjects
+}
+
+const groupedTree = computed(() => {
+  const byGrade = {}
+  for (const t of textbooks.value) {
+    if (!byGrade[t.grade]) byGrade[t.grade] = {}
+    if (!byGrade[t.grade][t.subject]) byGrade[t.grade][t.subject] = []
+    byGrade[t.grade][t.subject].push(t)
+  }
+  const result = []
+  const seenGrades = {}
+  for (const g of GRADES) {
+    if (!g || !byGrade[g]) continue
+    seenGrades[g] = true
+    result.push({ grade: g, subjects: buildSubjects(byGrade[g]) })
+  }
+  for (const g of Object.keys(byGrade)) {
+    if (seenGrades[g]) continue
+    result.push({ grade: g, subjects: buildSubjects(byGrade[g]) })
+  }
+  return result
+})
+
+function subjectIcon(subject) {
+  return subject === '语文' ? '📜' : subject === '数学' ? '🔢' : subject === '英语' ? '🔤' : '📚'
 }
 
 function toggleTextbook(id) {
@@ -122,6 +179,11 @@ defineExpose({ load })
 .tb-search-results { margin-bottom: 16rpx; }
 .tb-search-title { font-size: 26rpx; color: var(--c-title); font-weight: 600; margin-bottom: 12rpx; }
 .tb-textbook { background: var(--c-card); border-radius: 16rpx; margin-bottom: 12rpx; overflow: hidden; }
+.tb-grade { background: var(--c-card); border-radius: 16rpx; margin-bottom: 12rpx; overflow: hidden; }
+.tb-grade-title { font-size: 28rpx; font-weight: 700; color: var(--c-primary); padding: 16rpx 20rpx; background: rgba(0,0,0,0.03); }
+.tb-subject { border-top: 1rpx solid rgba(0,0,0,0.04); }
+.tb-subject-title { font-size: 24rpx; color: var(--c-sub); font-weight: 600; padding: 12rpx 20rpx 4rpx; }
+.tb-subject .tb-textbook { border-radius: 12rpx; margin: 0 16rpx 12rpx; }
 .tb-textbook-head { display: flex; align-items: center; padding: 20rpx; gap: 12rpx; }
 .tb-arrow { font-size: 24rpx; color: var(--c-sub); }
 .tb-arrow-sm { font-size: 22rpx; color: var(--c-sub); margin-right: 8rpx; }

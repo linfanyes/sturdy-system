@@ -5,27 +5,32 @@
  * - 家长按孩子学习需求展示全部三类（不按教师任课学科过滤）
  */
 import { ref, computed, onMounted } from 'vue'
-import { BookOpen, Calculator, Languages, Search, Loader2, X, ChevronDown, Filter, Copy, Printer } from 'lucide-vue-next'
+import { BookOpen, Calculator, Languages, FlaskConical, Scale, Search, Loader2, X, ChevronDown, Filter, Copy, Printer } from 'lucide-vue-next'
 import {
   listPoems, listFormulas, listWords, listWordCategories,
-  type Poem, type MathFormula, type EnglishWord,
+  listScience, listMoral,
+  type Poem, type MathFormula, type EnglishWord, type ScienceResource, type MoralResource,
 } from '@/api/resource-library'
 import { useAuthStore } from '@/stores/auth'
 import { copyText, printHtml, notify, escapeHtml } from '@/utils/copyPrint'
 
 const auth = useAuthStore()
 
-type Tab = 'poems' | 'formulas' | 'words'
+type Tab = 'poems' | 'formulas' | 'words' | 'science' | 'moral'
 const tabs: { key: Tab; label: string; icon: any }[] = [
   { key: 'poems', label: '古诗词', icon: BookOpen },
   { key: 'formulas', label: '数学公式', icon: Calculator },
   { key: 'words', label: '英语单词', icon: Languages },
+  { key: 'science', label: '科学', icon: FlaskConical },
+  { key: 'moral', label: '道德与法治', icon: Scale },
 ]
 const tab = ref<Tab>('poems')
 
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const DYNASTIES = ['唐', '宋', '元', '明', '清', '汉', '南北朝', '魏晋', '先秦', '近现代']
 const FORMULA_CATEGORIES = ['运算定律', '几何公式', '单位换算', '分数小数', '比例百分数', '思维方法']
+const SCIENCE_CATEGORIES = ['物质科学', '生命科学', '地球与宇宙', '技术与工程']
+const MORAL_CATEGORIES = ['个人品德', '家庭美德', '社会公德', '国家情怀']
 
 // ============ 古诗词 ============
 const poems = ref<Poem[]>([])
@@ -112,6 +117,40 @@ const groupedWords = computed(() => {
   return map
 })
 
+// ============ 科学资源（家长只读） ============
+const sciences = ref<ScienceResource[]>([])
+const sciencesLoading = ref(false)
+const scienceCategory = ref('')
+const scienceKeyword = ref('')
+
+async function loadSciences() {
+  sciencesLoading.value = true
+  try {
+    sciences.value = await listScience({
+      category: scienceCategory.value || undefined,
+      keyword: scienceKeyword.value.trim() || undefined,
+    })
+  } catch { sciences.value = [] }
+  finally { sciencesLoading.value = false }
+}
+
+// ============ 道德与法治资源（家长只读） ============
+const morals = ref<MoralResource[]>([])
+const moralsLoading = ref(false)
+const moralCategory = ref('')
+const moralKeyword = ref('')
+
+async function loadMorals() {
+  moralsLoading.value = true
+  try {
+    morals.value = await listMoral({
+      category: moralCategory.value || undefined,
+      keyword: moralKeyword.value.trim() || undefined,
+    })
+  } catch { morals.value = [] }
+  finally { moralsLoading.value = false }
+}
+
 // ============ 切换标签页时按需加载 ============
 const loadedTabs = ref<Set<Tab>>(new Set())
 async function switchTab(t: Tab) {
@@ -120,7 +159,9 @@ async function switchTab(t: Tab) {
   loadedTabs.value.add(t)
   if (t === 'poems') await loadPoems()
   else if (t === 'formulas') await loadFormulas()
-  else await loadWords()
+  else if (t === 'words') await loadWords()
+  else if (t === 'science') await loadSciences()
+  else await loadMorals()
 }
 
 onMounted(() => {
@@ -128,7 +169,9 @@ onMounted(() => {
   loadedTabs.value.add(t)
   if (t === 'poems') loadPoems()
   else if (t === 'formulas') loadFormulas()
-  else loadWords()
+  else if (t === 'words') loadWords()
+  else if (t === 'science') loadSciences()
+  else if (t === 'moral') loadMorals()
 })
 
 // 朝代颜色映射
@@ -199,6 +242,42 @@ async function copyCategory(cat: string, list: EnglishWord[]) {
 }
 function printCategory(cat: string, list: EnglishWord[]) {
   printHtml(`英语单词 · ${cat}`, categoryHtml(cat, list))
+}
+
+// 科学
+function scienceText(s: ScienceResource) {
+  let t = `${s.title}（${s.category}）${s.grade ? ' · ' + s.grade : ''}`
+  if (s.keywords) t += `\n关键词：${s.keywords}`
+  t += `\n\n${s.content}`
+  return t
+}
+function scienceHtml(s: ScienceResource) {
+  return `<div class="item"><div><strong>${escapeHtml(s.title)}</strong> <span class="meta">${escapeHtml(s.category)}</span></div>${s.keywords ? `<div class="ex">关键词：${escapeHtml(s.keywords)}</div>` : ''}<div class="ex">${escapeHtml(s.content)}</div></div>`
+}
+async function copyScience(s: ScienceResource) {
+  const ok = await copyText(scienceText(s))
+  notify(ok ? '已复制该科学资源' : '复制失败', ok ? 'success' : 'error')
+}
+function printScience(s: ScienceResource) {
+  printHtml(`科学 · ${s.title}`, scienceHtml(s))
+}
+
+// 道德与法治
+function moralText(m: MoralResource) {
+  let t = `${m.title}（${m.category}）${m.grade ? ' · ' + m.grade : ''}`
+  if (m.keywords) t += `\n关键词：${m.keywords}`
+  t += `\n\n${m.content}`
+  return t
+}
+function moralHtml(m: MoralResource) {
+  return `<div class="item"><div><strong>${escapeHtml(m.title)}</strong> <span class="meta">${escapeHtml(m.category)}</span></div>${m.keywords ? `<div class="ex">关键词：${escapeHtml(m.keywords)}</div>` : ''}<div class="ex">${escapeHtml(m.content)}</div></div>`
+}
+async function copyMoral(m: MoralResource) {
+  const ok = await copyText(moralText(m))
+  notify(ok ? '已复制该道德与法治资源' : '复制失败', ok ? 'success' : 'error')
+}
+function printMoral(m: MoralResource) {
+  printHtml(`道德与法治 · ${m.title}`, moralHtml(m))
 }
 
 const studentName = computed(() => auth.user?.studentName || '')
@@ -375,6 +454,92 @@ const studentName = computed(() => auth.user?.studentName || '')
               <div class="text-sm text-cocoa-600 mt-0.5">{{ w.meaning }}</div>
               <div v-if="w.example" class="text-xs text-cocoa-400 mt-1 italic leading-relaxed">e.g. {{ w.example }}</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ============ 科学资源 ============ -->
+    <template v-if="tab === 'science'">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
+          <input v-model="scienceKeyword" @keyup.enter="loadSciences" placeholder="搜索科学标题或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
+          <button v-if="scienceKeyword" class="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-300 hover:text-cocoa-500" @click="scienceKeyword = ''; loadSciences()"><X class="w-4 h-4" /></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-cocoa-400 flex items-center gap-1"><Filter class="w-3 h-3" />分类</span>
+          <button v-for="c in ['', ...SCIENCE_CATEGORIES]" :key="c"
+            :class="['px-2.5 py-1 rounded-full text-xs border transition-colors', scienceCategory === c ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-500 hover:bg-cream-50']"
+            @click="scienceCategory = c; loadSciences()">{{ c || '全部' }}</button>
+        </div>
+      </div>
+
+      <div v-if="sciencesLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
+      <div v-else-if="!sciences.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+        <FlaskConical class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
+        <p>暂无科学资源</p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <div v-for="s in sciences" :key="s.id" class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="font-medium text-cocoa-900">{{ s.title }}</div>
+                <span class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ s.category }}</span>
+                <span v-if="s.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ s.grade }}</span>
+              </div>
+              <div class="mt-2 text-sm text-cocoa-700 leading-relaxed whitespace-pre-line">{{ s.content }}</div>
+              <div v-if="s.keywords" class="text-xs text-cocoa-400 mt-2">🏷 {{ s.keywords }}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyScience(s)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printScience(s)"><Printer class="w-3.5 h-3.5" /> 打印</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ============ 道德与法治资源 ============ -->
+    <template v-if="tab === 'moral'">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
+          <input v-model="moralKeyword" @keyup.enter="loadMorals" placeholder="搜索标题或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
+          <button v-if="moralKeyword" class="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-300 hover:text-cocoa-500" @click="moralKeyword = ''; loadMorals()"><X class="w-4 h-4" /></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-cocoa-400 flex items-center gap-1"><Filter class="w-3 h-3" />主题</span>
+          <button v-for="c in ['', ...MORAL_CATEGORIES]" :key="c"
+            :class="['px-2.5 py-1 rounded-full text-xs border transition-colors', moralCategory === c ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-500 hover:bg-cream-50']"
+            @click="moralCategory = c; loadMorals()">{{ c || '全部' }}</button>
+        </div>
+      </div>
+
+      <div v-if="moralsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
+      <div v-else-if="!morals.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+        <Scale class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
+        <p>暂无道德与法治资源</p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <div v-for="m in morals" :key="m.id" class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="font-medium text-cocoa-900">{{ m.title }}</div>
+                <span class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ m.category }}</span>
+                <span v-if="m.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ m.grade }}</span>
+              </div>
+              <div class="mt-2 text-sm text-cocoa-700 leading-relaxed whitespace-pre-line">{{ m.content }}</div>
+              <div v-if="m.keywords" class="text-xs text-cocoa-400 mt-2">🏷 {{ m.keywords }}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyMoral(m)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printMoral(m)"><Printer class="w-3.5 h-3.5" /> 打印</button>
           </div>
         </div>
       </div>

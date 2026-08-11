@@ -6,34 +6,52 @@
  * - 英语单词：按分类分组展示，每个单词显示音标与释义
  */
 import { ref, computed, onMounted } from 'vue'
-import { BookOpen, Calculator, Languages, Search, Loader2, X, ChevronDown, Filter, Copy, Printer } from 'lucide-vue-next'
+import { BookOpen, Calculator, Languages, FlaskConical, Scale, Search, Loader2, X, ChevronDown, Filter, Copy, Printer, Edit2 } from 'lucide-vue-next'
 import {
   listPoems, listFormulas, listWords, listWordCategories,
-  type Poem, type MathFormula, type EnglishWord,
+  listScience, searchScience, listMoral, searchMoral,
+  teacherUpdateScience, teacherUpdateMoral,
+  type Poem, type MathFormula, type EnglishWord, type ScienceResource, type MoralResource,
 } from '@/api/resource-library'
 import { useAuthStore } from '@/stores/auth'
+import { parseSubjectLeader } from '@gardener/shared/constants'
 import BackBar from '@/components/BackBar.vue'
 import { copyText, printHtml, notify, escapeHtml } from '@/utils/copyPrint'
+import { toast } from '@/utils/feedback'
 
 const auth = useAuthStore()
 
-type Tab = 'poems' | 'formulas' | 'words'
+type Tab = 'poems' | 'formulas' | 'words' | 'science' | 'moral'
 const tabs: { key: Tab; label: string; icon: any }[] = [
   { key: 'poems', label: '古诗词', icon: BookOpen },
   { key: 'formulas', label: '数学公式', icon: Calculator },
   { key: 'words', label: '英语单词', icon: Languages },
+  { key: 'science', label: '科学', icon: FlaskConical },
+  { key: 'moral', label: '道德与法治', icon: Scale },
 ]
-// 按教师任课学科过滤可见 tab：语文→古诗词，数学→公式，英语→单词；
+// 按教师任课学科过滤可见 tab：语文→古诗词，数学→公式，英语→单词，科学→科学，道德与法治→道德与法治无关；
 // 多学科教师显示多个对应 tab；未匹配语数外的教师展示全部（兼容）。
 const teacherSubjects: string[] = Array.isArray(auth.user?.subjects) && auth.user.subjects.length
   ? auth.user.subjects
   : auth.user?.subject ? [auth.user.subject] : []
-const SUBJECT_TAB: Record<string, Tab> = { 语文: 'poems', 数学: 'formulas', 英语: 'words' }
+const SUBJECT_TAB: Record<string, Tab> = { 语文: 'poems', 数学: 'formulas', 英语: 'words', 科学: 'science', '道德与法治': 'moral' }
+// 学科组长：即使未列入任课学科，也应对其负责的资源库可见并可编辑
+const teacherPosition = auth.user?.position || ''
+const leaderSubject = parseSubjectLeader(teacherPosition).subject || ''
+const isScienceLeader = leaderSubject === '科学'
+const isMoralLeader = leaderSubject === '道德与法治'
 const visibleTabs = computed(() => {
-  if (!teacherSubjects.length) return tabs
-  const matched = teacherSubjects.map((s) => SUBJECT_TAB[s]).filter(Boolean) as Tab[]
-  const ordered = tabs.filter((t) => matched.includes(t.key))
-  return ordered.length ? ordered : tabs
+  let result = tabs
+  if (teacherSubjects.length) {
+    const matched = teacherSubjects.map((s) => SUBJECT_TAB[s]).filter(Boolean) as Tab[]
+    result = tabs.filter((t) => matched.includes(t.key))
+    if (!result.length) result = tabs
+  }
+  // 学科组长额外补齐对应 tab
+  const keys = result.map((t) => t.key)
+  if (isScienceLeader && !keys.includes('science')) result = [...result, tabs.find((t) => t.key === 'science')!]
+  if (isMoralLeader && !keys.includes('moral')) result = [...result, tabs.find((t) => t.key === 'moral')!]
+  return result
 })
 // 默认选中第一个可见 tab（即教师主学科对应的资源）
 const tab = ref<Tab>(visibleTabs.value[0]?.key || 'poems')
@@ -41,6 +59,8 @@ const tab = ref<Tab>(visibleTabs.value[0]?.key || 'poems')
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const DYNASTIES = ['唐', '宋', '元', '明', '清', '汉', '南北朝', '魏晋', '先秦', '近现代']
 const FORMULA_CATEGORIES = ['运算定律', '几何公式', '单位换算', '分数小数', '比例百分数', '思维方法']
+const SCIENCE_CATEGORIES = ['物质科学', '生命科学', '地球与宇宙', '技术与工程']
+const MORAL_CATEGORIES = ['个人品德', '家庭美德', '社会公德', '国家情怀']
 
 // ============ 古诗词 ============
 const poems = ref<Poem[]>([])
@@ -128,6 +148,42 @@ const groupedWords = computed(() => {
   return map
 })
 
+// ============ 科学资源（只读 + 科学组长可编辑） ============
+const sciences = ref<ScienceResource[]>([])
+const sciencesLoading = ref(false)
+const scienceCategory = ref('')
+const scienceKeyword = ref('')
+// 科学组长的可编辑副本（仅复制可编辑字段）
+const scienceCats = [...SCIENCE_CATEGORIES]
+
+async function loadSciences() {
+  sciencesLoading.value = true
+  try {
+    sciences.value = await listScience({
+      category: scienceCategory.value || undefined,
+      keyword: scienceKeyword.value.trim() || undefined,
+    })
+  } catch { sciences.value = [] }
+  finally { sciencesLoading.value = false }
+}
+
+// ============ 道德与法治资源（只读 + 道德与法治组长可编辑） ============
+const morals = ref<MoralResource[]>([])
+const moralsLoading = ref(false)
+const moralCategory = ref('')
+const moralKeyword = ref('')
+
+async function loadMorals() {
+  moralsLoading.value = true
+  try {
+    morals.value = await listMoral({
+      category: moralCategory.value || undefined,
+      keyword: moralKeyword.value.trim() || undefined,
+    })
+  } catch { morals.value = [] }
+  finally { moralsLoading.value = false }
+}
+
 // ============ 切换标签页时按需加载 ============
 const loadedTabs = ref<Set<Tab>>(new Set())
 async function switchTab(t: Tab) {
@@ -136,7 +192,9 @@ async function switchTab(t: Tab) {
   loadedTabs.value.add(t)
   if (t === 'poems') await loadPoems()
   else if (t === 'formulas') await loadFormulas()
-  else await loadWords()
+  else if (t === 'words') await loadWords()
+  else if (t === 'science') await loadSciences()
+  else await loadMorals()
 }
 
 onMounted(() => {
@@ -144,7 +202,9 @@ onMounted(() => {
   loadedTabs.value.add(t)
   if (t === 'poems') loadPoems()
   else if (t === 'formulas') loadFormulas()
-  else loadWords()
+  else if (t === 'words') loadWords()
+  else if (t === 'science') loadSciences()
+  else if (t === 'moral') loadMorals()
 })
 
 // 朝代颜色映射，让卡片更有诗意
@@ -218,6 +278,79 @@ async function copyCategory(cat: string, list: EnglishWord[]) {
 }
 function printCategory(cat: string, list: EnglishWord[]) {
   printHtml(`英语单词 · ${cat}`, categoryHtml(cat, list))
+}
+
+// 科学
+function scienceText(s: ScienceResource) {
+  let t = `${s.title}（${s.category}）${s.grade ? ' · ' + s.grade : ''}`
+  if (s.keywords) t += `\n关键词：${s.keywords}`
+  t += `\n\n${s.content}`
+  return t
+}
+function scienceHtml(s: ScienceResource) {
+  return `<div class="item"><div><strong>${escapeHtml(s.title)}</strong> <span class="meta">${escapeHtml(s.category)}</span></div>${s.keywords ? `<div class="ex">关键词：${escapeHtml(s.keywords)}</div>` : ''}<div class="ex">${escapeHtml(s.content)}</div></div>`
+}
+async function copyScience(s: ScienceResource) {
+  const ok = await copyText(scienceText(s))
+  notify(ok ? '已复制该科学资源' : '复制失败', ok ? 'success' : 'error')
+}
+function printScience(s: ScienceResource) {
+  printHtml(`科学 · ${s.title}`, scienceHtml(s))
+}
+
+// 道德与法治
+function moralText(m: MoralResource) {
+  let t = `${m.title}（${m.category}）${m.grade ? ' · ' + m.grade : ''}`
+  if (m.keywords) t += `\n关键词：${m.keywords}`
+  t += `\n\n${m.content}`
+  return t
+}
+function moralHtml(m: MoralResource) {
+  return `<div class="item"><div><strong>${escapeHtml(m.title)}</strong> <span class="meta">${escapeHtml(m.category)}</span></div>${m.keywords ? `<div class="ex">关键词：${escapeHtml(m.keywords)}</div>` : ''}<div class="ex">${escapeHtml(m.content)}</div></div>`
+}
+async function copyMoral(m: MoralResource) {
+  const ok = await copyText(moralText(m))
+  notify(ok ? '已复制该道德与法治资源' : '复制失败', ok ? 'success' : 'error')
+}
+function printMoral(m: MoralResource) {
+  printHtml(`道德与法治 · ${m.title}`, moralHtml(m))
+}
+
+// ============ 学科组长编辑（科学 / 道德与法治） ============
+const editing = ref<{ kind: 'science' | 'moral'; data: any } | null>(null)
+const inputCls = 'w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400'
+
+function editScienceItem(s: ScienceResource) {
+  if (!isScienceLeader) return
+  editing.value = { kind: 'science', data: { ...s } }
+}
+function editMoralItem(m: MoralResource) {
+  if (!isMoralLeader) return
+  editing.value = { kind: 'moral', data: { ...m } }
+}
+
+async function saveLeaderEdit() {
+  if (!editing.value) return
+  const { kind, data } = editing.value
+  try {
+    if (kind === 'science') {
+      await teacherUpdateScience(data.id, {
+        title: data.title, category: data.category, content: data.content,
+        grade: data.grade, keywords: data.keywords, sortOrder: data.sortOrder,
+      })
+      await loadSciences()
+    } else {
+      await teacherUpdateMoral(data.id, {
+        title: data.title, category: data.category, content: data.content,
+        grade: data.grade, keywords: data.keywords, sortOrder: data.sortOrder,
+      })
+      await loadMorals()
+    }
+    editing.value = null
+    toast.success('已保存修改')
+  } catch (e: any) {
+    toast.error(e?.message || '保存失败')
+  }
 }
 </script>
 
@@ -396,5 +529,130 @@ function printCategory(cat: string, list: EnglishWord[]) {
         </div>
       </div>
     </template>
+
+    <!-- ============ 科学资源 ============ -->
+    <template v-if="tab === 'science'">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
+          <input v-model="scienceKeyword" @keyup.enter="loadSciences" placeholder="搜索科学标题或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
+          <button v-if="scienceKeyword" class="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-300 hover:text-cocoa-500" @click="scienceKeyword = ''; loadSciences()"><X class="w-4 h-4" /></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-cocoa-400 flex items-center gap-1"><Filter class="w-3 h-3" />分类</span>
+          <button v-for="c in ['', ...scienceCats]" :key="c"
+            :class="['px-2.5 py-1 rounded-full text-xs border transition-colors', scienceCategory === c ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-500 hover:bg-cream-50']"
+            @click="scienceCategory = c; loadSciences()">{{ c || '全部' }}</button>
+        </div>
+      </div>
+
+      <div v-if="sciencesLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
+      <div v-else-if="!sciences.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+        <FlaskConical class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
+        <p>暂无科学资源</p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <div v-for="s in sciences" :key="s.id" class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="font-medium text-cocoa-900">{{ s.title }}</div>
+                <span class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ s.category }}</span>
+                <span v-if="s.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ s.grade }}</span>
+              </div>
+              <div class="mt-2 text-sm text-cocoa-700 leading-relaxed whitespace-pre-line">{{ s.content }}</div>
+              <div v-if="s.keywords" class="text-xs text-cocoa-400 mt-2">🏷 {{ s.keywords }}</div>
+            </div>
+            <button v-if="isScienceLeader" class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="编辑" @click="editScienceItem(s)"><Edit2 class="w-4 h-4" /></button>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyScience(s)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printScience(s)"><Printer class="w-3.5 h-3.5" /> 打印</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ============ 道德与法治资源 ============ -->
+    <template v-if="tab === 'moral'">
+      <div class="bg-surface rounded-2xl p-4 shadow-softer space-y-3">
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cocoa-300" />
+          <input v-model="moralKeyword" @keyup.enter="loadMorals" placeholder="搜索标题或关键字" class="w-full pl-9 pr-9 py-2 rounded-xl border border-cream-200 focus:outline-none focus:border-butter-400" />
+          <button v-if="moralKeyword" class="absolute right-3 top-1/2 -translate-y-1/2 text-cocoa-300 hover:text-cocoa-500" @click="moralKeyword = ''; loadMorals()"><X class="w-4 h-4" /></button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-cocoa-400 flex items-center gap-1"><Filter class="w-3 h-3" />主题</span>
+          <button v-for="c in ['', ...MORAL_CATEGORIES]" :key="c"
+            :class="['px-2.5 py-1 rounded-full text-xs border transition-colors', moralCategory === c ? 'border-butter-400 bg-butter-100 text-butter-600' : 'border-cream-200 text-cocoa-500 hover:bg-cream-50']"
+            @click="moralCategory = c; loadMorals()">{{ c || '全部' }}</button>
+        </div>
+      </div>
+
+      <div v-if="moralsLoading" class="text-cocoa-400 py-8 text-center flex items-center justify-center gap-2"><Loader2 class="w-4 h-4 animate-spin" /> 加载中…</div>
+      <div v-else-if="!morals.length" class="bg-surface rounded-2xl p-10 text-center text-cocoa-400 shadow-softer">
+        <Scale class="w-12 h-12 mx-auto mb-3 text-cocoa-200" />
+        <p>暂无道德与法治资源</p>
+      </div>
+
+      <div v-else class="space-y-2">
+        <div v-for="m in morals" :key="m.id" class="bg-surface rounded-2xl border border-cream-200 shadow-softer p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="font-medium text-cocoa-900">{{ m.title }}</div>
+                <span class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ m.category }}</span>
+                <span v-if="m.grade" class="text-xs px-1.5 py-0.5 rounded-full bg-cream-100 text-cocoa-500">{{ m.grade }}</span>
+              </div>
+              <div class="mt-2 text-sm text-cocoa-700 leading-relaxed whitespace-pre-line">{{ m.content }}</div>
+              <div v-if="m.keywords" class="text-xs text-cocoa-400 mt-2">🏷 {{ m.keywords }}</div>
+            </div>
+            <button v-if="isMoralLeader" class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500 shrink-0" title="编辑" @click="editMoralItem(m)"><Edit2 class="w-4 h-4" /></button>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-cream-100">
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="copyMoral(m)"><Copy class="w-3.5 h-3.5" /> 复制</button>
+            <button class="flex items-center gap-1 text-xs text-cocoa-500 hover:text-butter-600 transition-colors" @click="printMoral(m)"><Printer class="w-3.5 h-3.5" /> 打印</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 学科组长编辑弹窗 -->
+    <div v-if="editing" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="editing = null">
+      <div class="bg-surface rounded-2xl p-6 w-full max-w-lg mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-cocoa-900">
+            编辑{{ editing.kind === 'science' ? '科学资源' : '道德与法治资源' }}
+          </h3>
+          <button @click="editing = null"><X class="w-5 h-5 text-cocoa-400" /></button>
+        </div>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="text-sm text-cocoa-500">标题</label>
+              <input v-model="editing.data.title" :class="inputCls" /></div>
+            <div><label class="text-sm text-cocoa-500">{{ editing.kind === 'science' ? '分类' : '主题' }}</label>
+              <select v-model="editing.data.category" :class="inputCls">
+                <option v-for="c in (editing.kind === 'science' ? SCIENCE_CATEGORIES : MORAL_CATEGORIES)" :key="c" :value="c">{{ c }}</option>
+                <option value="其他">其他</option>
+              </select></div>
+            <div><label class="text-sm text-cocoa-500">年级</label>
+              <select v-model="editing.data.grade" :class="inputCls">
+                <option v-for="g in GRADES" :key="g" :value="g">{{ g }}</option>
+              </select></div>
+            <div><label class="text-sm text-cocoa-500">排序</label>
+              <input v-model.number="editing.data.sortOrder" type="number" :class="inputCls" /></div>
+          </div>
+          <div><label class="text-sm text-cocoa-500">内容</label>
+            <textarea v-model="editing.data.content" rows="5" :class="inputCls + ' resize-none'" /></div>
+          <div><label class="text-sm text-cocoa-500">关键字（逗号分隔）</label>
+            <input v-model="editing.data.keywords" :class="inputCls" /></div>
+        </div>
+        <div class="flex justify-end gap-2 mt-5">
+          <button class="px-4 py-2 rounded-xl bg-cream-100 text-cocoa-600 hover:bg-cream-200" @click="editing = null">取消</button>
+          <button class="px-5 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600" @click="saveLeaderEdit">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

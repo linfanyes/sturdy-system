@@ -8,12 +8,19 @@
       <text class="loading-text">加载中…</text>
     </view>
     <view class="hd">
-      <view class="t">🏡 {{ me?.studentName ? me.studentName + '同学家长' : '家长中心' }}</view>
+      <view class="t">🏡 {{ greeting }}{{ me?.studentName ? me.studentName + '同学家长' : '家长' }}</view>
       <view class="hd-actions">
+        <text class="out" @click="openEditStudentInfo">📝 维护信息</text>
+        <text class="out" @click="openStudentRequests">📋 申请记录</text>
         <text class="out" @click="openMessageCenter">💬 留言</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
+    </view>
+    <view class="stu-bar" v-if="me && me.studentName">
+      <text class="sb-item">姓名：{{ me.studentName }}</text>
+      <text class="sb-item">学号：{{ me.studentNo || '--' }}</text>
+      <text class="sb-item">班级：{{ me.className || '--' }}</text>
     </view>
 
     <!-- 孩子列表子组件 -->
@@ -290,6 +297,14 @@ async function subscribeGuide() {
 
 const me = ref(null)
 const kids = ref([])
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6) return '凌晨好，'
+  if (h < 12) return '早上好，'
+  if (h < 14) return '中午好，'
+  if (h < 18) return '下午好，'
+  return '晚上好，'
+})
 const activeKidId = ref('')
 const notices = ref([])
 const exams = ref([])
@@ -307,8 +322,8 @@ const filterTerm = ref('')
 const filterExamName = ref('')
 const filterSubject = ref('')
 
-function onTermChange(e) { const idx = e.detail.value; filterTerm.value = idx === 0 ? '' : termOptions.value[idx - 1] }
-function onExamNameChange(e) { const idx = e.detail.value; filterExamName.value = idx === 0 ? '' : examNameOptions.value[idx - 1] }
+function onTermChange(e) { const idx = e.detail.value; filterTerm.value = idx === 0 ? '' : termOptions.value[idx - 1]; filterExamName.value = ''; filterSubject.value = '' }
+function onExamNameChange(e) { const idx = e.detail.value; filterExamName.value = idx === 0 ? '' : examNameOptions.value[idx - 1]; filterSubject.value = '' }
 function onSubjectChange(e) { const idx = e.detail.value; filterSubject.value = idx === 0 ? '' : subjectOptions.value[idx - 1] }
 
 const termOptions = computed(() => { const set = new Set(); for (const e of exams.value) { if (e.term) set.add(e.term) }; return Array.from(set) })
@@ -554,7 +569,9 @@ onShow(() => { if (!parent.token) { uni.reLaunch({ url: '/pages/parent-login/par
 <style scoped>
 .page { display: flex; flex-direction: column; height: 100vh; padding: 24rpx; box-sizing: border-box; }
 .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10rpx; }
-.hd-actions { display: flex; gap: 16rpx; }
+.hd-actions { display: flex; gap: 16rpx; flex-wrap: wrap; justify-content: flex-end; }
+.stu-bar { display: flex; flex-wrap: wrap; gap: 20rpx; margin-bottom: 10rpx; background: var(--c-card); border-radius: 12rpx; padding: 16rpx 20rpx; }
+.sb-item { font-size: 24rpx; color: var(--c-title); font-weight: 600; }
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
 .out { font-size: 24rpx; color: #9aa0a6; }
 .tabs { display: flex; gap: 10rpx; margin-bottom: 14rpx; }

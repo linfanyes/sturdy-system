@@ -150,19 +150,97 @@
         <EmptyState v-if="!loading.words && !words.length" icon="🔤" text="暂无单词" hint="换个分类或关键词试试" />
       </scroll-view>
     </block>
+
+    <!-- ============ 科学 ============ -->
+    <block v-if="tab === 'science'">
+      <view class="search-bar">
+        <view class="search-input">
+          <text class="s-ic">🔍</text>
+          <input
+            v-model="scienceKeyword"
+            class="s-inp"
+            placeholder="搜索标题 / 内容 / 关键词"
+            confirm-type="search"
+            @confirm="loadSciences"
+          />
+          <text v-if="scienceKeyword" class="s-clr" @click="clearScienceKeyword">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-x class="cat-scroll" show-scrollbar="false">
+        <view class="cat-row">
+          <view
+            v-for="c in scienceCatOptions" :key="c"
+            class="cat-tag" :class="{ on: scienceCategory === c }"
+            @click="pickScienceCat(c)"
+          >{{ c }}</view>
+        </view>
+      </scroll-view>
+
+      <scroll-view scroll-y class="list">
+        <view v-for="s in sciences" :key="s.id" class="formula-card">
+          <view class="formula-top">
+            <text class="formula-title">{{ s.title }}</text>
+            <text v-if="s.category" class="formula-cat">{{ s.category }}</text>
+          </view>
+          <text v-if="s.grade && s.grade !== '通用'" class="poem-grade">{{ s.grade }}</text>
+          <text v-if="s.content" class="formula-explain">{{ s.content }}</text>
+        </view>
+        <EmptyState v-if="!loading.science && !sciences.length" icon="🔬" text="暂无科学资源" hint="换个类别或关键词试试" />
+      </scroll-view>
+    </block>
+
+    <!-- ============ 道德与法治 ============ -->
+    <block v-if="tab === 'moral'">
+      <view class="search-bar">
+        <view class="search-input">
+          <text class="s-ic">🔍</text>
+          <input
+            v-model="moralKeyword"
+            class="s-inp"
+            placeholder="搜索标题 / 内容 / 关键词"
+            confirm-type="search"
+            @confirm="loadMorals"
+          />
+          <text v-if="moralKeyword" class="s-clr" @click="clearMoralKeyword">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-x class="cat-scroll" show-scrollbar="false">
+        <view class="cat-row">
+          <view
+            v-for="c in moralCatOptions" :key="c"
+            class="cat-tag" :class="{ on: moralCategory === c }"
+            @click="pickMoralCat(c)"
+          >{{ c }}</view>
+        </view>
+      </scroll-view>
+
+      <scroll-view scroll-y class="list">
+        <view v-for="m in morals" :key="m.id" class="formula-card">
+          <view class="formula-top">
+            <text class="formula-title">{{ m.title }}</text>
+            <text v-if="m.category" class="formula-cat">{{ m.category }}</text>
+          </view>
+          <text v-if="m.grade && m.grade !== '通用'" class="poem-grade">{{ m.grade }}</text>
+          <text v-if="m.content" class="formula-explain">{{ m.content }}</text>
+        </view>
+        <EmptyState v-if="!loading.moral && !morals.length" icon="⚖️" text="暂无道德与法治资源" hint="换个类别或关键词试试" />
+      </scroll-view>
+    </block>
   </view>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listPoems, listFormulas, listWords, listWordCategories } from '@/api/resource-library'
+import { listPoems, listFormulas, listWords, listWordCategories, listScience, listMoral } from '@/api/resource-library'
 import { theme, auth } from '../../common/store'
 
 const tabs = [
   { key: 'poems', label: '古诗词', icon: '📜' },
   { key: 'formulas', label: '数学公式', icon: '📐' },
   { key: 'words', label: '英语单词', icon: '🔤' },
+  { key: 'science', label: '科学', icon: '🔬' },
+  { key: 'moral', label: '道德与法治', icon: '⚖️' },
 ]
 // 按教师主学科默认选中对应 tab：语文→古诗词，数学→公式，英语→单词
 const _teacherSubject = (auth.user && (auth.user.subjects && auth.user.subjects[0])) || (auth.user && auth.user.subject) || ''
@@ -176,12 +254,18 @@ const dynastyValues = ['', '唐', '宋', '元', '明', '清', '近现代', '其�
 const dynastyLabels = ['全部朝代', ...dynastyValues.slice(1)]
 const formulaCats = ['全部', '运算定律', '几何公式', '单位换算', '分数小数', '比例百分数', '思维方法']
 const defaultWordCats = ['全部', '季节', '食物', '水果', '数字', '颜色', '动物', '身体', '家庭', '衣物', '交通']
+const scienceCats = ['全部', '物质科学', '生命科学', '地球与宇宙', '技术与工程']
+const moralCats = ['全部', '个人品德', '家庭美德', '社会公德', '国家情怀']
 
 // 状态
 const poems = ref([])
 const formulas = ref([])
 const words = ref([])
+const sciences = ref([])
+const morals = ref([])
 const wordCatOptions = ref([...defaultWordCats])
+const scienceCatOptions = ref([...scienceCats])
+const moralCatOptions = ref([...moralCats])
 
 const poemKeyword = ref('')
 const poemGrade = ref('')
@@ -195,7 +279,12 @@ const formulaCategory = ref('全部')
 const wordKeyword = ref('')
 const wordCategory = ref('全部')
 
-const loading = reactive({ poems: false, formulas: false, words: false })
+const scienceKeyword = ref('')
+const scienceCategory = ref('全部')
+const moralKeyword = ref('')
+const moralCategory = ref('全部')
+
+const loading = reactive({ poems: false, formulas: false, words: false, science: false, moral: false })
 
 async function loadPoems() {
   loading.poems = true
@@ -257,6 +346,38 @@ async function loadWordCategories() {
   }
 }
 
+async function loadSciences() {
+  loading.science = true
+  try {
+    const cat = scienceCategory.value === '全部' ? '' : scienceCategory.value
+    const data = await listScience({
+      category: cat,
+      keyword: scienceKeyword.value.trim(),
+    })
+    sciences.value = Array.isArray(data) ? data : (data?.items || data?.list || [])
+  } catch (e) {
+    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    sciences.value = []
+  }
+  loading.science = false
+}
+
+async function loadMorals() {
+  loading.moral = true
+  try {
+    const cat = moralCategory.value === '全部' ? '' : moralCategory.value
+    const data = await listMoral({
+      category: cat,
+      keyword: moralKeyword.value.trim(),
+    })
+    morals.value = Array.isArray(data) ? data : (data?.items || data?.list || [])
+  } catch (e) {
+    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    morals.value = []
+  }
+  loading.moral = false
+}
+
 function switchTab(key) {
   tab.value = key
   if (key === 'poems' && !poems.value.length) loadPoems()
@@ -265,6 +386,8 @@ function switchTab(key) {
     if (!wordCatOptions.value.length || wordCatOptions.value.length <= 1) loadWordCategories()
     if (!words.value.length) loadWords()
   }
+  else if (key === 'science' && !sciences.value.length) loadSciences()
+  else if (key === 'moral' && !morals.value.length) loadMorals()
 }
 
 function onPoemGrade(e) {
@@ -297,6 +420,22 @@ function clearWordKeyword() {
   wordKeyword.value = ''
   loadWords()
 }
+function pickScienceCat(c) {
+  scienceCategory.value = c
+  loadSciences()
+}
+function clearScienceKeyword() {
+  scienceKeyword.value = ''
+  loadSciences()
+}
+function pickMoralCat(c) {
+  moralCategory.value = c
+  loadMorals()
+}
+function clearMoralKeyword() {
+  moralKeyword.value = ''
+  loadMorals()
+}
 
 // 古诗词预览：取前 2 行
 function poemPreview(content) {
@@ -315,12 +454,16 @@ onShow(() => {
   loadWordCategories()
   if (tab.value === 'poems') loadPoems()
   else if (tab.value === 'formulas') loadFormulas()
+  else if (tab.value === 'science') loadSciences()
+  else if (tab.value === 'moral') loadMorals()
   else loadWords()
 })
 
 onPullDownRefresh(async () => {
   if (tab.value === 'poems') await loadPoems()
   else if (tab.value === 'formulas') await loadFormulas()
+  else if (tab.value === 'science') await loadSciences()
+  else if (tab.value === 'moral') await loadMorals()
   else await loadWords()
   uni.stopPullDownRefresh()
 })

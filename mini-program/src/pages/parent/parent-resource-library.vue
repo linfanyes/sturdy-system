@@ -106,6 +106,78 @@
         <EmptyState v-if="!loading && !list.length" icon="🔤" text="暂无单词" hint="换个分类或关键词试试" />
       </scroll-view>
     </block>
+
+    <!-- ============ 科学资源 ============ -->
+    <block v-if="tab === 'science'">
+      <view class="search-bar">
+        <view class="search-input">
+          <text class="s-ic">🔍</text>
+          <input
+            v-model="keyword"
+            class="s-inp"
+            placeholder="搜索科学标题 / 内容 / 关键词"
+            confirm-type="search"
+            @confirm="reload"
+          />
+          <text v-if="keyword" class="s-clr" @click="clearKeyword">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-x class="cat-scroll" show-scrollbar="false">
+        <view class="cat-row">
+          <view
+            v-for="c in scienceCatOptions" :key="c"
+            class="cat-tag" :class="{ on: scienceCategory === c }"
+            @click="scienceCategory = c; reload()"
+          >{{ c }}</view>
+        </view>
+      </scroll-view>
+      <scroll-view scroll-y class="list">
+        <view v-for="s in list" :key="s.id" class="formula-card">
+          <view class="formula-top">
+            <text class="formula-title">{{ s.title }}</text>
+            <text v-if="s.category && s.category !== '全部'" class="formula-cat">{{ s.category }}</text>
+          </view>
+          <text v-if="s.content" class="formula-explain">{{ s.content }}</text>
+        </view>
+        <EmptyState v-if="!loading && !list.length" icon="🔬" text="暂无科学资源" hint="换个分类或关键词试试" />
+      </scroll-view>
+    </block>
+
+    <!-- ============ 道德与法治资源 ============ -->
+    <block v-if="tab === 'moral'">
+      <view class="search-bar">
+        <view class="search-input">
+          <text class="s-ic">🔍</text>
+          <input
+            v-model="keyword"
+            class="s-inp"
+            placeholder="搜索标题 / 内容 / 关键词"
+            confirm-type="search"
+            @confirm="reload"
+          />
+          <text v-if="keyword" class="s-clr" @click="clearKeyword">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-x class="cat-scroll" show-scrollbar="false">
+        <view class="cat-row">
+          <view
+            v-for="c in moralCatOptions" :key="c"
+            class="cat-tag" :class="{ on: moralCategory === c }"
+            @click="moralCategory = c; reload()"
+          >{{ c }}</view>
+        </view>
+      </scroll-view>
+      <scroll-view scroll-y class="list">
+        <view v-for="m in list" :key="m.id" class="formula-card">
+          <view class="formula-top">
+            <text class="formula-title">{{ m.title }}</text>
+            <text v-if="m.category && m.category !== '全部'" class="formula-cat">{{ m.category }}</text>
+          </view>
+          <text v-if="m.content" class="formula-explain">{{ m.content }}</text>
+        </view>
+        <EmptyState v-if="!loading && !list.length" icon="⚖️" text="暂无道德与法治资源" hint="换个分类或关键词试试" />
+      </scroll-view>
+    </block>
   </view>
 </template>
 
@@ -119,6 +191,8 @@ const tabs = [
   { key: 'poems', label: '古诗词' },
   { key: 'formulas', label: '数学公式' },
   { key: 'words', label: '英语单词' },
+  { key: 'science', label: '科学' },
+  { key: 'moral', label: '道德与法治' },
 ]
 const tab = ref('poems')
 
@@ -128,15 +202,21 @@ const dynastyValues = ['', '唐', '宋', '元', '明', '清', '近现代', '其�
 const dynastyLabels = ['全部朝代', ...dynastyValues.slice(1)]
 const formulaCats = ['全部', '运算定律', '几何公式', '单位换算', '分数小数', '比例百分数', '思维方法']
 const defaultWordCats = ['全部', '季节', '食物', '水果', '数字', '颜色', '动物', '身体', '家庭', '衣物', '交通']
+const scienceCats = ['全部', '物质科学', '生命科学', '地球与宇宙', '技术与工程']
+const moralCats = ['全部', '个人品德', '家庭美德', '社会公德', '国家情怀']
 
 const list = ref([])
 const wordCatOptions = ref([...defaultWordCats])
+const scienceCatOptions = ref([...scienceCats])
+const moralCatOptions = ref([...moralCats])
 const keyword = ref('')
 const grade = ref('')
 const dynasty = ref('')
 const gradeIdx = ref(0)
 const dynastyIdx = ref(0)
 const category = ref('全部')
+const scienceCategory = ref('全部')
+const moralCategory = ref('全部')
 const loading = ref(false)
 
 const searchPlaceholder = computed(() => {
@@ -187,11 +267,17 @@ async function reload() {
       '/resource-library/formulas' + qs({ category: cat, keyword: kw }),
       '加载公式'
     )
-  } else {
-    const cat = category.value === '全部' ? '' : category.value
+  } else if (tab.value === 'science') {
+    const cat = scienceCategory.value === '全部' ? '' : scienceCategory.value
     list.value = await fetchList(
-      '/resource-library/words' + qs({ category: cat, keyword: kw }),
-      '加载单词'
+      '/resource-library/science' + qs({ category: cat, keyword: kw }),
+      '加载科学资源'
+    )
+  } else {
+    const cat = moralCategory.value === '全部' ? '' : moralCategory.value
+    list.value = await fetchList(
+      '/resource-library/moral' + qs({ category: cat, keyword: kw }),
+      '加载道德与法治资源'
     )
   }
 }
@@ -210,6 +296,8 @@ function switchTab(key) {
   tab.value = key
   keyword.value = ''
   category.value = '全部'
+  scienceCategory.value = '全部'
+  moralCategory.value = '全部'
   if (key === 'words') {
     if (wordCatOptions.value.length <= 1) loadWordCategories()
   }

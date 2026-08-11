@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, In, Like } from 'typeorm'
-import { Poem, MathFormula, EnglishWord } from './resource-library.entity'
+import { Poem, MathFormula, EnglishWord, Science, Moral } from './resource-library.entity'
 import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
-import { SEED_POEMS, SEED_MATH_FORMULAS, SEED_ENGLISH_WORDS } from './resource-library.seed-data'
+import { SEED_POEMS, SEED_MATH_FORMULAS, SEED_ENGLISH_WORDS, SEED_SCIENCE, SEED_MORAL } from './resource-library.seed-data'
 import { GLOBAL_SCHOOL_ID } from '../common/constants/global-school-id'
 
 /**
@@ -21,6 +21,8 @@ export class ResourceLibraryService {
     @InjectRepository(Poem) private poemRepo: Repository<Poem>,
     @InjectRepository(MathFormula) private formulaRepo: Repository<MathFormula>,
     @InjectRepository(EnglishWord) private wordRepo: Repository<EnglishWord>,
+    @InjectRepository(Science) private scienceRepo: Repository<Science>,
+    @InjectRepository(Moral) private moralRepo: Repository<Moral>,
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(ClassItem) private classRepo: Repository<ClassItem>,
     @InjectRepository(Student) private studentRepo: Repository<Student>,
@@ -131,6 +133,60 @@ export class ResourceLibraryService {
     return [...new Set(words.map(w => w.category).filter(Boolean))]
   }
 
+  // ============ 科学资源库 ============
+
+  async listScience(schoolId: string, q?: { grade?: string; category?: string; keyword?: string }) {
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
+    if (q?.grade && q.grade !== '通用') where.grade = q.grade
+    if (q?.category) where.category = q.category
+    if (q?.keyword) {
+      where.title = Like(`%${q.keyword}%`)
+    }
+    return this.scienceRepo.find({ where, order: { sortOrder: 'ASC', createdAt: 'ASC' } })
+  }
+
+  async searchScience(schoolId: string, keyword: string, limit = 50) {
+    if (!keyword?.trim()) return []
+    const kw = keyword.trim()
+    const scopes = In([GLOBAL_SCHOOL_ID, schoolId])
+    return this.scienceRepo.find({
+      where: [
+        { schoolId: scopes, status: 'published', title: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', content: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', keywords: Like(`%${kw}%`) },
+      ],
+      take: limit,
+      order: { sortOrder: 'ASC' },
+    })
+  }
+
+  // ============ 道德与法治资源库 ============
+
+  async listMoral(schoolId: string, q?: { grade?: string; category?: string; keyword?: string }) {
+    const where: any = { schoolId: In([GLOBAL_SCHOOL_ID, schoolId]), status: 'published' }
+    if (q?.grade && q.grade !== '通用') where.grade = q.grade
+    if (q?.category) where.category = q.category
+    if (q?.keyword) {
+      where.title = Like(`%${q.keyword}%`)
+    }
+    return this.moralRepo.find({ where, order: { sortOrder: 'ASC', createdAt: 'ASC' } })
+  }
+
+  async searchMoral(schoolId: string, keyword: string, limit = 50) {
+    if (!keyword?.trim()) return []
+    const kw = keyword.trim()
+    const scopes = In([GLOBAL_SCHOOL_ID, schoolId])
+    return this.moralRepo.find({
+      where: [
+        { schoolId: scopes, status: 'published', title: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', content: Like(`%${kw}%`) },
+        { schoolId: scopes, status: 'published', keywords: Like(`%${kw}%`) },
+      ],
+      take: limit,
+      order: { sortOrder: 'ASC' },
+    })
+  }
+
   // ============ 校管 CRUD ============
 
   // 古诗词
@@ -187,12 +243,48 @@ export class ResourceLibraryService {
     return { ok: true }
   }
 
+  // 科学资源
+  async createScience(schoolId: string, data: Partial<Science>) {
+    if (!data?.title) throw new BadRequestException('标题不能为空')
+    return this.scienceRepo.save(this.scienceRepo.create({ ...data, schoolId }))
+  }
+  async updateScience(schoolId: string, id: string, data: Partial<Science>) {
+    const s = await this.scienceRepo.findOne({ where: { id, schoolId } })
+    if (!s) throw new NotFoundException('科学资源不存在')
+    Object.assign(s, data)
+    return this.scienceRepo.save(s)
+  }
+  async deleteScience(schoolId: string, id: string) {
+    const s = await this.scienceRepo.findOne({ where: { id, schoolId } })
+    if (!s) throw new NotFoundException('科学资源不存在')
+    await this.scienceRepo.delete(id)
+    return { ok: true }
+  }
+
+  // 道德与法治资源
+  async createMoral(schoolId: string, data: Partial<Moral>) {
+    if (!data?.title) throw new BadRequestException('标题不能为空')
+    return this.moralRepo.save(this.moralRepo.create({ ...data, schoolId }))
+  }
+  async updateMoral(schoolId: string, id: string, data: Partial<Moral>) {
+    const m = await this.moralRepo.findOne({ where: { id, schoolId } })
+    if (!m) throw new NotFoundException('道德与法治资源不存在')
+    Object.assign(m, data)
+    return this.moralRepo.save(m)
+  }
+  async deleteMoral(schoolId: string, id: string) {
+    const m = await this.moralRepo.findOne({ where: { id, schoolId } })
+    if (!m) throw new NotFoundException('道德与法治资源不存在')
+    await this.moralRepo.delete(id)
+    return { ok: true }
+  }
+
   // ============ 学科组长编辑权限 ============
 
   /** 解析教师职务中的学科组长信息 */
   private parseLeaderPosition(position: string): { subject?: string; grade?: string } {
     if (!position) return {}
-    const subjects = ['语文', '数学', '英语', '科学', '音乐', '美术', '体育', '信息技术']
+    const subjects = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术']
     const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级',
       '初一', '初二', '初三', '高一', '高二', '高三']
     for (const subject of subjects) {
@@ -205,10 +297,10 @@ export class ResourceLibraryService {
   }
 
   /** 判断教师是否有权编辑某类资源 */
-  private canEditResourceType(user: any, resourceType: 'poem' | 'formula' | 'word'): boolean {
+  private canEditResourceType(user: any, resourceType: 'poem' | 'formula' | 'word' | 'science' | 'moral'): boolean {
     if (user?.role === 'school_admin' || user?.role === 'super') return true
     if (user?.role !== 'teacher') return false
-    const subjectMap: Record<string, string> = { poem: '语文', formula: '数学', word: '英语' }
+    const subjectMap: Record<string, string> = { poem: '语文', formula: '数学', word: '英语', science: '科学', moral: '道德与法治' }
     const requiredSubject = subjectMap[resourceType]
     if (!requiredSubject) return false
     // position 中的学科需匹配（grade 不限制资源编辑，只限制教材编辑）
@@ -217,12 +309,12 @@ export class ResourceLibraryService {
   }
 
   /** 学科组长从 DB 读取最新 position 后判断权限 */
-  private async checkEditPermission(user: any, resourceType: 'poem' | 'formula' | 'word'): Promise<void> {
+  private async checkEditPermission(user: any, resourceType: 'poem' | 'formula' | 'word' | 'science' | 'moral'): Promise<void> {
     if (user?.role === 'school_admin' || user?.role === 'super') return
     if (user?.role !== 'teacher') throw new ForbiddenException('仅学科组长可编辑')
     const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
     const { subject } = this.parseLeaderPosition(teacher?.position || user?.position || '')
-    const subjectMap: Record<string, string> = { poem: '语文', formula: '数学', word: '英语' }
+    const subjectMap: Record<string, string> = { poem: '语文', formula: '数学', word: '英语', science: '科学', moral: '道德与法治' }
     if (subject !== subjectMap[resourceType]) {
       throw new ForbiddenException(`仅${subjectMap[resourceType]}组长可编辑此资源`)
     }
@@ -262,6 +354,29 @@ export class ResourceLibraryService {
     return this.wordRepo.save(w)
   }
 
+  async teacherUpdateScience(user: any, id: string, data: Partial<Science>) {
+    await this.checkEditPermission(user, 'science')
+    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const s = await this.scienceRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
+    if (!s) throw new NotFoundException('科学资源不存在')
+    // 学科组长仅可修改内容字段，不可改 schoolId/status
+    for (const k of ['title', 'category', 'content', 'grade', 'keywords', 'sortOrder']) {
+      if (data[k] !== undefined) (s as any)[k] = data[k]
+    }
+    return this.scienceRepo.save(s)
+  }
+
+  async teacherUpdateMoral(user: any, id: string, data: Partial<Moral>) {
+    await this.checkEditPermission(user, 'moral')
+    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const m = await this.moralRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
+    if (!m) throw new NotFoundException('道德与法治资源不存在')
+    for (const k of ['title', 'category', 'content', 'grade', 'keywords', 'sortOrder']) {
+      if (data[k] !== undefined) (m as any)[k] = data[k]
+    }
+    return this.moralRepo.save(m)
+  }
+
   // ============ 一键初始化种子数据 ============
 
   /**
@@ -274,6 +389,8 @@ export class ResourceLibraryService {
     let poemCreated = 0, poemSkipped = 0
     let formulaCreated = 0, formulaSkipped = 0
     let wordCreated = 0, wordSkipped = 0
+    let scienceCreated = 0, scienceSkipped = 0
+    let moralCreated = 0, moralSkipped = 0
 
     // 古诗词
     for (let i = 0; i < SEED_POEMS.length; i++) {
@@ -314,10 +431,36 @@ export class ResourceLibraryService {
       wordCreated++
     }
 
+    // 科学资源
+    for (let i = 0; i < SEED_SCIENCE.length; i++) {
+      const seed = SEED_SCIENCE[i]
+      const existing = await this.scienceRepo.findOne({ where: { schoolId: scope, title: seed.title } })
+      if (existing) { scienceSkipped++; continue }
+      await this.scienceRepo.save(this.scienceRepo.create({
+        schoolId: scope, title: seed.title, category: seed.category, content: seed.content,
+        grade: seed.grade, keywords: seed.keywords, sortOrder: i + 1, status: 'published',
+      }))
+      scienceCreated++
+    }
+
+    // 道德与法治资源
+    for (let i = 0; i < SEED_MORAL.length; i++) {
+      const seed = SEED_MORAL[i]
+      const existing = await this.moralRepo.findOne({ where: { schoolId: scope, title: seed.title } })
+      if (existing) { moralSkipped++; continue }
+      await this.moralRepo.save(this.moralRepo.create({
+        schoolId: scope, title: seed.title, category: seed.category, content: seed.content,
+        grade: seed.grade, keywords: seed.keywords, sortOrder: i + 1, status: 'published',
+      }))
+      moralCreated++
+    }
+
     return {
       poems: { created: poemCreated, skipped: poemSkipped },
       formulas: { created: formulaCreated, skipped: formulaSkipped },
       words: { created: wordCreated, skipped: wordSkipped },
+      science: { created: scienceCreated, skipped: scienceSkipped },
+      moral: { created: moralCreated, skipped: moralSkipped },
     }
   }
 }

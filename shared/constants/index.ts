@@ -107,10 +107,10 @@ export const BASE_POSITIONS: string[] = [
   '班主任', '教研组长', '年级组长', '教导主任', '副校长', '校长',
 ]
 
-/** 生成学科组长职务选项（小学 6 个年级 × 3 主科） */
+/** 生成学科组长职务选项（小学 6 个年级 × 主科） */
 function buildSubjectLeaderPositions(): string[] {
   const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
-  const subjects = ['语文', '数学', '英语']
+  const subjects = ['语文', '数学', '英语', '科学', '道德与法治']
   const list: string[] = []
   // 各年级各学科组长
   for (const g of grades) {
@@ -137,7 +137,7 @@ export const ALL_POSITIONS: string[] = [...BASE_POSITIONS, ...SUBJECT_LEADER_POS
 export function parseSubjectLeader(position: string): { subject?: string; grade?: string } {
   if (!position) return {}
   // 匹配 "{年级}{学科}组长" 或 "{学科}组长"
-  for (const subject of ['语文', '数学', '英语', '科学', '音乐', '美术', '体育', '信息技术']) {
+  for (const subject of ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术']) {
     if (position === `${subject}组长`) return { subject }
     for (const grade of GRADE_OPTIONS) {
       if (position === `${grade}${subject}组长`) return { subject, grade }

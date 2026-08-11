@@ -94,3 +94,11 @@ server/.qa-dist/
 # 注意：否定规则必须放在 dist/ 忽略规则之后才生效。
 !server/vendor/gardener-shared/dist/
 !server/vendor/gardener-shared/dist/**
+
+# E2E 运行产物与依赖（脚本本体如 e2e/*.mjs 仍可正常入库）
+e2e/node_modules/
+e2e/reports/
+
+# 小程序接口/页面巡检的本机输出（每次运行都会变，勿入库）
+scripts/mini-api-test-results.json
+scripts/mini-pages.json

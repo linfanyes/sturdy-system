@@ -62,6 +62,53 @@ function clearSearch() {
 const SUBJECTS = ['语文', '数学', '英语']
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
 const studentName = computed(() => auth.user?.studentName || '')
+
+/**
+ * 按 年级 → 学科 → 教材 → 单元 → 知识点 分组。
+ * 后端 GET /textbooks/tree 已按 subject/grade/term 过滤并返回教材树，
+ * 此处仅做前端分组展示，不改动接口结构；筛选条件由 filterSubject/filterGrade 控制。
+ */
+const groupedTree = computed(() => {
+  const byGrade = new Map<string, Map<string, TextbookTreeNode[]>>()
+  for (const t of tree.value) {
+    if (!byGrade.has(t.grade)) byGrade.set(t.grade, new Map())
+    const bySubject = byGrade.get(t.grade)!
+    if (!bySubject.has(t.subject)) bySubject.set(t.subject, [])
+    bySubject.get(t.subject)!.push(t)
+  }
+  const result: { grade: string; subjects: { subject: string; textbooks: TextbookTreeNode[] }[] }[] = []
+  const seenGrades = new Set<string>()
+  // 先按预设年级顺序排（小学在前）
+  for (const g of GRADES) {
+    if (!byGrade.has(g)) continue
+    seenGrades.add(g)
+    result.push({ grade: g, subjects: buildSubjects(byGrade.get(g)!) })
+  }
+  // 兜底：未在预设列表中的年级（如初中/高中）按出现顺序追加
+  for (const [g, bySubject] of byGrade) {
+    if (seenGrades.has(g)) continue
+    result.push({ grade: g, subjects: buildSubjects(bySubject) })
+  }
+  return result
+})
+
+function buildSubjects(bySubject: Map<string, TextbookTreeNode[]>): { subject: string; textbooks: TextbookTreeNode[] }[] {
+  const subjects: { subject: string; textbooks: TextbookTreeNode[] }[] = []
+  for (const s of SUBJECTS) {
+    if (!bySubject.has(s)) continue
+    subjects.push({ subject: s, textbooks: bySubject.get(s)! })
+  }
+  // 兜底：未在预设学科列表中的学科
+  for (const [s, textbooks] of bySubject) {
+    if (SUBJECTS.includes(s)) continue
+    subjects.push({ subject: s, textbooks })
+  }
+  return subjects
+}
+
+function subjectIcon(subject: string) {
+  return subject === '语文' ? '📜' : subject === '数学' ? '🔢' : subject === '英语' ? '🔤' : '📚'
+}
 </script>
 
 <template>
@@ -120,34 +167,40 @@ const studentName = computed(() => auth.user?.studentName || '')
         <p>暂无教材知识点，请联系学校管理员导入</p>
       </div>
 
-      <div v-else class="space-y-2">
-        <div v-for="t in tree" :key="t.id" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
-          <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-cream-50" @click="toggleTextbook(t.id)">
-            <component :is="expandedTextbooks.has(t.id) ? ChevronDown : ChevronRight" class="w-5 h-5 text-cocoa-400" />
-            <div class="text-lg">{{ t.subject === '语文' ? '📜' : t.subject === '数学' ? '🔢' : t.subject === '英语' ? '🔤' : '📚' }}</div>
-            <div class="flex-1">
-              <div class="font-medium text-cocoa-900">{{ t.name }}</div>
-              <div class="text-xs text-cocoa-400">{{ t.publisher }} · {{ t.grade }} · {{ t.term }} · {{ t.units?.length || 0 }} 单元</div>
-            </div>
-          </div>
-          <div v-if="expandedTextbooks.has(t.id)" class="border-t border-cream-100 bg-cream-50/50">
-            <div v-if="!t.units?.length" class="px-6 py-4 text-sm text-cocoa-400">暂无单元</div>
-            <div v-for="u in t.units" :key="u.id">
-              <div class="flex items-center gap-3 px-6 py-2.5 cursor-pointer hover:bg-cream-100/50" @click="toggleUnit(u.id)">
-                <component :is="expandedUnits.has(u.id) ? ChevronDown : ChevronRight" class="w-4 h-4 text-cocoa-400" />
-                <div class="flex-1 text-sm text-cocoa-800">{{ u.title }}</div>
-                <span v-if="u.knowledgePoints?.length" class="text-xs text-cocoa-400">{{ u.knowledgePoints.length }} 个知识点</span>
+      <div v-else class="space-y-3">
+        <div v-for="g in groupedTree" :key="g.grade" class="bg-surface rounded-2xl shadow-softer overflow-hidden">
+          <div class="px-4 py-2.5 bg-butter-50/70 text-butter-700 font-semibold flex items-center gap-2">🎓 {{ g.grade }}</div>
+          <div v-for="sub in g.subjects" :key="sub.subject" class="border-t border-cream-100">
+            <div class="px-5 py-2 text-sm text-cocoa-600 font-medium flex items-center gap-1.5">{{ subjectIcon(sub.subject) }} {{ sub.subject }}</div>
+            <div v-for="t in sub.textbooks" :key="t.id" class="border-t border-cream-100">
+              <div class="flex items-center gap-3 p-4 cursor-pointer hover:bg-cream-50" @click="toggleTextbook(t.id)">
+                <component :is="expandedTextbooks.has(t.id) ? ChevronDown : ChevronRight" class="w-5 h-5 text-cocoa-400" />
+                <div class="text-lg">{{ subjectIcon(t.subject) }}</div>
+                <div class="flex-1">
+                  <div class="font-medium text-cocoa-900">{{ t.name }}</div>
+                  <div class="text-xs text-cocoa-400">{{ t.publisher }} · {{ t.grade }} · {{ t.term }} · {{ t.units?.length || 0 }} 单元</div>
+                </div>
               </div>
-              <div v-if="expandedUnits.has(u.id)" class="pl-12 pr-6 pb-3 space-y-1.5">
-                <div v-if="!u.knowledgePoints?.length" class="text-xs text-cocoa-400 py-1">暂无知识点</div>
-                <div v-for="p in u.knowledgePoints" :key="p.id" class="p-3 rounded-lg bg-surface border border-cream-100">
-                  <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
-                    {{ p.title }}
-                    <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
-                    <span v-if="p.difficulty" class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
+              <div v-if="expandedTextbooks.has(t.id)" class="border-t border-cream-100 bg-cream-50/50">
+                <div v-if="!t.units?.length" class="px-6 py-4 text-sm text-cocoa-400">暂无单元</div>
+                <div v-for="u in t.units" :key="u.id">
+                  <div class="flex items-center gap-3 px-6 py-2.5 cursor-pointer hover:bg-cream-100/50" @click="toggleUnit(u.id)">
+                    <component :is="expandedUnits.has(u.id) ? ChevronDown : ChevronRight" class="w-4 h-4 text-cocoa-400" />
+                    <div class="flex-1 text-sm text-cocoa-800">{{ u.title }}</div>
+                    <span v-if="u.knowledgePoints?.length" class="text-xs text-cocoa-400">{{ u.knowledgePoints.length }} 个知识点</span>
                   </div>
-                  <div class="text-xs text-cocoa-600 mt-1 whitespace-pre-wrap leading-relaxed">{{ p.content }}</div>
-                  <div v-if="p.keywords" class="text-xs text-cocoa-400 mt-1.5">🏷 {{ p.keywords }}</div>
+                  <div v-if="expandedUnits.has(u.id)" class="pl-12 pr-6 pb-3 space-y-1.5">
+                    <div v-if="!u.knowledgePoints?.length" class="text-xs text-cocoa-400 py-1">暂无知识点</div>
+                    <div v-for="p in u.knowledgePoints" :key="p.id" class="p-3 rounded-lg bg-surface border border-cream-100">
+                      <div class="text-sm font-medium text-cocoa-900 flex items-center gap-1.5 flex-wrap">
+                        {{ p.title }}
+                        <span class="text-xs px-1.5 py-0.5 rounded-full bg-butter-100 text-butter-700">{{ p.type }}</span>
+                        <span v-if="p.difficulty" class="text-xs px-1.5 py-0.5 rounded-full bg-sky2-50 text-sky2-600">{{ p.difficulty }}</span>
+                      </div>
+                      <div class="text-xs text-cocoa-600 mt-1 whitespace-pre-wrap leading-relaxed">{{ p.content }}</div>
+                      <div v-if="p.keywords" class="text-xs text-cocoa-400 mt-1.5">🏷 {{ p.keywords }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -43,33 +43,39 @@
         <text>暂无教材知识点，请联系学校管理员导入</text>
       </view>
       <view v-else class="tree">
-        <view v-for="t in tree" :key="t.id" class="textbook">
-          <view class="textbook-head" @click="toggleTextbook(t.id)">
-            <text class="arrow">{{ expandedTextbooks.has(t.id) ? '▼' : '▶' }}</text>
-            <text class="emoji">{{ t.subject === '语文' ? '📜' : t.subject === '数学' ? '🔢' : t.subject === '英语' ? '🔤' : '📚' }}</text>
-            <view class="textbook-info">
-              <text class="textbook-name">{{ t.name }}</text>
-              <text class="textbook-meta">{{ t.publisher }} · {{ t.grade }} · {{ t.term }} · {{ t.units?.length || 0 }} 单元</text>
-            </view>
-          </view>
-          <view v-if="expandedTextbooks.has(t.id)" class="units">
-            <view v-if="!t.units?.length" class="unit-empty">暂无单元</view>
-            <view v-for="u in t.units" :key="u.id" class="unit">
-              <view class="unit-head" @click="toggleUnit(u.id)">
-                <text class="arrow">{{ expandedUnits.has(u.id) ? '▼' : '▶' }}</text>
-                <text class="unit-title">{{ u.title }}</text>
-                <text v-if="u.knowledgePoints?.length" class="unit-count">{{ u.knowledgePoints.length }} 个知识点</text>
+        <view v-for="g in groupedTree" :key="g.grade" class="textbook">
+          <view class="grade-title">🎓 {{ g.grade }}</view>
+          <view v-for="sub in g.subjects" :key="sub.subject" class="subject-block">
+            <view class="subject-title">{{ subjectIcon(sub.subject) }} {{ sub.subject }}</view>
+            <view v-for="t in sub.textbooks" :key="t.id" class="textbook-inner">
+              <view class="textbook-head" @click="toggleTextbook(t.id)">
+                <text class="arrow">{{ expandedTextbooks.has(t.id) ? '▼' : '▶' }}</text>
+                <text class="emoji">{{ subjectIcon(t.subject) }}</text>
+                <view class="textbook-info">
+                  <text class="textbook-name">{{ t.name }}</text>
+                  <text class="textbook-meta">{{ t.publisher }} · {{ t.grade }} · {{ t.term }} · {{ t.units?.length || 0 }} 单元</text>
+                </view>
               </view>
-              <view v-if="expandedUnits.has(u.id)" class="points">
-                <view v-if="!u.knowledgePoints?.length" class="point-empty">暂无知识点</view>
-                <view v-for="p in u.knowledgePoints" :key="p.id" class="point">
-                  <view class="point-title">
-                    {{ p.title }}
-                    <text v-if="p.type" class="tag">{{ p.type }}</text>
-                    <text v-if="p.difficulty" class="tag diff">{{ p.difficulty }}</text>
+              <view v-if="expandedTextbooks.has(t.id)" class="units">
+                <view v-if="!t.units?.length" class="unit-empty">暂无单元</view>
+                <view v-for="u in t.units" :key="u.id" class="unit">
+                  <view class="unit-head" @click="toggleUnit(u.id)">
+                    <text class="arrow">{{ expandedUnits.has(u.id) ? '▼' : '▶' }}</text>
+                    <text class="unit-title">{{ u.title }}</text>
+                    <text v-if="u.knowledgePoints?.length" class="unit-count">{{ u.knowledgePoints.length }} 个知识点</text>
                   </view>
-                  <view class="point-content">{{ p.content }}</view>
-                  <view v-if="p.keywords" class="point-keywords">🏷 {{ p.keywords }}</view>
+                  <view v-if="expandedUnits.has(u.id)" class="points">
+                    <view v-if="!u.knowledgePoints?.length" class="point-empty">暂无知识点</view>
+                    <view v-for="p in u.knowledgePoints" :key="p.id" class="point">
+                      <view class="point-title">
+                        {{ p.title }}
+                        <text v-if="p.type" class="tag">{{ p.type }}</text>
+                        <text v-if="p.difficulty" class="tag diff">{{ p.difficulty }}</text>
+                      </view>
+                      <view class="point-content">{{ p.content }}</view>
+                      <view v-if="p.keywords" class="point-keywords">🏷 {{ p.keywords }}</view>
+                    </view>
+                  </view>
                 </view>
               </view>
             </view>
@@ -98,6 +104,48 @@ const searchResults = ref([])
 
 const SUBJECTS = ['', '语文', '数学', '英语']
 const GRADES = ['', '一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
+
+/**
+ * 按 年级 → 学科 → 教材 → 单元 → 知识点 分组（前端基于 tree 接口返回数据分组，
+ * 后端 GET /textbooks/tree 已支持 subject/grade/term 过滤，此处仅做展示分组）。
+ */
+function buildSubjects(bySubject) {
+  const subjects = []
+  for (const s of SUBJECTS) {
+    if (!s || !bySubject[s]) continue
+    subjects.push({ subject: s, textbooks: bySubject[s] })
+  }
+  for (const s of Object.keys(bySubject)) {
+    if (SUBJECTS.includes(s)) continue
+    subjects.push({ subject: s, textbooks: bySubject[s] })
+  }
+  return subjects
+}
+
+const groupedTree = computed(() => {
+  const byGrade = {}
+  for (const t of tree.value) {
+    if (!byGrade[t.grade]) byGrade[t.grade] = {}
+    if (!byGrade[t.grade][t.subject]) byGrade[t.grade][t.subject] = []
+    byGrade[t.grade][t.subject].push(t)
+  }
+  const result = []
+  const seenGrades = {}
+  for (const g of GRADES) {
+    if (!g || !byGrade[g]) continue
+    seenGrades[g] = true
+    result.push({ grade: g, subjects: buildSubjects(byGrade[g]) })
+  }
+  for (const g of Object.keys(byGrade)) {
+    if (seenGrades[g]) continue
+    result.push({ grade: g, subjects: buildSubjects(byGrade[g]) })
+  }
+  return result
+})
+
+function subjectIcon(subject) {
+  return subject === '语文' ? '📜' : subject === '数学' ? '🔢' : subject === '英语' ? '🔤' : '📚'
+}
 
 onLoad(() => {
   loadTree()
@@ -177,6 +225,10 @@ async function doSearch() {
 .result-keywords { font-size: 22rpx; color: var(--c-sub); margin-top: 8rpx; }
 .tree { display: flex; flex-direction: column; gap: 16rpx; }
 .textbook { background: var(--c-card); border-radius: 20rpx; overflow: hidden; }
+.grade-title { font-size: 30rpx; font-weight: 800; color: var(--c-primary); padding: 20rpx; background: rgba(0,0,0,0.03); }
+.subject-block { border-top: 1rpx solid var(--c-border); }
+.subject-title { font-size: 24rpx; color: var(--c-sub); font-weight: 700; padding: 16rpx 20rpx 4rpx; }
+.textbook-inner { border-top: 1rpx solid var(--c-border); }
 .textbook-head { display: flex; align-items: center; gap: 12rpx; padding: 20rpx; cursor: pointer; }
 .arrow { font-size: 22rpx; color: var(--c-sub); width: 28rpx; }
 .emoji { font-size: 40rpx; }

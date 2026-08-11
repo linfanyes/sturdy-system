@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { useAuthStore } from '@/stores/auth'
@@ -46,12 +46,16 @@ const termOptions = computed(() => {
 })
 const examNameOptions = computed(() => {
   const set = new Set<string>()
-  for (const e of exams.value) { if (e.examName) set.add(e.examName) }
+  for (const e of exams.value) {
+    if (filterTerm.value && e.term !== filterTerm.value) continue
+    if (e.examName) set.add(e.examName)
+  }
   return Array.from(set)
 })
 const subjectOptions = computed(() => {
   const set = new Set<string>()
   for (const e of exams.value) {
+    if (filterTerm.value && e.term !== filterTerm.value) continue
     for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) }
   }
   return Array.from(set)
@@ -191,6 +195,21 @@ async function switchToTeacher() {
 
 const studentName = computed(() => me.value?.studentName || auth.user?.studentName || '')
 const className = computed(() => me.value?.className || '')
+
+// 成长看板副标题：直接展示学生关键信息（姓名 / 学号 / 班级）
+const studentInfoLine = computed(() => {
+  const parts: string[] = []
+  if (studentName.value) parts.push('姓名：' + studentName.value)
+  if (me.value?.studentNo) parts.push('学号：' + me.value.studentNo)
+  if (className.value) parts.push('班级：' + className.value)
+  return parts.join('　·　')
+})
+
+// 切换学期后，清空已选考试 / 科目，避免下拉仍指向其他学期导致成绩区为空
+watch(filterTerm, () => {
+  filterExamName.value = ''
+  filterSubject.value = ''
+})
 
 const pendingNotices = computed(() => notices.value.filter(n => !n.ended).length)
 const pendingHomework = computed(() => homework.value.filter(h => !isHwDone(h)).length)
@@ -588,9 +607,7 @@ function dismissSubscribe() {
     <div class="welcome-banner">
       <WelcomeHero
         :name="studentName ? studentName + '同学家长' : '家长'"
-        role-label="的成长看板"
-        :subtitle="className ? '班级：' + className : '家长中心'"
-        badge="家长中心"
+        :subtitle="studentInfoLine"
         avatar="👪"
         accent="sakura"
       >
@@ -611,6 +628,11 @@ function dismissSubscribe() {
             class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
             @click="openEditStudentInfo"
           >👤 维护学生信息</button>
+          <button
+            v-if="me"
+            class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
+            @click="openStudentRequests"
+          >📋 查看申请记录</button>
         </template>
       </WelcomeHero>
     </div>
@@ -936,10 +958,6 @@ function dismissSubscribe() {
       <div v-if="teachers.length">
         <h2 class="section-title">
           <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
-          <button
-            class="ml-auto text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
-            @click="openMessageModal"
-          >✉️ 给老师留言</button>
         </h2>
         <div class="quick-card">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -998,50 +1016,6 @@ function dismissSubscribe() {
               class="flex-1 rounded-xl border border-mint-300 bg-mint-50 text-mint-700 font-semibold py-2.5 hover:bg-mint-100 flex items-center justify-center gap-1.5"
               @click="openMessageModal"
             >✉️ 给老师留言</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 学生信息 -->
-      <div v-if="me" class="quick-card">
-        <div class="section-title">
-          <UserCog class="w-5 h-5 text-mint-400" />
-          <h2>学生信息</h2>
-          <div class="ml-auto flex items-center gap-2">
-            <button
-              class="text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors"
-              @click="openEditStudentInfo"
-            >维护学生信息</button>
-            <button
-              class="text-sm rounded-xl border border-cream-200 bg-surface px-3 py-1.5 text-cocoa-600 hover:bg-cocoa-50 transition-colors"
-              @click="openStudentRequests"
-            >查看申请记录</button>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
-            <span class="text-cocoa-500">家长姓名</span>
-            <span class="font-medium text-cocoa-900">{{ studentInfo.parentName || '--' }}</span>
-          </div>
-          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
-            <span class="text-cocoa-500">家长电话</span>
-            <span class="font-medium text-cocoa-900">{{ studentInfo.parentPhone || '--' }}</span>
-          </div>
-          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
-            <span class="text-cocoa-500">学生电话</span>
-            <span class="font-medium text-cocoa-900">{{ studentInfo.studentPhone || '--' }}</span>
-          </div>
-          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2">
-            <span class="text-cocoa-500">出生日期</span>
-            <span class="font-medium text-cocoa-900">{{ studentInfo.birthDate || '--' }}</span>
-          </div>
-          <div class="flex items-center justify-between bg-cocoa-50 rounded-lg px-3 py-2 sm:col-span-2">
-            <span class="text-cocoa-500">地址</span>
-            <span class="font-medium text-cocoa-900 text-right">{{ studentInfo.address || '--' }}</span>
-          </div>
-          <div v-if="studentInfo.note" class="flex items-start justify-between bg-cocoa-50 rounded-lg px-3 py-2 sm:col-span-2">
-            <span class="text-cocoa-500 shrink-0">备注</span>
-            <span class="font-medium text-cocoa-900 text-right">{{ studentInfo.note }}</span>
           </div>
         </div>
       </div>
