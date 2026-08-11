@@ -15,11 +15,11 @@ const emit = defineEmits<{
 
 const password = ref('')
 
-// 每次打开弹框时清空输入框，避免预填旧密码；留空则由后端生成随机密码
+  // 每次打开弹框时，预填默认密码（若已指定）；留空则由后端生成随机密码
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) password.value = ''
+    if (open) password.value = props.defaultPassword || ''
   },
 )
 

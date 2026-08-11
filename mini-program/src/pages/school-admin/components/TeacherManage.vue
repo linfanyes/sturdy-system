@@ -185,7 +185,7 @@ function openEditForm(u) {
 
 function resetPwd(u) {
   pwdUser.value = u
-  newPwd.value = ''
+  newPwd.value = '1314521'
 }
 
 function setBatchResult(r) {
