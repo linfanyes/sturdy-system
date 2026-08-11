@@ -15,9 +15,6 @@ onAuthReset(() => {
   auth.schoolFeatureFlags = null
   parent.token = ''
   parent.user = null
-  parent.teacherToken = ''
-  parent.parentToken = ''
-  parent.currentRole = 'parent'
 })
 
 const TOKEN_KEY = 'g_token'
@@ -28,9 +25,6 @@ const FONT_KEY = 'g_fontsize'
 const MOCK_KEY = 'g_mock_mode'
 const PARENT_TOKEN_KEY = 'g_parent_token'
 const PARENT_USER_KEY = 'g_parent_user'
-const PARENT_TEACHER_TOKEN_KEY = 'g_parent_teacher_token'
-const PARENT_PARENT_TOKEN_KEY = 'g_parent_parent_token'
-const PARENT_ROLE_KEY = 'g_parent_role'
 const PARENT_DATA_KEY = 'g_parent_data'
 const EFFECTIVE_FEATURES_KEY = 'g_effective_features'
 const SCHOOL_FEATURE_FLAGS_KEY = 'g_school_feature_flags'
@@ -153,118 +147,29 @@ export const mockMode = reactive({
 export const switchTabParams = reactive({})
 
 // 家长端登录态（与教师端隔离，各自独立存储）
-// 双角色支持：当教师同时拥有家长身份时，teacherToken/parentToken 分别存两套令牌
 export const parent = reactive({
   token: uni.getStorageSync(PARENT_TOKEN_KEY) || '',
   user: uni.getStorageSync(PARENT_USER_KEY) || null,
-  // 双角色切换支持
-  teacherToken: uni.getStorageSync(PARENT_TEACHER_TOKEN_KEY) || '',
-  parentToken: uni.getStorageSync(PARENT_PARENT_TOKEN_KEY) || '',
-  currentRole: uni.getStorageSync(PARENT_ROLE_KEY) || 'parent',
   parentId: '',
   kids: [],
 })
 
-export function setDualTokens(teacherToken, parentToken, parentData) {
-  parent.teacherToken = teacherToken
-  parent.parentToken = parentToken
-  parent.token = parentToken
-  if (parentData) {
-    parent.parentId = parentData.parentId || ''
-    parent.kids = parentData.kids || []
-  }
-  parent.currentRole = 'parent'
-  // 持久化
-  uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, teacherToken)
-  uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parentToken)
-  uni.setStorageSync(PARENT_TOKEN_KEY, parentToken)
-  uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
-  if (parentData) {
-    uni.setStorageSync(PARENT_DATA_KEY, { parentId: parentData.parentId, kids: parentData.kids })
-  }
-  // machine 快照写入（双身份）
-  const snap = {
-    teacher: { token: teacherToken, user: auth.user },
-    parent: { token: parentToken, user: parent.user || auth.user },
-  }
-  uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
-}
-
-export function switchRole(targetRole) {
-  if (targetRole === 'teacher' && parent.teacherToken) {
-    // 切换到教师：备份当前 parentToken，激活 teacherToken
-    parent.parentToken = parent.token
-    parent.token = parent.teacherToken
-    parent.currentRole = 'teacher'
-    auth.token = parent.teacherToken
-    uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, parent.parentToken)
-    uni.setStorageSync(PARENT_TOKEN_KEY, parent.teacherToken)
-    uni.setStorageSync(PARENT_ROLE_KEY, 'teacher')
-    // machine 快照同步：把双身份写入 multiRole 快照
-    syncMachineMultiRole()
-    uni.reLaunch({ url: '/pages/dashboard/dashboard' })
-  } else if (targetRole === 'parent' && parent.parentToken) {
-    // 切换到家长：备份当前 teacherToken，激活 parentToken
-    parent.teacherToken = parent.token
-    parent.token = parent.parentToken
-    parent.currentRole = 'parent'
-    auth.token = parent.parentToken
-    uni.setStorageSync(PARENT_TEACHER_TOKEN_KEY, parent.teacherToken)
-    uni.setStorageSync(PARENT_TOKEN_KEY, parent.parentToken)
-    uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
-    // machine 快照同步
-    syncMachineMultiRole()
-    uni.reLaunch({ url: '/pages/parent/parent' })
-  }
-}
-
-/**
- * 把当前双身份（parent.teacherToken/parent.parentToken）同步到 machine 的 multiRole 快照，
- * 从而使 authMachine.switchRole 可正常工作。
- * 内部调用 persistence。
- */
-function syncMachineMultiRole() {
-  const snap = {}
-  if (parent.teacherToken && auth.user) {
-    snap.teacher = { token: parent.teacherToken, user: auth.user }
-  }
-  if (parent.parentToken && parent.user) {
-    snap.parent = { token: parent.parentToken, user: parent.user }
-  }
-  if (Object.keys(snap).length) {
-    uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
-  }
-}
-
 export function setParent(token, user) {
   parent.token = token
   parent.user = user
-  parent.parentToken = token
-  parent.currentRole = 'parent'
   uni.setStorageSync(PARENT_TOKEN_KEY, token)
   uni.setStorageSync(PARENT_USER_KEY, typeof user === 'string' ? user : JSON.stringify(user))
-  uni.setStorageSync(PARENT_PARENT_TOKEN_KEY, token)
-  uni.setStorageSync(PARENT_ROLE_KEY, 'parent')
-  // 同步更新 machine 快照 + auth reactive，使 getToken / effectiveFeatures 一致
   auth.token = token
   auth.user = user
-  const snap = { parent: { token, user } }
-  uni.setStorageSync('__auth_multi_role__', JSON.stringify(snap))
 }
 
 export function logoutParent() {
   parent.token = ''
   parent.user = null
-  parent.teacherToken = ''
-  parent.parentToken = ''
-  parent.currentRole = 'parent'
   parent.parentId = ''
   parent.kids = []
   uni.removeStorageSync(PARENT_TOKEN_KEY)
   uni.removeStorageSync(PARENT_USER_KEY)
-  uni.removeStorageSync(PARENT_TEACHER_TOKEN_KEY)
-  uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
-  uni.removeStorageSync(PARENT_ROLE_KEY)
   uni.removeStorageSync(PARENT_DATA_KEY)
 }
 
@@ -393,11 +298,6 @@ export function logout() {
   auth.features = []
   auth.effectiveFeatures = []
   auth.schoolFeatureFlags = null
-  // 双身份 / 家长端 key 也清理（machine.clearLogin 未包 parent 双身份 key）
-  uni.removeStorageSync(PARENT_TEACHER_TOKEN_KEY)
-  uni.removeStorageSync(PARENT_PARENT_TOKEN_KEY)
-  uni.removeStorageSync(PARENT_ROLE_KEY)
-  uni.removeStorageSync(PARENT_DATA_KEY)
   // 演示模式标记也清理
   uni.removeStorageSync(MOCK_KEY)
 }

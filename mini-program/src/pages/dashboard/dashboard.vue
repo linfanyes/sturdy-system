@@ -367,11 +367,6 @@
         <view class="lb">{{ f.label }}</view>
       </view>
     </view>
-
-    <!-- 视角切换：切换到家长端（仅当有 parentToken 时显示） -->
-    <view class="switch-role" v-if="parent.parentToken" @tap="switchToParent">
-      🔄 切换到家长端
-    </view>
   </view>
 </template>
 
@@ -385,7 +380,7 @@ import {
   listTodos, listSchedules, listNotices, listAttendances, listHomework,
   listSchoolNotices, listBehaviorRecords, createTodo, updateTodo, deleteTodo,
 } from '@/api/dashboard'
-import { auth, theme, flushTabBarStyle, parent, switchRole } from '../../common/store'
+import { auth, theme, flushTabBarStyle } from '../../common/store'
 import { hasFeature } from '../../common/feature'
 import { copyText } from '../../common/print'
 
@@ -778,18 +773,6 @@ function goCrud(type) {
   const url = MAP[type]
   if (url) uni.switchTab({ url })  // 班级和学生是 tabBar 页面，用 switchTab
   else uni.navigateTo({ url: '/pages/crud/crud?type=' + encodeURIComponent(type) })
-}
-
-function switchToParent() {
-  uni.showModal({
-    title: '切换身份',
-    content: '确定切换到家长端？',
-    success: (res) => {
-      if (res.confirm) {
-        switchRole('parent')
-      }
-    },
-  })
 }
 </script>
 

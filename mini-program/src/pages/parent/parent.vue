@@ -124,9 +124,6 @@
     <!-- ===== Tab 5：教材知识点 ===== -->
     <TextbookPanel v-if="tab === 'textbook'" ref="textbookPanelRef" />
 
-    <!-- 视角切换 -->
-    <view class="switch-role" v-if="parent.teacherToken" @tap="switchToTeacher">🔄 切换到教师端</view>
-
     <!-- 修改密码弹窗 -->
     <view v-if="showPwdModal" class="pwd-mask" @click="showPwdModal = false">
       <view class="pwd-box" @click.stop>
@@ -274,7 +271,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme, parent, logoutParent, switchRole } from '../../common/store'
+import { theme, parent, logoutParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 import KidList from './components/KidList.vue'
 import ScoreView from './components/ScoreView.vue'
@@ -450,9 +447,6 @@ async function switchToKid(studentId) {
   finally { uni.hideLoading() }
 }
 function goCompare() { uni.navigateTo({ url: '/pages/parent/compare' }) }
-function switchToTeacher() {
-  uni.showModal({ title: '切换身份', content: '确定切换到教师端？', success: (res) => { if (res.confirm) switchRole('teacher') } })
-}
 function logout() {
   uni.showModal({ title: '退出登录', content: '确定退出当前账号？', confirmColor: '#e64340', success: (res) => { if (res.confirm) { logoutParent(); uni.reLaunch({ url: '/pages/login/login' }) } } })
 }
