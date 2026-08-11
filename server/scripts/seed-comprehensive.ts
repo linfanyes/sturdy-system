@@ -27,7 +27,7 @@ const CONFIG = {
   PASSWORD: 'Test@2026',
   MULTI_CHILD_COUNT: 5,           // 跨班多娃家长数
   CROSS_SCHOOL_PARENT_COUNT: 3,   // 跨校多娃家长数
-  TEACHER_AS_PARENT_COUNT: 10,    // 师兼家数
+  TEACHER_AS_PARENT_COUNT: 0,     // 师兼家数（已移除，教师和家长使用独立账户）
 }
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术', '综合实践']

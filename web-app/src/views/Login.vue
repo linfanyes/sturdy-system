@@ -2,14 +2,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { unifiedLogin, buildParentUser } from '@/api/auth'
-import type { UnifiedLoginResult } from '@/api/auth'
+import { unifiedLogin } from '@/api/auth'
 import { Loader2, Sparkles, RefreshCw, Eye, EyeOff } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
-const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -24,11 +21,7 @@ function checkCapsLock(e: KeyboardEvent) {
   capsLockOn.value = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock')
 }
 
-/* ============ 师兼家双角色选择 ============ */
-const showRoleChoiceModal = ref(false)
-const roleChoiceData = ref<UnifiedLoginResult | null>(null)
-
-const greeting = computed(() => {
+	const greeting = computed(() => {
   const h = new Date().getHours()
   if (h >= 5 && h < 12) return '早上好'
   if (h >= 12 && h < 18) return '下午好'
@@ -126,13 +119,6 @@ async function handleLogin() {
     // 调用统一登录，获取原始响应
     const result = await unifiedLogin(form.value.username, form.value.password)
 
-    // 师兼家双角色选择
-    if (result.needsRoleChoice) {
-      roleChoiceData.value = result
-      showRoleChoiceModal.value = true
-      return
-    }
-
     // 正常登录流程
     auth.setAuth(result.token, result.user)
     saveRecent(form.value.username)
@@ -145,41 +131,6 @@ async function handleLogin() {
   }
 }
 
-/* ============ 双角色选择 ============ */
-function selectRole(role: 'teacher' | 'parent') {
-  const data = roleChoiceData.value
-  if (!data?.teacher || !data.parent) return
-
-  // 预构建两端 user 对象（teacher 来自登录响应 user，parent 由后端 parent 分支构造）
-  const teacherUser = { role: 'teacher', ...data.teacher.user }
-  const parentUser = buildParentUser(data.parent)
-
-  // 无论先选哪个身份，都写入双 token + 双 user，保证两端切换按钮都可出现
-  if (role === 'teacher') {
-    roleSwitchStore.setTokens({
-      teacherToken: data.teacher.token,
-      parentToken: data.parent.token,
-      teacherUser,
-      parentUser,
-      initialRole: 'teacher',
-    })
-    auth.setAuth(data.teacher.token, teacherUser)
-    router.push('/teacher')
-  } else {
-    roleSwitchStore.setTokens({
-      teacherToken: data.teacher.token,
-      parentToken: data.parent.token,
-      teacherUser,
-      parentUser,
-      initialRole: 'parent',
-    })
-    auth.setAuth(data.parent.token, parentUser)
-    router.push('/parent')
-  }
-
-  showRoleChoiceModal.value = false
-  roleChoiceData.value = null
-}
 </script>
 
 <template>
@@ -444,34 +395,8 @@ function selectRole(role: 'teacher' | 'parent') {
         </div>
       </div>
     </div>
-  </div>
+	  </div>
 
-  <!-- 师兼家双角色选择弹层 -->
-  <div
-    v-if="showRoleChoiceModal"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-  >
-    <div class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
-      <h3 class="mb-2 text-center text-lg font-bold text-cocoa-900">选择登录身份</h3>
-      <p class="mb-5 text-center text-sm text-cocoa-500">
-        该账号同时关联了教师和家长身份
-      </p>
-      <div class="space-y-3">
-        <button
-          @click="selectRole('teacher')"
-          class="w-full rounded-full bg-cream-50 py-3 text-sm font-semibold text-cocoa-800 ring-1 ring-cream-200 transition hover:bg-butter-50 hover:ring-butter-300"
-        >
-          👨‍🏫 以老师身份进入
-        </button>
-        <button
-          @click="selectRole('parent')"
-          class="w-full rounded-full bg-cream-50 py-3 text-sm font-semibold text-cocoa-800 ring-1 ring-cream-200 transition hover:bg-butter-50 hover:ring-butter-300"
-        >
-          👨‍👩‍👧‍👦 以家长身份进入
-        </button>
-      </div>
-    </div>
-  </div>
 </template>
 
 <style scoped>

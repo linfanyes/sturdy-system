@@ -119,43 +119,7 @@ export class AuthService {
         subject: teacher.subject || teacherProfile?.subject || '',
         subjects: teacher.subjects || teacherProfile?.subjects || [],
       }
-      // 检查教师是否关联了家长身份（使用 parentId 字段）
-      let parentExists = false
-      let parentRecord = null
-      if (teacher.parentId) {
-        parentRecord = await this.parentRepo.findOne({ where: { id: teacher.parentId } })
-        if (parentRecord) {
-          parentExists = true
-        }
-      }
-
-      if (parentExists) {
-        // 双角色：返回 needsRoleChoice
-        const kids = await this.studentRepo.find({ where: { parentId: parentRecord!.id } })
-        const firstKid = kids[0]
-        let parentToken = ''
-        if (firstKid) {
-          const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parentRecord!.parentName })
-          parentToken = this.jwt.sign({ sub: pim, type: 'parent', parentId: parentRecord!.id, studentId: firstKid.id, studentName: firstKid.name, classId: firstKid.classId, studentNo: firstKid.studentNo })
-        }
-        const teacherToken = this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' })
-
-        return {
-          needsRoleChoice: true,
-          roles: ['teacher', 'parent'],
-          teacher: { role: 'teacher', token: teacherToken, user: safeUser, effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: teacher.schoolId, teacherFeatures: teacher.features }) },
-          parent: {
-            role: 'parent',
-            parentId: parentRecord!.id,
-            kids: kids?.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })) || [],
-            token: parentToken,
-            needsBind: false,
-            effectiveFeatures: firstKid ? await this.effectiveFeaturesFor('parent', { studentId: firstKid.id }) : [],
-          },
-        }
-      }
-
-      // 无家长身份 → 走原逻辑返回 teacher
+      // 教师直接签发 JWT 并返回
       return {
         role: 'teacher',
         token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }),

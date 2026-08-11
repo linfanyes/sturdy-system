@@ -260,17 +260,6 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
       <div class="w-9 h-9 rounded-full bg-butter-300 flex items-center justify-center">
         <User class="w-4 h-4 text-cocoa-700" />
       </div>
-      <button
-        v-if="canSwitchToParent"
-        class="p-1.5 rounded-lg hover:bg-cream-200 text-[#E6A23C] relative group"
-        title="切换至家长端"
-        @click="emit('switchToParent')"
-      >
-        <Repeat class="w-4 h-4" />
-        <span class="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-cocoa-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          切换至家长端
-        </span>
-      </button>
       <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="操作手册" @click="openManual">
         <BookOpen class="w-4 h-4" />
       </button>
