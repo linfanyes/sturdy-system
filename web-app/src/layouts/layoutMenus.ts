@@ -284,24 +284,29 @@ export const schoolAdminMenu: MenuCategory[] = [
   },
   {
     label: '人员管理', color: 'blue', icon: Users,
-    groups: [{ label: '', items: [
-      { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
-      { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
-      { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
-      { name: 'school-admin-features', label: '学校功能包', to: '/school-admin/features', icon: ToggleLeft, color: 'purple' },
-      { name: 'school-admin-academic', label: '成绩查询与汇总', to: '/school-admin/academic', icon: GraduationCap, color: 'purple' },
-    ] }],
-  },
-  {
-    label: '资源与设置', color: 'cream', icon: Settings,
-    groups: [{ label: '', items: [
-      { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
-      { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
-      { name: 'school-admin-resource-library', label: '专项资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
-      { name: 'school-admin-zhxue', label: '智慧中小学', to: '/school-admin/zhzx', icon: GraduationCap, color: 'blue' },
-      { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
-    ] }],
-  },
+	    groups: [{ label: '', items: [
+	      { name: 'school-admin-teachers', label: '教师管理', to: '/school-admin/teachers', icon: Users, color: 'blue' },
+	      { name: 'school-admin-classes', label: '班级管理', to: '/school-admin/classes', icon: School, color: 'green' },
+	      { name: 'school-admin-students', label: '学生管理', to: '/school-admin/students', icon: GraduationCap, color: 'rose' },
+	      { name: 'school-admin-academic', label: '成绩查询与汇总', to: '/school-admin/academic', icon: GraduationCap, color: 'purple' },
+	    ] }],
+	  },
+	  {
+	    label: '资源', color: 'green', icon: BookOpen,
+	    groups: [{ label: '', items: [
+	      { name: 'school-admin-notices', label: '学校公告', to: '/school-admin/notices', icon: Megaphone, color: 'butter' },
+	      { name: 'school-admin-textbooks', label: '教材知识库', to: '/school-admin/textbooks', icon: BookOpen, color: 'sky' },
+	      { name: 'school-admin-resource-library', label: '专项资源库', to: '/school-admin/resource-library', icon: BookOpen, color: 'green' },
+	      { name: 'school-admin-zhxue', label: '智慧中小学', to: '/school-admin/zhzx', icon: GraduationCap, color: 'blue' },
+	    ] }],
+	  },
+	  {
+	    label: '设置', color: 'cream', icon: Settings,
+	    groups: [{ label: '', items: [
+	      { name: 'school-admin-ai-config', label: 'AI 配置', to: '/school-admin/ai-config', icon: Bot, color: 'blue' },
+	      { name: 'school-admin-features', label: '学校功能包', to: '/school-admin/features', icon: ToggleLeft, color: 'purple' },
+	    ] }],
+	  },
 ]
 
 /* 非教师角色扁平菜单 */
