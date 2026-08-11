@@ -9,15 +9,15 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { loadClasses, useClasses } from '@/composables/useClasses'
 import { listSchoolExams, listSchoolGrades, getSchoolGradeSummary } from '@/api/school-admin'
+import { listClasses } from '@/api/school-admin'
 import { toast } from '@/utils/feedback'
-import { BookOpen, BarChart3, Loader2, FileText, RefreshCw, TrendingUp, ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { BookOpen, BarChart3, Loader2, FileText, RefreshCw, TrendingUp } from 'lucide-vue-next'
 import SvgBarChart from '@/components/SvgBarChart.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
 
 const auth = useAuthStore()
-const { classes } = useClasses()
+const classes = ref<any[]>([])
 
 const loading = ref(false)
 const classId = ref('')
@@ -123,9 +123,14 @@ function scoreSummary(g: any): string {
 }
 
 onMounted(async () => {
-  await loadClasses()
+  await loadSchoolClasses()
   await loadAll()
 })
+
+async function loadSchoolClasses() {
+  try { const res = await listClasses(0, 500); classes.value = res.items || [] }
+  catch { classes.value = [] }
+}
 </script>
 
 <template>
@@ -257,54 +262,6 @@ onMounted(async () => {
         <div class="flex items-center gap-2">
           <span class="text-xs text-cocoa-400">每页</span>
           <select v-model.number="examPageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm" @change="goExamPage(0)">
-            <option :value="10">10</option><option :value="20">20</option><option :value="50">50</option>
-          </select>
-        </div>
-      </div>
-    </section>
-
-    <!-- 成绩列表 -->
-    <section class="bg-surface rounded-2xl p-6 shadow-softer">
-      <div class="flex items-center gap-2 mb-4">
-        <BarChart3 class="w-5 h-5 text-butter-500" />
-        <h2 class="text-lg font-semibold text-cocoa-900">成绩列表</h2>
-        <span class="text-sm text-cocoa-400 ml-auto">共 {{ total }} 条</span>
-      </div>
-      <div v-if="!grades.length" class="text-center text-cocoa-400 py-6">暂无成绩记录</div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-cream-100 text-cocoa-500 text-left">
-            <tr>
-              <th class="px-4 py-3 font-medium">考试名称</th>
-              <th class="px-4 py-3 font-medium">科目</th>
-              <th class="px-4 py-3 font-medium">班级</th>
-              <th class="px-4 py-3 font-medium">日期</th>
-              <th class="px-4 py-3 font-medium">成绩汇总</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-cream-100">
-            <tr v-for="g in grades" :key="g.id" class="hover:bg-cream-50 transition-colors">
-              <td class="px-4 py-3 font-medium text-cocoa-900">{{ g.examName }}</td>
-              <td class="px-4 py-3 text-cocoa-700">{{ g.subject }}</td>
-              <td class="px-4 py-3 text-cocoa-700">{{ className(g.classId) }}</td>
-              <td class="px-4 py-3 text-cocoa-700">{{ g.date || '-' }}</td>
-              <td class="px-4 py-3 text-cocoa-500 text-xs">{{ scoreSummary(g) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 成绩分页 -->
-      <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
-        <span class="text-xs text-cocoa-400">共 {{ total }} 条</span>
-        <div class="flex items-center gap-2">
-          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page===0" @click="goPage(page-1)">上一页</button>
-          <span class="text-xs text-cocoa-500">第 {{ page+1 }}/{{ totalPages }} 页</span>
-          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page+1>=totalPages" @click="goPage(page+1)">下一页</button>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-cocoa-400">每页</span>
-          <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm" @change="goPage(0)">
             <option :value="10">10</option><option :value="20">20</option><option :value="50">50</option>
           </select>
         </div>
