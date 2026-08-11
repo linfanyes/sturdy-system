@@ -252,12 +252,10 @@ export const superMenu: MenuCategory[] = [
   },
   {
     label: '账户管理', color: 'blue', icon: Users,
-    groups: [{ label: '', items: [
-      { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
-      { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
-      { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
-      { name: 'super-account-clear', label: '清除业务数据', to: '/super/account-clear', icon: Trash2, color: 'cocoa' },
-    ] }],
+	    groups: [{ label: '', items: [
+	      { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
+	      { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
+	    ] }],
   },
   {
     label: '审计日志', color: 'cocoa', icon: ScrollText, direct: true,
@@ -267,10 +265,12 @@ export const superMenu: MenuCategory[] = [
   },
   {
     label: '设置', color: 'cream', icon: Settings,
-    groups: [{ label: '', items: [
-      { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
-      { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
-    ] }],
+	    groups: [{ label: '', items: [
+	      { name: 'super-config', label: '平台配置', to: '/super/config', icon: Settings, color: 'cream' },
+	      { name: 'super-ai-providers', label: 'AI 服务商', to: '/super/ai-providers', icon: Bot, color: 'green' },
+	      { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
+	      { name: 'super-account-clear', label: '清除业务数据', to: '/super/account-clear', icon: Trash2, color: 'cocoa' },
+	    ] }],
   },
 ]
 
