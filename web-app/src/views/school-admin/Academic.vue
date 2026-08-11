@@ -21,6 +21,9 @@ const loading = ref(false)
 const classId = ref('')
 const subject = ref('')
 const examName = ref('')
+const page = ref(0)
+const pageSize = ref(20)
+const total = ref(0)
 
 const exams = ref<any[]>([])
 const grades = ref<any[]>([])
@@ -39,11 +42,12 @@ async function loadAll() {
     const params = classId.value ? { classId: classId.value } : {}
     const [examRes, gradeRes, sumRes] = await Promise.all([
       listSchoolExams(params),
-      listSchoolGrades({ ...params, subject: subject.value || undefined, examName: examName.value || undefined }),
+      listSchoolGrades({ ...params, subject: subject.value || undefined, examName: examName.value || undefined, skip: page.value * pageSize.value, take: pageSize.value }),
       getSchoolGradeSummary({ classId: classId.value || undefined }),
     ])
     exams.value = Array.isArray(examRes) ? examRes : (examRes?.items || [])
     grades.value = Array.isArray(gradeRes) ? gradeRes : (gradeRes?.items || [])
+    total.value = gradeRes?.total || grades.value.length
     summary.value = (sumRes?.subjects ? sumRes : { subjects: [], classes: [], totalGrades: 0 }) as any
   } catch (e: any) {
     toast.error(e?.message || '加载失败')
@@ -51,6 +55,9 @@ async function loadAll() {
     loading.value = false
   }
 }
+
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+function goPage(p: number) { page.value = p; loadAll() }
 
 function className(id: string) {
   return classes.value.find(c => c.id === id)?.name || id
@@ -193,6 +200,22 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+        <span class="text-xs text-cocoa-400">共 {{ total }} 条</span>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page===0" @click="goPage(page-1)">上一页</button>
+          <span class="text-xs text-cocoa-500">第 {{ page+1 }}/{{ totalPages }} 页</span>
+          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page+1>=totalPages" @click="goPage(page+1)">下一页</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-cocoa-400">每页</span>
+          <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm" @change="goPage(0)">
+            <option :value="10">10</option><option :value="20">20</option><option :value="50">50</option>
+          </select>
+        </div>
       </div>
     </section>
   </div>

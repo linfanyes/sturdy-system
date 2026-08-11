@@ -132,7 +132,9 @@ export class SchoolAdminController {
 
   @Get('classes')
   @UseGuards(JwtAuthGuard)
-  listClasses(@CurrentSchoolAdmin() a: any) { return this.classSvc.listClasses(a.schoolId) }
+  listClasses(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.classSvc.listClasses(a.schoolId, Number(skip) || 0, Number(take) || 500)
+  }
 
   @Get('classes/:id')
   @UseGuards(JwtAuthGuard)

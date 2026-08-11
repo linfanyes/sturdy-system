@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import {
@@ -21,6 +21,10 @@ const loading = ref(false)
 const classes = ref<ClassItem[]>([])
 const total = ref(0)
 const keyword = ref('')
+const page = ref(0)
+const pageSize = ref(20)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 
 const filtered = computed(() => {
   if (!keyword.value) return classes.value
@@ -36,7 +40,8 @@ const filtered = computed(() => {
 async function loadClasses() {
   loading.value = true
   try {
-    const res = await listClasses(0, 500)
+    const skip = page.value * pageSize.value
+    const res = await listClasses(skip, pageSize.value)
     classes.value = res.items
     total.value = res.total
   } catch (e: any) {
@@ -46,7 +51,9 @@ async function loadClasses() {
   }
 }
 
-onMounted(loadClasses)
+function goPage(p: number) { page.value = p; loadClasses() }
+watch(page, () => loadClasses())
+watch(pageSize, () => { page.value = 0; loadClasses() })
 
 /* ============ 教师选项 ============ */
 const teachers = ref<TeacherItem[]>([])
@@ -352,6 +359,22 @@ function handlePrint() {
           </template>
         </tbody>
       </table>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+      <span class="text-xs text-cocoa-400">共 {{ total }} 个班级</span>
+      <div class="flex items-center gap-2">
+        <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page===0" @click="goPage(page-1)">上一页</button>
+        <span class="text-xs text-cocoa-500">第 {{ page+1 }}/{{ totalPages }} 页</span>
+        <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="page+1>=totalPages" @click="goPage(page+1)">下一页</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-cocoa-400">每页</span>
+        <select v-model.number="pageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm">
+          <option :value="10">10</option><option :value="20">20</option><option :value="50">50</option>
+        </select>
+      </div>
     </div>
   </div>
 

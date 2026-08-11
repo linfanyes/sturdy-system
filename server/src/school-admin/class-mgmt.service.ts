@@ -31,13 +31,15 @@ export class ClassMgmtService {
   ) {}
 
   /** 本校班级列表（通过教师所属学校查询） */
-  async listClasses(schoolId: string) {
+  async listClasses(schoolId: string, skip = 0, take = 500) {
     const allTeachers = await this.userRepo.find({ where: { schoolId } })
     const ids = allTeachers.map(t => t.id)
     if (!ids.length) return { items: [], total: 0 }
     const [items, total] = await this.classRepo.findAndCount({
       where: ids.map(id => ({ teacherId: id })),
       order: { createdAt: 'DESC' },
+      skip,
+      take,
     })
     if (items.length) {
       const classIds = items.map(i => i.id)
