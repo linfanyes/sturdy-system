@@ -7,6 +7,7 @@ const props = withDefaults(defineProps<{
   data: BarData[]
   height?: number
   title?: string
+  color?: string
 }>(), { height: 180 })
 
 const maxVal = computed(() => Math.max(...props.data.map(d => d.value), 1))
@@ -15,8 +16,7 @@ const colors = ['#e6a23c', '#67c23a', '#409eff', '#e06c75', '#8e7cc3', '#40c9c6'
 
 const bars = computed(() => props.data.map((d, i) => ({
   ...d,
-  color: d.color || colors[i % colors.length],
-  // 小值不再被 8% 保底拉高：真实反映比例差异（仅保留 2.5% 最低可见高度）
+  color: d.color || props.color || colors[i % colors.length],
   pct: d.value > 0 ? Math.max((d.value / maxVal.value) * 100, 2.5) : 0,
 })))
 

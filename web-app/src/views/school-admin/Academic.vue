@@ -26,6 +26,9 @@ const examName = ref('')
 const page = ref(0)
 const pageSize = ref(20)
 const total = ref(0)
+const examPage = ref(0)
+const examPageSize = ref(20)
+const examTotal = ref(0)
 
 const exams = ref<any[]>([])
 const grades = ref<any[]>([])
@@ -47,7 +50,9 @@ async function loadAll() {
       listSchoolGrades({ ...params, subject: subject.value || undefined, examName: examName.value || undefined, skip: page.value * pageSize.value, take: pageSize.value }),
       getSchoolGradeSummary({ classId: classId.value || undefined }),
     ])
-    exams.value = Array.isArray(examRes) ? examRes : (examRes?.items || [])
+    const allExams = Array.isArray(examRes) ? examRes : (examRes?.items || [])
+    examTotal.value = allExams.length
+    exams.value = allExams.slice(examPage.value * examPageSize.value, (examPage.value + 1) * examPageSize.value)
     grades.value = Array.isArray(gradeRes) ? gradeRes : (gradeRes?.items || [])
     total.value = gradeRes?.total || grades.value.length
     summary.value = (sumRes?.subjects ? sumRes : { subjects: [], classes: [], totalGrades: 0 }) as any
@@ -57,6 +62,9 @@ async function loadAll() {
     loading.value = false
   }
 }
+
+const examTotalPages = computed(() => Math.max(1, Math.ceil(examTotal.value / examPageSize.value)))
+function goExamPage(p: number) { examPage.value = p; loadAll() }
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 function goPage(p: number) { page.value = p; loadAll() }
@@ -182,12 +190,38 @@ onMounted(async () => {
       </div>
     </section>
 
+    <!-- 各班横向对比 -->
+    <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer">
+      <div class="flex items-center gap-2 mb-4">
+        <TrendingUp class="w-5 h-5 text-butter-500" />
+        <h2 class="text-lg font-semibold text-cocoa-900">各班横向对比</h2>
+        <select v-model="selectedCompareExam" class="ml-auto px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm">
+          <option value="">选择考试</option>
+          <option v-for="e in [...new Set(exams.map(x=>x.name))]" :key="e" :value="e">{{ e }}</option>
+        </select>
+      </div>
+      <div v-if="!selectedCompareExam" class="text-center text-cocoa-400 py-8">请选择一场考试查看各班对比</div>
+      <SvgBarChart v-else-if="compareData.length" :data="compareData" :height="200" title="各班平均分对比" color="#f5b342" />
+      <div v-else class="text-center text-cocoa-400 py-8">暂无对比数据</div>
+    </section>
+
+    <!-- 成绩趋势 -->
+    <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer">
+      <div class="flex items-center gap-2 mb-4">
+        <TrendingUp class="w-5 h-5 text-mint-500" />
+        <h2 class="text-lg font-semibold text-cocoa-900">成绩趋势</h2>
+        <span class="text-sm text-cocoa-400 ml-auto">按考试时间排序</span>
+      </div>
+      <SvgLineChart v-if="trendData.length" :data="trendData" :height="200" title="" series1Name="均分" color="#67c23a" />
+      <div v-else class="text-center text-cocoa-400 py-8">暂无趋势数据</div>
+    </section>
+
     <!-- 考试列表 -->
     <section class="bg-surface rounded-2xl p-6 shadow-softer">
       <div class="flex items-center gap-2 mb-4">
         <FileText class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">考试列表</h2>
-        <span class="text-sm text-cocoa-400 ml-auto">共 {{ exams.length }} 场</span>
+        <span class="text-sm text-cocoa-400 ml-auto">共 {{ examTotal }} 场</span>
       </div>
       <div v-if="!exams.length" class="text-center text-cocoa-400 py-6">暂无考试</div>
       <div v-else class="overflow-x-auto">
@@ -212,6 +246,21 @@ onMounted(async () => {
           </tbody>
         </table>
       </div>
+      <!-- 考试分页 -->
+      <div v-if="examTotal > 0 && examPageSize < examTotal" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
+        <span class="text-xs text-cocoa-400">共 {{ examTotal }} 场</span>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="examPage===0" @click="goExamPage(examPage-1)">上一页</button>
+          <span class="text-xs text-cocoa-500">第 {{ examPage+1 }}/{{ examTotalPages }} 页</span>
+          <button class="px-3 py-1.5 rounded-xl border border-cream-200 text-sm disabled:opacity-40" :disabled="examPage+1>=examTotalPages" @click="goExamPage(examPage+1)">下一页</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-cocoa-400">每页</span>
+          <select v-model.number="examPageSize" class="px-2 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm" @change="goExamPage(0)">
+            <option :value="10">10</option><option :value="20">20</option><option :value="50">50</option>
+          </select>
+        </div>
+      </div>
     </section>
 
     <!-- 成绩列表 -->
@@ -219,7 +268,7 @@ onMounted(async () => {
       <div class="flex items-center gap-2 mb-4">
         <BarChart3 class="w-5 h-5 text-butter-500" />
         <h2 class="text-lg font-semibold text-cocoa-900">成绩列表</h2>
-        <span class="text-sm text-cocoa-400 ml-auto">共 {{ grades.length }} 条</span>
+        <span class="text-sm text-cocoa-400 ml-auto">共 {{ total }} 条</span>
       </div>
       <div v-if="!grades.length" class="text-center text-cocoa-400 py-6">暂无成绩记录</div>
       <div v-else class="overflow-x-auto">
@@ -245,33 +294,7 @@ onMounted(async () => {
         </table>
       </div>
 
-      <!-- 各班横向对比 -->
-      <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer mt-4">
-        <div class="flex items-center gap-2 mb-4">
-          <TrendingUp class="w-5 h-5 text-butter-500" />
-          <h2 class="text-lg font-semibold text-cocoa-900">各班横向对比</h2>
-          <select v-model="selectedCompareExam" class="ml-auto px-3 py-1.5 rounded-xl border border-cream-200 bg-surface text-sm">
-            <option value="">选择考试</option>
-            <option v-for="e in [...new Set(exams.map(x=>x.name))]" :key="e" :value="e">{{ e }}</option>
-          </select>
-        </div>
-        <div v-if="!selectedCompareExam" class="text-center text-cocoa-400 py-8">请选择一场考试查看各班对比</div>
-        <SvgBarChart v-else-if="compareData.length" :data="compareData" :height="200" title="各班平均分对比" color="#f5b342" />
-        <div v-else class="text-center text-cocoa-400 py-8">暂无对比数据</div>
-      </section>
-
-      <!-- 趋势分析 -->
-      <section v-if="exams.length" class="bg-surface rounded-2xl p-6 shadow-softer mt-4">
-        <div class="flex items-center gap-2 mb-4">
-          <TrendingUp class="w-5 h-5 text-mint-500" />
-          <h2 class="text-lg font-semibold text-cocoa-900">成绩趋势</h2>
-          <span class="text-sm text-cocoa-400 ml-auto">按考试时间排序</span>
-        </div>
-        <SvgLineChart v-if="trendData.length" :data="trendData" :height="200" title="" series1Name="均分" color="#67c23a" />
-        <div v-else class="text-center text-cocoa-400 py-8">暂无趋势数据</div>
-      </section>
-
-      <!-- 分页 -->
+      <!-- 成绩分页 -->
       <div v-if="total > 0 && pageSize < total" class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-cream-100">
         <span class="text-xs text-cocoa-400">共 {{ total }} 条</span>
         <div class="flex items-center gap-2">
