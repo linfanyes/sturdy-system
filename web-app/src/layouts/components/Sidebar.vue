@@ -2,15 +2,12 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useRoleSwitchStore } from '@/stores/roleSwitch'
-import { LayoutDashboard, School, LogOut, User, Repeat, Users, GraduationCap, ToggleLeft, Trash2, Bot, Settings, BookOpen } from 'lucide-vue-next'
 import { teacherMenu, superMenu, schoolAdminMenu, flatNavItems, palette, roleLabel } from '../layoutMenus'
 import type { Role } from '@/types/user'
 import type { MenuCategory, MenuItem } from '../layoutMenus'
 import { useParentKids } from '@/composables/useParentKids'
 
 const auth = useAuthStore()
-const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -111,7 +108,11 @@ function toggleCat(label: string) {
   router.push(role === 'super' ? '/super' : role === 'school_admin' ? '/school-admin' : '/teacher')
 }
 
-const canSwitchToParent = computed(() => !!roleSwitchStore.teacherToken && auth.role === 'teacher')
+const showProfile = ref(false)
+const showManualPreview = ref(false)
+const manualContent = ref('')
+
+function toggleProfile() { showProfile.value = !showProfile.value }
 
 const manualMap: Record<string, string> = {
   super: '/docs/super-admin-guide.md',
@@ -123,10 +124,47 @@ function openManual() {
   const url = manualMap[auth.role || 'teacher'] || '/docs/teacher-guide.md'
   window.open(url, '_blank')
 }
+async function previewManual() {
+  const url = manualMap[auth.role || 'teacher'] || '/docs/teacher-guide.md'
+  try {
+    const resp = await fetch(url)
+    manualContent.value = await resp.text()
+    showManualPreview.value = true
+  } catch { manualContent.value = '# 加载失败\n请检查网络连接' }
+}
+function downloadManual() {
+  const url = manualMap[auth.role || 'teacher'] || '/docs/teacher-guide.md'
+  const a = document.createElement('a')
+  a.href = url
+  a.download = url.split('/').pop() || 'manual.md'
+  a.click()
+}
+
+// Simple markdown-to-HTML renderer
+function renderMarkdown(md: string): string {
+  if (!md) return ''
+  let html = md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold mt-4 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-5 mb-2 border-b pb-1">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-6 mb-3">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="bg-cream-100 px-1 rounded text-xs">$1</code>')
+    .replace(/^\- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
+    .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-butter-300 pl-3 italic text-cocoa-500 my-2">$1</blockquote>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-butter-600 underline">$1</a>')
+    .replace(/\|(.+)\|/g, (match) => {
+      const cells = match.split('|').filter(c => c.trim())
+      if (cells.length < 3) return match
+      return '<div class="flex gap-2 my-1">' + cells.map(c => '<span class="flex-1 text-xs px-2 py-1 bg-cream-50 rounded">' + c.trim() + '</span>').join('') + '</div>'
+    })
+  return html
+}
 
 const emit = defineEmits<{
   (e: 'logout'): void
-  (e: 'switchToParent'): void
   (e: 'activeCategoryChange', value: string): void
 }>()
 
@@ -255,17 +293,82 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
       </template>
     </nav>
 
-    <!-- 用户信息底部 -->
-    <div class="border-t border-cream-200/60 pt-3 w-full flex flex-col items-center gap-2">
-      <div class="w-9 h-9 rounded-full bg-butter-300 flex items-center justify-center">
-        <User class="w-4 h-4 text-cocoa-700" />
+    <!-- 用户头像+弹出面板 -->
+    <div class="relative border-t border-cream-200/60 pt-3 w-full flex flex-col items-center">
+      <button
+        class="w-10 h-10 rounded-full bg-butter-300 hover:bg-butter-400 flex items-center justify-center transition-colors"
+        :title="auth.user?.name || roleLabel[auth.role || 'teacher']"
+        @click="toggleProfile"
+      >
+        <User class="w-5 h-5 text-cocoa-700" />
+      </button>
+
+      <!-- 弹出面板 -->
+      <div
+        v-if="showProfile"
+        class="absolute bottom-14 left-2 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4 z-50 text-left"
+      >
+        <!-- 个人信息 -->
+        <div class="flex items-center gap-3 mb-3 pb-3 border-b border-cream-100">
+          <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0">
+            <User class="w-5 h-5 text-cocoa-700" />
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-cocoa-900 truncate">{{ auth.user?.name || '用户' }}</div>
+            <div class="text-xs text-cocoa-400">{{ roleLabel[auth.role || 'teacher'] || auth.role }}</div>
+            <div v-if="auth.user?.schoolName" class="text-xs text-cocoa-400 truncate">{{ auth.user.schoolName }}</div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-cocoa-700 hover:bg-cream-50 transition-colors"
+          @click="previewManual"
+        >
+          <BookOpen class="w-4 h-4 text-butter-500" />
+          <span>操作手册</span>
+          <ChevronRight class="w-3 h-3 ml-auto text-cocoa-300" />
+        </button>
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-cocoa-700 hover:bg-cream-50 transition-colors"
+          @click="downloadManual"
+        >
+          <Download class="w-4 h-4 text-mint-500" />
+          <span>下载手册</span>
+        </button>
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors mt-1"
+          @click="emit('logout')"
+        >
+          <LogOut class="w-4 h-4" />
+          <span>退出登录</span>
+        </button>
       </div>
-      <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="操作手册" @click="openManual">
-        <BookOpen class="w-4 h-4" />
-      </button>
-      <button class="p-1.5 rounded-lg hover:bg-cream-200 text-cocoa-500" title="退出登录" @click="emit('logout')">
-        <LogOut class="w-4 h-4" />
-      </button>
     </div>
+
+    <!-- 手册预览弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="showManualPreview"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
+        @click.self="showManualPreview = false"
+      >
+        <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-surface shadow-xl overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-cream-200">
+            <h3 class="text-lg font-bold text-cocoa-900">操作手册</h3>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1.5 rounded-lg text-sm text-cocoa-600 hover:bg-cream-100 transition-colors" @click="downloadManual">
+                <Download class="w-4 h-4 inline mr-1" />下载
+              </button>
+              <button class="px-3 py-1.5 rounded-lg text-sm text-cocoa-600 hover:bg-cream-100 transition-colors" @click="showManualPreview = false">✕ 关闭</button>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto px-5 py-4">
+            <div v-if="manualContent" class="prose prose-sm max-w-none text-cocoa-800" v-html="renderMarkdown(manualContent)" />
+            <div v-else class="text-cocoa-400 py-10 text-center">加载中…</div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </aside>
 </template>
