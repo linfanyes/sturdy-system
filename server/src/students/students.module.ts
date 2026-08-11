@@ -388,6 +388,34 @@ class StudentsService extends CrudService<Student> {
       await Promise.all(studentTables.map((t) =>
         manager.query(`DELETE FROM \`${t}\` WHERE studentId = ?`, [id]).catch(() => {})
       ))
+      // P3-1: 清理 grades.scores JSON 数组中该学生的成绩条目（避免"幽灵数据"）
+      try {
+        const gradeRows = await manager.query(
+          `SELECT id, scores FROM grades WHERE classId = ? AND JSON_CONTAINS(scores, JSON_OBJECT('studentId', ?))`,
+          [e.classId, id]
+        )
+        for (const row of gradeRows) {
+          const scores = JSON.parse(row.scores || '[]')
+          const filtered = scores.filter((s: any) => s.studentId !== id)
+          if (filtered.length !== scores.length) {
+            await manager.query(`UPDATE grades SET scores = ? WHERE id = ?`, [JSON.stringify(filtered), row.id])
+          }
+        }
+      } catch { /* JSON_CONTAINS 不支持时跳过 */ }
+      // P3-1: 清理 attendances.records JSON 数组中该学生的考勤记录
+      try {
+        const attRows = await manager.query(
+          `SELECT id, records FROM attendances WHERE classId = ? AND JSON_CONTAINS(records, JSON_OBJECT('studentId', ?))`,
+          [e.classId, id]
+        )
+        for (const row of attRows) {
+          const records = JSON.parse(row.records || '[]')
+          const filtered = records.filter((r: any) => r.studentId !== id)
+          if (filtered.length !== records.length) {
+            await manager.query(`UPDATE attendances SET records = ? WHERE id = ?`, [JSON.stringify(filtered), row.id])
+          }
+        }
+      } catch { /* JSON_CONTAINS 不支持时跳过 */ }
       // 清理座位引用（从 seat_layouts 的 seats JSON 中移除该学生）
       const seats = await manager.query(`SELECT id, seats FROM seat_layouts WHERE classId = ?`, [e.classId])
       for (const row of seats) {

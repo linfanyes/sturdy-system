@@ -1,7 +1,8 @@
 import { Module, UseGuards } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, DataSource } from 'typeorm'
+import { InjectDataSource } from '@nestjs/typeorm'
 import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Feature } from '../common/decorators/feature.decorator'
@@ -25,6 +26,7 @@ class ClassesService extends CrudService<ClassItem> {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {
     super(repo)
     this.withClassMemberService(classMemberSvc2)
@@ -93,6 +95,11 @@ class ClassesService extends CrudService<ClassItem> {
     // 删除班级同时清理所有学期的成员关系（并行）
     const members = await this.classMemberSvc.listByClass(id)
     await Promise.all(members.map((m) => this.classMemberSvc.removeMember(m.teacherId, id, m.term)))
+    // P3-2: 级联删除班级下的考试和成绩数据，避免孤儿数据累积
+    try {
+      await this.dataSource.query(`DELETE FROM grades WHERE classId = ?`, [id])
+      await this.dataSource.query(`DELETE FROM exams WHERE classId = ?`, [id])
+    } catch { /* 忽略 */ }
     return super.remove(id, teacherId)
   }
 
