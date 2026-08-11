@@ -411,6 +411,41 @@
           </view>
         </view>
       </view>
+
+      <!-- 各班横向对比 -->
+      <view v-if="acadExams.length" class="notice-section">
+        <view class="notice-hd">
+          <text class="notice-title">📊 各班横向对比</text>
+          <picker class="act" :value="compareExamIdx" :range="acadExamNames" @change="onCompareExamChange">
+            <text>{{ compareExamName || '选择考试' }} ▾</text>
+          </picker>
+        </view>
+        <view v-if="!compareExamName" class="empty-hint">请先选择一场考试</view>
+        <view v-else-if="compareChartData.length" class="compare-bars">
+          <view class="compare-row" v-for="d in compareChartData" :key="d.label">
+            <text class="compare-label">{{ d.label }}</text>
+            <view class="compare-bar-wrap"><view class="compare-bar" :style="{ width: (d.value / compareMax * 100) + '%' }"></view></view>
+            <text class="compare-val">{{ d.value }}</text>
+          </view>
+        </view>
+        <EmptyState v-else icon="📊" text="暂无对比数据" />
+      </view>
+
+      <!-- 成绩趋势 -->
+      <view v-if="acadGrades.length" class="notice-section">
+        <view class="notice-hd">
+          <text class="notice-title">📈 成绩趋势</text>
+          <text class="act-sub">{{ trendChartData.length }} 场考试</text>
+        </view>
+        <view v-if="trendChartData.length" class="trend-bars">
+          <view class="trend-bar-col" v-for="(d,i) in trendChartData" :key="i">
+            <view class="trend-bar-wrap"><view class="trend-bar" :style="{ height: (d.value / trendMax * 160) + 'rpx' }"></view></view>
+            <text class="trend-label">{{ d.label }}</text>
+            <text class="trend-rate">{{ d.value }}</text>
+          </view>
+        </view>
+        <EmptyState v-else icon="📈" text="暂无趋势数据" />
+      </view>
     </template>
   </view>
 </template>
@@ -658,8 +693,8 @@ async function loadAcademic() {
   try {
     const [sum, exams, grades] = await Promise.all([
       apiCall('GET', '/school-admin/academic/summary'),
-      apiCall('GET', '/school-admin/academic/exams'),
-      apiCall('GET', '/school-admin/academic/grades'),
+      apiCall('GET', '/school-admin/academic/exams?take=500'),
+      apiCall('GET', '/school-admin/academic/grades?take=500'),
     ])
     acadSummary.value = (sum && Array.isArray(sum.subjects)) ? sum : { subjects: [], totalGrades: 0 }
     acadExams.value = (exams && exams.items) || (Array.isArray(exams) ? exams : [])
@@ -667,6 +702,37 @@ async function loadAcademic() {
   } catch (e) { uni.showToast({ title: (e && e.message) || '加载失败', icon: 'none' }) }
   finally { acadLoading.value = false }
 }
+
+// 班级对比 + 趋势图表
+const compareExamIdx = ref(-1)
+const compareExamName = computed(() => acadExamNames.value[compareExamIdx.value] || '')
+const acadExamNames = computed(() => [...new Set(acadExams.value.map(e => e.name))])
+function onCompareExamChange(e) { compareExamIdx.value = e.detail.value }
+const compareChartData = computed(() => {
+  if (!compareExamName.value) return []
+  const map = new Map()
+  acadGrades.value.filter(g => g.examName === compareExamName.value).forEach(g => {
+    const cn = acadClassName(g.classId)
+    const cur = map.get(cn) || { total: 0, count: 0 }
+    const scores = (g.scores || []).filter(s => s.score != null)
+    if (scores.length) { cur.total += scores.reduce((a,s) => a + s.score,0) / scores.length; cur.count++ }
+    map.set(cn, cur)
+  })
+  return [...map.entries()].map(([label, v]) => ({ label, value: Math.round(v.total / Math.max(1, v.count) * 10) / 10 }))
+})
+const compareMax = computed(() => Math.max(1, ...compareChartData.value.map(d => d.value)))
+const trendChartData = computed(() => {
+  const map = new Map()
+  acadGrades.value.forEach(g => {
+    const key = g.examName || g.id
+    const cur = map.get(key) || { label: g.date?.slice(0,7) || g.examName || key, total: 0, count: 0 }
+    const scores = (g.scores || []).filter(s => s.score != null)
+    if (scores.length) { cur.total += scores.reduce((a,s) => a + s.score,0) / scores.length; cur.count++ }
+    map.set(key, cur)
+  })
+  return [...map.values()].map(v => ({ label: v.label.slice(0,6), value: Math.round(v.total / Math.max(1, v.count) * 10) / 10 }))
+})
+const trendMax = computed(() => Math.max(1, ...trendChartData.value.map(d => d.value)))
 
 function goSchoolFeatures() { uni.navigateTo({ url: '/pages/school-admin/school-features' }) }
 function goZhzx() { uni.navigateTo({ url: '/pages/community/resource' }) }
@@ -1051,4 +1117,17 @@ onShow(async () => { await Promise.all([loadTeachers(), loadDashboard(), loadNot
 .dark .semester-date-row .inp { background: var(--c-input); }
 .dark .facet { background: var(--c-card2); }
 .dark .enter { background: var(--c-primary); }
+.compare-bars { padding: 10rpx 0; }
+.compare-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 14rpx; }
+.compare-label { width: 120rpx; font-size: 24rpx; color: var(--c-text); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compare-bar-wrap { flex: 1; height: 28rpx; background: var(--c-card2); border-radius: 14rpx; overflow: hidden; }
+.compare-bar { height: 100%; border-radius: 14rpx; background: linear-gradient(90deg, #f5b342, #67c23a); min-width: 8rpx; }
+.compare-val { width: 64rpx; font-size: 22rpx; color: var(--c-primary); font-weight: 600; text-align: left; }
+.trend-bars { display: flex; align-items: flex-end; gap: 8rpx; padding: 10rpx 0; height: 200rpx; }
+.trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.trend-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.trend-bar { width: 36rpx; border-radius: 6rpx 6rpx 0 0; background: #67c23a; min-height: 4rpx; }
+.trend-label { font-size: 20rpx; color: var(--c-sub); margin-top: 4rpx; }
+.trend-rate { font-size: 18rpx; color: var(--c-sub2); }
+.empty-hint { text-align: center; padding: 40rpx 0; font-size: 26rpx; color: var(--c-sub); }
 </style>
