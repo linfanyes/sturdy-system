@@ -148,4 +148,16 @@ export class GradesController extends CrudController<Grade> {
     if (!classId) throw new BadRequestException('缺少 classId')
     return (this.service as GradesService).weakStudents(t.sub, classId, examId || undefined)
   }
+
+  @Get('export')
+  @UseGuards(JwtAuthGuard)
+  async exportGrades(
+    @Query('classId') classId: string,
+    @CurrentTeacher() t: any,
+    @Query('term') term?: string,
+  ) {
+    if (!classId) throw new BadRequestException('缺少 classId')
+    const r = await (this.service as GradesService).findAll(t.sub, classId, 0, 5000, term)
+    return { total: Array.isArray(r) ? r.length : (r?.items?.length || 0), data: Array.isArray(r) ? r : (r?.items || []) }
+  }
 }

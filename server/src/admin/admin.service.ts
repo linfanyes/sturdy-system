@@ -364,6 +364,37 @@ export class AdminService implements OnModuleInit {
     return { ok: true }
   }
 
+  /** 批量创建学校管理员 */
+  async batchCreateAdmins(admins: Array<{ username: string; password: string; name: string; schoolId: string; enabled?: boolean }>) {
+    if (!admins?.length) throw new BadRequestException('请至少提供一位管理员信息')
+    const results = []
+    for (const a of admins) {
+      try {
+        const r = await this.createAdmin(a)
+        results.push({ username: a.username, status: '成功', id: r.id, schoolName: r.schoolName })
+      } catch (e: any) {
+        results.push({ username: a.username, status: '失败', error: e.message })
+      }
+    }
+    return { total: admins.length, success: results.filter(r => r.status === '成功').length, failed: results.filter(r => r.status === '失败').length, results }
+  }
+
+  /** 超管导出学校数据 */
+  async exportSchools() {
+    const [schools] = await this.schoolRepo.findAndCount({ take: 1000 })
+    const admins = await this.saRepo.find({ take: 5000 })
+    const adminCountBySchool = new Map<string, number>()
+    for (const a of admins) {
+      if (a.schoolId) adminCountBySchool.set(a.schoolId, (adminCountBySchool.get(a.schoolId) || 0) + 1)
+    }
+    const data = schools.map(s => ({
+      id: s.id, name: s.name, code: s.code, status: s.status,
+      address: s.address, contact: s.contact, phone: s.phone,
+      adminCount: adminCountBySchool.get(s.id) || 0, createdAt: s.createdAt,
+    }))
+    return { total: schools.length, data }
+  }
+
   /** 批量启用/禁用学校（勾选后一键停用/启用） */
   async batchToggleSchoolEnabled(ids: string[], enabled: boolean, operator = 'super') {
     if (!ids || !ids.length) throw new BadRequestException('请至少选择一条数据')

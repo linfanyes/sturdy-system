@@ -33,11 +33,26 @@ export class TeacherMgmtService {
   ) {}
 
   /** 本校教师列表 */
-  async listTeachers(schoolId: string, skip = 0, take = 200) {
-    const [users, total] = await this.userRepo.findAndCount({
-      where: { schoolId }, order: { createdAt: 'DESC' }, skip, take,
-    })
-    const items = users.map(u => ({
+  async listTeachers(schoolId: string, skip = 0, take = 200, keyword?: string) {
+    let where: any = { schoolId }
+    let teachers: User[]
+    let total: number
+    if (keyword && keyword.trim()) {
+      const kw = keyword.trim()
+      teachers = await this.userRepo.find({ where: { schoolId }, order: { createdAt: 'DESC' } })
+      const filtered = teachers.filter(u =>
+        u.name?.includes(kw) || u.username?.includes(kw) || u.teacherNo?.includes(kw) || u.subject?.includes(kw)
+      )
+      total = filtered.length
+      teachers = filtered.slice(skip, skip + take)
+    } else {
+      const [items, cnt] = await this.userRepo.findAndCount({
+        where: { schoolId }, order: { createdAt: 'DESC' }, skip, take,
+      })
+      teachers = items
+      total = cnt
+    }
+    const items = teachers.map(u => ({
       id: u.id, name: u.name, username: u.username, subject: u.subject,
       phone: u.phone, gender: u.gender, school: u.school, features: u.features || [],
       enabled: u.enabled !== false, createdAt: u.createdAt,
@@ -203,6 +218,19 @@ export class TeacherMgmtService {
       password += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     return password
+  }
+
+  /** 获取教师详情 */
+  async getTeacher(schoolId: string, teacherId: string) {
+    const user = await this.userRepo.findOne({ where: { id: teacherId, schoolId } })
+    if (!user) throw new BadRequestException('教师不存在或不属于本校')
+    return {
+      id: user.id, name: user.name, username: user.username, subject: user.subject,
+      phone: user.phone, gender: user.gender, school: user.school, features: user.features || [],
+      enabled: user.enabled !== false, createdAt: user.createdAt,
+      teacherNo: user.teacherNo || '', position: user.position || '',
+      positions: user.positions || [], grade: user.grade || '',
+    }
   }
 
   /** 删除教师账号及所有关联数据，保留学生但禁用家长登录（事务保护） */

@@ -9,6 +9,7 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -19,8 +20,8 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "paths": {
-      "@gardener/shared": ["../shared/dist", "node_modules/@gardener/shared/dist"],
-      "@gardener/shared/*": ["../shared/*", "node_modules/@gardener/shared/dist/*"]
+      "@gardener/shared": ["node_modules/@gardener/shared/dist", "../shared/dist"],
+      "@gardener/shared/*": ["node_modules/@gardener/shared/dist/*", "../shared/dist/*"]
     }
   },
   "include": ["src/**/*"],

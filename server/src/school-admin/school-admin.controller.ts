@@ -56,8 +56,14 @@ export class SchoolAdminController {
 
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
-  listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.teacherSvc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200)
+  listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string, @Query('keyword') keyword?: string) {
+    return this.teacherSvc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200, keyword)
+  }
+
+  @Get('teachers/:id')
+  @UseGuards(JwtAuthGuard)
+  getTeacher(@CurrentSchoolAdmin() a: any, @Param('id') id: string) {
+    return this.teacherSvc.getTeacher(a.schoolId, id)
   }
 
   @Post('teachers')
@@ -71,12 +77,25 @@ export class SchoolAdminController {
   }
 
   /** 从 CSV/Excel/JSON 文件导入教师（列：姓名,性别,学科,手机号） */
+  @Post('teachers/batch-import')
+  @UseGuards(JwtAuthGuard)
+  async batchImportTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { teachers?: any[]; filename?: string; data?: string }) {
+    if (b?.teachers?.length) {
+      return this.teacherSvc.batchCreateTeachers(a.schoolId, b.teachers)
+    }
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    const { rows } = await this.teacherSvc.parseTeacherFile(b.filename, b.data)
+    const valid = rows.filter((r: any) => r.valid).map((r: any) => ({ name: r.name, gender: r.gender, subject: r.subject, phone: r.phone }))
+    if (!valid.length) throw new BadRequestException('文件中无有效教师数据')
+    return this.teacherSvc.batchCreateTeachers(a.schoolId, valid)
+  }
+
   @Post('teachers/import')
   @UseGuards(JwtAuthGuard)
   async importTeachers(@CurrentSchoolAdmin() a: any, @Body() b: { filename?: string; data?: string }) {
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
     const { rows } = await this.teacherSvc.parseTeacherFile(b.filename, b.data)
-    const valid = rows.filter((r) => r.valid).map((r) => ({ name: r.name, gender: r.gender, subject: r.subject, phone: r.phone }))
+    const valid = rows.filter((r: any) => r.valid).map((r: any) => ({ name: r.name, gender: r.gender, subject: r.subject, phone: r.phone }))
     if (!valid.length) throw new BadRequestException('文件中无有效教师数据')
     return this.teacherSvc.batchCreateTeachers(a.schoolId, valid)
   }
@@ -230,13 +249,21 @@ export class SchoolAdminController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
     @Query('classId') classId?: string,
+    @Query('keyword') keyword?: string,
   ) {
     return this.classSvc.listSchoolStudents(
       a.schoolId,
       Number(skip) || 0,
       Number(take) || 500,
       classId || undefined,
+      keyword || undefined,
     )
+  }
+
+  @Get('students/export')
+  @UseGuards(JwtAuthGuard)
+  async exportStudents(@CurrentSchoolAdmin() a: any) {
+    return await this.studentOps.exportStudentsData(a.schoolId)
   }
 
   @Patch('students/:id')
@@ -264,6 +291,26 @@ export class SchoolAdminController {
    * 文件列顺序与教师端一致：姓名,性别,学号,家长姓名,家长电话。
    * 解析后取有效行写入指定 classId，返回成功/失败明细。
    */
+  @Post('students/batch-import')
+  @UseGuards(JwtAuthGuard)
+  async batchImportStudents(
+    @CurrentSchoolAdmin() a: any,
+    @Body() b: { classId?: string; students?: any[]; filename?: string; data?: string },
+  ) {
+    if (b?.students?.length) {
+      return this.studentOps.batchCreateStudents(a.schoolId, b.students)
+    }
+    if (!b?.classId) throw new BadRequestException('缺少班级ID')
+    if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
+    const { rows } = await this.studentOps.parseStudentFile(b.filename, b.data)
+    const valid = rows.filter((r) => r.valid).map((r) => ({
+      name: r.name, gender: r.gender, studentNo: r.studentNo,
+      parentName: r.parentName, parentPhone: r.parentPhone, classId: b.classId,
+    }))
+    if (!valid.length) throw new BadRequestException('文件中无有效学生数据')
+    return this.studentOps.batchCreateStudents(a.schoolId, valid)
+  }
+
   @Post('students/import')
   @UseGuards(JwtAuthGuard)
   async importStudents(
@@ -273,7 +320,6 @@ export class SchoolAdminController {
     if (!b?.classId) throw new BadRequestException('缺少班级ID')
     if (!b?.filename || !b?.data) throw new BadRequestException('缺少文件数据')
     const { rows } = await this.studentOps.parseStudentFile(b.filename, b.data)
-    // 仅导入校验通过的有效行，统一填充 classId
     const valid = rows.filter((r) => r.valid).map((r) => ({
       name: r.name, gender: r.gender, studentNo: r.studentNo,
       parentName: r.parentName, parentPhone: r.parentPhone, classId: b.classId,
@@ -311,7 +357,7 @@ export class SchoolAdminController {
 
   @Get('export/students')
   @UseGuards(JwtAuthGuard)
-  async exportStudents(@CurrentSchoolAdmin() a: any, @Res() res: any) {
+  async exportStudentsCsv(@CurrentSchoolAdmin() a: any, @Res() res: any) {
     const data = await this.studentOps.exportStudents(a.schoolId)
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=students.csv')

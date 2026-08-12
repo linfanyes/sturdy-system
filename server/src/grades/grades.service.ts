@@ -59,14 +59,17 @@ export class GradesService extends CrudService<Grade> {
 
   async mergeGrade(teacherId: string, dto: any) {
     await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
-    const existing = await this.repo.findOne({
-      where: {
+    const where: any = {
         classId: dto.classId,
-        examName: dto.examName,
         subject: dto.subject,
         teacherId,
-      } as any,
-    })
+    }
+    if (dto.examId) {
+        where.examId = dto.examId
+    } else {
+        where.examName = dto.examName
+    }
+    const existing = await this.repo.findOne({ where })
     if (existing) {
       existing.scores = dto.scores
       existing.date = dto.date
@@ -145,14 +148,17 @@ export class GradesService extends CrudService<Grade> {
         .filter((r: any) => r.valid && r.studentId && classStudentIds.has(r.studentId) && inRange(r.score))
         .map((r: any) => ({ studentId: r.studentId, score: r.score == null ? null : Number(r.score) }))
       if (!scores.length) throw new BadRequestException('没有可导入的有效成绩')
-      const existing = await repo.findOne({
-        where: {
-          classId: dto.classId,
-          examName: dto.examName,
-          subject: dto.subject,
-          teacherId,
-        } as any,
-      })
+      const where: any = {
+            classId: dto.classId,
+            subject: dto.subject,
+            teacherId,
+          }
+          if (dto.examId) {
+            where.examId = dto.examId
+          } else {
+            where.examName = dto.examName
+          }
+          const existing = await repo.findOne({ where })
       if (existing) {
         existing.scores = scores
         existing.date = dto.date

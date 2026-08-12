@@ -52,11 +52,20 @@ export class ParentQueryService {
   async findKids(parentId: string): Promise<Student[]> {
     if (!parentId) return []
     const bindings = await this.studentParentSvc.listByParent(parentId)
-    if (bindings.length) {
-      const studentIds = bindings.map(b => b.studentId)
-      return this.studentRepo.find({ where: { id: In(studentIds) } })
+    const studentIdsFromBindings = bindings.map(b => b.studentId)
+    const studentsFromBindings = studentIdsFromBindings.length
+      ? await this.studentRepo.find({ where: { id: In(studentIdsFromBindings) } })
+      : []
+    const studentsFromDirect = await this.studentRepo.find({ where: { parentId } })
+    const seen = new Set<string>()
+    const result: Student[] = []
+    for (const s of [...studentsFromBindings, ...studentsFromDirect]) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id)
+        result.push(s)
+      }
     }
-    return this.studentRepo.find({ where: { parentId } })
+    return result
   }
 
   /** 按学号查询学生用于家长登录 */

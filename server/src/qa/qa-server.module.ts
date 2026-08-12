@@ -69,8 +69,8 @@ import { AnalysisModule } from '../analysis/analysis.module'
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.qa' }),
     TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: ':memory:',
+      type: 'sqljs',
+      database: new Uint8Array(),
       synchronize: true,
       dropSchema: true,
       autoLoadEntities: true,

@@ -51,17 +51,23 @@ export interface HttpResp {
   body: any
   headers: Headers
 }
-export async function http(method: string, url: string, opts: { token?: string; body?: any; timeoutMs?: number } = {}): Promise<HttpResp> {
+export async function http(method: string, url: string, opts: { token?: string; body?: any; timeoutMs?: number; headers?: Record<string, string> } = {}): Promise<HttpResp> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs || 15000)
   try {
+    const isCustomContentType = opts.headers && opts.headers['Content-Type']
+    const headers: Record<string, string> = {
+      ...(opts.headers || {}),
+      ...(!isCustomContentType ? { 'Content-Type': 'application/json' } : {}),
+      ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+    }
+    const bodyStr = opts.body !== undefined
+      ? (Buffer.isBuffer(opts.body) ? opts.body : (!isCustomContentType ? JSON.stringify(opts.body) : opts.body))
+      : undefined
     const res = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
-      },
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      headers,
+      body: bodyStr as any,
       signal: controller.signal,
     })
     const text = await res.text()

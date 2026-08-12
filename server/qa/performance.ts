@@ -4,7 +4,7 @@
  */
 import { http } from './harness'
 import { addPerf, assert, PerfMetrics } from './framework'
-import { SeedResult, SUPER_USER, SUPER_PASS, PARENT_PASS, TEACHER_PASS, teacherUser, studentNo } from './seed'
+import { SeedResult, SUPER_USER, SUPER_PASS, PARENT_PASS, TEACHER_PASS, teacherUser, studentNo, CLASSES_PER_SCHOOL, STUDENTS_PER_CLASS } from './seed'
 
 function pct(arr: number[], p: number) {
   if (!arr.length) return 0
@@ -53,7 +53,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
         // 轮流用教师/家长账号，贴近真实混合登录
         const body = i % 2 === 0
           ? { username: teacherUser((i % 10) + 1, 1), password: TEACHER_PASS }
-          : { username: studentNo((i % 10) + 1, 1, (i % 50) + 1), password: PARENT_PASS }
+          : { username: studentNo((i % 10) + 1, 1, 1, (i % 50) + 1), password: PARENT_PASS }
         const r = await http('POST', api('/auth/unified-login'), { body, timeoutMs: 20000 })
         return { dt: Date.now() - t0, ok: r.status < 300 }
       })
@@ -71,7 +71,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       return null
     },
     async () => {
-      const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1), password: PARENT_PASS } })
+      const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
       const tok = lg.body.token
       const times: number[] = []
       let ok = 0
@@ -96,7 +96,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       // 预登录 30 位家长
       const tokens: string[] = []
       for (let i = 0; i < 30; i++) {
-        const no = studentNo((i % 10) + 1, (i % 10) + 1, (i % 50) + 1)
+        const no = studentNo((i % 10) + 1, 1, (i % 10) + 1, (i % 50) + 1)
         const lg = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
         if (lg.body.token) tokens.push(lg.body.token)
       }
@@ -117,7 +117,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       return statsOf(res.filter((r) => r.ok).map((r) => r.dt), res.filter((r) => r.ok).length, res.length, wall)
     })
 
-  addPerf('PERF-04', 'performance', '教师班级成绩查询（50 生 × 6 科 JSON 分数）',
+  addPerf('PERF-04', 'performance', '教师班级成绩查询（60 生 × 6 科 JSON 分数，48 班/校）',
     '100 次顺序查询：p95 < 500ms',
     (m) => {
       if ((m.ok || 0) !== m.total) return '存在失败请求'
@@ -139,7 +139,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       return statsOf(times, ok, 100, times.reduce((a, b) => a + b, 0))
     })
 
-  addPerf('PERF-05', 'performance', '5000 学生分页遍历（pageSize=50 × 前 40 页）',
+  addPerf('PERF-05', 'performance', '57600 学生分页遍历（pageSize=50 × 前 40 页）',
     '40 次分页查询：p95 < 400ms',
     (m) => {
       if ((m.ok || 0) !== m.total) return '存在失败请求'
@@ -169,7 +169,7 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
     },
     async () => {
       const tLg = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 1), password: TEACHER_PASS } })
-      const pLg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 5), password: PARENT_PASS } })
+      const pLg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 5), password: PARENT_PASS } })
       const tokT = tLg.body.token, tokP = pLg.body.token, tokA = seed.schools[0].adminToken
       const classId = seed.schools[0].classIds[0]
       const mix: Array<{ path: string; token: string }> = [
@@ -217,5 +217,88 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
         if (r.status < 300) ok++
       }
       return statsOf(times, ok, 100, times.reduce((a, b) => a + b, 0))
+    })
+
+  addPerf('PERF-08', 'performance', '57600 学生全量分页遍历（1200 页 × pageSize=50）',
+    '1200 次分页查询：p95 < 500ms',
+    (m) => {
+      if ((m.ok || 0) !== m.total) return `存在失败请求（${m.ok}/${m.total}）`
+      if ((m.p95Ms || 0) > 500) return `p95=${m.p95Ms}ms 超过 500ms`
+      return null
+    },
+    async () => {
+      const tok = seed.schools[0].adminToken
+      const times: number[] = []
+      let ok = 0
+      const totalPages = Math.ceil((STUDENTS_PER_CLASS * CLASSES_PER_SCHOOL) / 50)
+      for (let page = 1; page <= totalPages; page++) {
+        const t0 = Date.now()
+        const r = await http('GET', api(`/school-admin/students?page=${page}&pageSize=50`), { token: tok })
+        times.push(Date.now() - t0)
+        if (r.status < 300) ok++
+      }
+      return statsOf(times, ok, totalPages, times.reduce((a, b) => a + b, 0))
+    })
+
+  addPerf('PERF-09', 'performance', '28800 考试成绩聚合查询',
+    '100 次聚合查询：p95 < 2000ms',
+    (m) => {
+      if ((m.ok || 0) !== m.total) return '存在失败请求'
+      if ((m.p95Ms || 0) > 2000) return `p95=${m.p95Ms}ms 超过 2000ms`
+      return null
+    },
+    async () => {
+      const tok = seed.schools[0].adminToken
+      const times: number[] = []
+      let ok = 0
+      // 遍历不同班级的成绩聚合
+      const classCount = Math.min(100, CLASSES_PER_SCHOOL)
+      for (let i = 0; i < classCount; i++) {
+        const classId = seed.schools[0].classIds[i]
+        const t0 = Date.now()
+        const r = await http('GET', api(`/school-admin/academic/grades?classId=${classId}&pageSize=50`), { token: tok })
+        times.push(Date.now() - t0)
+        if (r.status < 300) ok++
+      }
+      return statsOf(times, ok, classCount, times.reduce((a, b) => a + b, 0))
+    })
+
+  addPerf('PERF-10', 'performance', '混合并发 300 请求（三角色 + 大数据量）',
+    '错误率 < 1%，p95 < 2000ms',
+    (m) => {
+      const errRate = 1 - (m.ok || 0) / Math.max(1, m.total)
+      if (errRate > 0.01) return `错误率 ${(errRate * 100).toFixed(1)}% 超过 1%`
+      if ((m.p95Ms || 0) > 2000) return `p95=${m.p95Ms}ms 超过 2000ms`
+      return null
+    },
+    async () => {
+      const tLg = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 1), password: TEACHER_PASS } })
+      const pLg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
+      const tokT = tLg.body.token, tokP = pLg.body.token, tokA = seed.schools[0].adminToken
+      const classId = seed.schools[0].classIds[0]
+      const mix: Array<{ path: string; token: string }> = [
+        { path: `/grades?classId=${classId}`, token: tokT },
+        { path: `/exams?classId=${classId}`, token: tokT },
+        { path: `/students?classId=${classId}&pageSize=60`, token: tokT },
+        { path: '/parent-auth/exams', token: tokP },
+        { path: '/parent-auth/me', token: tokP },
+        { path: '/parent-auth/attendance', token: tokP },
+        { path: '/school-admin/dashboard', token: tokA },
+        { path: '/school-admin/teachers?pageSize=30', token: tokA },
+        { path: '/school-admin/students?pageSize=50', token: tokA },
+        { path: '/school-admin/classes?take=48', token: tokA },
+      ]
+      const tasks = Array.from({ length: 300 }, (_, i) => {
+        const m = mix[i % mix.length]
+        return async () => {
+          const t0 = Date.now()
+          const r = await http('GET', api(m.path), { token: m.token, timeoutMs: 10000 })
+          return { dt: Date.now() - t0, ok: r.status < 300 }
+        }
+      })
+      const wall0 = Date.now()
+      const res = await pooled(tasks, 30)
+      const wall = Date.now() - wall0
+      return statsOf(res.filter((r) => r.ok).map((r) => r.dt), res.filter((r) => r.ok).length, res.length, wall)
     })
 }

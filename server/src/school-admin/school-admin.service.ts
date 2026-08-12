@@ -209,7 +209,7 @@ export class SchoolAdminService {
   /** 校管只读：成绩汇总分析（按学科聚合均分/及格率/高低分；可按班级/考试过滤） */
   async schoolGradeSummary(schoolId: string, classId?: string, examId?: string) {
     const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
-    if (!classIds.length) return { subjects: [], classes: [], totalGrades: 0 }
+    if (!classIds.length) return { subjects: [], classes: [], totalGrades: 0, totalExams: 0, totalStudents: 0 }
     const extra: Record<string, any> = {}
     if (examId) extra.examId = examId
     // P03修复：降低单次查询上限（2000→1000），避免大内存占用
@@ -219,6 +219,17 @@ export class SchoolAdminService {
     const classList = classIds.length
       ? await this.classRepo.find({ where: classIds.map(id => ({ id })), select: ['id', 'name'] as any })
       : []
+
+    // 统计考试数与学生数
+    let totalExams = 0
+    let totalStudents = 0
+    try {
+      totalExams = await this.examRepo.count({ where: classIds.map(id => ({ classId: id })) })
+    } catch { totalExams = 0 }
+    try {
+      totalStudents = await this.studentRepo.count({ where: classIds.map(id => ({ classId: id })) })
+    } catch { totalStudents = 0 }
+
     // 按学科聚合
     const subjectMap = new Map<string, number[]>()
     for (const g of grades) {
@@ -242,7 +253,7 @@ export class SchoolAdminService {
         }
       })
       .sort((a, b) => b.avg - a.avg)
-    return { subjects, classes: classList, totalGrades: grades.length }
+    return { subjects, classes: classList, totalGrades: grades.length, totalExams, totalStudents }
   }
 
   // ===== 学校公告 =====

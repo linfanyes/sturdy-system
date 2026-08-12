@@ -6,7 +6,9 @@ import { http } from './harness'
 import { addCase, assert, assertEq, assertIncludes } from './framework'
 import {
   SeedResult, SUPER_USER, SUPER_PASS, ADMIN_PASS, TEACHER_PASS, PARENT_PASS,
-  adminUser, teacherUser, studentNo, SCHOOL_COUNT, SUBJECTS, EXAMS_PER_CLASS,
+  adminUser, teacherUser, studentNo, SCHOOL_COUNT, SUBJECTS,
+  TEACHERS_PER_SCHOOL, CLASSES_PER_SCHOOL, STUDENTS_PER_CLASS, EXAMS_PER_CLASS,
+  GRADES_PER_SCHOOL, CLASSES_PER_GRADE, TEACHERS_PER_CLASS,
 } from './seed'
 
 export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
@@ -98,6 +100,24 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(r.status === 401 || r.status === 403, `期望 401/403，实际 ${r.status}`)
   })
 
+  addCase('FUNC-SUP-14', 'super', '超管批量创建校管', async () => {
+    const r = await http('POST', api('/admin/school-admins/batch'), {
+      token: superToken,
+      body: {
+        admins: [
+          { username: 'qatmp_admin01', password: 'QaTmp@12345', name: '临时校管1', schoolId: s1().id },
+          { username: 'qatmp_admin02', password: 'QaTmp@12345', name: '临时校管2', schoolId: s2().id },
+        ],
+      },
+    })
+    assert(r.status < 300, `批量创建校管失败 ${r.status} ${r2text(r)}`)
+  })
+
+  addCase('FUNC-SUP-15', 'super', '超管导出学校数据', async () => {
+    const r = await http('GET', api('/admin/schools/export'), { token: superToken })
+    assert(r.status < 300, `导出学校数据失败 ${r.status}`)
+  })
+
   /* ================= 校管 ================= */
   addCase('FUNC-SA-01', 'school_admin', '校管登录返回 role=school_admin', async () => {
     const r = await http('POST', api('/auth/unified-login'), { body: { username: adminUser(1), password: ADMIN_PASS } })
@@ -108,16 +128,16 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
   addCase('FUNC-SA-02', 'school_admin', '校管工作台统计接口', async () => {
     const r = await http('GET', api('/school-admin/dashboard'), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
-    assert(r.body.totalTeachers >= 20, `教师数应≥20，实际 ${r.body.totalTeachers}`)
-    assert(r.body.totalClasses >= 10, `班级数应≥10，实际 ${r.body.totalClasses}`)
-    assert(r.body.totalStudents >= 500, `学生数应≥500，实际 ${r.body.totalStudents}`)
+    assert(r.body.totalTeachers >= 200, `教师数应≥200，实际 ${r.body.totalTeachers}`)
+    assert(r.body.totalClasses >= 40, `班级数应≥40，实际 ${r.body.totalClasses}`)
+    assert(r.body.totalStudents >= 2000, `学生数应≥2000，实际 ${r.body.totalStudents}`)
   })
 
   addCase('FUNC-SA-03', 'school_admin', '教师列表分页与总数（≥30 人）', async () => {
     const r = await http('GET', api('/school-admin/teachers?pageSize=200'), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 20, `教师总数应≥20，实际 ${total}`)
+    assert(total >= 200, `教师总数应≥200，实际 ${total}`)
   })
 
   addCase('FUNC-SA-04', 'school_admin', '新建教师后可登录', async () => {
@@ -136,7 +156,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     const r = await http('GET', api('/school-admin/classes?pageSize=100'), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 10, `班级数应≥10，实际 ${total}`)
+    assert(total >= 40, `班级数应≥40，实际 ${total}`)
   })
 
   addCase('FUNC-SA-07', 'school_admin', '按班级查询学生（≥60 人）', async () => {
@@ -150,7 +170,9 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     const r = await http('GET', api(`/school-admin/students?keyword=学生1-1-1&pageSize=20`), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = r.body.items || []
-    assert(items.some((s: any) => s.name === '学生1-1-1'), '未搜索到目标学生')
+    assert(items.length > 0, '未搜索到任何学生')
+    // 姓名格式为 学生{i}-{g}-{c}-{n}，搜索 学生1-1-1 应匹配 学生1-1-1-1、学生1-1-1-2 等
+    assert(items.some((s: any) => s.name && s.name.startsWith('学生1-1-1')), '未搜索到目标学生')
   })
 
   addCase('FUNC-SA-09', 'school_admin', '学校公告 CRUD 闭环', async () => {
@@ -359,7 +381,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
   addCase('FUNC-TCH-18', 'teacher', '校管重置教师密码后教师用新密码登录', async () => {
     // 说明：系统现状教师无自助改密端点，密码由校管重置（记录为 UX 待改进项）
     const u = teacherUser(1, 4)
-    const list = await http('GET', api('/school-admin/teachers?pageSize=100'), { token: s1().adminToken })
+    const list = await http('GET', api(`/school-admin/teachers?keyword=${u}&pageSize=1`), { token: s1().adminToken })
     const tch = (list.body.items || []).find((t: any) => t.username === u)
     assert(tch, '教师账号缺失')
     const rs = await http('POST', api(`/school-admin/teachers/${tch.id}/reset-password`), { token: s1().adminToken, body: { password: 'QaReset@123' } })
@@ -370,7 +392,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-TCH-19', 'teacher', '学生信息修改申请审核流（家长提交→教师审核）', async () => {
     // 家长提交
-    const no = studentNo(1, 1, 1)
+    const no = studentNo(1, 1, 1, 1)
     const plg = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
     assert(plg.status < 300, `家长登录失败 ${plg.status}`)
     const req = await http('POST', api('/parent-auth/student-update-request'), { token: plg.body.token, body: { payload: { parentPhone: '13900001111', note: 'QA更新' } } })
@@ -389,15 +411,50 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assertEq(r.status, 401, '状态码')
   })
 
+  addCase('FUNC-TCH-26', 'teacher', '教师批量成绩导入', async () => {
+    const classId = s1().classIds[0]
+    const exams = await http('GET', api(`/exams?classId=${classId}`), { token: tTok() })
+    const examList = Array.isArray(exams.body) ? exams.body : exams.body.items || []
+    const exam = examList.find((e: any) => e.name === '期末考试') || examList[0]
+    assert(exam, '无可用考试')
+    const students = await http('GET', api(`/students?classId=${classId}&pageSize=500`), { token: tTok() })
+    const stus = (students.body.items || []).slice(0, 5)
+    assert(stus.length >= 5, '学生不足')
+    const r = await http('POST', api('/grades/import-commit'), {
+      token: tTok(),
+      body: { classId, examName: exam.name, subject: '语文', date: exam.date, rows: stus.map((s: any, i: number) => ({ studentId: s.id, score: 80 + i, valid: true })) },
+    })
+    assert(r.status < 300, `批量成绩导入失败 ${r.status} ${r2text(r)}`)
+  })
+
+  addCase('FUNC-TCH-27', 'teacher', '教师查看3学期考试列表', async () => {
+    const r = await http('GET', api(`/exams?classId=${s1().classIds[0]}&pageSize=100`), { token: tTok() })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const list = Array.isArray(r.body) ? r.body : r.body.items || []
+    const terms = new Set(list.map((e: any) => e.term))
+    assert(terms.size >= 3, `应覆盖3学期，实际 ${terms.size} 学期`)
+    assert(list.length >= EXAMS_PER_CLASS, `考试数应≥${EXAMS_PER_CLASS}，实际 ${list.length}`)
+  })
+
+  addCase('FUNC-TCH-28', 'teacher', '教师班级成绩导出', async () => {
+    const r = await http('GET', api(`/grades/export?classId=${s1().classIds[0]}`), { token: tTok() })
+    assert(r.status < 300, `成绩导出失败 ${r.status}`)
+  })
+
+  addCase('FUNC-TCH-29', 'teacher', '教师按年级浏览课程表', async () => {
+    const r = await http('GET', api(`/schedules?grade=一年级`), { token: tTok() })
+    assert(r.status < 300, `课程表查询失败 ${r.status}`)
+  })
+
   /* ================= 家长 ================= */
   addCase('FUNC-PAR-01', 'parent', '家长用学号+口令统一登录', async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1), password: PARENT_PASS } })
+    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
     assert(r.status < 300, `登录失败 ${r.status}`)
     assertEq(r.body.role, 'parent', 'role')
   })
 
   addCase('FUNC-PAR-02', 'parent', '家长错误密码返回 401', async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1), password: 'wrong' } })
+    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: 'wrong' } })
     assertEq(r.status, 401, '状态码')
   })
 
@@ -407,7 +464,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
   })
 
   const pTok = async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1), password: PARENT_PASS } })
+    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
     assert(r.status < 300, `家长登录失败 ${r.status}`)
     return r.body.token as string
   }
@@ -423,7 +480,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-PAR-18', 'parent', '二孩家庭家长 /me 返回 2 个孩子且可跨娃比对', async () => {
     // S01C01N01 与 S01C02N01 同家长（seed 构造）
-    const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1), password: PARENT_PASS } })
+    const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
     assert(lg.status < 300, `登录失败 ${lg.status}`)
     const me = await http('GET', api('/parent-auth/me'), { token: lg.body.token })
     assert(me.body != null, '/me 返回空')
@@ -502,7 +559,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('FUNC-PAR-14', 'parent', '家长修改密码后用新密码登录', async () => {
-    const no = studentNo(1, 1, 2)
+    const no = studentNo(1, 1, 1, 2)
     const lg = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
     assert(lg.status < 300, `登录失败 ${lg.status}`)
     const ch = await http('POST', api('/parent-auth/change-password'), { token: lg.body.token, body: { oldPassword: PARENT_PASS, newPassword: 'QaParent@123' } })
@@ -589,7 +646,7 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     const r = await http('GET', api('/school-admin/teachers?pageSize=200'), { token: s1().adminToken })
     assert(r.status < 300, `查询失败 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 20, `教师数应≥20，实际 ${total}`)
+    assert(total >= 200, `教师数应≥200，实际 ${total}`)
   })
 
   addCase('FUNC-SA-15', 'school_admin', '校管收件人列表包含本校教师/超管/其他校管', async () => {
@@ -612,6 +669,54 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
       body: { recipientId: target.id, recipientRole: 'teacher', title: 'QA校管→教师', content: '您好，关于班级事情…', type: 'direct' },
     })
     assert(s.status < 300, `发送失败 ${s.status}`)
+  })
+
+  addCase('FUNC-SA-17', 'school_admin', '校管批量导入教师', async () => {
+    const r = await http('POST', api('/school-admin/teachers/batch-import'), {
+      token: s1().adminToken,
+      body: {
+        teachers: [
+          { name: '批量教师1', username: 'qabatch01', password: 'QaBatch@123' },
+          { name: '批量教师2', username: 'qabatch02', password: 'QaBatch@123' },
+        ],
+      },
+    })
+    assert(r.status < 300, `批量导入教师失败 ${r.status} ${r2text(r)}`)
+  })
+
+  addCase('FUNC-SA-18', 'school_admin', '校管批量导入学生', async () => {
+    const r = await http('POST', api('/school-admin/students/batch-import'), {
+      token: s1().adminToken,
+      body: {
+        students: [
+          { name: '批量学生1', studentNo: 'S01G01C01N99', className: '一年级(1)班' },
+          { name: '批量学生2', studentNo: 'S01G01C01N98', className: '一年级(1)班' },
+        ],
+      },
+    })
+    assert(r.status < 300, `批量导入学生失败 ${r.status} ${r2text(r)}`)
+  })
+
+  addCase('FUNC-SA-19', 'school_admin', '校管导出学生', async () => {
+    const r = await http('GET', api('/school-admin/students/export'), { token: s1().adminToken })
+    assert(r.status < 300, `导出学生失败 ${r.status}`)
+  })
+
+  addCase('FUNC-SA-20', 'school_admin', '校管按年级横向对比成绩', async () => {
+    const r = await http('GET', api('/school-admin/academic/class-comparison?grade=一年级'), { token: s1().adminToken })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const classes = r.body.classes || []
+    assert(classes.length >= 1, `一年级下班级数应≥1，实际 ${classes.length}`)
+    assert(classes[0].className, '班级名缺失')
+    assert(typeof classes[0].overallAvg === 'number', '综合均分缺失')
+    assert(classes.length >= CLASSES_PER_GRADE, `一年级应≥${CLASSES_PER_GRADE}班，实际 ${classes.length}`)
+  })
+
+  addCase('FUNC-SA-21', 'school_admin', '校管查看3学期汇总', async () => {
+    const r = await http('GET', api('/school-admin/academic/summary'), { token: s1().adminToken })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    assert(r.body.totalExams >= EXAMS_PER_CLASS, `考试总数应≥${EXAMS_PER_CLASS}`)
+    assert(r.body.totalStudents >= STUDENTS_PER_CLASS * CLASSES_PER_SCHOOL, `学生总数不足`)
   })
 
   /* ================= 四角色互通：消息 ================= */
@@ -645,19 +750,74 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(hasTeacher, '家长收件人列表应包含班主任')
   })
 
+  addCase('FUNC-PAR-21', 'parent', '跨校多孩家庭（家长跨校）', async () => {
+    const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(2, 1, 4, 1), password: PARENT_PASS } })
+    assert(lg.status < 300, `跨校家长登录失败 ${lg.status}`)
+    const me = await http('GET', api('/parent-auth/me'), { token: lg.body.token })
+    assert(me.status < 300, `查询 /me 失败 ${me.status}`)
+    assert(me.body != null, '/me 返回空')
+    assert(Array.isArray(me.body.kids) && me.body.kids.length >= 2, `跨校家庭应≥2个孩子，实际 ${me.body.kids?.length}`)
+  })
+
+  addCase('FUNC-PAR-22', 'parent', '师兼长登录（教师同时作为家长）', async () => {
+    const teacherLogin = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 5), password: TEACHER_PASS } })
+    assert(teacherLogin.status < 300, `教师登录失败 ${teacherLogin.status}`)
+    assertEq(teacherLogin.body.role, 'teacher', '师兼长登录应为 teacher 角色')
+    const kidNo = studentNo(1, 2, 3, 60)
+    const parentLogin = await http('POST', api('/auth/unified-login'), { body: { username: kidNo, password: PARENT_PASS } })
+    assert(parentLogin.status < 300, `家长登录失败 ${parentLogin.status}`)
+    assertEq(parentLogin.body.role, 'parent', '师兼长孩子登录应为 parent 角色')
+  })
+
+  addCase('FUNC-PAR-23', 'parent', '三孩家庭', async () => {
+    const lg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 3, 1), password: PARENT_PASS } })
+    assert(lg.status < 300, `家长登录失败 ${lg.status}`)
+    const me = await http('GET', api('/parent-auth/me'), { token: lg.body.token })
+    assert(me.status < 300, `查询 /me 失败 ${me.status}`)
+    assert(me.body != null, '/me 返回空')
+    assertEq(me.body.kids.length, 3, `三孩家庭 kids 数量应为 3，实际 ${me.body.kids?.length}`)
+  })
+
+  addCase('FUNC-PAR-24', 'parent', '家长查看3学期成绩', async () => {
+    const t = await pTok()
+    const r = await http('GET', api('/parent-auth/exams'), { token: t })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const exams = r.body.exams || []
+    assert(exams.length >= EXAMS_PER_CLASS, `考试数应≥${EXAMS_PER_CLASS}，实际 ${exams.length}`)
+    const terms = new Set(exams.map((e: any) => e.term))
+    assert(terms.size >= 3, `应覆盖3学期，实际 ${terms.size} 学期`)
+  })
+
   /* ================= 跨端一致性（接口契约） ================= */
   addCase('FUNC-CONS-01', 'consistency', 'Web/小程序共用登录端点 unified-login', async () => {
     // 教师（Web 主场景）与家长（小程序主场景）均可通过同一端点登录
     const t = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(2, 1), password: TEACHER_PASS } })
-    const p = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(2, 1, 1), password: PARENT_PASS } })
+    const p = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(2, 1, 1, 1), password: PARENT_PASS } })
     assert(t.status < 300, '教师登录失败')
     assert(p.status < 300, '家长登录失败')
   })
 
   addCase('FUNC-CONS-02', 'consistency', '家长小程序专用登录端点 parent-auth/login 与统一登录等价', async () => {
-    const a = await http('POST', api('/parent-auth/login'), { body: { studentNo: studentNo(1, 1, 3), password: PARENT_PASS } })
+    const a = await http('POST', api('/parent-auth/login'), { body: { studentNo: studentNo(1, 1, 1, 3), password: PARENT_PASS } })
     assert(a.status < 300, `parent-auth/login 失败 ${a.status} ${JSON.stringify(a.body).slice(0, 120)}`)
     assert(a.body.token, 'token 缺失')
+  })
+
+  addCase('FUNC-CONS-03', 'consistency', '三学期数据跨端一致性', async () => {
+    const classId = s1().classIds[0]
+    const teacherExams = await http('GET', api(`/exams?classId=${classId}`), { token: tTok() })
+    const teacherList = Array.isArray(teacherExams.body) ? teacherExams.body : teacherExams.body.items || []
+    const teacherTerms = new Set(teacherList.map((e: any) => e.term))
+    assert(teacherTerms.size >= 3, `教师端应覆盖3学期，实际 ${teacherTerms.size} 学期`)
+
+    const parentLg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
+    const parentExams = await http('GET', api('/parent-auth/exams'), { token: parentLg.body.token })
+    const parentList = parentExams.body.exams || []
+    const parentTerms = new Set(parentList.map((e: any) => e.term))
+    assert(parentTerms.size >= 3, `家长端应覆盖3学期，实际 ${parentTerms.size} 学期`)
+
+    const overlap = [...teacherTerms].filter(t => parentTerms.has(t))
+    assert(overlap.length >= 3, `教师端与家长端学期应完全一致，交集 ${overlap.length}/3`)
   })
 }
 

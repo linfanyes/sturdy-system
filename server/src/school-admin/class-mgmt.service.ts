@@ -365,7 +365,7 @@ export class ClassMgmtService {
    * 全校学生列表（P0-3：分页化，避免一次性全量加载；支持 skip/take 与可选 classId 过滤）。
    * 响应形状保持 { items, total } 不变，兼容旧调用方；page/pageSize 为附加信息。
    */
-  async listSchoolStudents(schoolId: string, skip = 0, take = 500, classId?: string) {
+  async listSchoolStudents(schoolId: string, skip = 0, take = 500, classId?: string, keyword?: string) {
     const allTeachers = await this.userRepo.find({ where: { schoolId } })
     const ids = allTeachers.map(t => t.id)
     if (!ids.length) return { items: [], total: 0 }
@@ -383,14 +383,23 @@ export class ClassMgmtService {
     } else {
       where = classIds.map(id => ({ classId: id }))
     }
-    const [items, total] = await this.studentRepo.findAndCount({
-      where,
-      order: { name: 'ASC' },
-      skip,
-      take,
-    })
+    let students: Student[]
+    let total: number
+    if (keyword && keyword.trim()) {
+      const kw = keyword.trim()
+      const all = await this.studentRepo.find({ where, order: { name: 'ASC' } })
+      const filtered = all.filter(s => s.name?.includes(kw) || s.studentNo?.includes(kw))
+      total = filtered.length
+      students = filtered.slice(skip, skip + take)
+    } else {
+      const [items, cnt] = await this.studentRepo.findAndCount({
+        where, order: { name: 'ASC' }, skip, take,
+      })
+      students = items
+      total = cnt
+    }
     return {
-      items: items.map(s => ({
+      items: students.map(s => ({
         ...s, className: classMap[s.classId] || '',
       })),
       total,

@@ -48,6 +48,10 @@ export class AdminController {
     return this.svc.listSchools(clampSkip(skip), clampTake(take, 100))
   }
 
+  @Get('schools/export')
+  @UseGuards(JwtAuthGuard)
+  exportSchools() { return this.svc.exportSchools() }
+
   @Get('schools/:id')
   @UseGuards(JwtAuthGuard)
   getSchool(@Param('id') id: string) {
@@ -115,6 +119,12 @@ export class AdminController {
   @Delete('school-admins/:id')
   @UseGuards(JwtAuthGuard)
   deleteAdmin(@Param('id') id: string) { return this.svc.deleteAdmin(id) }
+
+  @Post('school-admins/batch')
+  @UseGuards(JwtAuthGuard)
+  batchCreateAdmins(@Body() b: { admins: Array<{ username: string; password: string; name: string; schoolId: string; enabled?: boolean }> }) {
+    return this.svc.batchCreateAdmins(b?.admins || [])
+  }
 
   @Post('school-admins/batch-toggle')
   @UseGuards(JwtAuthGuard)

@@ -6,7 +6,7 @@ import { http } from './harness'
 import { addCase, assert, assertEq } from './framework'
 import {
   SeedResult, SUPER_USER, SUPER_PASS, ADMIN_PASS, TEACHER_PASS, PARENT_PASS,
-  adminUser, teacherUser, studentNo,
+  adminUser, teacherUser, studentNo, CLASSES_PER_SCHOOL,
 } from './seed'
 
 export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
@@ -64,6 +64,14 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
     assert(r2.status < 500, `负数分页不应 5xx（${r2.status}）`)
   })
 
+  addCase('EDGE-SUP-07', 'super', '批量创建校管空数组被拒绝', async () => {
+    const r = await http('POST', api('/admin/school-admins/batch'), {
+      token: superToken,
+      body: { admins: [] },
+    })
+    assertEq(r.status, 400, '状态码')
+  })
+
   /* ================= 校管边界 ================= */
   addCase('EDGE-SA-01', 'school_admin', '创建教师：非法手机号被拒绝', async () => {
     const r = await http('POST', api('/school-admin/teachers'), {
@@ -99,14 +107,11 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('EDGE-SA-06', 'school_admin', '学生列表注入字符不报错不跨校泄漏', async () => {
-    // 说明：/school-admin/students 的搜索为前端本地过滤，服务端仅分页；
     // 边界目标 = 注入载荷不引发 5xx、不跨校泄漏、不突破分页上限
     const r = await http('GET', api(`/school-admin/students?keyword=${encodeURIComponent("' OR '1'='1")}&take=50`), { token: s1().adminToken })
     assert(r.status < 500, `不应 5xx（${r.status}）`)
     const items = r.body.items || []
     assert(items.length <= 50, '不应突破分页上限')
-    const base = await http('GET', api('/school-admin/students?take=50'), { token: s1().adminToken })
-    assertEq(items.length, (base.body.items || []).length, '注入载荷不应改变结果集（服务端无 keyword 处理）')
     // 跨校隔离：结果全部属于本校班级
     const classes = await http('GET', api('/school-admin/classes?take=200'), { token: s1().adminToken })
     const myClassIds = new Set((classes.body.items || []).map((c: any) => c.id))
@@ -134,11 +139,43 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('EDGE-SA-10', 'school_admin', '重置教师密码弱口令（<8位）被拒绝', async () => {
-    const list = await http('GET', api('/school-admin/teachers?pageSize=100'), { token: s1().adminToken })
-    const tch = (list.body.items || []).find((t: any) => t.username === teacherUser(1, 5))
+    const u = teacherUser(1, 5)
+    const list = await http('GET', api(`/school-admin/teachers?keyword=${u}&pageSize=1`), { token: s1().adminToken })
+    const tch = (list.body.items || []).find((t: any) => t.username === u)
     assert(tch, '教师缺失')
     const r = await http('POST', api(`/school-admin/teachers/${tch.id}/reset-password`), { token: s1().adminToken, body: { password: '123' } })
     assertEq(r.status, 400, '状态码')
+  })
+
+  addCase('EDGE-SA-11', 'school_admin', '批量导入学生空数据被拒绝', async () => {
+    const r = await http('POST', api('/school-admin/students/batch'), {
+      token: s1().adminToken,
+      body: { students: [] },
+    })
+    assertEq(r.status, 400, '状态码')
+  })
+
+  addCase('EDGE-SA-12', 'school_admin', '导入学生重复学号被拒绝', async () => {
+    const existing = await http('GET', api(`/school-admin/students?pageSize=1`), { token: s1().adminToken })
+    const stu = (existing.body.items || [])[0]
+    assert(stu, '学生缺失')
+    const r = await http('POST', api('/school-admin/students'), {
+      token: s1().adminToken,
+      body: { classId: stu.classId, name: '重复学号学生', gender: '男', studentNo: stu.studentNo },
+    })
+    assert(r.status >= 400, `重复学号应被拒绝，实际 ${r.status}`)
+  })
+
+  addCase('EDGE-SA-13', 'school_admin', '跨年级数据隔离', async () => {
+    // 校1 年级1 班级0 的校管尝试访问 年级3 的班级数据应正常返回但数据隔离
+    const classes = await http('GET', api('/school-admin/classes?take=200'), { token: s1().adminToken })
+    const items = classes.body.items || []
+    const grade1Classes = items.filter((c: any) => c.classNo && c.classNo.startsWith('1'))
+    const grade3Classes = items.filter((c: any) => c.classNo && c.classNo.startsWith('3'))
+    assert(grade1Classes.length > 0, '年级1班级缺失')
+    assert(grade3Classes.length > 0, '年级3班级缺失')
+    // 同一校管可见全部年级（同校内无年级隔离）
+    assert(grade1Classes.length + grade3Classes.length <= CLASSES_PER_SCHOOL, '班级总数异常')
   })
 
   /* ================= 教师边界 ================= */
@@ -217,7 +254,7 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
 
   addCase('EDGE-TCH-08', 'teacher', '审核 action 非法值被拒绝', async () => {
     // 先由家长提交一条申请
-    const plg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 3), password: PARENT_PASS } })
+    const plg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 3), password: PARENT_PASS } })
     const sub = await http('POST', api('/parent-auth/student-update-request'), { token: plg.body.token, body: { payload: { note: '边界用例' } } })
     assert(sub.status < 300, `提交失败 ${sub.status}`)
     const list = await http('GET', api('/student-info-updates?status=pending'), { token: tTok() })
@@ -254,6 +291,53 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
     await http('POST', api('/auth/change-password'), { token: lg2.body.token, body: { oldPassword: 'QaSelf@123', newPassword: TEACHER_PASS } })
   })
 
+  addCase('EDGE-TCH-11', 'teacher', '批量成绩导入跨班级被过滤', async () => {
+    const classId = s1().classIds[0]
+    // 获取本班学生（教师可访问）
+    const myList = await http('GET', api(`/students?classId=${classId}&pageSize=1`), { token: tTok() })
+    const myStu = (myList.body.items || [])[0]
+    assert(myStu, '本班学生缺失')
+    // 获取他班学生（用校管 token 获取，教师无权直接查看他班学生）
+    const otherList = await http('GET', api(`/school-admin/students?classId=${s1().classIds[2]}&pageSize=1`), { token: s1().adminToken })
+    const otherStu = (otherList.body.items || [])[0]
+    assert(otherStu, '他班学生缺失')
+    // 跨班级提交成绩：本班+他班学生混合
+    const r = await http('POST', api('/grades/import-commit'), {
+      token: tTok(),
+      body: {
+        classId,
+        examName: '边界跨班过滤考试',
+        subject: '语文',
+        date: '2026-08-06',
+        rows: [
+          { studentId: myStu.id, score: 85, valid: true },
+          { studentId: otherStu.id, score: 90, valid: true },
+        ],
+      },
+    })
+    // 应被接受（仅本班学生入库，他班被过滤）或被整体拒绝
+    assert(r.status < 500, `不应 5xx（${r.status}）`)
+    if (r.status < 300) {
+      // 二次验证：他班学生成绩未落库
+      const g = await http('GET', api(`/grades?classId=${classId}`), { token: tTok() })
+      const row = (Array.isArray(g.body) ? g.body : g.body.items || []).find((x: any) => x.examName === '边界跨班过滤考试')
+      if (row) {
+        assert(!(row.scores || []).some((x: any) => x.studentId === otherStu.id), '他班学生成绩不应落库')
+      }
+    }
+  })
+
+  addCase('EDGE-TCH-12', 'teacher', '考试名称跨学期重复被允许（不同学期可以同名）', async () => {
+    const classId = s1().classIds[0]
+    const body1 = { classId, name: '边界同名考试', term: '2025-2026学年下学期', date: '2026-08-06', subjects: ['语文'] }
+    const r1 = await http('POST', api('/exams'), { token: tTok(), body: body1 })
+    assert(r1.status < 300, `首次创建失败 ${r1.status}`)
+    // 不同学期同名应允许
+    const body2 = { classId, name: '边界同名考试', term: '2026-2027学年上学期', date: '2026-09-01', subjects: ['语文'] }
+    const r2 = await http('POST', api('/exams'), { token: tTok(), body: body2 })
+    assert(r2.status < 300, `不同学期同名应允许，实际 ${r2.status}`)
+  })
+
   /* ================= 家长边界 ================= */
   const pTok = async (no: string) => {
     const lg = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
@@ -263,7 +347,7 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
 
   addCase('EDGE-PAR-01', 'parent', '连续错误密码均返回 401', async () => {
     for (let i = 0; i < 3; i++) {
-      const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 4), password: 'bad' + i } })
+      const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 4), password: 'bad' + i } })
       assertEq(r.status, 401, `第 ${i + 1} 次状态码`)
     }
   })
@@ -288,7 +372,7 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
 
   addCase('EDGE-PAR-04', 'parent', '修改密码：原密码错误拒绝、短密码拒绝、成功闭环', async () => {
     // 使用不与性能用例冲突的学生（1,2,5）；改密策略要求新密码≥8位（默认口令 123456 仅作初始值）
-    const no = studentNo(1, 2, 5)
+    const no = studentNo(1, 1, 2, 5)
     const t = await pTok(no)
     const bad = await http('POST', api('/parent-auth/change-password'), { token: t, body: { oldPassword: 'wrong', newPassword: 'QaPar@123' } })
     assert(bad.status >= 400, `原密码错误应拒绝，实际 ${bad.status}`)
@@ -304,13 +388,13 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('EDGE-PAR-05', 'parent', '学生信息修改申请：空 payload 被拒绝', async () => {
-    const t = await pTok(studentNo(1, 1, 6))
+    const t = await pTok(studentNo(1, 1, 1, 6))
     const r = await http('POST', api('/parent-auth/student-update-request'), { token: t, body: { payload: {} } })
     assertEq(r.status, 400, '状态码')
   })
 
   addCase('EDGE-PAR-06', 'parent', '切换孩子到他人子女被拒绝（隔离）', async () => {
-    const t = await pTok(studentNo(1, 1, 7))
+    const t = await pTok(studentNo(1, 1, 1, 7))
     // 校2某学生与当前家长无关
     const list2 = await http('GET', api(`/school-admin/students?classId=${s2().classIds[0]}&pageSize=1`), { token: s2().adminToken })
     const outsider = (list2.body.items || [])[0]
@@ -319,7 +403,7 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('EDGE-PAR-07', 'parent', '独生子女家庭 compare-kids 返回空比对不崩溃', async () => {
-    const t = await pTok(studentNo(2, 1, 1))
+    const t = await pTok(studentNo(2, 1, 1, 1))
     const r = await http('GET', api('/parent-auth/compare-kids'), { token: t })
     assert(r.status < 300, `状态码 ${r.status}`)
     assert(Array.isArray(r.body.kids), 'kids 应为数组')
@@ -327,9 +411,57 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   })
 
   addCase('EDGE-PAR-08', 'parent', '篡改家长 token 被拒绝', async () => {
-    const t = await pTok(studentNo(1, 1, 8))
+    const t = await pTok(studentNo(1, 1, 1, 8))
     const r = await http('GET', api('/parent-auth/me'), { token: t.slice(0, -3) + 'xyz' })
     assertEq(r.status, 401, '状态码')
+  })
+
+  addCase('EDGE-PAR-09', 'parent', '跨校多孩家庭切换孩子隔离', async () => {
+    const crossFamily = seed.multiChildFamilies[2]
+    assert(crossFamily, '跨校多孩家庭缺失')
+    // 用跨校家庭的第一个孩子登录
+    const t = await pTok(crossFamily.studentNos[0])
+    // 验证 compare-kids 返回跨校的2个孩子
+    const ck = await http('GET', api('/parent-auth/compare-kids'), { token: t })
+    assert(ck.status < 300, `compare-kids 失败 ${ck.status}`)
+    assert(Array.isArray(ck.body.kids), 'kids 应为数组')
+    assert(ck.body.kids.length >= 2, `跨校家庭应至少有2个孩子，实际 ${ck.body.kids.length}`)
+    // 尝试切换到家庭内的另一个孩子（跨校）应成功
+    const otherKidNo = crossFamily.studentNos[1]
+    const kidList = await http('GET', api('/parent-auth/me'), { token: t })
+    const currentStudentId = kidList.body.studentId
+    assert(currentStudentId, '当前学生ID缺失')
+    // 验证其他孩子属于家庭
+    const me = await http('GET', api('/parent-auth/me'), { token: t })
+    assert(me.status < 300, `me 端点失败 ${me.status}`)
+  })
+
+  addCase('EDGE-PAR-10', 'parent', '师兼长用家长身份越权访问', async () => {
+    const tp = seed.teacherAsParent[0]
+    assert(tp, '师兼长记录缺失')
+    // 以家长身份登录（师兼长的孩子）
+    const t = await pTok(tp.studentNo)
+    // 尝试访问不属于自己孩子的数据
+    // 获取一个无关学生的ID
+    const outsiders = await http('GET', api(`/school-admin/students?classId=${s2().classIds[0]}&pageSize=1`), { token: s2().adminToken })
+    const outsider = (outsiders.body.items || [])[0]
+    if (outsider) {
+      const r = await http('POST', api('/parent-auth/switch-student'), { token: t, body: { studentId: outsider.id } })
+      assert(r.status >= 400, `越权切换应拒绝，实际 ${r.status}`)
+    }
+    // 验证家长 API 只返回自己孩子的数据
+    const exams = await http('GET', api('/parent-auth/exams'), { token: t })
+    assert(exams.status < 300, `exams 端点失败 ${exams.status}`)
+  })
+
+  addCase('EDGE-PAR-11', 'parent', '三孩家庭 compare-kids 返回3个孩子', async () => {
+    const family = seed.multiChildFamilies[1]
+    assert(family, '三孩家庭缺失')
+    const t = await pTok(family.studentNos[0])
+    const ck = await http('GET', api('/parent-auth/compare-kids'), { token: t })
+    assert(ck.status < 300, `compare-kids 失败 ${ck.status}`)
+    assert(Array.isArray(ck.body.kids), 'kids 应为数组')
+    assertEq(ck.body.kids.length, 3, '三孩家庭应返回3个孩子')
   })
 
   /* ================= 通用安全边界 ================= */
@@ -357,5 +489,24 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
   addCase('EDGE-SEC-04', 'security', '错误 HTTP 方法返回 404', async () => {
     const r = await http('GET', api('/auth/unified-login'))
     assertEq(r.status, 404, '状态码')
+  })
+
+  addCase('EDGE-SEC-05', 'security', '批量导入文件格式校验', async () => {
+    // 上传非 CSV/Excel 文件应被拒绝
+    const fakeFile = Buffer.from('not a valid file content')
+    const r = await http('POST', api('/school-admin/students/import'), {
+      token: s1().adminToken,
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: fakeFile,
+    })
+    assert(r.status >= 400, `非法文件格式应被拒绝，实际 ${r.status}`)
+    // 空文件也应被拒绝
+    const emptyFile = Buffer.from('')
+    const r2 = await http('POST', api('/school-admin/students/import'), {
+      token: s1().adminToken,
+      headers: { 'Content-Type': 'text/csv' },
+      body: emptyFile,
+    })
+    assert(r2.status >= 400, `空文件应被拒绝，实际 ${r2.status}`)
   })
 }

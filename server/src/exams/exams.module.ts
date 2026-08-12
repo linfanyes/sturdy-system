@@ -58,9 +58,9 @@ class ExamsService extends CrudService<Exam> {
 
   /** 创建考试计划时，为每个科目自动建一条空成绩记录 */
   async create(teacherId: string, dto: any): Promise<Exam> {
-    // 检查是否有同名考试，避免唯一索引冲突
+    // 检查是否有同名考试（同班同学期同名才冲突，不同学期允许）
     const existingExam = await this.repo.findOne({
-      where: { classId: dto.classId, name: dto.name } as any,
+      where: { classId: dto.classId, name: dto.name, term: dto.term } as any,
     })
     if (existingExam) {
       throw new BadRequestException('该班级已存在同名考试，请修改考试名称')

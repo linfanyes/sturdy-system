@@ -297,6 +297,17 @@ export class StudentOpsService {
     return this.toCsv(rows)
   }
 
+  async exportStudentsData(schoolId: string) {
+    const r = await this.classMgmt.listSchoolStudents(schoolId, 0, 10000)
+    const data = r.items.map(s => ({
+      id: s.id, name: s.name, studentNo: s.studentNo, gender: s.gender,
+      classId: s.classId, className: s.className,
+      parentName: s.parentName, parentPhone: s.parentPhone,
+      parentLoginEnabled: s.parentLoginEnabled,
+    }))
+    return { total: r.total, data }
+  }
+
   async exportStudentsXls(schoolId: string): Promise<Buffer> {
     const r = await this.classMgmt.listSchoolStudents(schoolId, 0, 10000)
     const headers = ['姓名', '学号', '性别', '班级', '家长', '家长电话', '家长开通']
