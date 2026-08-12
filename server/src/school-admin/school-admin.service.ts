@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common'
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -330,6 +330,246 @@ export class SchoolAdminService {
     for (const s of students) { s['className'] = classMap[s.classId] || '' }
 
     return { students, teachers, classes }
+  }
+
+  // ===== 校管只读：全校作业聚合 =====
+
+  /**
+   * 校管查看本校全部班级作业的聚合列表。
+   * 支持按 classId / grade / subject / status 过滤，返回每条作业的科目、班级、教师、截止时间、状态等信息。
+   */
+  async listSchoolHomework(
+    schoolId: string,
+    opts: { skip?: number; take?: number; classId?: string; grade?: string; subject?: string; status?: string } = {},
+  ) {
+    const skip = Math.max(0, opts.skip || 0)
+    const take = Math.min(500, opts.take || 50)
+    const classIds = opts.classId ? [opts.classId] : await this.getSchoolClassIds(schoolId)
+    if (!classIds.length) return { items: [], total: 0 }
+
+    // 先确定要展示的班级（支持 grade 过滤：仅保留指定年级的班级）
+    let classFilter = classIds
+    if (opts.grade) {
+      const filtered = await this.classRepo.find({
+        where: classIds.map(id => ({ id })),
+        select: ['id', 'name', 'grade', 'teacherId'] as any,
+      })
+      classFilter = filtered.filter(c => c.grade === opts.grade).map(c => c.id)
+    }
+    if (!classFilter.length) return { items: [], total: 0 }
+
+    const extra: Record<string, any> = {}
+    if (opts.subject) extra.subject = opts.subject
+    if (opts.status) extra.status = opts.status
+
+    const where = this.buildClassWhere(classFilter, extra)
+    const [items, total] = await this.hwRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' } as any,
+      skip,
+      take,
+    })
+
+    // 回填班级名称、教师姓名
+    const classList = await this.classRepo.find({
+      where: classFilter.map(id => ({ id })),
+      select: ['id', 'name', 'grade', 'teacherId'] as any,
+    })
+    const classMap = new Map(classList.map(c => [c.id, c]))
+    const teacherIds = Array.from(new Set(items.map(i => i.teacherId).filter(Boolean)))
+    const teachers = teacherIds.length
+      ? await this.userRepo.find({ where: teacherIds.map(id => ({ id })), select: ['id', 'name'] as any })
+      : []
+    const teacherMap = new Map(teachers.map(t => [t.id, t]))
+
+    const enriched = items.map(h => {
+      const cls = classMap.get(h.classId)
+      const tch = teacherMap.get(h.teacherId)
+      return {
+        ...h,
+        className: cls?.name || '',
+        grade: cls?.grade || '',
+        teacherName: tch?.name || '',
+      }
+    })
+    return { items: enriched, total }
+  }
+
+  // ===== 校管只读：按年级横向对比成绩 =====
+
+  /**
+   * 指定年级下，各班某学科（或全学科）在给定考试下的均分对比。
+   * 用于校管查看"某一学年"各班之间的成绩汇总对比。
+   */
+  async gradeClassComparison(
+    schoolId: string,
+    opts: { grade?: string; subject?: string; examName?: string; term?: string } = {},
+  ) {
+    const classIds = await this.getSchoolClassIds(schoolId)
+    if (!classIds.length) return { grade: opts.grade || '', classes: [], subjectStats: [] }
+
+    let targetClassIds = classIds
+    if (opts.grade) {
+      const filtered = await this.classRepo.find({
+        where: classIds.map(id => ({ id })),
+        select: ['id', 'name', 'grade'] as any,
+      })
+      targetClassIds = filtered.filter(c => c.grade === opts.grade).map(c => c.id)
+      if (!targetClassIds.length) return { grade: opts.grade, classes: [], subjectStats: [] }
+    }
+
+    const extra: Record<string, any> = {}
+    if (opts.subject) extra.subject = opts.subject
+    if (opts.examName) extra.examName = opts.examName
+    const where = this.buildClassWhere(targetClassIds, extra)
+
+    let grades = await this.gradeRepo.find({ where, take: 2000 })
+    if (opts.term) {
+      const matchedExams = await this.examRepo.find({ where: targetClassIds.map(cid => ({ classId: cid, term: opts.term })), select: ['id'] as any })
+      const examIds = new Set(matchedExams.map((e) => e.id))
+      grades = grades.filter((g) => g.examId && examIds.has(g.examId))
+    }
+    // 班级映射
+    const cls = await this.classRepo.find({
+      where: classIds.map(id => ({ id })),
+      select: ['id', 'name', 'grade'] as any,
+    })
+    const classMap = new Map(cls.map(c => [c.id, c]))
+
+    // 按班级 + 学科聚合
+    const classStats = new Map<string, Map<string, { total: number; count: number }>>()
+    for (const g of grades) {
+      if (!classStats.has(g.classId)) classStats.set(g.classId, new Map())
+      const subjMap = classStats.get(g.classId)!
+      const valid = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score))
+      if (!valid.length) continue
+      const total = valid.reduce((a, b) => a + b, 0)
+      const existing = subjMap.get(g.subject) || { total: 0, count: 0 }
+      existing.total += total
+      existing.count += valid.length
+      subjMap.set(g.subject, existing)
+    }
+
+    const result = [...classStats.entries()].map(([classId, subjMap]) => {
+      const classInfo = classMap.get(classId)
+      const subjects = [...subjMap.entries()].map(([subject, v]) => ({
+        subject,
+        count: v.count,
+        avg: Math.round((v.total / v.count) * 10) / 10,
+      }))
+      return {
+        classId,
+        className: classInfo?.name || classId,
+        grade: classInfo?.grade || '',
+        subjects,
+        overallAvg: Math.round(
+          (subjects.reduce((a, s) => a + s.avg * s.count, 0) /
+            Math.max(1, subjects.reduce((a, s) => a + s.count, 0))) *
+            10,
+        ) / 10,
+      }
+    })
+
+    return { grade: opts.grade || '', classes: result }
+  }
+
+  // ===== 校管只读：班级本学期成绩汇总与趋势 =====
+
+  /**
+   * 某班级本学期所有考试的成绩汇总（均分/及格率/优秀率）与按考试时间的趋势。
+   * term 可选；传值时用 Exam 实体的 term 过滤。
+   */
+  async classTermTrend(
+    schoolId: string,
+    classId: string,
+    opts: { subject?: string; term?: string } = {},
+  ) {
+    const classIds = await this.getSchoolClassIds(schoolId)
+    if (!classIds.includes(classId)) throw new NotFoundException('无权查看该班级成绩')
+
+    const classInfo = await this.classRepo.findOne({ where: { id: classId } })
+    if (!classInfo) throw new NotFoundException('班级不存在')
+    const term = opts.term || classInfo.term || ''
+
+    const extra: Record<string, any> = {}
+    if (opts.subject) extra.subject = opts.subject
+    let grades = await this.gradeRepo.find({
+      where: this.buildClassWhere([classId], extra),
+      order: { date: 'ASC' } as any,
+      take: 500,
+    })
+    // term 过滤：Grade 本身无 term 字段，通过 Exam.join 过滤
+    if (term) {
+      const matchedExams = await this.examRepo.find({ where: { classId, term }, select: ['id'] as any })
+      const examIds = new Set(matchedExams.map((e) => e.id))
+      grades = grades.filter((g) => g.examId && examIds.has(g.examId))
+    }
+
+    // 按考试聚合
+    const byExam = new Map<string, { examName: string; date: string; subject: string; total: number; count: number; pass: number; excellent: number; max: number; min: number }>()
+    const subjectSet = new Set<string>()
+    for (const g of grades) {
+      const valid = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score))
+      if (!valid.length) continue
+      const key = `${g.examName}|${g.subject}`
+      const existing = byExam.get(key) || {
+        examName: g.examName,
+        date: g.date,
+        subject: g.subject,
+        total: 0,
+        count: 0,
+        pass: 0,
+        excellent: 0,
+        max: -Infinity,
+        min: Infinity,
+      }
+      existing.total += valid.reduce((a, b) => a + b, 0)
+      existing.count += valid.length
+      existing.pass += valid.filter(v => v >= 60).length
+      existing.excellent += valid.filter(v => v >= 85).length
+      existing.max = Math.max(existing.max, ...valid)
+      existing.min = Math.min(existing.min, ...valid)
+      byExam.set(key, existing)
+      subjectSet.add(g.subject)
+    }
+
+    const exams = [...byExam.values()].map(v => ({
+      examName: v.examName,
+      date: v.date,
+      subject: v.subject,
+      avg: v.count ? Math.round((v.total / v.count) * 10) / 10 : 0,
+      passRate: v.count ? Math.round((v.pass / v.count) * 1000) / 10 : 0,
+      excellentRate: v.count ? Math.round((v.excellent / v.count) * 1000) / 10 : 0,
+      max: v.max === -Infinity ? 0 : v.max,
+      min: v.min === Infinity ? 0 : v.min,
+      count: v.count,
+    }))
+
+    // 按考试均分聚合（同一考试跨多科目加权平均），用于趋势折线
+    const examMap = new Map<string, { date: string; total: number; count: number }>()
+    for (const e of exams) {
+      const cur = examMap.get(e.examName) || { date: e.date, total: 0, count: 0 }
+      cur.total += e.avg * e.count
+      cur.count += e.count
+      examMap.set(e.examName, cur)
+    }
+    const trend = [...examMap.entries()]
+      .map(([examName, v]) => ({
+        examName,
+        date: v.date,
+        avg: v.count ? Math.round((v.total / v.count) * 10) / 10 : 0,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    return {
+      classId,
+      className: classInfo.name,
+      grade: classInfo.grade,
+      term,
+      subjects: Array.from(subjectSet),
+      exams,
+      trend,
+    }
   }
 
   }

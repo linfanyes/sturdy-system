@@ -395,6 +395,31 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
           link: type === 'homework' ? '/class-ops/homework' : type === 'grade' ? '/exams/grades' : '',
         }))
       }
+
+      // 校管 → 班主任 消息（每校 2 条）
+      if (k === 0) {
+        await messageRepo.save(messageRepo.create({
+          senderId: adminId,
+          senderRole: 'school_admin',
+          recipientId: headId,
+          recipientRole: 'teacher',
+          title: `校${i} 校管→班主任`,
+          content: `关于班级 ${i}-${k + 1} 的日常管理沟通…`,
+          type: 'direct',
+          isRead: false,
+        }))
+        // 校管 → 超管 1 条
+        await messageRepo.save(messageRepo.create({
+          senderId: adminId,
+          senderRole: 'school_admin',
+          recipientId: 'super',
+          recipientRole: 'super',
+          title: `校${i} 向超管汇报`,
+          content: `校${i} 的本学期教学进展汇报…`,
+          type: 'direct',
+          isRead: false,
+        }))
+      }
     }
 
     schools.push({

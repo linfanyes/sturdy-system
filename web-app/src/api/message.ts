@@ -39,3 +39,30 @@ export function listSentMessages(skip = 0, take = 20) {
 export function unreadMessageCount() {
   return request.get<any, { count: number }>('/messages/unread-count')
 }
+
+/** 收件人候选列表（按当前登录角色动态返回：家长/教师/校管/超管） */
+export interface RecipientItem {
+  id: string
+  name: string
+  role: 'teacher' | 'parent' | 'school_admin' | 'super'
+  schoolId?: string
+  extra?: Record<string, any>
+}
+export function listRecipients() {
+  return request.get<any, RecipientItem[]>('/messages/recipients')
+}
+
+/** 标记单条留言已读 */
+export function markMessageRead(id: string) {
+  return request.patch<any, { id: string; isRead: boolean }>(`/messages/${id}/read`)
+}
+
+/** 一键全部已读 */
+export function markAllMessagesRead() {
+  return request.patch<any, { ok: boolean }>('/messages/mark-all-read')
+}
+
+/** 删除留言 */
+export function removeMessage(id: string) {
+  return request.delete<any, { id: string; deleted: boolean }>(`/messages/${id}`)
+}

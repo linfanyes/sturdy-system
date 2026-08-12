@@ -1,22 +1,38 @@
 import request from './request'
 
 /** 家长端：考试成绩 */
+export interface ParentExamSubject {
+  subject: string
+  score: number | null
+  fullScore: number
+  classRank?: number | null
+  classAvg?: number | null
+  classPassRate?: number | null
+  classExcellentRate?: number | null
+}
+
+export interface ParentClassStats {
+  classAvg?: number | null
+  classFullAvg?: number | null
+  classPassRate?: number | null
+  classExcellentRate?: number | null
+  classStudentCount?: number
+  subjectAvgs?: Record<string, { avg: number; passRate: number; excellentRate: number; count: number }>
+}
+
 export interface ParentExam {
   examId: string
   examName: string
   date: string
   term?: string
-  subjects: Array<{
-    subject: string
-    score: number | null
-    fullScore: number
-    classRank?: number | null
-  }>
+  subjects: ParentExamSubject[]
   totalScore: number | null
   totalFullScore: number | null
   classRank: number | null
+  gradeRank?: number | null
   distribution: Array<{ label: string; count: number; pct: number; isStudent: boolean }>
   analysisNote?: string | null
+  classStats?: ParentClassStats
 }
 
 /** 家长端：公告 */

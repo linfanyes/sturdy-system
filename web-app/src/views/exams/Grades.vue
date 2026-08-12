@@ -14,7 +14,7 @@ import Modal from '@/components/Modal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
 import { listAllStudents, listExams, listGrades, type TeacherStudent } from '@/api/teacher'
-import { Plus, Search, Upload, Sparkles, Loader2, Download, ClipboardPaste, Table2, Grid3x3 } from 'lucide-vue-next'
+import { Plus, Search, Upload, Sparkles, Loader2, Download, ClipboardPaste, Table2, Grid3x3, BarChart3, AlertTriangle, Users } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 import GradeEntry from './components/GradeEntry.vue'
 import GradeStatistics from './components/GradeStatistics.vue'
@@ -113,6 +113,103 @@ function className(id: string) {
 
 function onStudentDblClick(studentId: string) {
   router.push({ path: '/teacher/student-grades', query: { studentId, classId: classId.value } })
+}
+
+/* ============ 班级成绩概览（基于已加载的成绩数据本地计算） ============ */
+const classOverview = computed(() => {
+  if (!classId.value || !selectedExamId.value) return null
+  const examGrades = grades.value.filter(g =>
+    (g.examId === selectedExamId.value || g.examName === selectedExam.value?.name)
+  )
+  if (!examGrades.length) return null
+
+  // 计算各科数据
+  const subjectData: Record<string, { total: number; count: number; max: number; min: number; fullScore: number }> = {}
+  for (const g of examGrades) {
+    if (!Array.isArray(g.scores)) continue
+    const fullScore = g.fullScore || 100
+    for (const s of g.scores) {
+      if (s.score == null) continue
+      if (!subjectData[g.subject]) {
+        subjectData[g.subject] = { total: 0, count: 0, max: -Infinity, min: Infinity, fullScore }
+      }
+      const d = subjectData[g.subject]
+      d.total += Number(s.score)
+      d.count += 1
+      d.max = Math.max(d.max, Number(s.score))
+      d.min = Math.min(d.min, Number(s.score))
+    }
+  }
+
+  const subjects = Object.entries(subjectData).map(([subject, d]) => {
+    const avg = d.count ? Math.round((d.total / d.count) * 10) / 10 : 0
+    const passCount = Object.values(grades.value
+      .filter(g => (g.examId === selectedExamId.value || g.examName === selectedExam.value?.name) && g.subject === subject)
+      .flatMap(g => g.scores || [])
+      .filter(s => s.score != null && Number(s.score) >= d.fullScore * 0.6)).length
+    const passRate = d.count ? Math.round((passCount / d.count) * 1000) / 10 : 0
+    const excellentCount = Object.values(grades.value
+      .filter(g => (g.examId === selectedExamId.value || g.examName === selectedExam.value?.name) && g.subject === subject)
+      .flatMap(g => g.scores || [])
+      .filter(s => s.score != null && Number(s.score) >= d.fullScore * 0.85)).length
+    const excellentRate = d.count ? Math.round((excellentCount / d.count) * 1000) / 10 : 0
+    return { subject, avg, max: d.max, min: d.min, count: d.count, passRate, excellentRate, fullScore: d.fullScore }
+  }).sort((a, b) => b.avg - a.avg)
+
+  // 薄弱学生（单科低于班级均分）
+  const weakStudents: Array<{ studentId: string; studentName: string; subject: string; score: number; classAvg: number }> = []
+  for (const g of examGrades) {
+    if (!Array.isArray(g.scores)) continue
+    const subjStat = subjects.find(s => s.subject === g.subject)
+    if (!subjStat) continue
+    for (const s of g.scores) {
+      if (s.score == null) continue
+      if (Number(s.score) < subjStat.avg - 5) {
+        const student = students.value.find(st => st.id === s.studentId)
+        weakStudents.push({
+          studentId: s.studentId,
+          studentName: student?.name || s.studentId,
+          subject: g.subject,
+          score: Number(s.score),
+          classAvg: subjStat.avg,
+        })
+      }
+    }
+  }
+
+  const classAvg = subjects.length ? Math.round((subjects.reduce((s, x) => s + x.avg, 0) / subjects.length) * 10) / 10 : 0
+  const overallPassRate = subjects.length ? Math.round(subjects.reduce((s, x) => s + x.passRate, 0) / subjects.length) : 0
+  const overallExcellentRate = subjects.length ? Math.round(subjects.reduce((s, x) => s + x.excellentRate, 0) / subjects.length) : 0
+
+  // 聚合薄弱学生（按学生）
+  const weakStudentMap = new Map<string, { name: string; subject: string; score: number; avg: number }>()
+  for (const w of weakStudents) {
+    const existing = weakStudentMap.get(w.studentId)
+    if (!existing || (w.classAvg - w.score) > (existing.avg - existing.score)) {
+      weakStudentMap.set(w.studentId, { name: w.studentName, subject: w.subject, score: w.score, avg: w.classAvg })
+    }
+  }
+  const topWeak = Array.from(weakStudentMap.entries())
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => (b.avg - b.score) - (a.avg - a.score))
+    .slice(0, 6)
+
+  return {
+    classAvg,
+    overallPassRate,
+    overallExcellentRate,
+    totalStudents: subjects.length ? subjects[0].count : 0,
+    subjectCount: subjects.length,
+    subjects,
+    topWeak,
+  }
+})
+
+/* 滚动到成绩统计区 */
+const statsRef = ref<HTMLElement | null>(null)
+function scrollToStats() {
+  const el = document.querySelector('[data-stats-section]')
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const gradeEntryRef = ref<InstanceType<typeof GradeEntry> | null>(null)
@@ -364,6 +461,17 @@ function resetMatrixImport() {
           <option v-for="s in examSubjects" :key="s" :value="s">{{ s }}</option>
         </select>
 
+        <!-- 搜索框 -->
+        <div class="relative">
+          <Search class="w-4 h-4 text-cocoa-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜索考试/科目"
+            class="pl-8 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400 w-44"
+          />
+        </div>
+
         <!-- 整场考试：全部科目一起录入 / 批量导入 -->
         <button
           class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 disabled:opacity-60"
@@ -407,6 +515,187 @@ function resetMatrixImport() {
       </div>
     </div>
 
+    <!-- 班级成绩速览（选中考后即时展示） -->
+    <div v-if="classOverview" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- 左侧：班级核心指标 -->
+      <div class="bg-surface rounded-2xl p-4 shadow-softer lg:col-span-1">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700">
+            <BarChart3 class="w-4 h-4 text-butter-500" />
+            班级成绩速览
+          </div>
+          <button
+            class="text-xs text-mint-600 hover:text-mint-700 flex items-center gap-0.5"
+            @click="scrollToStats"
+          >
+            详情分析 →
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="rounded-xl bg-cream-50 p-3">
+            <div class="text-xs text-cocoa-500">班级均分</div>
+            <div class="text-xl font-bold text-cocoa-900 mt-0.5">{{ classOverview.classAvg }}</div>
+          </div>
+          <div class="rounded-xl bg-mint-50 p-3">
+            <div class="text-xs text-mint-700">平均及格率</div>
+            <div class="text-xl font-bold text-mint-600 mt-0.5">{{ classOverview.overallPassRate }}%</div>
+          </div>
+          <div class="rounded-xl bg-butter-50 p-3">
+            <div class="text-xs text-butter-700">平均优秀率</div>
+            <div class="text-xl font-bold text-butter-600 mt-0.5">{{ classOverview.overallExcellentRate }}%</div>
+          </div>
+          <div class="rounded-xl bg-sky2-50 p-3">
+            <div class="text-xs text-sky2-700">参考人数</div>
+            <div class="text-xl font-bold text-sky2-600 mt-0.5">{{ classOverview.totalStudents }} 人</div>
+          </div>
+        </div>
+
+        <!-- 各科均分条 -->
+        <div class="mt-3 space-y-2">
+          <div v-for="s in classOverview.subjects" :key="s.subject" class="flex items-center gap-2">
+            <span class="text-xs text-cocoa-600 w-12 shrink-0">{{ s.subject }}</span>
+            <div class="flex-1 h-5 bg-cream-100 rounded-full overflow-hidden relative">
+              <div
+                class="h-full rounded-full flex items-center justify-end pr-1.5 transition-all"
+                :style="{
+                  width: Math.min(100, (s.avg / s.fullScore) * 100) + '%',
+                  background: s.passRate >= 90 ? '#67c23a' : s.passRate >= 75 ? '#e6a23c' : '#f56c6c',
+                }"
+              >
+                <span class="text-[10px] text-white font-medium">{{ s.avg }}</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-cocoa-400 shrink-0">及{{ s.passRate }}% 优{{ s.excellentRate }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间：学生成绩详情（带排名徽标） -->
+      <div class="bg-surface rounded-2xl p-4 shadow-softer lg:col-span-1">
+        <div class="flex items-center gap-2 text-sm font-medium text-cocoa-700 mb-3">
+          <Users class="w-4 h-4 text-sky2-500" />
+          学生成绩详情
+          <span v-if="keyword" class="text-xs text-cocoa-400">（已搜索「{{ keyword }}」）</span>
+        </div>
+        <div class="max-h-72 overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 bg-surface text-cocoa-500 text-xs">
+              <tr>
+                <th class="text-left px-2 py-1.5 font-medium">学生</th>
+                <th v-for="s in classOverview.subjects" :key="'th-' + s.subject" class="text-right px-1 py-1.5 font-medium">{{ s.subject }}</th>
+                <th class="text-right px-2 py-1.5 font-medium">总分</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-cream-100">
+              <tr
+                v-for="stu in (() => {
+                  const examGrades = grades.value.filter(g =>
+                    (g.examId === selectedExamId.value || g.examName === selectedExam?.name)
+                  )
+                  const map = new Map<string, Record<string, number | null>>()
+                  for (const g of examGrades) {
+                    for (const s of (g.scores || [])) {
+                      if (!map.has(s.studentId)) map.set(s.studentId, {})
+                      map.get(s.studentId)![g.subject] = s.score
+                    }
+                  }
+                  let list = Array.from(map.entries()).map(([id, subjMap]) => {
+                    const stu = students.value.find(s => s.id === id)
+                    const total = Object.values(subjMap).reduce((s, v) => s + (v ?? 0), 0)
+                    const full = classOverview.subjects.reduce((s, x) => s + x.fullScore, 0)
+                    return { id, name: stu?.name || id, studentNo: stu?.studentNo || '', subjMap, total, full }
+                  }).filter(r => !keyword || r.name.includes(keyword) || r.studentNo.includes(keyword))
+                  list.sort((a, b) => b.total - a.total)
+                  return list
+                })()"
+                :key="stu.id"
+                class="hover:bg-cream-50 cursor-pointer"
+                @click="onStudentDblClick(stu.id)"
+              >
+                <td class="px-2 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5">
+                    <span>{{ stu.name }}</span>
+                    <span v-if="students.value.findIndex(s => s.id === stu.id) < 3" class="text-[10px] px-1 rounded bg-butter-100 text-butter-600">TOP{{ students.value.findIndex(s => s.id === stu.id) + 1 > 3 ? '' : students.value.findIndex(s => s.id === stu.id) + 1 }}</span>
+                  </div>
+                </td>
+                <td v-for="s in classOverview.subjects" :key="'td-' + s.subject" class="text-right px-1 py-1.5">
+                  <span
+                    v-if="stu.subjMap[s.subject] != null"
+                    class="text-sm"
+                    :class="(stu.subjMap[s.subject] as number) >= s.avg ? 'text-mint-600' : (stu.subjMap[s.subject] as number) < s.avg - 10 ? 'text-red-500' : 'text-cocoa-700'"
+                  >{{ stu.subjMap[s.subject] }}</span>
+                  <span v-else class="text-cocoa-300">—</span>
+                </td>
+                <td class="text-right px-2 py-1.5 font-semibold text-cocoa-900">{{ stu.total }}</td>
+              </tr>
+              <tr v-if="!classOverview.subjects.length" class="text-center text-cocoa-300">
+                <td :colspan="classOverview.subjects.length + 3" class="py-6">暂无成绩数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 右侧：薄弱学生预警 -->
+      <div class="bg-surface rounded-2xl p-4 shadow-softer lg:col-span-1">
+        <div class="flex items-center gap-2 mb-3">
+          <AlertTriangle class="w-4 h-4 text-sakura-500" />
+          <h3 class="text-sm font-medium text-cocoa-700">薄弱学生预警</h3>
+        </div>
+        <div v-if="classOverview.topWeak.length" class="space-y-2">
+          <div
+            v-for="w in classOverview.topWeak"
+            :key="w.id"
+            class="flex items-center justify-between gap-2 p-2 rounded-xl bg-sakura-50 cursor-pointer hover:bg-sakura-100 transition-colors"
+            @click="onStudentDblClick(w.id)"
+          >
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-cocoa-900 truncate">{{ w.name }}</div>
+              <div class="text-xs text-cocoa-500 mt-0.5">
+                <span class="text-sakura-600">{{ w.subject }}</span>
+                <span class="mx-1">·</span>
+                <span>{{ w.score }} 分</span>
+                <span class="mx-1">·</span>
+                <span class="text-sakura-500">低{{ (w.avg - w.score).toFixed(1) }}分</span>
+              </div>
+            </div>
+            <button
+              class="shrink-0 text-xs px-2 py-1 rounded-lg bg-sakura-200/50 text-sakura-700 hover:bg-sakura-300/50"
+              @click.stop="onStudentDblClick(w.id)"
+            >查看 →</button>
+          </div>
+        </div>
+        <div v-else class="text-sm text-cocoa-400 text-center py-8">
+          <div class="text-3xl mb-2">🎉</div>
+          班级整体发挥稳定
+        </div>
+
+        <!-- AI 生成的教学建议 -->
+        <div v-if="classOverview.subjects.length" class="mt-3 p-3 rounded-xl bg-butter-50 border border-butter-100">
+          <div class="flex items-center gap-1.5 text-xs font-medium text-butter-700 mb-1.5">
+            <Sparkles class="w-3.5 h-3.5" />
+            教学建议
+          </div>
+          <div class="text-xs text-cocoa-700 leading-relaxed space-y-1">
+            <template v-if="classOverview.subjects.length">
+              <p v-if="classOverview.overallPassRate < 80">⚠️ 平均及格率仅 {{ classOverview.overallPassRate }}%，建议加强及格线附近学生的基础训练。</p>
+              <p v-if="classOverview.overallExcellentRate < 30">💡 优秀率 {{ classOverview.overallExcellentRate }}%，可考虑分层教学提升尖子生。</p>
+              <p v-if="classOverview.topWeak.length >= 3">🎯 有 {{ classOverview.topWeak.length }} 名学生多科低于班级均分，建议一对一辅导。</p>
+              <p v-if="classOverview.overallPassRate >= 90 && classOverview.overallExcellentRate >= 40">✅ 班级整体表现优秀，继续保持良好的教学节奏。</p>
+              <p>📘 优势学科：{{ classOverview.subjects[0].subject }}（均分 {{ classOverview.subjects[0].avg }}）</p>
+              <p v-if="classOverview.subjects.length > 1">📕 薄弱学科：{{ classOverview.subjects[classOverview.subjects.length - 1].subject }}（均分 {{ classOverview.subjects[classOverview.subjects.length - 1].avg }}，建议重点突破）</p>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 无选中考试时的提示 -->
+    <div v-else-if="classId" class="bg-surface rounded-2xl p-6 shadow-softer text-center">
+      <BarChart3 class="w-10 h-10 mx-auto text-cream-300 mb-2" />
+      <p class="text-cocoa-400 text-sm">请选择考试查看班级成绩概览</p>
+    </div>
+
     <!-- 成绩录入子组件 -->
     <GradeEntry
       ref="gradeEntryRef"
@@ -436,14 +725,16 @@ function resetMatrixImport() {
     />
 
     <!-- 成绩统计子组件 -->
-    <GradeStatistics
-      :class-id="classId"
-      :selected-exam="selectedExam"
-      :selected-exam-id="selectedExamId"
-      :students="students"
-      :grades="grades"
-      @student-dbl-click="onStudentDblClick"
-    />
+    <div data-stats-section>
+      <GradeStatistics
+        :class-id="classId"
+        :selected-exam="selectedExam"
+        :selected-exam-id="selectedExamId"
+        :students="students"
+        :grades="grades"
+        @student-dbl-click="onStudentDblClick"
+      />
+    </div>
   </div>
 
   <!-- 全部科目录入（矩阵）弹窗 -->

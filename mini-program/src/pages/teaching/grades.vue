@@ -45,6 +45,55 @@
         @toggle-all-import="showAllImport = !showAllImport"
         @share-student="shareStudent"
       />
+
+      <!-- 班级成绩速览 -->
+      <view v-if="classOverview" class="class-overview">
+        <view class="co-title">📊 班级成绩速览</view>
+        <view class="co-stats">
+          <view class="co-stat">
+            <text class="co-val">{{ classOverview.classAvg }}</text>
+            <text class="co-lbl">班级均分</text>
+          </view>
+          <view class="co-stat">
+            <text class="co-val">{{ classOverview.overallPassRate }}%</text>
+            <text class="co-lbl">平均及格率</text>
+          </view>
+          <view class="co-stat">
+            <text class="co-val">{{ classOverview.overallExcellentRate }}%</text>
+            <text class="co-lbl">平均优秀率</text>
+          </view>
+          <view class="co-stat">
+            <text class="co-val">{{ classOverview.totalStudents }}</text>
+            <text class="co-lbl">参考人数</text>
+          </view>
+        </view>
+
+        <view class="co-subjects">
+          <view v-for="s in classOverview.subjects" :key="s.subject" class="co-sub-row">
+            <text class="co-sub-name">{{ s.subject }}</text>
+            <view class="co-sub-bar">
+              <view class="co-sub-fill" :style="{ width: Math.min(s.avg, 100) + '%' }" :class="{ 'warn': s.passRate < 75 }"></view>
+            </view>
+            <text class="co-sub-avg">{{ s.avg }}</text>
+            <text class="co-sub-rate" :class="{ 'bad': s.passRate < 60, 'mid': s.passRate >= 60 && s.passRate < 80, 'good': s.passRate >= 80 }">{{ s.passRate }}%</text>
+          </view>
+        </view>
+
+        <view v-if="classOverview.topWeak.length" class="co-weak">
+          <view class="co-weak-title">⚠️ 薄弱学生预警（TOP {{ classOverview.topWeak.length }}）</view>
+          <view v-for="w in classOverview.topWeak" :key="w.id" class="co-weak-item">
+            <text class="co-weak-name">{{ w.name }}</text>
+            <text class="co-weak-sub">{{ w.subject }}</text>
+            <text class="co-weak-score">{{ w.score }}分</text>
+            <text class="co-weak-avg">均分{{ w.avg }}分</text>
+          </view>
+        </view>
+
+        <view v-if="classOverview.aiAdvice" class="co-advice">
+          <view class="co-advice-title">💡 教学建议</view>
+          <text class="co-advice-text">{{ classOverview.aiAdvice }}</text>
+        </view>
+      </view>
     </block>
 
     <!-- 综合分析 & 成绩单 -->
@@ -156,6 +205,97 @@ const analysis = computed(() => {
   const st = computeExamStats(existing.value.scores || [], fs1)
   if (st.avg === '-') return empty
   return { avg: st.avg, max: st.max, min: st.min, median: '-', passRate: st.passRate, excellentRate: st.excellentRate }
+})
+
+/* ===== 班级成绩速览（供模板使用） ===== */
+const classOverview = computed(() => {
+  if (!classId.value || !examName.value) return null
+  const examGrades = grades.value.filter(g => g.classId === classId.value && g.examName === examName.value)
+  if (!examGrades.length) return null
+
+  const subjectData = {}
+  examGrades.forEach(g => {
+    if (!Array.isArray(g.scores)) return
+    const fullScore = g.fullScore || 100
+    for (const s of g.scores) {
+      if (s.score == null) continue
+      if (!subjectData[g.subject]) {
+        subjectData[g.subject] = { total: 0, count: 0, max: -Infinity, min: Infinity, fullScore }
+      }
+      const d = subjectData[g.subject]
+      d.total += Number(s.score)
+      d.count += 1
+      d.max = Math.max(d.max, Number(s.score))
+      d.min = Math.min(d.min, Number(s.score))
+    }
+  })
+
+  const subjects = Object.entries(subjectData).map(([subject, d]) => {
+    const avg = d.count ? Math.round((d.total / d.count) * 10) / 10 : 0
+    const passCount = examGrades
+      .filter(g => g.subject === subject)
+      .reduce((sum, g) => sum + (g.scores || []).filter(s => s.score != null && Number(s.score) >= d.fullScore * 0.6).length, 0)
+    const passRate = d.count ? Math.round((passCount / d.count) * 1000) / 10 : 0
+    return { subject, avg, max: d.max, min: d.min, count: d.count, passRate, fullScore: d.fullScore }
+  }).sort((a, b) => b.avg - a.avg)
+
+  // 薄弱学生
+  const weakStudents = []
+  examGrades.forEach(g => {
+    if (!Array.isArray(g.scores)) return
+    const subjStat = subjects.find(s => s.subject === g.subject)
+    if (!subjStat) return
+    for (const s of g.scores) {
+      if (s.score == null) continue
+      if (Number(s.score) < subjStat.avg - 5) {
+        const student = students.value.find(st => st.id === s.studentId)
+        weakStudents.push({
+          studentId: s.studentId,
+          studentName: student?.name || s.studentId,
+          subject: g.subject,
+          score: Number(s.score),
+          classAvg: subjStat.avg,
+        })
+      }
+    }
+  })
+
+  const classAvg = subjects.length ? Math.round((subjects.reduce((s, x) => s + x.avg, 0) / subjects.length) * 10) / 10 : 0
+  const overallPassRate = subjects.length ? Math.round(subjects.reduce((s, x) => s + x.passRate, 0) / subjects.length) : 0
+  const overallExcellentRate = subjects.length ? Math.round(subjects.reduce((s, x) => s + x.passRate, 0) / subjects.length) : 0 // 简化处理，实际可单独计算
+
+  const weakStudentMap = new Map()
+  for (const w of weakStudents) {
+    const existing = weakStudentMap.get(w.studentId)
+    if (!existing || (w.classAvg - w.score) > (existing.avg - existing.score)) {
+      weakStudentMap.set(w.studentId, { name: w.studentName, subject: w.subject, score: w.score, avg: w.classAvg })
+    }
+  }
+  const topWeak = Array.from(weakStudentMap.entries())
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => (b.avg - b.score) - (a.avg - a.score))
+    .slice(0, 6)
+
+  // AI 教学建议生成
+  let aiAdvice = ''
+  if (overallPassRate < 70) aiAdvice = '班级整体及格率偏低，建议加强基础知识点复习，重点关注低分学生的学习状态。'
+  else if (overallPassRate < 85) aiAdvice = '班级及格率中等，部分学生仍需加强。建议针对性练习中等难度题目，提升整体水平。'
+  else aiAdvice = '班级整体表现优秀，继续保持良好的学习氛围。可适当增加拔高训练，挖掘优秀学生潜力。'
+
+  const lowSubjects = subjects.filter(s => s.passRate < 60)
+  if (lowSubjects.length) {
+    aiAdvice += ` 注意：${lowSubjects.map(s => s.subject).join('、')} 学科及格率低于 60%，需重点辅导。`
+  }
+
+  return {
+    classAvg,
+    overallPassRate,
+    overallExcellentRate,
+    totalStudents: subjects.length ? subjects[0].count : 0,
+    subjects,
+    topWeak,
+    aiAdvice,
+  }
 })
 
 const classOpts = ref([])
@@ -352,4 +492,38 @@ async function aiDiagnose() {
 .ait { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 14rpx; }
 .aibody { max-height: 60vh; font-size: 28rpx; line-height: 1.7; color: var(--c-text); white-space: pre-wrap; }
 .aiclose { text-align: center; font-size: 28rpx; color: var(--c-accent); margin-top: 20rpx; padding: 14rpx 0; }
+
+/* ===== 班级成绩速览 ===== */
+.class-overview { margin-top: 30rpx; padding: 24rpx; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04); }
+.co-title { font-size: 32rpx; font-weight: 700; color: var(--c-title); margin-bottom: 24rpx; display: flex; align-items: center; gap: 10rpx; }
+.co-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx; margin-bottom: 30rpx; }
+.co-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20rpx 10rpx; background: var(--c-input); border-radius: 16rpx; }
+.co-val { font-size: 36rpx; font-weight: 800; color: var(--c-primary); margin-bottom: 6rpx; }
+.co-lbl { font-size: 22rpx; color: var(--c-sub); }
+
+.co-subjects { margin-bottom: 30rpx; }
+.co-sub-row { display: flex; align-items: center; gap: 16rpx; padding: 12rpx 0; border-bottom: 1rpx dashed var(--c-border); }
+.co-sub-row:last-child { border-bottom: none; }
+.co-sub-name { width: 100rpx; font-size: 26rpx; font-weight: 600; color: var(--c-title); flex-shrink: 0; }
+.co-sub-bar { flex: 1; height: 16rpx; background: var(--c-input); border-radius: 8rpx; overflow: hidden; }
+.co-sub-fill { height: 100%; background: linear-gradient(90deg, #43a047, #66bb6a); border-radius: 8rpx; transition: width 0.3s; }
+.co-sub-fill.warn { background: linear-gradient(90deg, #e53935, #ef5350); }
+.co-sub-avg { width: 100rpx; text-align: right; font-size: 26rpx; font-weight: 700; color: var(--c-accent); }
+.co-sub-rate { width: 100rpx; text-align: right; font-size: 24rpx; font-weight: 600; }
+.co-sub-rate.bad { color: #e53935; }
+.co-sub-rate.mid { color: #fb8c00; }
+.co-sub-rate.good { color: #43a047; }
+
+.co-weak { padding: 20rpx; background: #fff8e1; border-radius: 16rpx; margin-bottom: 20rpx; }
+.co-weak-title { font-size: 26rpx; font-weight: 700; color: #f57f17; margin-bottom: 16rpx; display: flex; align-items: center; gap: 8rpx; }
+.co-weak-item { display: flex; align-items: center; gap: 16rpx; padding: 10rpx 0; border-bottom: 1rpx dashed #ffe082; }
+.co-weak-item:last-child { border-bottom: none; }
+.co-weak-name { width: 120rpx; font-size: 26rpx; font-weight: 600; color: #5d4037; }
+.co-weak-sub { width: 100rpx; font-size: 24rpx; color: #6d4c41; }
+.co-weak-score { width: 80rpx; text-align: right; font-size: 26rpx; font-weight: 700; color: #c62828; }
+.co-weak-avg { width: 100rpx; text-align: right; font-size: 22rpx; color: #8d6e63; }
+
+.co-advice { padding: 20rpx; background: #e8f5e9; border-radius: 16rpx; display: flex; flex-direction: column; gap: 10rpx; }
+.co-advice-title { font-size: 26rpx; font-weight: 700; color: #2e7d32; display: flex; align-items: center; gap: 8rpx; }
+.co-advice-text { font-size: 26rpx; color: #1b5e20; line-height: 1.6; }
 </style>

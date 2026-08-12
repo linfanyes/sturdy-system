@@ -426,11 +426,54 @@ export class ParentQueryService {
       // 预计算总分排名（同分同名次）
       const totalRankMap = this.computeRankMap(totalRanks.map(r => ({ studentId: r.studentId, score: r.total })))
       const distribution = buildDistribution([...totalRanks.map(r => r.total)], '', null)
+
+      // 计算班级整体统计：均分、及格率、优秀率、各科均分
+      const allTotals = totalRanks.map(r => r.total).filter(t => t > 0)
+      const classAvg = allTotals.length ? Math.round((allTotals.reduce((a, b) => a + b, 0) / allTotals.length) * 10) / 10 : 0
+      const classFullAvg = exam.subjects.reduce((sum, subj) => {
+        const fs = (exam.subjectFullScores && exam.subjectFullScores[subj]) || 100
+        return sum + fs
+      }, 0) || 100 * (exam.subjects?.length || 1)
+      const passCount = allTotals.filter(t => t >= classFullAvg * 0.6).length
+      const excellentCount = allTotals.filter(t => t >= classFullAvg * 0.85).length
+      const classPassRate = allTotals.length ? Math.round((passCount / allTotals.length) * 1000) / 10 : 0
+      const classExcellentRate = allTotals.length ? Math.round((excellentCount / allTotals.length) * 1000) / 10 : 0
+
+      // 各科班级均分
+      const subjectClassAvgs = new Map<string, { total: number; count: number }>()
+      for (const [, data] of studentScoreMap) {
+        for (const sub of data.subjects) {
+          if (sub.score == null) continue
+          if (!subjectClassAvgs.has(sub.subject)) subjectClassAvgs.set(sub.subject, { total: 0, count: 0 })
+          const entry = subjectClassAvgs.get(sub.subject)!
+          entry.total += Number(sub.score)
+          entry.count += 1
+        }
+      }
+      const classSubjectStats = new Map<string, { avg: number; passRate: number; excellentRate: number; count: number }>()
+      for (const [subj, agg] of subjectClassAvgs) {
+        const avg = agg.count ? Math.round((agg.total / agg.count) * 10) / 10 : 0
+        // 该科及格/优秀率需重新统计
+        let passN = 0, excN = 0
+        const fs = (exam.subjectFullScores && exam.subjectFullScores[subj]) || 100
+        for (const [, data] of studentScoreMap) {
+          const sub = data.subjects.find((s: any) => s.subject === subj && s.score != null)
+          if (!sub) continue
+          if (Number(sub.score) >= fs * 0.6) passN++
+          if (Number(sub.score) >= fs * 0.85) excN++
+        }
+        classSubjectStats.set(subj, {
+          avg,
+          passRate: agg.count ? Math.round((passN / agg.count) * 1000) / 10 : 0,
+          excellentRate: agg.count ? Math.round((excN / agg.count) * 1000) / 10 : 0,
+          count: agg.count,
+        })
+      }
+
       for (const [sid, data] of studentScoreMap) {
         const totalRank = totalRankMap.get(sid) || 0
         for (const sub of data.subjects) {
           const arr = subjectRanks.get(sub.subject) || []
-          // 单科排名：同分同名次
           if (sub.score != null) {
             const subRankMap = this.computeRankMap(arr)
             sub.classRank = subRankMap.get(sid) ?? null
@@ -451,6 +494,14 @@ export class ParentQueryService {
         _totalRanks: totalRanks,
         distribution,
         analysisNote: exam.analysisNote || null,
+        classStats: {
+          classAvg,
+          classFullAvg,
+          classPassRate,
+          classExcellentRate,
+          classStudentCount: allTotals.length,
+          subjectAvgs: Object.fromEntries(classSubjectStats),
+        },
       })
     }
     return { exams: examList }
@@ -462,19 +513,44 @@ export class ParentQueryService {
     return {
       exams: fullData.exams.map((exam: any) => {
         const myData = exam._studentScoreMap?.get(studentId)
-        const subjects = myData ? myData.subjects : []
+        const subjects = myData ? myData.subjects.map((s: any) => {
+          const classStat = exam.classStats?.subjectAvgs?.[s.subject]
+          return {
+            ...s,
+            classAvg: classStat?.avg ?? null,
+            classPassRate: classStat?.passRate ?? null,
+            classExcellentRate: classStat?.excellentRate ?? null,
+          }
+        }) : []
+        const totalScore = myData ? myData.total : null
+        const totalFullScore = myData ? myData.full : null
+        // 个人百分位排名（基于总分）
+        const totalRanks = exam._totalRanks || []
+        const myRank = totalRanks.findIndex((r: any) => r.studentId === studentId)
+        const percentile = totalRanks.length && myRank >= 0
+          ? Math.round(((totalRanks.length - myRank - 1) / totalRanks.length) * 1000) / 10
+          : null
+        const cs = exam.classStats || {}
         return {
           examId: exam.examId,
           examName: exam.examName,
           date: exam.date,
           term: exam.term,
           subjects,
-          totalScore: myData ? myData.total : null,
-          totalFullScore: myData ? myData.full : null,
+          totalScore,
+          totalFullScore,
           classRank: myData ? (myData as any).classRank : null,
+          percentile,
           gradeRank: null,
           distribution: exam.distribution,
           analysisNote: exam.analysisNote,
+          classStats: {
+            classAvg: cs.classAvg ?? null,
+            classFullAvg: cs.classFullAvg ?? null,
+            classPassRate: cs.classPassRate ?? null,
+            classExcellentRate: cs.classExcellentRate ?? null,
+            classStudentCount: cs.classStudentCount ?? 0,
+          },
         }
       }),
     }

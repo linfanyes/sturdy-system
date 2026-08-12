@@ -168,6 +168,39 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(r.status < 300, `状态码 ${r.status}`)
   })
 
+  addCase('FUNC-SA-10A', 'school_admin', '校管查看全校作业聚合列表', async () => {
+    const r = await http('GET', api('/school-admin/homework?pageSize=20'), { token: s1().adminToken })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const total = r.body.total ?? (r.body.items || []).length
+    assert(total >= 1, `作业总数应≥1，实际 ${total}`)
+    const sample = (r.body.items || [])[0]
+    if (sample) {
+      assert(sample.className, '作业应回填班级名称')
+      assert(sample.teacherName, '作业应回填教师姓名')
+    }
+  })
+
+  addCase('FUNC-SA-10B', 'school_admin', '校管按年级横向对比各班成绩', async () => {
+    const r = await http('GET', api('/school-admin/academic/class-comparison?grade=一年级'), { token: s1().adminToken })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const classes = r.body.classes || []
+    assert(classes.length >= 1, `年级下班级数应≥1，实际 ${classes.length}`)
+    assert(classes[0].className, '班级名缺失')
+    assert(typeof classes[0].overallAvg === 'number', '综合均分缺失')
+  })
+
+  addCase('FUNC-SA-10C', 'school_admin', '校管查看班级本学期成绩汇总与趋势', async () => {
+    const classId = s1().classIds[0]
+    const r = await http('GET', api(`/school-admin/academic/class-trend?classId=${classId}`), { token: s1().adminToken })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    assert(r.body.className, 'className 缺失')
+    assert(Array.isArray(r.body.trend), 'trend 应为数组')
+    assert(Array.isArray(r.body.exams), 'exams 应为数组')
+    if (r.body.trend.length) {
+      assert(typeof r.body.trend[0].avg === 'number', '趋势均分缺失')
+    }
+  })
+
   addCase('FUNC-SA-11', 'school_admin', '校管 A 无法访问校管 B 学校的教师（跨校隔离）', async () => {
     const r = await http('GET', api('/school-admin/teachers?pageSize=10'), { token: s2().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
@@ -557,6 +590,59 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(r.status < 300, `查询失败 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
     assert(total >= 20, `教师数应≥20，实际 ${total}`)
+  })
+
+  addCase('FUNC-SA-15', 'school_admin', '校管收件人列表包含本校教师/超管/其他校管', async () => {
+    const r = await http('GET', api('/messages/recipients'), { token: s1().adminToken })
+    assert(r.status < 300, `查询失败 ${r.status}`)
+    const list = Array.isArray(r.body) ? r.body : []
+    const hasTeacher = list.some((x: any) => x.role === 'teacher')
+    const hasSuper = list.some((x: any) => x.role === 'super')
+    assert(hasTeacher, '校管收件人列表应包含本校教师')
+    assert(hasSuper, '校管收件人列表应包含超管')
+  })
+
+  addCase('FUNC-SA-16', 'school_admin', '校管给本校教师发送消息闭环', async () => {
+    const recs = await http('GET', api('/messages/recipients'), { token: s1().adminToken })
+    const list = Array.isArray(recs.body) ? recs.body : []
+    const target = list.find((x: any) => x.role === 'teacher')
+    assert(target, '无可用教师收件人')
+    const s = await http('POST', api('/messages'), {
+      token: s1().adminToken,
+      body: { recipientId: target.id, recipientRole: 'teacher', title: 'QA校管→教师', content: '您好，关于班级事情…', type: 'direct' },
+    })
+    assert(s.status < 300, `发送失败 ${s.status}`)
+  })
+
+  /* ================= 四角色互通：消息 ================= */
+  addCase('FUNC-SUP-07', 'super', '超管收件人列表包含全部校管', async () => {
+    const r = await http('GET', api('/messages/recipients'), { token: s1().adminToken })
+    // 超管使用 adminToken 会被识别为 school_admin，改用 superToken 直接
+    const login = await http('POST', api('/auth/unified-login'), { body: { username: SUPER_USER, password: SUPER_PASS } })
+    const superTok = login.body.token
+    const list = await http('GET', api('/messages/recipients'), { token: superTok })
+    assert(list.status < 300, `查询失败 ${list.status}`)
+    const items = Array.isArray(list.body) ? list.body : []
+    assert(items.length >= 5, `超管应能看到所有校管，实际 ${items.length}`)
+  })
+
+  addCase('FUNC-TCH-25', 'teacher', '教师收件人列表包含本班家长与本校校管', async () => {
+    const r = await http('GET', api('/messages/recipients'), { token: tTok() })
+    assert(r.status < 300, `查询失败 ${r.status}`)
+    const list = Array.isArray(r.body) ? r.body : []
+    const hasParent = list.some((x: any) => x.role === 'parent')
+    const hasAdmin = list.some((x: any) => x.role === 'school_admin')
+    assert(hasParent, '教师收件人列表应包含本班家长')
+    assert(hasAdmin, '教师收件人列表应包含本校校管')
+  })
+
+  addCase('FUNC-PAR-20', 'parent', '家长收件人列表包含班主任', async () => {
+    const t = await pTok()
+    const r = await http('GET', api('/messages/recipients'), { token: t })
+    assert(r.status < 300, `查询失败 ${r.status}`)
+    const list = Array.isArray(r.body) ? r.body : []
+    const hasTeacher = list.some((x: any) => x.role === 'teacher')
+    assert(hasTeacher, '家长收件人列表应包含班主任')
   })
 
   /* ================= 跨端一致性（接口契约） ================= */

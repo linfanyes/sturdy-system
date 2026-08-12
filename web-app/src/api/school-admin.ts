@@ -323,3 +323,18 @@ export function listSchoolGrades(params: { classId?: string; subject?: string; e
 export function getSchoolGradeSummary(params: { classId?: string; examId?: string } = {}) {
   return request.get('/school-admin/academic/summary', { params })
 }
+
+/** 校管只读：年级下各班成绩横向对比 */
+export function getGradeClassComparison(params: { grade?: string; subject?: string; examName?: string } = {}) {
+  return request.get('/school-admin/academic/class-comparison', { params })
+}
+
+/** 校管只读：某班级本学期成绩汇总与趋势 */
+export function getClassTermTrend(params: { classId: string; subject?: string; term?: string }) {
+  return request.get('/school-admin/academic/class-trend', { params })
+}
+
+/** 校管只读：全校作业聚合列表 */
+export function listSchoolHomework(params: { skip?: number; take?: number; classId?: string; grade?: string; subject?: string; status?: string } = {}) {
+  return request.get('/school-admin/homework', { params })
+}

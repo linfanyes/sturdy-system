@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T01:33:40.962Z",
+  "generatedAt": "2026-08-12T01:49:18.131Z",
   "dataset": {
     "schools": 10,
     "students": 6000,
@@ -9,12 +9,12 @@
     "messages": 500,
     "notes": 300,
     "notifications": 500,
-    "seedDurationMs": 26302
+    "seedDurationMs": 26221
   },
   "summary": {
     "functional": {
-      "total": 110,
-      "pass": 110,
+      "total": 118,
+      "pass": 118,
       "fail": 0
     },
     "performance": {
@@ -29,21 +29,21 @@
       "name": "健康检查 GET /health 返回 ok",
       "module": "super",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 1
     },
     {
       "id": "FUNC-SUP-02",
       "name": "超管统一登录返回 token 与 role=super",
       "module": "super",
       "status": "pass",
-      "durationMs": 1
+      "durationMs": 2
     },
     {
       "id": "FUNC-SUP-03",
       "name": "错误密码登录返回 401",
       "module": "super",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 1
     },
     {
       "id": "FUNC-SUP-04",
@@ -92,28 +92,28 @@
       "name": "平台配置读取与更新闭环",
       "module": "super",
       "status": "pass",
-      "durationMs": 4
+      "durationMs": 5
     },
     {
       "id": "FUNC-SUP-11",
       "name": "教师应用配置接口按角色管控（教师可访问，超管不适用）",
       "module": "super",
       "status": "pass",
-      "durationMs": 73
+      "durationMs": 72
     },
     {
       "id": "FUNC-SUP-12",
       "name": "学校功能包查询",
       "module": "super",
       "status": "pass",
-      "durationMs": 1
+      "durationMs": 2
     },
     {
       "id": "FUNC-SUP-13",
       "name": "校管越权访问超管接口被拒绝",
       "module": "super",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 1
     },
     {
       "id": "FUNC-SA-01",
@@ -127,21 +127,21 @@
       "name": "校管工作台统计接口",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 9
+      "durationMs": 10
     },
     {
       "id": "FUNC-SA-03",
       "name": "教师列表分页与总数（≥30 人）",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "FUNC-SA-04",
       "name": "新建教师后可登录",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 138
+      "durationMs": 139
     },
     {
       "id": "FUNC-SA-05",
@@ -169,7 +169,7 @@
       "name": "学生搜索按姓名命中",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 14
+      "durationMs": 13
     },
     {
       "id": "FUNC-SA-09",
@@ -183,21 +183,42 @@
       "name": "成绩查询与汇总接口",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 25
+      "durationMs": 16
+    },
+    {
+      "id": "FUNC-SA-10A",
+      "name": "校管查看全校作业聚合列表",
+      "module": "school_admin",
+      "status": "pass",
+      "durationMs": 6
+    },
+    {
+      "id": "FUNC-SA-10B",
+      "name": "校管按年级横向对比各班成绩",
+      "module": "school_admin",
+      "status": "pass",
+      "durationMs": 5
+    },
+    {
+      "id": "FUNC-SA-10C",
+      "name": "校管查看班级本学期成绩汇总与趋势",
+      "module": "school_admin",
+      "status": "pass",
+      "durationMs": 7
     },
     {
       "id": "FUNC-SA-11",
       "name": "校管 A 无法访问校管 B 学校的教师（跨校隔离）",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 3
     },
     {
       "id": "FUNC-SA-12",
       "name": "校管错误密码返回 401",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 69
+      "durationMs": 67
     },
     {
       "id": "FUNC-TCH-01",
@@ -218,35 +239,35 @@
       "name": "教师学生列表（本班 50 人）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 4
+      "durationMs": 3
     },
     {
       "id": "FUNC-TCH-04",
       "name": "教师查询自己学生的详情",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 6
     },
     {
       "id": "FUNC-TCH-05",
       "name": "教师访问他校学生被拒绝（租户隔离）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 6
+      "durationMs": 5
     },
     {
       "id": "FUNC-TCH-06",
       "name": "教师考试列表（本班 10 次）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 3
     },
     {
       "id": "FUNC-TCH-07",
       "name": "教师查询班级成绩（含 6 科）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 7
+      "durationMs": 6
     },
     {
       "id": "FUNC-TCH-08",
@@ -260,14 +281,14 @@
       "name": "成绩录入真实流程：建考试自动生成占位→import-commit 提交分数→可查询",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 16
+      "durationMs": 17
     },
     {
       "id": "FUNC-TCH-10",
       "name": "考试分析接口（班级均分/分段）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 7
+      "durationMs": 9
     },
     {
       "id": "FUNC-TCH-11",
@@ -302,28 +323,28 @@
       "name": "课表查询与保存",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "FUNC-TCH-16",
       "name": "教材知识点树查询",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 6
     },
     {
       "id": "FUNC-TCH-17",
       "name": "专项资源库（古诗词）查询",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "FUNC-TCH-18",
       "name": "校管重置教师密码后教师用新密码登录",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 139
+      "durationMs": 140
     },
     {
       "id": "FUNC-TCH-19",
@@ -351,28 +372,28 @@
       "name": "家长错误密码返回 401",
       "module": "parent",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "FUNC-PAR-03",
       "name": "未开启家长登录的学号被拒绝",
       "module": "parent",
       "status": "pass",
-      "durationMs": 1
+      "durationMs": 2
     },
     {
       "id": "FUNC-PAR-04",
       "name": "家长 /me 返回孩子信息（unified-login 签发 parentId 修复验证）",
       "module": "parent",
       "status": "pass",
-      "durationMs": 6
+      "durationMs": 5
     },
     {
       "id": "FUNC-PAR-18",
       "name": "二孩家庭家长 /me 返回 2 个孩子且可跨娃比对",
       "module": "parent",
       "status": "pass",
-      "durationMs": 43
+      "durationMs": 38
     },
     {
       "id": "FUNC-PAR-05",
@@ -400,7 +421,7 @@
       "name": "家长查看作业",
       "module": "parent",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 4
     },
     {
       "id": "FUNC-PAR-09",
@@ -428,21 +449,21 @@
       "name": "家长查看家校沟通记录",
       "module": "parent",
       "status": "pass",
-      "durationMs": 4
+      "durationMs": 5
     },
     {
       "id": "FUNC-PAR-13",
       "name": "家长查看科任老师（含班主任）",
       "module": "parent",
       "status": "pass",
-      "durationMs": 6
+      "durationMs": 5
     },
     {
       "id": "FUNC-PAR-14",
       "name": "家长修改密码后用新密码登录",
       "module": "parent",
       "status": "pass",
-      "durationMs": 145
+      "durationMs": 146
     },
     {
       "id": "FUNC-PAR-15",
@@ -456,7 +477,7 @@
       "name": "家长 token 无法访问教师接口",
       "module": "parent",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 4
     },
     {
       "id": "FUNC-PAR-17",
@@ -491,35 +512,70 @@
       "name": "教师消息列表（含种子数据，收件箱+已发）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 4
     },
     {
       "id": "FUNC-TCH-24",
       "name": "教师考勤列表（含富化种子数据）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "FUNC-SA-13",
       "name": "校管查看本校级公告（含学校级与班级级）",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 1
+      "durationMs": 2
     },
     {
       "id": "FUNC-SA-14",
       "name": "校管查看全校教师信息（含跨部门聚合）",
       "module": "school_admin",
       "status": "pass",
+      "durationMs": 2
+    },
+    {
+      "id": "FUNC-SA-15",
+      "name": "校管收件人列表包含本校教师/超管/其他校管",
+      "module": "school_admin",
+      "status": "pass",
       "durationMs": 3
+    },
+    {
+      "id": "FUNC-SA-16",
+      "name": "校管给本校教师发送消息闭环",
+      "module": "school_admin",
+      "status": "pass",
+      "durationMs": 4
+    },
+    {
+      "id": "FUNC-SUP-07",
+      "name": "超管收件人列表包含全部校管",
+      "module": "super",
+      "status": "pass",
+      "durationMs": 5
+    },
+    {
+      "id": "FUNC-TCH-25",
+      "name": "教师收件人列表包含本班家长与本校校管",
+      "module": "teacher",
+      "status": "pass",
+      "durationMs": 3
+    },
+    {
+      "id": "FUNC-PAR-20",
+      "name": "家长收件人列表包含班主任",
+      "module": "parent",
+      "status": "pass",
+      "durationMs": 59
     },
     {
       "id": "FUNC-CONS-01",
       "name": "Web/小程序共用登录端点 unified-login",
       "module": "consistency",
       "status": "pass",
-      "durationMs": 72
+      "durationMs": 73
     },
     {
       "id": "FUNC-CONS-02",
@@ -533,7 +589,7 @@
       "name": "重复校管用户名被拒绝",
       "module": "super",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 4
     },
     {
       "id": "EDGE-SUP-02",
@@ -596,42 +652,42 @@
       "name": "创建班级缺必填字段被拒绝",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 3
     },
     {
       "id": "EDGE-SA-05",
       "name": "跨校越权：校管2查询校1班级学生被隔离",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 3
+      "durationMs": 2
     },
     {
       "id": "EDGE-SA-06",
       "name": "学生列表注入字符不报错不跨校泄漏",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 11
+      "durationMs": 15
     },
     {
       "id": "EDGE-SA-07",
       "name": "不存在的 classId 查询返回空不崩溃",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 3
     },
     {
       "id": "EDGE-SA-08",
       "name": "重置不存在教师的密码被拒绝",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 42
     },
     {
       "id": "EDGE-SA-09",
       "name": "超长教师姓名（>50 字）被拒绝",
       "module": "school_admin",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 54
     },
     {
       "id": "EDGE-SA-10",
@@ -645,42 +701,42 @@
       "name": "同名考试重复创建被拒绝",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 7
     },
     {
       "id": "EDGE-TCH-02",
       "name": "成绩录入负分被拒绝或安全处理",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 11
+      "durationMs": 17
     },
     {
       "id": "EDGE-TCH-03",
       "name": "成绩录入了不属于该班的学生被拒绝或忽略",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 12
+      "durationMs": 25
     },
     {
       "id": "EDGE-TCH-04",
       "name": "公告缺标题被拒绝",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 4
+      "durationMs": 8
     },
     {
       "id": "EDGE-TCH-05",
       "name": "作业缺标题被拒绝",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 2
+      "durationMs": 10
     },
     {
       "id": "EDGE-TCH-06",
       "name": "非班主任教师访问他班成绩被隔离",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 71
+      "durationMs": 74
     },
     {
       "id": "EDGE-TCH-07",
@@ -694,7 +750,7 @@
       "name": "审核 action 非法值被拒绝",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 10
+      "durationMs": 11
     },
     {
       "id": "EDGE-TCH-09",
@@ -708,7 +764,7 @@
       "name": "教师自助修改密码闭环（新能力）",
       "module": "teacher",
       "status": "pass",
-      "durationMs": 476
+      "durationMs": 484
     },
     {
       "id": "EDGE-PAR-01",
@@ -729,7 +785,7 @@
       "name": "未开启家长登录的学生无法登录（新建学生验证）",
       "module": "parent",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 4
     },
     {
       "id": "EDGE-PAR-04",
@@ -750,7 +806,7 @@
       "name": "切换孩子到他人子女被拒绝（隔离）",
       "module": "parent",
       "status": "pass",
-      "durationMs": 15
+      "durationMs": 10
     },
     {
       "id": "EDGE-PAR-07",
@@ -764,7 +820,7 @@
       "name": "篡改家长 token 被拒绝",
       "module": "parent",
       "status": "pass",
-      "durationMs": 5
+      "durationMs": 4
     },
     {
       "id": "EDGE-SEC-01",
@@ -801,15 +857,15 @@
       "name": "统一登录并发吞吐（bcrypt 校验为 CPU 密集）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 3650,
+      "durationMs": 3646,
       "metrics": {
         "total": 100,
         "ok": 100,
-        "p50Ms": 354,
-        "p95Ms": 725,
-        "avgMs": 361,
+        "p50Ms": 355,
+        "p95Ms": 721,
+        "avgMs": 360,
         "maxMs": 1007,
-        "rps": 27.4
+        "rps": 27.43
       },
       "threshold": "100 次登录 / 并发 10：成功率 100%，p95 < 3000ms，RPS ≥ 5"
     },
@@ -818,14 +874,14 @@
       "name": "家长成绩查询（10 考试 × 6 科数据集）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 171,
+      "durationMs": 158,
       "metrics": {
         "total": 100,
         "ok": 100,
         "p50Ms": 2,
         "p95Ms": 2,
         "avgMs": 2,
-        "maxMs": 5,
+        "maxMs": 4,
         "rps": 100
       },
       "threshold": "100 次顺序查询：p95 < 500ms，无失败"
@@ -835,14 +891,14 @@
       "name": "家长看板聚合（9 接口 × 30 位家长，并发 15）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 777,
+      "durationMs": 560,
       "metrics": {
         "total": 270,
         "ok": 270,
-        "p50Ms": 22,
-        "p95Ms": 144,
-        "avgMs": 37,
-        "maxMs": 366,
+        "p50Ms": 18,
+        "p95Ms": 50,
+        "avgMs": 25,
+        "maxMs": 192,
         "rps": 270
       },
       "threshold": "270 请求：错误率 < 1%，p95 < 800ms"
@@ -852,14 +908,14 @@
       "name": "教师班级成绩查询（50 生 × 6 科 JSON 分数）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 662,
+      "durationMs": 624,
       "metrics": {
         "total": 100,
         "ok": 100,
-        "p50Ms": 6,
-        "p95Ms": 7,
+        "p50Ms": 5,
+        "p95Ms": 6,
         "avgMs": 6,
-        "maxMs": 12,
+        "maxMs": 9,
         "rps": 100
       },
       "threshold": "100 次顺序查询：p95 < 500ms"
@@ -869,14 +925,14 @@
       "name": "5000 学生分页遍历（pageSize=50 × 前 40 页）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 453,
+      "durationMs": 432,
       "metrics": {
         "total": 40,
         "ok": 40,
         "p50Ms": 11,
-        "p95Ms": 14,
+        "p95Ms": 13,
         "avgMs": 11,
-        "maxMs": 17,
+        "maxMs": 13,
         "rps": 40
       },
       "threshold": "40 次分页查询：p95 < 400ms"
@@ -886,14 +942,14 @@
       "name": "混合并发只读负载（教师+家长+校管，300 请求 / 并发 20）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 652,
+      "durationMs": 626,
       "metrics": {
         "total": 300,
         "ok": 300,
-        "p50Ms": 36,
+        "p50Ms": 35,
         "p95Ms": 45,
-        "avgMs": 38,
-        "maxMs": 151,
+        "avgMs": 36,
+        "maxMs": 153,
         "rps": 300
       },
       "threshold": "错误率 < 1%，p95 < 1000ms"
@@ -903,18 +959,18 @@
       "name": "教师笔记/消息/通知列表（富化数据压力）",
       "module": "performance",
       "status": "pass",
-      "durationMs": 222,
+      "durationMs": 216,
       "metrics": {
         "total": 100,
         "ok": 100,
-        "p50Ms": 2,
+        "p50Ms": 1,
         "p95Ms": 2,
-        "avgMs": 2,
+        "avgMs": 1,
         "maxMs": 3,
         "rps": 100
       },
       "threshold": "100 次顺序查询：p95 < 300ms"
     }
   ],
-  "totalDurationMs": 35404
+  "totalDurationMs": 35204
 }

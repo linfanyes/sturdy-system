@@ -16,10 +16,15 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { Roles } from '../common/decorators/roles.decorator'
 
 /**
- * 留言板（家校留言）——替代腾讯云 IM 的持久化消息系统。
- * 教师和家长均可在各自端发送/查看留言，数据持久化到 MySQL，无需额外开通 IM 服务。
- * 支持教师给家长留言、家长给教师留言、以及系统通知。
- * @CurrentTeacher 实际返回 req.user（含 sub=用户ID、role=角色），教师与家长令牌皆可解析。
+ * 站内消息（四角色互通版）：
+ * - 教师 ↔ 家长
+ * - 校管 ↔ 本校教师
+ * - 校管 ↔ 超管
+ * - 超管 ↔ 全部校管
+ * - 校管 ↔ 校管（跨校）
+ *
+ * @CurrentTeacher 实际返回 req.user（含 sub=用户ID、role=角色），
+ * 统一承载四种角色令牌。
  */
 @UseGuards(JwtAuthGuard)
 @Controller('messages')
@@ -52,14 +57,21 @@ export class MessageController {
     return this.svc.unreadCount(u.sub, u.role)
   }
 
-  /** GET /api/messages/recipients 获取教师可发消息的收件人列表（家长） */
-  @Roles('teacher')
+  /**
+   * GET /api/messages/recipients
+   * 当前登录用户可发送消息的收件人列表。
+   * 根据 role 动态返回：
+   *   - teacher: 本班家长 + 本校校管
+   *   - parent: 班主任/科任老师 + 校管
+   *   - school_admin: 本校教师 + 其他校管 + 超管
+   *   - super: 全部校管
+   */
   @Get('recipients')
   recipients(@CurrentTeacher() u: any) {
-    return this.svc.listRecipients(u.sub)
+    return this.svc.listRecipients(u.sub, u.role, u.schoolId)
   }
 
-  /** POST /api/messages 发送消息 */
+  /** POST /api/messages 发送消息（四角色通用） */
   @Post()
   send(@CurrentTeacher() u: any, @Body() dto: CreateMessageDto) {
     return this.svc.send(u.sub, u.role, dto)

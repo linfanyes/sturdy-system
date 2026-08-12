@@ -378,4 +378,51 @@ export class SchoolAdminController {
   gradeSummary(@CurrentSchoolAdmin() a: any, @Query('classId') classId?: string, @Query('examId') examId?: string) {
     return this.svc.schoolGradeSummary(a.schoolId, classId || undefined, examId || undefined)
   }
+
+  /** 校管只读：指定年级下各班成绩横向对比 */
+  @Get('academic/class-comparison')
+  @UseGuards(JwtAuthGuard)
+  gradeClassComparison(
+    @CurrentSchoolAdmin() a: any,
+    @Query('grade') grade?: string,
+    @Query('subject') subject?: string,
+    @Query('examName') examName?: string,
+  ) {
+    return this.svc.gradeClassComparison(a.schoolId, { grade: grade || undefined, subject: subject || undefined, examName: examName || undefined })
+  }
+
+  /** 校管只读：指定班级本学期成绩汇总与趋势 */
+  @Get('academic/class-trend')
+  @UseGuards(JwtAuthGuard)
+  classTermTrend(
+    @CurrentSchoolAdmin() a: any,
+    @Query('classId') classId?: string,
+    @Query('subject') subject?: string,
+    @Query('term') term?: string,
+  ) {
+    if (!classId) throw new BadRequestException('classId 必填')
+    return this.svc.classTermTrend(a.schoolId, classId, { subject: subject || undefined, term: term || undefined })
+  }
+
+  /** 校管只读：本校全部班级作业聚合列表 */
+  @Get('homework')
+  @UseGuards(JwtAuthGuard)
+  listHomework(
+    @CurrentSchoolAdmin() a: any,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('classId') classId?: string,
+    @Query('grade') grade?: string,
+    @Query('subject') subject?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.svc.listSchoolHomework(a.schoolId, {
+      skip: Number(skip) || 0,
+      take: Number(take) || 50,
+      classId: classId || undefined,
+      grade: grade || undefined,
+      subject: subject || undefined,
+      status: status || undefined,
+    })
+  }
 }

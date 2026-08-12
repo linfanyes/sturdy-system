@@ -42,8 +42,25 @@
           <view class="subject-list">
             <view v-for="s in orderedSubjects" :key="s.subject" class="srow">
               <text class="ssubject">{{ s.subject }}</text>
-              <text class="sscore">{{ s.score != null ? s.score + ' / ' + s.fullScore : '暂未录入' }}</text>
+              <text class="sscore" :class="{ 'below': s.score != null && s.classAvg != null && s.score < s.classAvg }">
+                {{ s.score != null ? s.score + ' / ' + s.fullScore : '暂未录入' }}
+              </text>
               <text class="srank">班级第{{ s.classRank ?? '--' }}名</text>
+              <text v-if="s.classAvg != null" class="savg">均分{{ s.classAvg }}</text>
+              <text v-if="s.score != null && s.classAvg != null" class="s-diff" :class="s.score >= s.classAvg ? 'up' : 'down'">
+                {{ s.score >= s.classAvg ? '↑' : '↓' }}{{ Math.abs(s.score - s.classAvg).toFixed(1) }}
+              </text>
+            </view>
+          </view>
+
+          <!-- 学情诊断卡 -->
+          <view v-if="aiInsight" class="ai-insight" :class="aiInsight.level">
+            <view class="ai-title" :class="aiInsight.level">
+              {{ aiInsight.level === 'good' ? '🎉 表现优秀' : aiInsight.level === 'warn' ? '⚠️ 需要关注' : '💡 学情诊断' }}
+            </view>
+            <view class="ai-summary">{{ aiInsight.summary }}</view>
+            <view v-if="aiInsight.tips && aiInsight.tips.length" class="ai-tips">
+              <view v-for="(tip, idx) in aiInsight.tips" :key="idx" class="ai-tip">{{ tip }}</view>
             </view>
           </view>
 
@@ -139,7 +156,64 @@ const orderedSubjects = computed(() => {
     if (bi >= 0) return 1
     return (a.subject || '').localeCompare(b.subject || '')
   })
-  return subs
+  // 为每个科目计算/获取班级均分
+  const classStats = selectedExam.value?.classStats || {}
+  const subjectAvgs = classStats.subjectAvgs || {}
+  return subs.map(s => {
+    let classAvg = null
+    if (subjectAvgs[s.subject]) {
+      classAvg = subjectAvgs[s.subject].avg ?? subjectAvgs[s.subject]
+    } else if (s.classAvg != null) {
+      classAvg = s.classAvg
+    }
+    return { ...s, classAvg }
+  })
+})
+
+/* ===== AI 学情诊断（简易版） ===== */
+const aiInsight = computed(() => {
+  const exam = selectedExam.value
+  if (!exam) return null
+  const tips = []
+  const subjects = exam.subjects || []
+  const classStats = exam.classStats || {}
+  let lowCount = 0
+  let highCount = 0
+
+  for (const s of subjects) {
+    if (s.score == null || !s.fullScore) continue
+    const pct = s.score / s.fullScore
+    const subjectAvgs = classStats.subjectAvgs || {}
+    const classAvg = subjectAvgs[s.subject]?.avg ?? s.classAvg
+
+    if (classAvg != null && s.score < classAvg) lowCount++
+    else if (classAvg != null && s.score > classAvg) highCount++
+
+    if (pct < 0.6) tips.push(`📕 ${s.subject} 成绩偏弱（${s.score}/${s.fullScore}），建议加强基础概念训练`)
+    else if (pct < 0.75) tips.push(`📘 ${s.subject} 成绩中等（${s.score}/${s.fullScore}），有提升空间`)
+    else if (pct >= 0.85) tips.push(`📗 ${s.subject} 表现优秀（${s.score}/${s.fullScore}），继续保持`)
+  }
+
+  let level = 'info'
+  let summary = ''
+  if (lowCount >= 2) {
+    level = 'warn'
+    summary = `本次考试有 ${lowCount} 科低于班级均分，需要重点关注薄弱环节`
+  } else if (highCount >= Math.ceil(subjects.length / 2) && subjects.length > 0) {
+    level = 'good'
+    summary = `本次考试发挥出色，${highCount} 科高于班级均分，整体水平领先`
+  } else {
+    summary = '本次考试整体表现平稳，建议重点突破薄弱学科'
+  }
+
+  // 排名变化（如果有数据）
+  if (exam.classRank != null && exam.prevClassRank != null) {
+    const dRank = exam.prevClassRank - exam.classRank
+    if (dRank > 0) tips.push(`📈 班级排名上升 ${dRank} 名，继续保持良好学习势头`)
+    else if (dRank < 0) tips.push(`📉 班级排名下降 ${Math.abs(dRank)} 名，需要调整学习策略`)
+  }
+
+  return { summary, tips, level }
 })
 
 const EXCELLENT_RATIO = 0.8
@@ -190,8 +264,27 @@ const histogram = computed(() => {
 .srow { display: flex; align-items: center; padding: 8rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
 .srow:last-child { border-bottom: none; }
 .ssubject { width: 100rpx; font-size: 24rpx; color: var(--c-title); font-weight: 600; flex-shrink: 0; }
-.sscore { flex: 1; font-size: 24rpx; color: var(--c-sub); text-align: center; }
+.sscore { flex: 1; font-size: 24rpx; color: var(--c-sub); text-align: center; font-weight: 600; }
+.sscore.below { color: #e06c75; }
 .srank { width: 130rpx; font-size: 22rpx; color: #9aa0a6; text-align: right; flex-shrink: 0; }
+.savg { width: 100rpx; font-size: 22rpx; color: var(--c-sub); text-align: right; flex-shrink: 0; }
+.s-diff { width: 60rpx; text-align: right; font-size: 22rpx; font-weight: 600; flex-shrink: 0; }
+.s-diff.up { color: #07c160; }
+.s-diff.down { color: #e06c75; }
+
+/* ===== AI 学情诊断卡 ===== */
+.ai-insight { border-radius: 16rpx; padding: 20rpx; margin-bottom: 20rpx; border-left: 6rpx solid #07c160; }
+.ai-insight.good { background: #e8f9e8; border-color: #07c160; }
+.ai-insight.warn { background: #fde8e8; border-color: #e06c75; }
+.ai-insight.info { background: #e8f4fd; border-color: #1c6fb3; }
+.ai-title { font-size: 26rpx; font-weight: 700; margin-bottom: 10rpx; }
+.ai-title.good { color: #07c160; }
+.ai-title.warn { color: #e06c75; }
+.ai-title.info { color: #1c6fb3; }
+.ai-summary { font-size: 24rpx; color: var(--c-title); line-height: 1.6; margin-bottom: 12rpx; font-weight: 500; }
+.ai-tips { display: flex; flex-direction: column; gap: 8rpx; }
+.ai-tip { font-size: 22rpx; color: var(--c-sub); line-height: 1.6; padding-left: 10rpx; border-left: 2rpx solid rgba(0,0,0,0.1); }
+
 .sw-section { background: var(--c-input); border-radius: 10rpx; padding: 14rpx 16rpx; margin-bottom: 14rpx; }
 .sw-row { display: flex; align-items: baseline; gap: 10rpx; line-height: 1.8; }
 .sw-label { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 8rpx; font-weight: 600; flex-shrink: 0; }
