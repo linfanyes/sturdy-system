@@ -10,7 +10,7 @@
     <!-- ===== 校管理员管理 ===== -->
     <view v-if="mode === 'admin'">
       <view class="stats">
-        <text class="sc">共 {{ admins.length }} 个学校管理员</text>
+        <text class="sc">共 {{ schoolAdmins.length }} 个学校管理员</text>
         <text class="act" @click="emit('open-create-admin')">＋ 新增</text>
       </view>
       <view class="filter-bar">
