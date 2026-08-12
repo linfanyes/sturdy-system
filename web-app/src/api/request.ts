@@ -50,7 +50,8 @@ export function cancelAllRequests() {
 // ========== SWR GET 缓存 ==========
 const swrCache = new Map<string, { data: any; expireAt: number }>()
 const SWR_DEFAULT_TTL = 30_000 // 30s
-const SWR_STALE_TIME = 10_000  // 10s 内认为新鲜，不重复请求
+const SWR_FRESH_TIME = 5_000   // 5s 内直接命中（新鲜）
+const SWR_STALE_TIME = 10_000  // 10s 内返回旧值 + 后台刷新（stale-while-revalidate）
 
 /** 带缓存的 GET 请求 */
 export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<T> {
@@ -58,8 +59,8 @@ export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<
   const now = Date.now()
   const cached = swrCache.get(cacheKey)
 
-  // 新鲜命中
-  if (cached && cached.expireAt - now < SWR_STALE_TIME && cached.expireAt > now) {
+  // 新鲜命中：缓存创建时间在 FRESH_TIME 内 → 直接返回，不触发请求
+  if (cached && cached.expireAt > now && (cached.expireAt - now) > (ttl - SWR_FRESH_TIME)) {
     return Promise.resolve(cached.data as T)
   }
 
