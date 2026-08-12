@@ -56,6 +56,7 @@
           :schools="schools"
           :providers="providers"
           :config-groups="configGroups"
+          :entry="subView"
           :saving="saving"
           @open-create-admin="openCreateAdmin"
           @open-edit-admin="openEditAdmin"

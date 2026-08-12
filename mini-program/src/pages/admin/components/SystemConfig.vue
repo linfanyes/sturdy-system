@@ -1,7 +1,8 @@
 <template>
   <view>
-    <!-- Tab 切换：校管理员 / 平台配置 / AI 服务商 -->
-    <view class="sub-tabs">
+    <!-- 顶部 Tab：仅在从「平台配置 / AI 服务商」入口进入时显示完整切换；
+         从「校管理员」入口进入时不显示 平台配置 / AI 服务商，避免多出一排菜单栏 -->
+    <view class="sub-tabs" v-if="entry !== 'schoolAdmin'">
       <view class="stab" :class="{ on: mode === 'admin' }" @click="mode = 'admin'">校管理员</view>
       <view class="stab" :class="{ on: mode === 'config' }" @click="mode = 'config'">平台配置</view>
       <view class="stab" :class="{ on: mode === 'ai' }" @click="mode = 'ai'">AI 服务商</view>
@@ -202,6 +203,8 @@ const props = defineProps({
   providers: { type: Array, default: () => [] },
   configGroups: { type: Array, default: () => [] },
   saving: { type: Boolean, default: false },
+  // 入口来源：'schoolAdmin'（校管理员视图，隐藏 平台配置/AI 服务商 Tab）/ 'config' / 'ai'
+  entry: { type: String, default: 'admin' },
 })
 const emit = defineEmits([
   'open-create-admin', 'open-edit-admin', 'del-admin', 'open-reset-admin', 'save-admin', 'reset-pwd',
@@ -209,7 +212,8 @@ const emit = defineEmits([
   'open-create-provider', 'open-edit-provider', 'del-provider', 'toggle-provider', 'save-provider',
 ])
 
-const mode = ref('admin')
+// 按入口初始化：从「校管理员」进入锁定为 admin；从「平台配置/AI 服务商」进入时直接落到对应视图
+const mode = ref(props.entry === 'schoolAdmin' ? 'admin' : (props.entry || 'admin'))
 
 // 校管理员
 const filterSchoolCode = ref('')
