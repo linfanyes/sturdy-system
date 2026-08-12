@@ -55,6 +55,13 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('登录已过期，请重新登录')
     }
 
+    // 校验 audience：家长令牌 aud='parent'，教师令牌无 aud 或 aud='teacher'
+    // 防止令牌在错误端点被使用
+    const expectedAud = req.headers?.['x-expect-aud']
+    if (expectedAud && payload.aud && payload.aud !== expectedAud) {
+      throw new UnauthorizedException('令牌类型不匹配')
+    }
+
     // 统一 role：家长令牌用 type='parent'，映射为 role='parent' 便于 @Roles 校验
     const role = payload.role || (payload.type === 'parent' ? 'parent' : undefined)
     req.user = { ...payload, role }

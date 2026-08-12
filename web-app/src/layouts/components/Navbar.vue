@@ -2,11 +2,13 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Search } from 'lucide-vue-next'
+import { usePrefsStore } from '@/stores/prefs'
+import { Search, Moon, Sun } from 'lucide-vue-next'
 import { search as searchAll, type SearchResult } from '@/api/school-admin'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
+const prefs = usePrefsStore()
 const route = useRoute()
 
 const roleLabel: Record<Role, string> = {
@@ -167,9 +169,19 @@ function goStudents() { closeSearch(); emit('goStudents') }
           <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
         </nav>
       </div>
-      <div class="text-right">
-        <div class="text-sm font-medium text-cocoa-700">{{ roleDisplay }}</div>
-        <div class="mt-0.5 text-xs text-cocoa-400">{{ today }}</div>
+      <div class="text-right flex items-center gap-3">
+        <button
+          class="theme-toggle p-2 rounded-lg hover:bg-cream-100 transition-colors"
+          :title="prefs.theme === 'dark' ? '切换浅色模式' : '切换深色模式'"
+          @click="prefs.toggleTheme()"
+        >
+          <Sun v-if="prefs.theme === 'dark'" class="w-4 h-4 text-amber-500" />
+          <Moon v-else class="w-4 h-4 text-cocoa-500" />
+        </button>
+        <div>
+          <div class="text-sm font-medium text-cocoa-700">{{ roleDisplay }}</div>
+          <div class="mt-0.5 text-xs text-cocoa-400">{{ today }}</div>
+        </div>
       </div>
     </div>
   </header>

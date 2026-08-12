@@ -19,6 +19,16 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #d4c9b8; border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: #bfb09a; }
+
+  /* Skeleton shimmer colors */
+  :root {
+    --c-skeleton: #e8ddd0;
+    --c-skeleton-shimmer: #f5ede0;
+  }
+  .dark {
+    --c-skeleton: #3d352c;
+    --c-skeleton-shimmer: #4d4338;
+  }
 }
 
 @layer components {

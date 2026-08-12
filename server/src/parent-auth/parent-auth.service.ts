@@ -68,6 +68,7 @@ export class ParentAuthService {
     const token = this.jwt.sign({
       sub: imUserId,
       type: 'parent',
+      aud: 'parent',
       parentId: stu.parentId || undefined,
       studentId: stu.id,
       studentName: stu.name,
@@ -155,7 +156,7 @@ export class ParentAuthService {
     const pn = parent?.parentName || '家长'
     const pim = parentImUserId({ studentId: target.id, relation: '家长', parentName: pn })
     const token = this.jwt.sign({
-      sub: pim, type: 'parent', parentId: payload.parentId,
+      sub: pim, type: 'parent', aud: 'parent', parentId: payload.parentId,
       studentId: target.id, studentName: target.name,
       classId: target.classId, studentNo: target.studentNo,
     })
@@ -176,7 +177,7 @@ export class ParentAuthService {
     const firstKid = kids[0]
     const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
     const token = this.jwt.sign({
-      sub: pim, type: 'parent', parentId: parent.id,
+      sub: pim, type: 'parent', aud: 'parent', parentId: parent.id,
       studentId: firstKid.id, studentName: firstKid.name,
       classId: firstKid.classId, studentNo: firstKid.studentNo,
     })
