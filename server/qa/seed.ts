@@ -11,15 +11,23 @@
 import type { DataSource } from 'typeorm'
 import { http } from './harness'
 
+/** 与 src/im/parent-im.util.ts 保持一致的家长 IM 账号派生算法 */
+function parentImUserId(p: { studentId: string; relation: string; parentName: string }): string {
+  const raw = `${p.studentId}|${p.relation}|${p.parentName}`
+  let h = 0
+  for (let i = 0; i < raw.length; i++) h = (Math.imul(h, 31) + raw.charCodeAt(i)) >>> 0
+  return 'p_' + h.toString(36)
+}
+
 export const SUPER_USER = 'admin'
 export const SUPER_PASS = 'admin'
 export const ADMIN_PASS = 'QaAdmin@123'
 export const TEACHER_PASS = 'QaTeach@123'
 export const PARENT_PASS = '123456'
 export const SCHOOL_COUNT = 10
-export const TEACHERS_PER_SCHOOL = 20
+export const TEACHERS_PER_SCHOOL = 30
 export const CLASSES_PER_SCHOOL = 10
-export const STUDENTS_PER_CLASS = 50
+export const STUDENTS_PER_CLASS = 60
 export const EXAMS_PER_CLASS = 10
 export const SUBJECTS = ['语文', '数学', '英语', '科学', '道法', '体育']
 
@@ -63,6 +71,10 @@ export interface SeedResult {
   studentCount: number
   examCount: number
   gradeRowCount: number
+  noticeCount: number
+  messageCount: number
+  noteCount: number
+  notificationCount: number
   durationMs: number
 }
 
@@ -78,6 +90,12 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
   const studentRepo = ds.getRepository('students')
   const examRepo = ds.getRepository('exams')
   const gradeRepo = ds.getRepository('grades')
+  const noticeRepo = ds.getRepository('notices')
+  const homeworkRepo = ds.getRepository('homework')
+  const attendanceRepo = ds.getRepository('attendances')
+  const messageRepo = ds.getRepository('messages')
+  const noteRepo = ds.getRepository('notes')
+  const notificationRepo = ds.getRepository('notifications')
 
   // 预计算家长口令哈希（同一口令复用同一哈希，bcrypt 盐内嵌于哈希，验证不受影响）
   const bcrypt = require('bcrypt')
@@ -87,6 +105,7 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
   let studentCount = 0
   let examCount = 0
   let gradeRowCount = 0
+  let firstAdminId = ''
 
   for (let i = 1; i <= SCHOOL_COUNT; i++) {
     // ---------- 2) 学校 ----------
@@ -105,6 +124,10 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
     const adminLogin = await http('POST', `${baseUrl}/auth/unified-login`, { body: { username: au, password: ADMIN_PASS } })
     if (adminLogin.status >= 300) throw new Error(`校管登录失败(${au}): ${adminLogin.status} ${JSON.stringify(adminLogin.body)}`)
     const adminToken = adminLogin.body.token as string
+    const adminId = adminLogin.body.user?.id || adminLogin.body.id || ''
+    if (!adminId) throw new Error(`校管ID缺失(${au})`)
+    // 记录第一所学校的 admin 信息，供后续用例断言
+    if (i === 1) firstAdminId = adminId
 
     // ---------- 4) 教师 ×20（批量接口） ----------
     const teachers = Array.from({ length: TEACHERS_PER_SCHOOL }, (_, j0) => {
@@ -264,6 +287,116 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
       }
     }
 
+    // ---------- 8) 富化数据：班级公告 / 作业 / 考勤 / 消息 / 笔记 / 通知 ----------
+    // 目的：让四角色页面真实有数据可查，支撑功能/性能/交互三类用例。
+    // 仓储已在函数开头声明，复用即可。
+
+    const rngI = makeRng(i * 99991)
+
+    for (let k = 1; k <= CLASSES_PER_SCHOOL; k++) {
+      const classId = classIds[k - 1]
+      const headId = headTeacherIds[k - 1]
+      const classStudents = await studentRepo.find({ where: { classId } })
+      const classStudentIds = classStudents.map((s) => s.id)
+
+      // 公告：每班 3 条（含 1 条置顶），外加 1 条全校级公告（仅首班写一次）
+      const noticeRows = []
+      for (let n = 0; n < 3; n++) {
+        noticeRows.push({
+          teacherId: headId,
+          classId,
+          title: `班级${k}公告 #${n + 1}：${['家长开放日通知', '期中复习安排', '班级公约更新'][n]}`,
+          content: `这是测试第${i}学校的班级${k}发布的第 ${n + 1} 条公告。发布时间：2026-0${n + 1}-15 10:00。`,
+          pinned: n === 0,
+          ended: false,
+          scope: 'class',
+        })
+      }
+      for (const nr of noticeRows) await noticeRepo.save(noticeRepo.create(nr))
+      if (k === 1) {
+        await noticeRepo.save(noticeRepo.create({
+          teacherId: adminId,
+          classId: '全校',
+          title: `测试第${i}学校 全校公告：期末工作通知`,
+          content: '为迎接期末考试，学校安排如下工作，请各位师生知悉。',
+          pinned: true,
+          ended: false,
+          scope: 'school',
+        }))
+      }
+
+      // 作业：每班 4 条，覆盖不同学科 / 不同状态
+      for (let h = 0; h < 4; h++) {
+        const subject = SUBJECTS[(h + k) % SUBJECTS.length]
+        const statuses = ['待批改', '已批改', '进行中', '已发布']
+        await homeworkRepo.save(homeworkRepo.create({
+          teacherId: headId,
+          classId,
+          subject,
+          title: `${subject}作业 #${h + 1}`,
+          content: `测试第${i}学校 班级${k} 的 ${subject} 作业 #${h + 1}。`,
+          startDate: `2026-0${h + 1}-01`,
+          deadline: `2026-0${h + 1}-15`,
+          status: statuses[h],
+        }))
+      }
+
+      // 考勤：每班 3 天考勤记录（含随机出勤状态）
+      for (let d = 0; d < 3; d++) {
+        const date = `2026-0${d + 1}-10`
+        const records = classStudentIds.map((sid, idx) => ({
+          studentId: sid,
+          status: (rngI() > 0.05 ? 'present' : 'absent') + (idx % 3 === 0 ? '+late' : ''),
+        }))
+        await attendanceRepo.save(attendanceRepo.create({ teacherId: headId, classId, date, records }))
+      }
+
+      // 消息：每班 5 条教师→家长双向消息（使用 parentImUserId 派生家长收件人ID，与家长登录JWT sub 对齐）
+      const parentStudents = classStudents.filter((_, idx) => idx % 5 === 0)
+      for (let m = 0; m < 5; m++) {
+        const stu = parentStudents[m % Math.max(1, parentStudents.length)] || classStudents[m]
+        const pName: string = stu?.parentName || `家长${i}-${k}-${m}`
+        const recipientId = parentImUserId({ studentId: stu?.id || '', relation: '家长', parentName: pName })
+        await messageRepo.save(messageRepo.create({
+          senderId: headId,
+          senderRole: 'teacher',
+          recipientId,
+          recipientRole: 'parent',
+          title: `班级${k} 通知 #${m + 1}`,
+          content: `您好，我是测试第${i}学校 ${k}班班主任，关于 ${stu?.name || '学生'} 的事情与您沟通…`,
+          type: 'direct',
+          isRead: false,
+        }))
+      }
+
+      // 笔记：每位班主任 3 条
+      for (let n = 0; n < 3; n++) {
+        const categories = ['教学反思', '班级管理', '教研笔记', '其他']
+        await noteRepo.save(noteRepo.create({
+          teacherId: headId,
+          title: `笔记 #${n + 1}：${categories[n % categories.length]}`,
+          content: `这是班主任 ${teacherUser(i, k)} 的第 ${n + 1} 条笔记内容。`,
+          category: categories[n % categories.length],
+          pinned: n === 0,
+          favorite: n === 1,
+        }))
+      }
+
+      // 通知：每位班主任 5 条（含不同类型）
+      for (let n = 0; n < 5; n++) {
+        const types = ['info', 'notice', 'homework', 'grade', 'info']
+        const type = types[n]
+        await notificationRepo.save(notificationRepo.create({
+          teacherId: headId,
+          title: `通知 #${n + 1}`,
+          content: `这是一条 ${type} 类型的通知。`,
+          type,
+          read: n % 3 === 0,
+          link: type === 'homework' ? '/class-ops/homework' : type === 'grade' ? '/exams/grades' : '',
+        }))
+      }
+    }
+
     schools.push({
       id: schoolId,
       name: schoolName,
@@ -277,5 +410,20 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
     console.log(`[seed] 学校 ${i}/${SCHOOL_COUNT} 完成`)
   }
 
-  return { schools, studentCount, examCount, gradeRowCount, durationMs: Date.now() - t0 }
+  const noticeCount = await noticeRepo.count()
+  const messageCount = await messageRepo.count()
+  const noteCount = await noteRepo.count()
+  const notificationCount = await notificationRepo.count()
+
+  return {
+    schools,
+    studentCount,
+    examCount,
+    gradeRowCount,
+    noticeCount,
+    messageCount,
+    noteCount,
+    notificationCount,
+    durationMs: Date.now() - t0,
+  }
 }

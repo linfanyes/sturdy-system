@@ -23,10 +23,10 @@ async function main() {
   const qa = await startQaApp(+(process.env.QA_PORT || 3199))
 
   // eslint-disable-next-line no-console
-  console.log('[qa] 开始灌入测试数据集（10 校 × 20 师 × 10 班 × 50 生 × 10 考试）…')
+  console.log('[qa] 开始灌入测试数据集（10 校 × 30 师 × 10 班 × 60 生 × 10 考试 + 富化数据）…')
   const seed = await seedDataset(qa.baseUrl, qa.dataSource)
   // eslint-disable-next-line no-console
-  console.log(`[qa] 数据集就绪：学生 ${seed.studentCount} / 考试 ${seed.examCount} / 成绩记录 ${seed.gradeRowCount}，耗时 ${seed.durationMs}ms`)
+  console.log(`[qa] 数据集就绪：学生 ${seed.studentCount} / 考试 ${seed.examCount} / 成绩记录 ${seed.gradeRowCount}，公告 ${seed.noticeCount} / 消息 ${seed.messageCount} / 笔记 ${seed.noteCount} / 通知 ${seed.notificationCount}，耗时 ${seed.durationMs}ms`)
 
   registerFunctionalCases(qa.baseUrl, seed)
   registerEdgeCases(qa.baseUrl, seed)
@@ -42,7 +42,17 @@ async function main() {
   const outFile = path.join(outDir, 'server-results.json')
   fs.writeFileSync(outFile, JSON.stringify({
     generatedAt: new Date().toISOString(),
-    dataset: { schools: seed.schools.length, students: seed.studentCount, exams: seed.examCount, gradeRows: seed.gradeRowCount, seedDurationMs: seed.durationMs },
+    dataset: {
+      schools: seed.schools.length,
+      students: seed.studentCount,
+      exams: seed.examCount,
+      gradeRows: seed.gradeRowCount,
+      notices: seed.noticeCount,
+      messages: seed.messageCount,
+      notes: seed.noteCount,
+      notifications: seed.notificationCount,
+      seedDurationMs: seed.durationMs,
+    },
     summary,
     functional,
     performance,

@@ -1,46 +1,41 @@
-# cache-bust-2: 2026-08-05 强制刷新构建缓存（规避云构建镜像层 commit 校验和错误）
-# cache-bust-shared: 2026-08-10 修复 @gardener/shared dist 缺失导致 TS2307
+# cache-bust: 2026-08-12 简化 shared 构建，纯靠 vendor/gardener-shared/dist 入库
 # ---- 构建阶段（含 devDeps，用于编译） ----
 FROM node:20-alpine AS build
 WORKDIR /app
+# 先拷贝依赖描述，尽量利用层缓存
 COPY package*.json ./
+COPY vendor ./vendor
+# 剩余源码（包含 migrations / public / tsconfig 等）
 COPY . .
 
-# 确保 @gardener/shared 的编译产物 dist 存在（这是 TS2307 报错的根因）。
-# - 若构建上下文为仓库根目录（../shared 存在），则从源码现编一份最新 dist；
-# - 否则依赖已入库的 server/vendor/gardener-shared/dist（构建上下文为 server/ 时）。
-# 二者任一共存即可，npm install 会把 vendor 包复制进 node_modules/@gardener/shared。
+# 确保 @gardener/shared 的编译产物 dist 存在
+# 云托管构建上下文一般只有 server/ 目录，不会带上 ../shared；
+# 因此优先使用随仓库入库的 vendor/gardener-shared/dist；
+# 仅当 developer 本地存在 ../shared 源码时才现场构建。
 RUN set -e; \
-    if [ -d "../shared" ]; then \
-      echo "[build] Building @gardener/shared from ../shared"; \
+    if [ -d "../shared" ] && [ -f "../shared/package.json" ]; then \
+      echo "[build] Developer mode: building @gardener/shared from ../shared"; \
       cp -r ../shared ./_shared && cd _shared && npm install --no-audit --no-fund && npm run build && cd ..; \
       rm -rf vendor/gardener-shared/dist; \
       cp -r _shared/dist vendor/gardener-shared/dist; \
       rm -rf _shared; \
-      echo "[build] Removing ../shared to prevent tsc rootDir expansion"; \
-      rm -rf ../shared; \
-    elif [ ! -d "vendor/gardener-shared/dist" ]; then \
-      echo "[build] ERROR: @gardener/shared dist 缺失。请将 server/vendor/gardener-shared/dist 入库，或以仓库根为构建上下文重新构建。"; \
+    fi; \
+    if [ ! -d "vendor/gardener-shared/dist" ]; then \
+      echo "[build] ERROR: @gardener/shared/dist 缺失。请将 vendor/gardener-shared/dist 入库后再构建。"; \
       exit 1; \
-    fi
+    fi; \
+    echo "[build] @gardener/shared/dist ready."
 
-RUN npm install
+RUN npm install --no-audit --no-fund
 RUN npm run build
 
 # ---- 生产依赖阶段（仅安装运行时依赖） ----
-# cache-bust-pd-2: 2026-08-05 强制刷新生产依赖缓存
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package*.json ./
-# 必须带上 vendor/gardener-shared（file: 依赖的目标目录）。
-# 否则 npm install --production 时 file: 目标不存在，会装到残缺包（无 dist），
-# 运行阶段 COPY --from=prod-deps 复制的就是残缺 node_modules，导致运行时 MODULE_NOT_FOUND。
 COPY vendor ./vendor
 RUN npm install --production --ignore-scripts
-# 兜底：确保 node_modules/@gardener/shared 包含完整 dist，且不依赖 npm 对 file: 依赖的软链行为。
-# 注意：npm 对 file: 依赖默认会创建软链 node_modules/@gardener/shared -> vendor/gardener-shared。
-# 若直接 rm -rf 其 dist，会顺链误删 vendor 源目录的 dist，导致后续 cp 源缺失而构建失败（见 2026-08-10 构建 #14 报错）。
-# 因此先移除软链（不跟随），再以真实目录整体复制，保证运行阶段 node_modules 自包含、无需 vendor/。
+# 兜底：确保 node_modules/@gardener/shared 包含完整 dist
 RUN if [ -d vendor/gardener-shared/dist ]; then \
       if [ -L node_modules/@gardener/shared ]; then \
         rm -f node_modules/@gardener/shared; \
@@ -57,12 +52,13 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
-# migrations 目录：供启动时自动 migration runner 执行（见 main.ts runMigrations）
 COPY --from=build /app/migrations ./migrations
-# 以非 root 用户运行，符合云托管安全最佳实践
+# 复制 vendor 目录以便运行时引用
+COPY --from=build /app/vendor ./vendor
 RUN chown -R node:node /app
 USER node
 EXPOSE 3000
-# 启动命令：移除 ../shared 后，tsc rootDir 正确推断为 server/src/，输出到 dist/main.js。
-# 详见 dockerfile 构建阶段末尾的 `rm -rf ../shared`。
+# 健康检查（微信云托管使用 /health 端点）
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 CMD ["node", "dist/main.js"]

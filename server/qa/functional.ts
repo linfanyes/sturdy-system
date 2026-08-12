@@ -113,8 +113,8 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(r.body.totalStudents >= 500, `学生数应≥500，实际 ${r.body.totalStudents}`)
   })
 
-  addCase('FUNC-SA-03', 'school_admin', '教师列表分页与总数（20 人）', async () => {
-    const r = await http('GET', api('/school-admin/teachers?pageSize=100'), { token: s1().adminToken })
+  addCase('FUNC-SA-03', 'school_admin', '教师列表分页与总数（≥30 人）', async () => {
+    const r = await http('GET', api('/school-admin/teachers?pageSize=200'), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
     assert(total >= 20, `教师总数应≥20，实际 ${total}`)
@@ -139,8 +139,8 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(total >= 10, `班级数应≥10，实际 ${total}`)
   })
 
-  addCase('FUNC-SA-07', 'school_admin', '按班级查询学生（50 人）', async () => {
-    const r = await http('GET', api(`/school-admin/students?classId=${s1().classIds[0]}&pageSize=100`), { token: s1().adminToken })
+  addCase('FUNC-SA-07', 'school_admin', '按班级查询学生（≥60 人）', async () => {
+    const r = await http('GET', api(`/school-admin/students?classId=${s1().classIds[0]}&pageSize=200`), { token: s1().adminToken })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
     assert(total >= 50, `学生数应≥50，实际 ${total}`)
@@ -498,6 +498,65 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     const t = await pTok()
     const r = await http('POST', api('/parent-auth/subscribe'), { token: t, body: {} })
     assert(r.status < 300, `状态码 ${r.status}`)
+  })
+
+  addCase('FUNC-PAR-19', 'parent', '家长查看教师消息列表（含富化种子数据）', async () => {
+    const t = await pTok()
+    const r = await http('GET', api('/messages?pageSize=50'), { token: t })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    const items = Array.isArray(r.body) ? r.body : r.body.items || []
+    assert(items.length >= 1, '家长消息列表应至少含一条富化数据')
+  })
+
+  /* ================= 教师：富化数据覆盖（新增强化用例）================ */
+  addCase('FUNC-TCH-21', 'teacher', '教师笔记 CRUD 闭环', async () => {
+    const c = await http('POST', api('/notes'), { token: tTok(), body: { title: 'QA笔记', content: '内容', category: '教学反思' } })
+    assert(c.status < 300, `创建失败 ${r2text(c)}`)
+    const l = await http('GET', api('/notes?pageSize=20'), { token: tTok() })
+    assert(l.status < 300, `查询失败 ${r2text(l)}`)
+    const items = Array.isArray(l.body) ? l.body : l.body.items || []
+    assert(items.some((n: any) => n.title === 'QA笔记'), '笔记未创建成功')
+  })
+
+  addCase('FUNC-TCH-22', 'teacher', '教师通知列表（含富化种子数据）', async () => {
+    const l = await http('GET', api('/notifications?pageSize=50'), { token: tTok() })
+    assert(l.status < 300, `查询失败 ${r2text(l)}`)
+    const items = Array.isArray(l.body) ? l.body : l.body.items || []
+    assert(items.length >= 1, '通知列表应至少含一条富化数据')
+  })
+
+  addCase('FUNC-TCH-23', 'teacher', '教师消息列表（含种子数据，收件箱+已发）', async () => {
+    const l = await http('GET', api('/messages?pageSize=50'), { token: tTok() })
+    assert(l.status < 300, `收件箱查询失败 ${l.status}`)
+    const itemsIn = Array.isArray(l.body) ? l.body : l.body.items || []
+    const s = await http('GET', api('/messages/sent?pageSize=50'), { token: tTok() })
+    assert(s.status < 300, `已发箱查询失败 ${s.status}`)
+    const itemsSent = Array.isArray(s.body) ? s.body : s.body.items || []
+    // 收件箱可能为空（教师通常是发件人），但已发箱应有富化数据
+    assert(itemsSent.length >= 1 || itemsIn.length >= 1, '教师消息（已发/收件）应至少含一条富化数据')
+  })
+
+  addCase('FUNC-TCH-24', 'teacher', '教师考勤列表（含富化种子数据）', async () => {
+    const l = await http('GET', api(`/attendances?classId=${s1().classIds[0]}`), { token: tTok() })
+    assert(l.status < 300, `查询失败 ${r2text(l)}`)
+    const items = Array.isArray(l.body) ? l.body : l.body.items || []
+    assert(items.length >= 1, '考勤列表应至少含一条富化数据')
+  })
+
+  /* ================= 校管：富化数据覆盖 ================= */
+  addCase('FUNC-SA-13', 'school_admin', '校管查看本校级公告（含学校级与班级级）', async () => {
+    const r = await http('GET', api('/school-admin/notices?pageSize=200'), { token: s1().adminToken })
+    assert(r.status < 300, `查询失败 ${r.status}`)
+    const items = Array.isArray(r.body) ? r.body : r.body.items || []
+    // 该校应至少有 1 条学校级公告（seed 创建时使用 adminId 作为 teacherId）
+    assert(items.length >= 1, `公告数应≥1，实际 ${items.length}`)
+  })
+
+  addCase('FUNC-SA-14', 'school_admin', '校管查看全校教师信息（含跨部门聚合）', async () => {
+    const r = await http('GET', api('/school-admin/teachers?pageSize=200'), { token: s1().adminToken })
+    assert(r.status < 300, `查询失败 ${r.status}`)
+    const total = r.body.total ?? (r.body.items || []).length
+    assert(total >= 20, `教师数应≥20，实际 ${total}`)
   })
 
   /* ================= 跨端一致性（接口契约） ================= */

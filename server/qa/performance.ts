@@ -175,12 +175,12 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       const mix: Array<{ path: string; token: string }> = [
         { path: `/grades?classId=${classId}`, token: tokT },
         { path: `/exams?classId=${classId}`, token: tokT },
-        { path: `/students?classId=${classId}&pageSize=50`, token: tokT },
+        { path: `/students?classId=${classId}&pageSize=60`, token: tokT },
         { path: '/parent-auth/exams', token: tokP },
         { path: '/parent-auth/me', token: tokP },
         { path: '/parent-auth/attendance', token: tokP },
         { path: '/school-admin/dashboard', token: tokA },
-        { path: '/school-admin/teachers?pageSize=20', token: tokA },
+        { path: '/school-admin/teachers?pageSize=30', token: tokA },
       ]
       const tasks = Array.from({ length: 300 }, (_, i) => {
         const m = mix[i % mix.length]
@@ -194,5 +194,28 @@ export function registerPerfCases(baseUrl: string, seed: SeedResult) {
       const res = await pooled(tasks, 20)
       const wall = Date.now() - wall0
       return statsOf(res.filter((r) => r.ok).map((r) => r.dt), res.filter((r) => r.ok).length, res.length, wall)
+    })
+
+  addPerf('PERF-07', 'performance', '教师笔记/消息/通知列表（富化数据压力）',
+    '100 次顺序查询：p95 < 300ms',
+    (m) => {
+      if ((m.ok || 0) !== m.total) return '存在失败请求'
+      if ((m.p95Ms || 0) > 300) return `p95=${m.p95Ms}ms 超过 300ms`
+      return null
+    },
+    async () => {
+      const lg = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 1), password: TEACHER_PASS } })
+      const tok = lg.body.token
+      const paths = ['/notes?pageSize=30', '/messages?pageSize=30', '/notifications?pageSize=30', `/homework?classId=${seed.schools[0].classIds[0]}`, `/notices?classId=${seed.schools[0].classIds[0]}`]
+      const times: number[] = []
+      let ok = 0
+      for (let i = 0; i < 100; i++) {
+        const path = paths[i % paths.length]
+        const t0 = Date.now()
+        const r = await http('GET', api(path), { token: tok })
+        times.push(Date.now() - t0)
+        if (r.status < 300) ok++
+      }
+      return statsOf(times, ok, 100, times.reduce((a, b) => a + b, 0))
     })
 }

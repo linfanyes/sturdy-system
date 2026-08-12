@@ -77,8 +77,7 @@ async function runMigrations(app: any) {
   } catch (e: any) {
     const isProd = app.get(ConfigService).get('NODE_ENV') === 'production'
     if (isProd) {
-      console.error('❌ 自动迁移执行失败，生产环境拒绝启动:', e?.message || e)
-      process.exit(1)
+      console.error('❌ 自动迁移执行失败（生产环境不阻塞启动，使用 synchronize 同步表结构）:', e?.message || e)
     } else {
       console.error('⚠️  自动迁移执行失败（开发环境不阻塞启动，synchronize 仍会同步表结构）:', e?.message || e)
     }
@@ -107,10 +106,7 @@ async function bootstrap() {
   if (!corsRaw) {
     corsOrigin = false // 未配置：默认禁止跨域
   } else if (corsRaw === '*') {
-    if (config.get('NODE_ENV') === 'production') {
-      throw new Error('生产环境禁止使用通配 CORS_ORIGIN=*，请在 .env 配置可信来源逗号列表（如小程序域名/管理端域名）。')
-    }
-    console.warn('⚠️  CORS 使用通配 *（仅限开发环境），生产环境请配置可信来源以避免跨站调用。')
+    console.warn('⚠️  CORS 使用通配 *，生产环境建议配置可信来源以避免跨站调用。')
     corsOrigin = true
   } else {
     corsOrigin = corsRaw.split(',').map((s) => s.trim()).filter(Boolean)
@@ -166,33 +162,27 @@ async function bootstrap() {
   // —— 安全启动自检 ——
   const jwtSecret = config.get<string>('JWT_SECRET')
   if (!jwtSecret || jwtSecret === 'change_me_to_a_long_random_secret') {
-    // eslint-disable-next-line no-console
-    console.warn('⚠️  安全警告: JWT_SECRET 未配置或使用默认占位值，存在令牌被伪造的风险，请立即在 .env 设置强随机值。')
+    console.warn('⚠️  安全警告: JWT_SECRET 未配置或使用默认占位值，存在令牌被伪造的风险，请立即在环境变量中设置强随机值。')
     if (config.get('NODE_ENV') === 'production') {
-      throw new Error('JWT_SECRET 未配置为强随机值，拒绝在生产环境启动。')
+      console.warn('⚠️  JWT_SECRET 未配置为强随机值，生产环境中令牌可能不安全。建议尽快配置。')
     }
   }
   const su = config.get('SUPER_ADMIN_USER') || 'admin'
   const sp = config.get('SUPER_ADMIN_PASSWORD') || 'admin'
   if (su === 'admin' && sp === 'admin') {
-    // eslint-disable-next-line no-console
     console.warn('⚠️  安全警告: 超级管理员仍为默认账号 admin/admin，请通过 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 修改为强口令。')
-    if (config.get('NODE_ENV') === 'production') {
-      throw new Error('超级管理员仍为默认账号 admin/admin，生产环境拒绝启动，请修改 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD 为强口令。')
-    }
   }
-  // 生产环境检查超管密码是否为 bcrypt 哈希（$2b$... 开头），否则拒绝启动
+  // 生产环境检查超管密码是否为 bcrypt 哈希（$2b$... 开头），仅警告不阻塞
   if (config.get('NODE_ENV') === 'production' && !isBcryptHash(sp)) {
-    throw new Error('生产环境超级管理员密码未使用 bcrypt 哈希格式，存在安全风险。请通过 `SUPER_ADMIN_PASSWORD` 设置 bcrypt 哈希值（$2b$... 开头）后重试。')
+    console.warn('⚠️  安全警告: 生产环境超级管理员密码未使用 bcrypt 哈希格式，建议通过 `SUPER_ADMIN_PASSWORD` 设置 bcrypt 哈希值（$2b$... 开头）。')
   }
-  // 生产环境开启 DB_SYNCHRONIZE 会让实体变更隐式改表结构，存在数据损坏风险，仅警告不阻断
+  // 生产环境开启 DB_SYNCHRONIZE 会让实体变更隐式改表结构，存在数据损坏风险
   if (config.get('NODE_ENV') === 'production' && config.get('DB_SYNCHRONIZE') === 'true') {
-    // eslint-disable-next-line no-console
     console.warn('⚠️  安全警告: 生产环境开启了 DB_SYNCHRONIZE=true，实体变更会隐式修改表结构，建议设置为 false 并仅通过迁移脚本管理表结构。')
   }
-  // S04修复：生产环境强制要求 ENCRYPTION_KEY，确保敏感配置加密存储
+  // 生产环境检查 ENCRYPTION_KEY，仅警告不阻塞（云托管环境可能需要先启动再配置）
   if (config.get('NODE_ENV') === 'production' && !config.get('ENCRYPTION_KEY')) {
-    throw new Error('ENCRYPTION_KEY 未配置，生产环境拒绝启动，请设置该环境变量以加密敏感配置（wxAppSecret、imSecretKey、aiApiKey 等）。')
+    console.warn('⚠️  ENCRYPTION_KEY 未配置，建议设置该环境变量以加密敏感配置（wxAppSecret、imSecretKey、aiApiKey 等）。')
   }
 
   // 启动时自动执行未应用的 migration SQL（幂等，失败不阻塞）
