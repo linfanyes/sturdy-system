@@ -26,7 +26,23 @@ RUN set -e; \
     fi; \
     echo "[build] @gardener/shared/dist ready."
 
+# 云构建上下文仅含 server/，../shared 不存在；
+# file:../shared 依赖无法建立有效软链，会导致 tsc 解析 @gardener/shared/* 失败（TS2307）。
+# 将其重定向到随仓库入库的 vendor 副本，确保 npm install 能正确链接 @gardener/shared。
+RUN set -e; \
+    if [ ! -d "../shared" ]; then \
+      echo "[build] 云构建：@gardener/shared 依赖重定向到 vendor/gardener-shared"; \
+      sed -i 's#"file:../shared"#"file:vendor/gardener-shared"#g' package.json; \
+      sed -i 's#"file:../shared"#"file:vendor/gardener-shared"#g' package-lock.json; \
+    fi
+
 RUN npm install --no-audit --no-fund
+# 兜底：强制构建期 node_modules/@gardener/shared 指向完整 vendor 副本
+# （即便 npm install 软链异常，也用真实目录副本覆盖，保证 tsc 解析与运行时 require 一致）
+RUN if [ -d vendor/gardener-shared/dist ]; then \
+      if [ -L node_modules/@gardener/shared ]; then rm -f node_modules/@gardener/shared; fi; \
+      rm -rf node_modules/@gardener/shared && cp -r vendor/gardener-shared node_modules/@gardener/shared; \
+    fi
 RUN npm run build
 
 # ---- 生产依赖阶段（仅安装运行时依赖） ----

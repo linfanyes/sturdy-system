@@ -20,8 +20,8 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "paths": {
-      "@gardener/shared": ["node_modules/@gardener/shared/dist", "../shared/dist"],
-      "@gardener/shared/*": ["node_modules/@gardener/shared/dist/*", "../shared/dist/*"]
+      "@gardener/shared": ["node_modules/@gardener/shared/dist", "../shared/dist", "vendor/gardener-shared/dist"],
+      "@gardener/shared/*": ["node_modules/@gardener/shared/dist/*", "../shared/dist/*", "vendor/gardener-shared/dist/*"]
     }
   },
   "include": ["src/**/*"],
