@@ -1,0 +1,110 @@
+{
+    "case_name": "test_tabbar_icons_exist_in_build_output",
+    "run_time": "20260812 23:07:08",
+    "test_type": "TestTabBar",
+    "case_doc": "\u6784\u5efa\u4ea7\u7269\u4e2d\u5fc5\u987b\u5305\u542b tabBar \u6240\u9700\u7684 10 \u4e2a\u56fe\u6807\u6587\u4ef6",
+    "success": false,
+    "failures": "",
+    "errors": "Traceback (most recent call last):\n  File \"D:\\app\\anaconda3\\Lib\\site-packages\\minium\\framework\\libs\\unittest\\case.py\", line 43, in testPartExecutor\n    yield\n  File \"D:\\app\\anaconda3\\Lib\\site-packages\\minium\\framework\\libs\\unittest\\case.py\", line 121, in run\n    self._callSetUp()\n  File \"D:\\app\\anaconda3\\Lib\\unittest\\case.py\", line 586, in _callSetUp\n    self.setUp()\n  File \"D:\\workspace\\my-prj\\tercher-work\\work-system\\mini-program\\minium\\conftest.py\", line 15, in setUp\n    self.app = self.get_app()\n               ^^^^^^^^^^^^\n  File \"D:\\app\\anaconda3\\Lib\\site-packages\\minium\\framework\\libs\\unittest\\case.py\", line 81, in __getattr__\n    raise AttributeError(f\"'{self.__class__.__name__}' object has no attribute '{name}'\")\nAttributeError: 'TestTabBar' object has no attribute 'get_app'\n",
+    "start_timestamp": 1786547230.3549688,
+    "is_failure": false,
+    "is_error": true,
+    "module": "",
+    "package": "test_tabbar",
+    "failed_line_num": 15,
+    "device": {
+        "system_info": {
+            "brand": "devtools",
+            "model": "iPhone 12/13 (Pro)",
+            "system": "iOS 10.0.1",
+            "platform": "devtools",
+            "benchmarkLevel": -1,
+            "pixelRatio": 3,
+            "screenWidth": 390,
+            "screenHeight": 844,
+            "windowWidth": 390,
+            "windowHeight": 753,
+            "statusBarHeight": 47,
+            "safeArea": {
+                "top": 47,
+                "left": 0,
+                "right": 390,
+                "bottom": 810,
+                "width": 390,
+                "height": 763
+            },
+            "language": "zh_CN",
+            "version": "8.0.5",
+            "fontSizeSetting": 16,
+            "SDKVersion": "3.16.2",
+            "host": {
+                "env": "WeChat"
+            },
+            "enableDebug": false,
+            "mode": "default",
+            "deviceOrientation": "portrait",
+            "bluetoothEnabled": true,
+            "locationEnabled": true,
+            "wifiEnabled": true,
+            "albumAuthorized": true,
+            "cameraAuthorized": true,
+            "locationAuthorized": true,
+            "microphoneAuthorized": true,
+            "notificationAuthorized": true,
+            "notificationAlertAuthorized": true,
+            "notificationBadgeAuthorized": true,
+            "notificationSoundAuthorized": true,
+            "phoneCalendarAuthorized": true,
+            "bluetoothAuthorized": true,
+            "locationReducedAccuracy": true,
+            "devicePixelRatio": 3
+        }
+    },
+    "log_filename": "run.log",
+    "error_type": "AttributeError",
+    "error_value": "'TestTabBar' object has no attribute 'get_app'",
+    "error_extra_info": "",
+    "error_stages": [
+        "setUp"
+    ],
+    "screen_info": [
+        {
+            "name": "setup",
+            "url": "/pages/login/login",
+            "path": "images\\setup.png",
+            "ts": 1786547230,
+            "datetime": "2026-08-12 23:07:10",
+            "use_region": false
+        },
+        {
+            "name": "teardown",
+            "url": "/pages/login/login",
+            "path": "images\\teardown.png",
+            "ts": 1786547230,
+            "datetime": "2026-08-12 23:07:10",
+            "use_region": false
+        }
+    ],
+    "step_info": [],
+    "check_list": [],
+    "assert_list": [],
+    "autofix_info": [],
+    "perf_data": "{\"startup\": 0, \"avg_cpu\": 0, \"max_cpu\": 0, \"cpu_data_list\": [], \"avg_mem\": 0, \"max_mem\": 0, \"mem_data_list\": [], \"avg_fps\": 0, \"min_fps_rt\": 0, \"fps_data_list\": [], \"fps_time_series_list\": [], \"cpu_time_series_list\": [], \"mem_time_series_list\": []}",
+    "weapp_log_path": "weapp.log",
+    "request_log_path": "request.log",
+    "stop_timestamp": 1786547230.5104828,
+    "appId": "",
+    "appName": "",
+    "source": {
+        "code": [
+            "    def setUp(self):\n",
+            "        self.app = self.get_app()\n",
+            "        self.project_path = os.path.abspath(\n",
+            "            os.path.join(os.path.dirname(__file__), \"..\", \"dist\", \"build\", \"mp-weixin\")\n",
+            "        )\n",
+            "        os.makedirs(os.path.join(os.path.dirname(__file__), \"reports\"), exist_ok=True)\n"
+        ],
+        "start": 14
+    },
+    "filename": "result.json"
+}

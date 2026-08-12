@@ -52,11 +52,13 @@ export class AuthService {
     if (!username || !password) throw new BadRequestException('请输入用户名和密码')
     const u = username.trim()
     const p = password.trim()
+    let foundUsername = false  // 追踪是否在任何角色中匹配到用户名
 
     // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报"账号不存在"）
     const su = this.config.get('SUPER_ADMIN_USER') || 'admin'
     const sp = this.config.get('SUPER_ADMIN_PASSWORD') || 'admin'
     if (u === su) {
+      foundUsername = true
       // 支持 bcrypt 哈希或明文比较（向后兼容）。
       // 建议通过 SUPER_ADMIN_PASSWORD 设置 bcrypt 哈希（$2b$... 开头）以提高安全性。
       const valid = isBcryptHash(sp)
@@ -70,12 +72,13 @@ export class AuthService {
           effectiveFeatures: await this.effectiveFeaturesFor('super'),
         }
       }
-      throw new UnauthorizedException('密码错误')
+      // 密码不匹配，继续查其他角色（同名账号可能存在多角色）
     }
 
     // 2) 学校管理员
     const admin = await this.saRepo.findOne({ where: { username: u } })
     if (admin) {
+      foundUsername = true
       if (admin.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
       const { valid, newHash } = verifyAndUpgrade(p, admin.passwordHash)
       if (valid) {
@@ -92,45 +95,49 @@ export class AuthService {
           effectiveFeatures: await this.effectiveFeaturesFor('school_admin'),
         }
       }
-      throw new UnauthorizedException('密码错误')
+      // 密码不匹配，继续查教师/家长（同名账号可能存在多角色）
     }
 
     // 3) 教师（用户名密码由学校管理员创建）
     const teacher = await this.users.findByUsername(u)
     if (teacher) {
+      foundUsername = true
       if (teacher.enabled === false) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
       if (!teacher.passwordHash) throw new UnauthorizedException('该账号未设置密码，请用微信登录')
       const { valid, newHash } = verifyAndUpgrade(p, teacher.passwordHash)
-      if (!valid) throw new UnauthorizedException('密码错误')
-      // 透明升级旧 sha256 为 bcrypt
-      if (newHash) {
-        teacher.passwordHash = newHash
-        await this.users.update(teacher.id, { passwordHash: newHash })
+      if (valid) {
+        // 透明升级旧 sha256 为 bcrypt
+        if (newHash) {
+          teacher.passwordHash = newHash
+          await this.users.update(teacher.id, { passwordHash: newHash })
+        }
+        // 仅返回安全的字段，避免泄露 passwordHash/sessionKey
+        const teacherProfile = await this.entityManager.findOne(Teacher, { where: { id: teacher.id } }).catch(() => null)
+        const safeUser = {
+          id: teacher.id, name: teacher.name, username: teacher.username,
+          school: teacher.school, schoolId: teacher.schoolId, phone: teacher.phone,
+          features: teacher.features, enabled: teacher.enabled,
+          avatar: teacher.avatar, teacherNo: teacher.teacherNo,
+          position: teacher.position || teacherProfile?.position || '',
+          // 任教学科：用于前端按学科过滤菜单/工具（语数外老师一般只任一科）
+          subject: teacher.subject || teacherProfile?.subject || '',
+          subjects: teacher.subjects || teacherProfile?.subjects || [],
+        }
+        // 教师直接签发 JWT 并返回
+        return {
+          role: 'teacher',
+          token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }),
+          user: safeUser,
+          effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: teacher.schoolId, teacherFeatures: teacher.features }),
+        }
       }
-      // 仅返回安全的字段，避免泄露 passwordHash/sessionKey
-      const teacherProfile = await this.entityManager.findOne(Teacher, { where: { id: teacher.id } }).catch(() => null)
-      const safeUser = {
-        id: teacher.id, name: teacher.name, username: teacher.username,
-        school: teacher.school, schoolId: teacher.schoolId, phone: teacher.phone,
-        features: teacher.features, enabled: teacher.enabled,
-        avatar: teacher.avatar, teacherNo: teacher.teacherNo,
-        position: teacher.position || teacherProfile?.position || '',
-        // 任教学科：用于前端按学科过滤菜单/工具（语数外老师一般只任一科）
-        subject: teacher.subject || teacherProfile?.subject || '',
-        subjects: teacher.subjects || teacherProfile?.subjects || [],
-      }
-      // 教师直接签发 JWT 并返回
-      return {
-        role: 'teacher',
-        token: this.jwt.sign({ sub: teacher.id, role: 'teacher', schoolId: teacher.schoolId || '' }),
-        user: safeUser,
-        effectiveFeatures: await this.effectiveFeaturesFor('teacher', { schoolId: teacher.schoolId, teacherFeatures: teacher.features }),
-      }
+      // 密码不匹配，继续查家长（同用户名可能存在多角色）
     }
 
     // 4) 家长（用户名=学号，密码为老师开启家长登录时生成的随机密码，不再支持默认弱密码）
     const stu = await this.findStudentByNoForLogin(u)
     if (stu) {
+      foundUsername = true
       if (!stu.parentLoginEnabled) throw new UnauthorizedException('该学生家长登录尚未被老师授权')
       if (!stu.parentPasswordHash)
         throw new BadRequestException('家长密码尚未初始化，请联系老师重新开启家长登录以设置密码')
@@ -170,7 +177,8 @@ export class AuthService {
       }
     }
 
-    throw new UnauthorizedException('账号不存在')
+    // 所有角色都未匹配：如果曾经在某张表找到用户名但密码不对，提示"密码错误"更准确
+    throw new UnauthorizedException(foundUsername ? '密码错误' : '账号不存在')
   }
 
   /** 微信登录：委托 WechatAuthService（保持接口兼容） */

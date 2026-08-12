@@ -1,0 +1,5 @@
+# minium 运行产物
+__pycache__/
+*.pyc
+reports/
+*.log

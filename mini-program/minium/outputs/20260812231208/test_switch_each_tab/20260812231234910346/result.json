@@ -1,0 +1,189 @@
+{
+    "case_name": "test_switch_each_tab",
+    "run_time": "20260812 23:12:34",
+    "test_type": "TestTabBar",
+    "case_doc": "\u4e94\u4e2a tab \u9875\u9762\u90fd\u80fd\u6b63\u5e38\u8df3\u8f6c",
+    "success": true,
+    "failures": "",
+    "errors": "",
+    "start_timestamp": 1786547556.3040633,
+    "is_failure": false,
+    "is_error": false,
+    "module": "",
+    "package": "test_tabbar",
+    "failed_line_num": -1,
+    "device": {
+        "system_info": {
+            "brand": "devtools",
+            "model": "iPhone 12/13 (Pro)",
+            "system": "iOS 10.0.1",
+            "platform": "devtools",
+            "benchmarkLevel": -1,
+            "pixelRatio": 3,
+            "screenWidth": 390,
+            "screenHeight": 844,
+            "windowWidth": 390,
+            "windowHeight": 753,
+            "statusBarHeight": 47,
+            "safeArea": {
+                "top": 47,
+                "left": 0,
+                "right": 390,
+                "bottom": 810,
+                "width": 390,
+                "height": 763
+            },
+            "language": "zh_CN",
+            "version": "8.0.5",
+            "fontSizeSetting": 16,
+            "SDKVersion": "3.16.2",
+            "host": {
+                "env": "WeChat"
+            },
+            "enableDebug": false,
+            "mode": "default",
+            "deviceOrientation": "portrait",
+            "bluetoothEnabled": true,
+            "locationEnabled": true,
+            "wifiEnabled": true,
+            "albumAuthorized": true,
+            "cameraAuthorized": true,
+            "locationAuthorized": true,
+            "microphoneAuthorized": true,
+            "notificationAuthorized": true,
+            "notificationAlertAuthorized": true,
+            "notificationBadgeAuthorized": true,
+            "notificationSoundAuthorized": true,
+            "phoneCalendarAuthorized": true,
+            "bluetoothAuthorized": true,
+            "locationReducedAccuracy": true,
+            "devicePixelRatio": 3
+        }
+    },
+    "log_filename": "run.log",
+    "error_type": "",
+    "error_value": "",
+    "error_extra_info": "",
+    "error_stages": [],
+    "screen_info": [
+        {
+            "name": "setup",
+            "url": "/pages/login/login",
+            "path": "images\\setup.png",
+            "ts": 1786547556,
+            "datetime": "2026-08-12 23:12:36",
+            "use_region": false
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_dashboard_dashboard_\u5931\u8d25-success",
+            "url": "/pages/login/login",
+            "path": "images\\\u5207\u6362\u81f3_pages_dashboard_dashboard_\u5931\u8d25-success.png",
+            "ts": 1786547558,
+            "datetime": "2026-08-12 23:12:38",
+            "use_region": false
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_classes_classes_\u5931\u8d25-success",
+            "url": "/pages/classes/classes",
+            "path": "images\\\u5207\u6362\u81f3_pages_classes_classes_\u5931\u8d25-success.png",
+            "ts": 1786547561,
+            "datetime": "2026-08-12 23:12:41",
+            "use_region": false
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_students_students_\u5931\u8d25-success",
+            "url": "/pages/students/students",
+            "path": "images\\\u5207\u6362\u81f3_pages_students_students_\u5931\u8d25-success.png",
+            "ts": 1786547563,
+            "datetime": "2026-08-12 23:12:43",
+            "use_region": false
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_toolbox_toolbox_\u5931\u8d25-success",
+            "url": "/pages/login/login",
+            "path": "images\\\u5207\u6362\u81f3_pages_toolbox_toolbox_\u5931\u8d25-success.png",
+            "ts": 1786547565,
+            "datetime": "2026-08-12 23:12:45",
+            "use_region": false
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_config_config_\u5931\u8d25-success",
+            "url": "/pages/config/config",
+            "path": "images\\\u5207\u6362\u81f3_pages_config_config_\u5931\u8d25-success.png",
+            "ts": 1786547567,
+            "datetime": "2026-08-12 23:12:47",
+            "use_region": false
+        },
+        {
+            "name": "teardown",
+            "url": "/pages/config/config",
+            "path": "images\\teardown.png",
+            "ts": 1786547567,
+            "datetime": "2026-08-12 23:12:47",
+            "use_region": false
+        }
+    ],
+    "step_info": [],
+    "check_list": [],
+    "assert_list": [
+        {
+            "name": "\u5207\u6362\u81f3_pages_dashboard_dashboard_\u5931\u8d25",
+            "ret": true,
+            "msg": null,
+            "img": "\u5207\u6362\u81f3_pages_dashboard_dashboard_\u5931\u8d25-success",
+            "wxml": ""
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_classes_classes_\u5931\u8d25",
+            "ret": true,
+            "msg": null,
+            "img": "\u5207\u6362\u81f3_pages_classes_classes_\u5931\u8d25-success",
+            "wxml": ""
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_students_students_\u5931\u8d25",
+            "ret": true,
+            "msg": null,
+            "img": "\u5207\u6362\u81f3_pages_students_students_\u5931\u8d25-success",
+            "wxml": ""
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_toolbox_toolbox_\u5931\u8d25",
+            "ret": true,
+            "msg": null,
+            "img": "\u5207\u6362\u81f3_pages_toolbox_toolbox_\u5931\u8d25-success",
+            "wxml": ""
+        },
+        {
+            "name": "\u5207\u6362\u81f3_pages_config_config_\u5931\u8d25",
+            "ret": true,
+            "msg": null,
+            "img": "\u5207\u6362\u81f3_pages_config_config_\u5931\u8d25-success",
+            "wxml": ""
+        }
+    ],
+    "autofix_info": [],
+    "perf_data": "{\"startup\": 0, \"avg_cpu\": 0, \"max_cpu\": 0, \"cpu_data_list\": [], \"avg_mem\": 0, \"max_mem\": 0, \"mem_data_list\": [], \"avg_fps\": 0, \"min_fps_rt\": 0, \"fps_data_list\": [], \"fps_time_series_list\": [], \"cpu_time_series_list\": [], \"mem_time_series_list\": []}",
+    "weapp_log_path": "weapp.log",
+    "request_log_path": "request.log",
+    "stop_timestamp": 1786547567.8963218,
+    "appId": "",
+    "appName": "",
+    "source": {
+        "code": [
+            "    def test_switch_each_tab(self):\n",
+            "        \"\"\"\u4e94\u4e2a tab \u9875\u9762\u90fd\u80fd\u6b63\u5e38\u8df3\u8f6c\"\"\"\n",
+            "        for page_path in self.TAB_PAGES:\n",
+            "            with self.subTest(page=page_path):\n",
+            "                self.app.switch_tab(f\"/{page_path}\")\n",
+            "                time.sleep(1)\n",
+            "                page = self.app.get_current_page()\n",
+            "                self.assertIsNotNone(page, msg=f\"\u5207\u6362\u81f3 {page_path} \u5931\u8d25\")\n",
+            "                screenshot_name = page_path.replace(\"/\", \"_\") + \".png\"\n",
+            "                save_path = os.path.join(os.path.dirname(__file__), \"reports\", screenshot_name)\n",
+            "                self.app.screen_shot(save_path)\n"
+        ],
+        "start": 39
+    },
+    "filename": "result.json"
+}

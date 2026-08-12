@@ -1,0 +1,16 @@
+{
+  "platform": "ide",
+  "app": "wx",
+  "appid": "wx1e6d151c7eb428cc",
+  "project_path": "D:/workspace/my-prj/tercher-work/work-system/mini-program/dist/build/mp-weixin",
+  "dev_tool_path": "D:/app/微信web开发者工具/cli.bat",
+  "autoJumpClose": true,
+  "autoDevClose": false,
+  "closeAfterTest": false,
+  "useIDE": true,
+  "debug_mode": "info",
+  "remote_connect_timeout": 180,
+  "request_timeout": 60,
+  "auto_authorize": true,
+  "force_full_import": true
+}
