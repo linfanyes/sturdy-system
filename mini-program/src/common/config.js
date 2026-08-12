@@ -6,8 +6,8 @@
 export const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53' // 云开发/云托管环境 ID（控制台「环境」页复制）
 export const CLOUDRUN_SERVICE = 'tec-work' // 云托管服务名（创建服务时填的名字；单服务时可留空）
 
-// 后端接口路径前缀（与后端 main.ts 的 setGlobalPrefix('api') 一致）
-export const API_PREFIX = '/api'
+// 后端接口路径前缀（与后端 main.ts 的 setGlobalPrefix('api/v1') 一致；旧 /api 路径由后端 307 重定向）
+export const API_PREFIX = '/api/v1'
 
 // 演示模式（Mock）发布隔离开关：
 // - 开发/预览构建（uni 默认 NODE_ENV=development）保持 true，支持无后端冷启动全功能演示；

@@ -4,30 +4,41 @@ import {
   ArgumentsHost,
   HttpStatus,
   HttpException,
+  Logger,
 } from '@nestjs/common'
-import { Response } from 'express'
+import { Response, Request } from 'express'
 import { BusinessException } from '../exceptions/business.exception'
 
 /**
  * 统一异常过滤器（全局注册）：
  *  - BusinessException → 透传其错误码 code，返回 { statusCode, code, message }
- *  - 校验 / HTTP 异常（含 ValidationPipe 抛出的 BadRequestException）→
- *    返回 { statusCode, code: 'VALIDATION_ERROR'|'HTTP_xxx', message, details? }
+ *  - 校验 / HTTP 异常 → 返回 { statusCode, code, message, details? }
  *  - 数据库层错误 → 400 + code: 'DB_ERROR'（不暴露 SQL 细节）
  *  - 其他未预期异常 → 500 + code: 'INTERNAL_ERROR'
  *
- * 响应体统一含 code / message（details 可选），前端可据此做差异化提示，
- * 且 message 字段与现有错误解包逻辑兼容。
+ * 增强：
+ *  - 自动记录请求上下文（method, url, ip）到日志
+ *  - 业务异常 WARN 级别，系统异常 ERROR 级别
+ *  - 生产环境隐藏错误详情，仅返回通用提示
  */
 @Catch()
 export class TypeOrmExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('ExceptionFilter')
+
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
+    const request = ctx.getRequest<Request>()
+    const method = request.method
+    const url = request.originalUrl || request.url
+    const ip = request.ip || request.socket?.remoteAddress || 'unknown'
+    const reqContext = `[${method} ${url}] IP=${ip}`
+    const isProd = process.env.NODE_ENV === 'production'
 
-    // 1) 业务异常（带错误码，优先匹配，因其也是 HttpException 的子类）
+    // 1) 业务异常
     if (exception instanceof BusinessException) {
       const status = exception.getStatus()
+      this.logger.warn(`${reqContext} BusinessException: code=${exception.code} msg=${exception.message}`)
       return response.status(status).json({
         statusCode: status,
         code: exception.code,
@@ -35,7 +46,7 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
       })
     }
 
-    // 2) 校验 / HTTP 异常（含 ValidationPipe 的 BadRequestException）
+    // 2) 校验 / HTTP 异常
     if (exception instanceof HttpException) {
       const status = exception.getStatus()
       const res = exception.getResponse()
@@ -44,14 +55,15 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
       const message = isArr ? rawMsg.join('；') : rawMsg
       const code = status === HttpStatus.BAD_REQUEST ? 'VALIDATION_ERROR' : `HTTP_${status}`
       const body: any = { statusCode: status, code, message }
-      // ValidationPipe 返回数组形式的校验错误明细，附 details 字段供前端精准定位字段
       if (isArr && (rawMsg as string[]).length > 0) {
         body.details = rawMsg
       }
+      const logLevel = status >= 500 ? 'error' : 'warn'
+      this.logger[logLevel](`${reqContext} HttpException(${status}): ${message}`)
       return response.status(status).json(body)
     }
 
-    // 3) 数据库层错误（TypeORM QueryFailedError 等）→ 400，不暴露 SQL
+    // 3) 数据库层错误
     if (exception?.code || exception?.errno) {
       let message: string
       switch (exception.code) {
@@ -67,9 +79,13 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
         case 'ER_NO_REFERENCED_ROW_2':
           message = '关联数据不存在，请检查引用的ID是否正确'
           break
+        case 'ER_LOCK_DEADLOCK':
+          message = '系统繁忙，请稍后重试'
+          break
         default:
           message = '请求数据校验失败，请检查输入参数'
       }
+      this.logger.warn(`${reqContext} DBError(${exception.code || exception.errno}): ${message}`)
       return response.status(HttpStatus.BAD_REQUEST).json({
         statusCode: HttpStatus.BAD_REQUEST,
         code: 'DB_ERROR',
@@ -78,14 +94,14 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
     }
 
     // 4) 其他未预期异常
+    this.logger.error(
+      `${reqContext} UnexpectedError: ${exception?.message || exception}\n${exception?.stack || ''}`,
+    )
     const status = exception?.getStatus?.() || HttpStatus.INTERNAL_SERVER_ERROR
     response.status(status).json({
       statusCode: status,
       code: 'INTERNAL_ERROR',
-      message:
-        process.env.NODE_ENV === 'production'
-          ? '服务器内部错误'
-          : exception?.message || '服务器内部错误',
+      message: isProd ? '服务器内部错误' : (exception?.message || '服务器内部错误'),
     })
   }
 }

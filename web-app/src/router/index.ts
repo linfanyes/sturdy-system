@@ -280,6 +280,45 @@ const router = createRouter({
   routes,
 })
 
+// ========== 路由预加载：鼠标悬停时预加载目标路由的代码 ==========
+// 将 on-demand import 变为 hover-to-preload，减少实际跳转白屏
+const _preloadCache = new Set<string>()
+
+function preloadRouteComponent(name: string) {
+  if (_preloadCache.has(name)) return
+  const record = router.resolve({ name })
+  // 根据路由记录找到 component 并执行 import
+  const matched = router.getRoutes().find((r) => r.name === name)
+  if (matched) {
+    _preloadCache.add(name)
+    // 手动触发 Webpack/Vite 对 import() 的解析
+    const component = (matched as any).components?.default || (matched as any).component
+    if (typeof component === 'function') {
+      Promise.resolve(component()).catch(() => { /* 忽略预加载失败 */ })
+    }
+  }
+}
+
+// 全局点击捕获：任何带 data-preload-route 属性的元素悬停时预加载
+if (typeof window !== 'undefined') {
+  document.addEventListener(
+    'mouseover',
+    (e) => {
+      const target = e.target as HTMLElement
+      const preloadName = target.closest('[data-preload-route]')?.getAttribute('data-preload-route')
+      if (preloadName) preloadRouteComponent(preloadName)
+    },
+    { passive: true },
+  )
+  // 页面空闲时预加载常用路由
+  if ('requestIdleCallback' in window) {
+    ;(window as any).requestIdleCallback(() => {
+      const commonRoutes = ['teacher-dashboard', 'teacher-grades', 'teacher-exam-analysis']
+      commonRoutes.forEach((n) => preloadRouteComponent(n))
+    })
+  }
+}
+
 // 全局守卫：登录态 + 角色校验 + 功能权限校验
 // 注意：localStorage 中的 role / features 仅用于 UX 层跳转与菜单显隐，
 // 真正的数据权限由后端 @Roles + JWT（t.sub）强制校验，本地篡改无法越权读取数据；

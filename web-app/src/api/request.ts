@@ -5,15 +5,16 @@ import { isSessionInvalid } from '@gardener/shared/utils/security'
 
 /**
  * 全局 HTTP 封装：对接小程序后端（NestJS）。
- * - baseURL 解析：运行时 window.__APP_CONFIG__.API_BASE_URL > 构建期 VITE_API_BASE > '/api'
- * - JWT 注入：Authorization: Bearer <token>（与小程序 callContainer 透传方式一致）
+ * - baseURL 解析：运行时 window.__APP_CONFIG__.API_BASE_URL > 构建期 VITE_API_BASE > '/api/v1'
+ * - JWT 注入：Authorization: Bearer <token>
  * - 401 自动清除登录态并跳转登录页
- * - 响应拦截器返回 res.data（已解包），类型声明同步解包
+ * - 响应拦截器返回 res.data（已解包）
+ * - 内置 AbortController 取消支持 + SWR GET 缓存
  */
 
-/** 解析后端 API 基础地址（支持运行时覆盖，便于更换云托管域名免重建） */
+/** 默认走 v1 API；旧 /api/* 会由后端 307 重定向到 /api/v1/* */
 export function getApiBase(): string {
-  return resolveApiBase(getRuntimeApiBase(), getViteEnvApiBase(), '/api')
+  return resolveApiBase(getRuntimeApiBase(), getViteEnvApiBase(), '/api/v1')
 }
 
 const instance: AxiosInstance = axios.create({
@@ -22,10 +23,70 @@ const instance: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// 请求拦截：注入 JWT
-// 注意：axios v1 的 config.headers 是 AxiosHeaders 实例，直接 `config.headers.Authorization = x`
-// 在部分版本/调用链下会被 normalize 丢弃，导致浏览器实际不发 Authorization 头。
-// 统一用 .set() 写入（若不存在则回退到直接赋值），保证跨域/云托管场景 token 一定被带上。
+// ========== AbortController 支持 ==========
+interface PendingRequest {
+  controller: AbortController
+  url: string
+  method: string
+}
+const pendingRequests = new Map<string, PendingRequest>()
+
+/** 取消指定 URL 的进行中请求（同 URL 同时只保留最新一个） */
+export function cancelRequest(url: string, method = 'GET') {
+  const key = `${method}:${url}`
+  const pending = pendingRequests.get(key)
+  if (pending) {
+    pending.controller.abort()
+    pendingRequests.delete(key)
+  }
+}
+
+/** 取消所有进行中请求（路由切换/登出时调用） */
+export function cancelAllRequests() {
+  for (const [, { controller }] of pendingRequests) controller.abort()
+  pendingRequests.clear()
+}
+
+// ========== SWR GET 缓存 ==========
+const swrCache = new Map<string, { data: any; expireAt: number }>()
+const SWR_DEFAULT_TTL = 30_000 // 30s
+const SWR_STALE_TIME = 10_000  // 10s 内认为新鲜，不重复请求
+
+/** 带缓存的 GET 请求 */
+export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<T> {
+  const cacheKey = `GET:${url}`
+  const now = Date.now()
+  const cached = swrCache.get(cacheKey)
+
+  // 新鲜命中
+  if (cached && cached.expireAt - now < SWR_STALE_TIME && cached.expireAt > now) {
+    return Promise.resolve(cached.data as T)
+  }
+
+  // 过期或不存在 → 请求
+  const pending = get<T>(url).then((data) => {
+    swrCache.set(cacheKey, { data, expireAt: Date.now() + ttl })
+    return data
+  }).catch((err) => {
+    swrCache.delete(cacheKey)
+    throw err
+  })
+
+  // 若有旧缓存，后台刷新同时返回旧值
+  if (cached && cached.expireAt > now) return Promise.resolve(cached.data as T)
+  return pending
+}
+
+/** 清除指定或全部缓存 */
+export function clearCache(url?: string) {
+  if (url) {
+    swrCache.delete(`GET:${url}`)
+  } else {
+    swrCache.clear()
+  }
+}
+
+// ========== 请求拦截 ==========
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('trace_web_token')
   if (token) {
@@ -39,44 +100,61 @@ instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       h.Authorization = `Bearer ${token}`
     }
   }
+
+  // 记录进行中请求（用于取消）
+  const url = config.url || ''
+  const method = (config.method || 'get').toUpperCase()
+  const key = `${method}:${url}`
+  const existing = pendingRequests.get(key)
+  if (existing) existing.controller.abort()
+  const controller = new AbortController()
+  config.signal = controller.signal
+  pendingRequests.set(key, { controller, url, method })
+
   return config
 })
 
-// 响应拦截：统一错误处理 + 解包 data
+// ========== 响应拦截 ==========
 instance.interceptors.response.use(
-  (res) => res.data,
+  (res) => {
+    const url = res.config.url || ''
+    const method = (res.config.method || 'get').toUpperCase()
+    pendingRequests.delete(`${method}:${url}`)
+    return res.data
+  },
   async (err: AxiosError<any>) => {
+    // 清理取消的请求
+    const url = (err.config?.url as string) || ''
+    const method = ((err.config?.method as string) || 'get').toUpperCase()
+    pendingRequests.delete(`${method}:${url}`)
+
+    if (axios.isCancel(err)) {
+      return Promise.reject(new Error('REQUEST_CANCELLED'))
+    }
+
     const status = err.response?.status
     const msg = err.response?.data?.message || err.message || '请求失败'
     if (status === 401) {
-      // token 失效：仅「非登录类接口」才清除登录态并跳转登录。
-      // 登录类接口（密码/统一登录等）的 401 是"账号密码错误"业务提示，
-      // 应交给登录页 errMsg 展示，避免误删用户正在输入的表单并强制跳登录。
-      const url = (err.config?.url as string) || ''
+      const urlCheck = (err.config?.url as string) || ''
       const isLoginApi = [
         '/admin/login',
         '/school-admin/login',
         '/auth/password-login',
         '/auth/unified-login',
         '/parent-auth/login',
-      ].some((p) => url.includes(p))
+      ].some((p) => urlCheck.includes(p))
       if (!isLoginApi) {
-        // 关键：只有「真正的会话失效」才清除登录态。
-        // 后端部分接口把「权限不足/角色不符」也以 401 返回（如校管访问教师专属 /grades），
-        // 这类 401 不该清 token 踢登录——否则一个无权限接口就会拖垮整个登录态。
         const msgText = typeof err.response?.data?.message === 'string' ? err.response.data.message : ''
         if (isSessionInvalid(msgText)) {
           await handleUnauthorized()
         }
       }
     }
-    // 抛出业务错误（组件层 try/catch 捕获）
     return Promise.reject(new Error(typeof msg === 'string' ? msg : JSON.stringify(msg)))
   },
 )
 
-/** 类型声明：拦截器已解包 res.data，故方法直接返回数据体而非 AxiosResponse。
- *  保留双类型参数以兼容 axios 的 get<T, R> 调用习惯，R 为实际返回类型。 */
+// ========== 类型声明 ==========
 interface TypedAxios {
   get<T = any, R = T>(url: string, config?: any): Promise<R>
   post<T = any, R = T>(url: string, data?: any, config?: any): Promise<R>
@@ -88,20 +166,19 @@ interface TypedAxios {
 const request = instance as unknown as TypedAxios
 
 export default request
+export const get = request.get.bind(request)
+export const post = request.post.bind(request)
+export const put = request.put.bind(request)
+export const del = request.delete.bind(request)
 
 /**
  * 统一处理「会话失效」：清除登录态 + 同步清空 Pinia store + 跳转登录页。
- *
- * 供两类场景共用：
- *  1. axios 响应拦截器（已确认 isSessionInvalid，调用前即判定为真失效）；
- *  2. 绕过拦截器的原生 fetch 流式接口（ai/chat 等非登录接口）在收到 401 时直接调用。
- *
- * 要点：同步清空 Pinia store 是为了避免路由守卫 isLoggedIn 仍为 true，
- * 导致踢登录被重定向循环拦截。
  */
 export async function handleUnauthorized(): Promise<void> {
   localStorage.removeItem('trace_web_token')
   localStorage.removeItem('trace_web_user')
+  clearCache()
+  cancelAllRequests()
   try {
     const { useAuthStore } = await import('@/stores/auth')
     const auth = useAuthStore()

@@ -54,6 +54,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: proxyTarget.startsWith('https'),
       },
+      '/api/v1': {
+        target: proxyTarget,
+        changeOrigin: true,
+        secure: proxyTarget.startsWith('https'),
+      },
     },
   },
   // 生产构建剥离 console.log/info/debug/table（保留 error/warn 用于线上错误监控上报）
