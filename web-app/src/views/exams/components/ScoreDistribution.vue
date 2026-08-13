@@ -10,7 +10,7 @@ interface Subject {
   passRate: number
   excellentRate: number
   fullScore?: number
-  distribution?: Record<string, number>
+  distribution?: { label: string; count: number }[]
 }
 
 const props = defineProps<{
@@ -34,7 +34,7 @@ const PAD = { top: 20, right: 20, bottom: 40, left: 40 }
 const distribution = computed(() => {
   const subj = props.subjects.find(s => s.subject === selectedDist.value) || props.subjects[0]
   if (!subj?.distribution) return []
-  return Object.entries(subj.distribution).map(([range, count]) => ({ range, count: count as number }))
+  return subj.distribution.map(d => ({ range: d.label, count: d.count }))
 })
 
 const subjectBars = computed(() => {

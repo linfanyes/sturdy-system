@@ -106,7 +106,6 @@ async function loadCompareAnalysis() {
 async function loadCompareClasses() {
   if (!props.classId) return
   try {
-    const res = await listExams({ classId: props.classId, take: 1 })
     // Find other classes in same grade
     const classes = await fetchClassList()
     compareClasses.value = classes.filter((c: any) => c.id !== props.classId)

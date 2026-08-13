@@ -24,7 +24,7 @@ const io = typeof IntersectionObserver !== 'undefined'
               el.src = realSrc
               el.removeAttribute('data-lazy-src')
             }
-            io.unobserve(el)
+            io?.unobserve(el)
           }
         }
       },

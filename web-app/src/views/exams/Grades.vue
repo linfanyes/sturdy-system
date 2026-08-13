@@ -589,8 +589,10 @@ function resetMatrixImport() {
             <tbody class="divide-y divide-cream-100">
               <tr
                 v-for="stu in (() => {
-                  const examGrades = grades.value.filter(g =>
-                    (g.examId === selectedExamId.value || g.examName === selectedExam?.name)
+                  const overview = classOverview
+                  if (!overview) return []
+                  const examGrades = grades.filter(g =>
+                    (g.examId === selectedExamId || g.examName === selectedExam?.name)
                   )
                   const map = new Map<string, Record<string, number | null>>()
                   for (const g of examGrades) {
@@ -600,9 +602,9 @@ function resetMatrixImport() {
                     }
                   }
                   let list = Array.from(map.entries()).map(([id, subjMap]) => {
-                    const stu = students.value.find(s => s.id === id)
-                    const total = Object.values(subjMap).reduce((s, v) => s + (v ?? 0), 0)
-                    const full = classOverview.subjects.reduce((s, x) => s + x.fullScore, 0)
+                    const stu = students.find((s: any) => s.id === id)
+                    const total = Object.values(subjMap).reduce((s: number, v) => s + (v ?? 0), 0)
+                    const full = overview.subjects.reduce((s: number, x) => s + x.fullScore, 0)
                     return { id, name: stu?.name || id, studentNo: stu?.studentNo || '', subjMap, total, full }
                   }).filter(r => !keyword || r.name.includes(keyword) || r.studentNo.includes(keyword))
                   list.sort((a, b) => b.total - a.total)
@@ -615,7 +617,7 @@ function resetMatrixImport() {
                 <td class="px-2 py-1.5 font-medium text-cocoa-900 whitespace-nowrap">
                   <div class="flex items-center gap-1.5">
                     <span>{{ stu.name }}</span>
-                    <span v-if="students.value.findIndex(s => s.id === stu.id) < 3" class="text-[10px] px-1 rounded bg-butter-100 text-butter-600">TOP{{ students.value.findIndex(s => s.id === stu.id) + 1 > 3 ? '' : students.value.findIndex(s => s.id === stu.id) + 1 }}</span>
+                    <span v-if="students.findIndex((s: any) => s.id === stu.id) < 3" class="text-[10px] px-1 rounded bg-butter-100 text-butter-600">TOP{{ students.findIndex((s: any) => s.id === stu.id) + 1 > 3 ? '' : students.findIndex((s: any) => s.id === stu.id) + 1 }}</span>
                   </div>
                 </td>
                 <td v-for="s in classOverview.subjects" :key="'td-' + s.subject" class="text-right px-1 py-1.5">

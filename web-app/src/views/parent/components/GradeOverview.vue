@@ -347,11 +347,11 @@ const gradeTrend = computed(() => {
             <div v-if="s.classRank" class="text-xs text-mint-600">班级第 {{ s.classRank }} 名</div>
             <div v-else class="text-xs text-cocoa-300">暂无排名</div>
             <div
-              v-if="classCompare && s.diff != null"
+              v-if="classCompare && s.score != null && s.classAvg != null"
               class="text-xs font-medium"
-              :class="s.diff >= 0 ? 'text-mint-600' : 'text-sakura-500'"
+              :class="(s.score - s.classAvg) >= 0 ? 'text-mint-600' : 'text-sakura-500'"
             >
-              {{ s.diff >= 0 ? '↑' : '↓' }} {{ Math.abs(s.diff).toFixed(1) }}
+              {{ (s.score - s.classAvg) >= 0 ? '↑' : '↓' }} {{ Math.abs(s.score - s.classAvg).toFixed(1) }}
             </div>
           </div>
         </div>
@@ -490,7 +490,7 @@ const gradeTrend = computed(() => {
                 <td class="px-3 py-2 text-right text-cocoa-500">{{ e.date }}</td>
                 <td class="px-3 py-2 text-right font-medium text-cocoa-900">{{ e.totalScore ?? '--' }}</td>
                 <td class="px-3 py-2 text-right">
-                  <span class="font-semibold" :class="e.classRank <= 3 ? 'text-butter-600' : e.classRank <= 10 ? 'text-mint-600' : 'text-cocoa-700'">第 {{ e.classRank }} 名</span>
+                  <span class="font-semibold" :class="e.classRank! <= 3 ? 'text-butter-600' : e.classRank! <= 10 ? 'text-mint-600' : 'text-cocoa-700'">第 {{ e.classRank }} 名</span>
                 </td>
                 <td class="px-3 py-2 text-right">
                   <template v-if="i > 0">
