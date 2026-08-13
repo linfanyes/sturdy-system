@@ -49,12 +49,13 @@ export default defineConfig({
       //   - local 模式（start-web-local.bat）→ localhost:3000 本地后端
       //   - cloud 模式（start-web-cloud.bat）→ 微信云托管后端
       // 见上方 resolveProxyTarget() 实现。
-      '/api': {
+      // 注意：将更具体的 '/api/v1' 放在 '/api' 前面，避免 '/api' 前缀优先匹配导致 '/api/v1' 永远不命中
+      '/api/v1': {
         target: proxyTarget,
         changeOrigin: true,
         secure: proxyTarget.startsWith('https'),
       },
-      '/api/v1': {
+      '/api': {
         target: proxyTarget,
         changeOrigin: true,
         secure: proxyTarget.startsWith('https'),
