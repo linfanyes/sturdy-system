@@ -11,6 +11,7 @@ import * as mysql from 'mysql2/promise'
 import { AppModule } from './app.module'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
 import { isBcryptHash } from './common/utils/password.util'
+import helmet from 'helmet'
 
 const logger = new Logger('Bootstrap')
 
@@ -122,6 +123,7 @@ async function bootstrap() {
   // AI 对话可能携带较大上下文，放宽请求体上限
   app.use(json({ limit: '5mb' }))
   app.use(urlencoded({ limit: '5mb', extended: true }))
+  app.use(helmet())
   const config = app.get(ConfigService)
 
   // API 版本化中间件（必须在全局前缀之前注册，因为 setGlobalPrefix 会改写路径）
@@ -142,6 +144,10 @@ async function bootstrap() {
     origin: corsOrigin,
     credentials: corsOrigin !== true && corsOrigin !== false,
   })
+  // CORS 说明：
+  // - 未配置 CORS_ORIGIN：不启用 CORS，适合后端服务或同域部署
+  // - 配置为 *：允许所有来源，但不允许携带凭证（浏览器会拒绝 credentials:true + 通配 origin）
+  // - 配置为具体域名列表：仅允许这些来源，并允许携带凭证
   // 全局前缀改为 /api/v1；旧 /api 路径由版本化中间件重定向
   app.setGlobalPrefix('api/v1')
   app.useGlobalPipes(

@@ -17,6 +17,7 @@
 import { ref } from 'vue'
 import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
+import { escapeHtml } from '@gardener/shared/utils'
 const form = ref({ title: '', keywords: '', outline: '' })
 const result = ref('')
 const loading = ref(false)
@@ -25,7 +26,7 @@ async function generate() {
   try {
     const prompt = `请以教育论文格式，撰写一篇题为《${form.value.title}》的论文。${form.value.keywords?`关键词：${form.value.keywords}。`:''}${form.value.outline?`参考大纲：${form.value.outline}`:'请自动生成完整大纲和内容。'}`
     const r = await chatSync({ messages: [{ role: 'user', content: prompt }] })
-    result.value = (r.content || r.message || '生成失败').replace(/\n/g, '<br/>')
+    result.value = escapeHtml(r.content || r.message || '生成失败').replace(/\n/g, '<br/>')
   } catch (e) { result.value = '生成失败：' + (e.message || '') }
   loading.value = false
 }

@@ -69,8 +69,10 @@ import { getPapersByType } from '@/api/ai-generated'
 import { analyzeExam } from '@/api/ai'
 import { createNote } from '@/api/notes'
 import { theme } from '../../common/store'
+import { createSafeRenderer } from '@gardener/shared/utils'
 
 marked.setOptions({ gfm: true, breaks: true })
+marked.use({ renderer: createSafeRenderer(() => theme.mode) })
 
 const exams = ref([])
 const selectedExam = ref('')

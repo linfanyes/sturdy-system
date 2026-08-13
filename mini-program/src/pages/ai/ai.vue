@@ -142,67 +142,15 @@ import { onShow, onUnload } from '@dcloudio/uni-app'
 import { marked } from 'marked'
 import { streamChat } from '../../common/request'
 import { getAiSettings } from '@/api/config'
+import { escapeHtml, createSafeRenderer } from '@gardener/shared/utils'
 import { createNote } from '@/api/notes'
 import { theme } from '../../common/store'
 import { compressImage } from '../../common/image'
 
 // —— Markdown 渲染：token 化 renderer + 内联样式，产物交给 <rich-text> 渲染 ——
 marked.setOptions({ gfm: true, breaks: true })
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-const SZ = { 1: 40, 2: 36, 3: 32, 4: 30, 5: 28, 6: 26 }
-const LIGHT = { fg: '#333', sub: '#888', codeBg: '#f5f5f5', codeFg: '#c7254e', border: '#d9d9d9', link: '#07c160', strong: '#222' }
-const DARK = { fg: '#e6e6e6', sub: '#9aa0a6', codeBg: '#262b34', codeFg: '#ff9b9b', border: '#3a3f47', link: '#3fd07f', strong: '#ffffff' }
 marked.use({
-  renderer: {
-    heading(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<view style="font-size:${SZ[t.depth] || 30}rpx;font-weight:700;margin:18rpx 0 10rpx;color:${c.fg};line-height:1.4;">${this.parser.parseInline(t.tokens) || t.text}</view>`
-    },
-    paragraph(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<view style="margin:10rpx 0;line-height:1.7;color:${c.fg};">${this.parser.parseInline(t.tokens) || t.text}</view>`
-    },
-    listitem(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<li style="margin:8rpx 0;line-height:1.7;color:${c.fg};">• ${this.parser.parseInline(t.tokens) || t.text}</li>`
-    },
-    code(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<view style="background:${c.codeBg};border-radius:12rpx;padding:18rpx;font-size:24rpx;margin:12rpx 0;white-space:pre-wrap;word-break:break-all;color:${c.codeFg};">${esc(t.text)}</view>`
-    },
-    codespan(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<text style="background:${c.codeBg};padding:2rpx 8rpx;border-radius:6rpx;font-size:24rpx;color:${c.codeFg};">${t.text}</text>`
-    },
-    strong(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<text style="font-weight:700;color:${c.strong};">${t.text}</text>`
-    },
-    em(t) {
-      return `<text style="font-style:italic;">${t.text}</text>`
-    },
-    blockquote(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<view style="border-left:6rpx solid ${c.border};padding:4rpx 20rpx;color:${c.sub};margin:12rpx 0;">${this.parser.parse(t.tokens) || t.text}</view>`
-    },
-    hr() {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<view style="height:1rpx;background:${c.border};margin:18rpx 0;"></view>`
-    },
-    link(t) {
-      const c = theme.mode === 'dark' ? DARK : LIGHT
-      return `<text style="color:${c.link};">${t.text}</text>`
-    },
-    // 防御：明文 HTML 标签（非 markdown 语法）逃逸到 rich-text，转义为纯文本
-    html(t) {
-      return esc(t.text || '')
-    },
-    // 图片：仅允许 http/https 协议，防止 javascript: 等协议注入
-    image(t) {
-      if (!t.href || !/^https?:\/\//i.test(t.href)) return esc(t.text || '图片')
-      return `<image src="${esc(t.href)}" style="max-width:100%;border-radius:8rpx;margin:8rpx 0;" mode="widthFix"></image>`
-    },
-  },
+  renderer: createSafeRenderer(() => theme.mode),
 })
 function md(text) {
   return marked.parse(text || '')

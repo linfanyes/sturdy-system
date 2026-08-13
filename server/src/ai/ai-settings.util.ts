@@ -19,7 +19,7 @@ export async function buildAiSettings(
   if (!s.baseUrl) {
     throw new BadRequestException('未配置 AI 接口地址')
   }
-  // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址
-  assertAllowedAiUrl(s.baseUrl)
+  // SSRF 防护：拒绝私网/云元数据/非 HTTPS 地址，并校验域名解析后 IP 不在内网范围
+  await assertAllowedAiUrl(s.baseUrl)
   return s
 }

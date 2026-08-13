@@ -52,9 +52,11 @@ import { ref } from 'vue'
 import { marked } from 'marked'
 import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
+import { createSafeRenderer } from '@gardener/shared/utils'
 import { safeParse } from '../../common/util'
 
 marked.setOptions({ gfm: true, breaks: true })
+marked.use({ renderer: createSafeRenderer(() => theme.mode) })
 
 const subjects = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术']
 const form = ref({ grade: '', subject: '', question: '' })

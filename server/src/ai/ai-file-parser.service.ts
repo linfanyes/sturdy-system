@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import axios from 'axios'
 import https from 'node:https'
+import * as dns from 'node:dns'
 import * as path from 'path'
 import mammoth from 'mammoth'
 import { xlsxToCsvText } from '../common/excel.util'
@@ -21,13 +22,46 @@ axios.defaults.maxRedirects = 0
  * AI 出站地址校验：默认仅允许 HTTPS 公网地址，阻止服务端探测内网/云元数据（SSRF）。
  * 若确实需要内网/自签 AI 网关，可显式设置 AI_ALLOW_PRIVATE_URLS=true 放宽。
  */
-export function assertAllowedAiUrl(baseUrl: string): void {
+export async function assertAllowedAiUrl(baseUrl: string): Promise<void> {
   if (process.env.AI_ALLOW_PRIVATE_URLS === 'true') return
   if (!isSafeHttpUrl(baseUrl)) {
     throw new BadRequestException(
       'AI 接口地址不合法：仅允许 HTTPS 公网地址。内网/自签环境请设置 AI_ALLOW_PRIVATE_URLS=true 后重试。',
     )
   }
+  try {
+    const url = new URL(baseUrl)
+    await assertHostnameNotPrivate(url.hostname)
+  } catch (e: any) {
+    throw new BadRequestException(`AI 接口域名校验失败：${e?.message || e}`)
+  }
+}
+
+function isPrivateIp(ip: string): boolean {
+  const privateRanges = [
+    /^10\./,
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+    /^192\.168\./,
+    /^127\./,
+    /^169\.254\./,
+    /^0\./,
+    /^::1$/,
+    /^fe80:/i,
+    /^fc00:/i,
+    /^fd00:/i,
+  ]
+  return privateRanges.some(r => r.test(ip))
+}
+
+function assertHostnameNotPrivate(hostname: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    dns.lookup(hostname, { all: true }, (err, addresses) => {
+      if (err) return reject(err)
+      const bad = addresses.find(a => isPrivateIp(a.address))
+      if (bad) return reject(new Error(`Hostname resolves to private IP: ${bad.address}`))
+      resolve()
+    })
+  })
 }
 
 // 上传文件大小上限（10MB），避免超大文件拖垮进程

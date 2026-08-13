@@ -68,8 +68,10 @@ import { chatSync } from '@/api/ai'
 import { createNote } from '@/api/notes'
 import { createLessonPlan } from '@/api/ai-generated'
 import { theme } from '../../common/store'
+import { createSafeRenderer } from '@gardener/shared/utils'
 
 marked.setOptions({ gfm: true, breaks: true })
+marked.use({ renderer: createSafeRenderer(() => theme.mode) })
 
 const subjects = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术']
 const form = ref({ grade: '', subject: '', topic: '', lesson: '第1课时', requirement: '' })

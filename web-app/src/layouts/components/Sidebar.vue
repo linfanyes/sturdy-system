@@ -7,6 +7,7 @@ import { LayoutDashboard, School, LogOut, User, Users, GraduationCap, ToggleLeft
 import type { Role } from '@/types/user'
 import type { MenuCategory, MenuItem } from '../layoutMenus'
 import { useParentKids } from '@/composables/useParentKids'
+import { escapeHtml } from '@gardener/shared/utils'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -146,18 +147,17 @@ function downloadManual() {
 // Simple markdown-to-HTML renderer
 function md2html(md: string): string {
   if (!md) return ''
-  return md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
-  .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-  .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-  .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  .replace(/`([^`]+)`/g, '<code>$1</code>')
-  .replace(/^\- (.+)$/gm, '<li>$1</li>')
-  .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-  .replace(/^---$/gm, '<hr>')
-  .replace(/\n\n/g, '<br><br>')
+  return escapeHtml(md)
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^\- (.+)$/gm, '<li>$1</li>')
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\n\n/g, '<br><br>')
 }
 
 const emit = defineEmits<{

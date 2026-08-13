@@ -414,7 +414,8 @@ export class TeacherMgmtService {
 
   toCsv(rows: string[][]): string {
     return rows.map(r => r.map(c => {
-      const s = String(c).replace(/"/g, '""')
+      let s = String(c).replace(/"/g, '""')
+      if (/^[=+\-@|%]/.test(s)) s = "'" + s
       return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
     }).join(',')).join('\n')
   }
