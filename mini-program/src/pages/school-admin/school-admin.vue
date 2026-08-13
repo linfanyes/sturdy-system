@@ -455,7 +455,7 @@ import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { setMockMode } from '../../common/request'
-import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
+import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from '../../common/config'
 import { auth, setAuth, setFeatureProfile } from '../../common/store'
 import { isPhone } from '../../common/validators'
 import { safeParse } from '../../common/util'
@@ -549,7 +549,7 @@ async function apiCall(method, path, data) {
   return new Promise((resolve, reject) => {
     const opts = {
       config: { env: CLOUDRUN_ENV },
-      path: '/api' + path,
+      path: API_PREFIX + path,
       method,
       header: { 'content-type': 'application/json', 'X-WX-SERVICE': CLOUDRUN_SERVICE, Authorization: 'Bearer ' + token },
       success: (r) => {

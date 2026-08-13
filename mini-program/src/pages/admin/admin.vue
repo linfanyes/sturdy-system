@@ -192,12 +192,12 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { isPhone } from '../../common/validators'
-import { CLOUDRUN_ENV, CLOUDRUN_SERVICE } from '../../common/config'
+import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from '../../common/config'
 import SchoolManage from './components/SchoolManage.vue'
 import DataStats from './components/DataStats.vue'
 import SystemConfig from './components/SystemConfig.vue'
 
-const SERVER_URL = '/api'
+const SERVER_URL = API_PREFIX
 const ADMIN_TOKEN_KEY = 'admin_token'
 const adminToken = ref(uni.getStorageSync(ADMIN_TOKEN_KEY) || '')
 const logging = ref(false)
