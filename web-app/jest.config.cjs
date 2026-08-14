@@ -9,6 +9,9 @@ module.exports = {
     '^@/config/viteEnv$': '<rootDir>/test/stubs/viteEnv.ts',
     // shared 包内部使用 ESM 风格 './xxx.js' 引用 .ts 模块，CJS 下需去掉 .js 后缀
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    // shared 源文件（经 moduleNameMapper 直引）import 'vue' 时，node 解析从 shared 目录向上找不到 web-app 的 node_modules，
+    // 显式映射到本项目的 vue 入口，保证 shared/composables 等模块在测试环境可解析。
+    '^vue$': '<rootDir>/node_modules/vue/index.js',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@gardener/shared/(.*)$': '<rootDir>/../shared/$1',
   },

@@ -17,6 +17,8 @@ import { Student } from '../students/student.entity'
 import { Notice } from '../school/school.entity'
 import { Grade } from '../grades/grade.entity'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { FeatureService } from '../common/feature/feature.service'
+import { PARENT_FEATURE_KEYS, PARENT_FEATURE_OPTIONS } from '../common/feature/feature-flags.constants'
 
 class ClassesService extends CrudService<ClassItem> {
   constructor(
@@ -27,6 +29,7 @@ class ClassesService extends CrudService<ClassItem> {
     @InjectRepository(Notice) private readonly noticeRepo: Repository<Notice>,
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly featureSvc: FeatureService,
   ) {
     super(repo)
     this.withClassMemberService(classMemberSvc2)
@@ -287,6 +290,51 @@ class ClassesService extends CrudService<ClassItem> {
       recentNotices,
     }
   }
+
+  /**
+   * 家长功能包管理：获取某班级的家长功能包配置（班级成员可查看）。
+   * - configured=false → 未显式配置，家长跟随默认（班级教师功能并集 ∩ 学校级）
+   * - configured=true  → 班主任显式指定的家长可见功能（空数组=关闭全部）
+   */
+  async getParentFeatures(classId: string, teacherId: string) {
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId, cls.term || '')
+    if (!canAccess) throw new ForbiddenException('无权访问该班级')
+    return {
+      configured: Array.isArray(cls.parentFeatures),
+      features: Array.isArray(cls.parentFeatures) ? cls.parentFeatures : null,
+      options: PARENT_FEATURE_OPTIONS,
+    }
+  }
+
+  /**
+   * 家长功能包管理：班主任为班级家长显式指定可见功能。
+   * - features=null/undefined → 恢复「跟随默认」（清空显式配置）
+   * - features=[]            → 关闭该班家长端全部功能
+   * - 非空数组               → 仅开放数组内功能（仍受学校级 featureFlags 收窄）
+   * 保存后清除该班级所有家长的功能缓存，使其下次请求立即生效。
+   */
+  async updateParentFeatures(classId: string, headTeacherId: string, features: string[] | null) {
+    await this.assertHeadTeacher(headTeacherId, classId)
+    const cls = await this.repo.findOne({ where: { id: classId } as any })
+    if (!cls) throw new BadRequestException('班级不存在')
+    let next: string[] | null
+    if (features == null) {
+      next = null
+    } else {
+      const arr = Array.isArray(features) ? features : []
+      const valid = new Set(PARENT_FEATURE_KEYS)
+      const unknown = arr.filter((k) => !valid.has(k))
+      if (unknown.length) throw new BadRequestException(`包含无效的功能包：${unknown.join('、')}`)
+      next = [...new Set(arr)]
+    }
+    cls.parentFeatures = next
+    await this.repo.save(cls)
+    // 清除该班级所有家长的功能缓存（下次请求按新配置重新解析）
+    await this.featureSvc.clearParentCacheForClass(classId)
+    return { ok: true, features: cls.parentFeatures }
+  }
 }
 
 @Roles('teacher')
@@ -343,6 +391,18 @@ class ClassesController extends CrudController<ClassItem> {
   @Get(':id/dashboard')
   getDashboard(@Param('id') id: string, @CurrentTeacher() t: any) {
     return this.s.getDashboard(id, t.sub)
+  }
+
+  /** 家长功能包管理：获取班级家长功能包配置（班级成员可查看） */
+  @Get(':id/parent-features')
+  getParentFeatures(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return this.s.getParentFeatures(id, t.sub)
+  }
+
+  /** 家长功能包管理：班主任更新班级家长功能包（features=null 恢复跟随默认） */
+  @Patch(':id/parent-features')
+  updateParentFeatures(@Param('id') id: string, @Body() body: any, @CurrentTeacher() t: any) {
+    return this.s.updateParentFeatures(id, t.sub, body?.features == null ? null : body.features)
   }
 }
 

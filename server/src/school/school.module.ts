@@ -230,11 +230,11 @@ class NoticeController extends CrudController<Notice> {
       const [items, total] = await this.noticeRepo.findAndCount({
         where: { scope: 'school' },
         order: { createdAt: 'DESC' } as any,
-        skip: Number(skip) || 0, take: Math.min(Number(take) || 500, 500),
+        skip: Math.max(0, Number(skip) || 0), take: Math.min(Number(take) || 500, 500),
       })
       return { items, total }
     }
-    return this.service.findAll(t.sub, classId, Number(skip) || 0, Math.min(Number(take) || 500, 500))
+    return this.service.findAll(t.sub, classId, Math.max(0, Number(skip) || 0), Math.min(Number(take) || 500, 500))
   }
 }
 

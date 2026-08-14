@@ -155,6 +155,20 @@ export function createAuthMachine(opts: AuthMachineOptions): IAuthStateMachineWi
     return target
   }
 
+  /**
+   * 采纳外部已完成的登录结果（不重新发起登录请求）。
+   * 登录已由调用方完成后（统一登录 / 切换学生换 token 等），把结果写入内存态 + 多角色快照 + 持久化，
+   * 并发射 'login' 事件，使订阅方（store）同步，避免 setAuth 直写导致的 machine/store 状态失步。
+   */
+  function adopt(result: LoginResult): void {
+    if (!result?.token || !result?.user?.id) {
+      throw new AuthError('采纳登录结果失败：缺少 token 或 user.id', 'INVALID_RESPONSE')
+    }
+    setActive(result)
+    emit('login', { token: result.token, user: result.user, role: result.user.role as Role })
+    if (debug) console.log('[auth] adopt ok, role=', result.user.role)
+  }
+
   return {
     get token() {
       return active?.token ?? null
@@ -172,6 +186,7 @@ export function createAuthMachine(opts: AuthMachineOptions): IAuthStateMachineWi
     logout,
     restore,
     switchRole,
+    adopt,
     on,
     once,
   }

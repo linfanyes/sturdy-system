@@ -6,9 +6,9 @@ import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import { GameScoresService } from './game-scores.service'
 
-// A02修复：添加 @Feature('game') 装饰器，使 game-scores 受功能包开关保护
+// A02修复：添加 @Feature('games') 装饰器，使 game-scores 受功能包开关保护
 @Roles('teacher')
-@Feature('game')
+@Feature('games')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('game-scores')
 export class GameScoresController {

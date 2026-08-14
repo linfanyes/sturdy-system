@@ -179,9 +179,20 @@ export class SchoolAdminService {
     return base.map(w => ({ ...w, ...extra }))
   }
 
+  /**
+   * 越权修复：校管传入 classId 时必须校验其属于本校，否则返回空数组（视为无权查看）。
+   * 防止通过拼接他校 classId 越权读取/聚合他校数据（跨校数据隔离）。
+   */
+  private async resolveSchoolClassIds(schoolId: string, classId?: string): Promise<string[]> {
+    if (!classId) return this.getSchoolClassIds(schoolId)
+    const classIds = await this.getSchoolClassIds(schoolId)
+    if (!classIds.includes(classId)) return []
+    return [classId]
+  }
+
   /** 校管只读：本校考试列表（可选按班级过滤） */
   async listSchoolExams(schoolId: string, classId?: string) {
-    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    const classIds = await this.resolveSchoolClassIds(schoolId, classId)
     if (!classIds.length) return { items: [], total: 0 }
     const [items, total] = await this.examRepo.findAndCount({
       where: this.buildClassWhere(classIds),
@@ -193,7 +204,7 @@ export class SchoolAdminService {
 
   /** 校管只读：本校成绩列表（可选按班级 / 科目 / 考试名过滤） */
   async listSchoolGrades(schoolId: string, classId?: string, subject?: string, examName?: string) {
-    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    const classIds = await this.resolveSchoolClassIds(schoolId, classId)
     if (!classIds.length) return { items: [], total: 0 }
     const extra: Record<string, any> = {}
     if (subject) extra.subject = subject
@@ -208,7 +219,7 @@ export class SchoolAdminService {
 
   /** 校管只读：成绩汇总分析（按学科聚合均分/及格率/高低分；可按班级/考试过滤） */
   async schoolGradeSummary(schoolId: string, classId?: string, examId?: string) {
-    const classIds = classId ? [classId] : await this.getSchoolClassIds(schoolId)
+    const classIds = await this.resolveSchoolClassIds(schoolId, classId)
     if (!classIds.length) return { subjects: [], classes: [], totalGrades: 0, totalExams: 0, totalStudents: 0 }
     const extra: Record<string, any> = {}
     if (examId) extra.examId = examId
@@ -355,7 +366,7 @@ export class SchoolAdminService {
   ) {
     const skip = Math.max(0, opts.skip || 0)
     const take = Math.min(500, opts.take || 50)
-    const classIds = opts.classId ? [opts.classId] : await this.getSchoolClassIds(schoolId)
+    const classIds = await this.resolveSchoolClassIds(schoolId, opts.classId)
     if (!classIds.length) return { items: [], total: 0 }
 
     // 先确定要展示的班级（支持 grade 过滤：仅保留指定年级的班级）

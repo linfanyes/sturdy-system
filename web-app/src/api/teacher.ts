@@ -130,6 +130,23 @@ export function listClassMembers(classId: string) {
   return request.post<any, ClassMember[]>('/classes/' + classId + '/members/list')
 }
 
+/** 家长功能包选项类型（与 shared/constants PARENT_FEATURE_OPTIONS 一致） */
+export interface ParentFeatureOption { key: string; label: string }
+
+/** 获取班级家长功能包配置（班级成员可查看） */
+export function getClassParentFeatures(classId: string) {
+  return request.get<any, {
+    configured: boolean
+    features: string[] | null
+    options: ParentFeatureOption[]
+  }>('/classes/' + classId + '/parent-features')
+}
+
+/** 更新班级家长功能包（班主任；features=null 恢复跟随默认） */
+export function updateClassParentFeatures(classId: string, features: string[] | null) {
+  return request.patch<any, { ok: boolean; features: string[] | null }>('/classes/' + classId + '/parent-features', { features })
+}
+
 /* ============ 班级运营：轮值/值日/班费/活动/风采 ============ */
 
 /** 轮值表 */

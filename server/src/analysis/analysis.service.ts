@@ -1,10 +1,12 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Exam } from '../exams/exam.entity'
 import { Grade, GradeScore } from '../grades/grade.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
+import { User } from '../users/user.entity'
+import { ClassMemberService } from '../class-members/class-members.module'
 
 /**
  * 学生成长分析服务。
@@ -18,15 +20,43 @@ export class AnalysisService {
     @InjectRepository(Grade) private readonly gradeRepo: Repository<Grade>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    private readonly classMemberSvc: ClassMemberService,
   ) {}
+
+  /**
+   * 访问控制：校验当前用户（教师/校管）是否有权查看指定班级。
+   * - teacher：必须是该班成员（班主任/科任），否则 403
+   * - school_admin：该班必须属于其本校，否则 403
+   * 杜绝通过任意 classId/studentId 越权读取他人班级数据。
+   */
+  private async assertClassAccess(ctx: { sub: string; role?: string; schoolId?: string }, classId: string): Promise<void> {
+    if (!classId) throw new BadRequestException('缺少 classId')
+    if (ctx.role === 'school_admin') {
+      const cls = await this.classRepo.findOne({ where: { id: classId } as any })
+      if (!cls) throw new BadRequestException('班级不存在')
+      const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId: ctx.schoolId || '' } })
+      if (!teacher) throw new ForbiddenException('无权访问该班级')
+      return
+    }
+    const can = await this.classMemberSvc.canAccess(ctx.sub, classId)
+    if (!can) throw new ForbiddenException('无权访问该班级')
+  }
+
+  /** 校验学生确实属于指定班级（防止跨班拼接 studentId+classId） */
+  private async assertStudentInClass(studentId: string, classId: string): Promise<Student> {
+    const student = await this.studentRepo.findOne({ where: { id: studentId, classId } as any })
+    if (!student) throw new BadRequestException('学生不存在或不属于该班级')
+    return student
+  }
 
   /**
    * 学生历次考试趋势。
    * subject 可选：提供时仅返回该科成绩曲线，否则返回总分/均分/排名曲线。
    */
-  async studentTrend(studentId: string, classId: string, subject?: string) {
-    const student = await this.studentRepo.findOne({ where: { id: studentId } as any })
-    if (!student) throw new BadRequestException('学生不存在')
+  async studentTrend(ctx: { sub: string; role?: string; schoolId?: string }, studentId: string, classId: string, subject?: string) {
+    await this.assertClassAccess(ctx, classId)
+    const student = await this.assertStudentInClass(studentId, classId)
 
     const classItem = await this.classRepo.findOne({ where: { id: classId } as any })
 
@@ -136,7 +166,8 @@ export class AnalysisService {
   /**
    * 班级历次考试均分/及格率/优秀率/参加人数。
    */
-  async classTrend(classId: string, subject?: string) {
+  async classTrend(ctx: { sub: string; role?: string; schoolId?: string }, classId: string, subject?: string) {
+    await this.assertClassAccess(ctx, classId)
     const classItem = await this.classRepo.findOne({ where: { id: classId } as any })
     if (!classItem) throw new BadRequestException('班级不存在')
 
@@ -196,7 +227,8 @@ export class AnalysisService {
    * 班级各科目相对强弱分析（供雷达图）。
    * 全校同年级均值用所有班级该科均分均值近似。
    */
-  async subjectStrength(classId: string) {
+  async subjectStrength(ctx: { sub: string; role?: string; schoolId?: string }, classId: string) {
+    await this.assertClassAccess(ctx, classId)
     const classItem = await this.classRepo.findOne({ where: { id: classId } as any })
     if (!classItem) throw new BadRequestException('班级不存在')
 

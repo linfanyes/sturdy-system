@@ -39,6 +39,11 @@ export class StudentInfoUpdateService {
     if (parentPayload?.parentId && stu.parentId && parentPayload.parentId !== stu.parentId) {
       throw new BadRequestException('只能修改自己孩子的信息')
     }
+    // 幂等：同一家长对该孩子已有「待审核」申请时拒绝重复提交，避免审核队列堆积重复记录
+    const pending = await this.repo.findOne({
+      where: { studentId, parentId: parentPayload?.parentId || '', status: 'pending' },
+    })
+    if (pending) throw new BadRequestException('您已提交过待审核的修改申请，请等待老师处理后再提交新申请')
 
     const entity = this.repo.create({
       teacherId: parentPayload?.studentId || 'parent', // 租户键占位，审核通过后由教师账号接管
@@ -67,7 +72,11 @@ export class StudentInfoUpdateService {
 
   /** 教师端：按班级查询待审核列表 */
   async listForTeacher(teacherId: string, classId?: string, status?: string) {
-    const classIds = classId ? [classId] : await this.classMemberSvc.getClassIdsByTeacher(teacherId)
+    // 越权修复：教师传入 classId 时必须校验其确为该班成员，否则视为无权查看（返回空），
+    // 防止教师拼入他班 classId 读取含家长联系方式/住址等 PII 的申请记录。
+    const classIds = classId
+      ? (await this.classMemberSvc.canAccess(teacherId, classId)) ? [classId] : []
+      : await this.classMemberSvc.getClassIdsByTeacher(teacherId)
     if (!classIds.length) return []
     const q = this.repo.createQueryBuilder('u')
       .where('u.classId IN (:...cids)', { cids: classIds })

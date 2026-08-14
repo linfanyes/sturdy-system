@@ -6,6 +6,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
+import { authMachine } from '@/stores/auth-machine'
 import { mockAccounts } from '../data/fixtures'
 
 // request.ts 含 import.meta（Vite 注入），CJS 下无法解析；测试路由守卫无需真实 HTTP，统一 mock
@@ -20,6 +21,9 @@ describe('功能流程: 登录全流程', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
     localStorage.clear()
+    // 鉴权状态机为模块级单例，setAuth 会真实写入 machine 内部状态；
+    // 必须显式登出重置，否则上一用例的登录态泄漏到下一用例（NAV-01/LOGIN-05 会误判已登录）。
+    await authMachine.logout()
     // router 是模块级单例，先重置到中性路由 /forbidden，保证后续 push 必跑守卫
     await router.push('/forbidden')
   })

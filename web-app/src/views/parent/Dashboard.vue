@@ -3,21 +3,55 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { useAuthStore } from '@/stores/auth'
-import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { getParentMe, getParentNotices, getParentExams, getParentHomework, getParentAttendance, changeParentPassword, getParentBehavior, getParentSchedule, getParentCommunications, getParentTeachers, switchStudent, submitStudentUpdateRequest, listStudentUpdateRequests, subscribeParentDemo } from '@/api/parent'
 import type { ParentAttendance, ParentBehavior, ParentSchedule, ParentCommunications, ParentMe, StudentUpdateRequest, ParentTeacher } from '@/api/parent'
 import { sendMessage, listSentMessages, type MessageItem } from '@/api/message'
 import { useParentKids } from '@/composables/useParentKids'
-import { Sparkles, BookOpen, Bell, ChevronRight, Loader2, ClipboardList, CalendarCheck, MessageCircle, Repeat, UserCog, Phone, TrendingUp, TrendingDown } from 'lucide-vue-next'
+import { Sparkles, BookOpen, Bell, ChevronRight, Loader2, ClipboardList, CalendarCheck, MessageCircle, UserCog, Phone, TrendingUp, TrendingDown } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import GradeOverview from './components/GradeOverview.vue'
 import BehaviorRecord from './components/BehaviorRecord.vue'
 import NoticeList from './components/NoticeList.vue'
 
 const auth = useAuthStore()
-const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const parentKids = useParentKids()
+
+/**
+ * 家长功能包判定（班主任可在班级里配置家长可见功能）。
+ * - 未携带功能包（undefined/非数组，旧会话）→ 不限制，全部可见
+ * - 空数组 → 班主任关闭该班家长全部功能
+ * - 非空数组 → 仅开放数组内功能
+ * 安全边界以后端为准。
+ * 数据源：/parent-auth/me 返回当前孩子的 effectiveFeatures（切换孩子后随 me 刷新）。
+ */
+function hasPf(key: string): boolean {
+  const f = me.value?.effectiveFeatures
+  if (!Array.isArray(f)) return true
+  if (f.length === 0) return false
+  return f.indexOf(key) >= 0
+}
+const showScoresSection = computed(() => hasPf('grades') || hasPf('analysis'))
+const showHomeworkSection = computed(() => hasPf('homework'))
+const showNoticesSection = computed(() => hasPf('notices'))
+const showAttendanceSection = computed(() => hasPf('attendance') || hasPf('behavior'))
+const showScheduleSection = computed(() => hasPf('schedule') || hasPf('duty'))
+const showImSection = computed(() => hasPf('im'))
+/** 健康度总览：仅展示当前家长功能包内可见的维度（attendance/exam/homework/behavior/comm） */
+const visibleHealth = computed(() => (healthOverview.value || []).filter((h: any) => {
+  if (h.key === 'attendance' || h.key === 'behavior') return showAttendanceSection.value
+  if (h.key === 'exam') return showScoresSection.value
+  if (h.key === 'homework') return showHomeworkSection.value
+  if (h.key === 'comm') return showImSection.value
+  return true
+}))
+/** 当前家长功能包下是否有可见数据（空态判定，被班主任关闭的功能不计入） */
+const hasAnyVisibleData = computed(() =>
+  (showNoticesSection.value && notices.value.length > 0) ||
+  (showScoresSection.value && exams.value.length > 0) ||
+  (showHomeworkSection.value && homework.value.length > 0) ||
+  (showAttendanceSection.value && !!attendance.value),
+)
 
 const loading = ref(true)
 const loadError = ref(false)
@@ -183,15 +217,6 @@ function contactTeacher() {
 
 const toastMsg = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
-
-/** 师兼家：切换到教师端 */
-const canSwitchToTeacher = computed(() => !!roleSwitchStore.parentToken)
-async function switchToTeacher() {
-  if (!await confirm('确定切换到教师端？')) return
-  roleSwitchStore.switchTo('teacher', auth.setAuth)
-  await auth.fetchMe()
-  router.push('/teacher')
-}
 
 const studentName = computed(() => me.value?.studentName || auth.user?.studentName || '')
 const className = computed(() => me.value?.className || '')
@@ -414,6 +439,10 @@ async function switchToKid(studentId: string) {
   if (studentId === activeKidId.value) return
   try {
     const result = await switchStudent(studentId)
+    // 切换孩子后刷新家长功能包（不同班级的家长可见功能可能不同）
+    if (Array.isArray(result.effectiveFeatures) && me.value) {
+      me.value = { ...me.value, effectiveFeatures: result.effectiveFeatures }
+    }
     auth.setAuth(result.token, auth.user!)
     const freshMe = await getParentMe()
     if (freshMe) {
@@ -613,13 +642,6 @@ function dismissSubscribe() {
       >
         <template #actions>
           <button
-            v-if="canSwitchToTeacher"
-            class="shrink-0 text-sm rounded-xl border border-mint-300 bg-mint-50 px-3 py-1.5 text-mint-700 hover:bg-mint-100 transition-colors flex items-center gap-1"
-            @click="switchToTeacher"
-          >
-            <Repeat class="w-3.5 h-3.5" /> 切换至教师端
-          </button>
-          <button
             class="shrink-0 text-sm rounded-xl border border-white/40 bg-surface/20 px-3 py-1.5 text-cocoa-800 hover:bg-surface/30"
             @click="showPwdModal = true"
           >⚙️ 修改密码</button>
@@ -650,7 +672,7 @@ function dismissSubscribe() {
 
     <template v-else>
       <!-- 今日需关注（置顶提醒卡） -->
-      <div v-if="reminders.length" class="rounded-2xl border-l-4 border-sakura-400 bg-surface p-4 shadow-softer">
+      <div v-if="reminders.length && (showNoticesSection || showHomeworkSection || showAttendanceSection)" class="rounded-2xl border-l-4 border-sakura-400 bg-surface p-4 shadow-softer">
         <div class="text-sm font-bold text-cocoa-900 mb-2 flex items-center gap-2">
           <Bell class="w-4 h-4 text-sakura-500" /> 今日需关注
           <span class="text-xs font-normal text-cocoa-400">{{ reminders.length }} 项</span>
@@ -664,17 +686,17 @@ function dismissSubscribe() {
 
       <!-- 概览卡片 -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
+        <div v-if="showNoticesSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Bell class="w-4 h-4 text-sakura-500" /> 待读通知</div>
           <div class="text-3xl font-bold text-cocoa-900">{{ pendingNotices }}</div>
           <div class="text-xs text-sakura-400 mt-1 flex items-center gap-0.5">查看通知 <ChevronRight class="w-3 h-3" /></div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickHomeworkCard">
+        <div v-if="showHomeworkSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickHomeworkCard">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-butter-500" /> 待完成作业</div>
           <div class="text-3xl font-bold text-cocoa-900">{{ pendingHomework }}</div>
           <div class="text-xs text-butter-500 mt-1 flex items-center gap-0.5">查看作业 <ChevronRight class="w-3 h-3" /></div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickExamCountCard">
+        <div v-if="showScoresSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickExamCountCard">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Sparkles class="w-4 h-4 text-mint-500" /> 最近考试</div>
           <div class="text-3xl font-bold text-cocoa-900">
             <template v-if="latestPct != null">{{ latestPct }}<span class="text-base font-semibold text-cocoa-400">%</span></template>
@@ -690,7 +712,7 @@ function dismissSubscribe() {
             <span class="text-mint-500 flex items-center gap-0.5">得分率详情 <ChevronRight class="w-3 h-3" /></span>
           </div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickRankCard">
+        <div v-if="showScoresSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickRankCard">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><TrendingUp class="w-4 h-4 text-sky2-500" /> 最新排名</div>
           <div class="text-3xl font-bold text-cocoa-900">
             <template v-if="latestExam && latestExam.classRank">第 {{ latestExam.classRank }} 名</template>
@@ -729,7 +751,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 作业（上移：家长最关心的待办） -->
-      <div v-if="homework.length > 0" id="parent-homework-section">
+      <div v-if="showHomeworkSection && homework.length > 0" id="parent-homework-section">
         <h2 class="section-title"><BookOpen class="w-5 h-5 text-butter-400" /> 作业</h2>
         <div class="space-y-3">
           <div v-for="h in (showAllHomework ? homework : homework.slice(0, 5))" :key="h.id" class="quick-card" :class="isHwOverdue(h) ? 'border-l-4 border-l-sakura-400' : ''">
@@ -752,7 +774,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 班级公告（上移） -->
-      <NoticeList :loading="loading" :notices="notices" @toggle-show-all="showAllNotices = !showAllNotices" />
+      <NoticeList v-if="showNoticesSection" :loading="loading" :notices="notices" @toggle-show-all="showAllNotices = !showAllNotices" />
 
       <!-- 消息订阅（弱化、可关闭） -->
       <div v-if="!subscribeDismissed && subscribeStatus !== 'done'" class="flex items-center gap-3 rounded-2xl border border-cream-200 bg-surface px-4 py-3">
@@ -773,14 +795,14 @@ function dismissSubscribe() {
       </div>
 
       <!-- 孩子在校健康度总览（彩色状态卡） -->
-      <div v-if="healthOverview.length" class="quick-card">
+      <div v-if="visibleHealth.length" class="quick-card">
         <div class="section-title">
           <Sparkles class="w-5 h-5 text-mint-400" />
           <h2>孩子在校健康度总览</h2>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           <button
-            v-for="h in healthOverview" :key="h.key"
+            v-for="h in visibleHealth" :key="h.key"
             class="flex flex-col items-center text-center gap-1.5 rounded-2xl border p-3 transition-all hover:shadow-md hover:-translate-y-0.5"
             :class="HEALTH_TONE_CLS[h.tone]"
             @click="scrollToSection(h.target)"
@@ -794,7 +816,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 每周小结 -->
-      <div v-if="weekSummary.has" class="quick-card">
+      <div v-if="weekSummary.has && (showAttendanceSection || showHomeworkSection)" class="quick-card">
         <div class="section-title">
           <CalendarCheck class="w-5 h-5 text-butter-400" />
           <h2>每周小结</h2>
@@ -825,6 +847,7 @@ function dismissSubscribe() {
 
       <!-- 成绩概览子组件 -->
       <GradeOverview
+        v-if="showScoresSection"
         :loading="loading"
         :exams="exams"
         :selected-exam="selectedExam"
@@ -842,7 +865,7 @@ function dismissSubscribe() {
       />
 
       <!-- 考勤看板 -->
-      <div v-if="attendance" id="parent-attendance-section">
+      <div v-if="attendance && showAttendanceSection" id="parent-attendance-section">
         <h2 class="section-title">
           <CalendarCheck class="w-5 h-5 text-mint-400" /> 考勤看板
         </h2>
@@ -886,12 +909,12 @@ function dismissSubscribe() {
       </div>
 
       <!-- 行为表现子组件 -->
-      <div id="parent-behavior-section">
+      <div v-if="hasPf('behavior')" id="parent-behavior-section">
         <BehaviorRecord :loading="loading" :behavior="behavior" />
       </div>
 
       <!-- 课表 & 值日 -->
-      <div v-if="schedule" id="parent-schedule-section">
+      <div v-if="schedule && showScheduleSection" id="parent-schedule-section">
         <h2 class="section-title">
           <CalendarCheck class="w-5 h-5 text-mint-400" /> 课表 &amp; 值日
         </h2>
@@ -955,7 +978,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 科任老师 -->
-      <div v-if="teachers.length">
+      <div v-if="showImSection && teachers.length">
         <h2 class="section-title">
           <UserCog class="w-5 h-5 text-mint-400" /> 科任老师
         </h2>
@@ -982,7 +1005,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 家校沟通 -->
-      <div v-if="communications" id="parent-comm-section">
+      <div v-if="communications && showImSection" id="parent-comm-section">
         <h2 class="section-title">
           <MessageCircle class="w-5 h-5 text-mint-400" /> 家校沟通
         </h2>
@@ -1021,7 +1044,7 @@ function dismissSubscribe() {
       </div>
 
       <!-- 空状态 -->
-      <div v-if="!notices.length && !exams.length && !homework.length && !attendance" class="empty-state">
+      <div v-if="!hasAnyVisibleData" class="empty-state">
         <div class="icon">🌟</div>
         <div class="title">欢迎来到家长中心</div>
         <div class="desc">老师尚未发布通知、作业或成绩，请稍后再来</div>

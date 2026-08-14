@@ -1,5 +1,5 @@
 import { Repository, FindOptionsWhere, In } from 'typeorm'
-import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common'
+import { HttpException, HttpStatus, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { BusinessException } from '../exceptions/business.exception'
 
@@ -122,12 +122,36 @@ export class CrudService<T extends { id: string; teacherId: string }> {
     if (missing.length) {
       throw new BusinessException('MISSING_REQUIRED_FIELD', '请完整填写必填项（缺少: ' + missing.join('、') + '）')
     }
+    // 班级维度实体：校验创建时指定的 classId 对当前教师可访问，防止跨班级写入数据越权
+    if (this.isClassScopedEntity() && this.classMemberSvc) {
+      const scopeField = this.classScopeField()
+      const newClassId = (dto as any)?.[scopeField]
+      if (newClassId) {
+        const canAccess = await this.classMemberSvc.canAccess(teacherId, newClassId)
+        if (!canAccess) {
+          throw new ForbiddenException('无权在该班级创建记录')
+        }
+      }
+    }
     const e = this.repo.create({ ...dto, teacherId } as any)
     return (await this.repo.save(e)) as unknown as T
   }
 
   async update(id: string, teacherId: string, dto: any): Promise<T> {
     const e = await this.findOne(id, teacherId)
+    // 班级归属校验：班级维度实体若在更新时尝试改动所属班级（classId），
+    // 且新班级不属于当前教师可访问范围，则拒绝，防止跨班级数据迁移越权。
+    if (this.isClassScopedEntity() && this.classMemberSvc) {
+      const scopeField = this.classScopeField()
+      const recordClassId = (e as any)[scopeField]
+      const newClassId = (dto as any)?.[scopeField]
+      if (newClassId && recordClassId && newClassId !== recordClassId) {
+        const canAccessNew = await this.classMemberSvc.canAccess(teacherId, newClassId)
+        if (!canAccessNew) {
+          throw new ForbiddenException('无权将记录迁移到其他班级')
+        }
+      }
+    }
     Object.assign(e, dto, { teacherId })
     return (await this.repo.save(e)) as unknown as T
   }

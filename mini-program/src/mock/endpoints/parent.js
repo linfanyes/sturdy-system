@@ -171,17 +171,6 @@ export const parentEndpoints = {
     return { ok: true, msg: '订阅成功' }
   },
 
-  'POST /parent-auth/activate-parent': (params) => {
-    return {
-      token: 'demo-parent-activate-token',
-      parentId: 'parent-001',
-      kids: [
-        { studentId: 'stu-1', studentName: '小明', studentNo: '2024001', classId: 'class-a' },
-        { studentId: 'stu-2', studentName: '小红', studentNo: '2024002', classId: 'class-b' },
-      ],
-    }
-  },
-
   'POST /parent-auth/bind-wechat': (params) => {
     return { ok: true, msg: '绑定成功' }
   },

@@ -32,7 +32,7 @@ export class GradesController extends CrudController<Grade> {
     return (this.service as GradesService).findAll(
       t.sub,
       classId,
-      Number(skip) || 0,
+      Math.max(0, Number(skip) || 0),
       n > 0 ? Math.min(n, 500) : 500,
       term,
       date,

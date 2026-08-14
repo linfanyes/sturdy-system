@@ -91,17 +91,18 @@
         <button class="imp" @click="showAllImport = !showAllImport">{{ showAllImport ? '收起导入' : '📥 批量导入全部科目' }}</button>
 
         <view v-if="showAllImport" class="import-box">
-          <view class="imp-tip">矩阵文件：首行表头为「学号,姓名,科目1,科目2,…」，每行一个学生。科目列名需与本次考试的科目一致。可先下载模板。</view>
+          <view class="imp-tip">矩阵文件：首行表头为「学号,姓名,科目1,科目2,…」，每行一个学生。科目列名需与本次考试的科目一致。支持 TXT/CSV（UTF-8）文本文件，Excel 请另存为 CSV 后导入。可先下载模板。</view>
           <view class="imp-btns">
             <button class="pick" @click="pickAllFile">📂 选择文件</button>
             <button class="tpl" @click="downloadAllTemplate">📋 下载模板</button>
           </view>
           <view v-if="allPreview" class="preview">
-            <view class="pv-sum">校验：<text class="ok">有效 {{ allPreview.validCount }}</text> · <text class="bad">异常 {{ allPreview.errorCount }}</text> / 共 {{ allPreview.total }} 单元格</view>
-            <view v-if="allPreview.errorCount" class="pv-errs">
-              <view v-for="(r, i) in allPreview.errors.slice(0, 8)" :key="i" class="pv-err">{{ r }}</view>
+            <view class="pv-sum">校验：<text class="ok">有效 {{ allPreview.valid }}</text> · <text class="bad">异常 {{ allPreview.error }}</text> / 共 {{ allPreview.total }} 单元格</view>
+            <view class="pv-file" v-if="allPreview.filename">文件：{{ allPreview.filename }}</view>
+            <view v-if="allPreview.unmatched && allPreview.unmatched.length" class="pv-errs">
+              <view v-for="(r, i) in allPreview.unmatched.slice(0, 8)" :key="i" class="pv-err">未匹配：{{ r }}</view>
             </view>
-            <button class="confirm" :disabled="!allPreview.validCount" @click="commitAll">确认导入 {{ allPreview.validCount }} 条</button>
+            <button class="confirm" :disabled="!allPreview.valid || importingAll" @click="commitAll">{{ importingAll ? '导入中…' : '确认导入 ' + allPreview.valid + ' 格' }}</button>
           </view>
         </view>
       </block>
@@ -114,7 +115,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import EmptyState from '@/components/EmptyState/EmptyState.vue'
 import { isScore } from '../../../common/validators'
 import {
-  getGrades, saveGrade, mergeGrades, importGradesPreview, importGradesCommit,
+  getGrades, mergeGrades, importGradesPreview, importGradesCommit,
   removeGrade as removeGradeApi,
 } from '@/api/grades'
 import { getTeacherSubjects } from '../../../common/subject-schema'
@@ -147,16 +148,17 @@ const props = defineProps({
   allFilledSubjects: { type: Number, default: 0 },
   savingAll: { type: Boolean, default: false },
   showAllImport: { type: Boolean, default: false },
-  allPreview: { type: Object, default: null },
 })
 
 const emit = defineEmits([
   'show-analysis', 'score-input', 'reload',
-  'matrix-input', 'toggle-all-import',
+  'matrix-input', 'toggle-all-import', 'matrix-import',
 ])
 
 const showImport = ref(false)
 const preview = ref(null)
+const allPreview = ref(null)
+const importingAll = ref(false)
 
 // 单科录入长列表虚拟滚动：分页 + scroll-view
 const GRADE_PAGE_SIZE = 20
@@ -179,17 +181,29 @@ async function saveManual() {
   const exam = props.exams.find((e) => e.id === props.examId)
   const fullScore = (exam && (exam.subjectFullScores || {})[props.subject]) || (exam && exam.fullScore) || 100
   const sc = []
-  props.students.forEach((s) => {
+  for (const s of props.students) {
     const v = (props.scores[s.id] || '').trim()
-    if (v !== '') {
-      const n = Number(v)
-      if (isNaN(n)) return uni.showToast({ title: `${s.name} 分数不是数字`, icon: 'none' })
-      if (!isScore(n, fullScore)) return uni.showToast({ title: `${s.name} 分数应为 0-${fullScore}`, icon: 'none' })
-      sc.push({ studentId: s.id, score: n })
-    }
-  })
+    if (v === '') continue
+    const n = Number(v)
+    if (isNaN(n)) return uni.showToast({ title: `${s.name} 分数不是数字`, icon: 'none' })
+    if (!isScore(n, fullScore)) return uni.showToast({ title: `${s.name} 分数应为 0-${fullScore}`, icon: 'none' })
+    sc.push({ studentId: s.id, score: n })
+  }
   if (!sc.length) return uni.showToast({ title: '请至少录入一个分数', icon: 'none' })
-  emit('reload')
+  uni.showLoading({ title: '保存中…', mask: true })
+  try {
+    // 幂等合并：同班级/同考试/同科目重复保存=更新，不产生重复记录（与 web 端 importGradesCommit 行为一致）
+    const r = await mergeGrades({
+      classId: props.classId, examName: props.examName, examId: props.examId,
+      subject: props.subject, date: props.date, scores: sc,
+    })
+    uni.showToast({ title: r?.created ? '已保存' : '已更新', icon: 'success' })
+    emit('reload')
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e?.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
 }
 
 /* ===== 单科删除 ===== */
@@ -285,8 +299,16 @@ function downloadAllTemplate() {
   uni.setClipboardData({ data: csv, success: () => uni.showToast({ title: '模板已复制到剪贴板，可粘贴到 Excel', icon: 'none' }) })
 }
 
+function readAsText(path) {
+  return new Promise((resolve, reject) => {
+    wx.getFileSystemManager().readFile({ filePath: path, encoding: 'utf8', success: (r) => resolve(String(r.data || '')), fail: reject })
+  })
+}
+
 async function pickAllFile() {
   if (!props.examId) return uni.showToast({ title: '请先选择考试', icon: 'none' })
+  if (!props.classId) return uni.showToast({ title: '请先选择班级', icon: 'none' })
+  if (!props.matrixSubjects.length) return uni.showToast({ title: '该考试未设置科目，请先在考试设置中添加科目', icon: 'none' })
   uni.chooseMessageFile({
     count: 1, type: 'file', extension: ['xlsx', 'xls', 'txt', 'csv'],
     success: async (res) => {
@@ -294,8 +316,67 @@ async function pickAllFile() {
       if (f.size > 5 * 1024 * 1024) return uni.showToast({ title: '文件不能超过 5MB', icon: 'none' })
       uni.showLoading({ title: '解析中…' })
       try {
-        const data = await readAsBase64(f.path)
-        emit('toggle-all-import')
+        const text = await readAsText(f.path)
+        const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+        if (lines.length < 2) {
+          uni.showToast({ title: '文件至少需包含表头行和一行数据', icon: 'none' })
+          return
+        }
+        const header = lines[0].split(/[,，\t]+/).map(c => c.trim())
+        const subjects = props.matrixSubjects
+        const noCol = Math.max(header.findIndex(h => h === '学号'), header.findIndex(h => /student\s*no/i.test(h)))
+        const nameCol = Math.max(header.findIndex(h => h === '姓名'), header.findIndex(h => /^name$/i.test(h)))
+        const keyCol = noCol >= 0 ? noCol : nameCol
+        if (keyCol < 0) {
+          uni.showToast({ title: '未找到「学号」或「姓名」列，请使用下载的模板', icon: 'none' })
+          return
+        }
+
+        const subCols = []
+        for (const sub of subjects) {
+          const idx = header.findIndex(h => h === sub)
+          if (idx >= 0) subCols.push({ subject: sub, idx })
+        }
+        if (!subCols.length) {
+          uni.showToast({ title: `表头中未匹配到任何考试科目（${subjects.join('、')}），请使用下载的模板，科目列名需与考试设置一致`, icon: 'none' })
+          return
+        }
+
+        const errorCells = []
+        const unmatched = []
+        let valid = 0
+        let total = 0
+        for (let i = 1; i < lines.length; i++) {
+          const cells = lines[i].split(/[,，\t]+/).map(c => c.trim())
+          if (cells.length <= keyCol) continue
+          const key = cells[keyCol]
+          const student = props.matrixStudents.find(s => (noCol >= 0 ? s.studentNo === key : s.name === key))
+            || props.matrixStudents.find(s => s.studentNo === key || s.name === key)
+          if (!student) {
+            unmatched.push(`第${i + 1}行: ${key}`)
+            continue
+          }
+          total++
+          for (const { subject, idx } of subCols) {
+            const raw = cells[idx] ?? ''
+            if (raw === '') continue
+            if (Number.isNaN(Number(raw))) {
+              errorCells.push(`${student.name}·${subject}`)
+              continue
+            }
+            valid++
+            onMatrixInput(student.id, subject, raw)
+          }
+        }
+        allPreview.value = {
+          filename: f.name,
+          valid,
+          error: errorCells.length + unmatched.length,
+          total: total * subCols.length,
+          unmatched: unmatched.concat(errorCells.map(e => '分数无效：' + e)),
+        }
+        if (!valid) uni.showToast({ title: '没有可导入的有效分数', icon: 'none' })
+        else uni.showToast({ title: `解析完成，共 ${valid} 格有效，点击确认导入`, icon: 'none' })
       } catch (e) { uni.showToast({ title: '解析失败：' + (e.message || '文件格式错误'), icon: 'none' }) }
       finally { uni.hideLoading() }
     },
@@ -303,8 +384,90 @@ async function pickAllFile() {
   })
 }
 
-async function saveAll() { emit('reload') }
-async function commitAll() { emit('reload') }
+async function saveAll() {
+  if (props.savingAll) return
+  if (!props.classId || !props.examName)
+    return uni.showToast({ title: '请先选择班级/考试', icon: 'none' })
+  if (!props.date) return uni.showToast({ title: '请填写日期', icon: 'none' })
+  // 按科目汇总矩阵中的有效分数（缺考留空跳过）
+  const bySubject = {}
+  for (const s of props.matrixStudents) {
+    for (const sub of props.matrixSubjects) {
+      const v = ((props.matrix[s.id] && props.matrix[s.id][sub]) || '').toString().trim()
+      if (v === '') continue
+      const n = Number(v)
+      if (isNaN(n)) return uni.showToast({ title: `${s.name}·${sub} 分数不是数字`, icon: 'none' })
+      if (!isScore(n, 100)) return uni.showToast({ title: `${s.name}·${sub} 分数应为 0-100`, icon: 'none' })
+      if (!bySubject[sub]) bySubject[sub] = []
+      bySubject[sub].push({ studentId: s.id, score: n })
+    }
+  }
+  const subs = Object.keys(bySubject)
+  if (!subs.length) return uni.showToast({ title: '请至少录入一个分数', icon: 'none' })
+  uni.showLoading({ title: '保存中…', mask: true })
+  try {
+    let created = 0
+    let updated = 0
+    // 逐科幂等合并（与 web 端全部科目录入逐科 importGradesCommit 行为一致）
+    for (const sub of subs) {
+      const r = await mergeGrades({
+        classId: props.classId, examName: props.examName, examId: props.examId,
+        subject: sub, date: props.date, scores: bySubject[sub],
+      })
+      if (r?.created) created++
+      else updated++
+    }
+    uni.showToast({ title: `已保存 ${subs.length} 科（新增${created}·更新${updated}）`, icon: 'success' })
+    emit('reload')
+  } catch (e) {
+    uni.showToast({ title: '保存失败：' + (e?.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+async function commitAll() {
+  if (importingAll.value) return
+  const subjects = props.matrixSubjects
+  if (!subjects.length) return uni.showToast({ title: '该考试未设置科目', icon: 'none' })
+  if (!props.classId || !props.examName) return uni.showToast({ title: '请先选择班级/考试', icon: 'none' })
+  importingAll.value = true
+  uni.showLoading({ title: '导入中…', mask: true })
+  let committed = 0
+  const failed = []
+  try {
+    // 逐科幂等提交（与 web 端全部科目录入逐科 importGradesCommit 行为一致）
+    for (const subject of subjects) {
+      const rows = props.matrixStudents.map((s) => {
+        const raw = (props.matrix[s.id] && props.matrix[s.id][subject] != null)
+          ? String(props.matrix[s.id][subject]).trim() : ''
+        const score = raw === '' ? null : Number(raw)
+        return { studentId: s.id, name: s.name, studentNo: s.studentNo || '', score, valid: true }
+      })
+      try {
+        await importGradesCommit({
+          classId: props.classId, examName: props.examName, examId: props.examId,
+          subject, date: props.date, rows,
+        })
+        committed++
+      } catch (e) {
+        failed.push(`${subject}: ${e?.message || '失败'}`)
+      }
+    }
+    if (failed.length) {
+      uni.showToast({ title: `已保存 ${committed}/${subjects.length} 科，失败：${failed.join('；')}`, icon: 'none', duration: 3000 })
+    } else {
+      uni.showToast({ title: `已全部保存：${committed} 个科目`, icon: 'success' })
+    }
+    allPreview.value = null
+    emit('toggle-all-import')
+    emit('reload')
+  } catch (e) {
+    uni.showToast({ title: '导入失败：' + (e?.message || '请重试'), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+    importingAll.value = false
+  }
+}
 
 function showScoreCard(s) { emit('show-analysis') }
 function shareStudent(s) { emit('share-student', s) }

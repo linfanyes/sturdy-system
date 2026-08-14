@@ -145,6 +145,9 @@ instance.interceptors.response.use(
         '/parent-auth/login',
       ].some((p) => urlCheck.includes(p))
       if (!isLoginApi) {
+        // 仅「真·会话失效」文案才清除登录态（正则见 shared/utils/security.ts）。
+        // 注意：后端 JwtAuthGuard 对"角色不匹配"也返回 401 '权限不足'，但那是伪·会话失效，
+        // 不应登出；精确文案判定可避免无权限请求把用户误踢回登录页。
         const msgText = typeof err.response?.data?.message === 'string' ? err.response.data.message : ''
         if (isSessionInvalid(msgText)) {
           await handleUnauthorized()

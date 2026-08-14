@@ -11,8 +11,6 @@
  *   parent       → g_parent_token / g_parent_user（家长身份）
  *   teacher      → g_token / g_user（教师身份）
  *
- * 【家长双身份】通过 shared machine 的 multiRole 快照 + switchRole 支持。
- *
  * 【与 store.js 的关系】
  * 本文件仅暴露 machine 实例；reactive 绑定（machine → auth 对象）在 store.js 中注册，
  * 避免循环依赖（store 依赖 machine，machine 不应依赖 store）。
@@ -115,15 +113,6 @@ async function loginFn(creds) {
   const username = creds.username || creds.studentNo || ''
   const password = creds.password || ''
   const res = await api.post('/auth/unified-login', { username, password })
-  // 师兼家（needsRoleChoice）：先返回 teacher 角色
-  if (res && res.needsRoleChoice) {
-    return {
-      token: res.teacher ? res.teacher.token : '',
-      user: res.teacher
-        ? res.teacher.user || { id: '', role: 'teacher', name: '' }
-        : { id: '', role: 'teacher', name: '' },
-    }
-  }
   let user
   switch (res.role) {
     case 'super':

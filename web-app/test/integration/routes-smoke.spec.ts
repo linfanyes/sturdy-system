@@ -27,20 +27,6 @@ jest.mock('@/stores/auth', () => ({
   }),
 }))
 
-// roleSwitch store 未在此测试安装 pinia，需要与 auth 一样做模块级 mock
-jest.mock('@/stores/roleSwitch', () => ({
-  useRoleSwitchStore: () => ({
-    teacherToken: '',
-    parentToken: '',
-    teacherUser: null,
-    parentUser: null,
-    currentRole: null,
-    setTokens: jest.fn(),
-    switchTo: jest.fn(),
-    clear: jest.fn(),
-  }),
-}))
-
 /* ---------- 收集所有叶子路由（页面组件） ---------- */
 interface Leaf { path: string; name?: string; component: any; props?: any }
 function collectLeaves(rs: RouteRecordRaw[], prefix = '', acc: Leaf[] = []): Leaf[] {

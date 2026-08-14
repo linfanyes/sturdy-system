@@ -1,7 +1,7 @@
 /**
  * 交互体验测试：统一登录页（UX-LOGIN-xx）
  * 覆盖：渲染、表单校验、密码可见性、大写锁定提示、历史账号、忘记密码引导、
- *       角色跳转、双角色选择、个性化折叠区。
+ *       角色跳转、个性化折叠区。
  */
 import { mount, flushPromises } from '@vue/test-utils'
 import Login from '@/views/Login.vue'
@@ -9,10 +9,8 @@ import Login from '@/views/Login.vue'
 jest.mock('lucide-vue-next', () => new Proxy({}, { get: () => ({ template: '<span class="icon" />' }) }))
 
 const unifiedLogin = jest.fn()
-const buildParentUser = jest.fn((p: any) => ({ role: 'parent', ...(p?.parent || p || {}) }))
 jest.mock('@/api/auth', () => ({
   unifiedLogin: (...a: any[]) => unifiedLogin(...a),
-  buildParentUser: (...a: any[]) => buildParentUser(...a),
 }))
 
 const mockAuth: any = {
@@ -26,9 +24,6 @@ const mockAuth: any = {
 }
 jest.mock('@/stores/auth', () => ({ useAuthStore: () => mockAuth }))
 
-const mockRoleSwitch = { setTokens: jest.fn() }
-jest.mock('@/stores/roleSwitch', () => ({ useRoleSwitchStore: () => mockRoleSwitch }))
-
 const push = jest.fn()
 jest.mock('vue-router', () => ({
   useRouter: () => ({ push }),
@@ -41,9 +36,7 @@ describe('UX-LOGIN 登录页交互体验', () => {
   beforeEach(() => {
     localStorage.clear()
     unifiedLogin.mockReset()
-    buildParentUser.mockClear()
     mockAuth.setAuth.mockClear()
-    mockRoleSwitch.setTokens.mockReset()
     mockAuth.role = null
     mockAuth.user = null
     push.mockReset()
@@ -119,24 +112,6 @@ describe('UX-LOGIN 登录页交互体验', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('用户名或密码错误')
     expect(push).not.toHaveBeenCalled()
-  })
-
-  it('UX-LOGIN-08 师兼家账号弹出身份选择，选家长进入家长端', async () => {
-    unifiedLogin.mockResolvedValueOnce({
-      needsRoleChoice: true,
-      teacher: { token: 'tt', user: { role: 'teacher', name: 'T' } },
-      parent: { token: 'pp', parent: { id: 'p1' }, studentName: '小明' },
-    })
-    await inputs()[0].setValue('dual')
-    await inputs()[1].setValue('pwd')
-    await wrapper.find('form').trigger('submit')
-    await flushPromises()
-    expect(wrapper.text()).toContain('选择登录身份')
-    const parentBtn = wrapper.findAll('button').find((b) => b.text().includes('以家长身份进入'))
-    await parentBtn!.trigger('click')
-    await flushPromises()
-    expect(mockRoleSwitch.setTokens).toHaveBeenCalledWith(expect.objectContaining({ teacherToken: 'tt', parentToken: 'pp', initialRole: 'parent' }))
-    expect(push).toHaveBeenCalledWith('/parent')
   })
 
   it('UX-LOGIN-10 旧版对象格式历史账号自动兼容（边界）', async () => {

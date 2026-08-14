@@ -436,10 +436,10 @@ export function registerEdgeCases(baseUrl: string, seed: SeedResult) {
     assert(me.status < 300, `me 端点失败 ${me.status}`)
   })
 
-  addCase('EDGE-PAR-10', 'parent', '师兼长用家长身份越权访问', async () => {
+  addCase('EDGE-PAR-10', 'parent', '教师子女家长身份越权访问', async () => {
     const tp = seed.teacherAsParent[0]
-    assert(tp, '师兼长记录缺失')
-    // 以家长身份登录（师兼长的孩子）
+    assert(tp, '教师子女家长记录缺失')
+    // 以家长身份登录（教师子女的学号）
     const t = await pTok(tp.studentNo)
     // 尝试访问不属于自己孩子的数据
     // 获取一个无关学生的ID

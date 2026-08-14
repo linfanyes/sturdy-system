@@ -276,7 +276,7 @@ export function registerNavigationCases(baseUrl: string, seed: SeedResult) {
 
   /* ================= 角色切换导航 ================= */
 
-  addCase('NAV-ROLE-01', 'navigation', '同一账号角色切换：教师→家长（师兼长场景）', async () => {
+  addCase('NAV-ROLE-01', 'navigation', '教师与子女家长双入口独立登录导航', async () => {
     // 教师登录
     const tLg = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 5), password: TEACHER_PASS } })
     assert(tLg.status < 300, `教师登录失败 ${tLg.status}`)
@@ -287,7 +287,7 @@ export function registerNavigationCases(baseUrl: string, seed: SeedResult) {
     const classes = await http('GET', api('/classes'), { token: tTok })
     assert(classes.status < 300, '教师访问班级失败')
 
-    // 家长身份：用孩子学号登录
+    // 家长身份：用孩子学号独立登录
     const pLg = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 2, 3, 60), password: PARENT_PASS } })
     assert(pLg.status < 300, `家长登录失败 ${pLg.status}`)
     assertEq(pLg.body.role, 'parent', '家长角色')

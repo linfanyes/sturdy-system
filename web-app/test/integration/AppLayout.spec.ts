@@ -22,17 +22,18 @@ jest.mock('@/stores/auth', () => ({
   }),
 }))
 
-// roleSwitch store：测试未安装 pinia，模块级 mock（与 auth mock 对齐）
-jest.mock('@/stores/roleSwitch', () => ({
-  useRoleSwitchStore: () => ({
-    teacherToken: '',
-    parentToken: '',
-    teacherUser: null,
-    parentUser: null,
-    currentRole: null,
-    setTokens: jest.fn(),
-    switchTo: jest.fn(),
-    clear: jest.fn(),
+// prefs store：Navbar 主题切换依赖它，测试未安装 pinia，模块级 mock
+jest.mock('@/stores/prefs', () => ({
+  usePrefsStore: () => ({
+    theme: 'light',
+    density: 'default',
+    sidebarCollapsed: false,
+    accentColor: 'butter',
+    fontSize: 'md',
+    recentExams: [],
+    toggleTheme: jest.fn(),
+    addRecentExam: jest.fn(),
+    clearRecentExams: jest.fn(),
   }),
 }))
 

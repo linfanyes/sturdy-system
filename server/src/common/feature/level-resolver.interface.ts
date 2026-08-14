@@ -30,4 +30,11 @@ export interface FeatureContext {
   teacherFeatures?: string[] | null
   /** 家长端选中孩子的 studentId（用于解析其教师） */
   studentId?: string
+  /**
+   * 班主任显式指定的班级家长功能包。
+   * - undefined → 未配置，跟随默认（班级教师功能并集 ∩ 学校级）
+   * - []        → 班主任关闭家长端全部功能
+   * - 非空数组  → 家长仅可见该数组中的功能包（学校级仍可进一步收窄）
+   */
+  parentOverrideFeatures?: string[]
 }

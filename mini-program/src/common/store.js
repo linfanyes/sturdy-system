@@ -155,6 +155,21 @@ export const parent = reactive({
 })
 
 export function setParent(token, user) {
+  // 缺陷修复：家长身份也通过 shared machine 写入（强制 role='parent'）。
+  // 此前绕过 machine 且 user 无 role，getToken()/冷启动恢复与家长实际令牌失步。
+  // 注意：makeWxPersistence 的 saveLogin 按 role 决定 storage key，role 缺失会误写教师 key。
+  try {
+    authMachine.adopt({
+      token,
+      user: {
+        ...(user && typeof user === 'object' ? user : {}),
+        id: String((user && (user.imUserId || user.parentId || user.id)) || 'parent'),
+        role: 'parent',
+      },
+    })
+  } catch {
+    // adopt 失败（如缺 id）时回退原逻辑，不阻塞登录
+  }
   parent.token = token
   parent.user = user
   uni.setStorageSync(PARENT_TOKEN_KEY, token)
@@ -256,6 +271,14 @@ export function getToken() {
 }
 
 export function setAuth(token, user) {
+  // 缺陷修复：通过 shared machine 写入，保持 machine / reactive / localStorage 三方一致。
+  // 此前直接写 localStorage 和 reactive 但绕过 machine，导致 authMachine.token 过时，
+  // 而 getToken() 优先读 machine，可能返回前一个令牌。
+  try {
+    authMachine.adopt({ token, user: { ...user, id: String(user?.id) } })
+  } catch {
+    // adopt 失败（如缺 id）时回退原逻辑，不阻塞登录
+  }
   auth.token = token
   auth.user = user
   uni.setStorageSync(TOKEN_KEY, token)
@@ -268,6 +291,28 @@ export function setUser(user) {
   // 自动从 user 对象提取管理员配置的功能权限
   if (user && Array.isArray(user.features)) auth.features = user.features
   uni.setStorageSync(USER_KEY, user)
+}
+
+/**
+ * 超管/校管登录：通过 shared machine 写入（makeWxPersistence 按角色分 key 持久化，
+ * super → admin_token/admin_user，school_admin → sa_token/sa_user），
+ * 使 machine / reactive / storage 三方一致。
+ *
+ * 缺陷修复：此前 login.vue 直接写 token key 并绕过 machine，导致：
+ *   1) authMachine.token 过时（getToken() 优先读 machine，可能返回前一个角色令牌）；
+ *   2) 超管未写 admin_user，冷启动 authMachine.restore() 的 loadLogin 要求
+ *      admin_token 与 admin_user 同时存在，超管会话无法被状态机恢复。
+ */
+export function setRoleAuth(token, user, role) {
+  const base = user && typeof user === 'object' ? user : {}
+  const u = { ...base, id: String(base.id || (role === 'super' ? 'super' : '') || ''), role }
+  try {
+    authMachine.adopt({ token, user: u })
+  } catch {
+    // adopt 失败（如缺 id）时回退原逻辑，不阻塞登录
+  }
+  auth.token = token
+  auth.user = u
 }
 
 /**

@@ -37,7 +37,7 @@
         :matrix-has-prev="matrixHasPrev" :matrix-has-next="matrixHasNext"
         :matrix="matrix"
         :all-filled-count="allFilledCount" :all-filled-subjects="allFilledSubjects"
-        :saving-all="savingAll" :show-all-import="showAllImport" :all-preview="allPreview"
+        :saving-all="savingAll" :show-all-import="showAllImport"
         @show-analysis="showAnalysis = true"
         @score-input="(e) => (scores[e.studentId] = e.value)"
         @reload="reloadGrades"
@@ -168,7 +168,6 @@ const MATRIX_PAGE_SIZE = 20
 const matrix = reactive({})
 const savingAll = ref(false)
 const showAllImport = ref(false)
-const allPreview = ref(null)
 
 const matrixSlice = computed(() => {
   const start = matrixPage.value * MATRIX_PAGE_SIZE

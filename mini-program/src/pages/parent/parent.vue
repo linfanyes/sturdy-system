@@ -34,22 +34,22 @@
 
     <!-- 顶部统计卡片 -->
     <view class="stats-row" v-if="!loading">
-      <view class="stat-card clickable" @tap="tab = 'pending'">
+      <view v-if="hasPf('notices')" class="stat-card clickable" @tap="tab = 'pending'">
         <view class="stat-label">📢 待读通知</view>
         <view class="stat-value">{{ stats.notices }}</view>
       </view>
-      <view class="stat-card clickable" @tap="tab = 'pending'">
+      <view v-if="hasPf('homework')" class="stat-card clickable" @tap="tab = 'pending'">
         <view class="stat-label">📝 待完成作业</view>
         <view class="stat-value">{{ stats.homework }}</view>
       </view>
-      <view class="stat-card clickable" @tap="tab = 'scores'">
+      <view v-if="hasPf('grades') || hasPf('analysis')" class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">📊 最近考试</view>
         <view class="stat-value">{{ stats.pct }}</view>
         <view v-if="stats.pctDelta != null && stats.pctDelta !== 0" class="stat-delta" :class="stats.pctDelta > 0 ? 'up' : 'down'">
           较上次 {{ stats.pctDelta > 0 ? '+' : '' }}{{ stats.pctDelta }}%
         </view>
       </view>
-      <view class="stat-card clickable" @tap="tab = 'scores'">
+      <view v-if="hasPf('grades') || hasPf('analysis')" class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">🏆 最新排名</view>
         <view class="stat-value">{{ stats.rank }}</view>
         <view v-if="stats.rankDelta != null && stats.rankDelta !== 0" class="stat-delta" :class="stats.rankDelta > 0 ? 'up' : 'down'">
@@ -60,9 +60,9 @@
 
     <!-- Tab 切换 -->
     <view class="tabs">
-      <text class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">📋 待办公告</text>
-      <text class="tab" :class="{ on: tab === 'scores' }" @click="tab = 'scores'">📊 成绩查询</text>
-      <text class="tab" :class="{ on: tab === 'attendance' }" @click="tab = 'attendance'">📈 考勤</text>
+      <text v-if="showPendingTab" class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">📋 待办公告</text>
+      <text v-if="showScoresTab" class="tab" :class="{ on: tab === 'scores' }" @click="tab = 'scores'">📊 成绩查询</text>
+      <text v-if="showAttendanceTab" class="tab" :class="{ on: tab === 'attendance' }" @click="tab = 'attendance'">📈 考勤</text>
       <text class="tab" :class="{ on: tab === 'textbook' }" @click="tab = 'textbook'; loadTextbooks()">📚 教材</text>
       <text class="tab" :class="{ on: tab === 'overview' }" @click="tab = 'overview'">💡 总览</text>
     </view>
@@ -271,7 +271,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { theme, parent, logoutParent } from '../../common/store'
+import { theme, parent, logoutParent, setParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 import KidList from './components/KidList.vue'
 import ScoreView from './components/ScoreView.vue'
@@ -283,6 +283,23 @@ import TextbookPanel from './components/TextbookPanel.vue'
 const dark = computed(() => theme.mode === 'dark')
 const tab = ref('pending')
 const showSubscribeGuide = ref(true)
+
+/**
+ * 家长功能包判定（班主任可在班级里配置家长可见功能）。
+ * - 未携带功能包（undefined/非数组，旧会话）→ 不限制，全部可见
+ * - 空数组 → 班主任关闭该班家长全部功能
+ * - 非空数组 → 仅开放数组内功能
+ * 安全边界以后端为准。
+ */
+function hasPf(key) {
+  const f = parent.user && parent.user.effectiveFeatures
+  if (!Array.isArray(f)) return true
+  if (f.length === 0) return false
+  return f.indexOf(key) >= 0
+}
+const showPendingTab = computed(() => hasPf('notices') || hasPf('homework'))
+const showScoresTab = computed(() => hasPf('grades') || hasPf('analysis'))
+const showAttendanceTab = computed(() => hasPf('attendance') || hasPf('behavior') || hasPf('schedule') || hasPf('duty') || hasPf('im'))
 
 async function subscribeGuide() {
   try {
@@ -442,7 +459,17 @@ async function switchToKid(studentId) {
   try {
     const res = await parentApi.post('/parent-auth/switch-student', { studentId })
     const data = res.data || res
-    if (data.token) { parent.token = data.token; me.value = null; load() }
+    if (data.token) {
+      // 缺陷修复：切换孩子后通过 setParent 持久化新令牌 g_parent_token + 更新 machine。
+      // 此前仅写内存 parent.token 不持久化，后续 parentApi 请求仍用旧令牌（从 storage 读），
+      // 冷启动后也恢复为旧令牌→旧孩子。
+      const userPatch = Array.isArray(data.effectiveFeatures)
+        ? { ...(parent.user || {}), effectiveFeatures: data.effectiveFeatures }
+        : parent.user
+      setParent(data.token, userPatch)
+      if (Array.isArray(data.effectiveFeatures)) parent.user = { ...(parent.user || {}), effectiveFeatures: data.effectiveFeatures }
+      me.value = null; load()
+    }
   } catch (e) { uni.showToast({ title: '切换失败', icon: 'error' }) }
   finally { uni.hideLoading() }
 }
@@ -545,6 +572,15 @@ async function load() {
     me.value = meResult.value
     kids.value = (meResult.value && meResult.value.kids) || []
     activeKidId.value = meResult.value?.studentId || ''
+    // 家长功能包：/parent-auth/me 返回当前孩子的有效功能，驱动页面显隐
+    if (meResult.value && Array.isArray(meResult.value.effectiveFeatures)) {
+      parent.user = { ...(parent.user || {}), effectiveFeatures: meResult.value.effectiveFeatures }
+    }
+    // 当前 Tab 被班主任关闭时回退到「总览」
+    const cur = tab.value
+    if ((cur === 'pending' && !showPendingTab.value) || (cur === 'scores' && !showScoresTab.value) || (cur === 'attendance' && !showAttendanceTab.value)) {
+      tab.value = 'overview'
+    }
   }
   if (edata.status === 'fulfilled') exams.value = (edata.value && edata.value.exams) || []
   if (ns.status === 'fulfilled') notices.value = Array.isArray(ns.value) ? ns.value : []

@@ -16,4 +16,6 @@ export class ClassItem extends BaseEntity {
   @Column('simple-json', { nullable: true }) subjects: string[]
   @Column('simple-json', { nullable: true }) subjectTeachers: Record<string, string>
   @Column({ default: '' }) imGroupId: string
+  /** 家长功能包：null/undefined=跟随默认（班级教师功能并集 ∩ 学校级）；非空数组=班主任显式指定的家长可见功能 */
+  @Column('simple-json', { nullable: true }) parentFeatures: string[] | null
 }

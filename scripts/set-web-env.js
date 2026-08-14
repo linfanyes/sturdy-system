@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG_PATH = path.resolve(__dirname, '..', 'web-app', 'public', 'config.js');
-const CLOUD_URL = 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api';
+const CLOUD_URL = 'https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api/v1';
 
 const mode = (process.argv[2] || '').toLowerCase();
 if (mode !== 'cloud' && mode !== 'local') {

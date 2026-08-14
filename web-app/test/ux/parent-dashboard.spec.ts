@@ -21,8 +21,8 @@ function resetApi(over: Record<string, any> = {}) {
     studentId: 'st1', studentName: '张小宝', className: '一年级(1)班', parentName: '张大宝',
     kids: [{ studentId: 'st1', studentName: '张小宝', studentNo: 'S01', classId: 'c1' }],
     studentInfo: { parentName: '张大宝', parentPhone: '13800000002', address: '武汉', birthDate: '2018-01-01' },
-  }
-  apiState.notices = ('notices' in over ? over.notices : [{ id: 'n1', title: '家长会通知', content: '请准时参加', pinned: true, createdAt: today }]
+  })
+  apiState.notices = ('notices' in over ? over.notices : [{ id: 'n1', title: '家长会通知', content: '请准时参加', pinned: true, createdAt: today }])
   apiState.exams = ('exams' in over ? over.exams : {
     exams: [
       {
@@ -42,12 +42,12 @@ function resetApi(over: Record<string, any> = {}) {
         ],
       },
     ],
-  }
+  })
   apiState.homework = ('homework' in over ? over.homework : [
     { id: 'h1', subject: '语文', title: '背诵古诗', content: '背诵《静夜思》', startDate: yesterday, deadline: yesterday, status: '待批改' },
     { id: 'h2', subject: '数学', title: '口算练习', content: '口算天天练 P35', startDate: today, deadline: today, status: '待批改' },
     { id: 'h3', subject: '英语', title: '朗读打卡', content: '跟读 Unit 3', startDate: today, deadline: inTwoDays, status: '已批改' },
-  ]
+  ])
   apiState.attendance = ('attendance' in over ? over.attendance : {
     total: 12,
     summary: { reading: 5, sport: 3, behavior: 2, homework: 2 },
@@ -56,7 +56,7 @@ function resetApi(over: Record<string, any> = {}) {
       { id: 'a2', type: 'sport', date: yesterday, count: 1, note: '迟到一次' },
     ],
     byMonth: [{ month: thisMonth, count: 12 }],
-  }
+  })
   apiState.behavior = ('behavior' in over ? over.behavior : {
     total: 3,
     summary: { praise: 2, violation: 1, other: 0 },
@@ -65,7 +65,7 @@ function resetApi(over: Record<string, any> = {}) {
       { id: 'b2', behavior: '课间奔跑', category: 'violation', date: yesterday, note: '已提醒' },
     ],
     byMonth: [{ month: thisMonth, count: 3 }],
-  }
+  })
   const dowToday = ((new Date().getDay() + 6) % 7) + 1
   const dowTomorrow = (dowToday % 7) + 1
   apiState.schedule = ('schedule' in over ? over.schedule : {
@@ -74,15 +74,15 @@ function resetApi(over: Record<string, any> = {}) {
       { dayOfWeek: dowTomorrow, items: [{ period: 1, section: '第一节', subject: '英语', teacher: '赵老师' }] },
     ],
     upcomingDuty: [{ name: '教室清洁', date: inTwoDays, type: 'weekly' }],
-  }
+  })
   apiState.communications = ('communications' in over ? over.communications : {
     total: 2,
     recent: [{ id: 'cm1', method: '电话', date: yesterday, content: '沟通作业情况', followUp: '已改进', parentName: '张大宝', relation: '爸爸' }],
-  }
+  })
   apiState.teachers = ('teachers' in over ? over.teachers : [
     { teacherId: 't1', name: '李老师', role: 'head', roleLabel: '班主任', subjects: ['语文'], phone: '13800000009' },
     { teacherId: 't2', name: '王老师', role: 'subject', roleLabel: '科任', subjects: ['数学'], phone: '' },
-  ]
+  ])
 }
 
 jest.mock('@/api/parent', () => ({
@@ -111,9 +111,6 @@ jest.mock('@/stores/auth', () => ({
     fetchMe: jest.fn().mockResolvedValue(null),
     logout: jest.fn(),
   }),
-}))
-jest.mock('@/stores/roleSwitch', () => ({
-  useRoleSwitchStore: () => ({ parentToken: '', setTokens: jest.fn(), switchTo: jest.fn() }),
 }))
 jest.mock('vue-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
 
@@ -255,5 +252,44 @@ describe('UX-PAR 家长看板交互体验', () => {
     wrapper = mount(Dashboard, { attachTo: document.body })
     await flushPromises()
     expect(wrapper.findAll('button').find((b) => b.attributes('title') === '不再提示')).toBeUndefined()
+  })
+
+  /* ============ 家长功能包（班主任配置家长可见功能） ============ */
+
+  it('UX-PAR-14 家长功能包：关闭作业/成绩后对应概览卡与区块隐藏', async () => {
+    // 班主任仅开放 notices + attendance + im
+    wrapper = await mountDashboard({ me: { ...apiState.me, effectiveFeatures: ['notices', 'attendance', 'im'] } })
+    const text = wrapper.text()
+    // 关闭的功能不可见：作业/成绩统计卡、作业区、成绩区、健康度中成绩/作业卡
+    expect(text).not.toContain('待完成作业')
+    expect(text).not.toContain('最近考试')
+    expect(text).not.toContain('最新排名')
+    expect(wrapper.find('#parent-homework-section').exists()).toBe(false)
+    expect(wrapper.find('#parent-grades-section').exists()).toBe(false)
+    // 仍开放的功能可见
+    expect(text).toContain('待读通知')
+    expect(text).toContain('考勤看板')
+    expect(text).toContain('家校沟通')
+  })
+
+  it('UX-PAR-15 家长功能包：空数组=关闭全部功能，仅显示空态', async () => {
+    wrapper = await mountDashboard({ me: { ...apiState.me, effectiveFeatures: [] } })
+    const text = wrapper.text()
+    expect(text).toContain('欢迎来到家长中心')
+    expect(wrapper.find('#parent-homework-section').exists()).toBe(false)
+    expect(wrapper.find('#parent-attendance-section').exists()).toBe(false)
+    expect(wrapper.find('#parent-comm-section').exists()).toBe(false)
+    expect(text).not.toContain('待读通知')
+    expect(text).not.toContain('最近考试')
+  })
+
+  it('UX-PAR-16 家长功能包：未配置/空列表=不限制（全部可见）', async () => {
+    wrapper = await mountDashboard({ me: { ...apiState.me, effectiveFeatures: undefined } })
+    const text = wrapper.text()
+    expect(text).toContain('待读通知')
+    expect(text).toContain('待完成作业')
+    expect(text).toContain('最近考试')
+    expect(wrapper.find('#parent-homework-section').exists()).toBe(true)
+    expect(text).toContain('孩子在校健康度总览')
   })
 })

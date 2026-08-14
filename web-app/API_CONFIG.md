@@ -10,16 +10,16 @@
 https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com
 ```
 
-前端调用时自动追加 `/api` 路由前缀，即实际接口基址为：
+前端调用时自动追加 `/api/v1` 路由前缀（与后端 `setGlobalPrefix('api/v1')` 一致），即实际接口基址为：
 
 ```
-https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
+https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api/v1
 ```
 
 > 该地址当前同时写入两处（保持一致）：
 > - `web-app/public/config.js` 的 `API_BASE_URL` —— **运行时生效，最高优先级，开发预览与生产都直接调用云后端**；
 > - `web-app/.env.production` 的 `VITE_API_BASE` —— 构建期默认值（config.js 缺失时的兜底）。
-> 所有后端路由均以 `/api` 开头（如 `/api/auth/password-login`、`/api/health`）。
+> 所有后端路由均以 `/api/v1` 开头（如 `/api/v1/auth/unified-login`）；旧 `/api/*` 路径由后端 307 重定向到 `/api/v1/*`，建议前端直接使用新前缀。
 
 ---
 
@@ -31,7 +31,7 @@ https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
 |--------|------|------|------|
 | 1（最高，已生效） | 运行时配置 | `public/config.js` 的 `window.__APP_CONFIG__.API_BASE_URL` | 当前=微信云托管域名；改这里可**免重建换域名** |
 | 2 | 构建期环境变量 | `.env.production` 的 `VITE_API_BASE` | 打包时写死进产物，作为兜底默认值 |
-| 3（兜底） | 硬编码 | `'/api'` | 仅本地开发代理场景（无变量时） |
+| 3（兜底） | 硬编码 | `'/api/v1'` | 仅本地开发代理场景（无变量时） |
 
 > `config.js` 已带云托管地址，因此 `npm run dev` 预览与 `npm run build` 生产都会调用云后端。
 > 若要在本地联调指向 `server:3000`，将 `config.js` 的 `API_BASE_URL` 行注释掉即可回退到 `.env.development` 的 `localhost:3000`。
@@ -49,10 +49,10 @@ https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
 1. 打开 `web-app/public/config.js`，把已存在的 `API_BASE_URL` 改成新地址：
    ```js
    window.__APP_CONFIG__ = {
-     API_BASE_URL: 'https://你的新域名.sh.run.tcloudbase.com/api',
+     API_BASE_URL: 'https://你的新域名.sh.run.tcloudbase.com/api/v1',
    }
    ```
-2. 保留结尾的 `/api`（后端 NestJS 路由前缀）。
+2. 保留结尾的 `/api/v1`（与后端 `setGlobalPrefix('api/v1')` 一致）。
 3. 将 `config.js` 单独重新部署 / 覆盖到线上静态资源目录即可生效。
 
 > `index.html` 通过 `<script src="./config.js"></script>`（经典脚本，在应用启动前同步加载）引入，`config.js` 的值即覆盖构建默认值，改动即时生效。
@@ -63,7 +63,7 @@ https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
 
 1. 打开 `web-app/.env.production`：
    ```
-   VITE_API_BASE=https://你的新域名.sh.run.tcloudbase.com/api
+   VITE_API_BASE=https://你的新域名.sh.run.tcloudbase.com/api/v1
    ```
 2. 重新构建：`npm run build`（产物 `dist/` 会内置新地址）。
 3. 部署 `dist/`。
@@ -77,7 +77,7 @@ https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api
 开发服务器（`npm run dev`，端口 5202）默认使用 `web-app/.env.development` 的 `localhost:3000`；但因 `public/config.js` 已带云托管地址（运行时优先级最高），**dev 预览实际会调用云后端**。
 
 ```
-VITE_API_BASE=http://localhost:3000/api   # .env.development，本地后端（config.js 未覆盖时生效）
+VITE_API_BASE=http://localhost:3000/api/v1   # .env.development，本地后端（config.js 未覆盖时生效）
 ```
 
 - 想在开发预览里直连云后端：无需改动（config.js 已生效）。
@@ -98,7 +98,7 @@ VITE_API_BASE=http://localhost:3000/api   # .env.development，本地后端（co
 部署后可用以下命令验证后端可达（替换为你当前域名）：
 
 ```bash
-curl https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api/health
+curl https://tec-work-283329-8-1440166408.sh.run.tcloudbase.com/api/v1/health
 ```
 
 返回 200 / JSON 即说明地址配置正确、后端在线。

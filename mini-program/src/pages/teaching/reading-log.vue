@@ -30,9 +30,16 @@
     <view class="mask" v-if="show" @click="show=false"></view>
     <view class="modal" v-if="show">
       <view class="mt">{{ editing ? '编辑阅读记录' : '新增阅读记录' }}</view>
+      <view class="hint">选择「班级 + 学生」后保存，家长端即可看到该孩子的阅读记录。</view>
+      <picker :range="classNames" @change="onClassPick">
+        <view class="picker">{{ form.classId ? selectedClassName : '选择班级（可选）' }}</view>
+      </picker>
+      <picker :range="stuNames" :disabled="!form.classId" @change="onStudentPick">
+        <view class="picker" :class="{ dim: !form.classId }">{{ form.studentId ? form.studentName : (form.classId ? '选择学生（推荐）' : '请先选择班级') }}</view>
+      </picker>
+      <input v-model="form.studentName" class="inp" placeholder="学生姓名（选择学生后自动填充）" />
       <input v-model="form.bookTitle" class="inp" placeholder="书名" />
       <input v-model="form.author" class="inp" placeholder="作者（可选）" />
-      <input v-model="form.studentName" class="inp" placeholder="学生姓名" />
       <input v-model="form.pages" type="number" class="inp" min="1" max="9999" placeholder="阅读页数" />
       <input v-model="form.minutes" type="number" class="inp" min="1" max="999" placeholder="阅读时长（分钟）" />
       <picker mode="date" :value="form.date" @change="e=>form.date=e.detail.value">
@@ -51,6 +58,7 @@
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { listReadingLogs, createReadingLog, updateReadingLog, removeReadingLog } from '@/api/reading'
+import { listClasses, listStudents } from '@/api/students'
 import { theme } from '../../common/store'
 import EmptyState from '../../components/EmptyState/EmptyState.vue'
 
@@ -60,7 +68,12 @@ const editing = ref(null)
 const saving = ref(false)
 const filterType = ref('')
 const types = ['本月', '本周', '今天']
-const form = ref({ studentName:'', bookTitle:'', author:'', pages:0, minutes:0, date:today(), note:'' })
+const classes = ref([]), stuList = ref([])
+const form = ref({ studentName:'', studentId:'', classId:'', bookTitle:'', author:'', pages:0, minutes:0, date:today(), note:'' })
+
+const classNames = computed(()=>classes.value.map(c=>c.name))
+const stuNames = computed(()=>stuList.value.map(s=>s.name))
+const selectedClassName = computed(()=>classes.value.find(c=>c.id===form.value.classId)?.name||'')
 
 function today() { const d=new Date(); const p=n=>(n<10?'0'+n:''+n); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()) }
 
@@ -81,19 +94,31 @@ const filtered = computed(() => {
 
 const saveText = computed(()=>saving.value?'保存中…':'保存')
 
-async function load() { list.value = await listReadingLogs({loading:true,loadingText:'加载阅读'}) }
+async function load() { list.value = await listReadingLogs({loading:true,loadingText:'加载阅读'}); if(!classes.value.length) classes.value = await listClasses({silent:true}) }
 onShow(load)
 onPullDownRefresh(async()=>{await load();uni.stopPullDownRefresh()})
 
-function openAdd() { editing.value=null; form.value={studentName:'',bookTitle:'',author:'',pages:0,minutes:0,date:today(),note:''}; show.value=true }
-function openEdit(r) { editing.value=r; form.value={studentName:r.studentName,bookTitle:r.bookTitle,author:r.author||'',pages:r.pages||0,minutes:r.minutes||0,date:r.date,note:r.note||''}; show.value=true }
+function openAdd() { editing.value=null; form.value={studentName:'',studentId:'',classId:'',bookTitle:'',author:'',pages:0,minutes:0,date:today(),note:''}; stuList.value=[]; show.value=true }
+function openEdit(r) { editing.value=r; form.value={studentName:r.studentName,studentId:r.studentId||'',classId:r.classId||'',bookTitle:r.bookTitle,author:r.author||'',pages:r.pages||0,minutes:r.minutes||0,date:r.date,note:r.note||''}; if(form.value.classId) listStudents(form.value.classId,{silent:true}).then(s=>stuList.value=s); show.value=true }
+async function onClassPick(e) {
+  const c = classes.value[+e.detail.value]
+  form.value.classId = c.id; form.value.studentId=''; form.value.studentName=''
+  stuList.value = await listStudents(c.id, {silent:true})
+}
+function onStudentPick(e) {
+  const s = stuList.value[+e.detail.value]
+  if (!s) return
+  form.value.studentId = s.id; form.value.studentName = s.name
+}
 async function save() {
   if (saving.value) return
   if (!form.value.bookTitle.trim()) return uni.showToast({title:'请填写书名',icon:'none'})
   saving.value=true
   try {
-    if (editing.value) { const r=await updateReadingLog(editing.value.id,form.value); Object.assign(editing.value,r) }
-    else { const r=await createReadingLog({...form.value,studentId:'s'+Date.now(),pages:Number(form.value.pages)||0,minutes:Number(form.value.minutes)||0}); list.value.unshift(r) }
+    const payload = { ...form.value, pages:Number(form.value.pages)||0, minutes:Number(form.value.minutes)||0 }
+    if (!form.value.studentId) delete payload.studentId // 未选真实学生时不写伪造ID
+    if (editing.value) { const r=await updateReadingLog(editing.value.id,payload); Object.assign(editing.value,r) }
+    else { const r=await createReadingLog(payload); list.value.unshift(r && r.id ? r : {...payload,id:String(Date.now())}) }
     show.value=false; uni.showToast({title:'已保存',icon:'none'})
   } catch(e) { uni.showToast({title:'失败:'+(e.message||''),icon:'none'}) }
   finally { saving.value=false }
@@ -127,9 +152,11 @@ function del(r) { uni.showModal({title:'删除',content:r.bookTitle,success:asyn
 .mask { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; }
 .modal { position:fixed; left:5%; right:5%; bottom:0; z-index:51; background:var(--c-card); border-radius:24rpx 24rpx 0 0; padding:30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; }
 .mt { font-size:32rpx; font-weight:700; margin-bottom:20rpx; color:var(--c-title); }
+.hint { font-size:22rpx; color:var(--c-accent); margin-bottom:14rpx; line-height:1.5; }
 .inp { border:1px solid var(--c-border); border-radius:12rpx; padding:16rpx; margin-bottom:14rpx; font-size:28rpx; width:100%; box-sizing:border-box; background:var(--c-card); }
 .area { height:110rpx; }
 .picker { background:var(--c-card2); border-radius:12rpx; padding:18rpx; margin-bottom:14rpx; font-size:28rpx; }
+.picker.dim { color:var(--c-sub); }
 .mbtns { display:flex; gap:20rpx; }
 .mb { flex:1; text-align:center; padding:22rpx; border-radius:40rpx; font-size:30rpx; }
 .mb.cancel { background:var(--c-card2); color:#666; }

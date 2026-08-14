@@ -94,6 +94,14 @@ export function removeClassMember(classId, teacherId) {
 export function addClassMember(classId, payload) {
   return api.post('/classes/' + classId + '/members', payload)
 }
+/** 获取班级家长功能包配置（班级成员可查看；options 由后端下发，双端展示一致） */
+export function getClassParentFeatures(classId) {
+  return api.get('/classes/' + classId + '/parent-features')
+}
+/** 更新班级家长功能包（班主任；features=null 恢复跟随默认，[] 关闭全部） */
+export function updateClassParentFeatures(classId, features) {
+  return api.patch('/classes/' + classId + '/parent-features', { features })
+}
 /** 将本学期同步到其他班级（返回 batchRun 结果） */
 export async function syncTermToOthers(classId, term) {
   const { batchRun } = await import('../common/request')

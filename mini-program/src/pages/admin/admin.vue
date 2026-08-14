@@ -192,6 +192,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { isSessionInvalid } from '@gardener/shared/utils/security'
 import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from '../../common/config'
 import SchoolManage from './components/SchoolManage.vue'
 import DataStats from './components/DataStats.vue'
@@ -251,9 +252,17 @@ async function apiCall(method, path, data) {
       success: (r) => {
         const status = r.statusCode || (r.data && r.data.statusCode) || 200
         if (status === 401) {
-          adminToken.value = ''
-          uni.removeStorageSync(ADMIN_TOKEN_KEY)
-          return reject(new Error((r.data && (r.data.message || r.data.error)) || '登录已过期'))
+          const msg = r.data && (r.data.message || r.data.error)
+          const msgText = typeof msg === 'string' ? msg : ''
+          // 缺陷修复：仅「真·会话失效」才清登录态踢回登录页。
+          // 后端对「权限不足/角色不符」也返回 401，无条件清除会把超管误登出。
+          if (isSessionInvalid(msgText)) {
+            adminToken.value = ''
+            uni.removeStorageSync(ADMIN_TOKEN_KEY)
+            uni.removeStorageSync('admin_user')
+            uni.reLaunch({ url: '/pages/login/login' })
+          }
+          return reject(new Error(msgText || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(r.data)
         else reject(new Error((r.data && (r.data.message || r.data.error)) || ('请求失败(' + status + ')')))
@@ -272,7 +281,14 @@ async function doLogin() {
   try {
     const resp = await apiCall('POST', '/admin/login', { username: adminUser.value.trim(), password: adminPwd.value })
     adminToken.value = resp?.token || ''
-    if (adminToken.value) { uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value); await loadAll() }
+    if (adminToken.value) {
+      // 缺陷修复：补齐 admin_user 写入，使 authMachine.restore() 的 loadLogin
+      // 能找到 admin_token + admin_user 配对，冷启动可恢复超管会话。
+      const user = resp?.user || {}
+      uni.setStorageSync(ADMIN_TOKEN_KEY, adminToken.value)
+      uni.setStorageSync('admin_user', JSON.stringify(user))
+      await loadAll()
+    }
     else uni.showToast({ title: '登录失败：未返回 token', icon: 'none' })
   } catch (e) { uni.showToast({ title: String(e?.message || '登录失败').slice(0, 40), icon: 'none' }) }
   finally { logging.value = false }
@@ -281,9 +297,8 @@ async function doLogin() {
 function logout() {
   adminToken.value = ''
   uni.removeStorageSync(ADMIN_TOKEN_KEY)
-  uni.removeStorageSync('g_token')
-  uni.removeStorageSync('g_user')
-  uni.removeStorageSync('g_mock_mode')
+  uni.removeStorageSync('admin_user')
+  // 仅清除超管自身令牌，不移除教师/校管登录态（g_token/g_user/sa_token）
   uni.reLaunch({ url: '/pages/login/login' })
 }
 

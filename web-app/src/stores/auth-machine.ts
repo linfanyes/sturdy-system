@@ -42,9 +42,6 @@ function getMachine() {
   _machine = createAuthMachine({
     loginFn: async (creds) => {
       const res = await authApi.unifiedLogin(creds.username || '', creds.password || '')
-      if ('needsRoleChoice' in res && res.needsRoleChoice) {
-        return { token: '', user: { id: '', role: 'teacher', name: '' } }
-      }
       return {
         token: res.token,
         user: toSharedUser(res.user),
@@ -92,16 +89,12 @@ export const useAuthStore = defineStore('auth', () => {
   authMachine.on('restore', syncFromMachine)
   authMachine.on('tokenExpired', syncFromMachine)
 
-  /** 兼容旧版 setAuth：直接写入 machine（内部状态 + localStorage）并触发同步 */
+  /** 兼容旧版 setAuth：采纳外部登录结果，统一走共享状态机，保持 machine/store/localStorage 三方一致 */
   function setAuth(t: string, u: AuthUser) {
-    localStorage.setItem(TOKEN_KEY, t)
-    localStorage.setItem(USER_KEY, JSON.stringify(u))
-    token.value = t
-    user.value = u
-    role.value = u.role as Role
-    isLoggedIn.value = true
-    effectiveFeatures.value = u.effectiveFeatures || []
-    schoolFeatureFlags.value = u.schoolFeatureFlags ?? null
+    authMachine.adopt({ token: t, user: toSharedUser(u) })
+    // adopt 内部已 emit('login') → syncFromMachine 会同步 refs；此处再显式同步一次兜底，
+    // 保证即使调用发生在监听注册之前也不丢失状态。
+    syncFromMachine()
   }
 
   async function logout() {

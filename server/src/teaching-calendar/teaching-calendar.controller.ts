@@ -51,7 +51,7 @@ export class TeachingCalendarController {
     if (year && month) {
       return this.svc.findByMonth(t.sub, Number(year), Number(month))
     }
-    return this.svc.findAll(t.sub, undefined, Number(skip) || 0, clampTake(take))
+    return this.svc.findAll(t.sub, undefined, Math.max(0, Number(skip) || 0), clampTake(take))
   }
 
   @Get(':id')

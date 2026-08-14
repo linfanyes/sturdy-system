@@ -14,6 +14,13 @@ import {
 // S01修复：学校管理员登录限流 10次/分钟/IP，防止暴力破解（与超管登录、教师登录同等级别防护）
 const SchoolAdminLoginRateLimit = createRateLimitGuard(60_000, 10)
 
+/** 分页上限（与 base.controller 的 MAX_TAKE 对齐）：客户端 take 超 500 截断，防大查询拖垮数据库 */
+const MAX_TAKE = 500
+function clampTake(take?: string, def = 100): number {
+  const v = Number(take) || def
+  return Math.min(v, MAX_TAKE)
+}
+
 @Controller('school-admin')
 @Roles('school_admin')
 export class SchoolAdminController {
@@ -57,7 +64,7 @@ export class SchoolAdminController {
   @Get('teachers')
   @UseGuards(JwtAuthGuard)
   listTeachers(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string, @Query('keyword') keyword?: string) {
-    return this.teacherSvc.listTeachers(a.schoolId, Number(skip) || 0, Number(take) || 200, keyword)
+    return this.teacherSvc.listTeachers(a.schoolId, Math.max(0, Number(skip) || 0), clampTake(take, 200), keyword)
   }
 
   @Get('teachers/:id')
@@ -152,7 +159,7 @@ export class SchoolAdminController {
   @Get('classes')
   @UseGuards(JwtAuthGuard)
   listClasses(@CurrentSchoolAdmin() a: any, @Query('skip') skip?: string, @Query('take') take?: string) {
-    return this.classSvc.listClasses(a.schoolId, Number(skip) || 0, Number(take) || 500)
+    return this.classSvc.listClasses(a.schoolId, Math.max(0, Number(skip) || 0), clampTake(take, 500))
   }
 
   @Get('classes/:id')
@@ -253,8 +260,8 @@ export class SchoolAdminController {
   ) {
     return this.classSvc.listSchoolStudents(
       a.schoolId,
-      Number(skip) || 0,
-      Number(take) || 500,
+      Math.max(0, Number(skip) || 0),
+      clampTake(take, 500),
       classId || undefined,
       keyword || undefined,
     )
@@ -463,8 +470,8 @@ export class SchoolAdminController {
     @Query('status') status?: string,
   ) {
     return this.svc.listSchoolHomework(a.schoolId, {
-      skip: Number(skip) || 0,
-      take: Number(take) || 50,
+      skip: Math.max(0, Number(skip) || 0),
+      take: clampTake(take, 50),
       classId: classId || undefined,
       grade: grade || undefined,
       subject: subject || undefined,

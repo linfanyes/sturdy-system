@@ -104,6 +104,14 @@ export interface IAuthStateMachine {
    * @returns 切换成功返回目标角色的 LoginResult；未登录或目标角色不可用时抛 AuthError
    */
   switchRole(targetRole: Role): Promise<LoginResult>
+
+  /**
+   * 采纳外部已完成的登录结果（不重新发起登录请求）。
+   * 适用于登录动作已由调用方完成后（如统一登录、切换学生后换发 token 等）：
+   * 将结果写入内存态 + 持久化 + 发射 'login' 事件，保证状态机 / store / 持久化三方一致。
+   * @throws AuthError 缺少 token 或 user.id 时抛出
+   */
+  adopt(result: LoginResult): void
 }
 
 /** 鉴权事件类型，用于状态变更订阅（可选）。 */

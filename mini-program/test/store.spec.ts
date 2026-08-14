@@ -255,7 +255,9 @@ describe('store 状态管理', () => {
   describe('持久化验证', () => {
     it('setAuth 持久化 token 和 user 到存储', () => {
       setAuth('persist-token', { id: 1, name: '持久化用户' })
-      expect(uni.setStorageSync).toHaveBeenCalledTimes(2)
+      // setAuth 现通过 shared authMachine.adopt 写入（machine 持久化 2 次）后，
+      // 再直接写 g_token/g_user（2 次），共 4 次；断言关键键被正确写入。
+      expect(uni.setStorageSync).toHaveBeenCalledTimes(4)
       expect(uni.setStorageSync).toHaveBeenCalledWith('g_token', 'persist-token')
       expect(uni.setStorageSync).toHaveBeenCalledWith('g_user', JSON.stringify({ id: 1, name: '持久化用户' }))
     })

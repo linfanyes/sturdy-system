@@ -170,6 +170,7 @@
           <view v-if="!members.length" class="empty-members">暂无成员</view>
         </view>
         <button v-if="isHead" class="enter" @click="showAddMember = true">＋ 添加科任老师</button>
+        <button v-if="isHead" class="pf-btn" @click="openParentFeatures()">⚙️ 家长功能包管理</button>
         <button class="cancel" @click="showMembers = false">关闭</button>
       </view>
     </view>
@@ -199,13 +200,47 @@
         <button class="cancel" @click="showAddMember = false">取消</button>
       </view>
     </view>
+
+    <!-- 家长功能包管理（班主任特权） -->
+    <view v-if="showPf" class="mask" @click="showPf = false">
+      <view class="sheet safe-bottom" @click.stop>
+        <view class="sh-t">{{ pfC.name }} · 家长功能包</view>
+        <view class="sh-meta">控制本班家长在小程序/网页端可见的页面功能</view>
+
+        <view class="pf-mode">
+          <view
+            :class="['pf-mode-item', pfMode === 'default' ? 'on' : '']"
+            @click="pfMode = 'default'; pfDraft = []"
+          >跟随默认</view>
+          <view
+            :class="['pf-mode-item', pfMode === 'custom' ? 'on' : '']"
+            @click="pfMode = 'custom'"
+          >自定义</view>
+        </view>
+        <view v-if="pfMode === 'default'" class="pf-hint">家长跟随班级教师功能并集，无需单独配置</view>
+
+        <view v-if="pfMode === 'custom'" class="pf-options">
+          <view
+            v-for="o in pfOptions"
+            :key="o.key"
+            :class="['pf-option', pfDraft.includes(o.key) ? 'on' : '']"
+            @click="togglePfOption(o.key)"
+          >{{ o.label }}</view>
+          <view v-if="!pfDraft.length" class="pf-empty">未勾选任何功能：家长端将关闭全部功能（仅剩基础信息）</view>
+        </view>
+
+        <button class="save" :disabled="pfSaving" @click="saveParentFeatures">{{ pfSaving ? '保存中…' : '保存配置' }}</button>
+        <text v-if="pfMsg" class="pf-msg" :class="pfMsgType === 'ok' ? 'pf-msg-ok' : 'pf-msg-err'">{{ pfMsg }}</text>
+        <button class="cancel" @click="showPf = false">关闭</button>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
-import { listClasses, createClass, updateClass, removeClass, listNotices, listSchoolTeachers, listClassMembers, removeClassMember, addClassMember, batchUpdateClasses } from '@/api/teaching'
+import { listClasses, createClass, updateClass, removeClass, listNotices, listSchoolTeachers, listClassMembers, removeClassMember, addClassMember, getClassParentFeatures, updateClassParentFeatures, batchUpdateClasses } from '@/api/teaching'
 import { listStudents } from '@/api/students'
 import { getPublicConfig } from '@/api/config'
 import { auth, theme, flushTabBarStyle, switchTabParams } from '../../common/store'
@@ -566,6 +601,67 @@ async function confirmAddMember() {
     saving.value = false
   }
 }
+
+/* ===== 家长功能包管理（班主任特权，与 web 端一致） ===== */
+const showPf = ref(false)
+const pfC = ref({})
+const pfOptions = ref([])
+const pfMode = ref('default')   // default=跟随默认（未显式配置）；custom=自定义家长可见功能
+const pfDraft = ref([])
+const pfSaving = ref(false)
+const pfMsg = ref('')
+const pfMsgType = ref('ok')
+
+async function openParentFeatures() {
+  showMembers.value = false
+  pfC.value = membersC.value
+  showPf.value = true
+  pfMsg.value = ''
+  uni.showLoading({ title: '加载配置…', mask: true })
+  try {
+    const res = await getClassParentFeatures(membersC.value.id)
+    if (res) {
+      pfOptions.value = (Array.isArray(res.options) && res.options.length) ? res.options : []
+      if (res.configured) {
+        pfMode.value = 'custom'
+        pfDraft.value = Array.isArray(res.features) ? [...res.features] : []
+      } else {
+        pfMode.value = 'default'
+        pfDraft.value = []
+      }
+    }
+  } catch (e) {
+    uni.showToast({ title: '加载失败：' + (e.message || ''), icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+function togglePfOption(key) {
+  const i = pfDraft.value.indexOf(key)
+  if (i >= 0) pfDraft.value.splice(i, 1)
+  else pfDraft.value.push(key)
+}
+
+async function saveParentFeatures() {
+  if (pfSaving.value) return
+  pfSaving.value = true
+  pfMsg.value = ''
+  try {
+    const features = pfMode.value === 'custom' ? [...pfDraft.value] : null
+    await updateClassParentFeatures(pfC.value.id, features)
+    pfMsgType.value = 'ok'
+    pfMsg.value = pfMode.value === 'default'
+      ? '已恢复跟随默认（家长跟随班级教师功能并集）'
+      : `已保存，家长可见 ${pfDraft.value.length} 项功能`
+    uni.showToast({ title: '已保存', icon: 'success' })
+  } catch (e) {
+    pfMsgType.value = 'err'
+    pfMsg.value = e?.message || '保存失败'
+  } finally {
+    pfSaving.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -670,6 +766,24 @@ async function confirmAddMember() {
 .member-subj { font-size: 22rpx; color: var(--c-sub); }
 .member-del { font-size: 24rpx; color: var(--c-danger); padding: 8rpx 18rpx; background: rgba(230, 67, 64, 0.12); border-radius: 24rpx; flex-shrink: 0; }
 .empty-members { text-align: center; color: var(--c-sub); padding: 40rpx 0; font-size: 26rpx; }
+
+/* 家长功能包管理 */
+.pf-btn { background: var(--c-accent); color: #fff; border-radius: 50rpx; margin-top: 0; margin-bottom: 14rpx; }
+.pf-mode { display: flex; gap: 16rpx; margin-bottom: 20rpx; }
+.pf-mode-item {
+  flex: 1; text-align: center; padding: 18rpx 0; border-radius: 16rpx;
+  background: var(--c-card2); color: var(--c-sub); font-size: 28rpx;
+  border: 2rpx solid transparent; box-sizing: border-box;
+}
+.pf-mode-item.on { background: rgba(245,179,66, 0.15); color: var(--c-accent); border-color: var(--c-accent); }
+.pf-hint { font-size: 24rpx; color: var(--c-sub); margin-bottom: 20rpx; }
+.pf-options { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 20rpx; }
+.pf-option { padding: 14rpx 26rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-sub); font-size: 26rpx; }
+.pf-option.on { background: var(--c-accent); color: #fff; }
+.pf-empty { width: 100%; font-size: 24rpx; color: var(--c-danger); padding: 8rpx 0; }
+.pf-msg { display: block; text-align: center; font-size: 24rpx; margin-top: 14rpx; }
+.pf-msg-ok { color: #07c160; }
+.pf-msg-err { color: var(--c-danger); }
 
 /* 骨架屏 */
 .skel { pointer-events: none; }

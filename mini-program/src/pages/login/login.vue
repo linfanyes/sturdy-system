@@ -56,7 +56,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { setMockMode } from '../../common/request'
-import { setAuth, setParent, setFeatureProfile, theme, auth } from '../../common/store'
+import { setAuth, setParent, setRoleAuth, setFeatureProfile, theme, auth } from '../../common/store'
 import { unifiedLogin } from '@/api/user'
 
 const dark = computed(() => theme.mode === 'dark')
@@ -79,30 +79,28 @@ function handleLoginResult(r) {
   // 各登录路径响应均含 effectiveFeatures（= 学校级 ∩ 教师级），统一写入登录态
   setFeatureProfile(r)
   switch (r.role) {
-    // 注意：超管/校管不再写 g_token（教师 token key）。
-    // 通用 api 层的 Bearer 由 auth.token 提供，冷启动则由 store.js readToken()
-    // 按 admin_token > sa_token > g_token 优先级恢复，避免角色被降级误识别为教师。
+    // 超管/校管通过 setRoleAuth 走共享状态机（按角色分 key 持久化 + machine/reactive 同步），
+    // 不再直接写 token key 绕过 machine；超管同时补齐 admin_user，保证冷启动可恢复。
     case 'super':
-      uni.setStorageSync('admin_token', r.token)
-      auth.token = r.token
-      auth.user = r.user || null
+      setRoleAuth(r.token, r.user, 'super')
       uni.redirectTo({ url:'/pages/admin/admin' })
       break
     case 'school_admin':
-      uni.setStorageSync('sa_token', r.token)
-      uni.setStorageSync('sa_user', JSON.stringify(r.user))
-      auth.token = r.token
-      auth.user = r.user || null
+      setRoleAuth(r.token, r.user, 'school_admin')
       uni.redirectTo({ url:'/pages/school-admin/school-admin' })
       break
     case 'teacher':
       setAuth(r.token, r.user)
       uni.switchTab({ url:'/pages/dashboard/dashboard' })
       break
-    case 'parent':
-      setParent(r.token, r.parent)
+    case 'parent': {
+      // 缺陷修复：登录响应含 effectiveFeatures（当前孩子班级家长功能包），
+      // 需并入 parent.user，否则家长页 hasPf() 读到 undefined → 全部功能可见（不限制）。
+      const p = r.parent || {}
+      setParent(r.token, Array.isArray(r.effectiveFeatures) ? { ...p, effectiveFeatures: r.effectiveFeatures } : p)
       uni.redirectTo({ url:'/pages/parent/parent' })
       break
+    }
   }
 }
 </script>

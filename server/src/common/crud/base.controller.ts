@@ -28,8 +28,22 @@ export { clampTake }
 /**
  * 剔除客户端不应自行写入的字段（租户键/主键/角色/时间戳等），
  * 防止越权批量赋值（mass assignment）。teacherId 仍由服务端从 JWT 注入。
+ * - schoolId：学校级租户键，绝不允许客户端指定（超管/校管按 JWT 注入）
+ * - parentId / parentPasswordHash / parentLoginEnabled：家长绑定与登录口令，仅服务端可控
+ * - classId 为业务字段保留（班级维度实体），由 base.service 在 create/update 时做班级归属校验
  */
-const UNSAFE_KEYS = new Set(['teacherId', 'id', 'role', 'createdAt', 'updatedAt', 'isDeleted'])
+const UNSAFE_KEYS = new Set([
+  'teacherId',
+  'schoolId',
+  'id',
+  'role',
+  'createdAt',
+  'updatedAt',
+  'isDeleted',
+  'parentId',
+  'parentPasswordHash',
+  'parentLoginEnabled',
+])
 function stripUnsafe(dto: any): any {
   if (!dto || typeof dto !== 'object') return dto
   const out: any = {}
@@ -58,7 +72,7 @@ export class CrudController<T extends { id: string; teacherId: string }> {
 
   @Get()
   findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string, @Query('date') date?: string) {
-    return this.service.findAll(t.sub, classId, Number(skip) || 0, clampTake(take), term, date)
+    return this.service.findAll(t.sub, classId, Math.max(0, Number(skip) || 0), clampTake(take), term, date)
   }
 
   @Get(':id')

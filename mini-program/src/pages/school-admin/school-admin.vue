@@ -458,6 +458,7 @@ import { setMockMode } from '../../common/request'
 import { DEMO_MODE_ENABLED, CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX } from '../../common/config'
 import { auth, setAuth, setFeatureProfile } from '../../common/store'
 import { isPhone } from '../../common/validators'
+import { isSessionInvalid } from '@gardener/shared/utils/security'
 import { safeParse } from '../../common/util'
 import { compressImage } from '../../common/image'
 import { copyText } from '../../common/print'
@@ -556,10 +557,15 @@ async function apiCall(method, path, data) {
         const status = r.statusCode || (r.data && r.data.statusCode) || 200
         if (status === 401) {
           const msg = r.data && (r.data.message || r.data.error)
-          uni.removeStorageSync('sa_token'); uni.removeStorageSync('sa_user'); uni.removeStorageSync('g_token')
-          uni.removeStorageSync('g_user'); uni.removeStorageSync('g_mock_mode')
-          uni.reLaunch({ url: '/pages/login/login' })
-          return reject(new Error(msg || '登录已过期'))
+          const msgText = typeof msg === 'string' ? msg : ''
+          // 缺陷修复：仅「真·会话失效」才清登录态踢回登录页。
+          // 后端对「权限不足/角色不符」也返回 401，无条件清除会把校管误登出。
+          if (isSessionInvalid(msgText)) {
+            uni.removeStorageSync('sa_token'); uni.removeStorageSync('sa_user'); uni.removeStorageSync('g_token')
+            uni.removeStorageSync('g_user'); uni.removeStorageSync('g_mock_mode')
+            uni.reLaunch({ url: '/pages/login/login' })
+          }
+          return reject(new Error(msgText || '登录已过期'))
         }
         if (status >= 200 && status < 300) resolve(r.data)
         else { const msg = (r.data && (r.data.message || r.data.error)) || ('请求失败(' + status + ')'); reject(new Error(msg)) }

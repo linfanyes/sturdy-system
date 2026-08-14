@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm'
 import { User } from '../../users/user.entity'
 import { Student } from '../../students/student.entity'
 import { School } from '../../school/school.entity'
+import { ClassItem } from '../../classes/class.entity'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { FEATURE_FLAGS } from './feature-flags.constants'
 import { FeatureLevelResolver, FeatureContext } from './level-resolver.interface'
@@ -44,6 +45,7 @@ export class FeatureService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
     @Inject(FEATURE_RESOLVERS) private readonly resolvers: FeatureLevelResolver[],
     private readonly classMemberSvc: ClassMemberService,
     private readonly cache: CacheService,
@@ -84,6 +86,9 @@ export class FeatureService {
     if (role === 'parent') {
       const stu = await this.studentRepo.findOne({ where: { id: user.studentId } })
       if (!stu?.classId) return { role: 'parent' }
+      // 班主任显式配置的班级家长功能包：存在（含空数组）则直接作为家长可见功能，不再聚合教师 features
+      const cls = stu.classId ? await this.classRepo.findOne({ where: { id: stu.classId } } as any).catch(() => null) : null
+      const parentOverride = cls?.parentFeatures
       // 获取孩子所在班级所有教师的 features（班主任 + 科任老师并集）
       const members = await this.classMemberSvc.listByClass(stu.classId)
       const teacherIds = members.map(m => m.teacherId)
@@ -102,6 +107,7 @@ export class FeatureService {
         role: 'parent',
         schoolId,
         teacherFeatures: teacherFeaturesUnion.size ? [...teacherFeaturesUnion] : null,
+        parentOverrideFeatures: Array.isArray(parentOverride) ? parentOverride : undefined,
       }
       this.cache.set(cacheKey, ctx, this.FEATURE_CONTEXT_TTL)
       return ctx
@@ -128,6 +134,15 @@ export class FeatureService {
     this.cache.delByScope('feature-ctx')
   }
 
+  /**
+   * 清除指定班级所有家长的功能缓存（班主任修改家长功能包时调用）。
+   */
+  async clearParentCacheForClass(classId: string): Promise<void> {
+    if (!classId) return
+    const students = await this.studentRepo.find({ where: { classId } as any })
+    for (const s of students) this.cache.del(`feature-ctx:parent:${s.id}`)
+  }
+
   /** 计算有效功能包集合（核心算法） */
   async getEffectiveFeatures(ctx: FeatureContext): Promise<string[]> {
     if (ctx.role === 'super' || ctx.role === 'school_admin') return [...this.allFeatures]
@@ -137,6 +152,11 @@ export class FeatureService {
       if (!allowed) continue // null/[] 表示该级不收窄
       const allowedSet = new Set(allowed)
       effective = new Set([...effective].filter((k) => allowedSet.has(k)))
+    }
+    // 班级家长功能包：班主任显式指定后直接收窄到该包（学校级仍可进一步收窄）
+    if (ctx.parentOverrideFeatures !== undefined) {
+      const overrideSet = new Set(ctx.parentOverrideFeatures)
+      effective = new Set([...effective].filter((k) => overrideSet.has(k)))
     }
     return [...effective]
   }

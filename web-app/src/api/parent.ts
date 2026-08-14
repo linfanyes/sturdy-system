@@ -110,6 +110,8 @@ export interface ParentMe {
   }>
   /** 学生档案信息（家长可查看/申请修改） */
   studentInfo?: ParentStudentInfo
+  /** 家长功能包：当前激活孩子对应的有效功能（班主任可配置班级家长功能包） */
+  effectiveFeatures?: string[]
 }
 
 /** 学生档案信息 */
@@ -136,7 +138,7 @@ export interface StudentUpdateRequest {
 }
 
 /** 切换孩子 */
-export async function switchStudent(studentId: string): Promise<{ token: string; studentId: string; studentName: string; studentNo: string; classId: string }> {
+export async function switchStudent(studentId: string): Promise<{ token: string; studentId: string; studentName: string; studentNo: string; classId: string; effectiveFeatures?: string[] }> {
   const r = await request.post('/parent-auth/switch-student', { studentId })
   return r.data
 }

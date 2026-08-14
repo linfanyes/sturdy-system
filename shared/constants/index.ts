@@ -193,6 +193,20 @@ export const FEATURE_FLAG_LABELS: Record<string, string> = {
   reward: '奖赏', translate: '翻译', blackboard: '黑板报', speech: '演讲稿',
 }
 
+/**
+ * 家长功能包可选 key（班主任可为班级家长配置「家长页面功能」，学校级仍可进一步收窄）。
+ * 与 server/src/common/feature/feature-flags.constants.ts 的 PARENT_FEATURE_KEYS 保持一致（CI 做一致性校验）。
+ */
+export const PARENT_FEATURE_KEYS: string[] = [
+  'grades', 'analysis', 'homework', 'attendance', 'behavior', 'notices',
+  'im', 'activities', 'gallery', 'checkin', 'reading', 'growth', 'schedule', 'rewards', 'duty',
+]
+
+/** 家长功能包选项（key + 中文标签，双端管理 UI 直接复用） */
+export const PARENT_FEATURE_OPTIONS: { key: string; label: string }[] = PARENT_FEATURE_KEYS.map(
+  (k) => ({ key: k, label: FEATURE_FLAG_LABELS[k] || k }),
+)
+
 /** 特性标识集合（用于快速 O(1) 查找） */
 export const FEATURE_FLAGS_SET: Set<string> = new Set(FEATURE_FLAGS)
 

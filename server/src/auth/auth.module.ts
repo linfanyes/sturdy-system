@@ -11,11 +11,12 @@ import { School } from '../school/school.entity'
 import { Parent } from '../parent/parent.entity'
 import { AuditModule } from '../audit/audit.module'
 import { StudentParentModule } from '../student-parent/student-parent.module'
+import { StudentParent } from '../student-parent/student-parent.entity'
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([SchoolAdmin, Student, School, Parent]),
+    TypeOrmModule.forFeature([SchoolAdmin, Student, School, Parent, StudentParent]),
     AuditModule,
     StudentParentModule,
   ],

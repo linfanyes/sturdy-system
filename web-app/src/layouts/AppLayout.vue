@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useRoleSwitchStore } from '@/stores/roleSwitch'
 import { User } from 'lucide-vue-next'
 import Sidebar from './components/Sidebar.vue'
 import Navbar from './components/Navbar.vue'
@@ -11,7 +10,6 @@ import { teacherMenu, superMenu, schoolAdminMenu, palette } from './layoutMenus'
 import type { MenuSubGroup, ColorTone } from './layoutMenus'
 
 const auth = useAuthStore()
-const roleSwitchStore = useRoleSwitchStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -72,12 +70,6 @@ async function handleLogout() {
   router.push({ name: 'login' })
 }
 
-async function switchToParent() {
-  roleSwitchStore.switchTo('parent', auth.setAuth)
-  await auth.fetchMe()
-  router.push('/parent')
-}
-
 function goTeachers() { router.push('/school-admin/teachers') }
 function goClasses() { router.push('/school-admin/classes') }
 function goStudents() { router.push('/school-admin/students') }
@@ -91,7 +83,6 @@ const isHome = computed(() => route.name === 'super-dashboard' || route.name ===
     <!-- 侧边栏子组件 -->
     <Sidebar
       @logout="handleLogout"
-      @switch-to-parent="switchToParent"
       @active-category-change="handleActiveCategoryChange"
     />
 

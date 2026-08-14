@@ -446,6 +446,65 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(r.status < 300, `课程表查询失败 ${r.status}`)
   })
 
+  /* ================= 家长功能包管理（班主任配置家长可见功能） ================= */
+  addCase('FUNC-PF-01', 'teacher', '班主任读取班级家长功能包（未配置→configured=false）', async () => {
+    const r = await http('GET', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok() })
+    assert(r.status < 300, `状态码 ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`)
+    assertEq(r.body.configured, false, '未配置时应为 false')
+    assert(Array.isArray(r.body.options) && r.body.options.length > 0, '应返回可用功能包选项')
+  })
+
+  addCase('FUNC-PF-02', 'teacher', '班主任写入家长功能包（grades+homework）', async () => {
+    const r = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok(), body: { features: ['grades', 'homework'] } })
+    assert(r.status < 300, `状态码 ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`)
+    assert(Array.isArray(r.body.features) && r.body.features.includes('grades'), 'features 应包含 grades')
+  })
+
+  addCase('FUNC-PF-03', 'teacher', '家长功能包写入后读取为已配置', async () => {
+    const r = await http('GET', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok() })
+    assert(r.status < 300, `状态码 ${r.status}`)
+    assertEq(r.body.configured, true, '已配置应为 true')
+    assert(Array.isArray(r.body.features) && r.body.features.includes('homework'), 'features 应包含 homework')
+  })
+
+  addCase('FUNC-PF-04', 'teacher', '无效功能包 key → 400', async () => {
+    const r = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok(), body: { features: ['not_a_real_key'] } })
+    assertEq(r.status, 400, '无效 key 应返回 400')
+  })
+
+  addCase('FUNC-PF-05', 'teacher', '非本班教师读取/写入家长功能包被拒绝', async () => {
+    // qat01t07 是 1 校 2 班班主任（非 1 班 1 成员）
+    const lg = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 7), password: TEACHER_PASS } })
+    assert(lg.status < 300, `教师登录失败 ${lg.status}`)
+    const g = await http('GET', api(`/classes/${s1().classIds[0]}/parent-features`), { token: lg.body.token })
+    assert(g.status === 401 || g.status === 403, `读取应被拒绝，实际 ${g.status}`)
+    const u = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: lg.body.token, body: { features: ['notices'] } })
+    assert(u.status === 401 || u.status === 403, `写入应被拒绝，实际 ${u.status}`)
+  })
+
+  addCase('FUNC-PF-06', 'teacher', '家长功能包恢复跟随默认（features=null）', async () => {
+    const r = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok(), body: { features: null } })
+    assert(r.status < 300, `状态码 ${r.status} ${JSON.stringify(r.body).slice(0, 120)}`)
+    const g = await http('GET', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok() })
+    assertEq(g.body.configured, false, '恢复默认后 configured=false')
+  })
+
+  addCase('FUNC-PF-07', 'parent', '家长 /me 的 effectiveFeatures 随班级家长功能包联动', async () => {
+    // 先配置仅 grades+homework
+    const p = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok(), body: { features: ['grades', 'homework'] } })
+    assert(p.status < 300, `配置失败 ${p.status} ${JSON.stringify(p.body).slice(0, 120)}`)
+    const t = await pTok()
+    const me = await http('GET', api('/parent-auth/me'), { token: t })
+    assert(me.status < 300, `/me 失败 ${me.status}`)
+    const eff = me.body.effectiveFeatures
+    assert(Array.isArray(eff), `effectiveFeatures 应为数组，实际 ${JSON.stringify(eff).slice(0, 120)}`)
+    assert(eff.includes('grades') && eff.includes('homework'), `应包含 grades/homework，实际 ${JSON.stringify(eff)}`)
+    assert(!eff.includes('notices') && !eff.includes('attendance'), `应排除未开放功能，实际 ${JSON.stringify(eff)}`)
+    // 恢复默认（清理测试副作用）
+    const r = await http('PATCH', api(`/classes/${s1().classIds[0]}/parent-features`), { token: tTok(), body: { features: null } })
+    assert(r.status < 300, `恢复默认失败 ${r.status}`)
+  })
+
   /* ================= 家长 ================= */
   addCase('FUNC-PAR-01', 'parent', '家长用学号+口令统一登录', async () => {
     const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
@@ -759,14 +818,14 @@ export function registerFunctionalCases(baseUrl: string, seed: SeedResult) {
     assert(Array.isArray(me.body.kids) && me.body.kids.length >= 2, `跨校家庭应≥2个孩子，实际 ${me.body.kids?.length}`)
   })
 
-  addCase('FUNC-PAR-22', 'parent', '师兼长登录（教师同时作为家长）', async () => {
+  addCase('FUNC-PAR-22', 'parent', '教师子女独立登录（教师用用户名、子女用学号）', async () => {
     const teacherLogin = await http('POST', api('/auth/unified-login'), { body: { username: teacherUser(1, 5), password: TEACHER_PASS } })
     assert(teacherLogin.status < 300, `教师登录失败 ${teacherLogin.status}`)
-    assertEq(teacherLogin.body.role, 'teacher', '师兼长登录应为 teacher 角色')
+    assertEq(teacherLogin.body.role, 'teacher', '教师登录应为 teacher 角色')
     const kidNo = studentNo(1, 2, 3, 60)
     const parentLogin = await http('POST', api('/auth/unified-login'), { body: { username: kidNo, password: PARENT_PASS } })
     assert(parentLogin.status < 300, `家长登录失败 ${parentLogin.status}`)
-    assertEq(parentLogin.body.role, 'parent', '师兼长孩子登录应为 parent 角色')
+    assertEq(parentLogin.body.role, 'parent', '子女学号登录应为 parent 角色（独立登录，无师兼家切换）')
   })
 
   addCase('FUNC-PAR-23', 'parent', '三孩家庭', async () => {

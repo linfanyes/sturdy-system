@@ -10,12 +10,10 @@ export function getGrades(params = {}) {
   return api.get('/grades', params)
 }
 
-/** 保存单条成绩 */
-export function saveGrade(payload) {
-  return api.post('/grades', payload)
+/** 保存单条成绩（幂等合并：重复保存=更新） */
+export function mergeGrades(payload) {
+  return api.post('/grades/merge', payload)
 }
-
-/** 批量导入预览 */
 export function importGradesPreview(payload) {
   return api.post('/grades/import-preview', payload)
 }
@@ -23,11 +21,6 @@ export function importGradesPreview(payload) {
 /** 批量导入确认 */
 export function importGradesCommit(payload) {
   return api.post('/grades/import-commit', payload)
-}
-
-/** 合并成绩 */
-export function mergeGrades(payload) {
-  return api.post('/grades/merge', payload)
 }
 
 /** 删除成绩 */

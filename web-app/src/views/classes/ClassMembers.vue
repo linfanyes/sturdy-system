@@ -8,10 +8,19 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
-import { listClassMembers, listTeachers, updateClassSubjects, type ClassMember } from '@/api/teacher'
+import {
+  listClassMembers,
+  listTeachers,
+  updateClassSubjects,
+  getClassParentFeatures,
+  updateClassParentFeatures,
+  type ClassMember,
+  type ParentFeatureOption,
+} from '@/api/teacher'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
+import { PARENT_FEATURE_OPTIONS } from '@gardener/shared/constants'
 import { useAuthStore } from '@/stores/auth'
-import { Users, Crown, BookOpen, Phone, Mail, Calendar, Briefcase, X, Save } from 'lucide-vue-next'
+import { Users, Crown, BookOpen, Phone, Mail, Calendar, Briefcase, X, Save, ShieldCheck } from 'lucide-vue-next'
 
 const { classes } = useClasses()
 const loading = ref(false)
@@ -133,6 +142,69 @@ async function saveSubjects() {
 }
 
 watch(activeClassId, syncSubjectDraft)
+
+/* ============ 家长功能包管理（班主任） ============ */
+const pfLoading = ref(false)
+const pfSaving = ref(false)
+const pfMsg = ref('')
+const pfMsgType = ref<'ok' | 'err'>('ok')
+/** 管理模式：default=跟随默认（未显式配置）；custom=班主任自定义家长可见功能 */
+const pfMode = ref<'default' | 'custom'>('default')
+const pfOptions = ref<ParentFeatureOption[]>(PARENT_FEATURE_OPTIONS)
+/** 自定义模式下已勾选的功能 key */
+const pfDraft = ref<string[]>([])
+
+async function loadParentFeatures(classId: string) {
+  pfMsg.value = ''
+  if (!classId) return
+  pfLoading.value = true
+  try {
+    const res = await getClassParentFeatures(classId)
+    if (res) {
+      pfOptions.value = Array.isArray(res.options) && res.options.length ? res.options : PARENT_FEATURE_OPTIONS
+      if (res.configured) {
+        pfMode.value = 'custom'
+        pfDraft.value = [...(res.features || [])]
+      } else {
+        pfMode.value = 'default'
+        pfDraft.value = []
+      }
+    }
+  } catch (e: any) {
+    pfMode.value = 'default'
+    pfDraft.value = []
+    toast.error(e?.message || '加载家长功能包失败')
+  } finally {
+    pfLoading.value = false
+  }
+}
+
+function togglePfOption(key: string) {
+  const i = pfDraft.value.indexOf(key)
+  if (i >= 0) pfDraft.value.splice(i, 1)
+  else pfDraft.value.push(key)
+}
+
+async function saveParentFeatures() {
+  if (!activeClassId.value) return
+  pfSaving.value = true
+  pfMsg.value = ''
+  try {
+    const features = pfMode.value === 'custom' ? [...pfDraft.value] : null
+    await updateClassParentFeatures(activeClassId.value, features)
+    pfMsgType.value = 'ok'
+    pfMsg.value = pfMode.value === 'default' ? '已恢复跟随默认（家长跟随班级教师功能并集）' : `已保存，家长可见 ${pfDraft.value.length} 项功能`
+  } catch (e: any) {
+    pfMsgType.value = 'err'
+    pfMsg.value = e?.message || '保存失败'
+  } finally {
+    pfSaving.value = false
+    setTimeout(() => { pfMsg.value = '' }, 3000)
+  }
+}
+
+watch(activeClassId, () => loadParentFeatures(activeClassId.value))
+onMounted(() => { if (activeClassId.value) loadParentFeatures(activeClassId.value) })
 </script>
 
 <template>
@@ -279,6 +351,86 @@ watch(activeClassId, syncSubjectDraft)
               <Save class="w-4 h-4" /> {{ subjectsSaving ? '保存中…' : '保存' }}
             </button>
             <span v-if="subjectsMsg" :class="['text-xs', subjectsMsgType === 'ok' ? 'text-mint-600' : 'text-sakura-600']">{{ subjectsMsg }}</span>
+          </div>
+        </template>
+      </div>
+
+      <!-- 家长功能包管理 -->
+      <div class="bg-surface rounded-2xl p-5 shadow-softer">
+        <div class="flex items-center gap-2 mb-1">
+          <ShieldCheck class="w-5 h-5 text-butter-500" />
+          <h2 class="text-lg font-semibold text-cocoa-900">家长功能包管理</h2>
+          <span class="text-sm text-cocoa-400 ml-auto">{{ activeClassName }}</span>
+        </div>
+        <p class="text-xs text-cocoa-500 mb-4">
+          配置本班家长在「家长端」可见的功能页面。未配置时家长跟随班级教师功能并集（仍受学校级功能包收窄）；配置后家长仅可见勾选的功能。
+        </p>
+
+        <div v-if="pfLoading" class="text-sm text-cocoa-400 py-4">加载中…</div>
+
+        <template v-else>
+          <!-- 模式切换：非班主任只读展示，班主任可管理 -->
+          <div class="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              :disabled="!isHeadTeacher"
+              :class="[
+                'text-xs px-3 py-1.5 rounded-full border transition-colors',
+                pfMode === 'default'
+                  ? 'border-butter-400 bg-butter-100 text-butter-600'
+                  : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+              ]"
+              @click="pfMode = 'default'; pfDraft = []"
+            >跟随默认</button>
+            <button
+              type="button"
+              :disabled="!isHeadTeacher"
+              :class="[
+                'text-xs px-3 py-1.5 rounded-full border transition-colors',
+                pfMode === 'custom'
+                  ? 'border-butter-400 bg-butter-100 text-butter-600'
+                  : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+              ]"
+              @click="pfMode = 'custom'"
+            >自定义勾选</button>
+            <span v-if="!isHeadTeacher" class="text-xs text-cocoa-400 ml-auto">仅班主任可配置家长功能包</span>
+          </div>
+
+          <div v-if="pfMode === 'default'" class="text-xs text-cocoa-500 bg-cream-50 rounded-xl p-3">
+            当前为「跟随默认」：家长可见班级教师功能并集，如班主任需要限制家长可见功能，请切换到「自定义勾选」。
+          </div>
+
+          <template v-else>
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              <button
+                v-for="opt in pfOptions"
+                :key="opt.key"
+                type="button"
+                :disabled="!isHeadTeacher"
+                :class="[
+                  'text-xs px-2.5 py-1 rounded-full border transition-colors disabled:cursor-not-allowed',
+                  pfDraft.includes(opt.key)
+                    ? 'border-butter-400 bg-butter-100 text-butter-600'
+                    : 'border-cream-200 text-cocoa-500 hover:bg-cream-50',
+                ]"
+                @click="togglePfOption(opt.key)"
+              >{{ opt.label }}</button>
+            </div>
+            <div class="text-xs text-cocoa-500">
+              <span class="text-cocoa-400">已勾选 {{ pfDraft.length }} 项</span>
+              <span v-if="pfDraft.length === 0" class="ml-2 text-sakura-500">（空数组=关闭该班家长端全部功能）</span>
+            </div>
+          </template>
+
+          <div v-if="isHeadTeacher" class="flex items-center gap-3 mt-4">
+            <button
+              class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm hover:bg-butter-600 disabled:opacity-60"
+              :disabled="pfSaving"
+              @click="saveParentFeatures"
+            >
+              <Save class="w-4 h-4" /> {{ pfSaving ? '保存中…' : '保存' }}
+            </button>
+            <span v-if="pfMsg" :class="['text-xs', pfMsgType === 'ok' ? 'text-mint-600' : 'text-sakura-600']">{{ pfMsg }}</span>
           </div>
         </template>
       </div>

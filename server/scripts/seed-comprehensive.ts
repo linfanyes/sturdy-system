@@ -4,7 +4,7 @@
  * 生成规模：
  *   20 所学校 × 6 年级 × 8 班级 × 60 学生 + 6 教师/校
  *   + 家长信息 + 3 学期 × 10 考试 × 各科成绩
- *   + 多娃家长（跨班/跨校）+ 师兼家
+ *   + 教师子女家长（独立登录，无师兼家）
  *
  * 运行：npx tsx scripts/seed-comprehensive.ts
  *
@@ -27,7 +27,7 @@ const CONFIG = {
   PASSWORD: 'Test@2026',
   MULTI_CHILD_COUNT: 5,           // 跨班多娃家长数
   CROSS_SCHOOL_PARENT_COUNT: 3,   // 跨校多娃家长数
-  TEACHER_AS_PARENT_COUNT: 0,     // 师兼家数（已移除，教师和家长使用独立账户）
+  TEACHER_AS_PARENT_COUNT: 0,     // 已移除（教师和家长使用独立账户，无师兼家）
 }
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '科学', '道德与法治', '音乐', '美术', '体育', '信息技术', '综合实践']
@@ -313,35 +313,12 @@ async function main() {
       }
     }
     console.log(`   ✅ ${CONFIG.CROSS_SCHOOL_PARENT_COUNT} 组跨校多娃家长创建完成`)
-
-    // 4c. 师兼家（教师同时是家长）
-    for (let i = 0; i < CONFIG.TEACHER_AS_PARENT_COUNT && i < allTeachers.length; i++) {
-      const teacher = allTeachers[i]
-      const schoolStudents = allStudents.filter(s => s.schoolId === teacher.schoolId)
-      const kid = schoolStudents[i % schoolStudents.length]
-      if (!kid) continue
-
-      const parentId = uuid()
-      await qr.query(
-        `INSERT INTO parents (id, openId, phone, parentName, nickName, relation, passwordHash) VALUES (?, NULL, ?, ?, ?, ?, ?)`,
-        [parentId, `139${String(70000000 + i).slice(0, 8)}`, `${teacher.name}本人`, `${teacher.name}`, '父亲', hash]
-      )
-      await qr.query(
-        `INSERT INTO student_parents (id, studentId, parentId, openId, schoolId, classId, isPrimary, nickName, relation) VALUES (?, ?, ?, ?, ?, ?, 1, ?, '父亲')`,
-        [uuid(), kid.id, parentId, 'tchp_' + parentId.slice(0, 8), kid.schoolId, kid.classId, teacher.name]
-      )
-      await qr.query(`UPDATE students SET parentLoginEnabled = 1, parentPasswordHash = ?, parentId = ?, parentName = ?, parentNickName = ?, parentPhone = ? WHERE id = ?`,
-        [hash, parentId, `${teacher.name}本人`, teacher.name, `139${String(70000000 + i).slice(0, 8)}`, kid.id])
-      // 回填教师的 parentId（师兼家锚点）
-      await qr.query(`UPDATE users SET parentId = ? WHERE id = ?`, [parentId, teacher.id])
-    }
     await qr.commitTransaction()
-    console.log(`   ✅ ${CONFIG.TEACHER_AS_PARENT_COUNT} 位师兼家创建完成\n`)
 
     console.log('🎉 全面测试数据生成完成！')
     console.log(`   学校: ${CONFIG.SCHOOLS} · 教师: ${teacherCount} · 学生: ${studentCount} · 家长: ${parentCount}`)
     console.log(`   考试: ${examCount} · 成绩科目次: ${examCount * 3}`)
-    console.log(`   多娃家长: ${CONFIG.MULTI_CHILD_COUNT}(跨班) + ${CONFIG.CROSS_SCHOOL_PARENT_COUNT}(跨校) · 师兼家: ${CONFIG.TEACHER_AS_PARENT_COUNT}`)
+    console.log(`   多娃家长: ${CONFIG.MULTI_CHILD_COUNT}(跨班) + ${CONFIG.CROSS_SCHOOL_PARENT_COUNT}(跨校)`)
     console.log(`   所有登录密码: ${CONFIG.PASSWORD}\n`)
 
   } catch (e: any) {

@@ -5,13 +5,13 @@ import { Repository } from 'typeorm'
 import { ConfigService } from '@nestjs/config'
 import { Student } from '../students/student.entity'
 import { Parent } from '../parent/parent.entity'
-import { User } from '../users/user.entity'
 import { ImService } from '../im/im.module'
 import { parentImUserId } from '../im/parent-im.util'
 import { WechatService } from '../auth/wechat.service'
 import { hashPassword, verifyAndUpgrade } from '../common/utils/password.util'
 import { StudentParentService } from '../student-parent/student-parent.module'
 import { ParentQueryService } from './parent-query.service'
+import { FeatureService } from '../common/feature/feature.service'
 import { isStudentNo } from '@gardener/shared/validators'
 
 /**
@@ -25,7 +25,6 @@ import { isStudentNo } from '@gardener/shared/validators'
 export class ParentAuthService {
   constructor(
     @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
-    @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     private readonly jwt: JwtService,
     private readonly im: ImService,
@@ -33,7 +32,18 @@ export class ParentAuthService {
     private readonly wechat: WechatService,
     private readonly studentParentSvc: StudentParentService,
     private readonly query: ParentQueryService,
+    private readonly feature: FeatureService,
   ) {}
+
+  /** 计算某学生的家长有效功能包（应用班主任「家长功能包」显式配置，失败时回退空=不限制） */
+  private async computeEffectiveFeatures(studentId: string): Promise<string[]> {
+    try {
+      const ctx = await this.feature.resolveContextFromReq({ role: 'parent', studentId })
+      return await this.feature.getEffectiveFeatures(ctx)
+    } catch {
+      return []
+    }
+  }
 
   /** 学号 + 密码登录 */
   async login(studentNo: string, password: string) {
@@ -75,9 +85,12 @@ export class ParentAuthService {
       classId: stu.classId,
       studentNo: no,
     })
+    // 家长功能包：登录时一并下发，双端家长页据此做页面显隐（班主任可配置班级家长功能包）
+    const effectiveFeatures = await this.computeEffectiveFeatures(stu.id)
     return {
       token,
-      parent: { imUserId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: no },
+      effectiveFeatures,
+      parent: { imUserId, studentId: stu.id, studentName: stu.name, classId: stu.classId, studentNo: no, effectiveFeatures },
     }
   }
 
@@ -118,11 +131,15 @@ export class ParentAuthService {
       ? await this.studentParentSvc.listByOpenid(parent.openId)
       : []
 
+    // 家长功能包：当前激活孩子对应的有效功能（班主任可配置班级家长功能包）
+    const effectiveFeatures = await this.computeEffectiveFeatures(activeKid.id)
+
     return {
       parentName: parent.parentName || '家长',
       studentId: activeKid.id, studentName: activeKid.name, studentNo: activeKid.studentNo,
       classId: activeKid.classId, className: '',
       parentId: parent.id,
+      effectiveFeatures,
       studentInfo: {
         name: activeKid.name,
         gender: activeKid.gender,
@@ -160,31 +177,10 @@ export class ParentAuthService {
       studentId: target.id, studentName: target.name,
       classId: target.classId, studentNo: target.studentNo,
     })
-    return { token, studentId: target.id, studentName: target.name, studentNo: target.studentNo, classId: target.classId }
-  }
-
-  /** 师兼家角色切换：教师激活家长身份，返回家长 token */
-  async activateParent(teacherUserId: string) {
-    const user = await this.usersRepo.findOne({ where: { id: teacherUserId } })
-    if (!user?.parentId) throw new ForbiddenException('该教师未关联家长身份')
-
-    const parent = await this.parentRepo.findOne({ where: { id: user.parentId } })
-    if (!parent) throw new ForbiddenException('家长身份不存在')
-
-    const kids = await this.query.findKids(parent.id)
-    if (!kids.length) throw new ForbiddenException('家长身份未关联学生')
-
-    const firstKid = kids[0]
-    const pim = parentImUserId({ studentId: firstKid.id, relation: '家长', parentName: parent.parentName })
-    const token = this.jwt.sign({
-      sub: pim, type: 'parent', aud: 'parent', parentId: parent.id,
-      studentId: firstKid.id, studentName: firstKid.name,
-      classId: firstKid.classId, studentNo: firstKid.studentNo,
-    })
+    const effectiveFeatures = await this.computeEffectiveFeatures(target.id)
     return {
-      token,
-      parentId: parent.id,
-      kids: kids.map(k => ({ studentId: k.id, studentName: k.name, studentNo: k.studentNo, classId: k.classId })),
+      token, effectiveFeatures,
+      studentId: target.id, studentName: target.name, studentNo: target.studentNo, classId: target.classId,
     }
   }
 

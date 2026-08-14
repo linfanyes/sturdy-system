@@ -57,13 +57,55 @@ class StudentsService extends CrudService<Student> {
     return true
   }
 
+  /**
+   * 服务层强制剥离敏感字段（纵深防御）：
+   * controller 的 stripUnsafe 只覆盖经基类走的标准 create/update，
+   * 而 /students/bulk 等入口直接调用 service.create(原始 item)，此处兜底，
+   * 防止 parentId / parentPasswordHash / parentLoginEnabled / schoolId / teacherId 被客户端注入。
+   */
+  private stripSensitive(dto: any): any {
+    if (!dto || typeof dto !== 'object') return dto
+    const out: any = { ...dto }
+    delete out.parentId
+    delete out.parentPasswordHash
+    delete out.parentLoginEnabled
+    delete out.schoolId
+    delete out.teacherId
+    delete out.id
+    delete out.createdAt
+    delete out.updatedAt
+    return out
+  }
+
   /** D1 修复：创建学生时校验家长手机号格式（与前端 PHONE_REGEX 一致，防脏数据入库） */
   override async create(teacherId: string, dto: any) {
+    dto = this.stripSensitive(dto)
     const phone = String(dto?.parentPhone || '').trim()
     if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
       throw new BadRequestException('家长手机号格式不正确（应为 1 开头的 11 位手机号）')
     }
+    // G3 修复：学号全局唯一（家长登录依赖学号），非空学号创建前查重，防重复学号入库
+    const studentNo = String(dto?.studentNo || '').trim()
+    if (studentNo) {
+      const dup = await this.repo.findOne({ where: { studentNo } as any })
+      if (dup) {
+        throw new BadRequestException(`学号 ${studentNo} 已存在，请勿重复创建`)
+      }
+    }
     return super.create(teacherId, dto)
+  }
+
+  /** G3 修复：更新学生时若修改学号，同样校验全局唯一（排除自身） */
+  override async update(id: string, teacherId: string, dto: any) {
+    dto = this.stripSensitive(dto)
+    const studentNo = String(dto?.studentNo || '').trim()
+    if (studentNo) {
+      const dup = await this.repo.findOne({ where: { studentNo } as any })
+      if (dup && dup.id !== id) {
+        throw new BadRequestException(`学号 ${studentNo} 已被其他学生使用`)
+      }
+    }
+    return super.update(id, teacherId, dto)
   }
 
   /** 校验当前教师是指定班级的班主任（批量导入/清空仅限班主任） */

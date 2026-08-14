@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { School } from '../../school/school.entity'
 import { Student } from '../../students/student.entity'
 import { User } from '../../users/user.entity'
+import { ClassItem } from '../../classes/class.entity'
 import { FeatureService, FEATURE_RESOLVERS } from './feature.service'
 import { FeatureGuard } from './feature.guard'
 import { SchoolLevelResolver } from './school-level.resolver'
@@ -18,7 +19,7 @@ import { ClassMembersModule } from '../../class-members/class-members.module'
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([School, Student, User]),
+    TypeOrmModule.forFeature([School, Student, User, ClassItem]),
     ClassMembersModule,
   ],
   providers: [

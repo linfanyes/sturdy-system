@@ -38,7 +38,7 @@ export class MessageController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.svc.list(u.sub, u.role, Number(skip) || 0, Number(take) || 20)
+    return this.svc.list(u.sub, u.role, Math.max(0, Number(skip) || 0), Math.min(Number(take) || 20, 100))
   }
 
   /** GET /api/messages/sent?skip=&take= 当前用户发送的消息 */
@@ -48,7 +48,7 @@ export class MessageController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.svc.listSent(u.sub, u.role, Number(skip) || 0, Number(take) || 20)
+    return this.svc.listSent(u.sub, u.role, Math.max(0, Number(skip) || 0), Math.min(Number(take) || 20, 100))
   }
 
   /** GET /api/messages/unread-count 当前用户未读消息数 */

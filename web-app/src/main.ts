@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from '@/stores/auth'
 import { installFeedback } from '@/utils/feedback'
 import { installGameScoreReporter } from '@/api/games'
 import { lazy } from '@/directives/lazy'
@@ -11,7 +12,12 @@ import './style.css'
 installGameScoreReporter()
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
+// 缺陷修复：冷启动恢复持久化登录态。此前无人调用 restore()，刷新/直链进入时
+// store 从空的内存态初始化，路由守卫把仍持有有效 token 的用户踢回登录页。
+// restore() 内部无 await（localStorage 同步读取 + 同步 emit），调用后同步完成 state 恢复。
+useAuthStore().restore()
 app.use(router)
 app.directive('lazy', lazy)
 installFeedback(app)

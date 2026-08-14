@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsArray, IsBoolean, IsNumber } from 'class-validator'
+import { IsOptional, IsString, IsArray, IsNumber } from 'class-validator'
 
 /** 学生新增入参（字段与 Student 实体对齐，白名单校验下需全部声明以免落库被剥离） */
 export class CreateStudentDto {
@@ -14,10 +14,7 @@ export class CreateStudentDto {
   @IsOptional() @IsString() parentPhone?: string
   @IsOptional() @IsString() studentPhone?: string
   @IsOptional() @IsString() address?: string
-  @IsOptional() @IsString() parentId?: string
   @IsOptional() @IsString() parentNickName?: string
-  @IsOptional() @IsBoolean() parentLoginEnabled?: boolean
-  @IsOptional() @IsString() parentPasswordHash?: string
   @IsOptional() @IsString() note?: string
   @IsOptional() @IsArray() tags?: string[]
   @IsOptional() @IsString() duty?: string
@@ -39,10 +36,7 @@ export class UpdateStudentDto {
   @IsOptional() @IsString() parentPhone?: string
   @IsOptional() @IsString() studentPhone?: string
   @IsOptional() @IsString() address?: string
-  @IsOptional() @IsString() parentId?: string
   @IsOptional() @IsString() parentNickName?: string
-  @IsOptional() @IsBoolean() parentLoginEnabled?: boolean
-  @IsOptional() @IsString() parentPasswordHash?: string
   @IsOptional() @IsString() note?: string
   @IsOptional() @IsArray() tags?: string[]
   @IsOptional() @IsString() duty?: string

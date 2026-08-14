@@ -13,23 +13,33 @@ jest.mock('@/stores/auth', () => ({
   }),
 }))
 
-// roleSwitch store：测试未安装 pinia，模块级 mock（与 auth mock 对齐）
-jest.mock('@/stores/roleSwitch', () => ({
-  useRoleSwitchStore: () => ({
-    teacherToken: '',
-    parentToken: '',
-    teacherUser: null,
-    parentUser: null,
-    currentRole: null,
-    setTokens: jest.fn(),
-    switchTo: jest.fn(),
-    clear: jest.fn(),
+// prefs store：Navbar 主题切换依赖它，测试未安装 pinia，模块级 mock
+jest.mock('@/stores/prefs', () => ({
+  usePrefsStore: () => ({
+    theme: 'light',
+    density: 'default',
+    sidebarCollapsed: false,
+    accentColor: 'butter',
+    fontSize: 'md',
+    recentExams: [],
+    toggleTheme: jest.fn(),
+    addRecentExam: jest.fn(),
+    clearRecentExams: jest.fn(),
   }),
 }))
 
 jest.mock('@/api/school-admin', () => ({
   __esModule: true,
   search: jest.fn(() => Promise.resolve({ teachers: [], classes: [], students: [] })),
+}))
+
+// 家长端「跨娃比对」需关联 ≥2 名学生才显示；mock useParentKids 返回 2 个孩子
+jest.mock('@/composables/useParentKids', () => ({
+  useParentKids: () => ({
+    kidCount: { value: 2 },
+    ensure: jest.fn().mockResolvedValue(2),
+    setKidCount: jest.fn(),
+  }),
 }))
 
 function makeRouter(initial: string) {
@@ -68,7 +78,7 @@ describe('AppLayout 侧边栏菜单 / 搜索 / 退出（NAV-06 / SA-06 / SA-07�
   it('校管：显示搜索框与 3 个一级分类', async () => {
     const { wrapper } = await mountWith('school_admin')
     expect(wrapper.find('input[placeholder="全局搜索：教师 / 班级 / 学生"]').exists()).toBe(true)
-    for (const label of ['工作台', '人员管理', '资源与设置']) {
+    for (const label of ['工作台', '人员管理', '资源', '设置']) {
       expect(wrapper.text()).toContain(label)
     }
   })
@@ -109,9 +119,14 @@ describe('AppLayout 侧边栏菜单 / 搜索 / 退出（NAV-06 / SA-06 / SA-07�
 
   it('点击退出：调用 auth.logout 并跳转登录', async () => {
     const { wrapper, router } = await mountWith('super')
-    const logoutBtn = wrapper.find('button[title="退出登录"]')
-    expect(logoutBtn.exists()).toBe(true)
-    await logoutBtn.trigger('click')
+    // 退出登录按钮在头像弹出的面板内（Teleport 到 body），先点击头像打开面板
+    const avatar = wrapper.find('button[title="测试用户"]')
+    expect(avatar.exists()).toBe(true)
+    await avatar.trigger('click')
+    await flushPromises()
+    const logoutBtn = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').includes('退出登录'))
+    expect(logoutBtn).toBeTruthy()
+    logoutBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
     // 路由应跳到 login
     expect(router.currentRoute.value.name).toBe('login')
