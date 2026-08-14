@@ -203,21 +203,32 @@ async function bootstrap() {
   }
   app.use('/h5', express.static(h5Path))
 
-  // —— 安全启动自检 ——
+  // —— 安全启动自检（fail-closed：生产环境高危弱配置直接拒绝启动，与 LOGIN_CODE 策略一致） ——
   const jwtSecret = config.get<string>('JWT_SECRET')
   if (!jwtSecret || jwtSecret === 'change_me_to_a_long_random_secret') {
-    logger.warn('⚠️  安全警告: JWT_SECRET 未配置或使用默认占位值')
-    if (config.get('NODE_ENV') === 'production') {
-      logger.warn('⚠️  JWT_SECRET 未配置为强随机值，生产环境中令牌可能不安全')
+    if (isProd) {
+      throw new Error(
+        '生产环境必须配置强随机的 JWT_SECRET（≥32 位），否则任意攻击者可伪造令牌。请在 .env 设置后重启，服务拒绝启动（fail-closed）。',
+      )
     }
+    logger.warn('⚠️  安全警告: JWT_SECRET 未配置或使用默认占位值（开发环境）')
   }
   const su = config.get('SUPER_ADMIN_USER') || 'admin'
   const sp = config.get('SUPER_ADMIN_PASSWORD') || 'admin'
   if (su === 'admin' && sp === 'admin') {
-    logger.warn('⚠️  安全警告: 超级管理员仍为默认账号 admin/admin')
+    if (isProd) {
+      throw new Error(
+        '生产环境超级管理员仍为默认账号 admin/admin，请通过 SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD（bcrypt 哈希）设置强凭据，服务拒绝启动（fail-closed）。',
+      )
+    }
+    logger.warn('⚠️  安全警告: 超级管理员仍为默认账号 admin/admin（开发环境）')
   }
-  if (config.get('NODE_ENV') === 'production' && !isBcryptHash(sp)) {
-    logger.warn('⚠️  安全警告: 生产环境超级管理员密码未使用 bcrypt 哈希格式')
+  if (isProd && !isBcryptHash(sp)) {
+    // 与 CHANGELOG「生产环境启动检查」承诺一致：超管密码必须以 bcrypt 哈希（$2b$...）配置，
+    // 避免 .env 泄露时明文口令直接暴露。
+    throw new Error(
+      '生产环境 SUPER_ADMIN_PASSWORD 必须使用 bcrypt 哈希格式（$2b$... 开头，可用 bcrypt.hashSync("你的密码", 10) 生成），服务拒绝启动（fail-closed）。',
+    )
   }
   if (config.get('NODE_ENV') === 'production' && config.get('DB_SYNCHRONIZE') === 'true') {
     logger.warn('⚠️  安全警告: 生产环境开启了 DB_SYNCHRONIZE=true')
@@ -242,4 +253,8 @@ async function bootstrap() {
   logger.log(`🚀 园丁工作台后端已启动: http://localhost:${port}/api/v1`)
   logger.log(`📖 API 版本化已启用：/api/* 自动重定向到 /api/v1/*`)
 }
-bootstrap()
+bootstrap().catch((err) => {
+  logger.error('❌ 应用启动失败（安全自检 fail-closed 或初始化错误）')
+  logger.error(err?.message || err)
+  process.exit(1)
+})

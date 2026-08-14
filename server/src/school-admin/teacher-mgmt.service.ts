@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import { randomInt } from 'node:crypto'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
 import { Repository, EntityManager, In } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -210,12 +211,14 @@ export class TeacherMgmtService {
     return { ok: true, defaultPassword: pwd, forcePasswordChange: true }
   }
 
-  /** S03修复：生成8位随机密码（包含大小写字母和数字） */
+  /** S03修复：生成8位随机密码（包含大小写字母和数字）。
+   *  使用 node:crypto 的 randomInt（CSPRNG），避免 Math.random 的可预测性：
+   *  重置/新建教师的默认口令若可预测，攻击者可在拿到用户名后离线穷举。 */
   private generateRandomPassword(length = 8): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
     let password = ''
     for (let i = 0; i < length; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
+      password += chars.charAt(randomInt(0, chars.length))
     }
     return password
   }
