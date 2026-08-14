@@ -170,4 +170,14 @@ export class AiController {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
     return this.ai.diagnose(b.studentId, t.sub)
   }
+
+  /** 通用 AI 生成：写作/范文/作文/试卷题等场景复用（写作工具） */
+  @Post('generate')
+  @Roles('teacher', 'school_admin')
+  @UseGuards(JwtAuthGuard)
+  generate(@Body() body: { prompt: string; type?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    const messages = [{ role: 'user', content: body.prompt }]
+    return this.withAiTimeout(this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, { messages }))
+  }
 }

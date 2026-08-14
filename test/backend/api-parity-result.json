@@ -1,0 +1,3949 @@
+{
+  "generatedAt": "2026-08-14T04:46:05.077Z",
+  "serverRoutes": [
+    {
+      "http": "POST",
+      "path": "/admin/login",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/schools",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/schools/export",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/schools/:id",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/schools",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/admin/schools/:id",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/schools/:id/features",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/admin/schools/:id/features",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/admin/schools/:id",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/schools/batch-toggle",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/school-admins",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/school-admins",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/admin/school-admins/:id",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/admin/school-admins/:id/enabled",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/admin/school-admins/:id/password",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/admin/school-admins/:id",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/school-admins/batch",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/school-admins/batch-toggle",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/reset-all",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/teachers",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/classes",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/students",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/admin/teachers/:id/clear-data",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/audit-logs",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/audit-exams",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/audit-grades",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/admin/audit-grade-summary",
+      "file": "admin/admin.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/lesson-plan-templates",
+      "file": "admin/admin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/lesson-plan-templates",
+      "file": "admin/admin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/lesson-plan-templates/:id",
+      "file": "admin/admin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/lesson-plan-templates/:id",
+      "file": "admin/admin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/lesson-plan-templates/:id",
+      "file": "admin/admin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/ai/chat",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/parse",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/chat-sync",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/gen-image",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/gen-video",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/asr",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/ocr",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/parse-file",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/analyze-exam",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/diagnose",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai/generate",
+      "file": "ai/ai.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/analysis/student-trend",
+      "file": "analysis/analysis.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/analysis/class-trend",
+      "file": "analysis/analysis.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/analysis/subject-strength",
+      "file": "analysis/analysis.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/unified-login",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/wechat-login",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/bind-teacher",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/bind-parent",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/bind-by-number",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/password-login",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/auth/change-password",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/auth/me",
+      "file": "auth/auth.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/award-records",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/award-records",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/award-records/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/award-records/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/award-records/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/award-categories",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/award-categories",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/award-categories/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/award-categories/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/award-categories/:id",
+      "file": "award/award.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/backups",
+      "file": "backup/backup.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/backups/:id",
+      "file": "backup/backup.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/backups",
+      "file": "backup/backup.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/backups/:id",
+      "file": "backup/backup.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/backups/auto",
+      "file": "backup/backup.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/chat-sessions",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/chat-sessions",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/chat-sessions/:id",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/chat-sessions/:id/messages",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/chat-sessions/:id/pin",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/chat-sessions/:id",
+      "file": "chat-history/chat-history.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/checkins",
+      "file": "checkin/checkin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/checkins",
+      "file": "checkin/checkin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/checkins/:id",
+      "file": "checkin/checkin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/checkins/:id",
+      "file": "checkin/checkin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/checkins/:id",
+      "file": "checkin/checkin.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/class-expenses",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/class-expenses",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/class-expenses/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/class-expenses/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/class-expenses/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/class-activities",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/class-activities",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/class-activities/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/class-activities/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/class-activities/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/class-duty-configs",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/class-duty-configs",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/class-duty-configs/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/class-duty-configs/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/class-duty-configs/:id",
+      "file": "class-ops/class-ops.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/classes",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/classes",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/classes/:id",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/classes/:id",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/classes/:id",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/classes/:id/members/list",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/classes/school-teachers",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/classes/:id/members",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/classes/:id/members/:teacherId",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/classes/:id/my-subjects",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/classes/:id/members/:teacherId/subjects",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/classes/:id/dashboard",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/classes/:id/parent-features",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/classes/:id/parent-features",
+      "file": "classes/classes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/path",
+      "file": "common/crud/base.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/path",
+      "file": "common/crud/base.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/path/:id",
+      "file": "common/crud/base.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/path/:id",
+      "file": "common/crud/base.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/path/:id",
+      "file": "common/crud/base.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/ai-providers",
+      "file": "config/ai-provider.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/ai-providers",
+      "file": "config/ai-provider.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/ai-providers/:code",
+      "file": "config/ai-provider.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/ai-providers/:code",
+      "file": "config/ai-provider.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/public",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/app",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PUT",
+      "path": "/config/app",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PUT",
+      "path": "/config/app/:key",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/ai",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PUT",
+      "path": "/config/ai",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/config/ai/models",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/teacher/ai-defaults",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/ai-settings",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PUT",
+      "path": "/config/ai",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/config/ai-settings",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/app-config",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/config/ai-providers",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/config/app-config",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/config/app-config",
+      "file": "config/config.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/duty-rosters",
+      "file": "duty-roster/duty-roster.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/duty-rosters",
+      "file": "duty-roster/duty-roster.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/duty-rosters/:id",
+      "file": "duty-roster/duty-roster.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/duty-rosters/:id",
+      "file": "duty-roster/duty-roster.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/duty-rosters/:id",
+      "file": "duty-roster/duty-roster.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/reward-records",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/reward-records",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/reward-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/reward-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/reward-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/score-records",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/score-records",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/score-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/score-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/score-records/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/group-scores",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/group-scores",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/group-scores/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/group-scores/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/group-scores/:id",
+      "file": "engagement/engagement.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/leaderboard",
+      "file": "evaluation/leaderboard.controller.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/exams",
+      "file": "exams/exams.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/exams",
+      "file": "exams/exams.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/exams/:id",
+      "file": "exams/exams.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/exams/:id",
+      "file": "exams/exams.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/exams/:id",
+      "file": "exams/exams.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/class-galleries",
+      "file": "gallery/gallery.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/class-galleries",
+      "file": "gallery/gallery.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/class-galleries/:id",
+      "file": "gallery/gallery.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/class-galleries/:id",
+      "file": "gallery/gallery.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/class-galleries/:id",
+      "file": "gallery/gallery.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/game-scores",
+      "file": "game-scores/game-scores.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/game-scores",
+      "file": "game-scores/game-scores.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/game-scores/:gameKey",
+      "file": "game-scores/game-scores.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/generated/papers",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/papers",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/papers/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/generated/papers/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/generated/papers/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/generated/lesson-plans",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/lesson-plans",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/lesson-plans/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/generated/lesson-plans/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/generated/lesson-plans/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/generated/lesson-plans/seed-defaults",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/generated/knowledges",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/knowledges",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/generated/knowledges/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/generated/knowledges/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/generated/knowledges/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/generated/knowledges/seed-defaults",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/generated/queries",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/generated/queries",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/generated/queries/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/generated/queries/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/generated/queries/:id",
+      "file": "generated/generated.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/grades",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/:id",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/grades/:id",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/grades/:id",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/grades/merge",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/grades/import-preview",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/grades/import-commit",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/grades/import-ai",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/analysis/exam",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/analysis/trend",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/analysis/rank",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/analysis/student/:studentId",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/analysis/weak",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/grades/export",
+      "file": "grades/grades.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/growth-entries",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/growth-entries",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/growth-entries/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/growth-entries/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/growth-entries/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/behavior-records",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/behavior-records",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/behavior-records/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/behavior-records/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/behavior-records/:id",
+      "file": "growth/growth.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/health",
+      "file": "health.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/health/cache",
+      "file": "health.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/home-visits",
+      "file": "home-visit/home-visit.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/home-visits",
+      "file": "home-visit/home-visit.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/home-visits/:id",
+      "file": "home-visit/home-visit.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/home-visits/:id",
+      "file": "home-visit/home-visit.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/home-visits/:id",
+      "file": "home-visit/home-visit.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/im/user-sig",
+      "file": "im/im.module.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/im/parents",
+      "file": "im/im.module.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/im/class-group",
+      "file": "im/im.module.ts",
+      "kind": "custom",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/lesson-observations",
+      "file": "lesson-observation/lesson-observation.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/lesson-observations",
+      "file": "lesson-observation/lesson-observation.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/lesson-observations/:id",
+      "file": "lesson-observation/lesson-observation.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/lesson-observations/:id",
+      "file": "lesson-observation/lesson-observation.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/lesson-observations/:id",
+      "file": "lesson-observation/lesson-observation.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/math-mistakes",
+      "file": "math-mistakes/math-mistakes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/math-mistakes",
+      "file": "math-mistakes/math-mistakes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/math-mistakes/:id",
+      "file": "math-mistakes/math-mistakes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/math-mistakes/:id",
+      "file": "math-mistakes/math-mistakes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/math-mistakes/:id",
+      "file": "math-mistakes/math-mistakes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/messages",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/messages/sent",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/messages/unread-count",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/messages/recipients",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/messages",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/messages/:id/read",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/messages/mark-all-read",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/messages/:id",
+      "file": "messages/message.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/monitor/log",
+      "file": "monitor/monitor.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/monitor/logs",
+      "file": "monitor/monitor.controller.ts",
+      "kind": "custom",
+      "role": "'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/my-galleries",
+      "file": "my-gallery/my-gallery.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/my-galleries",
+      "file": "my-gallery/my-gallery.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/my-galleries/:id",
+      "file": "my-gallery/my-gallery.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/my-galleries/:id",
+      "file": "my-gallery/my-gallery.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/my-galleries/:id",
+      "file": "my-gallery/my-gallery.controller.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/notes",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/notes",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/notes/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/notes/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/notes/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/todos",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/todos",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/todos/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/todos/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/todos/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/picker-history",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/picker-history",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/picker-history/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/picker-history/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/picker-history/:id",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/picker-history",
+      "file": "notes/notes.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/notifications",
+      "file": "notification/notification.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/notifications/unread-count",
+      "file": "notification/notification.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/notifications/:id/read",
+      "file": "notification/notification.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/notifications/mark-all-read",
+      "file": "notification/notification.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/online-resources/zhzx/courses",
+      "file": "online-resources/online-resources.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin', 'super'"
+    },
+    {
+      "http": "GET",
+      "path": "/online-resources/zhzx/courses/:id",
+      "file": "online-resources/online-resources.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'school_admin', 'super'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/login",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/change-password",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/bind-wechat",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/bindings",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/me",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/notices",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/exams",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/homework",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/attendance",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/behavior",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/schedule",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/communications",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/teachers",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/subscribe",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/im-user-sig",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/switch-student",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/compare-kids",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-auth/student-update-request",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-auth/student-update-requests",
+      "file": "parent-auth/parent-auth.controller.ts",
+      "kind": "custom",
+      "role": "'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/parent-contacts",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-contacts",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/parent-contacts/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/parent-contacts/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/parent-contacts/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/notice-templates",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/notice-templates",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/notice-templates/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/notice-templates/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/notice-templates/:id",
+      "file": "parent-contact/parent-contact.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/reading-logs",
+      "file": "reading-log/reading-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/reading-logs",
+      "file": "reading-log/reading-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/reading-logs/:id",
+      "file": "reading-log/reading-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/reading-logs/:id",
+      "file": "reading-log/reading-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/reading-logs/:id",
+      "file": "reading-log/reading-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/seed-defaults",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/poems",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/poems",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/resource-library/poems/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/resource-library/poems/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/formulas",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/formulas",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/resource-library/formulas/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/resource-library/formulas/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/words",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/words/categories",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/words",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/resource-library/words/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/resource-library/words/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/science",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/science",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/resource-library/science/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/resource-library/science/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/resource-library/moral",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/resource-library/moral",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/resource-library/moral/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/resource-library/moral/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/poems",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/poems/search",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/formulas",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/formulas/search",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/words",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/words/categories",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/words/search",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/science",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/science/search",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/moral",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/resource-library/moral/search",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/resource-library/poems/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/resource-library/formulas/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/resource-library/words/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/resource-library/science/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/resource-library/moral/:id",
+      "file": "resource-library/resource-library.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/schedules",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/schedules",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/schedules/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/schedules/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/schedules/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/schedules/my",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/attendances",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/attendances",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/attendances/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/attendances/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/attendances/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/homework",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/homework",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/homework/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/homework/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/homework/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/notices",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/notices",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "GET",
+      "path": "/notices/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/notices/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/notices/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/notices/push",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": "'teacher'"
+    },
+    {
+      "http": "POST",
+      "path": "/resources",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/resources",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/resources/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/resources/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/resources/:id",
+      "file": "school/school.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/schedules/import-ai",
+      "file": "school/school.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/schedules/import-commit",
+      "file": "school/school.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/login",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/dashboard",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/school-features",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/school-features",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/teachers",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/teachers/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/batch",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/batch-import",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/import",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/import-preview",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/import-ai",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/teachers/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/teachers/:id/features",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/:id/reset-password",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/teachers/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/teachers/deactivate-all",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/parent-logins",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/classes",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/classes/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/classes/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/classes/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes/:id/promote",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes/batch",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes/import",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes/import-preview",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/classes/import-ai",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/notices",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/notices",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/notices/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/notices/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/students",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/students/export",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/students/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/students/:id",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/students/batch",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/students/batch-import",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/students/import",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/students/import-preview",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/students/import-ai",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/export/teachers",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/export/students",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/export/teachers-xls",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/export/students-xls",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/export/classes-xls",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/search",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/academic/exams",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/academic/grades",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/academic/summary",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/academic/class-comparison",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/academic/class-trend",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/homework",
+      "file": "school-admin/school-admin.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/seat-layouts",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/seat-layouts",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/seat-layouts/:id",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/seat-layouts/:id",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/seat-layouts/:id",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/seat-layouts/:id/activate",
+      "file": "seats/seats.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/security/msg-check",
+      "file": "security/security.module.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/security/img-check",
+      "file": "security/security.module.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/security/push-notice",
+      "file": "security/security.module.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/security/push-homework",
+      "file": "security/security.module.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/semesters",
+      "file": "semester/semester.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/semesters",
+      "file": "semester/semester.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/semesters/:id",
+      "file": "semester/semester.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/semesters/:id",
+      "file": "semester/semester.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/semesters/:id",
+      "file": "semester/semester.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/student-info-updates",
+      "file": "student-info-update/student-info-update.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/student-info-updates/:id/review",
+      "file": "student-info-update/student-info-update.module.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/students",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/students",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/students/:id",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/students/:id",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/students/:id",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/bulk",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/import",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/import-commit",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/import-ai",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/:id/toggle-parent-login",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/:id/reset-parent-password",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/students/:id/parent-bindings",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/:id/parent-bindings/:bindingId/unbind",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/students/:id/parent-bindings/:bindingId/set-primary",
+      "file": "students/students.module.ts",
+      "kind": "crud",
+      "role": "'teacher', 'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/teachers",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/teachers",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/teachers/:id",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/teachers/:id",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/teachers/:id",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/teachers/:id/detail",
+      "file": "teacher/teacher.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/teaching-calendar",
+      "file": "teaching-calendar/teaching-calendar.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/teaching-calendar",
+      "file": "teaching-calendar/teaching-calendar.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/teaching-calendar/:id",
+      "file": "teaching-calendar/teaching-calendar.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/teaching-calendar/:id",
+      "file": "teaching-calendar/teaching-calendar.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/teaching-calendar/:id",
+      "file": "teaching-calendar/teaching-calendar.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/textbooks",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/textbooks",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/textbooks/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/textbooks/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/textbooks/:id/units",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/textbooks/units",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/textbooks/units/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/textbooks/units/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/school-admin/textbooks/units/:unitId/points",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/textbooks/points",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/school-admin/textbooks/points/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "DELETE",
+      "path": "/school-admin/textbooks/points/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/textbooks/ai-generate",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "POST",
+      "path": "/school-admin/textbooks/seed-defaults",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'school_admin'"
+    },
+    {
+      "http": "GET",
+      "path": "/textbooks/tree",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/textbooks/search",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/textbooks/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/textbooks/units",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/textbooks/units/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "POST",
+      "path": "/textbooks/points",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "PATCH",
+      "path": "/textbooks/points/:id",
+      "file": "textbook/textbook.controller.ts",
+      "kind": "custom",
+      "role": "'teacher', 'parent'"
+    },
+    {
+      "http": "GET",
+      "path": "/users/me",
+      "file": "users/users.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PUT",
+      "path": "/users/me",
+      "file": "users/users.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/users/me",
+      "file": "users/users.controller.ts",
+      "kind": "custom",
+      "role": ""
+    },
+    {
+      "http": "POST",
+      "path": "/work-logs",
+      "file": "work-log/work-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/work-logs",
+      "file": "work-log/work-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "GET",
+      "path": "/work-logs/:id",
+      "file": "work-log/work-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "PATCH",
+      "path": "/work-logs/:id",
+      "file": "work-log/work-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    },
+    {
+      "http": "DELETE",
+      "path": "/work-logs/:id",
+      "file": "work-log/work-log.module.ts",
+      "kind": "crud",
+      "role": ""
+    }
+  ],
+  "webPaths": [
+    "/admin/audit-exams",
+    "/admin/audit-grade-summary",
+    "/admin/audit-grades",
+    "/admin/reset-all",
+    "/admin/school-admins",
+    "/admin/school-admins/:id",
+    "/admin/school-admins/:id/enabled",
+    "/admin/school-admins/:id/password",
+    "/admin/school-admins/batch-toggle",
+    "/admin/schools",
+    "/admin/schools/:id",
+    "/admin/schools/:id/features",
+    "/admin/schools/batch-toggle",
+    "/admin/teachers/:id/clear-data",
+    "/attendances",
+    "/attendances/:id",
+    "/classes",
+    "/messages/:id/read",
+    "/notifications/:id/read",
+    "/notifications/mark-all-read",
+    "/parent-auth/compare-kids",
+    "/parent-auth/switch-student",
+    "/school-admin/academic/class-comparison",
+    "/school-admin/academic/class-trend",
+    "/school-admin/academic/exams",
+    "/school-admin/academic/grades",
+    "/school-admin/academic/summary",
+    "/school-admin/classes",
+    "/school-admin/classes/:id",
+    "/school-admin/classes/:id/promote",
+    "/school-admin/classes/batch",
+    "/school-admin/classes/import",
+    "/school-admin/classes/import-ai",
+    "/school-admin/classes/import-preview",
+    "/school-admin/export/classes-xls",
+    "/school-admin/export/students",
+    "/school-admin/export/students-xls",
+    "/school-admin/export/teachers",
+    "/school-admin/export/teachers-xls",
+    "/school-admin/homework",
+    "/school-admin/notices",
+    "/school-admin/students/:id",
+    "/school-admin/students/batch",
+    "/school-admin/students/import",
+    "/school-admin/students/import-ai",
+    "/school-admin/students/import-preview",
+    "/school-admin/teachers",
+    "/school-admin/teachers/:id",
+    "/school-admin/teachers/:id/features",
+    "/school-admin/teachers/:id/reset-password",
+    "/school-admin/teachers/batch",
+    "/school-admin/teachers/import",
+    "/school-admin/teachers/import-ai",
+    "/school-admin/teachers/import-preview",
+    "/semesters",
+    "/students",
+    "/students/import",
+    "/students/import-ai",
+    "/students/import-commit"
+  ],
+  "miniPaths": [
+    "/admin/schools",
+    "/admin/schools/",
+    "/ai/analyze-exam",
+    "/ai/asr",
+    "/ai/chat",
+    "/ai/chat-sync",
+    "/ai/diagnose",
+    "/ai/gen-image",
+    "/ai/gen-video",
+    "/ai/generate",
+    "/ai/ocr",
+    "/ai/parse-file",
+    "/attendances",
+    "/attendances/",
+    "/auth/me",
+    "/auth/unified-login",
+    "/award-categories",
+    "/award-categories/",
+    "/award-records",
+    "/award-records/",
+    "/backups",
+    "/backups/",
+    "/backups/auto",
+    "/behavior-records",
+    "/behavior-records/",
+    "/checkins",
+    "/checkins/",
+    "/class-activities",
+    "/class-activities/",
+    "/class-duty-configs",
+    "/class-duty-configs/",
+    "/class-expenses",
+    "/class-expenses/",
+    "/class-galleries",
+    "/class-galleries/",
+    "/classes",
+    "/classes/",
+    "/classes/school-teachers",
+    "/config/ai",
+    "/config/ai-providers",
+    "/config/ai-settings",
+    "/config/app-config",
+    "/config/public",
+    "/duty-rosters",
+    "/duty-rosters/",
+    "/exams",
+    "/exams/",
+    "/generated/knowledges",
+    "/generated/knowledges/",
+    "/generated/lesson-plans",
+    "/generated/papers",
+    "/generated/queries",
+    "/generated/queries/",
+    "/grades",
+    "/grades/",
+    "/grades/analysis/exam",
+    "/grades/analysis/rank",
+    "/grades/analysis/student/",
+    "/grades/analysis/trend",
+    "/grades/analysis/weak",
+    "/grades/import-commit",
+    "/grades/import-preview",
+    "/grades/merge",
+    "/group-scores",
+    "/group-scores/",
+    "/growth-entries",
+    "/growth-entries/",
+    "/homework",
+    "/homework/",
+    "/im/class-group",
+    "/im/parents?classId=",
+    "/im/user-sig",
+    "/lesson-observations",
+    "/lesson-observations/",
+    "/lesson-plan-templates",
+    "/lesson-plan-templates/",
+    "/messages",
+    "/messages/",
+    "/messages/mark-all-read",
+    "/messages/recipients",
+    "/messages/sent",
+    "/my-galleries",
+    "/my-galleries/",
+    "/notes",
+    "/notes/",
+    "/notice-templates",
+    "/notice-templates/",
+    "/notices",
+    "/notices/",
+    "/notices/push",
+    "/notices?scope=school",
+    "/notifications",
+    "/notifications/",
+    "/notifications/mark-all-read",
+    "/notifications/unread-count",
+    "/online-resources/zhzx/courses",
+    "/parent-auth/attendance",
+    "/parent-auth/behavior",
+    "/parent-auth/change-password",
+    "/parent-auth/communications",
+    "/parent-auth/compare-kids",
+    "/parent-auth/exams",
+    "/parent-auth/homework",
+    "/parent-auth/login",
+    "/parent-auth/me",
+    "/parent-auth/notices",
+    "/parent-auth/schedule",
+    "/parent-auth/student-update-request",
+    "/parent-auth/student-update-requests",
+    "/parent-auth/switch-student",
+    "/parent-auth/teachers",
+    "/parent-contacts",
+    "/parent-contacts/",
+    "/path",
+    "/picker-history/",
+    "/reading-logs",
+    "/reading-logs/",
+    "/resource-library/formulas",
+    "/resource-library/moral",
+    "/resource-library/poems",
+    "/resource-library/science",
+    "/resource-library/words",
+    "/resource-library/words/categories",
+    "/resources",
+    "/resources/",
+    "/reward-records",
+    "/reward-records/",
+    "/schedules",
+    "/schedules/",
+    "/schedules/import-ai",
+    "/schedules/import-commit",
+    "/school-admin/school-features",
+    "/school-admin/search?q=",
+    "/score-records",
+    "/score-records/",
+    "/seat-layouts",
+    "/seat-layouts/",
+    "/security/img-check",
+    "/security/msg-check",
+    "/semesters",
+    "/student-info-updates",
+    "/student-info-updates/",
+    "/students",
+    "/students/",
+    "/students/import",
+    "/students/import-ai",
+    "/students/import-commit",
+    "/teachers",
+    "/teachers/",
+    "/teaching-calendar",
+    "/teaching-calendar/",
+    "/textbooks/search",
+    "/textbooks/search?keyword=:id",
+    "/textbooks/tree",
+    "/todos",
+    "/todos/",
+    "/users/me",
+    "/work-logs",
+    "/work-logs/"
+  ],
+  "webOnly": [],
+  "miniOnly": [
+    "/grades/analysis/student/",
+    "/im/parents?classId=",
+    "/notices?scope=school",
+    "/school-admin/search?q="
+  ],
+  "unusedByBoth": [
+    "POST /admin/login",
+    "GET /admin/teachers",
+    "GET /admin/classes",
+    "GET /admin/students",
+    "GET /admin/audit-logs",
+    "GET /lesson-plan-templates/:id",
+    "PATCH /lesson-plan-templates/:id",
+    "DELETE /lesson-plan-templates/:id",
+    "POST /ai/parse",
+    "GET /analysis/student-trend",
+    "GET /analysis/class-trend",
+    "GET /analysis/subject-strength",
+    "POST /auth/wechat-login",
+    "POST /auth/bind-teacher",
+    "POST /auth/bind-parent",
+    "POST /auth/bind-by-number",
+    "POST /auth/password-login",
+    "POST /auth/change-password",
+    "GET /award-records/:id",
+    "PATCH /award-records/:id",
+    "DELETE /award-records/:id",
+    "GET /award-categories/:id",
+    "PATCH /award-categories/:id",
+    "DELETE /award-categories/:id",
+    "POST /chat-sessions",
+    "GET /chat-sessions",
+    "GET /chat-sessions/:id",
+    "PATCH /chat-sessions/:id/messages",
+    "PATCH /chat-sessions/:id/pin",
+    "DELETE /chat-sessions/:id",
+    "GET /checkins/:id",
+    "PATCH /checkins/:id",
+    "DELETE /checkins/:id",
+    "GET /class-expenses/:id",
+    "PATCH /class-expenses/:id",
+    "DELETE /class-expenses/:id",
+    "GET /class-activities/:id",
+    "PATCH /class-activities/:id",
+    "DELETE /class-activities/:id",
+    "GET /class-duty-configs/:id",
+    "PATCH /class-duty-configs/:id",
+    "DELETE /class-duty-configs/:id",
+    "POST /classes/:id/members/list",
+    "POST /classes/:id/members",
+    "DELETE /classes/:id/members/:teacherId",
+    "PATCH /classes/:id/my-subjects",
+    "PATCH /classes/:id/members/:teacherId/subjects",
+    "GET /classes/:id/dashboard",
+    "GET /classes/:id/parent-features",
+    "PATCH /classes/:id/parent-features",
+    "GET /path/:id",
+    "PATCH /path/:id",
+    "DELETE /path/:id",
+    "GET /ai-providers",
+    "POST /ai-providers",
+    "PATCH /ai-providers/:code",
+    "DELETE /ai-providers/:code",
+    "GET /config/app",
+    "PUT /config/app",
+    "PUT /config/app/:key",
+    "POST /config/ai/models",
+    "GET /config/teacher/ai-defaults",
+    "GET /duty-rosters/:id",
+    "PATCH /duty-rosters/:id",
+    "DELETE /duty-rosters/:id",
+    "GET /reward-records/:id",
+    "PATCH /reward-records/:id",
+    "DELETE /reward-records/:id",
+    "GET /score-records/:id",
+    "PATCH /score-records/:id",
+    "DELETE /score-records/:id",
+    "GET /group-scores/:id",
+    "PATCH /group-scores/:id",
+    "DELETE /group-scores/:id",
+    "GET /leaderboard",
+    "GET /exams/:id",
+    "PATCH /exams/:id",
+    "DELETE /exams/:id",
+    "GET /class-galleries/:id",
+    "PATCH /class-galleries/:id",
+    "DELETE /class-galleries/:id",
+    "POST /game-scores",
+    "GET /game-scores",
+    "GET /game-scores/:gameKey",
+    "GET /generated/papers/:id",
+    "PATCH /generated/papers/:id",
+    "DELETE /generated/papers/:id",
+    "GET /generated/lesson-plans/:id",
+    "PATCH /generated/lesson-plans/:id",
+    "DELETE /generated/lesson-plans/:id",
+    "POST /generated/lesson-plans/seed-defaults",
+    "GET /generated/knowledges/:id",
+    "PATCH /generated/knowledges/:id",
+    "DELETE /generated/knowledges/:id",
+    "POST /generated/knowledges/seed-defaults",
+    "GET /generated/queries/:id",
+    "PATCH /generated/queries/:id",
+    "DELETE /generated/queries/:id",
+    "POST /grades/import-ai",
+    "GET /grades/analysis/student/:studentId",
+    "GET /grades/export",
+    "GET /growth-entries/:id",
+    "PATCH /growth-entries/:id",
+    "DELETE /growth-entries/:id",
+    "GET /behavior-records/:id",
+    "PATCH /behavior-records/:id",
+    "DELETE /behavior-records/:id",
+    "GET /health",
+    "GET /health/cache",
+    "POST /home-visits",
+    "GET /home-visits",
+    "GET /home-visits/:id",
+    "PATCH /home-visits/:id",
+    "DELETE /home-visits/:id",
+    "GET /im/parents",
+    "GET /lesson-observations/:id",
+    "PATCH /lesson-observations/:id",
+    "DELETE /lesson-observations/:id",
+    "POST /math-mistakes",
+    "GET /math-mistakes",
+    "GET /math-mistakes/:id",
+    "PATCH /math-mistakes/:id",
+    "DELETE /math-mistakes/:id",
+    "GET /messages/unread-count",
+    "POST /monitor/log",
+    "GET /monitor/logs",
+    "GET /my-galleries/:id",
+    "PATCH /my-galleries/:id",
+    "DELETE /my-galleries/:id",
+    "GET /notes/:id",
+    "PATCH /notes/:id",
+    "DELETE /notes/:id",
+    "GET /todos/:id",
+    "PATCH /todos/:id",
+    "DELETE /todos/:id",
+    "GET /picker-history/:id",
+    "PATCH /picker-history/:id",
+    "DELETE /picker-history/:id",
+    "GET /online-resources/zhzx/courses/:id",
+    "POST /parent-auth/bind-wechat",
+    "GET /parent-auth/bindings",
+    "POST /parent-auth/subscribe",
+    "GET /parent-auth/im-user-sig",
+    "GET /parent-contacts/:id",
+    "PATCH /parent-contacts/:id",
+    "DELETE /parent-contacts/:id",
+    "GET /notice-templates/:id",
+    "PATCH /notice-templates/:id",
+    "DELETE /notice-templates/:id",
+    "GET /reading-logs/:id",
+    "PATCH /reading-logs/:id",
+    "DELETE /reading-logs/:id",
+    "POST /school-admin/resource-library/seed-defaults",
+    "GET /school-admin/resource-library/poems",
+    "POST /school-admin/resource-library/poems",
+    "PATCH /school-admin/resource-library/poems/:id",
+    "DELETE /school-admin/resource-library/poems/:id",
+    "GET /school-admin/resource-library/formulas",
+    "POST /school-admin/resource-library/formulas",
+    "PATCH /school-admin/resource-library/formulas/:id",
+    "DELETE /school-admin/resource-library/formulas/:id",
+    "GET /school-admin/resource-library/words",
+    "GET /school-admin/resource-library/words/categories",
+    "POST /school-admin/resource-library/words",
+    "PATCH /school-admin/resource-library/words/:id",
+    "DELETE /school-admin/resource-library/words/:id",
+    "GET /school-admin/resource-library/science",
+    "POST /school-admin/resource-library/science",
+    "PATCH /school-admin/resource-library/science/:id",
+    "DELETE /school-admin/resource-library/science/:id",
+    "GET /school-admin/resource-library/moral",
+    "POST /school-admin/resource-library/moral",
+    "PATCH /school-admin/resource-library/moral/:id",
+    "DELETE /school-admin/resource-library/moral/:id",
+    "GET /resource-library/poems/search",
+    "GET /resource-library/formulas/search",
+    "GET /resource-library/words/search",
+    "GET /resource-library/science/search",
+    "GET /resource-library/moral/search",
+    "PATCH /resource-library/poems/:id",
+    "PATCH /resource-library/formulas/:id",
+    "PATCH /resource-library/science/:id",
+    "PATCH /resource-library/moral/:id",
+    "GET /schedules/my",
+    "GET /homework/:id",
+    "PATCH /homework/:id",
+    "DELETE /homework/:id",
+    "GET /resources/:id",
+    "PATCH /resources/:id",
+    "DELETE /resources/:id",
+    "POST /school-admin/login",
+    "GET /school-admin/dashboard",
+    "GET /school-admin/parent-logins",
+    "DELETE /school-admin/notices/:id",
+    "PATCH /school-admin/notices/:id",
+    "GET /school-admin/students",
+    "GET /school-admin/search",
+    "GET /seat-layouts/:id",
+    "PATCH /seat-layouts/:id",
+    "DELETE /seat-layouts/:id",
+    "POST /seat-layouts/:id/activate",
+    "POST /security/push-notice",
+    "POST /security/push-homework",
+    "GET /semesters/:id",
+    "PATCH /semesters/:id",
+    "DELETE /semesters/:id",
+    "POST /student-info-updates/:id/review",
+    "POST /students/bulk",
+    "POST /students/:id/toggle-parent-login",
+    "POST /students/:id/reset-parent-password",
+    "GET /students/:id/parent-bindings",
+    "POST /students/:id/parent-bindings/:bindingId/unbind",
+    "POST /students/:id/parent-bindings/:bindingId/set-primary",
+    "GET /teachers/:id",
+    "PATCH /teachers/:id",
+    "DELETE /teachers/:id",
+    "GET /teachers/:id/detail",
+    "GET /teaching-calendar/:id",
+    "PATCH /teaching-calendar/:id",
+    "DELETE /teaching-calendar/:id",
+    "GET /school-admin/textbooks",
+    "POST /school-admin/textbooks",
+    "PATCH /school-admin/textbooks/:id",
+    "DELETE /school-admin/textbooks/:id",
+    "GET /school-admin/textbooks/:id/units",
+    "POST /school-admin/textbooks/units",
+    "PATCH /school-admin/textbooks/units/:id",
+    "DELETE /school-admin/textbooks/units/:id",
+    "GET /school-admin/textbooks/units/:unitId/points",
+    "POST /school-admin/textbooks/points",
+    "PATCH /school-admin/textbooks/points/:id",
+    "DELETE /school-admin/textbooks/points/:id",
+    "POST /school-admin/textbooks/ai-generate",
+    "POST /school-admin/textbooks/seed-defaults",
+    "POST /textbooks/units",
+    "PATCH /textbooks/units/:id",
+    "POST /textbooks/points",
+    "PATCH /textbooks/points/:id",
+    "GET /work-logs/:id",
+    "PATCH /work-logs/:id",
+    "DELETE /work-logs/:id"
+  ]
+}

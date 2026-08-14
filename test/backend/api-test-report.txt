@@ -1,85 +1,85 @@
 [PASS] A1 超管 unified-login | status=201
 [PASS] A2 错误密码登录被拒 | status=401
 [PASS] A5 GET /auth/me
-[PASS] B1-1 创建学校(web) | {"code":"TSSF9N4H","name":"测试小学667984","address":"","contact":"","phone":"","status":"active","featureFlags":null,"id":"
+[PASS] B1-1 创建学校(web) | {"code":"TSNSWQ5H","name":"测试小学033255","address":"","contact":"","phone":"","status":"active","featureFlags":null,"id":"
 [PASS] B1-2 创建学校(mini)
 [PASS] B1-3 学校列表
 [PASS] B1-4 学校 code 唯一
 [PASS] B4-1 学校功能包写入
-[PASS] B4-2 学校功能包读取 | {"schoolId":"69c4fdd4-d72e-4b21-9381-a857f66a5ad1","featureFlags":["classes","st
+[PASS] B4-2 学校功能包读取 | {"schoolId":"76005071-bc4d-4761-b4fd-61af93e7057e","featureFlags":["classes","st
 [PASS] B5-1 创建校管A
 [PASS] B5-2 重复 username 校管 → 400 | status=400 {"statusCode":400,"code":"ADMIN_USERNAME_EXISTS","message":"用户名已存在"}
 [PASS] B5-3 创建校管B
-[PASS] B5-4 批量创建校管 | {"total":2,"success":2,"failed":0,"results":[{"username":"sadmin_b_6679841","sta
+[PASS] B5-4 批量创建校管 | {"total":2,"success":2,"failed":0,"results":[{"username":"sadmin_b_0332551","sta
 [PASS] B6 校管停用
 [PASS] B6-2 校管启用
 [PASS] B7 校管重置密码
-[PASS] C1 校管登录(重置后密码) | status=201 {"role":"school_admin","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTViODYwOC04NGNkLTR
+[PASS] C1 校管登录(重置后密码) | status=201 {"role":"school_admin","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyYmQ0Y2IxZS0xMjU4LTR
 [PASS] C2 校管 dashboard
-[PASS] C4-1 创建教师1 | {"id":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","name":"张老师","username":"zhang_667984","teacherNo":"JST
+[PASS] C4-1 创建教师1 | {"id":"df2a8203-9b38-4090-b122-b31a51fa47f6","name":"张老师","username":"zhang_033255","teacherNo":"JST
 [PASS] C4-2 创建教师2
 [PASS] G4 重复 username 教师 → 400 | status=400
 [PASS] C4-3 批量创建教师 | {"total":2,"success":2,"failed":0,"results":[{"name":"王老师","username":"wanglaosh
 [PASS] C4-4 教师列表
 [PASS] C5-1 教师功能包
-[PASS] A3 教师 password 登录 | status=201 {"role":"teacher","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZDNi
+[PASS] A3 教师 password 登录 | status=201 {"role":"teacher","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZjJh
 [PASS] A4-1 改密-原密码错误拒绝 | status=401 {"statusCode":401,"code":"HTTP_401","message":"原密码错误"}
 [PASS] A4-2 改密-正确原密码 | status=201 {"ok":true}
-[PASS] C6-1 校管创建班级 | {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","name":"三年一班","grade":"三年级","classNo":"1","headTeacher":"张老师","term"
-[PASS] C6-2 创建班级2 | {"teacherId":"1180f7e9-b48b-4e94-8b31-f496ab8d3bcc","name":"三年二班","grade":"三年级","classNo":"2","headT
+[PASS] C6-1 校管创建班级 | {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","name":"三年一班","grade":"三年级","classNo":"1","headTeacher":"张老师","term"
+[PASS] C6-2 创建班级2 | {"teacherId":"8bfe3441-922d-4f41-8519-27d0b4456104","name":"三年二班","grade":"三年级","classNo":"2","headT
 [PASS] C6-3 班级升级 | {"ok":true,"message":"已升级至「四年级」，班级名称：三年一班"}
-[PASS] D1-1 教师班级列表 | {"items":[{"id":"84529eec-f91e-46aa-8da1-55cacc5cc47a","teacherId":"0d3b2315-20c
+[PASS] D1-1 教师班级列表 | {"items":[{"id":"06704672-fe6e-4681-9bf0-0ebf93d43a8b","teacherId":"df2a8203-9b3
 [PASS] D1-2 教师自建班级 → 拒绝(需校管) | status=403 {"statusCode":403,"code":"HTTP_403","message":"班级需由学校管理员创建并指定班主任，请联系校管"}
-[PASS] D3-1 教师创建学生1 | {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46aa-8da1-55cacc5cc47a","name":"小明","gender
+[PASS] D3-1 教师创建学生1 | {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-4681-9bf0-0ebf93d43a8b","name":"小明","gender
 [PASS] D3-2 创建学生2
-[PASS] G3 重复学号学生 → 失败 | status=400 {"statusCode":400,"code":"VALIDATION_ERROR","message":"学号 XS66798401 已存在，请勿重复创建"
+[PASS] G3 重复学号学生 → 失败 | status=400 {"statusCode":400,"code":"VALIDATION_ERROR","message":"学号 XS03325501 已存在，请勿重复创建"
 [PASS] D3-3 学生列表(classId)
 [PASS] D3-4 更新学生
-[PASS] D3-5 开通家长登录 | {"studentId":"f5036286-a055-4a12-bbdc-71da6f3d23b0","parentLoginEnabled":true,"initialPassword":"123456"}
-[PASS] D3-6 重置家长口令 | {"studentId":"f5036286-a055-4a12-bbdc-71da6f3d23b0","ok":true,"defaultPassword":"123456"}
-[PASS] D4-1 创建考试 | {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","term":"2026春","name":"期中考试667984","teacherName":"张老师","classId":"84
-[PASS] D5-1 录成绩(merge幂等) | {"created":false,"id":"67d4b676-78f5-443d-a7ec-1a0305fae39a"}
-[PASS] D5-2 重复提交merge幂等 | status=201 {"created":false,"id":"67d4b676-78f5-443d-a7ec-1a0305fae39a"}
+[PASS] D3-5 开通家长登录 | {"studentId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed9","parentLoginEnabled":true,"initialPassword":"123456"}
+[PASS] D3-6 重置家长口令 | {"studentId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed9","ok":true,"defaultPassword":"123456"}
+[PASS] D4-1 创建考试 | {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","term":"2026春","name":"期中考试033255","teacherName":"张老师","classId":"06
+[PASS] D5-1 录成绩(merge幂等) | {"created":false,"id":"adcc073f-8947-46dd-bb5f-46c5c8e119d4"}
+[PASS] D5-2 重复提交merge幂等 | status=201 {"created":false,"id":"adcc073f-8947-46dd-bb5f-46c5c8e119d4"}
 [PASS] D5-2b 该考试仅一条成绩记录 | count=1
-[PASS] D5-2c 成绩导入预览(import-preview) | status=201 {"rows":[{"studentId":"f5036286-a055-4a12-bbdc-71da6f3d23b0","name":"小明","studentNo":"XS66798401","s
-[PASS] D5-2d 成绩导入提交(import-commit) | status=201 {"created":true,"id":"a747d50b-beac-41c3-a9cd-b3de2e4e633c","count":2}
-[PASS] D5-2e 重复import-commit幂等 | status=201 {"created":false,"id":"a747d50b-beac-41c3-a9cd-b3de2e4e633c","count":1}
+[PASS] D5-2c 成绩导入预览(import-preview) | status=201 {"rows":[{"studentId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed9","name":"小明","studentNo":"XS03325501","s
+[PASS] D5-2d 成绩导入提交(import-commit) | status=201 {"created":true,"id":"2adcbbdb-2175-4679-a42c-04215d52b614","count":2}
+[PASS] D5-2e 重复import-commit幂等 | status=201 {"created":false,"id":"2adcbbdb-2175-4679-a42c-04215d52b614","count":1}
 [PASS] D5-3 成绩列表
-[PASS] D5-4 考试分析 | {"classId":"84529eec-f91e-46aa-8da1-55cacc5cc47a","examId":"e9b5637d-aaf8-43e8-beb3-09cdebc5eacf","c
+[PASS] D5-4 考试分析 | {"classId":"06704672-fe6e-4681-9bf0-0ebf93d43a8b","examId":"579df91a-727f-4921-8996-4b735e325c7a","c
 [PASS] D5-5 班级排名
 [PASS] D5-6 学生成绩历史
 [PASS] D5-7 成绩导出
-[PASS] F10 排行榜 | {"classId":"84529eec-f91e-46aa-8da1-55cacc5cc47a","total":0,"items":[]}
-[PASS] SMOKE POST /notes | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"笔记1","content":"正文"
-[PASS] SMOKE POST /todos | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"待办1","done":false,"
-[PASS] SMOKE POST /checkins | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /duty-rosters | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /lesson-observations | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /work-logs | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","date":"2026-08-13","classCo
-[PASS] SMOKE POST /reading-logs | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /growth-entries | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /behavior-records | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /reward-records | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /score-records | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /group-scores | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /award-records | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","name":"进步奖","issuer":"学校","
-[PASS] SMOKE POST /award-categories | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","name":"学习类","id":"e34884e3-
-[PASS] SMOKE POST /class-expenses | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /class-activities | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /class-duty-configs | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /parent-contacts | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /notice-templates | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"通知模板1","content":"模
-[PASS] SMOKE POST /home-visits | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","studentId":"f5036286-a055-4
-[PASS] SMOKE POST /seat-layouts | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /my-galleries | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"相册1","date":null,"d
-[PASS] SMOKE POST /schedules | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /attendances | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /homework | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /notices | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /resources | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"资源1","url":"https:/
-[PASS] SMOKE POST /class-galleries | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
-[PASS] SMOKE POST /semesters | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","name":"2026春","startDate":"
-[PASS] SMOKE POST /math-mistakes | status=201 {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","classId":"84529eec-f91e-46a
+[PASS] F10 排行榜 | {"classId":"06704672-fe6e-4681-9bf0-0ebf93d43a8b","total":0,"items":[]}
+[PASS] SMOKE POST /notes | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"笔记1","content":"正文"
+[PASS] SMOKE POST /todos | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"待办1","done":false,"
+[PASS] SMOKE POST /checkins | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /duty-rosters | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /lesson-observations | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /work-logs | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","date":"2026-08-13","classCo
+[PASS] SMOKE POST /reading-logs | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /growth-entries | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /behavior-records | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /reward-records | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /score-records | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /group-scores | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /award-records | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","name":"进步奖","issuer":"学校","
+[PASS] SMOKE POST /award-categories | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","name":"学习类","id":"a771d842-
+[PASS] SMOKE POST /class-expenses | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /class-activities | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /class-duty-configs | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /parent-contacts | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /notice-templates | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"通知模板1","content":"模
+[PASS] SMOKE POST /home-visits | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","studentId":"ca8fbfc8-cfa0-4
+[PASS] SMOKE POST /seat-layouts | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /my-galleries | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"相册1","date":null,"d
+[PASS] SMOKE POST /schedules | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /attendances | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /homework | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /notices | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /resources | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"资源1","url":"https:/
+[PASS] SMOKE POST /class-galleries | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
+[PASS] SMOKE POST /semesters | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","name":"2026春","startDate":"
+[PASS] SMOKE POST /math-mistakes | status=201 {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","classId":"06704672-fe6e-468
 [PASS] D2-1 班级成员列表
 [PASS] D2-2 本校教师列表
 [PASS] D2-3 添加科任 | {"ok":true}
@@ -91,7 +91,7 @@
 [PASS] D2-9 恢复跟随默认 | status=200
 [PASS] D2-10 已恢复默认(configured=false) | status=200 {"configured":false,"features":null,"options":[{"key":"grades","label":"成绩管理"},{"key":"analysis","la
 [PASS] F2-1 消息收件人
-[PASS] F2-2 发送消息 | {"senderId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","senderRole":"teacher","recipientId":"p_1382roy",
+[PASS] F2-2 发送消息 | {"senderId":"df2a8203-9b38-4090-b122-b31a51fa47f6","senderRole":"teacher","recipientId":"p_iuyzsl","
 [PASS] F2-3 消息列表
 [PASS] F2-4 未读数
 [PASS] F3-1 通知列表
@@ -99,12 +99,12 @@
 [PASS] F6-2 应用配置
 [PASS] F6-3 AI服务商列表
 [PASS] F7-1 ai-providers
-[PASS] F4-1 上报得分1 | {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","gameKey":"test2048667984","gameName":"2048测试","
+[PASS] F4-1 上报得分1 | {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","gameKey":"test2048033255","gameName":"2048测试","
 [PASS] F4-2 上报得分2(更高) | status=201
 [PASS] F4-3 上报得分3(更低) | status=201
-[PASS] G1 单游戏最高分=120 且不重复 | {"id":"8af4f0aa-39a8-42bb-b39d-dc77a6cc4f46","teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","createdAt":"2026-08-13T
+[PASS] G1 单游戏最高分=120 且不重复 | {"id":"4bb74097-8dc3-46ba-9417-2c3a8719fa49","teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","createdAt":"2026-08-13T
 [PASS] F4-4 游戏榜单
-[PASS] F5-1 创建会话 | {"teacherId":"0d3b2315-20c0-4fb8-8bd1-dacbec509355","title":"测试会话","messages":[]
+[PASS] F5-1 创建会话 | {"teacherId":"df2a8203-9b38-4090-b122-b31a51fa47f6","title":"测试会话","messages":[]
 [PASS] F5-2 追加消息
 [PASS] F5-3 置顶切换
 [PASS] F5-4 会话详情
@@ -123,7 +123,7 @@
 [PASS] F15-4 无 token 访问受保护接口 → 401 | status=401
 [PASS] F16-1 take 超限被截断(不500) | status=200
 [PASS] F16-2 skip 负数(不500) | status=200
-[PASS] E1 家长登录(学号+口令) | status=201 {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwXzEzODJyb3kiLCJ0eXBlIjoicGFyZW50IiwiYXVkI
+[PASS] E1 家长登录(学号+口令) | status=201 {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwX2l1eXpzbCIsInR5cGUiOiJwYXJlbnQiLCJhdWQiO
 [PASS] E2 GET /parent-auth/me | status=200
 [PASS] E2 GET /parent-auth/notices | status=200
 [PASS] E2 GET /parent-auth/exams | status=200
@@ -135,9 +135,9 @@
 [PASS] E2 GET /parent-auth/teachers | status=200
 [PASS] E2 GET /parent-auth/bindings | status=200
 [PASS] E2-10 多娃对比
-[PASS] E2-11 家长功能包(effectiveFeatures 数组下发) | status=200 {"parentName":"明父","studentId":"f5036286-a055-4a12-bbdc-71da6f3d23b0","studentName":"小明","studentNo":"XS66798401","class
+[PASS] E2-11 家长功能包(effectiveFeatures 数组下发) | status=200 {"parentName":"明父","studentId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed9","studentName":"小明","studentNo":"XS03325501","class
 [PASS] E3 家长改密 | {"ok":true}
-[PASS] E5-1 提交信息修改申请 | {"teacherId":"f5036286-a055-4a12-bbdc-71da6f3d23b0","studentId":"f5036286-a055-4a12-bbdc-71da6f3d23b
+[PASS] E5-1 提交信息修改申请 | {"teacherId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed9","studentId":"ca8fbfc8-cfa0-498e-8fc8-4cf78664bed
 [PASS] E5-2 申请记录
 [PASS] D-家长申请教师可见
 [PASS] C11 /school-admin/academic/exams | status=200
@@ -149,7 +149,7 @@
 [PASS] C10 全局搜索
 [PASS] F13-1 健康检查(公开)
 [PASS] F13-2 缓存健康
-[PASS] G6 列表查询响应<1000ms | 耗时5ms
+[PASS] G6 列表查询响应<1000ms | 耗时4ms
 [PASS] G5 并发20创建学生全部成功 | 成功20/20
 [PASS] G5-2 并发后学号无重复 | BF学生数=20
 
