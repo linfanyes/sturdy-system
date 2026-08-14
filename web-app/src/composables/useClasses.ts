@@ -13,6 +13,8 @@ export interface MyClass {
   /** 科目 → 任课教师姓名 */
   subjectTeachers?: Record<string, string>
   color?: string
+  /** 已创建的腾讯 IM 班级群号（后端 class.entity 持久化；空串表示尚未建群） */
+  imGroupId?: string
   createdAt: string
 }
 

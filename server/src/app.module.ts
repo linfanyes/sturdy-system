@@ -59,6 +59,7 @@ import { MonitorModule } from './monitor/monitor.module'
 import { MathMistakesModule } from './math-mistakes/math-mistakes.module'
 import { HealthController } from './health.controller'
 import { AnalysisModule } from './analysis/analysis.module'
+import { KidsCodingModule } from './kids-coding/kids-coding.module'
 
 @Module({
   imports: [
@@ -180,6 +181,7 @@ import { AnalysisModule } from './analysis/analysis.module'
     FeatureModule,
     CacheModule,
     AnalysisModule,
+    KidsCodingModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

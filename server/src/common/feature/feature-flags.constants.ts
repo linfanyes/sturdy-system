@@ -30,7 +30,16 @@ export const FEATURE_FLAGS: string[] = [
   'office_tools', 'subject_tools', 'quicktool', 'grade_trend', 'picker_history',
   // 与 shared 对齐补全（历史债 #9：此前缺失导致双端 key 漂移）
   'reward', 'translate', 'blackboard', 'speech',
+  // 少儿编程（opt-in：默认关闭，由校管/超管在学校功能包中开启；可开放给家长）
+  'kids-coding',
 ]
+
+/**
+ * 默认关闭（opt-in）功能包：学校功能包未显式配置（featureFlags 为 null/空）时，
+ * 这些 key 不随"全开"默认开启，必须校管/超管在学校功能包中显式勾选。
+ * 与 shared/constants/index.ts 的 OPT_IN_FEATURES 保持一致。
+ */
+export const OPT_IN_FEATURES: string[] = ['kids-coding']
 
 /**
  * 家长功能包可选 key（班主任可为班级家长配置「家长页面功能」，学校级仍可进一步收窄）。
@@ -39,6 +48,7 @@ export const FEATURE_FLAGS: string[] = [
 export const PARENT_FEATURE_KEYS: string[] = [
   'grades', 'analysis', 'homework', 'attendance', 'behavior', 'notices',
   'im', 'activities', 'gallery', 'checkin', 'reading', 'growth', 'schedule', 'rewards', 'duty',
+  'kids-coding',
 ]
 
 /** 功能包 key → 中文标签（服务端本地副本，与 shared/constants/index.ts 保持同步） */
@@ -54,6 +64,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   todos: '待办事项', notes: '笔记', demo: '演示模式',
   office_tools: '办公工具', subject_tools: '学科工具', quicktool: '快捷工具', grade_trend: '成绩趋势', picker_history: '点名历史',
   reward: '奖赏', translate: '翻译', blackboard: '黑板报', speech: '演讲稿',
+  'kids-coding': '少儿编程',
 }
 
 /** 家长功能包选项（key + 中文标签，双端管理 UI 直接复用） */

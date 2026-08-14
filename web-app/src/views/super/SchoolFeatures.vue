@@ -27,6 +27,10 @@ const GROUPS: { title: string; keys: string[] }[] = [
     title: '办公/学科/快捷工具',
     keys: ['office_tools', 'subject_tools', 'quicktool', 'grade_trend', 'picker_history', 'reward', 'translate', 'blackboard', 'speech'],
   },
+  {
+    title: '少儿编程',
+    keys: ['kids-coding'],
+  },
 ]
 
 // ==================== 学校选择 ====================

@@ -202,6 +202,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'tools/reward', name: 'teacher-reward', component: () => import('@/views/tools/Reward.vue'), meta: { title: '奖赏', feature: 'rewards' } },
       // 游戏合集
       { path: 'games', name: 'games', component: () => import('@/views/games/GamesIndex.vue'), meta: { title: '小游戏合集', feature: 'games' } },
+      // 少儿编程（积木式拖拽可视化编程，默认关闭，由学校功能包开启；可开放给家长）
+      { path: 'kids-coding', name: 'teacher-kids-coding', component: () => import('@/views/teacher/KidsCoding.vue'), meta: { title: '少儿编程', feature: 'kids-coding' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },
       { path: 'games/game2048', name: 'game2048', component: () => import('@/views/games/Game2048.vue'), meta: { title: '2048', feature: 'games' } },
       { path: 'games/minesweeper', name: 'gameMinesweeper', component: () => import('@/views/games/GameMinesweeper.vue'), meta: { title: '扫雷', feature: 'games' } },
@@ -251,6 +253,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'textbook', name: 'parent-textbook', component: () => import('@/views/parent/Textbook.vue'), meta: { title: '教材知识点' } },
       { path: 'resources', name: 'parent-resource-library', component: () => import('@/views/parent/ResourceLibrary.vue'), meta: { title: '专项资源库' } },
       { path: 'compare', name: 'parent-compare', component: () => import('@/views/parent/KidsCompare.vue'), meta: { title: '跨娃比对' } },
+      { path: 'kids-coding', name: 'parent-kids-coding', component: () => import('@/views/parent/KidsCoding.vue'), meta: { title: '少儿编程' } },
     ],
   },
   // 根路径：按角色重定向到对应工作台（优先用 auth store，兜底读 localStorage）

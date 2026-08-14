@@ -7,6 +7,7 @@ import {
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
   ToggleLeft, Home, Library, BarChart3, ClipboardCheck,
+  Code2,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -231,6 +232,17 @@ export const teacherMenu: MenuCategory[] = [
     ],
   },
   {
+    label: '少儿编程', color: 'green', icon: Code2,
+    groups: [
+      {
+        label: '', asGrid: true,
+        items: [
+          { name: 'teacher-kids-coding', label: '少儿编程', to: '/teacher/kids-coding', feature: 'kids-coding', icon: Code2, color: 'green' },
+        ],
+      },
+    ],
+  },
+  {
     label: '教师办公', color: 'green', icon: Briefcase,
     groups: [{
       label: '', items: [
@@ -338,5 +350,6 @@ export const flatNavItems: Record<Exclude<Role, 'teacher'>, MenuItem[]> = {
     { name: 'parent-textbook', label: '教材知识点', to: '/parent/textbook', icon: BookOpen, color: 'green' },
     { name: 'parent-resource-library', label: '专项资源库', to: '/parent/resources', icon: Library, color: 'sky' },
     { name: 'parent-compare', label: '跨娃比对', to: '/parent/compare', icon: BarChart3, color: 'purple' },
+    { name: 'parent-kids-coding', label: '少儿编程', to: '/parent/kids-coding', icon: Code2, color: 'green', feature: 'kids-coding' },
   ],
 }

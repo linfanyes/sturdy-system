@@ -47,7 +47,7 @@ const showCompare = computed(() => {
   return c !== null && c > 1
 })
 const visibleFlatItems = computed<MenuItem[]>(() =>
-  flatItems.value.filter((i) => i.name !== 'parent-compare' || showCompare.value),
+  flatItems.value.filter((i) => (i.name !== 'parent-compare' || showCompare.value) && hasFeature(i.feature)),
 )
 
 const activeCategory = ref<string>('')
