@@ -67,14 +67,27 @@ async function runMigrations(app: any) {
     const [appliedRows] = await conn.query<mysql.RowDataPacket[]>('SELECT filename FROM _migrations_applied')
     const appliedSet = new Set(appliedRows.map(r => String(r.filename)))
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort()
+    logger.log(`ℹ️  待检查迁移 ${files.length} 个，已应用 ${appliedSet.size} 个，目录: ${migrationsDir}`)
+    let appliedNow = 0
+    let failed = 0
     for (const file of files) {
       if (appliedSet.has(file)) continue
       const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8')
       logger.log(`📦 执行迁移: ${file}`)
-      await conn.query(sql)
-      await conn.query('INSERT INTO _migrations_applied (filename) VALUES (?)', [file])
-      logger.log(`✅ 迁移完成: ${file}`)
+      try {
+        await conn.query(sql)
+        await conn.query('INSERT INTO _migrations_applied (filename) VALUES (?)', [file])
+        appliedSet.add(file)
+        appliedNow++
+        logger.log(`✅ 迁移完成: ${file}`)
+      } catch (e: any) {
+        // 单个迁移失败不阻断后续迁移（生产库可能存在个别历史表缺失/数据冲突），
+        // 失败文件不记入 _migrations_applied，下次启动会重试。
+        failed++
+        logger.error(`❌ 迁移失败（已跳过，不影响其他迁移）: ${file} => ${e?.message || e}`)
+      }
     }
+    logger.log(`ℹ️  迁移执行汇总: 新应用 ${appliedNow} 个，失败 ${failed} 个`)
   } catch (e: any) {
     const isProd = app.get(ConfigService).get('NODE_ENV') === 'production'
     if (isProd) {

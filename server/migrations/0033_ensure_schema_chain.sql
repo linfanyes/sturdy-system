@@ -132,10 +132,8 @@ CREATE TABLE IF NOT EXISTS `grades` (
 SET @c=(SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='grades' AND COLUMN_NAME='examId'); SET @q=IF(@c=0,'ALTER TABLE `grades` ADD COLUMN `examId` varchar(255) NULL','SELECT 1'); PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;
 SET @c=(SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='grades' AND COLUMN_NAME='scores'); SET @q=IF(@c=0,'ALTER TABLE `grades` ADD COLUMN `scores` JSON NULL','SELECT 1'); PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;
 
--- grades 唯一索引（P02：班级-考试-科目 唯一，防并发重复提交）
-SET @i=(SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='grades' AND INDEX_NAME='idx_grades_unique_submission');
-SET @q=IF(@i=0,'CREATE UNIQUE INDEX idx_grades_unique_submission ON grades (classId, examId, subject)','SELECT 1');
-PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;
+-- grades 唯一索引（P02：班级-考试-科目 唯一，防并发重复提交）已拆分至 0034_grades_unique_index.sql，
+-- 原因：若 grades 存在历史重复数据，建唯一索引会报错阻断本迁移；0034 会先清重再建索引。
 
 -- ---------- 5) parents ----------
 CREATE TABLE IF NOT EXISTS `parents` (
