@@ -6,7 +6,7 @@ import {
   CalendarCheck, MessageSquare, Bell, Megaphone, Settings,
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
-  ToggleLeft, Home, Library, BarChart3,
+  ToggleLeft, Home, Library, BarChart3, ClipboardCheck,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -76,6 +76,7 @@ export const teacherMenu: MenuCategory[] = [
         items: [
           { name: 'teacher-classes', label: '班级成员', to: '/teacher/classes', feature: 'classes', emoji: '👥', color: 'blue' },
           { name: 'teacher-students', label: '学生管理', to: '/teacher/students', feature: 'students', emoji: '🎒', color: 'green' },
+          { name: 'student-info-review', label: '信息修改审核', to: '/teacher/student-info-review', feature: 'students', icon: ClipboardCheck, color: 'sky' },
           { name: 'teacher-duty-roster', label: '轮值表', to: '/teacher/duty-roster', feature: 'duty', emoji: '📋', color: 'butter' },
           { name: 'teacher-class-finance', label: '班费', to: '/teacher/class-finance', feature: 'finance', emoji: '💰', color: 'green' },
           { name: 'teacher-class-activities', label: '班级活动', to: '/teacher/class-activities', feature: 'activities', emoji: '🎉', color: 'rose' },
@@ -100,6 +101,7 @@ export const teacherMenu: MenuCategory[] = [
           { name: 'teacher-score-records', label: '加减分记录', to: '/teacher/score-records', feature: 'rewards', emoji: '➕', color: 'green' },
           { name: 'teacher-group-scores', label: '小组评分', to: '/teacher/group-scores', feature: 'rewards', emoji: '👨‍👩‍👧‍👦', color: 'purple' },
           { name: 'teacher-leaderboard', label: '排行榜', to: '/teacher/leaderboard', feature: 'rewards', icon: Award, color: 'rose' },
+          { name: 'teacher-award-categories', label: '奖项管理', to: '/teacher/award-categories', feature: 'rewards', icon: Award, color: 'cream' },
           { name: 'teacher-growth', label: '成长记录', to: '/teacher/growth', feature: 'growth', emoji: '🌱', color: 'green' },
           { name: 'teacher-behavior', label: '行为记录', to: '/teacher/behavior', feature: 'behavior', emoji: '📝', color: 'butter' },
           { name: 'teacher-reading-log', label: '课外阅读', to: '/teacher/reading-log', feature: 'reading', emoji: '📚', color: 'sky' },
@@ -110,6 +112,7 @@ export const teacherMenu: MenuCategory[] = [
         label: '家校沟通', asGrid: true,
         items: [
           { name: 'teacher-parent-contacts', label: '家长联系', to: '/teacher/parent-contacts', feature: 'parents', icon: Phone, color: 'green' },
+          { name: 'teacher-im', label: '家校沟通', to: '/teacher/im', feature: 'im', icon: MessageSquare, color: 'purple' },
           { name: 'teacher-message-board', label: '留言板', to: '/teacher/messages', feature: 'im', icon: MessageSquare, color: 'blue' },
           { name: 'teacher-notices', label: '公告', to: '/teacher/notices', feature: 'notices', icon: Megaphone, color: 'butter' },
           { name: 'teacher-notice-templates', label: '通知模板', to: '/teacher/notice-templates', feature: 'notices', icon: ScrollText, color: 'cocoa' },
@@ -128,6 +131,7 @@ export const teacherMenu: MenuCategory[] = [
           { name: 'teacher-ai-lesson', label: '优质教案生成', to: '/teacher/ai-generator/lesson', feature: 'ai', icon: FileText, color: 'blue' },
           { name: 'teacher-ai-knowledge', label: '知识点生成', to: '/teacher/ai-generator/knowledge', feature: 'ai', icon: BookOpen, color: 'green' },
           { name: 'teacher-ai-paper', label: '优选试卷生成', to: '/teacher/ai-generator/paper', feature: 'ai', icon: FileQuestion, color: 'rose' },
+          { name: 'teacher-ai-interactive', label: '互动答疑', to: '/teacher/ai-interactive', feature: 'ai', icon: Bot, color: 'sky' },
         ],
       },
       {
@@ -199,6 +203,22 @@ export const teacherMenu: MenuCategory[] = [
           { name: 'toolSpell', label: '单词拼写', to: '/teacher/tools/spell', feature: 'tools', emoji: '✍️', color: 'sky' },
           { name: 'toolSpeaking', label: '口语练习', to: '/teacher/tools/speaking', feature: 'tools', icon: MessageSquare, color: 'cocoa' },
           { name: 'toolEnglishStory', label: '英语爽文', to: '/teacher/tools/englishStory', feature: 'tools', emoji: '📖', color: 'rose' },
+        ],
+      },
+      {
+        label: '科学工具', asGrid: true, subject: '科学',
+        items: [
+          { name: 'toolExperimentDesign', label: '实验设计助手', to: '/teacher/tools/ai?key=experiment-design', feature: 'tools', emoji: '🧪', color: 'purple' },
+          { name: 'toolScienceKnowledge', label: '科学知识图解', to: '/teacher/tools/ai?key=science-knowledge', feature: 'tools', emoji: '🔬', color: 'sky' },
+          { name: 'toolObservationRecord', label: '观察记录生成', to: '/teacher/tools/ai?key=observation-record', feature: 'tools', emoji: '📝', color: 'green' },
+        ],
+      },
+      {
+        label: '道法工具', asGrid: true, subject: '道德与法治',
+        items: [
+          { name: 'toolMoralCase', label: '案例分析', to: '/teacher/tools/ai?key=moral-case', feature: 'tools', emoji: '⚖️', color: 'rose' },
+          { name: 'toolMoralDiscussion', label: '情境讨论', to: '/teacher/tools/ai?key=moral-discussion', feature: 'tools', emoji: '💬', color: 'blue' },
+          { name: 'toolMoralValue', label: '价值观辨析', to: '/teacher/tools/ai?key=moral-value', feature: 'tools', emoji: '🌟', color: 'butter' },
         ],
       },
       {

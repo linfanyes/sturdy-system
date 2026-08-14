@@ -114,6 +114,7 @@ export const routes: RouteRecordRaw[] = [
       // 家校沟通
       { path: 'parent-contacts', name: 'teacher-parent-contacts', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'parent-contacts' }, meta: { title: '家长联系', feature: 'parents' } },
       { path: 'messages', name: 'teacher-message-board', component: () => import('@/views/workspace/MessageBoard.vue'), meta: { title: '留言板', feature: 'im' } },
+      { path: 'im', name: 'teacher-im', component: () => import('@/views/workspace/TeacherIM.vue'), meta: { title: '家校沟通', feature: 'im' } },
       { path: 'notice-templates', name: 'teacher-notice-templates', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'notice-templates' }, meta: { title: '通知模板', feature: 'notices' } },
       // AI 与备课
       { path: 'ai-chat', name: 'teacher-ai-chat', component: () => import('@/views/ai/AiChat.vue'), meta: { title: 'AI 对话', feature: 'ai' } },
@@ -130,6 +131,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'ai-generator/lesson', name: 'teacher-ai-lesson', component: () => import('@/views/ai/AiGenerator.vue'), props: { type: 'lesson' }, meta: { title: '优质教案生成', feature: 'ai' } },
       { path: 'ai-generator/knowledge', name: 'teacher-ai-knowledge', component: () => import('@/views/ai/AiGenerator.vue'), props: { type: 'knowledge' }, meta: { title: '知识点生成', feature: 'ai' } },
       { path: 'ai-generator/paper', name: 'teacher-ai-paper', component: () => import('@/views/ai/AiGenerator.vue'), props: { type: 'paper' }, meta: { title: '优选试卷生成', feature: 'ai' } },
+      { path: 'ai-interactive', name: 'teacher-ai-interactive', component: () => import('@/views/ai/InteractiveQA.vue'), meta: { title: '互动答疑', feature: 'ai' } },
       // 教师办公
       { path: 'work-log', name: 'teacher-work-log', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'work-logs' }, meta: { title: '工作日志', feature: 'worklog' } },
       { path: 'lesson-obs', name: 'teacher-lesson-obs', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'lesson-observations' }, meta: { title: '听课记录', feature: 'observation' } },

@@ -148,67 +148,13 @@ export function updateClassParentFeatures(classId: string, features: string[] | 
 }
 
 /* ============ 班级运营：轮值/值日/班费/活动/风采 ============ */
-
-/** 轮值表 */
-export function listDutyRosters(classId: string) {
-  return request.get<any, any[]>('/duty-rosters', { params: { classId } })
-}
-export function createDutyRoster(data: any) {
-  return request.post<any, any>('/duty-rosters', data)
-}
-export function updateDutyRoster(id: string, data: any) {
-  return request.patch<any, any>('/duty-rosters/' + id, data)
-}
-export function deleteDutyRoster(id: string) {
-  return request.delete<any, void>('/duty-rosters/' + id)
-}
-
-/** 值日配置 */
-export function listDutyConfigs(classId: string) {
-  return request.get<any, any[]>('/class-duty-configs', { params: { classId } })
-}
-
-/** 班费 */
-export function listClassExpenses(classId: string) {
-  return request.get<any, any[]>('/class-expenses', { params: { classId } })
-}
-
-/** 班级活动 */
-export function listClassActivities(classId: string) {
-  return request.get<any, any[]>('/class-activities', { params: { classId } })
-}
-
-/** 班级风采（照片墙） */
-export function listClassGalleries(classId: string) {
-  return request.get<any, any[]>('/class-galleries', { params: { classId } })
-}
-
-/** 我的相册 */
-export function listMyGalleries(classId?: string) {
-  return request.get<any, any[]>('/my-galleries', { params: classId ? { classId } : {} })
-}
+/* 轮值表/值日配置/班费/班级活动/风采/相册/家长联系 等实体页均已迁移至 SchemaCrudPage 通用渲染，专属封装已移除 */
 
 /* ============ 家校沟通 ============ */
-
-/** 家长联系记录 */
-export function listParentContacts(classId: string) {
-  return request.get<any, any[]>('/parent-contacts', { params: { classId } })
-}
 
 /** 通知模板 */
 export function listNoticeTemplates() {
   return request.get<any, any[]>('/notice-templates')
-}
-
-/** IM 会话与消息 */
-export function listImConversations() {
-  return request.get<any, any[]>('/im/conversations')
-}
-export function listImMessages(conversationId: string, before?: string) {
-  return request.get<any, any[]>('/im/messages', { params: { conversationId, before } })
-}
-export function sendImMessage(data: { conversationId: string; content: string; type?: string }) {
-  return request.post<any, any>('/im/messages', data)
 }
 
 /** IM 家长通讯录（按班级） */
@@ -227,16 +173,6 @@ export function createImClassGroup(data: { classId: string; groupId: string }) {
 }
 
 /* ============ 教师办公 ============ */
-
-/** 工作日志 */
-export function listWorkLogs() {
-  return request.get<any, any[]>('/work-logs')
-}
-
-/** 听课记录 */
-export function listLessonObservations() {
-  return request.get<any, any[]>('/lesson-observations')
-}
 
 /** 教学日历 */
 export function listTeachingCalendar(params?: Record<string, any>) {
@@ -291,6 +227,16 @@ export function createSchedule(data: Record<string, any>) {
 /** 删除课表条目 */
 export function deleteSchedule(id: string) {
   return request.delete<any, void>('/schedules/' + id)
+}
+
+/** AI 识别课表（图片走 OCR、Excel/CSV 提取文本，返回结构化预览，不落库） */
+export function importSchedulesAi(data: { classId: string; mode: string; data: string; filename?: string }) {
+  return request.post<any, { items: any[]; errors: any[] }>('/schedules/import-ai', data)
+}
+
+/** 提交 AI 识别的课表（批量落库） */
+export function importSchedulesCommit(data: { classId: string; items: any[] }) {
+  return request.post<any, any>('/schedules/import-commit', data)
 }
 
 /* ============ 通用配置 / 消息（workspace 与超管共用） ============ */
@@ -355,6 +301,11 @@ export function listMessages(params?: Record<string, any>) {
   return request.get<any, any>('/messages', { params })
 }
 
+/** 留言板：未读数 */
+export function unreadMessageCount() {
+  return request.get<any, { count: number }>('/messages/unread-count')
+}
+
 /** 留言板：已发送列表 */
 export function listMessagesSent(params?: Record<string, any>) {
   return request.get<any, any>('/messages/sent', { params })
@@ -389,12 +340,6 @@ export function listSeatLayouts(classId: string) {
 export function saveSeatLayout(data: any) {
   return request.post<any, any>('/seat-layouts', data)
 }
-export function updateSeatLayout(id: string, data: any) {
-  return request.patch<any, any>('/seat-layouts/' + id, data)
-}
-export function deleteSeatLayout(id: string) {
-  return request.delete<any, void>('/seat-layouts/' + id)
-}
 
 /** 启用某座位布局：把行列回写到学生 seatRow/seatCol/seatNo */
 export function activateSeatLayout(id: string) {
@@ -420,12 +365,6 @@ export function listRewards(classId?: string) {
 export function createReward(data: any) {
   return request.post<any, any>('/reward-records', data)
 }
-export function updateReward(id: string, data: any) {
-  return request.patch<any, any>('/reward-records/' + id, data)
-}
-export function deleteReward(id: string) {
-  return request.delete<any, void>('/reward-records/' + id)
-}
 
 /** 加减分记录 */
 export function listScoreRecords(classId?: string) {
@@ -434,30 +373,10 @@ export function listScoreRecords(classId?: string) {
 export function createScoreRecord(data: any) {
   return request.post<any, any>('/score-records', data)
 }
-export function deleteScoreRecord(id: string) {
-  return request.delete<any, void>('/score-records/' + id)
-}
 
-/** 小组评分 */
-export function listGroupScores(classId: string) {
-  return request.get<any, any[]>('/group-scores', { params: { classId } })
-}
-export function createGroupScore(data: any) {
-  return request.post<any, any>('/group-scores', data)
-}
-
-/** 奖项管理（后端表 award_records / award_categories） */
-export function listAwardCategories(classId?: string) {
-  return request.get<any, any[]>('/award-categories', { params: classId ? { classId } : {} })
-}
-export function createAwardCategory(data: any) {
-  return request.post<any, any>('/award-categories', data)
-}
+/** 获奖记录（学生详情页引用；奖项类别管理走 SchemaCrudPage） */
 export function listAwards(classId?: string) {
   return request.get<any, any[]>('/award-records', { params: classId ? { classId } : {} })
-}
-export function createAward(data: any) {
-  return request.post<any, any>('/award-records', data)
 }
 
 /** 班级职务配置 */
@@ -474,36 +393,9 @@ export function deleteClassDutyConfig(id: string) {
   return request.delete<any, void>('/class-duty-configs/' + id)
 }
 
-/** 成长记录（后端表 growth_entries，路径 /growth-entries） */
-export function listGrowthRecords(classId?: string) {
-  return request.get<any, any[]>('/growth-entries', { params: classId ? { classId } : {} })
-}
-export function createGrowthRecord(data: any) {
-  return request.post<any, any>('/growth-entries', data)
-}
-
 /** 行为记录（后端表 behavior_records，路径 /behavior-records） */
 export function listBehaviors(classId?: string) {
   return request.get<any, any>('/behavior-records', { params: classId ? { classId } : {} })
-}
-export function createBehavior(data: any) {
-  return request.post<any, any>('/behavior-records', data)
-}
-
-/** 课外阅读 */
-export function listReadingLogs(classId?: string) {
-  return request.get<any, any[]>('/reading-logs', { params: classId ? { classId } : {} })
-}
-export function createReadingLog(data: any) {
-  return request.post<any, any>('/reading-logs', data)
-}
-
-/** 学生打卡 */
-export function listCheckins(classId?: string) {
-  return request.get<any, any[]>('/checkins', { params: classId ? { classId } : {} })
-}
-export function createCheckin(data: any) {
-  return request.post<any, any>('/checkins', data)
 }
 
 /** 错题本 */
@@ -747,25 +639,6 @@ export function getBackup(id: string) {
 /** 作业列表 */
 export function listHomework(params?: Record<string, any>) {
   return request.get<any, any[]>('/homework', { params: params || {} })
-}
-
-/* ============ 通用 CRUD 辅助 ============ */
-
-/** 通用列表查询 */
-export function crudList<T = any>(path: string, params?: Record<string, any>) {
-  return request.get<any, T[]>(path, { params })
-}
-/** 通用新增 */
-export function crudCreate<T = any>(path: string, data: any) {
-  return request.post<any, T>(path, data)
-}
-/** 通用更新 */
-export function crudUpdate<T = any>(path: string, id: string, data: any) {
-  return request.patch<any, T>(path + '/' + id, data)
-}
-/** 通用删除 */
-export function crudDelete(path: string, id: string) {
-  return request.delete<any, void>(path + '/' + id)
 }
 
 /* ============ 教师批量导入学生（走 /students 教师专属接口） ============ */

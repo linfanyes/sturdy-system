@@ -1,7 +1,7 @@
 <template>
   <scroll-view scroll-y class="tab-body">
     <view class="sec">
-      <view class="st">📚 教材知识点</view>
+      <view class="st">📚 教材知识点<text class="tb-lib-link" @click="goResourceLibrary">🗃️ 专项资源库 ›</text></view>
       <view class="tb-search-row">
         <input class="tb-search-input" v-model="keyword" placeholder="搜索知识点（如：多音字）" confirm-type="search" @confirm="search" />
         <view class="tb-search-btn" @click="search">🔍</view>
@@ -75,6 +75,11 @@ const loading = ref(false)
 const filterSubject = ref('')
 const filterGrade = ref('')
 const keyword = ref('')
+
+/** 跳转家长端专项资源库（古诗词/数学公式/英语单词等） */
+function goResourceLibrary() {
+  uni.navigateTo({ url: '/pages/parent/parent-resource-library' })
+}
 const searchResults = ref([])
 const expandedTextbooks = ref({})
 const expandedUnits = ref({})
@@ -166,6 +171,7 @@ defineExpose({ load })
 .tab-body { flex: 1; overflow-y: auto; padding-bottom: 20rpx; }
 .sec { margin-bottom: 14rpx; }
 .st { font-size: 28rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; display: flex; align-items: center; gap: 10rpx; }
+.tb-lib-link { margin-left: auto; font-size: 24rpx; font-weight: 400; color: var(--c-primary, #f5b342); padding: 6rpx 16rpx; border-radius: 999rpx; background: rgba(245, 179, 66, .12); }
 .empty-card { background: var(--c-card); border-radius: 14rpx; padding: 40rpx; display: flex; flex-direction: column; align-items: center; gap: 10rpx; margin-bottom: 12rpx; }
 .empty-icon { font-size: 48rpx; }
 .empty-text { font-size: 26rpx; color: var(--c-sub); }

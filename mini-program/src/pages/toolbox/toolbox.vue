@@ -181,6 +181,7 @@ const sections = ref([
     title: '班级管理',
     items: [
       { label: '班级成员', icon: '👥', tab: '/pages/classes/classes' },
+      { label: '信息审核', icon: '📝', path: '/pages/community/student-info-review' },
       { label: '轮值表', icon: '📋', path: '/pages/community/duty-roster' },
       { label: '值日配置', icon: '🧹', crud: 'class-duty-configs' },
       { label: '班费', icon: '💰', path: '/pages/community/class-finance' },

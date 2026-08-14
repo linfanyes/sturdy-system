@@ -14,8 +14,10 @@
       <text class="tab" :class="{ on: tab === 'teachers' }" @click="switchTab('teachers')">👩‍🏫 教师</text>
       <text class="tab" :class="{ on: tab === 'classes' }" @click="switchTab('classes')">🏫 班级</text>
       <text class="tab" :class="{ on: tab === 'students' }" @click="switchTab('students')">🧑‍🎓 学生</text>
-      <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI 配置</text>
+      <text class="tab" :class="{ on: tab === 'ai' }" @click="switchTab('ai')">🤖 AI</text>
       <text class="tab" :class="{ on: tab === 'academic' }" @click="switchTab('academic')">📈 成绩</text>
+      <text class="tab" :class="{ on: tab === 'textbook' }" @click="switchTab('textbook')">📚 教材</text>
+      <text class="tab" :class="{ on: tab === 'resource' }" @click="switchTab('resource')">🗃️ 资源</text>
     </view>
 
     <!-- ====== 看板 Tab ====== -->
@@ -447,6 +449,17 @@
         <EmptyState v-else icon="📈" text="暂无趋势数据" />
       </view>
     </template>
+
+    <!-- ====== 教材库 Tab（校管维护教材/单元/知识点，教师端只读使用） ====== -->
+    <template v-if="tab === 'textbook'">
+      <TextbookManage :api="apiCall" />
+    </template>
+
+
+    <!-- ====== 资源库 Tab（古诗词/数学公式/英语单词/科学/道法 预置资源管理） ====== -->
+    <template v-if="tab === 'resource'">
+      <ResourceLibManage :api="apiCall" />
+    </template>
   </view>
 </template>
 
@@ -468,6 +481,8 @@ import TeacherManage from './components/TeacherManage.vue'
 import ClassManage from './components/ClassManage.vue'
 import FeatureConfig from './components/FeatureConfig.vue'
 import AiSettings from './components/AiSettings.vue'
+import TextbookManage from './components/TextbookManage.vue'
+import ResourceLibManage from './components/ResourceLibManage.vue'
 
 const dark = computed(() => theme.mode === 'dark')
 const teachers = ref([])
@@ -1008,8 +1023,8 @@ onShow(async () => { await Promise.all([loadTeachers(), loadDashboard(), loadNot
 <style scoped>
 .page { padding: 24rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24rpx; padding-top: 8rpx; }
-.tabs { display: flex; gap: 8rpx; margin-bottom: 24rpx; padding: 10rpx; background: var(--c-card2); border-radius: 26rpx; }
-.tab { flex: 1; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 18rpx; background: transparent; color: var(--c-sub); font-weight: 600; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 24rpx; padding: 10rpx; background: var(--c-card2); border-radius: 26rpx; }
+.tab { flex: 1 0 150rpx; text-align: center; font-size: 26rpx; padding: 18rpx 0; border-radius: 18rpx; background: transparent; color: var(--c-sub); font-weight: 600; }
 .tab.on { background: var(--c-primary); color: #fff; box-shadow: 0 4rpx 14rpx rgba(245,179,66,.28); }
 .hd-left { flex: 1; }
 .t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }

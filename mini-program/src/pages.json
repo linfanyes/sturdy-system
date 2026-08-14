@@ -373,72 +373,9 @@
           }
         },
         {
-          "path": "grade-trend",
-          "style": {
-            "navigationBarTitleText": "成绩趋势",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
           "path": "analysis",
           "style": {
             "navigationBarTitleText": "数据统计",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "award-categories",
-          "style": {
-            "navigationBarTitleText": "奖项类别",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "group-scores",
-          "style": {
-            "navigationBarTitleText": "小组评分",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "score-records",
-          "style": {
-            "navigationBarTitleText": "积分记录",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "reward-records",
-          "style": {
-            "navigationBarTitleText": "加减分记录",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "duty-config",
-          "style": {
-            "navigationBarTitleText": "值日配置",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "class-duty",
-          "style": {
-            "navigationBarTitleText": "班级职务",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "schedule-maker",
-          "style": {
-            "navigationBarTitleText": "课表排版",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "data-manager",
-          "style": {
-            "navigationBarTitleText": "数据管理",
             "enablePullDownRefresh": true
           }
         }
@@ -681,71 +618,6 @@
       ]
     },
     {
-      "root": "pages/writing",
-      "name": "writing",
-      "pages": [
-        {
-          "path": "essay",
-          "style": {
-            "navigationBarTitleText": "小作文助手"
-          }
-        },
-        {
-          "path": "english-story",
-          "style": {
-            "navigationBarTitleText": "英语小故事"
-          }
-        },
-        {
-          "path": "scene-dialogue",
-          "style": {
-            "navigationBarTitleText": "情景对话"
-          }
-        },
-        {
-          "path": "paper",
-          "style": {
-            "navigationBarTitleText": "教育论文"
-          }
-        },
-        {
-          "path": "plan-template-lib",
-          "style": {
-            "navigationBarTitleText": "文案模板库",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "paper-queries",
-          "style": {
-            "navigationBarTitleText": "试卷查询",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "lesson-plan-templates",
-          "style": {
-            "navigationBarTitleText": "教案模板",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "knowledges",
-          "style": {
-            "navigationBarTitleText": "知识点库",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "notice-templates",
-          "style": {
-            "navigationBarTitleText": "通知模板",
-            "enablePullDownRefresh": true
-          }
-        }
-      ]
-    },
-    {
       "root": "pages/quick",
       "name": "quick",
       "pages": [
@@ -765,156 +637,6 @@
           "path": "subject-list",
           "style": {
             "navigationBarTitleText": "学科工具"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/subject-tools",
-      "name": "subject-tools",
-      "pages": [
-        {
-          "path": "index",
-          "style": {
-            "navigationBarTitleText": "学科工具"
-          }
-        },
-        {
-          "path": "chinese",
-          "style": {
-            "navigationBarTitleText": "语文工具"
-          }
-        },
-        {
-          "path": "english",
-          "style": {
-            "navigationBarTitleText": "英语工具"
-          }
-        },
-        {
-          "path": "math",
-          "style": {
-            "navigationBarTitleText": "数学工具"
-          }
-        },
-        {
-          "path": "writingMaterials",
-          "style": {
-            "navigationBarTitleText": "作文素材"
-          }
-        },
-        {
-          "path": "poetry",
-          "style": {
-            "navigationBarTitleText": "古诗词助手"
-          }
-        },
-        {
-          "path": "wordCard",
-          "style": {
-            "navigationBarTitleText": "单词卡片"
-          }
-        },
-        {
-          "path": "dictation",
-          "style": {
-            "navigationBarTitleText": "汉字听写"
-          }
-        },
-        {
-          "path": "idiom",
-          "style": {
-            "navigationBarTitleText": "成语词典"
-          }
-        },
-        {
-          "path": "sentencePractice",
-          "style": {
-            "navigationBarTitleText": "句型练习"
-          }
-        },
-        {
-          "path": "reading",
-          "style": {
-            "navigationBarTitleText": "阅读理解"
-          }
-        },
-        {
-          "path": "grammar",
-          "style": {
-            "navigationBarTitleText": "语法练习"
-          }
-        },
-        {
-          "path": "listening",
-          "style": {
-            "navigationBarTitleText": "听力训练"
-          }
-        },
-        {
-          "path": "pinyin",
-          "style": {
-            "navigationBarTitleText": "拼音学习"
-          }
-        },
-        {
-          "path": "spell",
-          "style": {
-            "navigationBarTitleText": "单词拼写"
-          }
-        },
-        {
-          "path": "speaking",
-          "style": {
-            "navigationBarTitleText": "口语练习"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/office-tools",
-      "name": "office-tools",
-      "pages": [
-        {
-          "path": "index",
-          "style": {
-            "navigationBarTitleText": "办公工具"
-          }
-        },
-        {
-          "path": "translate",
-          "style": {
-            "navigationBarTitleText": "翻译助手"
-          }
-        },
-        {
-          "path": "thesis",
-          "style": {
-            "navigationBarTitleText": "教育论文"
-          }
-        },
-        {
-          "path": "comment",
-          "style": {
-            "navigationBarTitleText": "评语生成"
-          }
-        },
-        {
-          "path": "summary",
-          "style": {
-            "navigationBarTitleText": "期末总结"
-          }
-        },
-        {
-          "path": "blackboard",
-          "style": {
-            "navigationBarTitleText": "黑板报生成"
-          }
-        },
-        {
-          "path": "speech",
-          "style": {
-            "navigationBarTitleText": "演讲稿生成"
           }
         }
       ]
@@ -1002,19 +724,33 @@
   "preloadRule": {
     "pages/dashboard/dashboard": {
       "network": "all",
-      "packages": ["ai-features", "games", "tools", "teaching", "community"]
+      "packages": [
+        "ai-features",
+        "games",
+        "tools",
+        "teaching",
+        "community"
+      ]
     },
     "pages/toolbox/toolbox": {
       "network": "all",
-      "packages": ["tools"]
+      "packages": [
+        "tools"
+      ]
     },
     "pages/classes/classes": {
       "network": "all",
-      "packages": ["teaching", "community"]
+      "packages": [
+        "teaching",
+        "community"
+      ]
     },
     "pages/students/students": {
       "network": "all",
-      "packages": ["teaching", "community"]
+      "packages": [
+        "teaching",
+        "community"
+      ]
     }
   },
   "globalStyle": {

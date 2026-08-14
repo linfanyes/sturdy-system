@@ -11,7 +11,7 @@ import {
 } from 'lucide-vue-next'
 import {
   listMessageRecipients, listMessages, listMessagesSent,
-  markMessageRead, markAllMessagesRead,
+  markMessageRead, markAllMessagesRead, unreadMessageCount,
   deleteMessage as apiDeleteMessage, sendMessage as apiSendMessage,
 } from '@/api/teacher'
 
@@ -66,6 +66,18 @@ const page = computed(() => Math.floor(skip.value / PAGE_SIZE) + 1)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
 
 const unreadCount = computed(() => messages.value.filter(m => !(m.isRead ?? m.read)).length)
+
+// ===== 全局未读总数（跨页） =====
+const totalUnread = ref(0)
+
+async function loadUnreadTotal() {
+  try {
+    const res: any = await unreadMessageCount()
+    totalUnread.value = res?.count ?? 0
+  } catch {
+    totalUnread.value = 0
+  }
+}
 
 // ===== 发送表单 =====
 const showSendForm = ref(false)
@@ -143,6 +155,7 @@ async function markRead(msg: Message) {
     await markMessageRead(msg.id)
     if (msg.isRead !== undefined) msg.isRead = true
     else msg.read = true
+    loadUnreadTotal()
   } catch (e: any) {
     errorMsg.value = e?.message || '标记已读失败'
   }
@@ -156,6 +169,7 @@ async function markAllRead() {
       if (m.isRead !== undefined) m.isRead = true
       else m.read = true
     })
+    loadUnreadTotal()
   } catch (e: any) {
     errorMsg.value = e?.message || '全部已读失败'
   }
@@ -249,6 +263,7 @@ function nextPage() {
 onMounted(() => {
   loadRecipients()
   loadMessages()
+  loadUnreadTotal()
 })
 </script>
 
@@ -258,6 +273,10 @@ onMounted(() => {
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
         <MessageSquare class="w-6 h-6 text-butter-500" /> 留言板
+        <span
+          v-if="totalUnread > 0"
+          class="text-xs font-normal px-2 py-0.5 rounded-full bg-sakura-500 text-white"
+        >{{ totalUnread > 99 ? '99+' : totalUnread }} 条未读</span>
       </h1>
       <div class="flex items-center gap-2">
         <button
