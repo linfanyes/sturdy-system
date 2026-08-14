@@ -6,6 +6,7 @@ const props = defineProps<{
   modelValue: boolean
   targetName?: string
   defaultPassword?: string
+  currentPassword?: string
 }>()
 
 const emit = defineEmits<{
@@ -37,6 +38,15 @@ function submit() {
     <p class="text-sm text-cocoa-500 mb-4">
       为「{{ targetName || '该用户' }}」设置新密码（留空则由系统生成 8 位随机密码）
     </p>
+    <div v-if="currentPassword" class="mb-4">
+      <label class="text-sm text-cocoa-500">原密码</label>
+      <input
+        :value="currentPassword"
+        type="text"
+        readonly
+        class="w-full mt-1 px-3 py-2 rounded-xl border border-cream-200 bg-cream-50 text-cocoa-700"
+      />
+    </div>
     <div>
       <label class="text-sm text-cocoa-500">新密码</label>
       <input

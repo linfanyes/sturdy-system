@@ -232,7 +232,7 @@ onUnmounted(() => stopTimer())
 .btn.big { margin-top: 40rpx; padding: 0 80rpx; font-size: 32rpx; line-height: 88rpx; }
 
 .mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 10; }
-.mask-c { width: 480rpx; padding: 40rpx; border-radius: 18rpx; display: flex; flex-direction: column; align-items: center; }
+.mask-c { width: 480rpx; max-width: 90vw; padding: 40rpx; border-radius: 18rpx; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
 .mask-t { font-size: 36rpx; font-weight: 800; }
 .mask-s { font-size: 32rpx; margin-top: 12rpx; font-weight: 700; }
 .mask-s2 { font-size: 24rpx; margin-top: 6rpx; }

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Param, Query, Body, UseGuards, BadRequestException } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { Roles } from '../common/decorators/roles.decorator'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
@@ -17,6 +18,7 @@ export class GradesController extends CrudController<Grade> {
     super(s)
   }
 
+  @Throttle('dashboard')
   @Get()
   findAll(
     @CurrentTeacher() t: any,

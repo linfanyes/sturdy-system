@@ -402,7 +402,7 @@ async function loadCmpStats(name) {
 .q { font-size: 24rpx; padding: 10rpx 18rpx; border-radius: 30rpx; background: var(--c-card2); color: var(--c-accent); }
 .trend-card { background: var(--c-card); border-radius: 16rpx; padding: 20rpx; margin-bottom: 18rpx; }
 .trend-h { font-size: 26rpx; font-weight: 700; color: var(--c-title); margin-bottom: 10rpx; }
-.trend-canvas { width: 660rpx; height: 260rpx; margin: 0 auto; display: block; }
+.trend-canvas { width: 660rpx; max-width: 92vw; height: 260rpx; margin: 0 auto; display: block; }
 .trend-legend { display: flex; gap: 24rpx; justify-content: center; margin-top: 8rpx; }
 .tl-i { font-size: 20rpx; color: var(--c-sub); display: flex; align-items: center; gap: 6rpx; }
 .tl-dot { width: 16rpx; height: 16rpx; border-radius: 50%; }

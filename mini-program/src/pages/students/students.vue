@@ -168,6 +168,7 @@
   <view v-if="pwdUser" class="mask" @click="pwdUser = null">
     <view class="dialog" @click.stop>
       <view class="d-title">重置「{{ pwdUser.name }}」家长密码</view>
+      <input :value="origPwd" class="pwd-inp" placeholder="原密码" readonly />
       <input v-model="newPwd" class="pwd-inp" placeholder="新密码（6-20位）" />
       <view class="d-sub">默认密码 123456，也可自行设置（6-20位）</view>
       <view class="btn-row2">
@@ -241,6 +242,9 @@ const batchMode = ref(false)
 const selected = ref(new Set())
 // 长列表分页：避免大班级一次渲染几十上百项卡顿
 const PAGE_SIZE = 20
+const pageSize = ref(200)
+const nextSkip = ref(0)
+const allLoaded = ref(false)
 // scroll-view 滚动位置（搜索/筛选用）
 const scrollTop = ref(0)
 const page = ref(1)
@@ -261,14 +265,34 @@ const shownAll = computed(() => {
 })
 // 实际渲染的切片：前 page * PAGE_SIZE 条
 const shown = computed(() => shownAll.value.slice(0, page.value * PAGE_SIZE))
-const hasMore = computed(() => shown.value.length < shownAll.value.length)
+const hasMore = computed(() => {
+  const hasKw = !!(kwDebounced.value || '').trim()
+  const gender = genderFilter.value
+  if (!hasKw && gender === '全部') {
+    return !allLoaded.value
+  }
+  return shown.value.length < shownAll.value.length
+})
 // 筛选/搜索/排序变化时重置分页
 function resetPage() { page.value = 1; scrollTop.value = 0 }
 function loadMore() {
-  if (loadingMore.value) return
+  if (loadingMore.value || allLoaded.value) return
   loadingMore.value = true
-  page.value++
-  setTimeout(() => { loadingMore.value = false }, 300)
+  const hasKw = !!(kwDebounced.value || '').trim()
+  const gender = genderFilter.value
+  if (!hasKw && gender === '全部') {
+    listStudents(classId.value, { loading: false, skip: nextSkip.value, take: pageSize.value }).then((more) => {
+      if (more && more.length) {
+        list.value = [...list.value, ...more]
+        nextSkip.value += more.length
+      }
+      if (!more || more.length < pageSize.value) allLoaded.value = true
+      loadingMore.value = false
+    }).catch(() => { loadingMore.value = false })
+  } else {
+    page.value++
+    loadingMore.value = false
+  }
 }
 const showForm = ref(false)
 const showImport = ref(false)
@@ -320,7 +344,6 @@ const levelClass = computed(() => {
 async function load() {
   loading.value = true
   try {
-    // 首次加载时若没有 classId，从 switchTabParams 读取或取第一个班级
     if (!classId.value) {
       const p = switchTabParams.students
       if (p && p.classId) {
@@ -336,7 +359,19 @@ async function load() {
       }
     }
     if (classId.value) {
-      list.value = await listStudents(classId.value, { loading: false })
+      const hasKw = !!(kwDebounced.value || '').trim()
+      const gender = genderFilter.value
+      if (!hasKw && gender === '全部') {
+        nextSkip.value = 0
+        allLoaded.value = false
+        list.value = await listStudents(classId.value, { loading: false, skip: 0, take: pageSize.value })
+        nextSkip.value = list.value.length
+        if (list.value.length < pageSize.value) allLoaded.value = true
+      } else {
+        list.value = await listStudents(classId.value, { loading: false })
+        nextSkip.value = list.value.length
+        allLoaded.value = true
+      }
     }
   } finally { loading.value = false }
   resetPage()
@@ -400,11 +435,13 @@ async function batchAuthParent(enabled) {
 // 班主任重置某学生家长登录口令（弹框：默认 123456，可自定义）
 const pwdUser = ref(null)
 const newPwd = ref('')
+const origPwd = ref('')
 const resetSaving = ref(false)
 
 function resetParentPwd(s) {
   pwdUser.value = s
   newPwd.value = '123456'
+  origPwd.value = '123456'
 }
 
 async function doResetParentPwd() {
@@ -869,7 +906,7 @@ function drawRadar() {
 .d-code { background: var(--c-title); color: var(--c-card2); font-size: 22rpx; padding: 20rpx; border-radius: 12rpx; white-space: pre-wrap; line-height: 1.7; font-family: monospace; margin-bottom: 20rpx; }
 .d-copy { background: var(--c-blue); color: #fff; border-radius: 50rpx; margin-bottom: 14rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
 .d-close { background: var(--c-card2); color: var(--c-sub); border-radius: 50rpx; height: 80rpx; line-height: 80rpx; font-size: 28rpx; }
-.radar { width: 300px; height: 300px; display: block; margin: 10rpx auto; }
+.radar { width: 300px; max-width: 90vw; height: auto; aspect-ratio: 1 / 1; display: block; margin: 10rpx auto; }
 .pf-meta { font-size: 24rpx; color: var(--c-sub); text-align: center; margin-bottom: 6rpx; }
 .pf-stats { display: flex; justify-content: space-around; margin: 10rpx 0; }
 .pf-st { display: flex; flex-direction: column; align-items: center; }

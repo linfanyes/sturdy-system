@@ -175,6 +175,16 @@ export const post = request.post.bind(request)
 export const put = request.put.bind(request)
 export const del = request.delete.bind(request)
 
+export function cachedCrudList<T = any>(path: string, params?: Record<string, any>, ttl?: number) {
+  const url = params ? `${path}?${new URLSearchParams(params).toString()}` : path
+  return cachedGet<T[]>(url, ttl).then((data) => {
+    if (Array.isArray(data)) return data as T[]
+    if (data && Array.isArray(data.items)) return data.items as T[]
+    if (data && Array.isArray(data.list)) return data.list as T[]
+    return (Array.isArray(data) ? data : []) as T[]
+  })
+}
+
 /**
  * 统一处理「会话失效」：清除登录态 + 同步清空 Pinia store + 跳转登录页。
  */

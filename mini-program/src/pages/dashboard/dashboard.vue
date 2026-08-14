@@ -492,10 +492,13 @@ let searchTimer = null
 async function doSearch() {
   const q = searchQuery.value.trim()
   if (!q) { searchResults.value = null; return }
-  try {
-    const r = await globalSearch(q)
-    searchResults.value = r || { students: [], teachers: [], classes: [] }
-  } catch { searchResults.value = { students: [], teachers: [], classes: [] } }
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(async () => {
+    try {
+      const r = await globalSearch(q)
+      searchResults.value = r || { students: [], teachers: [], classes: [] }
+    } catch { searchResults.value = { students: [], teachers: [], classes: [] } }
+  }, 300)
 }
 function goStudent(s) { goPage('/pages/students/students?classId=' + s.classId) }
 
@@ -672,10 +675,34 @@ const weekTrend = computed(() => {
   return days
 })
 
-async function loadAll() {
+const DASHBOARD_CACHE_KEY = 'g_dashboard_cache'
+const DASHBOARD_CACHE_TTL = 2 * 60 * 1000
+
+async function loadAll(force = false) {
   loading.value = true
   loadSemester()
   try {
+    const cached = force ? null : uni.getStorageInfoSync ? null : null
+    let cacheUsed = false
+    if (!force) {
+      try {
+        const raw = uni.getStorageSync(DASHBOARD_CACHE_KEY)
+        if (raw && typeof raw === 'object' && raw.ts && Date.now() - raw.ts < DASHBOARD_CACHE_TTL) {
+          cacheUsed = true
+          classList.value = raw.classes || []
+          studentList.value = raw.students || []
+          noteList.value = raw.notes || []
+          gradeList.value = raw.grades || []
+          todoList.value = raw.todos || []
+          todayLessons.value = raw.todayLessons || []
+          noticeList.value = raw.notices || []
+          attendanceList.value = raw.attendances || []
+          homeworkList.value = raw.homeworks || []
+          schoolNotices.value = raw.schoolNotices || []
+          behaviorList.value = raw.behaviors || []
+        }
+      } catch {}
+    }
     const [
       classes, students, notes, grades, todos, schedules, notices,
       attendances, homeworks, schoolNoticesR, behaviors,
@@ -706,6 +733,22 @@ async function loadAll() {
     homeworkList.value = homeworks || []
     schoolNotices.value = (schoolNoticesR && (schoolNoticesR.items || schoolNoticesR)) || []
     behaviorList.value = behaviors || []
+    try {
+      uni.setStorageSync(DASHBOARD_CACHE_KEY, {
+        ts: Date.now(),
+        classes: classList.value,
+        students: studentList.value,
+        notes: noteList.value,
+        grades: gradeList.value,
+        todos: todoList.value,
+        todayLessons: todayLessons.value,
+        notices: noticeList.value,
+        attendances: attendanceList.value,
+        homeworks: homeworkList.value,
+        schoolNotices: schoolNotices.value,
+        behaviors: behaviorList.value,
+      })
+    } catch {}
     loadNotifications()
   } catch (e) {
     uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })
@@ -716,12 +759,62 @@ onShow(() => {
   if (!auth.token) { uni.reLaunch({ url: '/pages/login/login' }); return }
   currentMood.value = uni.getStorageSync('mood_' + todayStr) || ''
   selKeys.value = uni.getStorageSync('dash_widgets') || widgetCands.slice(0, 4).map((w) => w.label)
-  loadAll()
+  loadPrimaryDashboard()
   flushTabBarStyle()
+  setTimeout(() => {
+    loadSecondaryDashboard()
+  }, 120)
   // 通知未读数每 60 秒刷新一次
   if (notifTimer) clearInterval(notifTimer)
   notifTimer = setInterval(loadNotifications, 60000)
 })
+
+async function loadPrimaryDashboard() {
+  try {
+    const [classes, students, schedules, unread] = await Promise.all([
+      listDashboardClasses().catch(() => []),
+      listDashboardStudents().catch(() => []),
+      listSchedules().catch(() => []),
+      getUnreadCount().catch(() => ({ unreadCount: 0, notices: [] })),
+    ])
+    classList.value = classes || []
+    studentList.value = students || []
+    todayLessons.value = (schedules || [])
+      .filter((s) => s.dayOfWeek === todayDow)
+      .sort((a, b) => (a.period || 99) - (b.period || 99))
+      .slice(0, 6)
+    noticeList.value = (unread && (unread.notices || unread.items)) || []
+  } catch (e) {
+    uni.showToast({ title: '首页关键数据加载失败：' + (e.message || ''), icon: 'none' })
+  }
+}
+
+async function loadSecondaryDashboard() {
+  try {
+    const [
+      notes, grades, todos, notices, attendances, homeworks, schoolNoticesR, behaviors,
+    ] = await Promise.all([
+      listNotes().catch(() => []),
+      listDashboardGrades().catch(() => []),
+      listTodos().catch(() => []),
+      listNotices().catch(() => []),
+      listAttendances().catch(() => []),
+      listHomework().catch(() => []),
+      listSchoolNotices().catch(() => ({ items: [] })),
+      listBehaviorRecords().catch(() => []),
+    ])
+    noteList.value = notes || []
+    gradeList.value = grades || []
+    todoList.value = todos || []
+    attendanceList.value = attendances || []
+    homeworkList.value = homeworks || []
+    schoolNotices.value = (schoolNoticesR && (schoolNoticesR.items || schoolNoticesR)) || []
+    behaviorList.value = behaviors || []
+    loadNotifications()
+  } catch (e) {
+    uni.showToast({ title: '首页数据加载失败：' + (e.message || ''), icon: 'none' })
+  }
+}
 onHide(() => {
   if (notifTimer) { clearInterval(notifTimer); notifTimer = null }
 })
@@ -867,7 +960,7 @@ function goCrud(type) {
 .bd-today { font-size: 22rpx; color: #fff; background: var(--c-danger); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
 .bd-days { font-size: 22rpx; color: var(--c-accent); background: rgba(230,162,60,.15); padding: 4rpx 14rpx; border-radius: 20rpx; flex-shrink: 0; }
 .bd-card { font-size: 20rpx; color: #fff; background: #e06c75; padding: 4rpx 12rpx; border-radius: 16rpx; flex-shrink: 0; }
-.bd-card-dialog { width: 580rpx; background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%); border-radius: 28rpx; padding: 40rpx 30rpx; text-align: center; }
+.bd-card-dialog { width: 580rpx; max-width: 92vw; background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%); border-radius: 28rpx; padding: 40rpx 30rpx; text-align: center; box-sizing: border-box; }
 .bd-card-bg { font-size: 72rpx; }
 .bd-card-title { font-size: 36rpx; font-weight: 800; color: #e06c75; margin: 10rpx 0; }
 .bd-card-name { font-size: 44rpx; font-weight: 800; color: var(--c-title); }

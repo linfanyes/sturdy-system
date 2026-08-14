@@ -18,7 +18,12 @@ const layout = computed(() => (route.meta.layout === 'blank' ? BlankLayout : App
 <template>
   <component :is="layout">
     <ErrorBoundary>
-      <router-view />
+      <router-view v-slot="{ Component, route }">
+        <keep-alive>
+          <component :is="Component" v-if="route.meta.keepAlive" :key="route.fullPath" />
+        </keep-alive>
+        <component :is="Component" v-if="!route.meta.keepAlive" :key="route.fullPath" />
+      </router-view>
     </ErrorBoundary>
   </component>
   <ToastContainer />

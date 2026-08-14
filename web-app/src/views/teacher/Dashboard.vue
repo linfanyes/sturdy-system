@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
-import { crudList } from '@/api/teacher'
+import { crudList, cachedCrudList, cancelAllRequests } from '@/api/request'
 import { getUnreadCount } from '@/api/notification'
 import {
   Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
@@ -45,19 +45,23 @@ async function load() {
 
 async function loadCharts() {
   chartLoading.value = true
-  const [stu, exams, aw, hw, att] = await Promise.allSettled([
+  const [stu, hw, att] = await Promise.allSettled([
     listAllStudents({ take: 500 }),
-    crudList('/exams', { take: 5 }),
-    crudList('/award-records', { take: 200 }),
-    crudList('/homework', { take: 200 }),
-    crudList('/attendances', { params: { date: todayStr } }),
+    cachedCrudList('/homework', { take: 200 }, 30000),
+    cachedCrudList('/attendances', { date: todayStr }, 30000),
   ])
   if (stu.status === 'fulfilled') students.value = unwrap(stu.value)
-  if (exams.status === 'fulfilled') recentExams.value = unwrap(exams.value)
-  if (aw.status === 'fulfilled') awards.value = unwrap(aw.value)
   if (hw.status === 'fulfilled') homeworkList.value = unwrap(hw.value)
   if (att.status === 'fulfilled') attendanceList.value = unwrap(att.value)
-  loadGradeTrend()
+
+  const secondary = await Promise.allSettled([
+    cachedCrudList('/exams', { take: 5 }, 30000),
+    cachedCrudList('/award-records', { take: 200 }, 30000),
+  ])
+  if (secondary[0].status === 'fulfilled') recentExams.value = unwrap(secondary[0].value)
+  if (secondary[1].status === 'fulfilled') awards.value = unwrap(secondary[1].value)
+
+  await loadGradeTrend()
   chartLoading.value = false
 }
 
@@ -89,6 +93,7 @@ async function loadGradeTrend() {
   }
 }
 onMounted(() => { load(); loadCharts() })
+onUnmounted(() => { cancelAllRequests() })
 
 /* —— 概览统计 —— */
 const totalStudents = computed(() => students.value.length)

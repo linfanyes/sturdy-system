@@ -419,6 +419,7 @@ async function handleDelete(s: StudentItem) {
     v-model="showReset"
     :target-name="resetTarget?.name ? resetTarget.name + ' 的家长' : '该学生家长'"
     default-password="123456"
+    current-password="123456"
     @confirm="submitReset"
   />
 </template>

@@ -85,6 +85,7 @@
     <view v-if="pwdUser" class="mask" @click="pwdUser=null">
       <view class="sheet safe-bottom" @click.stop>
         <view class="sh-t">重置「{{ pwdUser.name }}」密码</view>
+        <view class="inp-wrap"><input :value="origPwd" class="inp" placeholder="原密码" readonly /></view>
         <view class="inp-wrap"><input v-model="newPwd" class="inp" placeholder="新密码（6-20位，留空随机生成）" password /></view>
         <view class="sh-sub">自定义密码长度须为 6-20 位；留空则由系统随机生成。</view>
         <button class="btn" :disabled="saving" @click="$emit('do-reset-pwd', pwdUser, newPwd)">确认重置</button>
@@ -145,6 +146,7 @@ const form = ref({ username: '', password: '', name: '', subject: '', phone: '',
 const phoneError = ref('')
 const pwdUser = ref(null)
 const newPwd = ref('')
+const origPwd = ref('')
 const showBatchImport = ref(false)
 const batchText = ref('')
 const batchResult = ref([])
@@ -186,6 +188,7 @@ function openEditForm(u) {
 function resetPwd(u) {
   pwdUser.value = u
   newPwd.value = '1314521'
+  origPwd.value = '1314521'
 }
 
 function setBatchResult(r) {

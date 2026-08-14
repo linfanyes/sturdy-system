@@ -334,6 +334,7 @@ function formatTime(t?: string) {
       v-model="showReset"
       :target-name="resetTarget?.name"
       default-password="1314520"
+      current-password="1314520"
       @confirm="submitReset"
     />
   </div>

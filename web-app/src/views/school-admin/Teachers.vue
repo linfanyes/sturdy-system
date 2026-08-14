@@ -607,6 +607,7 @@ function handlePrint() {
     v-model="showReset"
     :target-name="resetTarget?.name"
     default-password="1314521"
+    current-password="1314521"
     @confirm="submitReset"
   />
 </template>

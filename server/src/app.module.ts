@@ -104,17 +104,28 @@ import { AnalysisModule } from './analysis/analysis.module'
         signOptions: { expiresIn: c.get('JWT_EXPIRES_IN') || '30d' },
       }),
     }),
-    // 全局速率限制：兜底 600 次/分钟/IP（实际值经 THROTTLE_LIMIT 可调），防止 AI/文件解析等高成本接口被滥用（DoS/费用滥用）。
-    // 具体接口可用 @Throttle(limit, ttl) 覆盖更严格配额（如 AI 接口 10/min）。
-    // 参数可经 THROTTLE_TTL / THROTTLE_LIMIT 调整（默认 60000ms / 600 次）。
-    // ⚠️ 已知限制（历史债 #6）：存储为进程内存，云托管横向扩容后配额按实例数倍增；
-    // 如需严格全局配额，需外置 Redis 存储（@nestjs/throttler-storage-redis）——待基础设施就绪后接入。
+    // 全局速率限制：兜底 80 次/分钟/IP，避免 Dashboard/AI 等高并发打满 CPU；
+    // 热点接口可用 @Throttle('dashboard') 覆盖为更严格的 40 次/分钟/IP；
+    // AI 接口已有 @Throttle('ai') 10/min，这里仅做兜底。
+    // 参数可经 THROTTLE_TTL / THROTTLE_LIMIT 调整（默认 60000ms / 80 次）。
+    // ⚠️ 已知限制：存储为进程内存，云托管横向扩容后配额按实例数倍增；
+    // 如需严格全局配额，需外置 Redis 存储（@nestjs/throttler-storage-redis）。
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (c: ConfigService) => [
         {
           ttl: +(c.get('THROTTLE_TTL') || 60000),
-          limit: +(c.get('THROTTLE_LIMIT') || 600),
+          limit: +(c.get('THROTTLE_LIMIT') || 80),
+        },
+        {
+          name: 'dashboard',
+          ttl: 60000,
+          limit: 40,
+        },
+        {
+          name: 'ai',
+          ttl: 60000,
+          limit: 10,
         },
       ],
     }),

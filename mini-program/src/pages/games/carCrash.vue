@@ -308,7 +308,7 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
 }
-.over-card { width: 520rpx; padding: 36rpx; border-radius: 20rpx; display: flex; flex-direction: column; align-items: center; }
+.over-card { width: 520rpx; max-width: 90vw; padding: 36rpx; border-radius: 20rpx; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; }
 .over-title { font-size: 38rpx; font-weight: 800; color: #e64340; margin-bottom: 20rpx; }
 .over-row { width: 100%; display: flex; justify-content: space-between; padding: 10rpx 0; font-size: 26rpx; }
 .over-row .num { font-weight: 700; }

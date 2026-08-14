@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { Roles } from '../decorators/roles.decorator'
 import { CurrentTeacher } from '../decorators/current-teacher.decorator'
@@ -70,6 +71,7 @@ export class CrudController<T extends { id: string; teacherId: string }> {
     return this.service.create(t.sub, stripUnsafe(dto))
   }
 
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Get()
   findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string, @Query('date') date?: string) {
     return this.service.findAll(t.sub, classId, Math.max(0, Number(skip) || 0), clampTake(take), term, date)

@@ -67,7 +67,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/RouteOutlet.vue'),
     meta: { requiresAuth: true, roles: ['teacher'] as Role[] },
     children: [
-      { path: '', name: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue'), meta: { title: '教师工作台' } },
+      { path: '', name: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue'), meta: { title: '教师工作台', keepAlive: true } },
       { path: 'notifications', name: 'teacher-notifications', component: () => import('@/views/workspace/Notifications.vue'), meta: { title: '通知中心' } },
       // 个人空间
       { path: 'profile', name: 'teacher-profile', component: () => import('@/views/workspace/Profile.vue'), meta: { title: '个人资料' } },
@@ -80,7 +80,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'data', name: 'teacher-data', component: () => import('@/views/workspace/DataManager.vue'), meta: { title: '数据管理', feature: 'notices' } },
       // 班级与学生
       { path: 'classes', name: 'teacher-classes', component: () => import('@/views/classes/ClassMembers.vue'), meta: { title: '班级成员', feature: 'classes' } },
-      { path: 'students', name: 'teacher-students', component: () => import('@/views/teacher/Students.vue'), meta: { title: '学生管理', feature: 'students' } },
+      { path: 'students', name: 'teacher-students', component: () => import('@/views/teacher/Students.vue'), meta: { title: '学生管理', feature: 'students', keepAlive: true } },
       { path: 'students/:id', name: 'teacher-student-detail', component: () => import('@/views/teacher/StudentDetail.vue'), meta: { title: '学生详情', feature: 'students' } },
       { path: 'student-info-review', name: 'student-info-review', component: () => import('@/views/teacher/StudentInfoReview.vue'), meta: { title: '信息修改审核', feature: 'students' } },
       { path: 'duty-roster', name: 'teacher-duty-roster', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'duty-rosters' }, meta: { title: '轮值表', feature: 'duty' } },
@@ -90,16 +90,16 @@ export const routes: RouteRecordRaw[] = [
       { path: 'gallery', name: 'teacher-gallery', component: () => import('@/views/classes/Gallery.vue'), meta: { title: '班级风采', feature: 'gallery' } },
       { path: 'my-gallery', name: 'teacher-my-gallery', component: () => import('@/views/classes/MyGallery.vue'), meta: { title: '我的相册', feature: 'gallery' } },
       // 学情与考试
-      { path: 'exams', name: 'teacher-exams', component: () => import('@/views/exams/Exams.vue'), meta: { title: '考试管理', feature: 'exams' } },
-      { path: 'grades', name: 'teacher-grades', component: () => import('@/views/exams/Grades.vue'), meta: { title: '成绩管理', feature: 'grades' } },
+      { path: 'exams', name: 'teacher-exams', component: () => import('@/views/exams/Exams.vue'), meta: { title: '考试管理', feature: 'exams', keepAlive: true } },
+      { path: 'grades', name: 'teacher-grades', component: () => import('@/views/exams/Grades.vue'), meta: { title: '成绩管理', feature: 'grades', keepAlive: true } },
       { path: 'exam-analysis', name: 'teacher-exam-analysis', component: () => import('@/views/exams/ExamAnalysis.vue'), meta: { title: '考试分析', feature: 'analysis' } },
       { path: 'data-dashboard', name: 'teacher-data-dashboard', component: () => import('@/views/exams/DataDashboard.vue'), meta: { title: '数据看板', feature: 'analysis' } },
       { path: 'radar', name: 'teacher-radar', component: () => import('@/views/exams/Radar.vue'), meta: { title: '雷达图', feature: 'analysis' } },
       { path: 'exam-detail', name: 'teacher-exam-detail', component: () => import('@/views/exams/ExamDetail.vue'), meta: { title: '考试详情', feature: 'analysis' } },
       { path: 'exam-compare', name: 'teacher-exam-compare', component: () => import('@/views/exams/ExamCompare.vue'), meta: { title: '进退步对比', feature: 'analysis' } },
       { path: 'student-grades', name: 'teacher-student-grades', component: () => import('@/views/exams/StudentGrades.vue'), meta: { title: '学生成绩', feature: 'grades' } },
-      { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/attendance/Attendance.vue'), meta: { title: '考勤', feature: 'attendance' } },
-      { path: 'homework', name: 'teacher-homework', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'homework' }, meta: { title: '作业', feature: 'homework' } },
+      { path: 'attendance', name: 'teacher-attendance', component: () => import('@/views/attendance/Attendance.vue'), meta: { title: '考勤', feature: 'attendance', keepAlive: true } },
+      { path: 'homework', name: 'teacher-homework', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'homework' }, meta: { title: '作业', feature: 'homework', keepAlive: true } },
       // 学生评价
       { path: 'rewards', name: 'teacher-rewards', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'reward-records' }, meta: { title: '奖励记录', feature: 'rewards' } },
       { path: 'score-records', name: 'teacher-score-records', component: () => import('@/views/_schema_crud/SchemaCrudPage.vue'), props: { entity: 'score-records' }, meta: { title: '加减分记录', feature: 'rewards' } },

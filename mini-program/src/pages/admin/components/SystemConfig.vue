@@ -85,13 +85,14 @@
       <!-- 重置密码 -->
       <view v-if="resetTarget" class="mask mask-center" @click="resetTarget = null">
         <view class="dialog" @click.stop>
-          <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
-          <view class="inp-wrap">
-            <input v-model="resetPwd" class="inp-dialog" placeholder="请输入新密码" password />
-            <text class="dialog-hint">提示：密码重置后，原密码立即失效，该管理员需使用新密码重新登录。若账号此前被禁用，将同时恢复启用。</text>
+            <view class="sh-t">重置「{{ resetTarget.name }}」的密码</view>
+            <view class="inp-wrap">
+              <input :value="origPwd" class="inp-dialog" placeholder="原密码" readonly />
+              <input v-model="resetPwd" class="inp-dialog" placeholder="请输入新密码" password />
+              <text class="dialog-hint">提示：密码重置后，原密码立即失效，该管理员需使用新密码重新登录。若账号此前被禁用，将同时恢复启用。</text>
+            </view>
+            <button class="save-btn" :disabled="saving" @click="onResetPwd">{{ saving ? '保存中…' : '确认重置' }}</button>
           </view>
-          <button class="save-btn" :disabled="saving" @click="onResetPwd">{{ saving ? '保存中…' : '确认重置' }}</button>
-        </view>
       </view>
     </view>
 
@@ -237,6 +238,7 @@ function onSaveAdmin() {
 }
 const resetTarget = ref(null)
 const resetPwd = ref('')
+const origPwd = ref('')
 function onResetPwd() {
   if (!resetPwd.value) return uni.showToast({ title: '请输入新密码', icon: 'none' })
   emit('reset-pwd', resetTarget.value, resetPwd.value)
@@ -294,7 +296,7 @@ defineExpose({
     Object.assign(adminForm, { schoolId: a.schoolId || '', name: a.name || '', username: a.username || '', password: '', enabled: a.enabled })
     showAdminForm.value = true
   },
-  openResetAdmin(a) { resetTarget.value = a; resetPwd.value = '1314520' },
+  openResetAdmin(a) { resetTarget.value = a; resetPwd.value = '1314520'; origPwd.value = '1314520' },
 })
 </script>
 
