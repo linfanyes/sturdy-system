@@ -4,7 +4,7 @@
  * 复用小程序后端统一 CRUD 接口（base.controller.ts 模式：GET/?classId=&skip=&take=&term=）
  * 支持：列表展示、新增、编辑、删除、按 classId 筛选、关键词搜索
  */
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onActivated, computed, watch } from 'vue'
 import { Plus, Search, Edit3, Trash2, Inbox } from 'lucide-vue-next'
 import Modal from './Modal.vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
@@ -123,6 +123,14 @@ async function loadList() {
 }
 
 onMounted(() => {
+  loadClasses()
+  loadList()
+})
+
+let activated = false
+// keep-alive 页面（如作业）重新激活时刷新列表；非 keep-alive 场景 onActivated 不触发，无副作用
+onActivated(() => {
+  if (!activated) { activated = true; return }
   loadClasses()
   loadList()
 })

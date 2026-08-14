@@ -263,8 +263,15 @@ const shownAll = computed(() => {
   })
   return arr
 })
-// 实际渲染的切片：前 page * PAGE_SIZE 条
-const shown = computed(() => shownAll.value.slice(0, page.value * PAGE_SIZE))
+// 实际渲染切片：
+// - 无筛选（服务端分页）时，直接渲染已加载列表（最多 pageSize 条，滚动增量加载，不截断）；
+// - 有筛选/搜索（前端分页）时，仍按 page * PAGE_SIZE 截取，scroll 触底通过 page++ 显示更多。
+const shown = computed(() => {
+  const hasKw = !!(kwDebounced.value || '').trim()
+  const gender = genderFilter.value
+  if (!hasKw && gender === '全部') return shownAll.value
+  return shownAll.value.slice(0, page.value * PAGE_SIZE)
+})
 const hasMore = computed(() => {
   const hasKw = !!(kwDebounced.value || '').trim()
   const gender = genderFilter.value

@@ -105,8 +105,8 @@ import { AnalysisModule } from './analysis/analysis.module'
       }),
     }),
     // 全局速率限制：兜底 80 次/分钟/IP，避免 Dashboard/AI 等高并发打满 CPU；
-    // 热点接口可用 @Throttle('dashboard') 覆盖为更严格的 40 次/分钟/IP；
-    // AI 接口已有 @Throttle('ai') 10/min，这里仅做兜底。
+    // 热点接口可用 @Throttle({ dashboard: { limit: 40, ttl: 60000 } }) 覆盖为更严格的 40 次/分钟/IP；
+    // AI 接口已有 @Throttle({ default: { limit: 10, ttl: 60000 } }) 10/min，这里仅做兜底。
     // 参数可经 THROTTLE_TTL / THROTTLE_LIMIT 调整（默认 60000ms / 80 次）。
     // ⚠️ 已知限制：存储为进程内存，云托管横向扩容后配额按实例数倍增；
     // 如需严格全局配额，需外置 Redis 存储（@nestjs/throttler-storage-redis）。

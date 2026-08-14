@@ -4,7 +4,7 @@
  * - 新增考试时学期默认为当前学期，无需手动设置
  * - 双击考试行查看本次考试的汇总信息（各科成绩统计）
  */
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onActivated, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { listExams, createExam, updateExam, deleteExam, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
@@ -73,6 +73,13 @@ function currentTerm() {
 onMounted(async () => {
   await loadClasses()
   await loadList()
+})
+
+let activated = false
+// keep-alive 页面重新激活时刷新（首次挂载由 onMounted 加载，不重复请求）
+onActivated(async () => {
+  if (activated) { await loadClasses(); await loadList() }
+  activated = true
 })
 
 function className(id: string) {

@@ -5,7 +5,7 @@
  * - 支持「全班X」一键标记、统计概览、保存（新建或更新）
  * - 数据对接后端 /attendances（GET 列表 / POST 新建 / PATCH 更新）
  */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { toast } from '@/utils/feedback'
 import request from '@/api/request'
@@ -162,6 +162,14 @@ onMounted(async () => {
   if (classes.value.length) {
     classId.value = classes.value[0].id
   }
+})
+
+let activated = false
+// keep-alive 页面重新激活时刷新（首次挂载由 onMounted 加载，不重复请求）
+onActivated(async () => {
+  if (!activated) { activated = true; return }
+  await loadClasses()
+  if (classId.value) await loadStudents() // loadStudents 内部会调 loadAttendance 刷新考勤
 })
 </script>
 

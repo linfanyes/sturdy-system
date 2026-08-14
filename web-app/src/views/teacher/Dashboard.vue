@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onActivated, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
-import { crudList, cachedCrudList, cancelAllRequests } from '@/api/request'
+import { cachedCrudList, cancelAllRequests } from '@/api/request'
 import { getUnreadCount } from '@/api/notification'
 import {
   Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
@@ -93,6 +93,9 @@ async function loadGradeTrend() {
   }
 }
 onMounted(() => { load(); loadCharts() })
+let activated = false
+// keep-alive 页面重新激活时刷新数据（首次挂载由 onMounted 加载，不重复请求）
+onActivated(() => { if (activated) { load(); loadCharts() } activated = true })
 onUnmounted(() => { cancelAllRequests() })
 
 /* —— 概览统计 —— */

@@ -682,13 +682,10 @@ async function loadAll(force = false) {
   loading.value = true
   loadSemester()
   try {
-    const cached = force ? null : uni.getStorageInfoSync ? null : null
-    let cacheUsed = false
     if (!force) {
       try {
         const raw = uni.getStorageSync(DASHBOARD_CACHE_KEY)
         if (raw && typeof raw === 'object' && raw.ts && Date.now() - raw.ts < DASHBOARD_CACHE_TTL) {
-          cacheUsed = true
           classList.value = raw.classes || []
           studentList.value = raw.students || []
           noteList.value = raw.notes || []

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import os from 'os'
 import fs from 'node:fs'
@@ -97,7 +96,8 @@ export default defineConfig({
       },
     },
   },
-  plugins: [vue(), tailwindcss()],
+  // Tailwind 3 通过 PostCSS 处理（见 postcss.config.js），无需 @tailwindcss/vite 插件
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

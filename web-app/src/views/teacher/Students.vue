@@ -4,7 +4,7 @@
  * 班主任和科任老师均可管理学生：单个录入、编辑、删除、家长登录开关。
  * 数据来自后端 /students（按 teacherId 隔离，支持 classId 过滤）。
  */
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onActivated, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { loadClasses, useClasses, type MyClass } from '@/composables/useClasses'
 import {
@@ -74,6 +74,13 @@ async function loadStudents() {
 onMounted(async () => {
   await loadClasses()
   await loadStudents()
+})
+
+let activated = false
+// keep-alive 页面重新激活时刷新（首次挂载由 onMounted 加载，不重复请求）
+onActivated(async () => {
+  if (activated) { await loadClasses(); await loadStudents() }
+  activated = true
 })
 
 function className(id: string) {

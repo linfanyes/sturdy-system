@@ -103,3 +103,7 @@ e2e/reports/
 scripts/mini-api-test-results.json
 scripts/mini-pages.json
 *.tsbuildinfo
+
+# 云端测试运行态/缓存产物（含 JWT token，勿入库）
+test/cloud/.gen-state.json
+test/cloud/.cloud-sweep-result.json

@@ -18,7 +18,8 @@ export class GradesController extends CrudController<Grade> {
     super(s)
   }
 
-  @Throttle('dashboard')
+  // 热点接口：覆盖名为 dashboard 的限流器（40 次/分钟/IP），见 app.module.ts ThrottlerModule 配置
+  @Throttle({ dashboard: { limit: 40, ttl: 60000 } })
   @Get()
   findAll(
     @CurrentTeacher() t: any,
