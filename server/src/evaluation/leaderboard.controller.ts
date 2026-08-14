@@ -9,9 +9,10 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { ScoreRecord, RewardRecord } from '../engagement/engagement.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
+import { User } from '../users/user.entity'
 
 @Controller('leaderboard')
-@Roles('teacher')
+@Roles('teacher', 'school_admin')
 @Feature('rewards')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 export class LeaderboardController {
@@ -20,6 +21,7 @@ export class LeaderboardController {
     @InjectRepository(RewardRecord) private readonly rewardRepo: Repository<RewardRecord>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
   @Get()
@@ -31,10 +33,17 @@ export class LeaderboardController {
     if (!classId) {
       throw new BadRequestException('classId 必填')
     }
-    // 校验班级归属
-    const cls = await this.classRepo.findOne({ where: { id: classId, teacherId: t.sub } as any })
-    if (!cls) {
-      throw new ForbiddenException('班级不存在或无权访问')
+    // 校验班级归属：teacher 必须是该班成员；school_admin 必须是本校班级
+    if (t.role === 'school_admin') {
+      const cls = await this.classRepo.findOne({ where: { id: classId } as any })
+      if (!cls) throw new ForbiddenException('班级不存在或无权访问')
+      const owner = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId: t.schoolId } as any })
+      if (!owner) throw new ForbiddenException('班级不存在或无权访问')
+    } else {
+      const cls = await this.classRepo.findOne({ where: { id: classId, teacherId: t.sub } as any })
+      if (!cls) {
+        throw new ForbiddenException('班级不存在或无权访问')
+      }
     }
 
     // 并行查询加分和减分记录

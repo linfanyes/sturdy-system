@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { ScoreRecord, RewardRecord } from '../engagement/engagement.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
+import { User } from '../users/user.entity'
 import { LeaderboardController } from './leaderboard.controller'
 
 /**
@@ -12,7 +13,7 @@ import { LeaderboardController } from './leaderboard.controller'
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScoreRecord, RewardRecord, Student, ClassItem]),
+    TypeOrmModule.forFeature([ScoreRecord, RewardRecord, Student, ClassItem, User]),
   ],
   controllers: [LeaderboardController],
 })

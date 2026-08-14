@@ -19,6 +19,7 @@ export class GradesController extends CrudController<Grade> {
   }
 
   // 热点接口：覆盖名为 dashboard 的限流器（40 次/分钟/IP），见 app.module.ts ThrottlerModule 配置
+  @Roles('teacher', 'school_admin')
   @Throttle({ dashboard: { limit: 40, ttl: 60000 } })
   @Get()
   findAll(
@@ -33,7 +34,7 @@ export class GradesController extends CrudController<Grade> {
   ) {
     const n = Number(take) || 0
     return (this.service as GradesService).findAll(
-      t.sub,
+      t,
       classId,
       Math.max(0, Number(skip) || 0),
       n > 0 ? Math.min(n, 500) : 500,
@@ -94,6 +95,7 @@ export class GradesController extends CrudController<Grade> {
   }
 
   @Get('analysis/exam')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   examStats(
     @Query('classId') classId: string,
@@ -106,10 +108,11 @@ export class GradesController extends CrudController<Grade> {
     try {
       if (fullScoreMap) map = JSON.parse(fullScoreMap)
     } catch { /* ignore */ }
-    return (this.service as GradesService).examStats(t.sub, classId, examId, map)
+    return (this.service as GradesService).examStats(t, classId, examId, map)
   }
 
   @Get('analysis/trend')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   examTrend(
     @Query('classId') classId: string,
@@ -117,10 +120,11 @@ export class GradesController extends CrudController<Grade> {
     @CurrentTeacher() t: any,
   ) {
     if (!classId) throw new BadRequestException('缺少 classId')
-    return (this.service as GradesService).examTrend(t.sub, classId, subject || undefined)
+    return (this.service as GradesService).examTrend(t, classId, subject || undefined)
   }
 
   @Get('analysis/rank')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   classRank(
     @Query('classId') classId: string,
@@ -129,19 +133,21 @@ export class GradesController extends CrudController<Grade> {
     @CurrentTeacher() t: any,
   ) {
     if (!classId || !examId) throw new BadRequestException('缺少 classId 或 examId')
-    return (this.service as GradesService).classRank(t.sub, classId, examId, subject || undefined)
+    return (this.service as GradesService).classRank(t, classId, examId, subject || undefined)
   }
 
   @Get('analysis/student/:studentId')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   studentHistory(
     @Param('studentId') studentId: string,
     @CurrentTeacher() t: any,
   ) {
-    return (this.service as GradesService).studentHistory(t.sub, studentId)
+    return (this.service as GradesService).studentHistory(t, studentId)
   }
 
   @Get('analysis/weak')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   weakStudents(
     @Query('classId') classId: string,
@@ -149,10 +155,11 @@ export class GradesController extends CrudController<Grade> {
     @CurrentTeacher() t: any,
   ) {
     if (!classId) throw new BadRequestException('缺少 classId')
-    return (this.service as GradesService).weakStudents(t.sub, classId, examId || undefined)
+    return (this.service as GradesService).weakStudents(t, classId, examId || undefined)
   }
 
   @Get('export')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   async exportGrades(
     @Query('classId') classId: string,
@@ -160,7 +167,7 @@ export class GradesController extends CrudController<Grade> {
     @Query('term') term?: string,
   ) {
     if (!classId) throw new BadRequestException('缺少 classId')
-    const r = await (this.service as GradesService).findAll(t.sub, classId, 0, 5000, term)
+    const r = await (this.service as GradesService).findAll(t, classId, 0, 5000, term)
     return { total: Array.isArray(r) ? r.length : (r?.items?.length || 0), data: Array.isArray(r) ? r : (r?.items || []) }
   }
 }

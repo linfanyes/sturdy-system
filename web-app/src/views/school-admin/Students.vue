@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { toast } from '@/utils/feedback'
 import {
   listSchoolStudents, updateStudent, deleteStudent, exportStudentsCsv, exportStudentsXls,
@@ -30,6 +31,13 @@ const {
   const res = await listSchoolStudents({ skip: params.skip, take: params.take, classId: params.classId })
   return { items: res.items || [], total: res.total || 0 }
 })
+
+// 支持从班级详情等入口携带 ?classId= 预选班级
+const route = useRoute()
+const initClassId = String(route.query.classId || '')
+if (initClassId) {
+  classId.value = initClassId
+}
 
 // vue-tsc 对 composable 返回的 Ref 在模板自动解包支持有限，用 computed 包裹一层 ref 值
 const pageNum = computed(() => page.value)

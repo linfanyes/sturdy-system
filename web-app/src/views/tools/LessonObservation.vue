@@ -98,7 +98,7 @@ load()
 
 <template>
   <div class="space-y-4">
-    <button class="inline-flex items-center gap-1 text-cocoa-500 hover:text-cocoa-900 text-sm" @click="router.push('/teacher/tools')">
+    <button class="inline-flex items-center gap-1 text-cocoa-500 hover:text-cocoa-900 text-sm" @click="router.push('/teacher/toolbox')">
       <ArrowLeft class="w-4 h-4" /> 返回工具箱
     </button>
 

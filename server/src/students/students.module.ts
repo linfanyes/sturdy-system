@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, Req, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, Req, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
 import { Student } from './student.entity'
@@ -516,6 +516,38 @@ class StudentsService extends CrudService<Student> {
 class StudentsController extends CrudController<Student> {
   constructor(s: StudentsService, private readonly studentOps: StudentOpsService) {
     super(s)
+  }
+
+  /** 学生列表：教师走班级集合过滤；校管按本校过滤（复用校管学生服务，含跨校校验） */
+  @Get()
+  @Roles('teacher', 'school_admin')
+  findAll(
+    @CurrentTeacher() t: any,
+    @Query('classId') classId?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('term') term?: string,
+    @Query('date') date?: string,
+  ) {
+    if (t.role === 'school_admin') {
+      return this.studentOps.listStudentsForSchool(
+        t.schoolId,
+        classId,
+        Math.max(0, Number(skip) || 0),
+        Math.min(Number(take) || 500, 500),
+      )
+    }
+    return super.findAll(t, classId, skip, take, term, date)
+  }
+
+  /** 学生详情：教师走班级归属校验；校管按「班级→教师→学校」归属校验 */
+  @Get(':id')
+  @Roles('teacher', 'school_admin')
+  findOne(@Param('id') id: string, @CurrentTeacher() t: any) {
+    if (t.role === 'school_admin') {
+      return this.studentOps.getStudentForSchool(t.schoolId, id)
+    }
+    return super.findOne(id, t)
   }
 
   @Post()

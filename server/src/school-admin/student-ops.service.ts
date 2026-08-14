@@ -30,6 +30,22 @@ export class StudentOpsService {
 
   // ===== 学生管理 =====
 
+  /** 校管读取本校学生列表（复用 classMgmt 跨校校验：非本校班级返回空集） */
+  async listStudentsForSchool(schoolId: string, classId?: string, skip = 0, take = 500) {
+    return this.classMgmt.listSchoolStudents(schoolId, skip, take, classId || undefined)
+  }
+
+  /** 校管读取单个学生：按「班级→班主任→学校」归属校验，跨校/不存在统一抛错 */
+  async getStudentForSchool(schoolId: string, id: string) {
+    const student = await this.studentRepo.findOne({ where: { id } })
+    if (!student) throw new BadRequestException('学生不存在')
+    const cls = await this.classRepo.findOne({ where: { id: student.classId } })
+    if (!cls) throw new BadRequestException('班级不存在')
+    const teacher = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId } })
+    if (!teacher) throw new BadRequestException('无权访问此学生')
+    return student
+  }
+
   /** 编辑学生基本信息（含学号） */
   async updateStudent(schoolId: string, id: string, dto: { name?: string; gender?: string; parentName?: string; parentPhone?: string; studentNo?: string }) {
     const student = await this.studentRepo.findOne({ where: { id } })

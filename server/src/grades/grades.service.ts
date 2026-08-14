@@ -7,6 +7,7 @@ import { Grade, GradeScore } from './grade.entity'
 import { Student } from '../students/student.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Exam } from '../exams/exam.entity'
+import { User } from '../users/user.entity'
 import { CrudService } from '../common/crud/base.service'
 import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { parseFileToRows } from '../common/file-parser.util'
@@ -28,19 +29,25 @@ export class GradesService extends CrudService<Grade> {
     this.withClassMemberService(classMemberSvc)
   }
 
-  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
+  async findAll(user: any, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
+    const isSchoolAdmin = user?.role === 'school_admin'
     const where: any = {}
     let allowedSubjects: string[] | null = null
     if (classId) {
-      const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
+      const canAccess = await this.canAccessClass(user, classId)
       if (!canAccess) return { items: [], total: 0 }
       where.classId = classId
-      const role = await this.classMemberSvc.getRole(teacherId, classId)
-      if (role !== 'head') {
-        allowedSubjects = await this.classMemberSvc.getAllSubjects(teacherId, classId)
+      if (!isSchoolAdmin) {
+        const role = await this.classMemberSvc.getRole(user.sub, classId)
+        if (role !== 'head') {
+          allowedSubjects = await this.classMemberSvc.getAllSubjects(user.sub, classId)
+        }
       }
+    } else if (isSchoolAdmin) {
+      // 校管必须指定班级，避免跨校泄露
+      return { items: [], total: 0 }
     } else {
-      where.teacherId = teacherId
+      where.teacherId = user.sub
     }
     if (subject) where.subject = subject
     if (examName) where.examName = examName
@@ -322,9 +329,15 @@ export class GradesService extends CrudService<Grade> {
     }
   }
 
-  private async assertClassAccess(teacherId: string, classId: string): Promise<void> {
-    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
-    if (!canAccess) throw new BadRequestException('无权访问该班级成绩')
+  /** 通用班级访问校验：teacher 走 class_member 表，school_admin 走学校归属 */
+  private async canAccessClass(user: any, classId: string): Promise<boolean> {
+    if (user?.role === 'school_admin') {
+      const cls = await this.classRepo.findOne({ where: { id: classId } as any })
+      if (!cls) return false
+      const teacher = await this.dataSource.getRepository(User).findOne({ where: { id: cls.teacherId, schoolId: user.schoolId } as any })
+      return !!teacher
+    }
+    return this.classMemberSvc.canAccess(user.sub, classId)
   }
 
   private async assertSubjectPermission(teacherId: string, classId: string, subject: string): Promise<void> {
@@ -336,10 +349,15 @@ export class GradesService extends CrudService<Grade> {
     }
   }
 
-  private async loadVisibleClassGrades(teacherId: string, classId: string): Promise<Grade[]> {
-    await this.assertClassAccess(teacherId, classId)
-    const role = await this.classMemberSvc.getRole(teacherId, classId)
-    const allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(teacherId, classId)
+  private async loadVisibleClassGrades(user: any, classId: string): Promise<Grade[]> {
+    const isSchoolAdmin = user?.role === 'school_admin'
+    const canAccess = await this.canAccessClass(user, classId)
+    if (!canAccess) throw new BadRequestException('无权访问该班级成绩')
+    let allowedSubjects: string[] | null = null
+    if (!isSchoolAdmin) {
+      const role = await this.classMemberSvc.getRole(user.sub, classId)
+      allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(user.sub, classId)
+    }
     const grades = await this.repo.find({
       where: { classId } as any,
       order: { date: 'ASC' } as any,
@@ -350,12 +368,12 @@ export class GradesService extends CrudService<Grade> {
   }
 
   async examStats(
-    teacherId: string,
+    user: any,
     classId: string,
     examId: string,
     fullScoreMap: Record<string, number> = {},
   ) {
-    const grades = await this.loadVisibleClassGrades(teacherId, classId)
+    const grades = await this.loadVisibleClassGrades(user, classId)
     const byExam = grades.filter((g) => g.examId === examId)
     const subjectsStats: SubjectStat[] = []
     for (const g of byExam) {
@@ -383,8 +401,8 @@ export class GradesService extends CrudService<Grade> {
     }
   }
 
-  async examTrend(teacherId: string, classId: string, subject?: string) {
-    let grades = await this.loadVisibleClassGrades(teacherId, classId)
+  async examTrend(user: any, classId: string, subject?: string) {
+    let grades = await this.loadVisibleClassGrades(user, classId)
     const filtered = subject ? grades.filter((g) => g.subject === subject) : grades
     const trendBySubject: Record<string, { date: string; examName: string; avg: number; count: number }[]> = {}
     for (const g of filtered) {
@@ -403,12 +421,12 @@ export class GradesService extends CrudService<Grade> {
   }
 
   async classRank(
-    teacherId: string,
+    user: any,
     classId: string,
     examId: string,
     subject?: string,
   ) {
-    const grades = await this.loadVisibleClassGrades(teacherId, classId)
+    const grades = await this.loadVisibleClassGrades(user, classId)
     const byExam = grades.filter((g) => g.examId === examId)
     const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
     const studentMap = new Map(students.map((s) => [s.id, s]))
@@ -449,13 +467,16 @@ export class GradesService extends CrudService<Grade> {
     return { examId, classId, ranks: result }
   }
 
-  async studentHistory(teacherId: string, studentId: string) {
+  async studentHistory(user: any, studentId: string) {
     const stu = await this.stuRepo.findOne({ where: { id: studentId } } as any)
     if (!stu) throw new BadRequestException('学生不存在')
-    const canAccess = await this.classMemberSvc.canAccess(teacherId, stu.classId)
+    const canAccess = await this.canAccessClass(user, stu.classId)
     if (!canAccess) throw new BadRequestException('无权访问该学生成绩')
-    const role = await this.classMemberSvc.getRole(teacherId, stu.classId)
-    const allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(teacherId, stu.classId)
+    let allowedSubjects: string[] | null = null
+    if (user?.role !== 'school_admin') {
+      const role = await this.classMemberSvc.getRole(user.sub, stu.classId)
+      allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(user.sub, stu.classId)
+    }
     const grades = await this.repo.find({
       where: { classId: stu.classId } as any,
       order: { date: 'DESC' } as any,
@@ -489,8 +510,8 @@ export class GradesService extends CrudService<Grade> {
     return { studentId, studentName: stu.name, history, subjects }
   }
 
-  async weakStudents(teacherId: string, classId: string, examId?: string) {
-    let grades = await this.loadVisibleClassGrades(teacherId, classId)
+  async weakStudents(user: any, classId: string, examId?: string) {
+    let grades = await this.loadVisibleClassGrades(user, classId)
     if (examId) grades = grades.filter((g) => g.examId === examId)
     const students = await this.stuRepo.find({ where: { classId } as any, take: 500 })
     const studentMap = new Map(students.map((s) => [s.id, s]))

@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, DataSource } from 'typeorm'
 import { InjectDataSource } from '@nestjs/typeorm'
-import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
@@ -116,11 +116,19 @@ class ClassesService extends CrudService<ClassItem> {
     }
   }
 
-  /** 查询班级成员列表（含教师姓名） */
-  async listMembers(classId: string, teacherId: string) {
-    // 班主任或同班科任老师均可查看成员列表
-    const canAccess = await this.classMemberSvc.canAccess(teacherId, classId)
-    if (!canAccess) throw new ForbiddenException('无权访问该班级')
+  /** 查询班级成员列表（含教师姓名）：教师走班级归属校验，校管按「班级→教师→学校」归属校验 */
+  async listMembers(classId: string, user: any) {
+    const isSchoolAdmin = user?.role === 'school_admin'
+    if (isSchoolAdmin) {
+      const cls = await this.repo.findOne({ where: { id: classId } as any })
+      if (!cls) throw new NotFoundException('班级不存在')
+      const head = await this.userRepo.findOne({ where: { id: cls.teacherId, schoolId: user.schoolId } as any })
+      if (!head) throw new ForbiddenException('无权访问该班级')
+    } else {
+      // 班主任或同班科任老师均可查看成员列表
+      const canAccess = await this.classMemberSvc.canAccess(user.sub, classId)
+      if (!canAccess) throw new ForbiddenException('无权访问该班级')
+    }
     const members = await this.classMemberSvc.listByClass(classId)
     if (!members.length) return []
     const teacherIds = members.map(m => m.teacherId)
@@ -346,10 +354,11 @@ class ClassesController extends CrudController<ClassItem> {
     super(s)
   }
 
-  /** 查询班级成员列表（用 POST 避免与基类 GET :id 路由冲突） */
+  /** 查询班级成员列表（用 POST 避免与基类 GET :id 路由冲突；教师/校管均可查看） */
   @Post(':id/members/list')
+  @Roles('teacher', 'school_admin')
   listMembers(@Param('id') id: string, @CurrentTeacher() t: any) {
-    return this.s.listMembers(id, t.sub)
+    return this.s.listMembers(id, t)
   }
 
   /** 查询本校教师列表（供班主任添加科任老师时选择） */

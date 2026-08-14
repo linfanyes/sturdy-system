@@ -21,7 +21,7 @@ const subjects: (SubjectListItem & { path: string })[] = SUBJECT_LIST
   .filter((s) => teacherSubjects.value.includes(s.subject))
   .map((s) => ({
     ...s,
-    path: `/teacher/subject-tools/${s.subject}`,
+    path: `/teacher/subject/${s.subject}`,
   }))
 </script>
 

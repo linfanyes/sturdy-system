@@ -161,16 +161,10 @@ async function loadStudents() {
 }
 
 function goStudents() {
-  router.push(`/teacher/students?classId=${classId}`)
-}
-function goSeats() {
-  router.push(`/teaching/seatMap?classId=${classId}`)
-}
-function goSchedule() {
-  router.push('/community/schedule')
+  router.push({ path: '/school-admin/students', query: { classId } })
 }
 function goNotices() {
-  router.push('/workspace/notices')
+  router.push('/school-admin/notices')
 }
 function goEdit() {
   router.push(`/school-admin/classes?edit=${classId}`)
@@ -217,13 +211,6 @@ const trendChart = computed(() => {
   const ticks = [0, 25, 50, 75, 100].map(v => ({ v, y: TREND_PAD.top + plotH - ((v - minY) / yRange) * plotH }))
   return { TREND_W, TREND_H, TREND_PAD, plotW, plotH, points, path, ticks, maxY, minY, data }
 })
-
-function goStudentDetail(studentId: string) {
-  router.push(`/teacher/student-detail?id=${studentId}`)
-}
-function goStudentGradesFromLeaderboard(studentId: string) {
-  router.push({ path: '/teacher/student-grades', query: { studentId } })
-}
 
 onMounted(load)
 </script>
@@ -289,13 +276,13 @@ onMounted(load)
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-mint-500" /> 学生管理</div>
           <div class="text-xs text-cocoa-400">花名册 / 成绩</div>
         </div>
-        <div class="bg-surface rounded-2xl p-4 shadow-softer cursor-pointer hover:shadow-soft transition-shadow" @click="goSeats">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer opacity-50 cursor-not-allowed">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-sky2-500" /> 座位表</div>
-          <div class="text-xs text-cocoa-400">可视化排座</div>
+          <div class="text-xs text-cocoa-400">请教师在端内查看</div>
         </div>
-        <div class="bg-surface rounded-2xl p-4 shadow-softer cursor-pointer hover:shadow-soft transition-shadow" @click="goSchedule">
+        <div class="bg-surface rounded-2xl p-4 shadow-softer opacity-50 cursor-not-allowed">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Calendar class="w-4 h-4 text-butter-500" /> 班级课表</div>
-          <div class="text-xs text-cocoa-400">课程安排</div>
+          <div class="text-xs text-cocoa-400">请教师在端内查看</div>
         </div>
         <div class="bg-surface rounded-2xl p-4 shadow-softer cursor-pointer hover:shadow-soft transition-shadow" @click="goNotices">
           <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Megaphone class="w-4 h-4 text-sakura-500" /> 公告</div>
@@ -413,7 +400,7 @@ onMounted(load)
                     <span :class="['font-bold', item.rank <= 3 ? 'text-butter-600' : 'text-cocoa-700']">{{ item.rank }}</span>
                   </td>
                   <td class="px-3 py-2">
-                    <button class="text-butter-600 hover:text-butter-700 hover:underline font-medium" @click="goStudentGradesFromLeaderboard(item.studentId)">{{ item.name }}</button>
+                    <span class="font-medium text-cocoa-900">{{ item.name }}</span>
                   </td>
                   <td class="px-3 py-2 text-right font-semibold" :class="item.total >= 0 ? 'text-mint-600' : 'text-red-500'">
                     {{ item.total > 0 ? '+' : '' }}{{ item.total }}
@@ -487,7 +474,7 @@ onMounted(load)
             <tbody class="divide-y divide-cream-100">
               <tr v-for="s in students" :key="s.id" class="hover:bg-cream-50">
                 <td class="px-3 py-2">
-                  <button class="text-butter-600 hover:text-butter-700 hover:underline font-medium" @click="goStudentDetail(s.id)">{{ s.name || s.studentName || '-' }}</button>
+                  <span class="font-medium text-cocoa-900">{{ s.name || s.studentName || '-' }}</span>
                 </td>
                 <td class="px-3 py-2 text-cocoa-700">{{ s.studentNo || '-' }}</td>
                 <td class="px-3 py-2 text-cocoa-700">{{ s.gender || '-' }}</td>

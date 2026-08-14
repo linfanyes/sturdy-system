@@ -85,6 +85,39 @@ class ScheduleService extends CrudService<ScheduleItem> {
         })),
     }
   }
+
+  /** 全校课表：校管视角，返回本校所有班级的课表（不按教师姓名过滤） */
+  async getSchoolSchedule(schoolId: string) {
+    const teachers = await this.userRepo.find({ where: { schoolId } as any, select: ['id'] as any })
+    if (!teachers.length) return { teacherName: '', classes: [] }
+    const teacherIds = teachers.map(t => t.id)
+    const classRepo = this.repo.manager.getRepository(ClassItem)
+    const classes = await classRepo.find({ where: teacherIds.map(id => ({ teacherId: id })) as any })
+    const classIds = classes.map(c => c.id)
+    if (!classIds.length) return { teacherName: '', classes: [] }
+    const items = await this.repo.find({
+      where: { classId: In(classIds) } as any,
+      order: { dayOfWeek: 'ASC', period: 'ASC' } as any,
+      take: 1000,
+    })
+    const classMap = new Map(classes.map(c => [c.id, c]))
+    const byClass = new Map<string, any[]>()
+    for (const it of items) {
+      if (!byClass.has(it.classId)) byClass.set(it.classId, [])
+      byClass.get(it.classId)!.push(it)
+    }
+    return {
+      teacherName: '',
+      classes: classIds
+        .filter(cid => byClass.has(cid))
+        .map(cid => ({
+          classId: cid,
+          className: classMap.get(cid)?.name || cid,
+          term: classMap.get(cid)?.term || '',
+          items: byClass.get(cid) || [],
+        })),
+    }
+  }
 }
 @Roles('teacher')
 @Feature('schedule')
@@ -95,10 +128,14 @@ class ScheduleController extends CrudController<ScheduleItem> {
     super(s)
   }
 
-  /** 我的课表：按教师姓名匹配的所有班级课表 */
+  /** 我的课表：按教师姓名匹配的所有班级课表；校管返回本校所有班级课表 */
   @Get('my')
+  @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard)
   mySchedule(@CurrentTeacher() t: any) {
+    if (t.role === 'school_admin') {
+      return (this.service as ScheduleService).getSchoolSchedule(t.schoolId)
+    }
     return (this.service as ScheduleService).getMySchedule(t.sub)
   }
 }

@@ -17,7 +17,7 @@ const teacherSubjects = computed<string[]>(() =>
 const visibleSubjects = computed(() => SUBJECT_LIST.filter((s) => teacherSubjects.value.includes(s.subject)))
 
 function go(subject: string) {
-  router.push(`/teacher/subject-tools/${subject}`)
+  router.push(`/teacher/subject/${subject}`)
 }
 </script>
 
