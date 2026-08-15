@@ -15,6 +15,8 @@
         <text class="out" @click="openMessageCenter">💬 留言</text>
         <text class="out" @click="goKidsCoding">🧩 少儿编程</text>
         <text class="out" @click="goMood">🌤️ 心情打卡</text>
+        <text class="out" @click="goTimeline">🌈 成长时光机</text>
+        <text class="out" @click="goNotifySettings">🔔 通知设置</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -44,19 +46,23 @@
         <view class="stat-label">📝 待完成作业</view>
         <view class="stat-value">{{ stats.homework }}</view>
       </view>
-      <view v-if="hasPf('grades') || hasPf('analysis')" class="stat-card clickable" @tap="tab = 'scores'">
+      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showGrade" class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">📊 最近考试</view>
         <view class="stat-value">{{ stats.pct }}</view>
         <view v-if="stats.pctDelta != null && stats.pctDelta !== 0" class="stat-delta" :class="stats.pctDelta > 0 ? 'up' : 'down'">
           较上次 {{ stats.pctDelta > 0 ? '+' : '' }}{{ stats.pctDelta }}%
         </view>
       </view>
-      <view v-if="hasPf('grades') || hasPf('analysis')" class="stat-card clickable" @tap="tab = 'scores'">
+      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showRank" class="stat-card clickable" @tap="tab = 'scores'">
         <view class="stat-label">🏆 最新排名</view>
         <view class="stat-value">{{ stats.rank }}</view>
         <view v-if="stats.rankDelta != null && stats.rankDelta !== 0" class="stat-delta" :class="stats.rankDelta > 0 ? 'up' : 'down'">
           较上次 {{ stats.rankDelta > 0 ? '上升' : '下降' }}{{ Math.abs(stats.rankDelta) }}名
         </view>
+      </view>
+      <view v-if="moodStat" class="stat-card clickable" @tap="goMood">
+        <view class="stat-label">🌤️ 今日心情</view>
+        <view class="stat-value">{{ moodStat }}</view>
       </view>
     </view>
 
@@ -271,10 +277,11 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, reactive, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent, setParent } from '../../common/store'
 import { parentApi } from '../../common/request'
+import { getNotifyPref } from '../../api/notifyPref'
 import KidList from './components/KidList.vue'
 import ScoreView from './components/ScoreView.vue'
 import MessageCenter from './components/MessageCenter.vue'
@@ -332,6 +339,8 @@ const communications = ref(null)
 const loading = ref(true)
 const loadError = ref(false)
 const teachers = ref([])
+const notifyPref = reactive({ showGrade: true, showRank: true })
+const moodMine = ref([])
 
 // 成绩筛选
 const filterTerm = ref('')
@@ -530,6 +539,23 @@ function goKidsCoding() {
 function goMood() {
   uni.navigateTo({ url: '/pages/parent/mood' })
 }
+function goTimeline() {
+  uni.navigateTo({ url: '/pages/parent/timeline' })
+}
+function goNotifySettings() {
+  uni.navigateTo({ url: '/pages/parent/notifySettings' })
+}
+
+// 今日心情卡：优先显示今天打卡，否则提示未打卡
+const moodStat = computed(() => {
+  const list = moodMine.value || []
+  if (!list.length) return ''
+  const today = new Date().toISOString().slice(0, 10)
+  const todayOne = list.find(m => (m.date || '').slice(0, 10) === today)
+  if (todayOne) return todayOne.emoji || '😊'
+  const latest = list[0]
+  return (latest.emoji || '😊') + '·未打卡'
+})
 function openMessageTeacher(t) {
   const idx = (teachers.value || []).findIndex(x => x.teacherId === (t && t.teacherId))
   msgTeacherIdx.value = idx >= 0 ? idx : 0
@@ -564,7 +590,7 @@ async function loadSentMessages() {
 
 async function load() {
   loading.value = true; loadError.value = false
-  const [meResult, edata, ns, hw, att, beh, sch, comm, tch] = await Promise.allSettled([
+  const [meResult, edata, ns, hw, att, beh, sch, comm, tch, prefRes, moodRes] = await Promise.allSettled([
     parentApi.get('/parent-auth/me'),
     parentApi.get('/parent-auth/exams'),
     parentApi.get('/parent-auth/notices'),
@@ -574,6 +600,8 @@ async function load() {
     parentApi.get('/parent-auth/schedule'),
     parentApi.get('/parent-auth/communications'),
     parentApi.get('/parent-auth/teachers'),
+    getNotifyPref().catch(() => null),
+    parentApi.get('/parent/mood/mine').catch(() => []),
   ])
   if (tch.status === 'fulfilled') teachers.value = Array.isArray(tch.value) ? tch.value : []
   if (meResult.status === 'fulfilled') {
@@ -597,6 +625,11 @@ async function load() {
   if (beh.status === 'fulfilled') behavior.value = beh.value || null
   if (sch.status === 'fulfilled') schedule.value = sch.value || null
   if (comm.status === 'fulfilled') communications.value = comm.value || null
+  if (prefRes.status === 'fulfilled' && prefRes.value) {
+    notifyPref.showGrade = prefRes.value.showGrade !== false
+    notifyPref.showRank = prefRes.value.showRank !== false
+  }
+  if (moodRes.status === 'fulfilled') moodMine.value = Array.isArray(moodRes.value) ? moodRes.value : []
   loadError.value = meResult.status !== 'fulfilled'
   loading.value = false
 }

@@ -677,6 +677,18 @@
           }
         },
         {
+          "path": "timeline",
+          "style": {
+            "navigationBarTitleText": "成长时光机"
+          }
+        },
+        {
+          "path": "notifySettings",
+          "style": {
+            "navigationBarTitleText": "通知与隐私"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"
