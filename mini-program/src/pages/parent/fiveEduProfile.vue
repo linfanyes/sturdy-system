@@ -1,10 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import uCharts from '@qiun/ucharts'
 import { getFiveEduProfile } from '../../api/fiveEdu'
 
 const loading = ref(true)
 const data = ref(null)
+const charts = {}
 const DIM = [
   { key: 'moral', label: '德' },
   { key: 'intellectual', label: '智' },
@@ -20,11 +22,47 @@ async function load() {
   try {
     const res = await getFiveEduProfile()
     data.value = res
+    nextTick(() => drawAll())
   } catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
+}
+
+function drawAll() {
+  const students = (data.value && data.value.students) || []
+  students.forEach((s) => {
+    const id = 'radar_' + s.studentId
+    uni.createSelectorQuery()
+      .select('#' + id)
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res || !res[0] || !res[0].node) return
+        const canvas = res[0].node
+        const ctx = canvas.getContext('2d')
+        const dpr = uni.getSystemInfoSync().pixelRatio
+        canvas.width = res[0].width * dpr
+        canvas.height = res[0].height * dpr
+        ctx.scale(dpr, dpr)
+        const series = [{ name: s.studentName, data: DIM.map((d) => s.radar[d.key] || 0) }]
+        if (charts[id]) {
+          charts[id].updateData({ categories: DIM.map((d) => d.label), series })
+        } else {
+          charts[id] = new uCharts({
+            type: 'radar',
+            context: ctx,
+            width: res[0].width,
+            height: res[0].height,
+            categories: DIM.map((d) => d.label),
+            series,
+            color: ['#f59e0b'],
+            extra: { radar: { max: 100, labelShow: true } },
+            legend: { show: false },
+          })
+        }
+      })
+  })
 }
 </script>
 
@@ -44,14 +82,8 @@ async function load() {
           <text class="name">{{ s.studentName }}</text>
           <text class="avg">综合 {{ s.avg }}</text>
         </view>
-        <view class="bars">
-          <view class="bar-row" v-for="d in DIM" :key="d.key">
-            <text class="bar-label">{{ d.label }}</text>
-            <view class="bar-track">
-              <view class="bar-fill" :style="{ width: (s.radar[d.key] || 0) + '%' }"></view>
-            </view>
-            <text class="bar-val">{{ s.radar[d.key] || 0 }}</text>
-          </view>
+        <view class="chart-wrap">
+          <canvas type="2d" :canvas-id="'radar_' + s.studentId" :id="'radar_' + s.studentId" class="radar-canvas"></canvas>
         </view>
 
         <view class="records" v-if="data.records && data.records.length">
@@ -74,14 +106,11 @@ async function load() {
 .sub { display: block; margin-top: 6rpx; font-size: 24rpx; color: #9ca3af; }
 .tip, .empty { text-align: center; color: #9ca3af; font-size: 26rpx; padding: 60rpx 0; }
 .card { background: #fff; border-radius: 20rpx; padding: 28rpx; margin-bottom: 24rpx; }
-.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .name { font-size: 30rpx; font-weight: 700; color: #1f2937; }
 .avg { font-size: 26rpx; font-weight: 600; color: #d97706; }
-.bar-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 14rpx; }
-.bar-label { width: 40rpx; text-align: center; font-size: 26rpx; color: #6b7280; }
-.bar-track { flex: 1; height: 18rpx; background: #f1f2f6; border-radius: 10rpx; overflow: hidden; }
-.bar-fill { height: 100%; background: linear-gradient(90deg, #fbbf24, #f59e0b); border-radius: 10rpx; }
-.bar-val { width: 56rpx; text-align: right; font-size: 24rpx; color: #9ca3af; }
+.chart-wrap { width: 100%; height: 440rpx; }
+.radar-canvas { width: 100%; height: 440rpx; }
 .records { margin-top: 20rpx; border-top: 1rpx solid #f0f1f5; padding-top: 16rpx; }
 .rec-title { font-size: 24rpx; color: #9ca3af; }
 .rec { display: flex; align-items: center; gap: 16rpx; margin-top: 12rpx; font-size: 24rpx; color: #4b5563; }

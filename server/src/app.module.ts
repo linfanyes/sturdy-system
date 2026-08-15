@@ -70,6 +70,9 @@ import { LearningLoopModule } from './learning-loop/learning-loop.module'
 import { SafetyModule } from './safety/safety.module'
 import { HabitModule } from './habit/habit.module'
 import { LiteracyModule } from './literacy/literacy.module'
+import { ScheduleModule as AppScheduleModule } from './schedule/schedule.module'
+import { ReportModule } from './report/report.module'
+import { AssignmentModule } from './assignment/assignment.module'
 
 @Module({
   imports: [
@@ -203,6 +206,9 @@ import { LiteracyModule } from './literacy/literacy.module'
     SafetyModule,
     HabitModule,
     LiteracyModule,
+    AppScheduleModule,
+    ReportModule,
+    AssignmentModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

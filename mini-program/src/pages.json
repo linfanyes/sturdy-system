@@ -731,6 +731,24 @@
           }
         },
         {
+          "path": "schedule",
+          "style": {
+            "navigationBarTitleText": "本周课表"
+          }
+        },
+        {
+          "path": "report",
+          "style": {
+            "navigationBarTitleText": "班级周/月报"
+          }
+        },
+        {
+          "path": "assignment",
+          "style": {
+            "navigationBarTitleText": "分层作业"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"

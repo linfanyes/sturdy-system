@@ -7,7 +7,7 @@ import {
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
   ToggleLeft, Home, Library, BarChart3, ClipboardCheck,
-  Code2, Heart, Trophy, Target, ShieldAlert, Flame, Accessibility,
+  Code2, Heart, Trophy, Target, ShieldAlert, Flame, Accessibility, CalendarClock,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -257,6 +257,9 @@ export const teacherMenu: MenuCategory[] = [
           { name: 'teacher-habit', label: '21天习惯养成', to: '/teacher/habit', icon: Flame, color: 'orange' },
           { name: 'teacher-literacy', label: '数字素养·生涯', to: '/teacher/literacy', icon: GraduationCap, color: 'purple' },
           { name: 'teacher-accessibility', label: '适老化·字号', to: '/teacher/accessibility', icon: Accessibility, color: 'sky' },
+          { name: 'teacher-schedule', label: '课表与调课', to: '/teacher/schedule', icon: CalendarClock, color: 'sky' },
+          { name: 'teacher-report', label: '班级周/月报', to: '/teacher/report', icon: FileText, color: 'indigo' },
+          { name: 'teacher-assignment', label: '分层作业', to: '/teacher/assignment', icon: BookOpen, color: 'emerald' },
         ],
       },
     ],

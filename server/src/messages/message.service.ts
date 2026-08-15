@@ -228,6 +228,22 @@ export class MessageService {
     return this.repo.save(msg)
   }
 
+  /** 通知某班所有家长（按学生数去重，家长 IM 账号由 parentImUserId 派生，同学生多家长共享同一账号） */
+  async notifyClassParents(teacherId: string, classId: string, title: string, content: string, type = 'class_notice') {
+    const students = await this.studentRepo.find({ where: { teacherId, classId } } as any)
+    if (!students.length) return 0
+    const seen = new Set<string>()
+    let sent = 0
+    for (const s of students) {
+      const imId = parentImUserId({ studentId: s.id, relation: '家长', parentName: s.parentName || '家长' })
+      if (seen.has(imId)) continue
+      seen.add(imId)
+      await this.send('system', 'system', { recipientId: imId, recipientRole: 'parent', title, content, type })
+      sent++
+    }
+    return sent
+  }
+
   /** 标记单条已读（仅收件人本人可标记） */
   async markRead(id: string, recipientId: string, recipientRole: string) {
     const res = await this.repo.update(

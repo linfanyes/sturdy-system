@@ -1,38 +1,72 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import * as echarts from 'echarts'
 import { getFiveEduProfile, saveFiveEduRecord } from '@/api/fiveEdu'
-import { useClasses, classNameById } from '@/composables/useClasses'
+import { useClasses } from '@/composables/useClasses'
 
 const { classes, loadClasses } = useClasses()
 const classId = ref('')
 const loading = ref(false)
 const profile = ref<any>(null)
 const saving = ref(false)
+const selectedStudentId = ref('')
 
 const DIM_LABELS: Record<string, string> = {
   moral: '德', intellectual: '智', physical: '体', aesthetic: '美', labour: '劳',
 }
 const DIM_ORDER = ['moral', 'intellectual', 'physical', 'aesthetic', 'labour']
 
-// 五维雷达图 SVG 点位（0–100 映射到半径）
-function radarPoints(radar: Record<string, number>) {
-  const cx = 60, cy = 60, r = 48
-  return DIM_ORDER.map((d, i) => {
-    const ang = (-90 + i * 72) * (Math.PI / 180)
-    const v = (radar?.[d] ?? 0) / 100
-    return `${cx + r * v * Math.cos(ang)},${cy + r * v * Math.sin(ang)}`
-  }).join(' ')
-}
+const chartEl = ref<HTMLDivElement | null>(null)
+let chart: echarts.ECharts | null = null
 
 async function load() {
   if (!classId.value) { profile.value = null; return }
   loading.value = true
   try {
     profile.value = await getFiveEduProfile(classId.value)
+    selectedStudentId.value = ''
   } finally {
     loading.value = false
   }
 }
+
+const memberList = computed(() => profile.value?.students || [])
+
+function renderChart() {
+  if (!chartEl.value) return
+  const students = memberList.value
+  if (!students.length) return
+  const classAvg = DIM_ORDER.map((d) =>
+    Math.round(students.reduce((a: number, s: any) => a + (s.radar?.[d] || 0), 0) / students.length),
+  )
+  const series = [{ name: '班级均值', value: classAvg }]
+  const sel = students.find((s: any) => s.studentId === selectedStudentId.value)
+  if (sel) series.push({ name: sel.studentName, value: DIM_ORDER.map((d) => sel.radar?.[d] || 0) })
+
+  if (!chart) chart = echarts.init(chartEl.value)
+  chart.setOption({
+    tooltip: {},
+    legend: { bottom: 0, data: series.map((s) => s.name) },
+    radar: {
+      indicator: DIM_ORDER.map((d) => ({ name: DIM_LABELS[d], max: 100 })),
+      radius: '62%',
+      splitNumber: 4,
+      axisName: { color: '#6b7280', fontSize: 12 },
+    },
+    series: [
+      {
+        type: 'radar',
+        data: series.map((s) => ({ value: s.value, name: s.name, areaStyle: { opacity: 0.18 } })),
+      },
+    ],
+  })
+}
+
+watch([profile, selectedStudentId], () => nextTick(renderChart))
+onBeforeUnmount(() => {
+  chart?.dispose()
+  chart = null
+})
 
 // 过程性评价录入
 const showForm = ref(false)
@@ -55,8 +89,6 @@ async function submitForm() {
     saving.value = false
   }
 }
-
-const memberList = computed(() => profile.value?.students || [])
 
 onMounted(async () => {
   await loadClasses()
@@ -90,28 +122,37 @@ onMounted(async () => {
         <span class="ml-1 text-[11px] text-gray-400">（{{ profile.generatedBy === 'ai' ? 'AI 生成' : '模板生成' }}）</span>
       </div>
 
+      <!-- 五育雷达（班级均值 + 选中学生对比） -->
+      <div class="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div class="mb-1 text-sm font-medium text-gray-600">
+          五育雷达（班级均值<span v-if="selectedStudentId"> · 叠加个人</span>）
+        </div>
+        <div ref="chartEl" class="h-[360px] w-full"></div>
+        <p class="mt-1 text-center text-xs text-gray-400">点击下方学生卡片，可在雷达图上叠加对比该生五育轮廓。</p>
+      </div>
+
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="s in memberList" :key="s.studentId" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div
+          v-for="s in memberList"
+          :key="s.studentId"
+          class="cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition"
+          :class="selectedStudentId === s.studentId ? 'border-amber-400 ring-2 ring-amber-200' : 'border-gray-200'"
+          @click="selectedStudentId = s.studentId"
+        >
           <div class="mb-2 flex items-center justify-between">
             <div class="font-semibold text-gray-800">{{ s.studentName }}</div>
             <div class="text-sm font-medium text-amber-600">综合 {{ s.avg }}</div>
           </div>
-          <div class="flex gap-3">
-            <svg viewBox="0 0 120 120" class="h-28 w-28 shrink-0">
-              <polygon :points="radarPoints(s.radar)" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="1.5" />
-              <text v-for="(d, i) in DIM_ORDER" :key="d" :x="60 + 52 * Math.cos((-90 + i * 72) * Math.PI / 180)" :y="64 + 52 * Math.sin((-90 + i * 72) * Math.PI / 180)" text-anchor="middle" class="fill-gray-400" style="font-size:10px">{{ DIM_LABELS[d] }}</text>
-            </svg>
-            <div class="flex-1 space-y-1">
-              <div v-for="d in DIM_ORDER" :key="d" class="flex items-center gap-2">
-                <span class="w-4 text-xs text-gray-500">{{ DIM_LABELS[d] }}</span>
-                <div class="h-2 flex-1 rounded-full bg-gray-100">
-                  <div class="h-full rounded-full bg-amber-400" :style="{ width: (s.radar[d] || 0) + '%' }"></div>
-                </div>
-                <span class="w-7 text-right text-[11px] text-gray-500">{{ s.radar[d] || 0 }}</span>
+          <div class="space-y-1">
+            <div v-for="d in DIM_ORDER" :key="d" class="flex items-center gap-2">
+              <span class="w-4 text-xs text-gray-500">{{ DIM_LABELS[d] }}</span>
+              <div class="h-2 flex-1 rounded-full bg-gray-100">
+                <div class="h-full rounded-full bg-amber-400" :style="{ width: (s.radar[d] || 0) + '%' }"></div>
               </div>
+              <span class="w-7 text-right text-[11px] text-gray-500">{{ s.radar[d] || 0 }}</span>
             </div>
           </div>
-          <button class="mt-3 w-full rounded-lg border border-amber-200 py-1.5 text-sm text-amber-600 hover:bg-amber-50" @click="openForm(s)">录入过程性评价</button>
+          <button class="mt-3 w-full rounded-lg border border-amber-200 py-1.5 text-sm text-amber-600 hover:bg-amber-50" @click.stop="openForm(s)">录入过程性评价</button>
         </div>
       </div>
     </template>
