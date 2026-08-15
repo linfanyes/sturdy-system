@@ -207,6 +207,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'kids-coding', name: 'teacher-kids-coding', component: () => import('@/views/teacher/KidsCoding.vue'), meta: { title: '少儿编程', feature: 'kids-coding' } },
       // 心情与情绪关怀（每日打卡 + 班级情绪看板 + 树洞跟进）
       { path: 'mood', name: 'teacher-mood', component: () => import('@/views/teacher/MoodDashboard.vue'), meta: { title: '心情与情绪关怀' } },
+      // AI 班级助教：每周聚合 mood+成绩生成班级洞察
+      { path: 'insight', name: 'teacher-insight', component: () => import('@/views/teacher/ClassInsight.vue'), meta: { title: '班级洞察' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },
       { path: 'games/game2048', name: 'game2048', component: () => import('@/views/games/Game2048.vue'), meta: { title: '2048', feature: 'games' } },
       { path: 'games/minesweeper', name: 'gameMinesweeper', component: () => import('@/views/games/GameMinesweeper.vue'), meta: { title: '扫雷', feature: 'games' } },

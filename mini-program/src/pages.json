@@ -695,6 +695,12 @@
           }
         },
         {
+          "path": "studyBuddy",
+          "style": {
+            "navigationBarTitleText": "AI 学习伙伴"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"

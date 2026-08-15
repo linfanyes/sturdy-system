@@ -249,6 +249,7 @@ export const teacherMenu: MenuCategory[] = [
         label: '', asGrid: true,
         items: [
           { name: 'teacher-mood', label: '心情与情绪关怀', to: '/teacher/mood', icon: Heart, color: 'rose' },
+          { name: 'teacher-insight', label: '班级洞察', to: '/teacher/insight', icon: Sparkles, color: 'blue' },
         ],
       },
     ],
