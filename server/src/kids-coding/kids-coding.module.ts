@@ -1,4 +1,5 @@
-import { Module, UseGuards, Controller, Get, Post, Patch, Delete, Param, Body, Inject, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Module, UseGuards, Controller, Get, Post, Patch, Delete, Param, Body, Inject, Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
+import { Cron } from '@nestjs/schedule'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, DeepPartial } from 'typeorm'
@@ -506,12 +507,11 @@ function buildWeeklyReportText(rep: any): string {
   return parts.join('\n')
 }
 
-/** 超管端：批量推送本周学习周报给所有有练习活动的学生家长（供定时任务/管理员触发） */
-@Roles('super')
-@Feature('kids-coding')
-@UseGuards(JwtAuthGuard, FeatureGuard)
-@Controller('admin/kids-coding')
-export class KidsCodingAdminController {
+/** 批量推送服务：供超管接口与定时任务复用，避免逻辑重复 */
+@Injectable()
+export class KidsCodingBatchService {
+  private readonly logger = new Logger(KidsCodingBatchService.name)
+
   constructor(
     @InjectRepository(CodingProject) private readonly repo: Repository<CodingProject>,
     @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
@@ -519,8 +519,8 @@ export class KidsCodingAdminController {
     @Inject(MessageService) private readonly msg: MessageService,
   ) {}
 
-  @Post('weekly-report/push-all')
-  async pushAllWeeklyReports() {
+  /** 扫描所有有练习活动的学生，向其家长推送本周学习周报；返回扫描/推送/跳过统计 */
+  async pushAllWeeklyReports(): Promise<{ scanned: number; pushed: number; skipped: number }> {
     const rows = await this.repo
       .createQueryBuilder('p')
       .select('p.studentId', 'studentId')
@@ -547,6 +547,32 @@ export class KidsCodingAdminController {
     }
     return { scanned: rows.length, pushed, skipped }
   }
+
+  /** 定时任务：每周一 08:00 自动推送全校少儿编程周报（供运维免外部 crontab） */
+  @Cron('0 8 * * 1', { name: 'kids-coding-weekly-push' })
+  async handleWeeklyCron() {
+    this.logger.log('[cron] 少儿编程周报自动推送开始')
+    try {
+      const res = await this.pushAllWeeklyReports()
+      this.logger.log(`[cron] 少儿编程周报自动推送完成：${JSON.stringify(res)}`)
+    } catch (e) {
+      this.logger.error('[cron] 少儿编程周报自动推送失败：' + (e as Error).message)
+    }
+  }
+}
+
+/** 超管端：批量推送本周学习周报给所有有练习活动的学生家长（供管理员手动触发） */
+@Roles('super')
+@Feature('kids-coding')
+@UseGuards(JwtAuthGuard, FeatureGuard)
+@Controller('admin/kids-coding')
+export class KidsCodingAdminController {
+  constructor(private readonly batch: KidsCodingBatchService) {}
+
+  @Post('weekly-report/push-all')
+  pushAllWeeklyReports() {
+    return this.batch.pushAllWeeklyReports()
+  }
 }
 
 @Module({
@@ -554,7 +580,7 @@ export class KidsCodingAdminController {
     TypeOrmModule.forFeature([CodingProject, CodingChallenge, CodingReview, CodingBadge]),
     MessagesModule,
   ],
-  providers: [CodingProjectService],
+  providers: [CodingProjectService, KidsCodingBatchService],
   controllers: [CodingProjectController, CodingChallengeController, CodingReviewController, CodingGalleryController, ParentCodingController, KidsCodingAdminController],
   exports: [KidsCodingAdminController],
 })

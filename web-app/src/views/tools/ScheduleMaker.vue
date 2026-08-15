@@ -8,7 +8,7 @@ import { CalendarDays, Save, Printer, Trash2, Wand2, Loader2, Download, Pencil }
 import { toast } from '@/utils/feedback'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { SUBJECT_OPTIONS } from '@/constants/subjects'
-import { listSchedules, createSchedule, deleteSchedule } from '@/api/teacher'
+import { listSchedules, createSchedule, deleteSchedule, listMySchedules } from '@/api/teacher'
 import Modal from '@/components/Modal.vue'
 import { shuffle } from '@gardener/shared/games/helpers'
 
@@ -57,6 +57,68 @@ const originalItems = ref<any[]>([])
 
 const activeClass = computed(() => classes.value.find(c => c.id === classId.value))
 const days = computed(() => DAY_NAMES.slice(0, dayCount.value))
+
+/* ============ 冲突检测 ============ */
+const mySchedules = ref<any>(null)
+async function loadMySchedules() {
+  try {
+    mySchedules.value = await listMySchedules()
+  } catch {
+    mySchedules.value = null
+  }
+}
+
+/** 其它班级中，按「星期|节次 → 教师姓名」记录的占用情况（用于跨班撞课检测） */
+const crossClassBusy = computed(() => {
+  const m = new Map<string, string>()
+  const data = mySchedules.value
+  if (!data || !classId.value) return m
+  for (const c of data.classes || []) {
+    if (c.classId === classId.value) continue
+    for (const it of c.items || []) {
+      if (it.teacher) m.set(`${it.dayOfWeek}|${it.period}`, it.teacher)
+    }
+  }
+  return m
+})
+
+interface Conflict { day: number; period: number; reason: string }
+const conflicts = computed<Conflict[]>(() => {
+  const list: Conflict[] = []
+  // 1) 同班相邻节次同科（连堂以外视为排布过密）
+  for (let d = 0; d < dayCount.value; d++) {
+    const seq: { period: number; subject: string }[] = []
+    for (const r of ROWS) {
+      if (r.period === 0 || r.period === 99) continue
+      const c = grid.value[r.key]?.[d]
+      if (c?.subject) seq.push({ period: r.period, subject: c.subject })
+    }
+    seq.sort((a, b) => a.period - b.period)
+    for (let i = 1; i < seq.length; i++) {
+      if (seq[i].subject === seq[i - 1].subject) {
+        const lbl = ROWS.find(r => r.period === seq[i].period)?.label || `第${seq[i].period}节`
+        list.push({ day: d, period: seq[i].period, reason: `${days.value[d]} ${lbl} 与上一节同为「${seq[i].subject}」` })
+      }
+    }
+  }
+  // 2) 跨班撞课：同一教师在其它班级同一星期/节次已有课
+  for (const r of ROWS) {
+    if (r.period === 0 || r.period === 99) continue
+    for (let d = 0; d < dayCount.value; d++) {
+      const c = grid.value[r.key]?.[d]
+      if (!c?.teacher) continue
+      const other = crossClassBusy.value.get(`${d}|${r.period}`)
+      if (other && other === c.teacher) {
+        list.push({ day: d, period: r.period, reason: `${days.value[d]} ${r.label}：${c.teacher} 在其它班级同时有课（撞课）` })
+      }
+    }
+  }
+  return list
+})
+
+function isConflictCell(period: number, d: number): boolean {
+  return conflicts.value.some(c => c.day === d && c.period === period)
+}
 
 /** 科目 → 样式映射（与 Schedule.vue 保持一致的主题色板） */
 const SUBJECT_COLORS: Record<string, string> = {
@@ -200,17 +262,50 @@ const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
   '物理': 4, '化学': 3, '生物': 2, '历史': 2, '地理': 2, '政治': 2,
 }
 
+function makeCell(subj: string): Cell | null {
+  if (!subj) return null
+  const stMap: Record<string, string> = activeClass.value?.subjectTeachers || {}
+  return { subject: subj, teacher: stMap[subj] || '', note: '', weekType: 'all' }
+}
+
+function swapCells(keyA: string, keyB: string, d: number) {
+  const tmp = grid.value[keyA][d]
+  grid.value[keyA][d] = grid.value[keyB][d]
+  grid.value[keyB][d] = tmp
+}
+
+/** 按天优先分配：每天每节挑选「剩余课时最多且不与上一节同科」的科目，兼顾均衡与避免连堂同科 */
+function smartAssign(periodKeys: string[], pool: string[]) {
+  const remaining = new Map<string, number>()
+  for (const s of pool) remaining.set(s, (remaining.get(s) || 0) + 1)
+  const subjects = [...remaining.keys()]
+  for (let d = 0; d < dayCount.value; d++) {
+    let prev = ''
+    for (const key of periodKeys) {
+      let pick = ''
+      let best = -1
+      for (const s of subjects) {
+        const cnt = remaining.get(s) || 0
+        if (cnt <= 0) continue
+        const score = cnt * 10 + (s !== prev ? 5 : 0)
+        if (score > best) { best = score; pick = s }
+      }
+      if (pick) {
+        grid.value[key][d] = makeCell(pick)
+        remaining.set(pick, (remaining.get(pick) || 0) - 1)
+        prev = pick
+      }
+    }
+  }
+}
+
 function autoArrange() {
   if (!classId.value) { toast.warning('请先选择班级'); return }
   const cls = activeClass.value
   const subjects: string[] = (cls?.subjects && cls.subjects.length) ? cls.subjects : COMMON_SUBJECTS
-  const stMap: Record<string, string> = cls?.subjectTeachers || {}
   const mainSubjects: string[] = ['语文', '数学', '英语'].filter(s => subjects.includes(s))
   const subSubjects: string[] = subjects.filter(s => !mainSubjects.includes(s))
   const hoursOf = (s: string) => DEFAULT_WEEKLY_HOURS[s] ?? 2
-  const cellOf = (subj: string): Cell | null => subj
-    ? { subject: subj, teacher: stMap[subj] || '', note: '', weekType: 'all' }
-    : null
   const poolOf = (list: string[]): string[] => shuffle(list.flatMap(s => Array.from({ length: hoursOf(s) }, () => s)))
 
   initGrid()
@@ -220,39 +315,18 @@ function autoArrange() {
     ? '语文'
     : (mainSubjects.includes('英语') ? '英语' : (mainSubjects[0] || ''))
   for (let d = 0; d < dayCount.value; d++) {
-    grid.value['morning'][d] = cellOf(morningReadSubj)
+    grid.value['morning'][d] = makeCell(morningReadSubj)
   }
 
-  // 上午（1-4节）排主科，避免与上一节同科
-  const morningPool = poolOf(mainSubjects)
-  let mi = 0
-  for (let p = 1; p <= 4; p++) {
-    const key = `p${p}`
-    for (let d = 0; d < dayCount.value; d++) {
-      const above = p > 1 ? grid.value[`p${p - 1}`][d] : null
-      let guard = 0
-      while (mi < morningPool.length && morningPool[mi] === above?.subject && guard < morningPool.length) {
-        mi++; guard++
-      }
-      if (mi < morningPool.length) { grid.value[key][d] = cellOf(morningPool[mi]); mi++ }
-    }
-  }
+  // 上午（1-4节）排主科、下午（5-8节）排副科，智能分配避免连堂同科
+  smartAssign(['p1', 'p2', 'p3', 'p4'], poolOf(mainSubjects))
+  smartAssign(['p5', 'p6', 'p7', 'p8'], poolOf(subSubjects))
 
-  // 下午（5-8节）排副科，避免与上一节同科
-  const afternoonPool = poolOf(subSubjects)
-  let ai = 0
-  for (let p = 5; p <= 8; p++) {
-    const key = `p${p}`
-    for (let d = 0; d < dayCount.value; d++) {
-      const above = p > 1 ? grid.value[`p${p - 1}`][d] : null
-      let guard = 0
-      while (ai < afternoonPool.length && afternoonPool[ai] === above?.subject && guard < afternoonPool.length) {
-        ai++; guard++
-      }
-      if (ai < afternoonPool.length) { grid.value[key][d] = cellOf(afternoonPool[ai]); ai++ }
-    }
+  // 后处理：体育课不排第 1 / 第 8 节（运动类宜在中间时段）
+  for (let d = 0; d < dayCount.value; d++) {
+    if (grid.value['p1'][d]?.subject === '体育') swapCells('p1', 'p2', d)
+    if (grid.value['p8'][d]?.subject === '体育') swapCells('p8', 'p7', d)
   }
-  // 晚自习留空，可手动填写
 }
 
 /* ============ 保存到服务器（先删旧再建新） ============ */
@@ -335,6 +409,7 @@ watch(dayCount, resizeGrid)
 onMounted(async () => {
   await loadClasses()
   initGrid()
+  loadMySchedules()
   if (classes.value[0]) {
     // 设置 classId 会触发 watch(classId) → load()，避免重复请求
     classId.value = classes.value[0].id
@@ -386,6 +461,14 @@ onMounted(async () => {
       ⚠️ {{ errorMsg }}
     </div>
 
+    <!-- 冲突告警 -->
+    <div v-if="conflicts.length" class="rounded-xl p-4 border border-red-200 bg-red-50 text-red-700 text-sm no-print">
+      <div class="font-semibold mb-1">检测到 {{ conflicts.length }} 处排课冲突：</div>
+      <ul class="list-disc pl-5 space-y-0.5">
+        <li v-for="(c, i) in conflicts" :key="i">{{ c.reason }}</li>
+      </ul>
+    </div>
+
     <!-- 加载状态 -->
     <div v-if="loading" class="flex items-center justify-center py-16 text-cocoa-400 no-print">
       <Loader2 class="w-6 h-6 animate-spin mr-2" /> 加载中…
@@ -414,6 +497,7 @@ onMounted(async () => {
                 :class="[
                   'w-full text-left text-sm px-2 py-2 rounded-lg border transition-colors min-h-[44px] flex flex-col gap-0.5',
                   subjectClass(grid[r.key]?.[di]?.subject || ''),
+                  isConflictCell(r.period, di) ? 'ring-2 ring-red-400 ring-offset-1' : '',
                 ]"
                 @click="openEdit(r.key, di)"
               >

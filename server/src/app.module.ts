@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { JwtModule } from '@nestjs/jwt'
+import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 
 import { AuthModule } from './auth/auth.module'
@@ -97,6 +98,8 @@ import { KidsCodingModule } from './kids-coding/kids-coding.module'
       },
     }),
     JwtAuthModule,
+    // 全局定时任务：少儿编程周报每周一 08:00 自动推送（见 KidsCodingBatchService）
+    ScheduleModule.forRoot(),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],

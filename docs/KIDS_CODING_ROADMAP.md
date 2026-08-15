@@ -129,7 +129,7 @@
 - **系统改动**
   - 聚合统计：本周练习数、提交作业数、获评星级数、掌握概念（变量/条件/函数使用痕迹）。
   - 周报聚合接口 `GET /parent/kids-coding/weekly-report`；新增推送能力：家长端 `POST /parent/kids-coding/weekly-report/push`（手动推送到消息中心）+ 超管端 `POST /admin/kids-coding/weekly-report/push-all`（批量推送，遍历近 7 天有活动的学生），均经 `MessageService` 写入站内信（type=`coding_weekly`）。
-  - 自动推送：由外部 crontab/CI 每周定时以超管身份调用 `push-all` 实现（项目未内置调度器，端点化便于运维触发，亦可在未来接入 `@nestjs/schedule`）。
+  - 自动推送：已内置 `@nestjs/schedule` 定时任务（`KidsCodingBatchService` 的 `@Cron('0 8 * * 1')`，每周一 08:00 自动扫描并推送全校周报），`ScheduleModule.forRoot()` 在 `app.module` 注册；同时保留超管端 `POST /admin/kids-coding/weekly-report/push-all` 供手动触发，二者复用同一 `pushAllWeeklyReports()` 逻辑，避免重复。
 - **验收点**：家长在周报页点「推送周报到消息中心」即收到站内信周报；超管批量推送覆盖全部活跃学生家长。
 
 ---
