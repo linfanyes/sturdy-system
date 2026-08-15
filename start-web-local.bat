@@ -1,4 +1,5 @@
-@echo off
+﻿@echo off
+chcp 65001 >nul
 REM ============================================================
 REM  启动 Web 前端 —— 本地联调模式
 REM  - 把 config.js 切回本地（/api 由 Vite 代理到 localhost:3000 的本地 server）
