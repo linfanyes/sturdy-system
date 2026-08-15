@@ -213,6 +213,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'five-edu', name: 'teacher-five-edu', component: () => import('@/views/teacher/FiveEduProfile.vue'), meta: { title: '五育综合素质档案' } },
       // 个性化学习闭环：学情画像 + AI 同类题练习 + 学习计划
       { path: 'learning-loop', name: 'teacher-learning-loop', component: () => import('@/views/teacher/LearningLoop.vue'), meta: { title: '个性化学习闭环' } },
+      { path: 'safety', name: 'teacher-safety', component: () => import('@/views/teacher/SafetyBoard.vue'), meta: { title: '校园安全·防欺凌' } },
+      { path: 'habit', name: 'teacher-habit', component: () => import('@/views/teacher/HabitBoard.vue'), meta: { title: '21天习惯养成' } },
       { path: 'assistant', name: 'teacher-assistant', component: () => import('@/views/teacher/TeacherAssistant.vue'), meta: { title: '教师事务助手' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },
       { path: 'games/game2048', name: 'game2048', component: () => import('@/views/games/Game2048.vue'), meta: { title: '2048', feature: 'games' } },

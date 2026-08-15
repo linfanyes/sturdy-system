@@ -21,6 +21,8 @@
         <text class="out" @click="goStudyBuddy">🤖 AI学习伙伴</text>
         <text class="out" @click="goFiveEdu">📊 五育档案</text>
         <text class="out" @click="goLearningLoop">🎯 学习闭环</text>
+        <text class="out" @click="goSafety">🛡️ 安全守护</text>
+        <text class="out" @click="goHabit">🔥 习惯养成</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -560,6 +562,12 @@ function goFiveEdu() {
 }
 function goLearningLoop() {
   uni.navigateTo({ url: '/pages/parent/learningLoop' })
+}
+function goSafety() {
+  uni.navigateTo({ url: '/pages/parent/safety' })
+}
+function goHabit() {
+  uni.navigateTo({ url: '/pages/parent/habit' })
 }
 
 // 今日心情卡：优先显示今天打卡，否则提示未打卡

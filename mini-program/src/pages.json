@@ -713,6 +713,18 @@
           }
         },
         {
+          "path": "safety",
+          "style": {
+            "navigationBarTitleText": "校园安全·防欺凌"
+          }
+        },
+        {
+          "path": "habit",
+          "style": {
+            "navigationBarTitleText": "21天习惯养成"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"

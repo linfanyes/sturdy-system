@@ -67,6 +67,8 @@ import { DataComplianceModule } from './data-compliance/data-compliance.module'
 import { InsightModule } from './insight/insight.module'
 import { FiveEduModule } from './five-edu/five-edu.module'
 import { LearningLoopModule } from './learning-loop/learning-loop.module'
+import { SafetyModule } from './safety/safety.module'
+import { HabitModule } from './habit/habit.module'
 
 @Module({
   imports: [
@@ -197,6 +199,8 @@ import { LearningLoopModule } from './learning-loop/learning-loop.module'
     InsightModule,
     FiveEduModule,
     LearningLoopModule,
+    SafetyModule,
+    HabitModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

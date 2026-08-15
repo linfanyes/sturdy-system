@@ -7,7 +7,7 @@ import {
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
   ToggleLeft, Home, Library, BarChart3, ClipboardCheck,
-  Code2, Heart, Trophy, Target,
+  Code2, Heart, Trophy, Target, ShieldAlert, Flame,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -253,6 +253,8 @@ export const teacherMenu: MenuCategory[] = [
           { name: 'teacher-assistant', label: '事务助手', to: '/teacher/assistant', icon: Sparkles, color: 'indigo' },
           { name: 'teacher-five-edu', label: '五育综合素质档案', to: '/teacher/five-edu', icon: Trophy, color: 'amber' },
           { name: 'teacher-learning-loop', label: '个性化学习闭环', to: '/teacher/learning-loop', icon: Target, color: 'green' },
+          { name: 'teacher-safety', label: '校园安全·防欺凌', to: '/teacher/safety', icon: ShieldAlert, color: 'rose' },
+          { name: 'teacher-habit', label: '21天习惯养成', to: '/teacher/habit', icon: Flame, color: 'orange' },
         ],
       },
     ],
