@@ -400,6 +400,7 @@ export const parentApi = {
   get: (p) => request(p, 'GET', {}, uni.getStorageSync('g_parent_token') || ''),
   post: (p, d) => request(p, 'POST', d || {}, uni.getStorageSync('g_parent_token') || ''),
   put: (p, d) => request(p, 'PUT', d || {}, uni.getStorageSync('g_parent_token') || ''),
+  patch: (p, d) => request(p, 'PATCH', d || {}, uni.getStorageSync('g_parent_token') || ''),
   del: (p) => request(p, 'DELETE', {}, uni.getStorageSync('g_parent_token') || ''),
 }
 

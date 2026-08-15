@@ -21,3 +21,7 @@ export function removeTeacher(id) {
 export function getTeacherDetail(id, opts = {}) {
   return api.get('/teachers/' + id + '/detail', opts)
 }
+/** 本人任教的全部课程（跨班级），用于排课跨班撞课检测 */
+export function listMySchedules(opts = {}) {
+  return api.get('/schedules/my', opts)
+}

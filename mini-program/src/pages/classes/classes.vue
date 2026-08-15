@@ -131,6 +131,9 @@
           <view class="facet" @click="goSchedule()">
             <text class="f-n">🗓️</text><text class="f-l">班级课表</text>
           </view>
+          <view class="facet" @click="goKidsCoding()">
+            <text class="f-n">🧩</text><text class="f-l">少儿编程</text>
+          </view>
           <view class="facet" @click="goNotice(detailC)">
             <text class="f-n">{{ noticesCount }}</text><text class="f-l">未结束公告</text>
           </view>
@@ -457,6 +460,10 @@ function goSeats(c) {
 function goSchedule() {
   showDetail.value = false
   uni.navigateTo({ url: '/pages/community/schedule' })
+}
+function goKidsCoding() {
+  showDetail.value = false
+  uni.navigateTo({ url: '/pages/teaching/kidsCoding' })
 }
 function goNotice(c) {
   showDetail.value = false

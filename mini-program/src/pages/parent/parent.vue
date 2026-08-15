@@ -13,6 +13,7 @@
         <text class="out" @click="openEditStudentInfo">📝 维护信息</text>
         <text class="out" @click="openStudentRequests">📋 申请记录</text>
         <text class="out" @click="openMessageCenter">💬 留言</text>
+        <text class="out" @click="goKidsCoding">🧩 少儿编程</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -521,6 +522,9 @@ function openMessageCenter() {
   msgOk.value = false
   if ((teachers.value || []).length) msgTeacherIdx.value = 0
   showMsgModal.value = true
+}
+function goKidsCoding() {
+  uni.navigateTo({ url: '/pages/parent/kidsCoding' })
 }
 function openMessageTeacher(t) {
   const idx = (teachers.value || []).findIndex(x => x.teacherId === (t && t.teacherId))

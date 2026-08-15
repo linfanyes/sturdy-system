@@ -26,6 +26,10 @@
       <text class="lg lg-double">双周</text>
     </view>
 
+    <view v-if="conflictCount" class="conflict-banner">
+      ⚠️ 检测到 {{ conflictCount }} 处排课冲突（同教师跨班撞课 / 同班相邻同科），已用红框标出，请调整。
+    </view>
+
     <view class="grid">
       <view class="row head">
         <view class="cell col">节次</view>
@@ -147,6 +151,7 @@ import { ref, computed } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import api, { batchRun } from '../../common/request'
 import { listClasses } from '@/api/teaching'
+import { listMySchedules } from '@/api/teacher'
 import { listSchedules, createSchedule, updateSchedule, removeSchedule, batchRemoveSchedules } from '@/api/schedule'
 import { auth, theme } from '../../common/store'
 import { isInt } from '../../common/validators'
@@ -170,6 +175,8 @@ const mode = ref('class') // class | teacher
 const classes = ref([])
 const classId = ref('')
 const items = ref([])
+// 本人任教的全部课程（跨班级），用于「同教师跨班撞课」检测
+const myAll = ref([])
 const showEdit = ref(false)
 const edit = ref({ id: '', dayOfWeek: 0, period: 1, subject: '', teacher: '', section: '', weekType: 'all' })
 const editClassId = ref('')
@@ -200,6 +207,47 @@ const teachStat = computed(() => {
 })
 const classSubjects = computed(() => Array.from(new Set(items.value.map((s) => s.subject).filter(Boolean))))
 
+// 冲突检测：返回需要高亮的「天-节次」集合
+// 1) 同教师跨班撞课：同一教师在同 (周几,节次) 被排到 ≥2 个不同班级
+// 2) 同班相邻节次同科（连堂过密）：同一班级同一天相邻两节科目相同
+const conflicts = computed(() => {
+  const set = new Set()
+  // 跨班撞课：基于本人全部课程（教师课表模式直接用 items，班级模式用 myAll）
+  const src = mode.value === 'teacher' ? items.value : myAll.value
+  const byCell = {}
+  for (const s of src) {
+    const key = s.dayOfWeek + '-' + s.period
+    if (!byCell[key]) byCell[key] = []
+    byCell[key].push(s)
+  }
+  for (const key in byCell) {
+    const arr = byCell[key]
+    const cls = new Set(arr.map((s) => s.classId))
+    if (arr.length >= 2 && cls.size >= 2) set.add(key)
+  }
+  // 同班相邻同科：在当前班级课程内检测
+  const byClassDay = {}
+  for (const s of items.value) {
+    const k = s.classId + '-' + s.dayOfWeek
+    if (!byClassDay[k]) byClassDay[k] = []
+    byClassDay[k].push(s)
+  }
+  for (const k in byClassDay) {
+    const arr = byClassDay[k].slice().sort((a, b) => a.period - b.period)
+    for (let i = 0; i < arr.length - 1; i++) {
+      if (arr[i].subject && arr[i].subject === arr[i + 1].subject) {
+        set.add(arr[i].dayOfWeek + '-' + arr[i].period)
+        set.add(arr[i + 1].dayOfWeek + '-' + arr[i + 1].period)
+      }
+    }
+  }
+  return set
+})
+const conflictCount = computed(() => conflicts.value.size)
+function isConflict(day, period) {
+  return conflicts.value.has(day + '-' + period)
+}
+
 const meName = computed(() => (auth.user && auth.user.name) || '')
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -222,6 +270,26 @@ async function load() {
   classes.value = await listClasses({ silent: true })
   if (!classId.value && classes.value.length) classId.value = classes.value[0].id
   await loadItems()
+  await loadMyAll()
+}
+// 加载本人任教的全部课程（跨班级），供撞课检测使用
+async function loadMyAll() {
+  const me = meName.value.trim()
+  const emp = auth.user && (auth.user.employeeNo || auth.user.no || '')
+    ? String(auth.user.employeeNo || auth.user.no).trim()
+    : ''
+  if (!me && !emp) { myAll.value = []; return }
+  try {
+    const all = await listMySchedules()
+    myAll.value = (me || emp)
+      ? (all || []).filter((s) => {
+          const t = (s.teacher || '').trim()
+          return (me && t === me) || (emp && t === emp)
+        })
+      : []
+  } catch (e) {
+    myAll.value = []
+  }
 }
 async function loadItems() {
   if (mode.value === 'class') {
@@ -251,6 +319,7 @@ function switchMode(m) {
   mode.value = m
   showEdit.value = false
   loadItems()
+  loadMyAll()
 }
 // 教师课表：复制为文本
 function copyTeacherSchedule() {
@@ -296,6 +365,7 @@ function cellItems(day, period) {
   return items.value.filter((s) => s.dayOfWeek === day && s.period === period)
 }
 function cellClass(day, period) {
+  if (isConflict(day, period)) return 'cell conflict'
   const arr = cellItems(day, period)
   if (!arr.length) return 'cell idle'
   const types = arr.map((a) => a.weekType || 'all')
@@ -404,25 +474,46 @@ function openAuto() {
   autoForm.value = { subjectsText: subs.join(','), days: 5, periods: 8, start: 1, cover: false }
   showAuto.value = true
 }
+// 智能编排：按课时权重均衡分配，同天相邻节次不重科，体育不排首尾
 function buildPlan() {
-  const subs = autoForm.value.subjectsText.split(/[,，\s]+/).map((s) => s.trim()).filter(Boolean)
-  if (!subs.length) return { ok: false, err: '请填写科目列表' }
+  const rawSubs = autoForm.value.subjectsText.split(/[,，\s]+/).map((s) => s.trim()).filter(Boolean)
+  if (!rawSubs.length) return { ok: false, err: '请填写科目列表' }
   const dN = autoForm.value.days
   const pN = autoForm.value.periods
   const st = autoForm.value.start
   if (st + pN - 1 > 8) return { ok: false, err: '节次超出范围（最大第 8 节）' }
   if (dN > 7) return { ok: false, err: '天数超出范围（最大 7 天）' }
+  // 主科课时多、副科课时少；体育课权重调低且规避首尾
+  const WEIGHT = { 语文: 6, 数学: 6, 英语: 5, 体育: 3, 科学: 3, 音乐: 2, 美术: 2, 道法: 2, 品社: 2, 信息: 2, 劳动: 2, 写字: 2, 班会: 1, 自习: 1 }
+  const remaining = {}
+  rawSubs.forEach((s) => { remaining[s] = WEIGHT[s] || 3 })
   const plan = []
-  let idx = 0
   for (let d = 0; d < dN; d++) {
     const row = []
+    let prev = ''
     for (let p = 0; p < pN; p++) {
-      row.push(subs[(idx + d) % subs.length])
-      idx++
+      const isEdge = p === 0 || p === pN - 1
+      const subj = pickSmart(remaining, prev, isEdge, rawSubs)
+      row.push(subj)
+      if (remaining[subj] > 0) remaining[subj]--
+      prev = subj
     }
     plan.push(row)
   }
   return { ok: true, plan }
+}
+// 选下一节课：优先剩余课时最多的科目，避开与上一节同科；首尾位置避开体育
+function pickSmart(remaining, prev, isEdge, allSubs) {
+  const avail = Object.keys(remaining).filter((s) => remaining[s] > 0)
+  if (!avail.length) return allSubs.length ? allSubs[0] : ''
+  let pool = avail.filter((s) => s !== prev)
+  if (!pool.length) pool = avail
+  if (isEdge) {
+    const noPe = pool.filter((s) => s !== '体育')
+    if (noPe.length) pool = noPe
+  }
+  pool.sort((a, b) => remaining[b] - remaining[a])
+  return pool[0]
 }
 async function confirmAuto() {
   if (savingPlan.value) return
@@ -706,6 +797,8 @@ function copyAsText() {
 .cell.all { background: var(--c-card2); }
 .cell.single { background: var(--c-card2); }
 .cell.double { background: var(--c-card2); }
+.cell.conflict { background: #ffeceb; border: 2rpx solid #e64340; box-shadow: inset 0 0 0 2rpx #e64340; }
+.conflict-banner { background: #ffeceb; color: #e64340; font-size: 22rpx; line-height: 1.5; padding: 16rpx 20rpx; border-radius: 12rpx; margin-bottom: 16rpx; }
 .subj { font-weight: 700; color: var(--c-title); }
 .tea { color: var(--c-sub); font-size: 20rpx; }
 .tag { color: var(--c-accent); font-size: 20rpx; }

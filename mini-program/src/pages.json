@@ -378,6 +378,13 @@
             "navigationBarTitleText": "数据统计",
             "enablePullDownRefresh": true
           }
+        },
+        {
+          "path": "kidsCoding",
+          "style": {
+            "navigationBarTitleText": "少儿编程",
+            "enablePullDownRefresh": true
+          }
         }
       ]
     },
@@ -679,6 +686,12 @@
           "path": "parent-resource-library",
           "style": {
             "navigationBarTitleText": "资源库"
+          }
+        },
+        {
+          "path": "kidsCoding",
+          "style": {
+            "navigationBarTitleText": "少儿编程"
           }
         }
       ]

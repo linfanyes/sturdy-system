@@ -39,8 +39,11 @@
         <text class="tbtn" @click="showAuto = true">⚡ 自动排座</text>
         <text class="tbtn" @click="showResize = true">📐 调整尺寸</text>
         <text class="tbtn" @click="openAisle">🛤 过道</text>
+        <text class="tbtn" :class="{ on: showSeatNo }" @click="showSeatNo = !showSeatNo">🔢 座位号</text>
+        <text class="tbtn" :class="{ on: !!swapFrom }" @click="cancelSwap">🔄 交换{{ swapFrom ? '中' : '' }}</text>
         <text class="tbtn" @click="clearAll">🧹 清空</text>
       </view>
+      <view v-if="swapFrom" class="swap-tip">已选中「{{ swapFrom.r + 1 }}排{{ swapFrom.c + 1 }}列」作为交换起点，点击另一座位完成交换（再次点「交换」取消）。</view>
       <view class="podium">讲 台</view>
       <view class="grid-rows">
         <view v-for="(row, r) in seatRows" :key="r" class="grid-row">
@@ -49,10 +52,11 @@
             <view
               v-else
               class="seat"
-              :class="{ filled: cell.id }"
-              @click="tapCell(r, cell.col)"
+              :class="{ filled: cell.id, swapping: isSwapFrom(r, cell.col) }"
+              @click="onSeatTap(r, cell.col)"
+              @longpress="onSeatLongPress(r, cell.col)"
             >
-              <text v-if="cell.id" class="sno">{{ cell.no }}</text>
+              <text v-if="cell.id && showSeatNo" class="sno">{{ cell.no }}</text>
               <text class="sname">{{ cell.name || '空' }}</text>
             </view>
           </template>
@@ -184,6 +188,10 @@ const resizeRows = ref('')
 const resizeCols = ref('')
 const showAisle = ref(false)
 const aisleSet = ref(new Set())
+// 座位号显示开关（默认显示，对齐 Web 的「座位号显示开关」）
+const showSeatNo = ref(true)
+// 交换模式：长按起点座位后，点击另一座位完成两人互换（对齐 Web 拖拽交换）
+const swapFrom = ref(null)
 
 const classOpts = computed(() => classes.value.map((c) => c.name))
 const selName = computed(() => {
@@ -275,11 +283,43 @@ function openEdit(l) {
   // 兼容旧数据（aisleCols 字段后加）
   if (!Array.isArray(clone.aisleCols)) clone.aisleCols = []
   editing.value = clone
+  swapFrom.value = null
 }
 
 function tapCell(r, c) {
   cur.value = { r, c }
   picking.value = true
+}
+
+// 座位号显示 / 交换逻辑
+function isSwapFrom(r, c) {
+  return !!swapFrom.value && swapFrom.value.r === r && swapFrom.value.c === c
+}
+function onSeatLongPress(r, c) {
+  const id = editing.value.seats[r][c]
+  if (!id) return uni.showToast({ title: '请长按已有学生的座位', icon: 'none' })
+  swapFrom.value = { r, c }
+}
+function cancelSwap() {
+  swapFrom.value = null
+}
+function onSeatTap(r, c) {
+  // 交换模式：点击另一座位完成两人互换
+  if (swapFrom.value) {
+    if (swapFrom.value.r === r && swapFrom.value.c === c) {
+      cancelSwap()
+      return
+    }
+    const seats = editing.value.seats
+    const a = seats[swapFrom.value.r][swapFrom.value.c]
+    const b = seats[r][c]
+    seats[swapFrom.value.r][swapFrom.value.c] = b
+    seats[r][c] = a
+    swapFrom.value = null
+    uni.showToast({ title: '已交换，请保存', icon: 'none' })
+    return
+  }
+  tapCell(r, c)
 }
 
 function onPick(ev) {
@@ -502,6 +542,8 @@ function clearAll() {
 .grid { display: grid; gap: 12rpx; margin-bottom: 20rpx; }
 .seat { position: relative; background: #fff; border-radius: 14rpx; padding: 22rpx 6rpx; text-align: center; font-size: 24rpx; color: #9aa0a6; border: 1px solid #eee; flex: 1; min-width: 0; box-sizing: border-box; }
 .seat.filled { background: #fff3d6; color: #a07b3b; border-color: #e6a23c; font-weight: 600; }
+.seat.swapping { border-color: #07c160; box-shadow: inset 0 0 0 3rpx #07c160; background: #eafaf0; }
+.swap-tip { font-size: 22rpx; color: #07c160; background: #eafaf0; border-radius: 12rpx; padding: 12rpx 18rpx; margin-bottom: 14rpx; line-height: 1.5; }
 .sno { position: absolute; top: 4rpx; left: 8rpx; font-size: 18rpx; line-height: 1; color: #c08a3e; opacity: .85; font-weight: 700; }
 .sname { display: block; margin-top: 10rpx; }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
@@ -554,6 +596,8 @@ function clearAll() {
 .dark .seat { background: var(--c-card2); color: var(--c-sub); border-color: var(--c-border); }
 .dark .seat.filled { background: var(--c-card2); color: var(--c-accent); border-color: var(--c-accent); }
 .dark .sno { color: var(--c-accent); }
+.dark .seat.swapping { background: rgba(7,193,96,.18); border-color: #07c160; }
+.dark .swap-tip { background: rgba(7,193,96,.14); color: #5fd6a0; }
 .dark .podium { background: var(--c-card2); color: var(--c-sub); }
 .dark .sheet .picker { border-color: var(--c-border); }
 .dark .cancel { background: var(--c-card2); color: var(--c-sub); }
