@@ -17,6 +17,7 @@
         <text class="out" @click="goMood">🌤️ 心情打卡</text>
         <text class="out" @click="goTimeline">🌈 成长时光机</text>
         <text class="out" @click="goNotifySettings">🔔 通知设置</text>
+        <text class="out" @click="goDataConsent">🔐 数据授权</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -544,6 +545,9 @@ function goTimeline() {
 }
 function goNotifySettings() {
   uni.navigateTo({ url: '/pages/parent/notifySettings' })
+}
+function goDataConsent() {
+  uni.navigateTo({ url: '/pages/parent/dataConsent' })
 }
 
 // 今日心情卡：优先显示今天打卡，否则提示未打卡

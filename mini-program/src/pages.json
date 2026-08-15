@@ -689,6 +689,12 @@
           }
         },
         {
+          "path": "dataConsent",
+          "style": {
+            "navigationBarTitleText": "数据授权"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"
