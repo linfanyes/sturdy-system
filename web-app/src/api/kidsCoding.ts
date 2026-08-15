@@ -191,3 +191,13 @@ export function getWeeklyReport() {
 export function getBadges() {
   return request.get<any, { type: string; label: string; icon: string; earned: boolean }[]>('/parent/kids-coding/badges')
 }
+
+/** 家长：把本周学习周报推送到消息中心 */
+export function pushWeeklyReport() {
+  return request.post<any, { pushed: boolean; reason?: string; report?: any }>('/parent/kids-coding/weekly-report/push')
+}
+
+/** 超管：批量推送本周学习周报给所有有练习活动的学生家长 */
+export function pushAllWeeklyReports() {
+  return request.post<any, { scanned: number; pushed: number; skipped: number }>('/admin/kids-coding/weekly-report/push-all')
+}

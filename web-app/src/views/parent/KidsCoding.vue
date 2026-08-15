@@ -27,6 +27,7 @@ import {
   listGallery,
   getWeeklyReport,
   getBadges,
+  pushWeeklyReport,
   type CodingProject,
   type CodingChallenge,
   type CodingReview,
@@ -69,6 +70,23 @@ async function loadWeekly() {
 }
 async function loadBadges() {
   try { badges.value = await getBadges() } catch { badges.value = [] }
+}
+
+/* ============ 周报推送 ============ */
+const pushing = ref(false)
+const pushMsg = ref('')
+async function pushReport() {
+  if (pushing.value) return
+  pushing.value = true
+  pushMsg.value = ''
+  try {
+    const res = await pushWeeklyReport()
+    pushMsg.value = res.pushed ? '已推送到消息中心' : (res.reason || '暂无可推送内容')
+  } catch {
+    pushMsg.value = '推送失败，请稍后重试'
+  } finally {
+    pushing.value = false
+  }
 }
 function applyPreset() {
   const pre = PRESETS.find((p) => p.name === presetName.value)
@@ -666,6 +684,13 @@ onMounted(() => {
           <div class="text-2xl font-bold text-cocoa-900">{{ weekly.reviewsRecent }}</div>
           <div class="text-xs text-cocoa-400 mt-1">本周新点评</div>
         </div>
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        <button :disabled="pushing" @click="pushReport"
+          class="px-4 py-2 rounded-xl bg-cocoa-900 text-white text-sm disabled:opacity-50">
+          {{ pushing ? '推送中…' : '推送周报到消息中心' }}
+        </button>
+        <span v-if="pushMsg" class="text-xs text-cocoa-400">{{ pushMsg }}</span>
       </div>
       <div class="text-xs text-cocoa-400 mt-2">统计区间：{{ weekly.weekStart?.slice(0, 10) }} 起 · 最近活跃：{{ weekly.lastActivity ? new Date(weekly.lastActivity).toLocaleString() : '—' }}</div>
     </template>

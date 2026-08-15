@@ -1,4 +1,4 @@
-import { Module, UseGuards, Controller, Get, Post, Patch, Delete, Param, Body, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Module, UseGuards, Controller, Get, Post, Patch, Delete, Param, Body, Inject, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, DeepPartial } from 'typeorm'
@@ -16,6 +16,8 @@ import { CodingBadge } from './badge.entity'
 import { CreateCodingProjectDto, UpdateCodingProjectDto } from './dto/kids-coding.dto'
 import { CreateChallengeDto, UpdateChallengeDto, CreateReviewDto } from './dto/challenge-review.dto'
 import { CurrentParent } from '../parent-auth/current-parent.decorator'
+import { MessageService } from '../messages/message.service'
+import { MessagesModule } from '../messages/messages.module'
 
 class CodingProjectService extends CrudService<CodingProject> {
   constructor(@InjectRepository(CodingProject) repo: Repository<CodingProject>) {
@@ -28,7 +30,7 @@ class CodingProjectService extends CrudService<CodingProject> {
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('kids-coding')
-class CodingProjectController extends CrudController<CodingProject> {
+export class CodingProjectController extends CrudController<CodingProject> {
   constructor(s: CodingProjectService) {
     super(s)
   }
@@ -49,7 +51,7 @@ class CodingProjectController extends CrudController<CodingProject> {
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('kids-coding/challenges')
-class CodingChallengeController {
+export class CodingChallengeController {
   constructor(
     @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
     @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
@@ -132,7 +134,7 @@ class CodingChallengeController {
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('kids-coding/reviews')
-class CodingReviewController {
+export class CodingReviewController {
   constructor(
     @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
     @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
@@ -178,7 +180,7 @@ class CodingReviewController {
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('kids-coding/gallery')
-class CodingGalleryController {
+export class CodingGalleryController {
   constructor(
     @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
     @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
@@ -217,12 +219,13 @@ class CodingGalleryController {
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('parent/kids-coding')
-class ParentCodingController {
+export class ParentCodingController {
   constructor(
     @InjectRepository(CodingProject) private readonly repo: Repository<CodingProject>,
     @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
     @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
     @InjectRepository(CodingBadge) private readonly badgeRepo: Repository<CodingBadge>,
+    @Inject(MessageService) private readonly msg?: MessageService,
   ) {}
 
   /** 教师发布到本班的少儿编程作品（只读画廊） */
@@ -381,33 +384,25 @@ class ParentCodingController {
   /** 家长学习周报：汇总本周（近 7 天）学生的学习概况 */
   @Get('weekly-report')
   async weeklyReport(@CurrentParent() p: any) {
+    if (!p?.studentId) return null
+    return buildWeeklyReport(this.repo, this.challengeRepo, this.reviewRepo, p.studentId, p.classId)
+  }
+
+  /** 将本周学习周报推送给当前家长（站内信）。家长可主动触发，定时任务亦可调用。 */
+  @Post('weekly-report/push')
+  async pushWeeklyReport(@CurrentParent() p: any) {
     const studentId = p?.studentId
-    const classId = p?.classId
-    if (!studentId) return null
-    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000)
-    const myProjects = await this.repo.find({ where: { studentId } as any })
-    const recent = myProjects.filter((x) => (x.updatedAt?.getTime?.() ?? 0) >= since.getTime())
-    const submitted = myProjects.filter((x) => x.submitted)
-    const reviews = await this.reviewRepo.find({ where: { studentId } as any })
-    const recentReviews = reviews.filter((x) => (x.createdAt?.getTime?.() ?? 0) >= since.getTime())
-    const totalBlocks = myProjects.reduce((s, x) => s + (Array.isArray(x.blocks) ? x.blocks.length : 0), 0)
-    const challenges = classId ? await this.challengeRepo.find({ where: { classId } as any }) : []
-    const avgRating = reviews.filter((r) => r.rating != null).length
-      ? Math.round(reviews.filter((r) => r.rating != null).reduce((s, r) => s + (r.rating || 0), 0) / reviews.filter((r) => r.rating != null).length * 10) / 10
-      : null
-    return {
-      studentId,
-      weekStart: since.toISOString(),
-      challengesAvailable: challenges.length,
-      practiceTotal: myProjects.length,
-      practiceRecent: recent.length,
-      submittedTotal: submitted.length,
-      reviewsTotal: reviews.length,
-      reviewsRecent: recentReviews.length,
-      avgRating,
-      totalBlocks,
-      lastActivity: myProjects.length ? myProjects.sort((a, b) => (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0))[0].updatedAt : null,
-    }
+    if (!studentId) return { pushed: false, reason: '未关联学生' }
+    const rep = await buildWeeklyReport(this.repo, this.challengeRepo, this.reviewRepo, studentId, p.classId)
+    if (!rep || rep.practiceTotal === 0) return { pushed: false, reason: '本周暂无练习记录' }
+    await this.msg?.send('system', 'system', {
+      recipientId: studentId,
+      recipientRole: 'parent',
+      title: '少儿编程本周学习周报',
+      content: buildWeeklyReportText(rep),
+      type: 'coding_weekly',
+    })
+    return { pushed: true, report: rep }
   }
 
   /** 成就徽章：按规则计算并落库，返回全部徽章（含是否已获得） */
@@ -461,9 +456,106 @@ class ParentCodingController {
   }
 }
 
+/** 周报生成（与家长端/超管端推送解耦，便于复用） */
+async function buildWeeklyReport(
+  repo: Repository<CodingProject>,
+  challengeRepo: Repository<CodingChallenge>,
+  reviewRepo: Repository<CodingReview>,
+  studentId: string,
+  classId?: string | null,
+) {
+  const since = new Date(Date.now() - 7 * 24 * 3600 * 1000)
+  const myProjects = await repo.find({ where: { studentId } as any })
+  const recent = myProjects.filter((x) => (x.updatedAt?.getTime?.() ?? 0) >= since.getTime())
+  const submitted = myProjects.filter((x) => x.submitted)
+  const reviews = await reviewRepo.find({ where: { studentId } as any })
+  const recentReviews = reviews.filter((x) => (x.createdAt?.getTime?.() ?? 0) >= since.getTime())
+  const totalBlocks = myProjects.reduce((s, x) => s + (Array.isArray(x.blocks) ? x.blocks.length : 0), 0)
+  const challenges = classId ? await challengeRepo.find({ where: { classId } as any }) : []
+  const rated = reviews.filter((r) => r.rating != null)
+  const avgRating = rated.length
+    ? Math.round((rated.reduce((s, r) => s + (r.rating || 0), 0) / rated.length) * 10) / 10
+    : null
+  return {
+    studentId,
+    weekStart: since.toISOString(),
+    challengesAvailable: challenges.length,
+    practiceTotal: myProjects.length,
+    practiceRecent: recent.length,
+    submittedTotal: submitted.length,
+    reviewsTotal: reviews.length,
+    reviewsRecent: recentReviews.length,
+    avgRating,
+    totalBlocks,
+    lastActivity: myProjects.length
+      ? myProjects.slice().sort((a, b) => (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0))[0].updatedAt
+      : null,
+  }
+}
+
+function buildWeeklyReportText(rep: any): string {
+  const parts = [
+    '【少儿编程 · 本周学习周报】',
+    `练习作品：${rep.practiceTotal} 份（本周新增 ${rep.practiceRecent} 份）`,
+    `已提交作业：${rep.submittedTotal} 份`,
+    `累计积木块：${rep.totalBlocks} 块`,
+    `收到点评：${rep.reviewsTotal} 次${rep.avgRating != null ? `，平均 ${rep.avgRating} 星` : ''}`,
+    `可用任务卡：${rep.challengesAvailable} 个`,
+  ]
+  if (rep.lastActivity) parts.push(`最近活跃：${new Date(rep.lastActivity).toLocaleString('zh-CN')}`)
+  return parts.join('\n')
+}
+
+/** 超管端：批量推送本周学习周报给所有有练习活动的学生家长（供定时任务/管理员触发） */
+@Roles('super')
+@Feature('kids-coding')
+@UseGuards(JwtAuthGuard, FeatureGuard)
+@Controller('admin/kids-coding')
+export class KidsCodingAdminController {
+  constructor(
+    @InjectRepository(CodingProject) private readonly repo: Repository<CodingProject>,
+    @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
+    @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
+    @Inject(MessageService) private readonly msg: MessageService,
+  ) {}
+
+  @Post('weekly-report/push-all')
+  async pushAllWeeklyReports() {
+    const rows = await this.repo
+      .createQueryBuilder('p')
+      .select('p.studentId', 'studentId')
+      .addSelect('p.classId', 'classId')
+      .distinct(true)
+      .where('p.studentId IS NOT NULL')
+      .getRawMany()
+    let pushed = 0
+    let skipped = 0
+    for (const r of rows) {
+      const rep = await buildWeeklyReport(this.repo, this.challengeRepo, this.reviewRepo, r.studentId, r.classId)
+      if (!rep || rep.practiceTotal === 0) {
+        skipped++
+        continue
+      }
+      await this.msg.send('system', 'system', {
+        recipientId: r.studentId,
+        recipientRole: 'parent',
+        title: '少儿编程本周学习周报',
+        content: buildWeeklyReportText(rep),
+        type: 'coding_weekly',
+      })
+      pushed++
+    }
+    return { scanned: rows.length, pushed, skipped }
+  }
+}
+
 @Module({
-  imports: [TypeOrmModule.forFeature([CodingProject, CodingChallenge, CodingReview, CodingBadge])],
+  imports: [
+    TypeOrmModule.forFeature([CodingProject, CodingChallenge, CodingReview, CodingBadge]),
+    MessagesModule,
+  ],
   providers: [CodingProjectService],
-  controllers: [CodingProjectController, CodingChallengeController, CodingReviewController, CodingGalleryController, ParentCodingController],
+  controllers: [CodingProjectController, CodingChallengeController, CodingReviewController, CodingGalleryController, ParentCodingController, KidsCodingAdminController],
+  exports: [KidsCodingAdminController],
 })
 export class KidsCodingModule {}
