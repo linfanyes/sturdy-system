@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '@/layouts/AppLayout.vue'
 import BlankLayout from '@/layouts/BlankLayout.vue'
@@ -13,6 +13,12 @@ initMonitor()
 
 const route = useRoute()
 const layout = computed(() => (route.meta.layout === 'blank' ? BlankLayout : AppLayout))
+
+// 适老化：应用已保存的字号
+onMounted(() => {
+  const s = localStorage.getItem('fontScale')
+  if (s) document.documentElement.style.fontSize = s + 'px'
+})
 </script>
 
 <template>

@@ -23,6 +23,7 @@
         <text class="out" @click="goLearningLoop">🎯 学习闭环</text>
         <text class="out" @click="goSafety">🛡️ 安全守护</text>
         <text class="out" @click="goHabit">🔥 习惯养成</text>
+        <text class="out" @click="goLiteracy">📚 素养启蒙</text>
         <text class="out" @click="showPwdModal = true">🔑 改密</text>
         <text class="out" @click="logout">退出</text>
       </view>
@@ -568,6 +569,9 @@ function goSafety() {
 }
 function goHabit() {
   uni.navigateTo({ url: '/pages/parent/habit' })
+}
+function goLiteracy() {
+  uni.navigateTo({ url: '/pages/parent/literacy' })
 }
 
 // 今日心情卡：优先显示今天打卡，否则提示未打卡

@@ -725,6 +725,12 @@
           }
         },
         {
+          "path": "literacy",
+          "style": {
+            "navigationBarTitleText": "数字素养·生涯启蒙"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"
