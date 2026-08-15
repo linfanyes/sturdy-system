@@ -30,4 +30,16 @@ export class CodingProject extends BaseEntity {
 
   /** 练习作品所有者（家长端创作的学生练习）；有值表示练习作品，与 teacherId 互斥 */
   @Column({ type: 'varchar', length: 64, nullable: true }) studentId: string | null
+
+  /** 关联的任务卡（学生练习对应某道挑战）；null = 自由练习 */
+  @Column({ type: 'varchar', length: 64, nullable: true }) challengeId: string | null
+
+  /** 是否作为作业提交（true=已提交作业，false=草稿/随便练） */
+  @Column({ type: 'boolean', default: false }) submitted: boolean
+
+  /** 作业提交时间（草稿为 null） */
+  @Column({ type: 'datetime', nullable: true }) submittedAt: Date | null
+
+  /** 是否被选入班级作品墙（教师精选，家长端只读画廊可见） */
+  @Column({ type: 'boolean', default: false }) showInGallery: boolean
 }

@@ -10,7 +10,11 @@ import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
 import { CrudService } from '../common/crud/base.service'
 import { CrudController } from '../common/crud/base.controller'
 import { CodingProject } from './kids-coding.entity'
+import { CodingChallenge } from './challenge.entity'
+import { CodingReview } from './review.entity'
+import { CodingBadge } from './badge.entity'
 import { CreateCodingProjectDto, UpdateCodingProjectDto } from './dto/kids-coding.dto'
+import { CreateChallengeDto, UpdateChallengeDto, CreateReviewDto } from './dto/challenge-review.dto'
 import { CurrentParent } from '../parent-auth/current-parent.decorator'
 
 class CodingProjectService extends CrudService<CodingProject> {
@@ -40,13 +44,186 @@ class CodingProjectController extends CrudController<CodingProject> {
   }
 }
 
-/** 家长端：查看本班教师已开放的少儿编程作品（只读画廊）+ 学生自主练习作品的 CRUD */
+/** 教师端：任务卡 CRUD + 查看某任务的学生提交 */
+@Roles('teacher')
+@Feature('kids-coding')
+@UseGuards(JwtAuthGuard, FeatureGuard)
+@Controller('kids-coding/challenges')
+class CodingChallengeController {
+  constructor(
+    @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
+    @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
+  ) {}
+
+  /** 教师本人创建的任务卡列表 */
+  @Get()
+  list(@CurrentTeacher() t: any, @Body() body: { classId?: string | null }) {
+    const where: any = { teacherId: t?.id }
+    if (body?.classId) where.classId = body.classId
+    return this.challengeRepo.find({ where, order: { updatedAt: 'DESC' } })
+  }
+
+  @Post()
+  create(@Body() dto: CreateChallengeDto, @CurrentTeacher() t: any) {
+    const e = this.challengeRepo.create({
+      title: dto.title,
+      goal: dto.goal ?? null,
+      classId: dto.classId ?? null,
+      starterBlocks: dto.starterBlocks ?? null,
+      criteria: dto.criteria ?? null,
+      teacherName: dto.teacherName ?? null,
+      teacherId: t?.id,
+    } as DeepPartial<CodingChallenge>)
+    return this.challengeRepo.save(e)
+  }
+
+  @Get(':id')
+  async getOne(@Param('id') id: string, @CurrentTeacher() t: any) {
+    const r = await this.challengeRepo.findOne({ where: { id, teacherId: t?.id } as any })
+    if (!r) throw new NotFoundException('任务卡不存在')
+    return r
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateChallengeDto, @CurrentTeacher() t: any) {
+    const e = await this.challengeRepo.findOne({ where: { id, teacherId: t?.id } as any })
+    if (!e) throw new NotFoundException('任务卡不存在')
+    if (dto.title !== undefined) e.title = dto.title
+    if (dto.goal !== undefined) e.goal = dto.goal
+    if (dto.classId !== undefined) e.classId = dto.classId
+    if (dto.starterBlocks !== undefined) e.starterBlocks = dto.starterBlocks
+    if (dto.criteria !== undefined) e.criteria = dto.criteria
+    if (dto.teacherName !== undefined) e.teacherName = dto.teacherName
+    return this.challengeRepo.save(e)
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string, @CurrentTeacher() t: any) {
+    const e = await this.challengeRepo.findOne({ where: { id, teacherId: t?.id } as any })
+    if (!e) throw new NotFoundException('任务卡不存在')
+    await this.challengeRepo.remove(e)
+    return { id }
+  }
+
+  /** 某任务卡下的学生提交作品（教师批改用） */
+  @Get(':id/submissions')
+  async submissions(@Param('id') id: string, @CurrentTeacher() t: any) {
+    const ch = await this.challengeRepo.findOne({ where: { id, teacherId: t?.id } as any })
+    if (!ch) throw new NotFoundException('任务卡不存在')
+    const rows = await this.projectRepo.find({
+      where: { challengeId: id } as any,
+      order: { updatedAt: 'DESC' },
+    })
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      studentId: r.studentId,
+      submitted: r.submitted,
+      submittedAt: r.submittedAt,
+      showInGallery: r.showInGallery,
+      updatedAt: r.updatedAt,
+      blocks: r.blocks,
+    }))
+  }
+}
+
+/** 教师端：对学生提交的练习作业写点评（评语 + 星级），按 projectId 幂等 upsert */
+@Roles('teacher')
+@Feature('kids-coding')
+@UseGuards(JwtAuthGuard, FeatureGuard)
+@Controller('kids-coding/reviews')
+class CodingReviewController {
+  constructor(
+    @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
+    @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
+  ) {}
+
+  @Post()
+  async create(@Body() dto: CreateReviewDto, @CurrentTeacher() t: any) {
+    const proj = await this.projectRepo.findOne({ where: { id: dto.projectId } as any })
+    if (!proj) throw new NotFoundException('练习作品不存在')
+    let review = await this.reviewRepo.findOne({ where: { projectId: dto.projectId } as any })
+    if (!review) {
+      review = this.reviewRepo.create({
+        projectId: dto.projectId,
+        challengeId: dto.challengeId ?? proj.challengeId ?? null,
+        studentId: dto.studentId ?? proj.studentId ?? null,
+        teacherId: t?.id,
+        comment: dto.comment ?? null,
+        rating: dto.rating ?? null,
+        done: true,
+      } as DeepPartial<CodingReview>)
+    } else {
+      if (dto.comment !== undefined) review.comment = dto.comment
+      if (dto.rating !== undefined) review.rating = dto.rating
+      if (dto.challengeId !== undefined) review.challengeId = dto.challengeId
+      review.done = true
+    }
+    const saved = await this.reviewRepo.save(review)
+    return { id: saved.id, comment: saved.comment, rating: saved.rating }
+  }
+
+  /** 查看某任务的全部点评（教师批改概览） */
+  @Get('challenge/:challengeId')
+  async listByChallenge(@Param('challengeId') challengeId: string, @CurrentTeacher() t: any) {
+    return this.reviewRepo.find({
+      where: { challengeId, teacherId: t?.id } as any,
+      order: { updatedAt: 'DESC' },
+    })
+  }
+}
+
+/** 教师端：把学生提交的作品选入/移出「班级作品墙」（教师精选，家长端只读可见） */
+@Roles('teacher')
+@Feature('kids-coding')
+@UseGuards(JwtAuthGuard, FeatureGuard)
+@Controller('kids-coding/gallery')
+class CodingGalleryController {
+  constructor(
+    @InjectRepository(CodingProject) private readonly projectRepo: Repository<CodingProject>,
+    @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
+  ) {}
+
+  /** 选入作品墙：校验该作品对应的任务卡属于本教师 */
+  @Post(':projectId')
+  async feature(@Param('projectId') projectId: string, @CurrentTeacher() t: any) {
+    const proj = await this.projectRepo.findOne({ where: { id: projectId } as any })
+    if (!proj) throw new NotFoundException('作品不存在')
+    if (proj.challengeId) {
+      const ch = await this.challengeRepo.findOne({ where: { id: proj.challengeId, teacherId: t?.id } as any })
+      if (!ch) throw new ForbiddenException('无权操作该作品')
+    }
+    proj.showInGallery = true
+    await this.projectRepo.save(proj)
+    return { id: proj.id, showInGallery: true }
+  }
+
+  @Delete(':projectId')
+  async unfeature(@Param('projectId') projectId: string, @CurrentTeacher() t: any) {
+    const proj = await this.projectRepo.findOne({ where: { id: projectId } as any })
+    if (!proj) throw new NotFoundException('作品不存在')
+    if (proj.challengeId) {
+      const ch = await this.challengeRepo.findOne({ where: { id: proj.challengeId, teacherId: t?.id } as any })
+      if (!ch) throw new ForbiddenException('无权操作该作品')
+    }
+    proj.showInGallery = false
+    await this.projectRepo.save(proj)
+    return { id: proj.id, showInGallery: false }
+  }
+}
+
+/** 家长端：查看本班教师已开放的少儿编程作品（只读画廊）+ 学生自主练习作品的 CRUD + 任务卡 + 点评回看 */
 @Roles('parent')
 @Feature('kids-coding')
 @UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('parent/kids-coding')
 class ParentCodingController {
-  constructor(@InjectRepository(CodingProject) private readonly repo: Repository<CodingProject>) {}
+  constructor(
+    @InjectRepository(CodingProject) private readonly repo: Repository<CodingProject>,
+    @InjectRepository(CodingChallenge) private readonly challengeRepo: Repository<CodingChallenge>,
+    @InjectRepository(CodingReview) private readonly reviewRepo: Repository<CodingReview>,
+    @InjectRepository(CodingBadge) private readonly badgeRepo: Repository<CodingBadge>,
+  ) {}
 
   /** 教师发布到本班的少儿编程作品（只读画廊） */
   @Get()
@@ -58,6 +235,34 @@ class ParentCodingController {
       order: { updatedAt: 'DESC' },
     })
     return rows.map((r) => this.projectView(r))
+  }
+
+  /** 本班教师发布的任务卡（学生练习目标） */
+  @Get('challenges')
+  async listChallenges(@CurrentParent() p: any) {
+    const classId = p?.classId
+    if (!classId) return []
+    const rows = await this.challengeRepo.find({
+      where: { classId } as any,
+      order: { updatedAt: 'DESC' },
+    })
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      goal: r.goal,
+      starterBlocks: r.starterBlocks,
+      teacherName: r.teacherName,
+      updatedAt: r.updatedAt,
+    }))
+  }
+
+  /** 单个任务卡详情 */
+  @Get('challenges/:id')
+  async getChallenge(@Param('id') id: string, @CurrentParent() p: any) {
+    const classId = p?.classId
+    const r = await this.challengeRepo.findOne({ where: { id, classId } as any })
+    if (!r) throw new NotFoundException('任务卡不存在或未开放')
+    return { id: r.id, title: r.title, goal: r.goal, starterBlocks: r.starterBlocks, teacherName: r.teacherName }
   }
 
   /** 学生自主练习作品列表（仅本人可见，按 studentId 隔离） */
@@ -86,6 +291,9 @@ class ParentCodingController {
       classId: null,
       publishedToParent: false,
       teacherName: null,
+      challengeId: dto.challengeId ?? null,
+      submitted: dto.submitted ?? false,
+      submittedAt: dto.submitted ? new Date() : null,
     } as DeepPartial<CodingProject>)
     const saved = await this.repo.save(e)
     return { id: saved.id }
@@ -100,8 +308,25 @@ class ParentCodingController {
     if (dto.title !== undefined) e.title = dto.title
     if (dto.description !== undefined) e.description = dto.description
     if (dto.blocks !== undefined) e.blocks = dto.blocks
+    if (dto.challengeId !== undefined) e.challengeId = dto.challengeId
+    if (dto.submitted !== undefined) {
+      e.submitted = dto.submitted
+      e.submittedAt = dto.submitted ? new Date() : e.submittedAt
+    }
     await this.repo.save(e)
     return { id: e.id }
+  }
+
+  /** 提交草稿作为作业 */
+  @Post('mine/:id/submit')
+  async submitMine(@Param('id') id: string, @CurrentParent() p: any) {
+    const studentId = p?.studentId
+    const e = await this.repo.findOne({ where: { id } as any })
+    if (!e || e.studentId !== studentId) throw new NotFoundException('练习作品不存在')
+    e.submitted = true
+    e.submittedAt = new Date()
+    await this.repo.save(e)
+    return { id: e.id, submitted: true }
   }
 
   /** 删除本人练习作品 */
@@ -123,6 +348,103 @@ class ParentCodingController {
     return this.projectView(r)
   }
 
+  /** 回看某练习作品的教师点评 */
+  @Get('mine/:id/review')
+  async getReview(@Param('id') id: string, @CurrentParent() p: any) {
+    const studentId = p?.studentId
+    const proj = await this.repo.findOne({ where: { id } as any })
+    if (!proj || proj.studentId !== studentId) throw new NotFoundException('练习作品不存在')
+    const review = await this.reviewRepo.findOne({ where: { projectId: id } as any })
+    if (!review) return null
+    return { id: review.id, comment: review.comment, rating: review.rating, createdAt: review.createdAt }
+  }
+
+  /** 班级作品墙：本班被教师精选的学生作品（只读，同伴学习） */
+  @Get('gallery')
+  async classGallery(@CurrentParent() p: any) {
+    const classId = p?.classId
+    if (!classId) return []
+    const chs = await this.challengeRepo.find({ where: { classId } as any })
+    const chIds = chs.map((c) => c.id)
+    if (!chIds.length) return []
+    const rows = await this.repo.find({ where: { challengeId: chIds as any, showInGallery: true } as any, order: { updatedAt: 'DESC' } })
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      studentId: r.studentId,
+      challengeId: r.challengeId,
+      blocks: r.blocks,
+      updatedAt: r.updatedAt,
+    }))
+  }
+
+  /** 家长学习周报：汇总本周（近 7 天）学生的学习概况 */
+  @Get('weekly-report')
+  async weeklyReport(@CurrentParent() p: any) {
+    const studentId = p?.studentId
+    const classId = p?.classId
+    if (!studentId) return null
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000)
+    const myProjects = await this.repo.find({ where: { studentId } as any })
+    const recent = myProjects.filter((x) => (x.updatedAt?.getTime?.() ?? 0) >= since.getTime())
+    const submitted = myProjects.filter((x) => x.submitted)
+    const reviews = await this.reviewRepo.find({ where: { studentId } as any })
+    const recentReviews = reviews.filter((x) => (x.createdAt?.getTime?.() ?? 0) >= since.getTime())
+    const totalBlocks = myProjects.reduce((s, x) => s + (Array.isArray(x.blocks) ? x.blocks.length : 0), 0)
+    const challenges = classId ? await this.challengeRepo.find({ where: { classId } as any }) : []
+    const avgRating = reviews.filter((r) => r.rating != null).length
+      ? Math.round(reviews.filter((r) => r.rating != null).reduce((s, r) => s + (r.rating || 0), 0) / reviews.filter((r) => r.rating != null).length * 10) / 10
+      : null
+    return {
+      studentId,
+      weekStart: since.toISOString(),
+      challengesAvailable: challenges.length,
+      practiceTotal: myProjects.length,
+      practiceRecent: recent.length,
+      submittedTotal: submitted.length,
+      reviewsTotal: reviews.length,
+      reviewsRecent: recentReviews.length,
+      avgRating,
+      totalBlocks,
+      lastActivity: myProjects.length ? myProjects.sort((a, b) => (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0))[0].updatedAt : null,
+    }
+  }
+
+  /** 成就徽章：按规则计算并落库，返回全部徽章（含是否已获得） */
+  @Get('badges')
+  async getBadges(@CurrentParent() p: any) {
+    const studentId = p?.studentId
+    if (!studentId) return []
+    const myProjects = await this.repo.find({ where: { studentId } as any })
+    const submitted = myProjects.filter((x) => x.submitted).length
+    const reviews = await this.reviewRepo.find({ where: { studentId } as any })
+    const fiveStar = reviews.some((r) => r.rating === 5)
+    const earned = new Set<string>()
+    if (myProjects.length >= 1) earned.add('first_practice')
+    if (submitted >= 1) earned.add('first_submit')
+    if (myProjects.length >= 5) earned.add('five_practices')
+    if (fiveStar) earned.add('star_5')
+    if (submitted >= 3) earned.add('challenge_master')
+    // 落库新获得的徽章（幂等 upsert）
+    for (const type of earned) {
+      const exist = await this.badgeRepo.findOne({ where: { studentId, type } as any })
+      if (!exist) {
+        const b = this.badgeRepo.create({ studentId, type, teacherId: null, earnedAt: new Date() } as DeepPartial<CodingBadge>)
+        await this.badgeRepo.save(b)
+      }
+    }
+    const all = await this.badgeRepo.find({ where: { studentId } as any })
+    const got = new Set(all.map((b) => b.type))
+    const RULES: { type: string; label: string; icon: string }[] = [
+      { type: 'first_practice', label: '初次练习', icon: '🌱' },
+      { type: 'first_submit', label: '提交作业', icon: '📤' },
+      { type: 'five_practices', label: '练习达人(5份)', icon: '🎓' },
+      { type: 'star_5', label: '五星好评', icon: '⭐' },
+      { type: 'challenge_master', label: '挑战高手(3次提交)', icon: '🏅' },
+    ]
+    return RULES.map((r) => ({ ...r, earned: got.has(r.type) }))
+  }
+
   /** 家长端仅暴露必要字段，避免泄露教师私有信息 */
   private projectView(r: CodingProject) {
     return {
@@ -131,14 +453,17 @@ class ParentCodingController {
       description: r.description,
       blocks: r.blocks,
       teacherName: r.teacherName,
+      challengeId: r.challengeId,
+      submitted: r.submitted,
+      submittedAt: r.submittedAt,
       updatedAt: r.updatedAt,
     }
   }
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CodingProject])],
+  imports: [TypeOrmModule.forFeature([CodingProject, CodingChallenge, CodingReview, CodingBadge])],
   providers: [CodingProjectService],
-  controllers: [CodingProjectController, ParentCodingController],
+  controllers: [CodingProjectController, CodingChallengeController, CodingReviewController, CodingGalleryController, ParentCodingController],
 })
 export class KidsCodingModule {}

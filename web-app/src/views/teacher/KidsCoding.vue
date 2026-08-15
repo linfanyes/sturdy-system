@@ -4,100 +4,50 @@ import { useAuthStore } from '@/stores/auth'
 import { toast } from '@/utils/feedback'
 import BlockNode from '@/components/BlockNode.vue'
 import {
+  useCodingEngine,
+  makeBlock,
+  findBlock,
+  removeBlock,
+  extractBlock,
+  paletteByCat,
+  BLOCK_DEFS,
+  PRESETS,
+  type Block,
+} from '@/composables/useCodingEngine'
+import {
   listCodingProjects,
   getCodingProject,
   createCodingProject,
   updateCodingProject,
   removeCodingProject,
+  listTeacherChallenges,
+  createChallenge,
+  updateChallenge,
+  removeChallenge,
+  listChallengeSubmissions,
+  createReview,
+  featureSubmission,
+  unfeatureSubmission,
   type CodingProject,
+  type CodingChallenge,
 } from '@/api/kidsCoding'
 import { listMyClasses, getClassParentFeatures, updateClassParentFeatures, type TeacherClass } from '@/api/teacher'
 
 const auth = useAuthStore()
+const stageCanvas = ref<HTMLCanvasElement | null>(null)
+const eng = useCodingEngine(stageCanvas)
+const { running, mode, speed, paused, currentUid, logs, vars, output, varSummary, resetStage, run, stop, pause, resume, stepNext, setMode, setSpeed } = eng
+const runProgram = () => run(blocks.value)
 
 /* 作品发布设置（作品级，区别于班级菜单级 openPublish） */
 const selectedClassId = ref<string | null>(null)
 const publishToParent = ref(false)
 const description = ref('')
 
-/* ============ 积木定义（控件面板） ============ */
-interface BlockDef {
-  cat: 'event' | 'motion' | 'looks' | 'control' | 'data'
-  label: string
-  color: string
-  param?: { key: string; type: 'number' | 'text'; default: any; suffix?: string }
-  container?: boolean
-  fixed?: boolean
-}
-const CAT_LABELS: Record<BlockDef['cat'], string> = {
-  event: '事件',
-  motion: '运动',
-  looks: '外观',
-  control: '控制',
-  data: '数据',
-}
-const CAT_ORDER: BlockDef['cat'][] = ['event', 'motion', 'looks', 'control', 'data']
-const BLOCK_DEFS: Record<string, BlockDef> = {
-  event_flag: { cat: 'event', label: '当 🟢 被点击', color: '#ef4444', fixed: true },
-  move_forward: { cat: 'motion', label: '上移', color: '#22c55e', param: { key: 'steps', type: 'number', default: 1, suffix: '步' } },
-  move_back: { cat: 'motion', label: '下移', color: '#22c55e', param: { key: 'steps', type: 'number', default: 1, suffix: '步' } },
-  move_left: { cat: 'motion', label: '左移', color: '#22c55e', param: { key: 'steps', type: 'number', default: 1, suffix: '步' } },
-  move_right: { cat: 'motion', label: '右移', color: '#22c55e', param: { key: 'steps', type: 'number', default: 1, suffix: '步' } },
-  turn_left: { cat: 'motion', label: '左转', color: '#22c55e', param: { key: 'deg', type: 'number', default: 90, suffix: '°' } },
-  turn_right: { cat: 'motion', label: '右转', color: '#22c55e', param: { key: 'deg', type: 'number', default: 90, suffix: '°' } },
-  say: { cat: 'looks', label: '说', color: '#eab308', param: { key: 'text', type: 'text', default: '你好！' } },
-  change_color: { cat: 'looks', label: '换颜色', color: '#eab308' },
-  repeat: { cat: 'control', label: '重复', color: '#a855f7', param: { key: 'count', type: 'number', default: 4, suffix: '次' }, container: true },
-  wait: { cat: 'control', label: '等待', color: '#a855f7', param: { key: 'sec', type: 'number', default: 0.3, suffix: '秒' } },
-  set_var: { cat: 'data', label: '设置变量 score =', color: '#3b82f6', param: { key: 'value', type: 'number', default: 0 } },
-  change_var: { cat: 'data', label: '变量 score +', color: '#3b82f6', param: { key: 'delta', type: 'number', default: 1 } },
-}
-interface Block {
-  uid: string
-  type: string
-  params: Record<string, any>
-  body?: Block[]
-}
-
-const paletteByCat = computed(() =>
-  CAT_ORDER.map((cat) => ({
-    cat,
-    label: CAT_LABELS[cat],
-    items: Object.entries(BLOCK_DEFS)
-      .filter(([, d]) => d.cat === cat)
-      .map(([type, d]) => ({ type, ...d })),
-  })),
-)
-
 /* ============ 编辑器状态 ============ */
 const blocks = ref<Block[]>([])
 const title = ref('未命名作品')
 const currentProjectId = ref<string | null>(null)
-const running = ref(false)
-const stopFlag = ref(false)
-const logs = ref<string[]>([])
-const vars = reactive<Record<string, number>>({ score: 0 })
-const speech = ref('')
-
-/* 舞台（小乌龟） */
-const GRID = 16
-const turtle = reactive({ x: 8, y: 13, dir: 0, color: '#22c55e' })
-const trail = ref<{ x: number; y: number }[]>([])
-const stageCanvas = ref<HTMLCanvasElement | null>(null)
-const COLORS = ['#22c55e', '#ef4444', '#3b82f6', '#eab308', '#a855f7', '#f97316']
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-const num = (v: any) => Number(v) || 0
-const clampPos = (v: number) => Math.max(0, Math.min(GRID - 1, v))
-
-function makeBlock(type: string): Block {
-  const d = BLOCK_DEFS[type]
-  const params: Record<string, any> = {}
-  if (d.param) params[d.param.key] = d.param.default
-  const b: Block = { uid: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type, params }
-  if (d.container) b.body = []
-  return b
-}
 
 /* ============ 拖拽：从控件面板新建 / 移动已有积木 ============ */
 function onPaletteDragStart(e: DragEvent, type: string) {
@@ -108,50 +58,13 @@ function onBlockDragStart(e: DragEvent, uid: string) {
   e.dataTransfer?.setData('application/x-move-block', uid)
   if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
 }
-function findBlock(list: Block[], uid: string): Block | null {
-  for (const b of list) {
-    if (b.uid === uid) return b
-    if (b.body) {
-      const f = findBlock(b.body, uid)
-      if (f) return f
-    }
-  }
-  return null
-}
-function removeBlock(list: Block[], uid: string): boolean {
-  const i = list.findIndex((b) => b.uid === uid)
-  if (i >= 0) {
-    list.splice(i, 1)
-    return true
-  }
-  for (const b of list) {
-    if (b.body && removeBlock(b.body, uid)) return true
-  }
-  return false
-}
-function extractBlock(uid: string): Block | null {
-  let found: Block | null = null
-  const walk = (list: Block[]) => {
-    const i = list.findIndex((b) => b.uid === uid)
-    if (i >= 0) {
-      found = list[i]
-      list.splice(i, 1)
-      return true
-    }
-    for (const b of list) if (b.body && walk(b.body)) return true
-    return false
-  }
-  walk(blocks.value)
-  return found
-}
-// 重新实现 onDrop 的移动分支，使用 extractBlock（更可靠）
 function handleRootDrop(e: DragEvent) {
   e.preventDefault()
   const newType = e.dataTransfer?.getData('application/x-new-block') || ''
   const moveUid = e.dataTransfer?.getData('application/x-move-block') || ''
   if (newType) blocks.value.push(makeBlock(newType))
   else if (moveUid) {
-    const m = extractBlock(moveUid)
+    const m = extractBlock(moveUid, blocks)
     if (m) blocks.value.push(m)
   }
 }
@@ -164,8 +77,21 @@ function handleBodyDrop(e: DragEvent, containerUid: string) {
   if (newType) container.body!.push(makeBlock(newType))
   else if (moveUid) {
     if (moveUid === containerUid) return
-    const m = extractBlock(moveUid)
+    const m = extractBlock(moveUid, blocks)
     if (m) container.body!.push(m)
+  }
+}
+function handleElseDrop(e: DragEvent, containerUid: string) {
+  e.preventDefault()
+  const container = findBlock(blocks.value, containerUid)
+  if (!container?.elseBody) return
+  const newType = e.dataTransfer?.getData('application/x-new-block') || ''
+  const moveUid = e.dataTransfer?.getData('application/x-move-block') || ''
+  if (newType) container.elseBody!.push(makeBlock(newType))
+  else if (moveUid) {
+    if (moveUid === containerUid) return
+    const m = extractBlock(moveUid, blocks)
+    if (m) container.elseBody!.push(m)
   }
 }
 function deleteBlock(uid: string) {
@@ -176,160 +102,6 @@ function clearAll() {
   logs.value = []
   resetStage()
   toast('已清空画布')
-}
-
-/* ============ 运行引擎 ============ */
-function resetStage() {
-  turtle.x = 8
-  turtle.y = 13
-  turtle.dir = 0
-  turtle.color = COLORS[0]
-  trail.value = [{ x: turtle.x, y: turtle.y }]
-  speech.value = ''
-  vars.score = 0
-  drawStage()
-}
-function drawStage() {
-  const cv = stageCanvas.value
-  if (!cv) return
-  const ctx = cv.getContext('2d')
-  if (!ctx) return
-  const W = cv.width
-  const H = cv.height
-  const cell = W / GRID
-  ctx.clearRect(0, 0, W, H)
-  ctx.fillStyle = '#fffdf7'
-  ctx.fillRect(0, 0, W, H)
-  ctx.strokeStyle = '#f0e6d2'
-  ctx.lineWidth = 1
-  for (let i = 0; i <= GRID; i++) {
-    ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, H); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(W, i * cell); ctx.stroke()
-  }
-  if (trail.value.length > 1) {
-    ctx.strokeStyle = 'rgba(34,197,94,0.45)'
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    trail.value.forEach((p, i) => {
-      const x = (p.x + 0.5) * cell
-      const y = (p.y + 0.5) * cell
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.stroke()
-  }
-  const cx = (turtle.x + 0.5) * cell
-  const cy = (turtle.y + 0.5) * cell
-  const r = cell * 0.38
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.rotate((turtle.dir * Math.PI) / 180)
-  ctx.fillStyle = turtle.color
-  ctx.beginPath()
-  ctx.moveTo(0, -r)
-  ctx.lineTo(r * 0.8, r * 0.7)
-  ctx.lineTo(-r * 0.8, r * 0.7)
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
-  if (speech.value) {
-    ctx.font = '12px sans-serif'
-    const tw = ctx.measureText(speech.value).width + 12
-    const bx = Math.min(W - tw - 2, Math.max(2, cx - tw / 2))
-    const by = Math.max(2, cy - r - 26)
-    ctx.fillStyle = '#ffffff'
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1.5
-    roundRect(ctx, bx, by, tw, 20, 6)
-    ctx.fill()
-    ctx.stroke()
-    ctx.fillStyle = '#334155'
-    ctx.fillText(speech.value, bx + 6, by + 14)
-  }
-}
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.arcTo(x + w, y, x + w, y + h, r)
-  ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
-  ctx.arcTo(x, y, x + w, y, r)
-  ctx.closePath()
-}
-
-async function run() {
-  if (running.value) return
-  stepCount = 0
-  resetStage()
-  running.value = true
-  stopFlag.value = false
-  logs.value = []
-  log('▶ 开始运行')
-  try {
-    await execSequence(blocks.value, 0)
-    log('✅ 运行结束')
-  } catch {
-    log('⏹ 已停止')
-  } finally {
-    running.value = false
-    drawStage()
-  }
-}
-function stop() {
-  stopFlag.value = true
-}
-const MAX_STEPS = 5000
-let stepCount = 0
-async function execSequence(seq: Block[], depth: number) {
-  for (const b of seq) {
-    if (stopFlag.value) throw new Error('stopped')
-    await execBlock(b, depth)
-  }
-}
-async function execBlock(b: Block, depth: number) {
-  if (++stepCount > MAX_STEPS) throw new Error('stopped')
-  const d = BLOCK_DEFS[b.type]
-  const p = b.params
-  switch (b.type) {
-    case 'move_forward':
-      turtle.y = clampPos(turtle.y - num(p.steps)); pushTrail(); break
-    case 'move_back':
-      turtle.y = clampPos(turtle.y + num(p.steps)); pushTrail(); break
-    case 'move_left':
-      turtle.x = clampPos(turtle.x - num(p.steps)); pushTrail(); break
-    case 'move_right':
-      turtle.x = clampPos(turtle.x + num(p.steps)); pushTrail(); break
-    case 'turn_left':
-      turtle.dir = (turtle.dir - num(p.deg) + 360) % 360; break
-    case 'turn_right':
-      turtle.dir = (turtle.dir + num(p.deg)) % 360; break
-    case 'say':
-      speech.value = String(p.text ?? ''); log('💬 ' + speech.value); break
-    case 'change_color':
-      turtle.color = COLORS[(COLORS.indexOf(turtle.color) + 1) % COLORS.length]; break
-    case 'repeat':
-      for (let i = 0; i < num(p.count); i++) {
-        if (stopFlag.value) throw new Error('stopped')
-        await execSequence(b.body || [], depth + 1)
-      }
-      return
-    case 'wait':
-      await sleep(num(p.sec) * 1000); break
-    case 'set_var':
-      vars.score = num(p.value); log('📊 score = ' + vars.score); break
-    case 'change_var':
-      vars.score += num(p.delta); log('📊 score = ' + vars.score); break
-  }
-  drawStage()
-  if (d.cat === 'motion' || d.cat === 'looks' || d.cat === 'control') {
-    await sleep(depth === 0 ? 350 : 120)
-  }
-}
-function pushTrail() {
-  trail.value = [...trail.value, { x: turtle.x, y: turtle.y }]
-}
-function log(msg: string) {
-  logs.value = [...logs.value, msg]
 }
 
 /* ============ 作品：保存 / 我的作品 / 本地兜底 ============ */
@@ -432,9 +204,18 @@ function newProject() {
   selectedClassId.value = null
   publishToParent.value = false
   description.value = ''
-  resetStage()
   logs.value = []
+  resetStage()
   toast('新建作品')
+}
+
+const presetName = ref('')
+function applyPreset() {
+  const pre = PRESETS.find((p) => p.name === presetName.value)
+  if (!pre) return
+  blocks.value = pre.blocks()
+  resetStage()
+  toast('已载入示例：' + pre.name)
 }
 
 /* ============ 开放给家长 ============ */
@@ -485,6 +266,122 @@ async function loadClasses() {
     /* 忽略：以开放给家长弹窗为准 */
   }
 }
+
+/* ============ 任务卡（挑战）与批改 ============ */
+const showChallenges = ref(false)
+const challenges = ref<CodingChallenge[]>([])
+const challengeTitle = ref('')
+const challengeGoal = ref('')
+const challengeClassId = ref<string | null>(null)
+const challengeUseCanvas = ref(false) // 用当前画布作为起始模板
+const editingChallengeId = ref<string | null>(null)
+
+const submissions = ref<any[]>([])
+const activeReview = reactive<Record<string, { comment: string; rating: number | null; saving: boolean }>>({})
+
+async function loadChallenges() {
+  try {
+    challenges.value = await listTeacherChallenges()
+  } catch {
+    challenges.value = []
+  }
+}
+function newChallenge() {
+  editingChallengeId.value = null
+  challengeTitle.value = ''
+  challengeGoal.value = ''
+  challengeClassId.value = null
+  challengeUseCanvas.value = false
+}
+async function saveChallenge() {
+  if (!challengeTitle.value.trim()) {
+    toast.error('请填写挑战标题')
+    return
+  }
+  const dto: any = {
+    title: challengeTitle.value.trim(),
+    goal: challengeGoal.value || null,
+    classId: challengeClassId.value,
+    teacherName: auth.user?.name || '老师',
+  }
+  if (challengeUseCanvas.value) dto.starterBlocks = blocks.value
+  try {
+    if (editingChallengeId.value) {
+      await updateChallenge(editingChallengeId.value, dto)
+      toast.success('已更新挑战')
+    } else {
+      await createChallenge(dto)
+      toast.success('已发布挑战')
+    }
+    await loadChallenges()
+    newChallenge()
+  } catch {
+    toast.error('保存挑战失败')
+  }
+}
+function editChallenge(c: CodingChallenge) {
+  editingChallengeId.value = c.id
+  challengeTitle.value = c.title
+  challengeGoal.value = c.goal || ''
+  challengeClassId.value = c.classId ?? null
+  challengeUseCanvas.value = false
+}
+async function deleteChallenge(id: string) {
+  if (!window.confirm('确定删除该挑战？学生已提交的作业将保留但不再关联。')) return
+  try {
+    await removeChallenge(id)
+    await loadChallenges()
+    toast.success('已删除')
+  } catch {
+    toast.error('删除失败')
+  }
+}
+async function viewSubmissions(id: string) {
+  try {
+    const rows = await listChallengeSubmissions(id)
+    submissions.value = rows
+    for (const r of rows) {
+      if (!activeReview[r.id]) activeReview[r.id] = { comment: '', rating: null, saving: false }
+    }
+    toast('已加载 ' + rows.length + ' 份提交')
+  } catch {
+    toast.error('加载提交失败')
+  }
+}
+async function saveReview(projectId: string) {
+  const rv = activeReview[projectId]
+  if (!rv || rv.saving) return
+  rv.saving = true
+  try {
+    await createReview({ projectId, comment: rv.comment || null, rating: rv.rating })
+    toast.success('已保存点评')
+  } catch {
+    toast.error('保存点评失败')
+  } finally {
+    rv.saving = false
+  }
+}
+async function toggleGallery(s: any) {
+  try {
+    if (s.showInGallery) {
+      await unfeatureSubmission(s.id)
+      s.showInGallery = false
+      toast('已移出作品墙')
+    } else {
+      await featureSubmission(s.id)
+      s.showInGallery = true
+      toast.success('已选入班级作品墙 🏆')
+    }
+  } catch {
+    toast.error('操作失败')
+  }
+}
+
+function openChallengePanel() {
+  showChallenges.value = true
+  loadChallenges()
+}
+
 onMounted(() => {
   resetStage()
   loadMyProjects()
@@ -504,6 +401,14 @@ onMounted(() => {
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="newProject">＋ 新建</button>
       <button class="px-3 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 disabled:opacity-60" :disabled="saving" @click="saveProject">💾 保存</button>
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="showProjects = true">📂 我的作品</button>
+      <select
+        v-model="presetName"
+        class="px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 bg-white focus:outline-none"
+        @change="applyPreset()"
+      >
+        <option value="">📐 示例模板</option>
+        <option v-for="p in PRESETS" :key="p.name" :value="p.name">{{ p.name }}</option>
+      </select>
       <!-- 作品级发布设置 -->
       <div class="flex items-center gap-2 px-2 border-l border-cream-200">
         <select
@@ -528,9 +433,31 @@ onMounted(() => {
         />
       </div>
       <div class="flex-1" />
-      <button class="px-3 py-2 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 disabled:opacity-60" :disabled="running" @click="run">▶ 运行</button>
+      <!-- 运行 / 调试 -->
+      <button class="px-3 py-2 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 disabled:opacity-60" :disabled="running" @click="runProgram">▶ 运行</button>
       <button class="px-3 py-2 rounded-xl bg-rose-500 text-white text-sm font-medium hover:bg-rose-600" :disabled="!running" @click="stop">⏹ 停止</button>
+      <button
+        class="px-3 py-2 rounded-xl border text-sm font-medium transition-colors"
+        :class="mode === 'step' ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-cream-200 text-cocoa-600 hover:bg-cream-50'"
+        :disabled="running"
+        @click="setMode(mode === 'step' ? 'auto' : 'step')"
+      >👣 单步{{ mode === 'step' ? '中' : '' }}</button>
+      <select
+        class="px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 bg-white focus:outline-none"
+        :disabled="running"
+        :value="speed"
+        @change="setSpeed(Number(($event.target as HTMLSelectElement).value))"
+      >
+        <option :value="800">🐢 慢速</option>
+        <option :value="350">⏱ 中速</option>
+        <option :value="80">⚡ 快速</option>
+      </select>
+      <template v-if="running">
+        <button v-if="mode === 'step'" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600" @click="stepNext">⏭ 下一步</button>
+        <button v-else class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="paused ? resume() : pause()">{{ paused ? '▶ 继续' : '⏸ 暂停' }}</button>
+      </template>
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="clearAll">🧹 清空</button>
+      <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="openChallengePanel">🎯 任务卡</button>
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="openPublish">👨‍👩‍👧 开放给家长</button>
     </div>
 
@@ -570,10 +497,12 @@ onMounted(() => {
             :block="b"
             :defs="BLOCK_DEFS"
             :depth="0"
+            :active-uid="currentUid"
             @delete="deleteBlock"
             @dragstart-block="onBlockDragStart"
             @drop-root="handleRootDrop"
             @drop-body="handleBodyDrop"
+            @drop-else="handleElseDrop"
           />
         </div>
       </div>
@@ -582,12 +511,16 @@ onMounted(() => {
       <div class="bg-surface rounded-2xl shadow-softer p-3 space-y-3">
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-cocoa-900">舞台</span>
-          <span class="text-xs text-cocoa-400">score = {{ vars.score }}</span>
+          <span class="text-xs text-cocoa-400 font-mono">{{ varSummary }}</span>
         </div>
         <canvas ref="stageCanvas" width="320" height="320" class="w-full rounded-xl border border-cream-200 bg-white" />
         <div class="text-xs text-cocoa-400 h-28 overflow-y-auto bg-cream-50 rounded-xl p-2 font-mono">
           <div v-for="(l, i) in logs" :key="i">{{ l }}</div>
           <div v-if="!logs.length" class="text-cocoa-300">运行日志将显示在这里</div>
+        </div>
+        <div v-if="output.length" class="text-xs text-cocoa-900">
+          <div class="font-semibold text-cocoa-400 mb-1">🖨 输出</div>
+          <div class="bg-white rounded-xl p-2 font-mono border border-cream-200 max-h-24 overflow-y-auto">{{ output.join('\n') }}</div>
         </div>
       </div>
     </div>
@@ -640,6 +573,84 @@ onMounted(() => {
               <span class="w-5 h-5 rounded-full bg-surface shadow" />
             </button>
           </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务卡与批改 -->
+    <div v-if="showChallenges" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showChallenges = false">
+      <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-surface shadow-xl overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-cream-200">
+          <h3 class="text-lg font-bold text-cocoa-900">任务卡与批改</h3>
+          <button class="text-cocoa-400 hover:text-cocoa-700" @click="showChallenges = false">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- 左：任务卡列表 + 新建 -->
+          <div class="space-y-3">
+            <div class="bg-cream-50 rounded-xl p-3 space-y-2">
+              <div class="text-sm font-semibold text-cocoa-900">{{ editingChallengeId ? '编辑挑战' : '发布新挑战' }}</div>
+              <input v-model="challengeTitle" class="w-full px-3 py-2 rounded-lg border border-cream-200 text-sm" placeholder="挑战标题，如：画一个正方形" />
+              <textarea v-model="challengeGoal" rows="2" class="w-full px-3 py-2 rounded-lg border border-cream-200 text-sm" placeholder="任务说明（学生看到的学习目标）" />
+              <select v-model="challengeClassId" class="w-full px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 bg-white">
+                <option :value="null">发布到全部班级（按班级查收）</option>
+                <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+              <label class="flex items-center gap-2 text-xs text-cocoa-500">
+                <input type="checkbox" v-model="challengeUseCanvas" /> 用当前画布作为起始模板
+              </label>
+              <div class="flex gap-2">
+                <button class="px-3 py-1.5 rounded-lg bg-butter-500 text-white text-xs font-medium hover:bg-butter-600" @click="saveChallenge">{{ editingChallengeId ? '更新' : '发布' }}</button>
+                <button class="px-3 py-1.5 rounded-lg border border-cream-200 text-xs text-cocoa-600 hover:bg-cream-50" @click="newChallenge">清空</button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-xs font-semibold text-cocoa-400">我的挑战（{{ challenges.length }}）</div>
+              <div v-if="!challenges.length" class="text-center text-cocoa-300 py-6 text-sm">还没有挑战</div>
+              <div v-for="c in challenges" :key="c.id" class="p-3 rounded-xl border border-cream-200 hover:bg-cream-50">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-cocoa-900 truncate">{{ c.title }}</div>
+                    <div class="text-xs text-cocoa-400 line-clamp-2">{{ c.goal || '（无说明）' }}</div>
+                  </div>
+                  <div class="flex flex-col gap-1 shrink-0">
+                    <button class="px-2 py-1 rounded bg-indigo-50 text-indigo-600 text-xs" @click="viewSubmissions(c.id)">批改</button>
+                    <button class="px-2 py-1 rounded border border-cream-200 text-cocoa-500 text-xs" @click="editChallenge(c)">编辑</button>
+                    <button class="px-2 py-1 rounded border border-rose-200 text-rose-500 text-xs" @click="deleteChallenge(c.id)">删除</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右：提交与点评 -->
+          <div class="space-y-2">
+            <div class="text-xs font-semibold text-cocoa-400">学生提交（点左侧「批改」加载）</div>
+            <div v-if="!submissions.length" class="text-center text-cocoa-300 py-10 text-sm">暂无提交</div>
+            <div v-for="s in submissions" :key="s.id" class="p-3 rounded-xl border border-cream-200 space-y-2">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-medium text-cocoa-900 truncate">{{ s.title }}</span>
+                <span class="text-xs text-cocoa-400">{{ s.submitted ? '✅ 已提交' : '📝 草稿' }}</span>
+              </div>
+              <div class="text-xs text-cocoa-400">学生 {{ s.studentId }} · {{ (s.blocks?.length || 0) }} 个积木</div>
+              <button
+                class="mt-1 px-2 py-1 rounded text-xs font-medium"
+                :class="s.showInGallery ? 'bg-amber-100 text-amber-700' : 'border border-amber-200 text-amber-600'"
+                @click="toggleGallery(s)"
+              >{{ s.showInGallery ? '🏆 已在作品墙' : '选入作品墙' }}</button>
+              <textarea v-model="activeReview[s.id].comment" rows="2" class="w-full px-2 py-1.5 rounded-lg border border-cream-200 text-sm" placeholder="老师评语…" />
+              <div class="flex items-center gap-2">
+                <select v-model="activeReview[s.id].rating" class="px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 bg-white">
+                  <option :value="null">评分（不选）</option>
+                  <option :value="5">⭐⭐⭐⭐⭐</option>
+                  <option :value="4">⭐⭐⭐⭐</option>
+                  <option :value="3">⭐⭐⭐</option>
+                  <option :value="2">⭐⭐</option>
+                  <option :value="1">⭐</option>
+                </select>
+                <button class="px-3 py-1.5 rounded-lg bg-butter-500 text-white text-xs font-medium hover:bg-butter-600 disabled:opacity-60" :disabled="activeReview[s.id].saving" @click="saveReview(s.id)">保存点评</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
