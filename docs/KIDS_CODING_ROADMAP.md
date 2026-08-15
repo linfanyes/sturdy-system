@@ -24,6 +24,7 @@
 | **M4 同伴与家校** | ✅ 完成（nest build 通过） | 班级作品墙(教师精选+家长只读画廊+新控制器)、家长学习周报(近7天聚合统计) |
 | **M5 打磨与前瞻** | ✅ 完成（vue-tsc/vite/nest build 通过 + 徽章迁移实机幂等） | 画笔颜色/粗细(每龟独立)、音效(Web Audio 演奏音符)、AI 启蒙(纯几何形状识别`ai_recognize`)、示例模板(正方形/五角星/彩色螺旋)、成就徽章(`CodingBadge`+迁移+规则计算落库+家长端展示) |
 | **端到端验证 + 周报推送** | ✅ 完成（jest 8/8 + nest build + vite build + vue-tsc 通过） | 端到端集成测试（A–F：数据隔离/提交闭环/点评 upsert/作品墙/周报统计/徽章幂等；G/H：周报手动&超管批量推送站内信）全绿；周报生成抽为模块级函数复用；家长端「推送周报到消息中心」按钮；**超管端「少儿编程·周报推送」管理页 + 侧边栏菜单**（调用 `/admin/kids-coding/weekly-report/push-all`，展示扫描/已推送/跳过统计） |
+| **小程序全量对齐（Web↔Mini）** | ✅ 完成（uni build:mp-weixin 通过） | 小程序补齐少儿编程三端页面（教师端 `pages/teaching/kidsCoding` 任务卡/待点评/作品墙、家长端 `pages/parent/kidsCoding` 我的作品/周报/徽章/推送、班级详情与家长中心入口跳转）；排课页 `community/schedule` 冲突检测（同教师跨班撞课 + 同班相邻同科红框）+ 智能编排（课时权重均衡/体育避首尾）；座位页 `teaching/seatMap` 座位号显示开关 + 长按交换；`pages.json` 路由注册、`api/kids-coding.js` 镜像 Web 全部端点、`parentApi` 补 `patch` |
 
 > 验证约定：每完成一个里程碑，`web-app`（vue-tsc + vite build）与 `server`（nest build）均通过；新增迁移在 MySQL 8.4 容器实机跑两次验证幂等。全部里程碑完成后统一提交推送。
 
