@@ -582,6 +582,5 @@ export class KidsCodingAdminController {
   ],
   providers: [CodingProjectService, KidsCodingBatchService],
   controllers: [CodingProjectController, CodingChallengeController, CodingReviewController, CodingGalleryController, ParentCodingController, KidsCodingAdminController],
-  exports: [KidsCodingAdminController],
 })
 export class KidsCodingModule {}
