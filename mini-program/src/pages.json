@@ -693,6 +693,12 @@
           "style": {
             "navigationBarTitleText": "少儿编程"
           }
+        },
+        {
+          "path": "mood",
+          "style": {
+            "navigationBarTitleText": "心情与树洞"
+          }
         }
       ]
     },

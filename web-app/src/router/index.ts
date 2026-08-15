@@ -205,6 +205,8 @@ export const routes: RouteRecordRaw[] = [
       { path: 'games', name: 'games', component: () => import('@/views/games/GamesIndex.vue'), meta: { title: '小游戏合集', feature: 'games' } },
       // 少儿编程（积木式拖拽可视化编程，默认关闭，由学校功能包开启；可开放给家长）
       { path: 'kids-coding', name: 'teacher-kids-coding', component: () => import('@/views/teacher/KidsCoding.vue'), meta: { title: '少儿编程', feature: 'kids-coding' } },
+      // 心情与情绪关怀（每日打卡 + 班级情绪看板 + 树洞跟进）
+      { path: 'mood', name: 'teacher-mood', component: () => import('@/views/teacher/MoodDashboard.vue'), meta: { title: '心情与情绪关怀' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },
       { path: 'games/game2048', name: 'game2048', component: () => import('@/views/games/Game2048.vue'), meta: { title: '2048', feature: 'games' } },
       { path: 'games/minesweeper', name: 'gameMinesweeper', component: () => import('@/views/games/GameMinesweeper.vue'), meta: { title: '扫雷', feature: 'games' } },

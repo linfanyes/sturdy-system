@@ -7,7 +7,7 @@ import {
   BookMarked, Languages, Calculator,
   Gamepad2, ScrollText, Trash2,
   ToggleLeft, Home, Library, BarChart3, ClipboardCheck,
-  Code2,
+  Code2, Heart,
 } from 'lucide-vue-next'
 import type { Role } from '@/types/user'
 
@@ -238,6 +238,17 @@ export const teacherMenu: MenuCategory[] = [
         label: '', asGrid: true,
         items: [
           { name: 'teacher-kids-coding', label: '少儿编程', to: '/teacher/kids-coding', feature: 'kids-coding', icon: Code2, color: 'green' },
+        ],
+      },
+    ],
+  },
+  {
+    label: '心情关怀', color: 'rose', icon: Heart,
+    groups: [
+      {
+        label: '', asGrid: true,
+        items: [
+          { name: 'teacher-mood', label: '心情与情绪关怀', to: '/teacher/mood', icon: Heart, color: 'rose' },
         ],
       },
     ],
