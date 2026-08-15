@@ -65,6 +65,8 @@ import { MoodModule } from './mood/mood.module'
 import { NotifyPrefModule } from './notify-pref/notify-pref.module'
 import { DataComplianceModule } from './data-compliance/data-compliance.module'
 import { InsightModule } from './insight/insight.module'
+import { FiveEduModule } from './five-edu/five-edu.module'
+import { LearningLoopModule } from './learning-loop/learning-loop.module'
 
 @Module({
   imports: [
@@ -193,6 +195,8 @@ import { InsightModule } from './insight/insight.module'
     NotifyPrefModule,
     DataComplianceModule,
     InsightModule,
+    FiveEduModule,
+    LearningLoopModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）

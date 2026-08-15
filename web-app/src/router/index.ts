@@ -209,6 +209,10 @@ export const routes: RouteRecordRaw[] = [
       { path: 'mood', name: 'teacher-mood', component: () => import('@/views/teacher/MoodDashboard.vue'), meta: { title: '心情与情绪关怀' } },
       // AI 班级助教：每周聚合 mood+成绩生成班级洞察
       { path: 'insight', name: 'teacher-insight', component: () => import('@/views/teacher/ClassInsight.vue'), meta: { title: '班级洞察' } },
+      // 五育综合素质档案：聚合德/智/体/美/劳多源数据 + 过程性评价
+      { path: 'five-edu', name: 'teacher-five-edu', component: () => import('@/views/teacher/FiveEduProfile.vue'), meta: { title: '五育综合素质档案' } },
+      // 个性化学习闭环：学情画像 + AI 同类题练习 + 学习计划
+      { path: 'learning-loop', name: 'teacher-learning-loop', component: () => import('@/views/teacher/LearningLoop.vue'), meta: { title: '个性化学习闭环' } },
       { path: 'assistant', name: 'teacher-assistant', component: () => import('@/views/teacher/TeacherAssistant.vue'), meta: { title: '教师事务助手' } },
       { path: 'games/game24', name: 'game24point', component: () => import('@/views/games/Game24Point.vue'), meta: { title: '24点', feature: 'games' } },
       { path: 'games/game2048', name: 'game2048', component: () => import('@/views/games/Game2048.vue'), meta: { title: '2048', feature: 'games' } },

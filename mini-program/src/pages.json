@@ -701,6 +701,18 @@
           }
         },
         {
+          "path": "fiveEduProfile",
+          "style": {
+            "navigationBarTitleText": "五育综合素质档案"
+          }
+        },
+        {
+          "path": "learningLoop",
+          "style": {
+            "navigationBarTitleText": "个性化学习闭环"
+          }
+        },
+        {
           "path": "compare",
           "style": {
             "navigationStyle": "custom"
