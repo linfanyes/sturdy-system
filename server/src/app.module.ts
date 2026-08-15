@@ -64,6 +64,7 @@ import { KidsCodingModule } from './kids-coding/kids-coding.module'
 import { MoodModule } from './mood/mood.module'
 import { NotifyPrefModule } from './notify-pref/notify-pref.module'
 import { DataComplianceModule } from './data-compliance/data-compliance.module'
+import { InsightModule } from './insight/insight.module'
 
 @Module({
   imports: [
@@ -191,6 +192,7 @@ import { DataComplianceModule } from './data-compliance/data-compliance.module'
     MoodModule,
     NotifyPrefModule,
     DataComplianceModule,
+    InsightModule,
   ],
   providers: [
     // 全局限流守卫（默认 60/min/IP，可在具体路由用 @Throttle 覆盖）
