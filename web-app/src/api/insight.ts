@@ -9,3 +9,8 @@ export function getMyInsights() {
 export function regenerateInsight(classId: string) {
   return request.post<any, any>(`/insight/regenerate/${classId}`)
 }
+
+/** 教师：基于本班数据一键生成班级文案（letter/speech/summary/blessing） */
+export function generateClassDoc(classId: string, type: 'letter' | 'speech' | 'summary' | 'blessing') {
+  return request.post<any, any>('/insight/generate-doc', { classId, type })
+}

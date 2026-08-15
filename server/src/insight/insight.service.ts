@@ -213,4 +213,39 @@ export class InsightService {
       return { crisis: false, reply: '我暂时连不上，稍后再来问我吧～' }
     }
   }
+
+  /** 教师事务自动化：基于本班真实数据一键生成班级文案（家长会发言稿/致家长信/学期总结/班级寄语） */
+  async generateClassDoc(teacherId: string, classId: string, type: 'letter' | 'speech' | 'summary' | 'blessing') {
+    const cls = await this.classRepo.findOne({ where: { id: classId } as any })
+    const className = cls?.name || classId
+    const studentCount = await this.stuRepo.count({ where: { classId } as any })
+    const { weekStart: ws, weekEnd: we } = this.weekRange()
+    const raw = await this.computeRaw(teacherId, classId, ws, we)
+
+    const prompts: Record<string, string> = {
+      letter:
+        '你是班主任的文书助手。请基于下面的班级周度数据，写一封 350 字左右的《致家长的一封信》：语气真诚、专业、温暖，感谢家长配合，客观介绍班级近况（情绪、学业进退步），对需关注的方面给建设性建议，避免点名具体学生。',
+      speech:
+        '你是班主任的文书助手。请基于下面的班级周度数据，写一篇 400 字左右的家长会发言稿开场：自信、有条理、有温度，先问候家长，再概述班级整体状态与亮点，引出后续交流。避免点名具体学生。',
+      summary:
+        '你是班主任的文书助手。请基于下面的班级周度数据，写一段 300 字左右的学期/阶段总结：先总评班级状态，再谈学业与情绪两方面，最后给出下阶段班级建设目标。避免点名具体学生。',
+      blessing:
+        '你是班主任的文书助手。请基于下面的班级周度数据，写一段 120 字左右的班级寄语，鼓励全班、温暖向上，可提及「一起进步」等意象。避免点名具体学生。',
+    }
+
+    let content = '生成失败，请稍后重试。'
+    try {
+      const text = await this.ai.chatSync('teacher', teacherId, {
+        messages: [
+          { role: 'system', content: prompts[type] || prompts.letter },
+          { role: 'user', content: JSON.stringify({ className, studentCount, ...raw }) },
+        ],
+        temperature: 0.7,
+      })
+      if (text && text.length > 10 && !text.includes('未连接')) content = text
+    } catch (e) {
+      this.logger.warn('班级文案生成失败：' + (e as Error).message)
+    }
+    return { type, className, studentCount, content }
+  }
 }

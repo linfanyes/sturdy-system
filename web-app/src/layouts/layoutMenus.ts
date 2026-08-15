@@ -250,6 +250,7 @@ export const teacherMenu: MenuCategory[] = [
         items: [
           { name: 'teacher-mood', label: '心情与情绪关怀', to: '/teacher/mood', icon: Heart, color: 'rose' },
           { name: 'teacher-insight', label: '班级洞察', to: '/teacher/insight', icon: Sparkles, color: 'blue' },
+          { name: 'teacher-assistant', label: '事务助手', to: '/teacher/assistant', icon: Sparkles, color: 'indigo' },
         ],
       },
     ],

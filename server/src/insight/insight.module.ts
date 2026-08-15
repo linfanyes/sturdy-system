@@ -34,6 +34,12 @@ export class TeacherInsightController {
     await this.svc.pushToTeacher(t.id, insight)
     return insight
   }
+
+  /** 基于本班真实数据一键生成班级文案（家长会发言稿/致家长信/学期总结/班级寄语） */
+  @Post('generate-doc')
+  generateDoc(@Body() body: any, @CurrentTeacher() t: any) {
+    return this.svc.generateClassDoc(t.id, body.classId, body.type || 'letter')
+  }
 }
 
 @Controller('parent/insight')
