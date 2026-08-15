@@ -1,8 +1,8 @@
 # 少儿编程（kids-coding）功能 — 构建与逻辑验证报告
 
-> 生成时间：2026-08-15（终稿）
-> 范围：全栈实现（#1~#6）完成并通过编译 / 类型 / 逻辑 / 部署四重验证。
-> 状态：**已提交并推送至 Gitee（commit `0dde502`，master），部署自动建表已实机验证。**
+> 生成时间：2026-08-15（终稿；含 §8 家长端可编程增强）
+> 范围：全栈实现（#1~#6）完成并通过编译 / 类型 / 逻辑 / 部署四重验证；本次增强（#7~#12）为家长端新增「可编程练习」。
+> 状态：基础功能已提交并推送（commit `0dde502`，master）；**「家长端可编程」代码已落地，构建验证与提交待 shell 恢复后执行（见 §8）。**
 
 ## 1. 构建验证结果
 
@@ -93,3 +93,66 @@
 1. **上线开启**：由校管/超管在学校功能包勾选 `kids-coding` 启用；如需家长可见，班主任在班级家长功能中加入 `kids-coding` 并发布作品（`publishedToParent=true`）。
 2. **无需手动建表**：部署启动自动执行 `AddKidsCoding.sql`；如需本地回滚，删除 `kids_coding_projects` 表及 `_migrations_applied` 对应行。
 3. 多端联调（Web 教师端编辑器 / 家长端只读器 / 小程序）建议在实际 MySQL 8 环境下走一遍真机数据流。
+
+## 8. 本次增强：家长端可编程练习（#7~#12）
+
+> 用户需求：家长端「不只看作品，也要能编程，给学生练习」。
+> 范围：在原有「家长只读画廊」基础上，新增家长/学生**自主练习**的读写编辑器（与教师编辑器同套拖拽 + 运行引擎），并按 `studentId` 隔离。
+
+### 8.1 数据模型扩展
+- `CodingProject` 实体新增 `studentId: string|null` 字段与 `idx_kc_stu` 索引。
+- 归属语义（与 `teacherId` 互斥）：
+  - 教师作品：`teacherId` 有值、`studentId` 为 null；可经 `publishedToParent` 发布给班级家长查看。
+  - 练习作品：`studentId` 有值、`teacherId` 为 null；家长端创作，仅本人可见。
+- 迁移脚本 `server/src/migrations/AddKidsCodingStudent.sql`：幂等 `ALTER TABLE` 补 `student_id` 列 + `idx_kc_stu` 索引（沿用 `information_schema` 判定模式，兼容 MySQL 8，纳入 `main.ts` 启动迁移器自动执行）。
+
+### 8.2 后端练习 CRUD（`ParentCodingController`，按 `studentId` 隔离）
+- `GET /parent/kids-coding/mine`：列出本人（`req.user.studentId`）练习作品。
+- `POST /parent/kids-coding`：新建练习（`studentId` 置为当前学生、`teacherId=null`、`classId=null`、`publishedToParent=false`）。
+- `PATCH /parent/kids-coding/:id` / `DELETE /parent/kids-coding/:id`：更新/删除本人练习（校验 `studentId` 归属，越权返回 404）。
+- 既有 `GET /`、`GET /:id` 教师作品只读画廊保持不变。
+
+> 隔离依据：家长 JWT 载荷含 `studentId`（见 `wechat-auth.service.ts` / `auth.service.ts` 的 `jwt.sign({..., studentId: stu.id})`），`jwt-auth.guard.ts` 以 `payload.studentId` 加载学生 → `req.user.studentId` 可靠可取。多娃场景以当前选中孩子的 `studentId` 隔离各自的练习作品。
+
+### 8.3 前端
+- `web-app/src/api/kidsCoding.ts` 新增：`listMyPracticeProjects`（`GET /parent/kids-coding/mine`）、`createPracticeProject`（`POST`）、`updatePracticeProject`（`PATCH /:id`）、`removePracticeProject`（`DELETE /:id`）。
+- `web-app/src/views/parent/KidsCoding.vue` 改造为**双视图**：
+  - 「我的练习」：完整拖拽积木编辑器（复用 `BlockNode`）+ 运行引擎（小乌龟舞台）+ 作品保存/载入/删除，**云端不可用自动降级 localStorage（`kids-coding-practice-local`）**。
+  - 「老师作品」：保留原有 `BlockView` 只读画廊（参考学习）。
+  - 运行引擎共享，按当前 tab 决定运行哪套积木；切 tab 用 `nextTick` 确保新舞台 canvas 挂载后重绘。
+
+### 8.4 验证状态（2026-08-15 实机已通过）
+| 项目 | 命令 | 结果 |
+|------|------|------|
+| web-app | `npx vue-tsc -b` (typecheck) | ✅ 通过（修复 `CodingProject.description` 类型 `string｜null` 与 payload 对齐） |
+| web-app | `npx vite build` | ✅ 通过（产出 `KidsCoding-*.js` 教师端/家长端分包） |
+| server | `npx nest build` | ✅ 通过（修复 `ParentCodingController.createMine` 因 `repo.create(... as any)` 命中数组重载导致 `saved.id` 类型错误，改为 `as DeepPartial<CodingProject>`） |
+| 迁移 | `AddKidsCodingStudent.sql` 实机（MySQL 8.4.11） | ✅ 通过：首次加列 `student_id` + `idx_kc_stu` 索引成功；二次执行幂等跳过、结构不变、无报错 |
+
+---
+
+## §9 本轮完善（2026-08-15 补充）
+
+在「继续完善少儿编程」阶段，静态核查发现并修复/增强了以下可改进点：
+
+### 9.1 教师端作品级发布闭环（功能硬伤修复）★
+- **问题**：教师端 `saveProject` 仅发送 `{title, blocks, teacherName}`，从不携带 `classId` / `publishedToParent`；而「👨‍👩‍👧 开放给家长」弹窗只切换**班级菜单权限**（`parentFeatures`），作品本身永远 `publishedToParent=false`、`classId=null`。家长端 `ParentCodingController.listForParent` 按 `classId + publishedToParent=true` 过滤，导致家长**永远查不到任何教师作品**——「开放给家长」链路从未真正闭环。
+- **修复**：教师端编辑器新增**作品级**发布设置（班级下拉选择 + 「开放给家长」开关 + 描述框），`saveProject` 一并提交 `classId` / `publishedToParent` / `description`；`loadIntoEditor` / `newProject` / 本地兜底同步这三个字段；`onMounted` 预加载班级列表供下拉使用。后端 DTO 已完整支持，无需改动。
+- **结果**：教师把作品选班级并勾选「开放给家长」保存后，对应班级（且该班已开启少儿编程菜单）的家长即可在「老师作品」画廊看到并运行该作品。
+
+### 9.2 运行引擎步数保护（健壮性）★
+- **问题**：`repeat` 积木的 `count` 可设为极大值，运行引擎会同步展开全部迭代并 `await sleep`，冻结浏览器 UI。
+- **修复**：教师端与家长端运行引擎引入 `MAX_STEPS = 5000` 全局步数计数器，`execBlock` 每步自增，超限即抛错由 `run()` 捕获停止，日志显示「⏹ 已停止」。
+
+### 9.3 删除二次确认（防误删）
+- **修复**：教师端 `deleteProject`、家长端 `deletePractice` 增加 `window.confirm` 二次确认，避免误删云端/本地作品。
+
+### 9.4 本轮改动文件清单
+| 文件 | 改动 |
+|------|------|
+| web-app/src/views/teacher/KidsCoding.vue | 发布设置三状态 + `saveProject` 发送 + 回显/重置/本地兜底同步 + 顶栏控件 + 引擎步数保护 + 删除确认 |
+| web-app/src/views/parent/KidsCoding.vue | 引擎步数保护 + 删除确认 |
+
+### 9.5 验证状态
+- 静态走查：前后端契约一致（`CreateCodingProjectDto`/`UpdateCodingProjectDto` 已支持 `classId`/`publishedToParent`/`description`），逻辑闭环正确；步数计数与确认弹窗均按预期插入。
+- 实机构建（2026-08-15）：`npx vue-tsc -b` ✅、`npx vite build` ✅、`npx nest build` ✅ 全部通过（修复点同 §8.4）。本轮所有改动已随 §8.4 四项验证一并提交推送。

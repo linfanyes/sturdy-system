@@ -15,6 +15,11 @@ import { listMyClasses, getClassParentFeatures, updateClassParentFeatures, type 
 
 const auth = useAuthStore()
 
+/* 作品发布设置（作品级，区别于班级菜单级 openPublish） */
+const selectedClassId = ref<string | null>(null)
+const publishToParent = ref(false)
+const description = ref('')
+
 /* ============ 积木定义（控件面板） ============ */
 interface BlockDef {
   cat: 'event' | 'motion' | 'looks' | 'control' | 'data'
@@ -254,6 +259,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 async function run() {
   if (running.value) return
+  stepCount = 0
   resetStage()
   running.value = true
   stopFlag.value = false
@@ -272,6 +278,8 @@ async function run() {
 function stop() {
   stopFlag.value = true
 }
+const MAX_STEPS = 5000
+let stepCount = 0
 async function execSequence(seq: Block[], depth: number) {
   for (const b of seq) {
     if (stopFlag.value) throw new Error('stopped')
@@ -279,6 +287,7 @@ async function execSequence(seq: Block[], depth: number) {
   }
 }
 async function execBlock(b: Block, depth: number) {
+  if (++stepCount > MAX_STEPS) throw new Error('stopped')
   const d = BLOCK_DEFS[b.type]
   const p = b.params
   switch (b.type) {
@@ -352,6 +361,9 @@ async function saveProject() {
     title: title.value || '未命名作品',
     blocks: blocks.value as any,
     teacherName: auth.user?.name || '老师',
+    description: description.value || null,
+    classId: selectedClassId.value,
+    publishedToParent: publishToParent.value,
   }
   try {
     if (currentProjectId.value) {
@@ -367,7 +379,7 @@ async function saveProject() {
     const list = loadLocalProjects()
     if (currentProjectId.value) {
       const i = list.findIndex((p) => p.id === currentProjectId.value)
-      if (i >= 0) list[i] = { ...list[i], title: payload.title, blocks: payload.blocks, teacherName: payload.teacherName, updatedAt: new Date().toISOString() }
+      if (i >= 0) list[i] = { ...list[i], title: payload.title, blocks: payload.blocks, teacherName: payload.teacherName, description: payload.description, classId: payload.classId, publishedToParent: payload.publishedToParent, updatedAt: new Date().toISOString() }
     } else {
       const id = 'local-' + Date.now().toString(36)
       currentProjectId.value = id
@@ -395,10 +407,14 @@ function loadIntoEditor(p: CodingProject) {
   currentProjectId.value = p.id
   title.value = p.title || '未命名作品'
   blocks.value = Array.isArray(p.blocks) ? (JSON.parse(JSON.stringify(p.blocks)) as Block[]) : []
+  selectedClassId.value = p.classId ?? null
+  publishToParent.value = !!p.publishedToParent
+  description.value = p.description ?? ''
   resetStage()
   toast('已载入作品')
 }
 async function deleteProject(id: string) {
+  if (!window.confirm('确定删除该作品？此操作不可撤销。')) return
   try {
     await removeCodingProject(id)
     await loadMyProjects()
@@ -413,6 +429,9 @@ function newProject() {
   currentProjectId.value = null
   title.value = '未命名作品'
   blocks.value = []
+  selectedClassId.value = null
+  publishToParent.value = false
+  description.value = ''
   resetStage()
   logs.value = []
   toast('新建作品')
@@ -459,9 +478,17 @@ async function togglePublish(c: TeacherClass) {
   }
 }
 
+async function loadClasses() {
+  try {
+    classes.value = await listMyClasses()
+  } catch {
+    /* 忽略：以开放给家长弹窗为准 */
+  }
+}
 onMounted(() => {
   resetStage()
   loadMyProjects()
+  loadClasses()
 })
 </script>
 
@@ -477,6 +504,29 @@ onMounted(() => {
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="newProject">＋ 新建</button>
       <button class="px-3 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 disabled:opacity-60" :disabled="saving" @click="saveProject">💾 保存</button>
       <button class="px-3 py-2 rounded-xl border border-cream-200 text-sm text-cocoa-600 hover:bg-cream-50" @click="showProjects = true">📂 我的作品</button>
+      <!-- 作品级发布设置 -->
+      <div class="flex items-center gap-2 px-2 border-l border-cream-200">
+        <select
+          v-model="selectedClassId"
+          class="px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 bg-white focus:outline-none"
+          @change="publishToParent = false"
+        >
+          <option :value="null">仅自己可见</option>
+          <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <label
+          class="flex items-center gap-1 text-xs font-medium text-cocoa-500 select-none"
+          :class="selectedClassId ? '' : 'opacity-40 pointer-events-none'"
+        >
+          <input type="checkbox" v-model="publishToParent" :disabled="!selectedClassId" />
+          开放给家长
+        </label>
+        <input
+          v-model="description"
+          class="px-2 py-1.5 rounded-lg border border-cream-200 text-sm text-cocoa-700 w-40 focus:outline-none"
+          placeholder="作品描述（选填）"
+        />
+      </div>
       <div class="flex-1" />
       <button class="px-3 py-2 rounded-xl bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 disabled:opacity-60" :disabled="running" @click="run">▶ 运行</button>
       <button class="px-3 py-2 rounded-xl bg-rose-500 text-white text-sm font-medium hover:bg-rose-600" :disabled="!running" @click="stop">⏹ 停止</button>
