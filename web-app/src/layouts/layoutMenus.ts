@@ -304,6 +304,12 @@ export const superMenu: MenuCategory[] = [
 	      { name: 'super-account-clear', label: '清除业务数据', to: '/super/account-clear', icon: Trash2, color: 'cocoa' },
 	    ] }],
   },
+  {
+    label: '少儿编程', color: 'green', icon: Send,
+    groups: [{ label: '', items: [
+      { name: 'super-kids-coding', label: '周报批量推送', to: '/super/kids-coding', icon: Send, color: 'green' },
+    ] }],
+  },
 ]
 
 /* 校管菜单 */

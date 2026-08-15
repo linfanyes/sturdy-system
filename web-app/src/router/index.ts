@@ -39,6 +39,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'grade-audit', name: 'super-grade-audit', component: () => import('@/views/super/GradeAudit.vue'), meta: { title: '成绩审计' } },
       { path: 'teachers', name: 'super-teachers', component: () => import('@/views/super/Teachers.vue'), meta: { title: '教师管理' } },
       { path: 'students', name: 'super-students', component: () => import('@/views/super/Students.vue'), meta: { title: '学生管理' } },
+      { path: 'kids-coding', name: 'super-kids-coding', component: () => import('@/views/super/KidsCoding.vue'), meta: { title: '少儿编程·周报推送' } },
     ],
   },
   // 校管
