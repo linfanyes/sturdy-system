@@ -61,6 +61,7 @@ const accentClass = computed(
 .hero {
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(174,140,90,.06), 0 8px 20px rgba(174,140,90,.10), 0 20px 40px rgba(190,140,80,.08);
 }
 .hero-orb {
   position: absolute;
@@ -110,10 +111,13 @@ const accentClass = computed(
 }
 
 .hero-greeting {
+  font-family: 'Smiley Sans', 'ZCOOL KuaiLe', 'Ma Shan Zheng', 'Noto Sans SC', cursive;
+  font-style: oblique;
   font-size: 1.25rem;
   line-height: 1.6rem;
   font-weight: 700;
   color: #3d2e1f;
+  letter-spacing: 0.02em;
 }
 .hero-name {
   color: #b9821f;

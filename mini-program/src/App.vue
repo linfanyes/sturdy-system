@@ -95,6 +95,10 @@ page {
   --c-blue: #1C6FB3;
   --c-blue-soft: #E0F0FC;
   --c-shadow: rgba(0, 0, 0, 0.04);
+  /* 有机三层投影（模拟纸张悬浮）+ 光照 token（统一光源左上） */
+  --c-shadow-paper: 0 2rpx 4rpx rgba(174,140,90,.04), 0 8rpx 24rpx rgba(174,140,90,.06), 0 24rpx 48rpx rgba(174,140,90,.04);
+  --c-shadow-lift: 0 4rpx 8rpx rgba(174,140,90,.06), 0 16rpx 40rpx rgba(174,140,90,.10), 0 40rpx 80rpx rgba(190,140,80,.08);
+  --c-shade-warm: 174, 140, 90;
   /* 圆角体系（排版布局统一）：胶囊按钮 > 主卡片 > 输入框/小卡 > 标签/徽章 */
   --r-pill: 999rpx;
   --r-lg: 24rpx;
@@ -126,6 +130,8 @@ page {
   --c-blue: #5aa9e6;
   --c-blue-soft: #1c2a3a;
   --c-shadow: rgba(0, 0, 0, 0.35);
+  --c-shadow-paper: 0 2rpx 4rpx rgba(0,0,0,.25), 0 8rpx 24rpx rgba(0,0,0,.2), 0 24rpx 48rpx rgba(0,0,0,.15);
+  --c-shadow-lift: 0 4rpx 8rpx rgba(0,0,0,.3), 0 16rpx 40rpx rgba(0,0,0,.25), 0 40rpx 80rpx rgba(0,0,0,.2);
 }
 /* 字体大小档位：影响根 view 内文字大小（小程序 page font-size 不可改，仅影响 view 内 text） */
 .fz-sm { --fz-scale: 0.9; font-size: calc(28rpx * 0.9); }
@@ -210,4 +216,21 @@ image {
 page {
   --fz-scale: 1;
 }
+
+/* ===================== 晨光入场动效（L1）：内容从下向上 stagger 淡入 ===================== */
+@keyframes grow-in {
+  from { opacity: 0; transform: translateY(14rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.grow-in > * {
+  animation: grow-in 0.5s ease both;
+}
+.grow-in > *:nth-child(1) { animation-delay: 0.05s; }
+.grow-in > *:nth-child(2) { animation-delay: 0.12s; }
+.grow-in > *:nth-child(3) { animation-delay: 0.19s; }
+.grow-in > *:nth-child(4) { animation-delay: 0.26s; }
+.grow-in > *:nth-child(5) { animation-delay: 0.33s; }
+.grow-in > *:nth-child(6) { animation-delay: 0.40s; }
+.grow-in > *:nth-child(7) { animation-delay: 0.47s; }
+.grow-in > *:nth-child(8) { animation-delay: 0.54s; }
 </style>

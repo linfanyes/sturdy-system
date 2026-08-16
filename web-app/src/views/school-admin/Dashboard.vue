@@ -120,7 +120,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 grow-in">
     <WelcomeHero
       :name="auth.user?.name || '管理员'"
       role-label="管理后台"

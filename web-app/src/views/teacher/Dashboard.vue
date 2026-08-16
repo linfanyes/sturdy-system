@@ -189,7 +189,7 @@ const shortcutTools = [
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 grow-in">
     <!-- 欢迎横幅 -->
     <WelcomeHero
       :name="auth.user?.name || '老师'"
@@ -210,28 +210,28 @@ const shortcutTools = [
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/classes')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-butter-500" /> 班级</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ classes.length }}</template>
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/students')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ totalStudents }}</template>
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/exams')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-sky2-500" /> 考试</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ totalExams }}</template>
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/rewards')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-sakura-500" /> 奖励记录</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ awards.length }}</template>
         </div>
@@ -239,7 +239,7 @@ const shortcutTools = [
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/homework')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-butter-500" /> 待批作业</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="chartLoading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ pendingHomeworkCount }}</template>
         </div>
@@ -247,7 +247,7 @@ const shortcutTools = [
       </div>
       <div class="stat-card">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-mint-500" /> 今日出勤</div>
-        <div class="text-3xl font-bold text-cocoa-900">
+        <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="chartLoading"><div class="h-8 w-12 bg-cream-100 rounded-lg animate-pulse"></div></template>
           <template v-else>{{ todayAttendanceRate ?? '—' }}<span v-if="todayAttendanceRate !== null" class="text-lg">%</span></template>
         </div>

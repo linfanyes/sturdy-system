@@ -1,10 +1,10 @@
 <template>
-  <view class="page" :class="{ dark: theme.mode === 'dark' }">
+  <view class="page grow-in" :class="{ dark: theme.mode === 'dark' }">
     <!-- 欢迎条（黄油渐变横幅，对齐 Web WelcomeHero） -->
     <view class="header">
       <view class="h-orb h-orb-a" />
       <view class="h-orb h-orb-b" />
-      <view class="h-avatar">🍎</view>
+      <view class="h-avatar"><GrowthIcon :name="'bloom'" :size="40" /></view>
       <view class="h-main">
         <view class="hi">{{ greeting }}，<text class="hi-name">{{ auth.user?.name || '老师' }}</text></view>
         <view class="school">{{ auth.user?.school || '未设置学校' }}

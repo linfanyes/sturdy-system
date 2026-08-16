@@ -606,7 +606,7 @@ function dismissSubscribe() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 grow-in">
     <!-- 孩子选择条 -->
     <div v-if="me?.kids && me.kids.length > 1" class="flex gap-2 px-4 py-2 overflow-x-auto bg-surface border-b shrink-0 -mx-4 -mt-6">
       <div

@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { unifiedLogin } from '@/api/auth'
 import { Loader2, Sparkles, RefreshCw, Eye, EyeOff } from 'lucide-vue-next'
+import GrowthIcon from '@/components/GrowthIcon.vue'
 import type { Role } from '@/types/user'
 
 const auth = useAuthStore()
@@ -218,13 +219,12 @@ async function handleLogin() {
           </li>
         </ul>
 
-        <!-- 装饰 emoji -->
-        <div class="flex items-center justify-center gap-3 lg:justify-start">
-          <span class="text-3xl sm:text-4xl">📚</span>
-          <span class="text-2xl sm:text-3xl">✏️</span>
-          <span class="text-3xl sm:text-4xl">🍎</span>
-          <span class="text-2xl sm:text-3xl">🌈</span>
-          <span class="text-3xl sm:text-4xl">🌻</span>
+        <!-- 装饰生长图标（品牌锚点，替代 emoji） -->
+        <div class="flex items-center justify-center gap-4 lg:justify-start">
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-butter-100 text-butter-600"><GrowthIcon name="seed" :size="26" /></span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sakura-100 text-sakura-400"><GrowthIcon name="sprout" :size="26" /></span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-mint-100 text-mint-500"><GrowthIcon name="bud" :size="26" /></span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky2-100 text-sky2-500"><GrowthIcon name="bloom" :size="26" /></span>
         </div>
       </div>
 
@@ -268,7 +268,7 @@ async function handleLogin() {
           <form class="space-y-4" @submit.prevent="handleLogin">
             <div>
               <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-cocoa-600">
-                <span>👤</span> 用户名
+                <GrowthIcon name="user" :size="14" class="text-cocoa-400" /> 用户名
               </label>
               <input
                 v-model="form.username"
@@ -281,7 +281,7 @@ async function handleLogin() {
             </div>
             <div>
               <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-cocoa-600">
-                <span>🔒</span> 密码
+                <GrowthIcon name="lock" :size="14" class="text-cocoa-400" /> 密码
               </label>
               <div class="relative">
                 <input
@@ -322,8 +322,9 @@ async function handleLogin() {
             <button
               type="submit"
               :disabled="loading"
-              class="w-full rounded-full bg-gradient-to-r from-butter-400 to-butter-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-butter-400/30 transition hover:from-butter-500 hover:to-butter-600 hover:shadow-xl disabled:opacity-70"
+              class="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-butter-400 to-butter-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-butter-400/30 transition hover:from-butter-500 hover:to-butter-600 hover:shadow-xl disabled:opacity-70"
             >
+              <span aria-hidden class="pointer-events-none absolute left-0 top-0 h-full w-2/5 bg-white/40 blur-sm group-hover:animate-sweep" />
               <Loader2 v-if="loading" class="mr-2 inline h-4 w-4 animate-spin" />
               {{ loading ? '登录中…' : '开始工作 →' }}
             </button>

@@ -60,7 +60,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 grow-in">
     <!-- 欢迎横幅 -->
     <WelcomeHero
       :name="auth.user?.name || '超级管理员'"

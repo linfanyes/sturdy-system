@@ -259,10 +259,10 @@ defineExpose({ reload: loadList })
 </script>
 
 <template>
-  <div class="card-soft">
+  <div class="card-soft grow-in">
     <!-- 顶栏 -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-      <h1 class="text-2xl font-bold text-cocoa-900">{{ title }}管理</h1>
+      <h1 class="title-display text-2xl font-bold text-cocoa-900">{{ title }}管理</h1>
       <div class="flex flex-wrap items-center gap-2">
         <select
           v-if="classFilterable !== false"
