@@ -68,7 +68,9 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/migrations ./migrations
+# 迁移脚本（含 .sql）位于源码目录 src/migrations；nest build 只编译 .ts 而不复制 .sql，
+# 故直接从源码目录拷入镜像，确保运行时初始化入口能找到并执行这些迁移。
+COPY --from=build /app/src/migrations ./migrations
 # 容器初始化入口：部署时先自动执行数据库迁移，再启动服务
 COPY --from=build /app/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
