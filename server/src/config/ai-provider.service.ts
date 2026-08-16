@@ -11,7 +11,13 @@ export class AiProviderService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seed()
+    try {
+      await this.seed()
+    } catch (e) {
+      // 容错：缺列/表结构未对齐（如 ai_providers 缺 teacherId 列）不应阻断整个后端启动，
+      // 与 admin.service.seedDemoData 的容错策略保持一致。结构问题由迁移 0035 兜底补齐。
+      console.warn('[AiProvider] 种子初始化失败（可忽略，待迁移补齐结构后重试）:', (e as Error).message)
+    }
   }
 
   /** 首次启动：若 ai_providers 表为空，则用硬编码默认值填充 */

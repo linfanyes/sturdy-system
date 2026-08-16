@@ -62,6 +62,11 @@ export class ParentLiteracyController {
 export class LiteracyModule implements OnModuleInit {
   constructor(private readonly svc: LiteracyService) {}
   async onModuleInit() {
-    await this.svc.seedIfEmpty()
+    try {
+      await this.svc.seedIfEmpty()
+    } catch (e) {
+      // 容错：缺列/表结构未对齐不应阻断整个后端启动（与 admin.service.seedDemoData 一致）
+      console.warn('[Literacy] 种子初始化失败（可忽略，待迁移补齐结构后重试）:', (e as Error).message)
+    }
   }
 }

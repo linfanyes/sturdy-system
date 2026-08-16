@@ -90,9 +90,14 @@ export class ConfigService implements OnModuleInit {
     if (!getEncryptionKey()) {
       console.warn('⚠️  未配置 ENCRYPTION_KEY（32 字节 hex），密钥类配置（wxAppSecret/imSecretKey/aiApiKey）将以明文落库，生产环境建议配置。')
     }
-    await this.seed()
-    await this.migrateModelDefaults()
-    await this.migrateImDefaults()
+    try {
+      await this.seed()
+      await this.migrateModelDefaults()
+      await this.migrateImDefaults()
+    } catch (e) {
+      // 容错：缺列/表结构未对齐不应阻断整个后端启动（与 admin.service.seedDemoData 一致）
+      console.warn('[Config] 初始化失败（可忽略，待迁移补齐结构后重试）:', (e as Error).message)
+    }
   }
 
   /** 用环境变量首次填充平台配置（仅当 key 不存在时） */

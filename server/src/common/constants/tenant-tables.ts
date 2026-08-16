@@ -1,10 +1,13 @@
 /**
  * 多租户业务表清单（共享常量，消除 school-admin / admin 服务中的重复定义）
+ * 约束：本文件列出的表必须真实存在 teacherId 列（继承 BaseEntity 或显式声明），
+ * 否则按 teacherId 级联清理 / 启动自检对其执行 SELECT/DELETE teacherId 会触发
+ * Unknown column 而 fail-closed。全局/校本表（app_config、resources 等）不在此列。
  */
 /** 教师个人数据表（按 teacherId 级联清理） */
 export const TEACHER_ID_TABLES = [
   'exams', 'grades', 'notes', 'todos', 'picker_history',
-  'backup_snapshots', 'ai_settings', 'app_config',
+  'backup_snapshots', 'ai_settings',
   'generated_papers', 'generated_lesson_plans', 'generated_knowledges', 'paper_queries',
   'class_expenses', 'class_activities', 'duty_rosters',
   'reward_records', 'score_records', 'group_scores',
@@ -13,7 +16,7 @@ export const TEACHER_ID_TABLES = [
   'notices', 'lesson_observations', 'work_logs', 'lesson_plan_templates',
   'reading_logs', 'checkins', 'award_records', 'award_categories',
   'class_duty_configs', 'notice_templates', 'home_visits', 'teaching_calendar',
-  'class_members', 'my_galleries', 'notifications', 'schedules', 'resources',
+  'class_members', 'my_galleries', 'notifications', 'schedules',
   'semesters', 'teachers',
 ];
 
@@ -28,7 +31,7 @@ export const CLASS_ID_TABLES = [
 /** 全量业务数据表（超管一键清除用，按 teacherId 过滤） */
 export const ALL_BUSINESS_TABLES = [
   'picker_history', 'todos', 'notes',
-  'ai_settings', 'app_config', 'audit_logs',
+  'ai_settings', 'audit_logs',
   'paper_queries', 'generated_knowledges', 'generated_lesson_plans', 'generated_papers',
   'notice_templates', 'notifications',
   'semesters', 'teaching_calendar',
@@ -43,7 +46,6 @@ export const ALL_BUSINESS_TABLES = [
   'attendances',
   'schedules',
   'seat_layouts',
-  'resources',
   'work_logs',
   'lesson_observations', 'lesson_plan_templates',
   'class_members',
