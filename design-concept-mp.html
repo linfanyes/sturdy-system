@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>园丁小站 · 小程序 设计概念稿</title>
+<style>
+  @font-face {
+    font-family: 'Smiley Sans';
+    src: url('https://cdn.jsdelivr.net/npm/@fontpkg/smiley-sans@2.0.4/SmileySans-Oblique.ttf.woff2') format('woff2');
+    font-weight: 400; font-style: oblique; font-display: swap;
+  }
+
+  :root {
+    --cream-100: 253 251 244; --cream-200: 247 242 230;
+    --butter-50: 255 252 240; --butter-100: 255 244 214; --butter-300: 255 220 130;
+    --butter-400: 255 206 84; --butter-500: 245 179 66; --butter-600: 214 148 38;
+    --cocoa-300: 174 140 90; --cocoa-400: 138 110 70; --cocoa-700: 92 64 42; --cocoa-900: 61 42 28;
+    --sakura-100: 254 243 246; --sakura-400: 231 105 140;
+    --mint-400: 74 174 122; --sky2-400: 56 152 224;
+    --surface: 255 255 255;
+    --light-angle: 145deg;
+    --light-warm: 255 244 214;
+    --shadow-paper: 0 1px 2px rgb(174 140 90 / .04), 0 4rpx 12rpx rgb(174 140 90 / .06), 0 12rpx 28rpx rgb(174 140 90 / .04);
+    --shadow-lift: 0 2px 4px rgb(174 140 90 / .06), 0 8px 20px rgb(174 140 90 / .10), 0 20px 40px rgb(190 140 80 / .08);
+    --shadow-pop: 0 8px 24px rgb(255 180 80 / .26);
+    --font-display: 'Smiley Sans', 'PingFang SC', system-ui, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans SC', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-body);
+    color: rgb(var(--cocoa-900));
+    background: #e8e2d6;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 28px 16px 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 旁注 */
+  .sidenote {
+    position: fixed; left: 20px; top: 20px; max-width: 240px; font-size: 12px;
+    color: rgb(var(--cocoa-400)); line-height: 1.7; padding: 14px 16px;
+    background: rgb(var(--surface)); border-radius: 14px; box-shadow: var(--shadow-paper);
+    border: 1px solid rgb(var(--butter-100) / .5);
+  }
+  .sidenote b { color: rgb(var(--butter-600)); font-family: var(--font-display); font-style: italic; }
+  .sidenote hr { border: none; border-top: 1px dashed rgb(var(--cream-200)); margin: 10px 0; }
+  @media (max-width: 1100px){ .sidenote { display: none; } }
+
+  /* ===== 手机外框 ===== */
+  .phone {
+    position: relative; width: 390px; flex: none;
+    background: rgb(var(--cream-100));
+    border-radius: 44px; box-shadow: 0 30px 80px rgb(61 42 28 / .25), 0 0 0 11px #1a1a1a, 0 0 0 13px #2a2a2a;
+    overflow: hidden;
+  }
+  /* 亚麻纸纹（小程序用 png 平铺，这里用 SVG 模拟示意）*/
+  .phone::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: .035; mix-blend-mode: multiply;
+  }
+  /* 沉浸背景 */
+  .phone::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 40% at 50% -5%, rgb(var(--butter-100) / .6), transparent),
+      radial-gradient(ellipse 50% 30% at 100% 100%, rgb(var(--sakura-100) / .4), transparent);
+  }
+
+  /* 状态栏 */
+  .statusbar { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 16px 28px 4px; font-size: 14px; font-weight: 600; color: rgb(var(--cocoa-900)); font-variant-numeric: tabular-nums; }
+  .statusbar .right { display: flex; align-items: center; gap: 6px; }
+  .statusbar svg { width: 16px; height: 16px; }
+
+  /* 导航栏 */
+  .navbar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 8px 16px 12px; position: relative; }
+  .navbar h1 { font-family: var(--font-display); font-style: italic; font-size: 17px; color: rgb(var(--cocoa-900)); }
+  .navbar .nav-l, .navbar .nav-r { position: absolute; top: 50%; transform: translateY(-50%); }
+  .navbar .nav-l { left: 16px; } .navbar .nav-r { right: 16px; }
+  .navbar svg { width: 22px; height: 22px; color: rgb(var(--cocoa-700)); }
+
+  /* 可滚动内容区 */
+  .scroll { position: relative; z-index: 1; height: 640px; overflow-y: auto; padding: 4px 16px 20px; -webkit-overflow-scrolling: touch; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  /* 留出 tabBar 高度 + 安全区 */
+  .scroll { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+
+  @keyframes grow-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .grow-in > * { animation: grow-in .5s ease both; }
+  .grow-in > *:nth-child(1){animation-delay:.05s}
+  .grow-in > *:nth-child(2){animation-delay:.12s}
+  .grow-in > *:nth-child(3){animation-delay:.19s}
+  .grow-in > *:nth-child(4){animation-delay:.26s}
+  .grow-in > *:nth-child(5){animation-delay:.33s}
+  .grow-in > *:nth-child(6){animation-delay:.40s}
+  .grow-in > *:nth-child(7){animation-delay:.47s}
+  @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  /* ===== 欢迎横幅 ===== */
+  .hero { position: relative; overflow: visible; border-radius: 24px; padding: 20px 20px 18px; display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, rgb(var(--butter-100)) 0%, rgb(255 233 184) 55%, rgb(255 224 178) 100%); box-shadow: var(--shadow-lift); border: 1px solid rgb(255 255 255 / .6); }
+  .hero::after { content: ''; position: absolute; inset: 0; border-radius: 24px; background: linear-gradient(var(--light-angle), rgb(var(--light-warm) / .35), transparent 45%); pointer-events: none; }
+  .hero-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+  .hero-orb.a { width: 150px; height: 150px; right: -40px; top: -60px; background: radial-gradient(circle at 30% 30%, rgb(255 246 216), rgb(255 212 121)); opacity: .5; }
+  .hero-plant { position: absolute; right: 14px; top: -34px; width: 64px; height: 80px; z-index: 3; animation: floaty 5s ease-in-out infinite; }
+  .hero-plant svg { width: 100%; height: 100%; }
+  .hero-ic { flex: none; width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; background: rgb(255 243 214); box-shadow: var(--shadow-paper); position: relative; z-index: 2; }
+  .hero-ic svg { width: 26px; height: 26px; color: rgb(var(--butter-600)); }
+  .hero-main { position: relative; z-index: 2; flex: 1; min-width: 0; }
+  .hero-hi { font-family: var(--font-display); font-style: italic; font-size: 19px; color: rgb(var(--cocoa-900)); }
+  .hero-hi .name { color: rgb(var(--butter-600)); }
+  .hero-school { font-size: 12px; color: rgb(var(--cocoa-400)); margin-top: 3px; }
+  .hero-bell { position: relative; z-index: 2; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); }
+  .hero-bell svg { width: 18px; height: 18px; color: rgb(var(--cocoa-700)); }
+  .hero-bell .badge { position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: rgb(var(--sakura-400)); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+
+  /* 区块标题 */
+  .stitle { display: flex; align-items: center; gap: 9px; margin: 18px 0 12px; }
+  .stitle .bar { width: 3px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, rgb(var(--butter-400)), rgb(var(--sakura-400))); }
+  .stitle h3 { font-family: var(--font-display); font-style: italic; font-size: 16px; color: rgb(var(--cocoa-900)); }
+  .stitle .more { margin-left: auto; font-size: 12px; color: rgb(var(--cocoa-400)); }
+
+  /* 统计卡 2x2 */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stat-card { position: relative; padding: 16px; border-radius: 18px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); }
+  .stat-card .sc-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; margin-bottom: 10px; }
+  .stat-card .sc-ic svg { width: 19px; height: 19px; }
+  .stat-card .sc-num { font-weight: 800; font-size: 26px; color: rgb(var(--butter-600)); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .stat-card .sc-lb { font-size: 12px; color: rgb(var(--cocoa-400)); margin-top: 4px; }
+  .ic-butter { background: rgb(var(--butter-100)); } .ic-butter svg { color: rgb(var(--butter-600)); }
+  .ic-sakura { background: rgb(var(--sakura-100)); } .ic-sakura svg { color: rgb(var(--sakura-400)); }
+  .ic-mint { background: rgb(240 252 245); } .ic-mint svg { color: rgb(var(--mint-400)); }
+  .ic-sky { background: rgb(240 248 254); } .ic-sky svg { color: rgb(var(--sky2-400)); }
+
+  /* 功能入口瓷砖 */
+  .tile-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .tile { padding: 13px 6px; border-radius: 16px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); text-align: center; }
+  .tile .t-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; margin: 0 auto 7px; }
+  .tile .t-ic svg { width: 21px; height: 21px; }
+  .tile .t-lb { font-size: 11px; color: rgb(var(--cocoa-700)); font-weight: 600; }
+
+  /* 生长刻度 */
+  .growth-card { padding: 16px; border-radius: 18px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); }
+  .growth-row { display: grid; grid-template-columns: 60px 1fr 38px; align-items: center; gap: 10px; padding: 8px 0; }
+  .growth-row .g-name { font-size: 13px; color: rgb(var(--cocoa-700)); font-weight: 600; }
+  .growth-track { height: 12px; border-radius: 6px; background: rgb(var(--cream-200)); position: relative; }
+  .growth-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, rgb(var(--butter-300)), rgb(var(--butter-500))); position: relative; }
+  .growth-tip { position: absolute; right: -8px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; }
+  .growth-tip svg { width: 100%; height: 100%; }
+  .growth-row .g-num { font-weight: 700; font-size: 14px; color: rgb(var(--cocoa-700)); text-align: right; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgb(var(--cream-100)); border: 1px dashed rgb(var(--butter-300) / .6); }
+  .legend .lg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgb(var(--cocoa-400)); }
+  .legend .lg svg { width: 15px; height: 15px; color: rgb(var(--butter-500)); }
+  .legend .lg b { color: rgb(var(--cocoa-700)); font-weight: 600; }
+
+  /* 今日课表紧凑横滑 */
+  .lesson-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .lesson-scroll::-webkit-scrollbar { height: 0; }
+  .lesson-card { flex: none; width: 110px; padding: 12px; border-radius: 14px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); position: relative; }
+  .lesson-card.now { background: linear-gradient(135deg, rgb(var(--butter-400)), rgb(var(--butter-500))); border: none; box-shadow: var(--shadow-pop); }
+  .lesson-card .lc-per { font-size: 11px; font-weight: 700; color: rgb(var(--cocoa-400)); font-variant-numeric: tabular-nums; }
+  .lesson-card.now .lc-per { color: rgb(255 255 255 / .85); }
+  .lesson-card .lc-subj { font-family: var(--font-display); font-style: italic; font-size: 16px; color: rgb(var(--cocoa-900)); margin-top: 3px; }
+  .lesson-card.now .lc-subj { color: #fff; }
+  .lesson-card .lc-time { font-size: 11px; color: rgb(var(--cocoa-400)); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .lesson-card.now .lc-time { color: rgb(255 255 255 / .85); }
+  .lesson-card .lc-dot { position: absolute; top: 10px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--mint-400)); }
+  .lesson-card.now .lc-dot { background: #fff; animation: floaty 1.5s ease-in-out infinite; }
+
+  /* AI 助手 */
+  .ai-card { position: relative; overflow: hidden; padding: 16px; border-radius: 18px; background: linear-gradient(135deg, rgb(var(--butter-100)), rgb(var(--sakura-100))); border: 1px solid rgb(var(--butter-300) / .4); box-shadow: var(--shadow-paper); }
+  .ai-card::before { content: ''; position: absolute; right: -20px; top: -20px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgb(255 246 216), transparent 70%); opacity: .6; }
+  .ai-head { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; position: relative; }
+  .ai-head .ai-ic { width: 34px; height: 34px; border-radius: 11px; background: rgb(var(--surface)); display: grid; place-items: center; box-shadow: var(--shadow-paper); color: rgb(var(--butter-600)); flex: none; }
+  .ai-head .ai-ic svg { width: 19px; height: 19px; }
+  .ai-head h4 { font-family: var(--font-display); font-style: italic; font-size: 15px; color: rgb(var(--cocoa-900)); }
+  .ai-head p { font-size: 11px; color: rgb(var(--cocoa-400)); margin-top: 1px; }
+  .ai-chips { display: flex; flex-direction: column; gap: 7px; position: relative; }
+  .ai-chip { padding: 9px 11px; border-radius: 11px; background: rgb(var(--surface) / .8); font-size: 12px; color: rgb(var(--cocoa-700)); display: flex; align-items: center; gap: 7px; }
+  .ai-chip svg { width: 14px; height: 14px; color: rgb(var(--butter-500)); flex: none; }
+
+  /* ===== tabBar ===== */
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 10; display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: rgb(var(--surface) / .96); backdrop-filter: blur(12px); border-top: 1px solid rgb(var(--cream-200)); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; position: relative; }
+  .tab svg { width: 24px; height: 24px; color: rgb(var(--cocoa-300)); transition: color .2s; }
+  .tab .t-lb { font-size: 10px; color: rgb(var(--cocoa-300)); font-weight: 600; transition: color .2s; }
+  .tab.on svg { color: rgb(var(--butter-500)); }
+  .tab.on .t-lb { color: rgb(var(--butter-600)); }
+  .tab.on::before { content: ''; position: absolute; top: 0; width: 20px; height: 3px; border-radius: 0 0 3px 3px; background: linear-gradient(180deg, rgb(var(--butter-400)), rgb(var(--butter-500))); }
+
+  .ic-butter-soft { background: rgb(var(--butter-50)); }
+</style>
+</head>
+<body>
+
+<div class="sidenote">
+  <b>小程序概念稿</b><br>
+  复用「生长花园」同一套设计语言，多端统一。针对小程序特性适配：rpx/px 混用、系统字体（小程序不支持自定义字体加载）、SVG 用 image 引用、底部 5 tab、安全区避让。
+  <hr>
+  与 Web 端共享：<br>
+  · 生长图标 4 态<br>
+  · 亚麻纸纹 png 平铺<br>
+  · 有机三层阴影<br>
+  · 得意黑标题（小程序降级系统斜体粗体）<br>
+  · 晨光入场动效（cubic-bezier 降级 ease）<br>
+  · 暖色 token 完全一致
+</div>
+
+<!-- 生长图标 + 功能图标（与 Web 端共享同一套 SVG 源）-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="gi-seed" viewBox="0 0 24 24"><path d="M12 21c0-4 0-7 0-9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><ellipse cx="12" cy="10" rx="4" ry="6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" transform="rotate(-20 12 10)"/></symbol>
+    <symbol id="gi-sprout" viewBox="0 0 24 24"><path d="M12 21V11" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M12 13c0-3-2-5-5-5 0 3 2 5 5 5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M12 11c0-2 1.5-4 4-4 0 2-1.5 4-4 4z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+    <symbol id="gi-bud" viewBox="0 0 24 24"><path d="M12 21V12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M12 13c-2.5-1-4-3-4-6 2.5 0 4 2 4 6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M12 13c2.5-1 4-3 4-6-2.5 0-4 2-4 6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><circle cx="12" cy="9" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="gi-bloom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.4" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="2.2" ry="3.2"/><ellipse cx="12" cy="17.5" rx="2.2" ry="3.2"/><ellipse cx="6.5" cy="12" rx="3.2" ry="2.2"/><ellipse cx="17.5" cy="12" rx="3.2" ry="2.2"/></g><path d="M12 21V15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+    <symbol id="ic-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="ic-classes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-3"/><path d="M9 9v0M9 12v0M9 15v0"/></symbol>
+    <symbol id="ic-students" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/><path d="M22 10v6"/></symbol>
+    <symbol id="ic-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 015.66 5.66l-9.9 9.9-4.24.7.7-4.24z"/></symbol>
+    <symbol id="ic-config" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
+    <symbol id="ic-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></symbol>
+    <symbol id="ic-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 01-12.8 7.4L3 21l2.1-5.2A8.5 8.5 0 1121 11.5z"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></symbol>
+    <symbol id="ic-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5V21h16"/></symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="ic-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17l5-5 4 4 7-7 4 4"/><path d="M2 21h20"/></symbol>
+    <symbol id="ic-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0114 0"/><path d="M8.5 16a5 5 0 017 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></symbol>
+    <symbol id="ic-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><rect x="4" y="9" width="13" height="6" rx="1" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="phone">
+  <!-- 状态栏 -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="right">
+      <svg><use href="#ic-signal"/></svg>
+      <svg><use href="#ic-wifi"/></svg>
+      <svg><use href="#ic-battery"/></svg>
+    </div>
+  </div>
+
+  <!-- 导航栏 -->
+  <div class="navbar">
+    <h1>园丁小站</h1>
+    <div class="nav-r"><svg><use href="#ic-bell"/></svg></div>
+  </div>
+
+  <!-- 滚动内容 -->
+  <div class="scroll grow-in">
+
+    <!-- 欢迎横幅 -->
+    <div class="hero">
+      <div class="hero-orb a"></div>
+      <div class="hero-plant" aria-hidden="true">
+        <svg viewBox="0 0 64 80" fill="none">
+          <path d="M32 76 C32 56 32 36 32 16" stroke="rgb(74 174 122)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M32 50 C22 47 15 38 14 26 C24 28 32 36 32 50z" fill="rgb(240 252 245)" stroke="rgb(74 174 122)" stroke-width="1.8"/>
+          <circle cx="32" cy="16" r="8" fill="rgb(255 206 84)" stroke="rgb(214 148 38)" stroke-width="1.8"/>
+          <g fill="rgb(255 224 178)" stroke="rgb(231 105 140)" stroke-width="1.5">
+            <ellipse cx="32" cy="6" rx="4" ry="6"/>
+            <ellipse cx="32" cy="26" rx="4" ry="6"/>
+            <ellipse cx="22" cy="16" rx="6" ry="4"/>
+            <ellipse cx="42" cy="16" rx="6" ry="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="hero-ic"><svg><use href="#gi-bloom"/></svg></div>
+      <div class="hero-main">
+        <div class="hero-hi">早安，<span class="name">林老师</span></div>
+        <div class="hero-school">阳光小学 · 今日 6 节课</div>
+      </div>
+      <div class="hero-bell"><svg><use href="#ic-bell"/></svg><span class="badge">3</span></div>
+    </div>
+
+    <!-- 今日概览 -->
+    <div class="stitle"><span class="bar"></span><h3>今日概览</h3></div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="sc-ic ic-butter"><svg><use href="#ic-classes"/></svg></div>
+        <div class="sc-num">6</div><div class="sc-lb">所带班级</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-sakura"><svg><use href="#ic-students"/></svg></div>
+        <div class="sc-num">248</div><div class="sc-lb">在校学生</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-mint"><svg><use href="#ic-chart"/></svg></div>
+        <div class="sc-num">42</div><div class="sc-lb">待批作业</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-sky"><svg><use href="#ic-msg"/></svg></div>
+        <div class="sc-num">13</div><div class="sc-lb">家校消息</div>
+      </div>
+    </div>
+
+    <!-- 今日课表横滑 -->
+    <div class="stitle"><span class="bar"></span><h3>今日课表</h3><span class="more">第 3 节进行中</span></div>
+    <div class="lesson-scroll">
+      <div class="lesson-card">
+        <div class="lc-per">第1节</div><div class="lc-subj">语文</div><div class="lc-time">08:00</div>
+      </div>
+      <div class="lesson-card">
+        <div class="lc-per">第2节</div><div class="lc-subj">语文</div><div class="lc-time">08:50</div>
+      </div>
+      <div class="lesson-card now">
+        <div class="lc-dot"></div><div class="lc-per">第3节</div><div class="lc-subj">阅读</div><div class="lc-time">09:40</div>
+      </div>
+      <div class="lesson-card">
+        <div class="lc-per">第4节</div><div class="lc-subj">语文</div><div class="lc-time">10:30</div>
+      </div>
+      <div class="lesson-card">
+        <div class="lc-per">第5节</div><div class="lc-subj">班会</div><div class="lc-time">14:00</div>
+      </div>
+      <div class="lesson-card">
+        <div class="lc-per">第6节</div><div class="lc-subj">阅读</div><div class="lc-time">14:50</div>
+      </div>
+    </div>
+
+    <!-- 班级人数生长刻度 -->
+    <div class="stitle"><span class="bar"></span><h3>班级分布</h3><span class="more">详情 ›</span></div>
+    <div class="growth-card">
+      <div class="growth-row">
+        <span class="g-name">三(1)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:88%"><div class="growth-tip"><svg><use href="#gi-bloom"/></svg></div></div></div>
+        <span class="g-num">45</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">三(2)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:82%"><div class="growth-tip"><svg><use href="#gi-bloom"/></svg></div></div></div>
+        <span class="g-num">42</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">四(1)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:66%"><div class="growth-tip"><svg><use href="#gi-bud"/></svg></div></div></div>
+        <span class="g-num">34</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">四(2)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:48%"><div class="growth-tip"><svg><use href="#gi-sprout"/></svg></div></div></div>
+        <span class="g-num">25</span>
+      </div>
+      <div class="legend">
+        <div class="lg"><svg><use href="#gi-seed"/></svg><b>种子</b></div>
+        <div class="lg"><svg><use href="#gi-sprout"/></svg><b>萌芽</b></div>
+        <div class="lg"><svg><use href="#gi-bud"/></svg><b>含苞</b></div>
+        <div class="lg"><svg><use href="#gi-bloom"/></svg><b>盛放</b></div>
+      </div>
+    </div>
+
+    <!-- AI 助手 -->
+    <div class="stitle"><span class="bar"></span><h3>AI 园丁助手</h3></div>
+    <div class="ai-card">
+      <div class="ai-head">
+        <div class="ai-ic"><svg><use href="#ic-spark"/></svg></div>
+        <div><h4>为你准备好了</h4><p>基于你的班级数据</p></div>
+      </div>
+      <div class="ai-chips">
+        <div class="ai-chip"><svg><use href="#ic-book"/></svg> 生成今日阅读课教案大纲</div>
+        <div class="ai-chip"><svg><use href="#ic-chart"/></svg> 分析听写错误率 + 复习建议</div>
+        <div class="ai-chip"><svg><use href="#ic-msg"/></svg> 起草本周致家长信</div>
+      </div>
+    </div>
+
+    <!-- 快捷功能 -->
+    <div class="stitle"><span class="bar"></span><h3>快捷功能</h3></div>
+    <div class="tile-grid">
+      <div class="tile"><div class="t-ic ic-butter"><svg><use href="#ic-classes"/></svg></div><div class="t-lb">班级</div></div>
+      <div class="tile"><div class="t-ic ic-sakura"><svg><use href="#ic-students"/></svg></div><div class="t-lb">学生</div></div>
+      <div class="tile"><div class="t-ic ic-mint"><svg><use href="#ic-chart"/></svg></div><div class="t-lb">成绩</div></div>
+      <div class="tile"><div class="t-ic ic-sky"><svg><use href="#ic-msg"/></svg></div><div class="t-lb">沟通</div></div>
+      <div class="tile"><div class="t-ic ic-butter"><svg><use href="#ic-tools"/></svg></div><div class="t-lb">工具</div></div>
+      <div class="tile"><div class="t-ic ic-sakura"><svg><use href="#ic-ai"/></svg></div><div class="t-lb">AI</div></div>
+      <div class="tile"><div class="t-ic ic-mint"><svg><use href="#ic-book"/></svg></div><div class="t-lb">教案</div></div>
+      <div class="tile"><div class="t-ic ic-sky"><svg><use href="#ic-clock"/></svg></div><div class="t-lb">考勤</div></div>
+    </div>
+
+  </div>
+
+  <!-- tabBar -->
+  <div class="tabbar">
+    <div class="tab on"><svg><use href="#ic-dashboard"/></svg><span class="t-lb">工作台</span></div>
+    <div class="tab"><svg><use href="#ic-classes"/></svg><span class="t-lb">班级</span></div>
+    <div class="tab"><svg><use href="#ic-students"/></svg><span class="t-lb">学生</span></div>
+    <div class="tab"><svg><use href="#ic-tools"/></svg><span class="t-lb">工具箱</span></div>
+    <div class="tab"><svg><use href="#ic-config"/></svg><span class="t-lb">设置</span></div>
+  </div>
+</div>
+
+</body>
+</html>

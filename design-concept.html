@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>园丁工作台 · 生长花园 设计概念稿</title>
+<style>
+  /* ===== 字体（jsdelivr npm 源加载得意黑，失败优雅降级到系统斜体粗体）===== */
+  @font-face {
+    font-family: 'Smiley Sans';
+    src: url('https://cdn.jsdelivr.net/npm/@fontpkg/smiley-sans@2.0.4/SmileySans-Oblique.ttf.woff2') format('woff2');
+    font-weight: 400; font-style: oblique; font-display: swap;
+  }
+
+  /* ===== 设计 Token（对齐项目现有 butter 暖色系，RGB 三元组）===== */
+  :root {
+    --cream-100: 253 251 244; --cream-200: 247 242 230;
+    --butter-50: 255 252 240; --butter-100: 255 244 214; --butter-300: 255 220 130;
+    --butter-400: 255 206 84; --butter-500: 245 179 66; --butter-600: 214 148 38;
+    --cocoa-300: 174 140 90; --cocoa-400: 138 110 70; --cocoa-700: 92 64 42; --cocoa-900: 61 42 28;
+    --sakura-100: 254 243 246; --sakura-400: 231 105 140;
+    --mint-400: 74 174 122; --sky2-400: 56 152 224;
+    --surface: 255 255 255;
+
+    /* 光照系统：统一光源 145deg 左上 */
+    --light-angle: 145deg;
+    --light-warm: 255 244 214;
+    --shade-warm: 174 140 90;
+
+    /* 有机阴影：三层投影模拟纸张悬浮 */
+    --shadow-paper: 0 1px 2px rgb(174 140 90 / .04), 0 4px 12px rgb(174 140 90 / .06), 0 12px 28px rgb(174 140 90 / .04);
+    --shadow-lift: 0 2px 4px rgb(174 140 90 / .06), 0 8px 20px rgb(174 140 90 / .10), 0 20px 40px rgb(190 140 80 / .08);
+    --shadow-pop: 0 12px 32px rgb(255 180 80 / .28);
+
+    --r-lg: 24px; --r-md: 16px; --r-sm: 12px; --r-pill: 999px;
+
+    --font-display: 'Smiley Sans', 'ZCOOL KuaiLe', 'PingFang SC', system-ui, sans-serif;
+    --font-hand: 'Ma Shan Zheng', 'KaiTi', cursive;
+    --font-body: 'PingFang SC', 'HarmonyOS Sans SC', 'Noto Sans SC', system-ui, sans-serif;
+    --font-num: 'Familjen Grotesk', 'SF Pro Display', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-body);
+    color: rgb(var(--cocoa-900));
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(var(--butter-100) / .55), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgb(var(--sakura-100) / .4), transparent),
+      rgb(var(--cream-100));
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 亚麻纸纹叠加层 */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: .04; mix-blend-mode: multiply;
+  }
+
+  /* ===== 顶部切换栏 ===== */
+  .stage-bar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 16px;
+    backdrop-filter: blur(12px);
+    background: rgb(var(--cream-100) / .7);
+    border-bottom: 1px solid rgb(var(--butter-100) / .6);
+  }
+  .stage-bar .brand { position: absolute; left: 20px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgb(var(--cocoa-400)); }
+  .stage-bar .brand svg { width: 22px; height: 22px; color: rgb(var(--butter-500)); }
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: rgb(var(--butter-50)); border: 1px solid rgb(var(--butter-100)); }
+  .seg button {
+    border: none; background: transparent; cursor: pointer; padding: 8px 20px; border-radius: var(--r-pill);
+    font-family: var(--font-body); font-size: 14px; font-weight: 600; color: rgb(var(--cocoa-400));
+    transition: all .25s cubic-bezier(.22,1,.36,1);
+  }
+  .seg button.on { background: linear-gradient(135deg, rgb(var(--butter-400)), rgb(var(--butter-500))); color: #fff; box-shadow: var(--shadow-pop); }
+  .screen { display: none; }
+  .screen.on { display: block; }
+
+  /* ===== 晨光入场动效（L1）===== */
+  @keyframes grow-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .grow-in > * { animation: grow-in .6s cubic-bezier(.22,1,.36,1) both; }
+  .grow-in > *:nth-child(1){animation-delay:.05s}
+  .grow-in > *:nth-child(2){animation-delay:.12s}
+  .grow-in > *:nth-child(3){animation-delay:.19s}
+  .grow-in > *:nth-child(4){animation-delay:.26s}
+  .grow-in > *:nth-child(5){animation-delay:.33s}
+  .grow-in > *:nth-child(6){animation-delay:.40s}
+
+  @keyframes floaty { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-10px) rotate(2deg)} }
+  @keyframes sweep { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
+
+  /* ============ 屏 1：登录页 ============ */
+  .login-wrap {
+    position: relative; min-height: calc(100vh - 56px);
+    display: flex; align-items: center; justify-content: center; padding: 32px 20px;
+  }
+  .login-grid {
+    position: relative; z-index: 2;
+    display: grid; gap: 40px; align-items: center;
+    grid-template-columns: 1fr; max-width: 1080px; width: 100%;
+  }
+  @media (min-width: 960px){ .login-grid { grid-template-columns: 1.1fr .9fr; gap: 56px; } }
+
+  /* 左侧品牌区 */
+  .brand-side { position: relative; }
+  .brand-badge {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+    border-radius: var(--r-pill); background: rgb(var(--surface));
+    border: 1px solid rgb(var(--butter-100)); box-shadow: var(--shadow-paper);
+    font-size: 13px; color: rgb(var(--cocoa-700)); font-weight: 600; margin-bottom: 24px;
+  }
+  .brand-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--butter-500)); box-shadow: 0 0 0 4px rgb(var(--butter-100)); }
+  .brand-title {
+    font-family: var(--font-display); font-style: italic;
+    font-size: clamp(40px, 6vw, 68px); line-height: 1.05; color: rgb(var(--cocoa-900));
+    letter-spacing: -.01em; margin-bottom: 20px;
+  }
+  .brand-title .hl {
+    position: relative; display: inline-block; color: rgb(var(--cocoa-900));
+    background: linear-gradient(180deg, transparent 55%, rgb(var(--butter-300) / .85) 55%);
+    padding: 0 4px;
+  }
+  .brand-sub { font-size: 17px; line-height: 1.7; color: rgb(var(--cocoa-400)); max-width: 440px; margin-bottom: 28px; }
+  .brand-steps { display: flex; flex-direction: column; gap: 14px; }
+  .brand-step { display: flex; align-items: center; gap: 14px; font-size: 15px; color: rgb(var(--cocoa-700)); }
+  .brand-step .num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-family: var(--font-num); font-weight: 700; font-size: 14px;
+    background: rgb(var(--butter-100)); color: rgb(var(--butter-600)); border: 1px solid rgb(var(--butter-300) / .5);
+  }
+
+  /* 手绘植物插画 —— 破格探出 */
+  .plant-illo { position: absolute; top: -30px; right: -10px; width: 150px; height: 180px; z-index: 1; pointer-events: none; }
+  .plant-illo svg { width: 100%; height: 100%; animation: floaty 6s ease-in-out infinite; }
+  @media (max-width: 960px){ .plant-illo { display: none; } }
+
+  /* 右侧登录卡 */
+  .login-card {
+    position: relative; z-index: 2;
+    background: rgb(var(--surface) / .92); backdrop-filter: blur(8px);
+    border-radius: 36px; padding: 36px 32px; box-shadow: var(--shadow-lift);
+    border: 1px solid rgb(255 255 255 / .7);
+  }
+  .login-card::before {
+    content: ''; position: absolute; inset: 0; border-radius: 36px;
+    background: linear-gradient(var(--light-angle), rgb(var(--light-warm) / .4), transparent 40%);
+    pointer-events: none;
+  }
+  .lc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; position: relative; }
+  .lc-avatar {
+    width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center;
+    background: linear-gradient(135deg, rgb(var(--butter-300)), rgb(var(--butter-500)));
+    box-shadow: var(--shadow-pop); color: #fff;
+  }
+  .lc-avatar svg { width: 28px; height: 28px; }
+  .lc-head h2 { font-family: var(--font-display); font-style: italic; font-size: 22px; color: rgb(var(--cocoa-900)); }
+  .lc-head p { font-size: 13px; color: rgb(var(--cocoa-400)); margin-top: 2px; }
+
+  .field { margin-bottom: 16px; position: relative; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: rgb(var(--cocoa-700)); margin-bottom: 8px; }
+  .field .ctrl {
+    display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 52px;
+    border-radius: var(--r-md); background: rgb(var(--cream-100));
+    border: 1.5px solid rgb(var(--cream-200)); transition: all .2s;
+  }
+  .field .ctrl:focus-within { border-color: rgb(var(--butter-400)); box-shadow: 0 0 0 4px rgb(var(--butter-100) / .6); background: rgb(var(--surface)); }
+  .field .ctrl svg { width: 18px; height: 18px; color: rgb(var(--cocoa-300)); flex: none; }
+  .field input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; color: rgb(var(--cocoa-900)); font-family: var(--font-body); }
+  .role-row { display: flex; gap: 8px; margin-bottom: 22px; }
+  .role-chip { flex: 1; text-align: center; padding: 10px; border-radius: var(--r-md); font-size: 13px; font-weight: 600; color: rgb(var(--cocoa-400)); cursor: pointer; background: rgb(var(--cream-100)); border: 1.5px solid transparent; transition: all .2s; }
+  .role-chip.on { background: rgb(var(--butter-100)); border-color: rgb(var(--butter-400)); color: rgb(var(--butter-600)); }
+
+  .btn-primary {
+    position: relative; overflow: hidden; width: 100%; height: 54px; border: none; cursor: pointer;
+    border-radius: var(--r-pill); font-family: var(--font-display); font-style: italic; font-size: 17px; font-weight: 700;
+    color: #fff; letter-spacing: .02em;
+    background: linear-gradient(135deg, rgb(var(--butter-400)), rgb(var(--butter-500)));
+    box-shadow: var(--shadow-pop); transition: transform .2s, box-shadow .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgb(255 180 80 / .38); }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary .shine { position: absolute; top: 0; left: 0; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / .5), transparent); transform: translateX(-120%); }
+  .btn-primary:hover .shine { animation: sweep 1s ease; }
+  .lc-foot { text-align: center; margin-top: 18px; font-size: 13px; color: rgb(var(--cocoa-400)); }
+  .lc-foot a { color: rgb(var(--butter-600)); text-decoration: none; font-weight: 600; }
+
+  /* ============ 屏 2：工作台 ============ */
+  .dash-wrap { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* 欢迎横幅 + 破格植物 */
+  .hero {
+    position: relative; overflow: visible; border-radius: var(--r-lg);
+    padding: 28px 30px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    background: linear-gradient(135deg, rgb(var(--butter-100)) 0%, rgb(255 233 184) 55%, rgb(255 224 178) 100%);
+    box-shadow: var(--shadow-lift); border: 1px solid rgb(255 255 255 / .6);
+  }
+  .hero::after { content: ''; position: absolute; inset: 0; border-radius: var(--r-lg); background: linear-gradient(var(--light-angle), rgb(var(--light-warm) / .35), transparent 45%); pointer-events: none; }
+  .hero-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+  .hero-orb.a { width: 200px; height: 200px; right: -50px; top: -80px; background: radial-gradient(circle at 30% 30%, rgb(255 246 216), rgb(255 212 121)); opacity: .5; }
+  .hero-orb.b { width: 120px; height: 120px; left: 30%; bottom: -60px; background: radial-gradient(circle, rgb(var(--sakura-100)), transparent); opacity: .6; }
+  .hero-plant { position: absolute; right: 24px; top: -46px; width: 90px; height: 110px; z-index: 3; animation: floaty 5s ease-in-out infinite; }
+  .hero-plant svg { width: 100%; height: 100%; }
+  .hero-ic { flex: none; width: 60px; height: 60px; border-radius: 20px; display: grid; place-items: center; background: rgb(255 243 214); box-shadow: var(--shadow-paper); position: relative; z-index: 2; }
+  .hero-ic svg { width: 34px; height: 34px; color: rgb(var(--butter-600)); }
+  .hero-main { position: relative; z-index: 2; flex: 1; min-width: 220px; }
+  .hero-hi { font-family: var(--font-display); font-style: italic; font-size: 26px; color: rgb(var(--cocoa-900)); }
+  .hero-hi .name { color: rgb(var(--butter-600)); }
+  .hero-school { font-size: 13px; color: rgb(var(--cocoa-400)); margin-top: 4px; }
+  .hero-bell { position: relative; z-index: 2; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); cursor: pointer; }
+  .hero-bell svg { width: 20px; height: 20px; color: rgb(var(--cocoa-700)); }
+  .hero-bell .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: rgb(var(--sakura-400)); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; font-family: var(--font-num); }
+
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 28px 0 16px; }
+  .section-title .bar { width: 4px; height: 20px; border-radius: 2px; background: linear-gradient(180deg, rgb(var(--butter-400)), rgb(var(--sakura-400))); }
+  .section-title h3 { font-family: var(--font-display); font-style: italic; font-size: 19px; color: rgb(var(--cocoa-900)); }
+  .section-title .more { margin-left: auto; font-size: 13px; color: rgb(var(--cocoa-400)); cursor: pointer; }
+
+  /* 统计卡 2x2 —— 纸边高光 + 有机阴影 + 数字用 Familjen Grotesk */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (min-width: 640px){ .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat-card {
+    position: relative; padding: 20px; border-radius: 20px; background: rgb(var(--surface));
+    box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7);
+    transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s; cursor: pointer;
+  }
+  .stat-card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: linear-gradient(180deg, transparent, rgb(255 255 255 / .9), transparent); }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+  .stat-card .sc-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 14px; }
+  .stat-card .sc-ic svg { width: 22px; height: 22px; }
+  .stat-card .sc-num { font-family: var(--font-num); font-weight: 700; font-size: 32px; color: rgb(var(--butter-600)); line-height: 1; }
+  .stat-card .sc-lb { font-size: 13px; color: rgb(var(--cocoa-400)); margin-top: 6px; }
+  .stat-card .sc-delta { display: inline-flex; align-items: center; gap: 3px; margin-top: 8px; font-size: 12px; font-weight: 600; font-family: var(--font-num); }
+  .sc-delta.up { color: rgb(var(--mint-400)); }
+  .ic-butter { background: rgb(var(--butter-100)); } .ic-butter svg { color: rgb(var(--butter-600)); }
+  .ic-sakura { background: rgb(var(--sakura-100)); } .ic-sakura svg { color: rgb(var(--sakura-400)); }
+  .ic-mint { background: rgb(240 252 245); } .ic-mint svg { color: rgb(var(--mint-400)); }
+  .ic-sky { background: rgb(240 248 254); } .ic-sky svg { color: rgb(var(--sky2-400)); }
+
+  /* 生长刻度 —— 班级人数分布，条形顶端是植物形态 */
+  .growth-card { padding: 24px; border-radius: 20px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); }
+  .growth-row { display: grid; grid-template-columns: 70px 1fr 50px; align-items: center; gap: 14px; padding: 10px 0; }
+  .growth-row .g-name { font-size: 14px; color: rgb(var(--cocoa-700)); font-weight: 600; }
+  .growth-track { height: 14px; border-radius: 7px; background: rgb(var(--cream-200)); overflow: visible; position: relative; }
+  .growth-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, rgb(var(--butter-300)), rgb(var(--butter-500))); position: relative; transition: width .8s cubic-bezier(.22,1,.36,1); }
+  .growth-tip { position: absolute; right: -10px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; }
+  .growth-tip svg { width: 100%; height: 100%; }
+  .growth-row .g-num { font-family: var(--font-num); font-weight: 700; font-size: 16px; color: rgb(var(--cocoa-700)); text-align: right; }
+
+  /* 功能入口瓷砖 —— lucide 风格线性图标 + 调色板着色 */
+  .tile-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (min-width: 640px){ .tile-grid { grid-template-columns: repeat(6, 1fr); } }
+  .tile {
+    padding: 18px 10px; border-radius: 18px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper);
+    border: 1px solid rgb(255 255 255 / .7); text-align: center; cursor: pointer;
+    transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s;
+  }
+  .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+  .tile .t-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; margin: 0 auto 10px; }
+  .tile .t-ic svg { width: 24px; height: 24px; }
+  .tile .t-lb { font-size: 12px; color: rgb(var(--cocoa-700)); font-weight: 600; }
+
+  /* 生长图标图例 */
+  .legend { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-top: 14px; padding: 14px 18px; border-radius: 14px; background: rgb(var(--cream-100)); border: 1px dashed rgb(var(--butter-300) / .6); }
+  .legend .lg { display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgb(var(--cocoa-400)); }
+  .legend .lg svg { width: 18px; height: 18px; color: rgb(var(--butter-500)); }
+  .legend .lg b { color: rgb(var(--cocoa-700)); font-weight: 600; }
+
+  /* ===== 工作台扩展模块 ===== */
+  .dash-cols { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 880px){ .dash-cols { grid-template-columns: 1.25fr 1fr; } }
+  .panel { padding: 22px; border-radius: 20px; background: rgb(var(--surface)); box-shadow: var(--shadow-paper); border: 1px solid rgb(255 255 255 / .7); }
+  .panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .panel-head .ph-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; }
+  .panel-head .ph-ic svg { width: 18px; height: 18px; }
+  .panel-head h4 { font-family: var(--font-display); font-style: italic; font-size: 17px; color: rgb(var(--cocoa-900)); }
+  .panel-head .ph-meta { margin-left: auto; font-size: 12px; color: rgb(var(--cocoa-400)); }
+
+  /* 今日课表时间线 */
+  .lesson { display: flex; gap: 14px; padding: 13px 0; border-bottom: 1px dashed rgb(var(--cream-200)); align-items: center; }
+  .lesson:last-child { border-bottom: none; padding-bottom: 0; }
+  .lesson .per { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-family: var(--font-num); font-weight: 700; font-size: 14px; background: rgb(var(--cream-100)); color: rgb(var(--cocoa-400)); }
+  .lesson.now .per { background: linear-gradient(135deg, rgb(var(--butter-400)), rgb(var(--butter-500))); color: #fff; box-shadow: var(--shadow-pop); }
+  .lesson .l-info { flex: 1; min-width: 0; }
+  .lesson .l-subj { font-family: var(--font-display); font-style: italic; font-size: 16px; color: rgb(var(--cocoa-900)); }
+  .lesson .l-meta { font-size: 12px; color: rgb(var(--cocoa-400)); margin-top: 2px; font-family: var(--font-num); }
+  .lesson.now .l-subj { color: rgb(var(--butter-600)); }
+  .lesson .l-loc { flex: none; font-size: 11px; color: rgb(var(--cocoa-400)); padding: 4px 9px; border-radius: 7px; background: rgb(var(--cream-100)); }
+  .lesson.now .l-loc { background: rgb(var(--butter-100)); color: rgb(var(--butter-600)); }
+
+  /* 待办 */
+  .todo-item { display: flex; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px dashed rgb(var(--cream-200)); }
+  .todo-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .todo-item .t-st { flex: none; width: 22px; height: 22px; }
+  .todo-item .t-st svg { width: 100%; height: 100%; }
+  .todo-item .t-tt { flex: 1; font-size: 14px; color: rgb(var(--cocoa-700)); }
+  .todo-item.done .t-tt { text-decoration: line-through; color: rgb(var(--cocoa-300)); }
+  .todo-item .t-tag { flex: none; font-size: 11px; padding: 3px 9px; border-radius: 7px; font-weight: 600; }
+  .t-tag.urgent { background: rgb(var(--sakura-100)); color: rgb(var(--sakura-400)); }
+  .t-tag.normal { background: rgb(var(--cream-100)); color: rgb(var(--cocoa-400)); }
+
+  /* AI 助手卡 */
+  .ai-card { position: relative; overflow: hidden; padding: 22px; border-radius: 20px; background: linear-gradient(135deg, rgb(var(--butter-100)), rgb(var(--sakura-100))); border: 1px solid rgb(var(--butter-300) / .4); box-shadow: var(--shadow-paper); }
+  .ai-card::before { content: ''; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 246 216), transparent 70%); opacity: .6; }
+  .ai-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; position: relative; }
+  .ai-head .ai-ic { width: 40px; height: 40px; border-radius: 12px; background: rgb(var(--surface)); display: grid; place-items: center; box-shadow: var(--shadow-paper); color: rgb(var(--butter-600)); flex: none; }
+  .ai-head .ai-ic svg { width: 22px; height: 22px; }
+  .ai-head h4 { font-family: var(--font-display); font-style: italic; font-size: 17px; color: rgb(var(--cocoa-900)); }
+  .ai-head p { font-size: 12px; color: rgb(var(--cocoa-400)); margin-top: 2px; }
+  .ai-chips { display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .ai-chip { padding: 11px 13px; border-radius: 12px; background: rgb(var(--surface) / .75); font-size: 13px; color: rgb(var(--cocoa-700)); display: flex; align-items: center; gap: 9px; cursor: pointer; border: 1px solid transparent; transition: all .2s; }
+  .ai-chip:hover { background: rgb(var(--surface)); border-color: rgb(var(--butter-300)); transform: translateX(3px); }
+  .ai-chip svg { width: 15px; height: 15px; color: rgb(var(--butter-500)); flex: none; }
+
+  /* 家校动态 */
+  .feed-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px dashed rgb(var(--cream-200)); align-items: center; }
+  .feed-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .feed-av { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+  .feed-av svg { width: 18px; height: 18px; }
+  .feed-txt { flex: 1; font-size: 13px; color: rgb(var(--cocoa-400)); line-height: 1.5; min-width: 0; }
+  .feed-txt b { color: rgb(var(--cocoa-900)); font-weight: 600; }
+  .feed-time { flex: none; font-size: 11px; color: rgb(var(--cocoa-300)); font-family: var(--font-num); }
+
+  .note { margin-top: 32px; padding: 16px 20px; border-radius: 14px; background: rgb(var(--sakura-100) / .5); border-left: 3px solid rgb(var(--sakura-400)); font-size: 13px; color: rgb(var(--cocoa-700)); line-height: 1.7; }
+  .note b { color: rgb(var(--sakura-400)); }
+</style>
+</head>
+<body>
+
+<div class="stage-bar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M12 8c0-3 2-5 5-5 0 3-2 5-5 5z"/><path d="M12 12c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>
+    生长花园 · 设计概念稿
+  </div>
+  <div class="seg">
+    <button class="on" data-screen="login">登录页</button>
+    <button data-screen="dash">工作台</button>
+  </div>
+</div>
+
+<!-- ========== 生长图标系统（4 态：种子/萌芽/含苞/盛放）========== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="gi-seed" viewBox="0 0 24 24"><path d="M12 21c0-4 0-7 0-9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><ellipse cx="12" cy="10" rx="4" ry="6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" transform="rotate(-20 12 10)"/></symbol>
+    <symbol id="gi-sprout" viewBox="0 0 24 24"><path d="M12 21V11" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M12 13c0-3-2-5-5-5 0 3 2 5 5 5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M12 11c0-2 1.5-4 4-4 0 2-1.5 4-4 4z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+    <symbol id="gi-bud" viewBox="0 0 24 24"><path d="M12 21V12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M12 13c-2.5-1-4-3-4-6 2.5 0 4 2 4 6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M12 13c2.5-1 4-3 4-6-2.5 0-4 2-4 6z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><circle cx="12" cy="9" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="gi-bloom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.4" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="2.2" ry="3.2"/><ellipse cx="12" cy="17.5" rx="2.2" ry="3.2"/><ellipse cx="6.5" cy="12" rx="3.2" ry="2.2"/><ellipse cx="17.5" cy="12" rx="3.2" ry="2.2"/></g><path d="M12 21V15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+    <!-- 功能线性图标 -->
+    <symbol id="ic-classes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-3"/><path d="M9 9v0M9 12v0M9 15v0"/></symbol>
+    <symbol id="ic-students" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/><path d="M22 10v6"/></symbol>
+    <symbol id="ic-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></symbol>
+    <symbol id="ic-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 015.66 5.66l-9.9 9.9-4.24.7.7-4.24z"/></symbol>
+    <symbol id="ic-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 01-12.8 7.4L3 21l2.1-5.2A8.5 8.5 0 1121 11.5z"/></symbol>
+    <symbol id="ic-ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
+    <symbol id="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+    <symbol id="ic-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5z"/><path d="M4 19.5V21h16"/></symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 4 5 5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></symbol>
+    <symbol id="ic-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ========== 屏 1：登录页 ========== -->
+<section class="screen on" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-grid grow-in">
+
+      <!-- 左侧品牌区 -->
+      <div class="brand-side">
+        <!-- 破格手绘植物插画 -->
+        <div class="plant-illo" aria-hidden="true">
+          <svg viewBox="0 0 150 180" fill="none">
+            <path d="M75 170 C75 140 75 110 75 80" stroke="rgb(74 174 122)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M75 120 C55 115 40 100 38 78 C60 80 75 95 75 120z" fill="rgb(240 252 245)" stroke="rgb(74 174 122)" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M75 105 C95 100 110 85 112 63 C90 65 75 80 75 105z" fill="rgb(240 252 245)" stroke="rgb(74 174 122)" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="75" cy="55" r="14" fill="rgb(255 206 84)" stroke="rgb(214 148 38)" stroke-width="2.5"/>
+            <g fill="rgb(255 224 178)" stroke="rgb(231 105 140)" stroke-width="2">
+              <ellipse cx="75" cy="34" rx="7" ry="11"/>
+              <ellipse cx="75" cy="76" rx="7" ry="11"/>
+              <ellipse cx="53" cy="55" rx="11" ry="7"/>
+              <ellipse cx="97" cy="55" rx="11" ry="7"/>
+            </g>
+            <circle cx="75" cy="55" r="6" fill="rgb(214 148 38)"/>
+            <path d="M60 168 Q75 174 90 168" stroke="rgb(138 110 70)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div class="brand-badge"><span class="dot"></span> 园丁工作台 · 2026 设计语言</div>
+        <h1 class="brand-title">用心耕耘<br>让每个孩子<span class="hl">闪闪发光</span></h1>
+        <p class="brand-sub">把"园丁"的隐喻从配色真正落到界面——数据是作物，教师是园丁。一片被精心照料的花园，温暖、有机、有生命力。</p>
+        <div class="brand-steps">
+          <div class="brand-step"><span class="num">1</span> 输入工号，选择你的角色</div>
+          <div class="brand-step"><span class="num">2</span> 微信扫码或密码登录</div>
+          <div class="brand-step"><span class="num">3</span> 进入属于你的花园工作台</div>
+        </div>
+      </div>
+
+      <!-- 右侧登录卡 -->
+      <div class="login-card">
+        <div class="lc-head">
+          <div class="lc-avatar"><svg><use href="#gi-bloom"/></svg></div>
+          <div>
+            <h2>欢迎回来，园丁</h2>
+            <p>今天又是播种希望的一天</p>
+          </div>
+        </div>
+
+        <div class="role-row">
+          <div class="role-chip on">教师</div>
+          <div class="role-chip">校管</div>
+          <div class="role-chip">超管</div>
+          <div class="role-chip">家长</div>
+        </div>
+
+        <div class="field">
+          <label>工号 / 手机号</label>
+          <div class="ctrl">
+            <svg><use href="#ic-user"/></svg>
+            <input type="text" value="T2021088" />
+          </div>
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <div class="ctrl">
+            <svg><use href="#ic-lock"/></svg>
+            <input type="password" value="••••••••" />
+          </div>
+        </div>
+
+        <button class="btn-primary"><span class="shine"></span>开始耕耘 →</button>
+        <p class="lc-foot">首次使用？<a>微信扫码登录</a> · <a>忘记密码</a></p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========== 屏 2：工作台 ========== -->
+<section class="screen" id="screen-dash">
+  <div class="dash-wrap grow-in">
+
+    <!-- 欢迎横幅 + 破格植物 -->
+    <div class="hero">
+      <div class="hero-orb a"></div>
+      <div class="hero-orb b"></div>
+      <div class="hero-plant" aria-hidden="true">
+        <svg viewBox="0 0 90 110" fill="none">
+          <path d="M45 105 C45 80 45 55 45 30" stroke="rgb(74 174 122)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M45 70 C30 66 20 54 18 38 C34 40 45 52 45 70z" fill="rgb(240 252 245)" stroke="rgb(74 174 122)" stroke-width="2"/>
+          <circle cx="45" cy="24" r="11" fill="rgb(255 206 84)" stroke="rgb(214 148 38)" stroke-width="2"/>
+          <g fill="rgb(255 224 178)" stroke="rgb(231 105 140)" stroke-width="1.8">
+            <ellipse cx="45" cy="10" rx="5" ry="8"/>
+            <ellipse cx="45" cy="38" rx="5" ry="8"/>
+            <ellipse cx="29" cy="24" rx="8" ry="5"/>
+            <ellipse cx="61" cy="24" rx="8" ry="5"/>
+          </g>
+        </svg>
+      </div>
+      <div class="hero-ic"><svg><use href="#gi-bloom"/></svg></div>
+      <div class="hero-main">
+        <div class="hero-hi">早安，<span class="name">林老师</span> 🌱</div>
+        <div class="hero-school">阳光小学 · 三年级（2）班 · 今日 6 节课</div>
+      </div>
+      <div class="hero-bell"><svg><use href="#ic-bell"/></svg><span class="badge">3</span></div>
+    </div>
+
+    <!-- 统计卡 -->
+    <div class="section-title">
+      <span class="bar"></span><h3>今日概览</h3>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="sc-ic ic-butter"><svg><use href="#ic-classes"/></svg></div>
+        <div class="sc-num">6</div>
+        <div class="sc-lb">所带班级</div>
+        <div class="sc-delta up">↑ 本学期新增 1</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-sakura"><svg><use href="#ic-students"/></svg></div>
+        <div class="sc-num">248</div>
+        <div class="sc-lb">在校学生</div>
+        <div class="sc-delta up">↑ 出勤率 97.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-mint"><svg><use href="#ic-chart"/></svg></div>
+        <div class="sc-num">42</div>
+        <div class="sc-lb">待批改作业</div>
+        <div class="sc-delta up">↓ 较昨日 -8</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-ic ic-sky"><svg><use href="#ic-msg"/></svg></div>
+        <div class="sc-num">13</div>
+        <div class="sc-lb">家校消息</div>
+        <div class="sc-delta up">↑ 3 条未读</div>
+      </div>
+    </div>
+
+    <!-- 生长刻度：班级人数分布 -->
+    <div class="section-title">
+      <span class="bar"></span><h3>班级人数分布</h3>
+      <span class="more">查看详情 ›</span>
+    </div>
+    <div class="growth-card">
+      <div class="growth-row">
+        <span class="g-name">三(1)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:88%"><div class="growth-tip"><svg><use href="#gi-bloom"/></svg></div></div></div>
+        <span class="g-num">45</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">三(2)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:82%"><div class="growth-tip"><svg><use href="#gi-bloom"/></svg></div></div></div>
+        <span class="g-num">42</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">四(1)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:66%"><div class="growth-tip"><svg><use href="#gi-bud"/></svg></div></div></div>
+        <span class="g-num">34</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">四(2)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:48%"><div class="growth-tip"><svg><use href="#gi-sprout"/></svg></div></div></div>
+        <span class="g-num">25</span>
+      </div>
+      <div class="growth-row">
+        <span class="g-name">五(1)班</span>
+        <div class="growth-track"><div class="growth-fill" style="width:30%"><div class="growth-tip"><svg><use href="#gi-seed"/></svg></div></div></div>
+        <span class="g-num">15</span>
+      </div>
+
+      <div class="legend">
+        <div class="lg"><svg><use href="#gi-seed"/></svg><b>种子</b> 15人以下</div>
+        <div class="lg"><svg><use href="#gi-sprout"/></svg><b>萌芽</b> 15-30</div>
+        <div class="lg"><svg><use href="#gi-bud"/></svg><b>含苞</b> 30-40</div>
+        <div class="lg"><svg><use href="#gi-bloom"/></svg><b>盛放</b> 40+</div>
+      </div>
+    </div>
+
+    <!-- 功能入口 -->
+    <div class="section-title">
+      <span class="bar"></span><h3>快捷功能</h3>
+    </div>
+    <div class="tile-grid">
+      <div class="tile"><div class="t-ic ic-butter"><svg><use href="#ic-classes"/></svg></div><div class="t-lb">班级管理</div></div>
+      <div class="tile"><div class="t-ic ic-sakura"><svg><use href="#ic-students"/></svg></div><div class="t-lb">学生档案</div></div>
+      <div class="tile"><div class="t-ic ic-mint"><svg><use href="#ic-chart"/></svg></div><div class="t-lb">成绩分析</div></div>
+      <div class="tile"><div class="t-ic ic-sky"><svg><use href="#ic-msg"/></svg></div><div class="t-lb">家校沟通</div></div>
+      <div class="tile"><div class="t-ic ic-butter"><svg><use href="#ic-tools"/></svg></div><div class="t-lb">课堂工具</div></div>
+      <div class="tile"><div class="t-ic ic-sakura"><svg><use href="#ic-ai"/></svg></div><div class="t-lb">AI 助手</div></div>
+    </div>
+
+    <!-- 双栏：今日课表 + 待办 -->
+    <div class="section-title">
+      <span class="bar"></span><h3>今日安排</h3>
+    </div>
+    <div class="dash-cols">
+      <!-- 今日课表 -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="ph-ic ic-butter"><svg><use href="#ic-clock"/></svg></div>
+          <h4>今日课表</h4>
+          <span class="ph-meta">6 节 · 进行中第 3 节</span>
+        </div>
+        <div class="lesson">
+          <div class="per">1</div>
+          <div class="l-info"><div class="l-subj">语文</div><div class="l-meta">08:00 - 08:40</div></div>
+          <div class="l-loc">三(2)班</div>
+        </div>
+        <div class="lesson">
+          <div class="per">2</div>
+          <div class="l-info"><div class="l-subj">语文</div><div class="l-meta">08:50 - 09:30</div></div>
+          <div class="l-loc">三(1)班</div>
+        </div>
+        <div class="lesson now">
+          <div class="per">3</div>
+          <div class="l-info"><div class="l-subj">语文 · 阅读课</div><div class="l-meta">09:40 - 10:20 · 正在上课</div></div>
+          <div class="l-loc">三(2)班</div>
+        </div>
+        <div class="lesson">
+          <div class="per">4</div>
+          <div class="l-info"><div class="l-subj">语文</div><div class="l-meta">10:30 - 11:10</div></div>
+          <div class="l-loc">三(1)班</div>
+        </div>
+        <div class="lesson">
+          <div class="per">5</div>
+          <div class="l-info"><div class="l-subj">班会</div><div class="l-meta">14:00 - 14:40</div></div>
+          <div class="l-loc">三(2)班</div>
+        </div>
+        <div class="lesson">
+          <div class="per">6</div>
+          <div class="l-info"><div class="l-subj">阅读辅导</div><div class="l-meta">14:50 - 15:30</div></div>
+          <div class="l-loc">图书馆</div>
+        </div>
+      </div>
+
+      <!-- 待办清单 -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="ph-ic ic-sakura"><svg><use href="#ic-check"/></svg></div>
+          <h4>待办清单</h4>
+          <span class="ph-meta">5 项 · 2 项紧急</span>
+        </div>
+        <div class="todo-item done">
+          <div class="t-st" style="color:rgb(var(--mint-400))"><svg><use href="#gi-bloom"/></svg></div>
+          <div class="t-tt">批改三(1)班听写作业</div>
+          <span class="t-tag normal">已完成</span>
+        </div>
+        <div class="todo-item">
+          <div class="t-st" style="color:rgb(var(--butter-500))"><svg><use href="#gi-bud"/></svg></div>
+          <div class="t-tt">准备明日公开课课件</div>
+          <span class="t-tag urgent">紧急</span>
+        </div>
+        <div class="todo-item">
+          <div class="t-st" style="color:rgb(var(--butter-500))"><svg><use href="#gi-bud"/></svg></div>
+          <div class="t-tt">回复 3 位家长留言</div>
+          <span class="t-tag urgent">紧急</span>
+        </div>
+        <div class="todo-item">
+          <div class="t-st" style="color:rgb(var(--cocoa-300))"><svg><use href="#gi-sprout"/></svg></div>
+          <div class="t-tt">填写本周教学反思</div>
+          <span class="t-tag normal">本周</span>
+        </div>
+        <div class="todo-item">
+          <div class="t-st" style="color:rgb(var(--cocoa-300))"><svg><use href="#gi-seed"/></svg></div>
+          <div class="t-tt">整理期中成绩分析报告</div>
+          <span class="t-tag normal">下周</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 助手 + 家校动态 -->
+    <div class="dash-cols" style="margin-top:16px">
+      <!-- AI 助手 -->
+      <div class="ai-card">
+        <div class="ai-head">
+          <div class="ai-ic"><svg><use href="#ic-spark"/></svg></div>
+          <div>
+            <h4>AI 园丁助手</h4>
+            <p>基于你的班级数据，为你准备好了</p>
+          </div>
+        </div>
+        <div class="ai-chips">
+          <div class="ai-chip"><svg><use href="#ic-book"/></svg> 为三(2)班生成今日阅读课教案大纲</div>
+          <div class="ai-chip"><svg><use href="#ic-chart"/></svg> 分析三(1)班听写错误率并给出复习建议</div>
+          <div class="ai-chip"><svg><use href="#ic-msg"/></svg> 起草本周班级学习情况致家长信</div>
+          <div class="ai-chip"><svg><use href="#ic-spark"/></svg> 生成 5 道形近字辨析练习题</div>
+        </div>
+      </div>
+
+      <!-- 家校动态 -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="ph-ic ic-sky"><svg><use href="#ic-msg"/></svg></div>
+          <h4>家校动态</h4>
+          <span class="ph-meta">查看全部 ›</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-av ic-sakura"><svg><use href="#ic-msg"/></svg></div>
+          <div class="feed-txt"><b>王小明家长</b> 留言询问本周作业情况</div>
+          <span class="feed-time">5 分钟前</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-av ic-mint"><svg><use href="#ic-check"/></svg></div>
+          <div class="feed-txt"><b>李小红</b> 提交了阅读打卡（连续 12 天）</div>
+          <span class="feed-time">23 分钟前</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-av ic-butter"><svg><use href="#ic-flame"/></svg></div>
+          <div class="feed-txt"><b>张子轩</b> 获得徽章「阅读达人」</div>
+          <span class="feed-time">1 小时前</span>
+        </div>
+        <div class="feed-item">
+          <div class="feed-av ic-sky"><svg><use href="#ic-book"/></svg></div>
+          <div class="feed-txt"><b>陈朵朵家长</b> 请假申请待审批</div>
+          <span class="feed-time">2 小时前</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>设计说明：</b>本概念稿落地了「生长花园」方向的核心要素——亚麻纸纹背景、有机三层阴影、自研生长图标系统（种子/萌芽/含苞/盛放四态，用作进度隐喻）、得意黑斜体标题、Familjen Grotesk 数字、晨光入场动效、植物插画破格探出。所有暖色 token 与现有项目一致，可平滑落地。
+    </div>
+
+  </div>
+</section>
+
+<script>
+  // 顶部切换
+  document.querySelectorAll('.seg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      const target = btn.dataset.screen;
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+      const el = document.getElementById('screen-' + target);
+      el.classList.add('on');
+      // 重启入场动效
+      el.querySelector('.grow-in').classList.remove('grow-in');
+      void el.offsetWidth;
+      el.querySelector('.login-grid, .dash-wrap').classList.add('grow-in');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+  // 角色切换
+  document.querySelectorAll('.role-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.role-chip').forEach(x => x.classList.remove('on'));
+      c.classList.add('on');
+    });
+  });
+</script>
+</body>
+</html>
