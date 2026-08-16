@@ -148,7 +148,7 @@ const visibleSections = computed<ToolSection[]>(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 grow-in">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
         <Sparkles class="w-6 h-6 text-butter-500" /> 工具箱

@@ -4,10 +4,10 @@ import { useToasts } from '@/utils/feedback'
 const { toasts, dismissToast } = useToasts()
 
 const typeClass: Record<string, string> = {
-  success: 'bg-emerald-500',
-  error: 'bg-rose-500',
-  info: 'bg-slate-800',
-  warning: 'bg-amber-500',
+  success: 'bg-[rgb(var(--mint-400))]',
+  error: 'bg-[rgb(var(--sakura-500))]',
+  info: 'bg-[rgb(var(--cocoa-700))]',
+  warning: 'bg-[rgb(var(--butter-500))]',
 }
 </script>
 

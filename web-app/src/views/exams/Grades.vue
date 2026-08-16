@@ -444,7 +444,7 @@ function resetMatrixImport() {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 grow-in">
     <!-- 顶栏 -->
     <div class="flex items-center justify-between gap-4 flex-wrap">
       <h1 class="text-2xl font-bold text-cocoa-900">成绩管理</h1>

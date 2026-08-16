@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { listSchools, listClasses, listStudents } from '@/api/admin'
-import { Download, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { Download, Loader2, Search, ChevronLeft, ChevronRight, Users } from 'lucide-vue-next'
 
 const loading = ref(false)
 const students = ref<any[]>([])
@@ -125,10 +125,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 grow-in">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-cocoa-900 flex items-center gap-2">
-        👨‍🎓 学生管理（超管）
+        <Users class="w-6 h-6 text-butter-500" /> 学生管理（超管）
       </h1>
       <button
         class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-butter-500 text-white text-sm font-medium hover:bg-butter-600 transition-colors"
