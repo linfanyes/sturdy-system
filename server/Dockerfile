@@ -69,6 +69,9 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/migrations ./migrations
+# 容器初始化入口：部署时先自动执行数据库迁移，再启动服务
+COPY --from=build /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 # 复制 vendor 目录以便运行时引用
 COPY --from=build /app/vendor ./vendor
 RUN chown -R node:node /app
@@ -77,4 +80,6 @@ EXPOSE 3000
 # 健康检查（微信云托管使用 /health 端点）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
-CMD ["node", "dist/main.js"]
+# 容器启动经由初始化入口：先跑数据库迁移（migrations/*.sql，幂等），再启动服务。
+# 这样云端每次「重新拉取代码 → 跑流水线 → 重建部署」都会自动对齐表结构。
+CMD ["/app/docker-entrypoint.sh"]

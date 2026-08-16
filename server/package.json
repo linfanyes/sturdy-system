@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
+    "migrate": "node dist/migrate.js",
     "vendor:shared": "node ../scripts/sync-shared-vendor.mjs",
     "check:vendor": "node ../scripts/check-shared-vendor.mjs",
     "qa": "tsc -p tsconfig.qa.json && node .qa-dist/server/qa/run.js",

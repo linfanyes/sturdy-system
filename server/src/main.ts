@@ -6,104 +6,16 @@ import { json, urlencoded } from 'express'
 import * as express from 'express'
 import { join } from 'path'
 import * as fs from 'node:fs'
-import * as path from 'node:path'
-import * as mysql from 'mysql2/promise'
 import { AppModule } from './app.module'
+import { runMigrations } from './migrations/runner'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
 import { isBcryptHash } from './common/utils/password.util'
 import helmet from 'helmet'
 
 const logger = new Logger('Bootstrap')
 
-/**
- * 启动时自动执行 migrations 目录下未应用的 .sql 文件。
- * - 用 _migrations_applied 表跟踪已执行文件名，幂等可重复运行。
- * - 失败不阻塞启动（synchronize=true 仍会同步 entity 表结构），
- *   仅打印错误供运维排查。
- * - 使用独立的迁移连接（仅该连接开启 multipleStatements），
- *   业务连接不再开启多语句，缩小 SQL 注入单点风险面。
- * - 使用 MySQL 命名锁（GET_LOCK）防止多实例并发执行迁移，
- *   避免云托管多副本场景下的竞态条件。
- */
-async function runMigrations(app: any) {
-  const config = app.get(ConfigService)
-  let conn: mysql.Connection | null = null
-  let lockAcquired = false
-  const LOCK_NAME = 'gardener_run_migrations'
-  const LOCK_TIMEOUT = 60
-  try {
-    const migrationsDir = path.join(__dirname, '..', 'migrations')
-    if (!fs.existsSync(migrationsDir)) {
-      logger.log('ℹ️  migrations 目录不存在，跳过自动迁移')
-      return
-    }
-    conn = await mysql.createConnection({
-      host: config.get('DB_HOST'),
-      port: +(config.get('DB_PORT') || 3306),
-      user: config.get('DB_USERNAME'),
-      password: config.get('DB_PASSWORD'),
-      database: config.get('DB_DATABASE'),
-      charset: 'utf8mb4',
-      multipleStatements: true,
-      connectTimeout: 5000,
-      ...(config.get('DB_SSL') === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
-    })
-
-    const [lockResult] = await conn.query<mysql.RowDataPacket[]>(
-      'SELECT GET_LOCK(?, ?) as acquired',
-      [LOCK_NAME, LOCK_TIMEOUT],
-    )
-    lockAcquired = lockResult[0]?.acquired === 1
-    if (!lockAcquired) {
-      logger.warn(`⚠️ 未能获取迁移锁 ${LOCK_NAME}（其他实例正在执行迁移），跳过本轮迁移`)
-      return
-    }
-
-    await conn.query(`CREATE TABLE IF NOT EXISTS _migrations_applied (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      filename VARCHAR(255) NOT NULL UNIQUE,
-      applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
-    const [appliedRows] = await conn.query<mysql.RowDataPacket[]>('SELECT filename FROM _migrations_applied')
-    const appliedSet = new Set(appliedRows.map(r => String(r.filename)))
-    const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort()
-    logger.log(`ℹ️  待检查迁移 ${files.length} 个，已应用 ${appliedSet.size} 个，目录: ${migrationsDir}`)
-    let appliedNow = 0
-    let failed = 0
-    for (const file of files) {
-      if (appliedSet.has(file)) continue
-      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8')
-      logger.log(`📦 执行迁移: ${file}`)
-      try {
-        await conn.query(sql)
-        await conn.query('INSERT INTO _migrations_applied (filename) VALUES (?)', [file])
-        appliedSet.add(file)
-        appliedNow++
-        logger.log(`✅ 迁移完成: ${file}`)
-      } catch (e: any) {
-        // 单个迁移失败不阻断后续迁移（生产库可能存在个别历史表缺失/数据冲突），
-        // 失败文件不记入 _migrations_applied，下次启动会重试。
-        failed++
-        logger.error(`❌ 迁移失败（已跳过，不影响其他迁移）: ${file} => ${e?.message || e}`)
-      }
-    }
-    logger.log(`ℹ️  迁移执行汇总: 新应用 ${appliedNow} 个，失败 ${failed} 个`)
-  } catch (e: any) {
-    const isProd = app.get(ConfigService).get('NODE_ENV') === 'production'
-    if (isProd) {
-      logger.error('❌ 自动迁移执行失败（生产环境不阻塞启动）:', e?.message || e)
-    } else {
-      logger.warn('⚠️  自动迁移执行失败（开发环境不阻塞启动）:', e?.message || e)
-    }
-  } finally {
-    if (conn) {
-      if (lockAcquired) {
-        await conn.query('SELECT RELEASE_LOCK(?)', [LOCK_NAME]).catch(() => {})
-      }
-      await conn.end().catch(() => {})
-    }
-  }
-}
+// 自动迁移逻辑已抽取到 ./migrations/runner.ts，由本文件与容器初始化入口
+//（docker-entrypoint.sh）共用，保证云端流水线重建部署时先对齐表结构再起服务。
 
 /**
  * API 版本化：将 /api/* 重定向到 /api/v1/*，同时保留 /api/v1/* 直连。
@@ -237,7 +149,9 @@ async function bootstrap() {
     logger.warn('⚠️  ENCRYPTION_KEY 未配置，建议设置该环境变量')
   }
 
-  await runMigrations(app)
+  // 应用数据库迁移（幂等）。容器场景下这一步已在 docker-entrypoint.sh 中先行执行，
+  // 此处再次调用作为兜底（多实例下通过命名锁串行化），确保无论以何种方式启动都能对齐表结构。
+  await runMigrations(app.get(ConfigService))
 
   // 健康检查端点
   app.getHttpAdapter().get('/health', (_req, res) =>
