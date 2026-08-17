@@ -3,11 +3,25 @@
 //   1. 已开通云开发环境，并将云托管服务关联到该环境（服务设置里开启「微信私有链路」）。
 //   2. 小程序已绑定同一云开发环境（公众平台 → 云开发 → 关联）。
 // 小程序端用 wx.cloud.callContainer 通过该链路访问后端，免公网流量、免登记 request 合法域名。
+// ⚠️ 安全说明：CLOUDRUN_ENV 为环境标识符（非密钥），在小程序网络请求中明文传输不可避免。
+//   真正的安全依赖微信私有链路 + 后端 JWT 鉴权，环境 ID 本身不用于身份验证。
+//   若需轮换环境，在云托管控制台创建新环境后更新此值即可。
 export const CLOUDRUN_ENV = 'prod-d6g1zoq8c7be4ce53' // 云开发/云托管环境 ID（控制台「环境」页复制）
 export const CLOUDRUN_SERVICE = 'tec-work' // 云托管服务名（创建服务时填的名字；单服务时可留空）
 
 // 后端接口路径前缀（与后端 main.ts 的 setGlobalPrefix('api/v1') 一致；旧 /api 路径由后端 307 重定向）
 export const API_PREFIX = '/api/v1'
+
+// —— 鉴权 Token Storage Key（统一管理，避免散落在各文件中硬编码） ——
+export const TOKEN_KEY = 'g_token' // 教师端 token
+export const ADMIN_TOKEN_KEY = 'admin_token' // 超管 token
+export const SA_TOKEN_KEY = 'sa_token' // 校管 token
+export const PARENT_TOKEN_KEY = 'g_parent_token' // 家长端 token
+// 用户信息 key（与 token 配对）
+export const USER_KEY = 'g_user'
+export const ADMIN_USER_KEY = 'admin_user'
+export const SA_USER_KEY = 'sa_user'
+export const PARENT_USER_KEY = 'g_parent_user'
 
 // 演示模式（Mock）发布隔离开关：
 // - 开发/预览构建（uni 默认 NODE_ENV=development）保持 true，支持无后端冷启动全功能演示；

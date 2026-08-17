@@ -43,7 +43,8 @@ export function pctNum(n: number | string | null | undefined): string {
  * @example scoreColor(95, 100) => "#67c23a" ; scoreColor(null) => "rgb(var(--cream-200))"
  */
 export function scoreColor(score: number | null | undefined, fullScore: number = 100): string {
-  if (score == null) return 'rgb(var(--cream-200))'
+  // P1-8修复：fallback 返回具体颜色值而非 CSS 变量，确保小程序端可用
+  if (score == null) return '#f5f5f0'
   const p = score / fullScore
   if (p >= 0.9) return '#67c23a'
   if (p >= 0.8) return '#e6a23c'

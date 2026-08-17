@@ -2,7 +2,7 @@
 import { onLaunch } from '@dcloudio/uni-app'
 import { mockMode, initTheme, auth, bindAuthMachine, authMachine } from './common/store'
 import { setMockMode } from './common/request'
-import { CLOUDRUN_ENV, DEMO_MODE_ENABLED } from './common/config'
+import { CLOUDRUN_ENV, DEMO_MODE_ENABLED, TOKEN_KEY, ADMIN_TOKEN_KEY, SA_TOKEN_KEY, PARENT_TOKEN_KEY } from './common/config'
 import { setupRouteGuard } from './common/route-guard'
 import { initMonitor, onAppError, onAppUnhandledRejection } from './common/monitor'
 
@@ -49,10 +49,10 @@ export default {
     // 多角色会话恢复：任一角色令牌存在即视为已登录，并跳转对应首页，
     // 避免超管 / 校管 / 家长 / 教师登录态在冷启动时被判为未登录而被强制退回登录页。
     // 无任何登录态时，停留在登录页（pages/login/login 为首页），不再自动进入演示模式。
-    const hasTeacher = !!uni.getStorageSync('g_token')
-    const hasAdmin = !!uni.getStorageSync('admin_token')
-    const hasSa = !!uni.getStorageSync('sa_token')
-    const hasParent = !!uni.getStorageSync('g_parent_token')
+    const hasTeacher = !!uni.getStorageSync(TOKEN_KEY)
+    const hasAdmin = !!uni.getStorageSync(ADMIN_TOKEN_KEY)
+    const hasSa = !!uni.getStorageSync(SA_TOKEN_KEY)
+    const hasParent = !!uni.getStorageSync(PARENT_TOKEN_KEY)
     if (hasAdmin) {
       uni.reLaunch({ url: '/pages/admin/admin' })
     } else if (hasSa) {
@@ -191,24 +191,24 @@ image {
 }
 
 /* 5) 全站通用底部组件统一避让安全区（无需逐页修改）。
-   这些组件均为各页 scoped 样式，普通全局选择器会被页面 scoped 覆盖，
-   故用 !important 保证全站一致生效。 */
+   这些组件均为各页 scoped 样式，普通全局选择器会被页面 scoped 覆盖。
+   解决方案：使用 :global() 选择器穿透 scoped（uni-app 支持），避免 !important 带来的特异性战争。 */
 /* 底部抽屉 .modal（left/right 5%、bottom:0）：底部加安全区留白 */
-.modal {
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom)) !important;
+:global(.modal) {
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
 }
 /* 底部固定操作栏（如学生批量操作条 .batchbar） */
-.batchbar {
-  padding-bottom: env(safe-area-inset-bottom) !important;
+:global(.batchbar) {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 /* 右下悬浮按钮 .fab：底部基准上移安全区高度 */
-.fab {
-  bottom: calc(60rpx + env(safe-area-inset-bottom)) !important;
+:global(.fab) {
+  bottom: calc(60rpx + env(safe-area-inset-bottom));
 }
 /* 底部抽屉 .sheet / .sheet2（width:100%、border-radius:… 0 0、mask 内 flex-end）：底部加安全区留白 */
-.sheet,
-.sheet2 {
-  padding-bottom: calc(30rpx + env(safe-area-inset-bottom)) !important;
+:global(.sheet),
+:global(.sheet2) {
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
 }
 
 /* 6) 字体缩放变量（与「设置-字体大小」小/标准/大 对齐）。

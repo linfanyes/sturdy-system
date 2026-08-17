@@ -817,10 +817,8 @@
       "network": "all",
       "packages": [
         "ai-features",
-        "games",
         "tools",
-        "teaching",
-        "community"
+        "teaching"
       ]
     },
     "pages/toolbox/toolbox": {
@@ -832,15 +830,13 @@
     "pages/classes/classes": {
       "network": "all",
       "packages": [
-        "teaching",
-        "community"
+        "teaching"
       ]
     },
     "pages/students/students": {
       "network": "all",
       "packages": [
-        "teaching",
-        "community"
+        "teaching"
       ]
     }
   },

@@ -11,6 +11,7 @@ import { Repository } from 'typeorm'
 import { User } from '../../users/user.entity'
 import { SchoolAdmin } from '../../school-admin/school-admin.entity'
 import { Student } from '../../students/student.entity'
+import { CacheService } from '../cache/cache.service'
 
 /**
  * 统一 JWT 守卫（不依赖 passport，减少依赖）。
@@ -28,9 +29,13 @@ import { Student } from '../../students/student.entity'
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  // 账号状态缓存 TTL：30 秒（状态变更后最多 30 秒生效）
+  private readonly ACCOUNT_STATUS_TTL = 30 * 1000
+
   constructor(
     private readonly jwt: JwtService,
     private readonly reflector: Reflector,
+    private readonly cache: CacheService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(SchoolAdmin) private readonly saRepo: Repository<SchoolAdmin>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
@@ -83,30 +88,59 @@ export class JwtAuthGuard implements CanActivate {
     return true
   }
 
-  /** 按角色校验账号启用状态；状态未知时宁拒绝不放行 */
+  /**
+   * 按角色校验账号启用状态；状态未知时宁拒绝不放行。
+   * P0-2修复：引入 30 秒缓存，避免每请求都查库。
+   * 缓存在账号状态变更时由 UserService/SchoolAdminService 主动清除。
+   */
   private async assertAccountActive(role: string | undefined, payload: any): Promise<void> {
     try {
       if (role === 'teacher') {
+        const cacheKey = `acct-status:teacher:${payload.sub}`
+        const cached = this.cache.get<boolean>(cacheKey)
+        if (cached !== undefined) {
+          if (!cached) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
+          return
+        }
         const u = await this.userRepo.findOne({ where: { id: payload.sub } })
-        if (!u || u.enabled === false) {
-          throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
-        }
+        const isActive = !!u && u.enabled !== false
+        this.cache.set(cacheKey, isActive, this.ACCOUNT_STATUS_TTL)
+        if (!isActive) throw new UnauthorizedException('账号已被禁用，请联系学校管理员')
       } else if (role === 'school_admin') {
-        const a = await this.saRepo.findOne({ where: { id: payload.sub } })
-        if (!a || a.enabled === false) {
-          throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
+        const cacheKey = `acct-status:school_admin:${payload.sub}`
+        const cached = this.cache.get<boolean>(cacheKey)
+        if (cached !== undefined) {
+          if (!cached) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
+          return
         }
+        const a = await this.saRepo.findOne({ where: { id: payload.sub } })
+        const isActive = !!a && a.enabled !== false
+        this.cache.set(cacheKey, isActive, this.ACCOUNT_STATUS_TTL)
+        if (!isActive) throw new UnauthorizedException('账号已被禁用，请联系超级管理员')
       } else if (role === 'parent') {
         if (payload.studentId) {
-          const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
-          if (!stu || stu.parentLoginEnabled === false) {
-            throw new UnauthorizedException('家长登录已关闭或学生不存在')
+          const cacheKey = `acct-status:parent:${payload.studentId}`
+          const cached = this.cache.get<boolean>(cacheKey)
+          if (cached !== undefined) {
+            if (!cached) throw new UnauthorizedException('家长登录已关闭或学生不存在')
+            return
           }
+          const stu = await this.studentRepo.findOne({ where: { id: payload.studentId } })
+          const isActive = !!stu && stu.parentLoginEnabled !== false
+          this.cache.set(cacheKey, isActive, this.ACCOUNT_STATUS_TTL)
+          if (!isActive) throw new UnauthorizedException('家长登录已关闭或学生不存在')
         }
       }
     } catch (e) {
       if (e instanceof UnauthorizedException) throw e
       throw new UnauthorizedException('账号状态校验失败，请重新登录')
     }
+  }
+
+  /**
+   * 清除指定教师的账号状态缓存（账号状态变更时外部调用）
+   */
+  clearAccountStatusCache(role: string, id: string): void {
+    this.cache.del(`acct-status:${role}:${id}`)
   }
 }

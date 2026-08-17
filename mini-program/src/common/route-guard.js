@@ -4,14 +4,16 @@
  * 防止越权访问（如教师进入管理员面板、家长进入教师工作台等）。
  *
  * 角色与 token 对应：
- *   super        → admin_token
- *   school_admin → sa_token
- *   teacher      → g_token
- *   parent       → g_parent_token
+ *   super        → ADMIN_TOKEN_KEY
+ *   school_admin → SA_TOKEN_KEY
+ *   teacher      → TOKEN_KEY
+ *   parent       → PARENT_TOKEN_KEY
  *
  * 功能包守卫：对 ai/games/tools 子包页面，额外校验 effectiveFeatures。
  * 安全说明：前端守卫仅作体验兜底，真正的权限边界在后端 @Feature Guard。
  */
+
+import { TOKEN_KEY, ADMIN_TOKEN_KEY, SA_TOKEN_KEY, PARENT_TOKEN_KEY } from './config'
 
 // 子包页面路径前缀 → 所需功能包 key
 const FEATURE_PATH_MAP = {
@@ -49,10 +51,10 @@ const ROLE_HOME = {
 
 /** 获取当前登录角色（按 token 存在性判断；优先级：超管 > 校管 > 家长 > 教师） */
 export function getCurrentRole() {
-  if (uni.getStorageSync('admin_token')) return ROLE.SUPER
-  if (uni.getStorageSync('sa_token')) return ROLE.SCHOOL_ADMIN
-  if (uni.getStorageSync('g_parent_token')) return ROLE.PARENT
-  if (uni.getStorageSync('g_token')) return ROLE.TEACHER
+  if (uni.getStorageSync(ADMIN_TOKEN_KEY)) return ROLE.SUPER
+  if (uni.getStorageSync(SA_TOKEN_KEY)) return ROLE.SCHOOL_ADMIN
+  if (uni.getStorageSync(PARENT_TOKEN_KEY)) return ROLE.PARENT
+  if (uni.getStorageSync(TOKEN_KEY)) return ROLE.TEACHER
   return null
 }
 

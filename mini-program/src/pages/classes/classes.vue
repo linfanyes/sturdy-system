@@ -315,11 +315,6 @@ function toggleForm() {
   }
   // 班级需由学校管理员创建并指定班主任，老师端仅提示
   uni.showToast({ title: '新建班级请联系学校管理员', icon: 'none', duration: 2000 })
-  return
-  showForm.value = !showForm.value
-  if (showForm.value) {
-    form.value.headTeacher = auth.user?.name || ''
-  }
 }
 
 function toggleSubject(s) {

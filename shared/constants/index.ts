@@ -78,7 +78,8 @@ export const GRADE_OPTIONS: string[] = [
  * 对齐：web-app/src/types/user.ts::Role、后端 JWT payload.role
  * Role 类型权威来源：@gardener/shared/auth（auth/machine.ts）
  */
-import type { Role } from '../auth/machine.js'
+// P3-11修复：统一使用无扩展名导入风格（与文件内其他 import 一致）
+import type { Role } from '../auth/machine'
 export type { Role }
 
 export interface RoleOption {

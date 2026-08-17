@@ -5,6 +5,8 @@
  * 端侧仅需渲染 9×9 网格与选择高亮。
  */
 
+import { shuffle } from './helpers.js'
+
 export type Grid = number[]
 
 export interface SudokuConfig {
@@ -175,13 +177,4 @@ export function generate(holes: number): SudokuPuzzle {
   return { puzzle, solution }
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const out = arr.slice()
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const tmp = out[i]!
-    out[i] = out[j]!
-    out[j] = tmp
-  }
-  return out
-}
+// P1-7修复：内联 shuffle 已迁移至 games/helpers.ts，从统一入口导入。

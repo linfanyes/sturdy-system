@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
-import { rand, clamp } from '@gardener/shared/games/helpers'
+import { randInt, clamp } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 
@@ -37,7 +37,7 @@ let groundOffset = 0
 function spawnPipe(x: number) {
   const minY = 60
   const maxY = H - groundH - 60 - gapH
-  pipes.push({ x, gapY: rand(minY, maxY), scored: false })
+  pipes.push({ x, gapY: randInt(minY, maxY), scored: false })
 }
 
 function draw() {

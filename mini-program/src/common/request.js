@@ -1,12 +1,10 @@
-import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED } from './config'
+import { CLOUDRUN_ENV, CLOUDRUN_SERVICE, API_PREFIX, DEMO_MODE_ENABLED, TOKEN_KEY, ADMIN_TOKEN_KEY, SA_TOKEN_KEY, PARENT_TOKEN_KEY, USER_KEY, ADMIN_USER_KEY, SA_USER_KEY, PARENT_USER_KEY } from './config'
 import { isSessionInvalid } from '@gardener/shared/utils/security'
 import { createSSEParser } from '@gardener/shared/utils/sse-parser'
 import { emitAuthReset } from './auth-events'
 
 // ========== 本地鉴权帮手（下沉自 store.js，打破 circular chunk） ==========
-const TOKEN_KEY = 'g_token'
-const ADMIN_TOKEN_KEY = 'admin_token'
-const SA_TOKEN_KEY = 'sa_token'
+// Token key 已统一到 config.js，此处通过 import 引入
 
 function readToken() {
   return uni.getStorageSync(ADMIN_TOKEN_KEY) || uni.getStorageSync(SA_TOKEN_KEY) || uni.getStorageSync(TOKEN_KEY) || ''
@@ -16,11 +14,11 @@ function clearAuthStorage() {
   uni.removeStorageSync(TOKEN_KEY)
   uni.removeStorageSync(ADMIN_TOKEN_KEY)
   uni.removeStorageSync(SA_TOKEN_KEY)
-  uni.removeStorageSync('g_user')
-  uni.removeStorageSync('admin_user')
-  uni.removeStorageSync('sa_user')
-  uni.removeStorageSync('g_parent_token')
-  uni.removeStorageSync('g_parent_user')
+  uni.removeStorageSync(PARENT_TOKEN_KEY)
+  uni.removeStorageSync(USER_KEY)
+  uni.removeStorageSync(ADMIN_USER_KEY)
+  uni.removeStorageSync(SA_USER_KEY)
+  uni.removeStorageSync(PARENT_USER_KEY)
   uni.removeStorageSync('__auth_multi_role__')
 }
 // 演示模式 mock 数据仅在开发/预览构建（DEV）中被引用：
@@ -89,6 +87,42 @@ async function batchRun(tasks) {
  * 不设置超时会导致页面卡死直到微信框架内部超时（抛 Error: timeout）。
  */
 const REQUEST_TIMEOUT = 30000 // 30 秒（含冷启动），超时即视为后端/链路不可用
+
+/**
+ * 重试配置（仅对幂等 GET 请求生效）
+ * - 网络超时 / 微信框架临时异常时自动重试，最多 2 次（间隔 1s / 2s）
+ * - POST/PUT/PATCH/DELETE 不重试，避免重复提交
+ */
+const RETRY_MAX = 2
+const RETRY_DELAYbaseline = 1000
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
+function isRetryable(errMsg) {
+  if (!errMsg) return true
+  const m = errMsg.toLowerCase()
+  // 临时性故障才重试；鉴权/路由错误不重试
+  return m.includes('timeout') || m.includes('超时') ||
+    m.includes('网络异常') || m.includes('未就绪') ||
+    m.includes('fail') || m.includes('network')
+}
+
+async function requestWithRetry(path, method, data, token) {
+  let lastErr
+  for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+    try {
+      return await request(path, method, data, token)
+    } catch (e) {
+      lastErr = e
+      // 仅幂等 GET + 可重试异常 + 未达上限
+      const canRetry = method === 'GET' &&
+        isRetryable(e.message || e.errMsg) &&
+        attempt < RETRY_MAX
+      if (!canRetry) throw e
+      await delay(RETRY_DELAYbaseline * (attempt + 1))
+    }
+  }
+  throw lastErr
+}
 
 export function request(path, method = 'GET', data = {}, token) {
   // 演示模式：返回本地模拟数据，无需真实后端。
@@ -190,7 +224,7 @@ export const api = {
     // 支持直接传 query 对象 或 { params } 包装：api.get('/path', { params: { a: 1 } })
     // 此前 api.get 只接受单参数，query 被静默丢弃，过滤/搜索失效 —— 这里修复
     const path = p + (params ? queryString(params) : '')
-    const data = await request(path)
+    const data = await requestWithRetry(path)
     // 兼容 { items, total } 格式：自动解包为数组（所有旧代码不感知）
     if (data && typeof data === 'object' && !Array.isArray(data) && Array.isArray(data.items)) {
       return data.items
@@ -397,11 +431,11 @@ export function postRaw(path, data) {
 
 /** 家长端专用请求封装：使用家长令牌（从 storage 读取），其余与 api 一致 */
 export const parentApi = {
-  get: (p) => request(p, 'GET', {}, uni.getStorageSync('g_parent_token') || ''),
-  post: (p, d) => request(p, 'POST', d || {}, uni.getStorageSync('g_parent_token') || ''),
-  put: (p, d) => request(p, 'PUT', d || {}, uni.getStorageSync('g_parent_token') || ''),
-  patch: (p, d) => request(p, 'PATCH', d || {}, uni.getStorageSync('g_parent_token') || ''),
-  del: (p) => request(p, 'DELETE', {}, uni.getStorageSync('g_parent_token') || ''),
+  get: (p) => request(p, 'GET', {}, uni.getStorageSync(PARENT_TOKEN_KEY) || ''),
+  post: (p, d) => request(p, 'POST', d || {}, uni.getStorageSync(PARENT_TOKEN_KEY) || ''),
+  put: (p, d) => request(p, 'PUT', d || {}, uni.getStorageSync(PARENT_TOKEN_KEY) || ''),
+  patch: (p, d) => request(p, 'PATCH', d || {}, uni.getStorageSync(PARENT_TOKEN_KEY) || ''),
+  del: (p) => request(p, 'DELETE', {}, uni.getStorageSync(PARENT_TOKEN_KEY) || ''),
 }
 
 export default api

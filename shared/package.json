@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Techer 共享类型、常量、校验器、端点契约、跨端工具 — Web 端、小程序端、后端服务的单一事实来源",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -38,10 +37,6 @@
       "types": "./dist/utils/sse-parser.d.ts",
       "default": "./dist/utils/sse-parser.js"
     },
-    "./utils/game-helpers": {
-      "types": "./dist/utils/game-helpers.d.ts",
-      "default": "./dist/utils/game-helpers.js"
-    },
     "./utils/general": {
       "types": "./dist/utils/general.d.ts",
       "default": "./dist/utils/general.js"
@@ -54,13 +49,13 @@
       "types": "./dist/utils/image-spec.d.ts",
       "default": "./dist/utils/image-spec.js"
     },
-    "./utils/game-mappings": {
-      "types": "./dist/utils/game-mappings.d.ts",
-      "default": "./dist/utils/game-mappings.js"
-    },
     "./utils/security": {
       "types": "./dist/utils/security.d.ts",
       "default": "./dist/utils/security.js"
+    },
+    "./utils/mini-program/marked-renderer": {
+      "types": "./dist/utils/mini-program/marked-renderer.d.ts",
+      "default": "./dist/utils/mini-program/marked-renderer.js"
     },
     "./auth": {
       "types": "./dist/auth/index.d.ts",

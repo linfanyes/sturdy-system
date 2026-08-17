@@ -33,7 +33,7 @@ export interface SnakeState {
   snake: Cell[]
   dir: Dir
   nextDir: Dir
-  food: Cell
+  food: Cell | null // null = 棋盘已满，玩家胜利
   score: number
   ate: number
   over: boolean
@@ -61,7 +61,7 @@ export class SnakeGame {
   snake: Cell[]
   dir: Dir
   nextDir: Dir
-  food: Cell
+  food: Cell | null
   score = 0
   ate = 0
   over = false
@@ -110,17 +110,22 @@ export class SnakeGame {
     }
 
     const newHead: Cell = { r: nr, c: nc }
-    const ateFood = nr === this.food.r && nc === this.food.c
+    const ateFood = this.food && nr === this.food.r && nc === this.food.c
     this.snake = [newHead, ...this.snake]
     if (ateFood) {
       this.score++
       this.ate++
       this.food = randomFood(this.snake, this.size)
+      // P1-9修复：food 为 null 表示棋盘已满，玩家胜利
+      if (this.food === null) {
+        this.over = true // 胜利也标记为 over，端侧据此判断胜利
+        return { ate: true, over: true }
+      }
       this.hooks.onEat?.(this.score, this.ate)
     } else {
       this.snake.pop()
     }
-    return { ate: ateFood, over: false }
+    return { ate: !!ateFood, over: false }
   }
 
   private die() {
@@ -164,12 +169,16 @@ function initialSnake(size: number): Cell[] {
   ]
 }
 
-/** 在空格上随机放置食物（Math.random 两端均可） */
-function randomFood(snake: Cell[], size: number): Cell {
+/**
+ * 在空格上随机放置食物（Math.random 两端均可）。
+ * P1-9修复：棋盘满时（理论上的胜利条件）返回 null 而非 undefined，避免 TypeError。
+ */
+function randomFood(snake: Cell[], size: number): Cell | null {
   const occupied = new Set(snake.map((s) => `${s.r},${s.c}`))
   const empty: Cell[] = []
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++)
       if (!occupied.has(`${r},${c}`)) empty.push({ r, c })
+  if (empty.length === 0) return null // 棋盘已满，游戏应判定胜利
   return empty[Math.floor(Math.random() * empty.length)]!
 }

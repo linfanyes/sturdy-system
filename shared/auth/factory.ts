@@ -250,6 +250,10 @@ export function createKvPersistence(opts: {
 /**
  * 浏览器端默认适配器：使用 window.localStorage。
  * Web 端可直接使用，测试环境可按需替换为内存实现。
+ *
+ * ⚠️ 警告：此函数仅限浏览器/Web 端使用。
+ * 在服务端（Node.js SSR / 后端）调用时，localStorage 为 undefined，所有操作会被静默跳过。
+ * 若需在服务端持久化，请使用 createKvPersistence 注入自定义 KV 适配器。
  */
 export function createLocalStoragePersistence(opts?: {
   tokenKey?: string

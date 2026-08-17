@@ -52,7 +52,7 @@ import { ref } from 'vue'
 import { marked } from 'marked'
 import { chatSync } from '@/api/ai'
 import { theme } from '../../common/store'
-import { createSafeRenderer } from '@gardener/shared/utils'
+import { createSafeRenderer } from '@gardener/shared/utils/mini-program/marked-renderer'
 import { safeParse } from '../../common/util'
 
 marked.setOptions({ gfm: true, breaks: true })

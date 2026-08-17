@@ -69,7 +69,7 @@ import { getPapersByType } from '@/api/ai-generated'
 import { analyzeExam } from '@/api/ai'
 import { createNote } from '@/api/notes'
 import { theme } from '../../common/store'
-import { createSafeRenderer } from '@gardener/shared/utils'
+import { createSafeRenderer } from '@gardener/shared/utils/mini-program/marked-renderer'
 
 marked.setOptions({ gfm: true, breaks: true })
 marked.use({ renderer: createSafeRenderer(() => theme.mode) })

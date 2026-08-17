@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Gamepad2, Flame, Trophy } from 'lucide-vue-next'
-import { rand } from '@gardener/shared/games/helpers'
+import { randInt } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 
@@ -59,8 +59,8 @@ function roll() {
   // 动画：每 50ms 切换点数，共 10 次
   let ticks = 0
   rollTimer = setInterval(() => {
-    playerDice.value = [rand(1, 6), rand(1, 6), rand(1, 6)]
-    aiDice.value = [rand(1, 6), rand(1, 6), rand(1, 6)]
+    playerDice.value = [randInt(1, 6), randInt(1, 6), randInt(1, 6)]
+    aiDice.value = [randInt(1, 6), randInt(1, 6), randInt(1, 6)]
     ticks++
     if (ticks >= 10) {
       if (rollTimer) {
@@ -74,8 +74,8 @@ function roll() {
 
 function finalize() {
   // 真实结果
-  playerDice.value = [rand(1, 6), rand(1, 6), rand(1, 6)]
-  aiDice.value = [rand(1, 6), rand(1, 6), rand(1, 6)]
+  playerDice.value = [randInt(1, 6), randInt(1, 6), randInt(1, 6)]
+  aiDice.value = [randInt(1, 6), randInt(1, 6), randInt(1, 6)]
   rolling.value = false
 
   const pTotal = playerTotal.value

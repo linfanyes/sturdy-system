@@ -121,7 +121,9 @@ export function pickColors(dark) {
 }
 
 // ========== 通用工具（从 shared 引入，与 Web 端共用同一份实现） ==========
-export { rand, randInt, shuffle, clamp, fmtTime } from '@gardener/shared/games/helpers'
+export { randInt, shuffle, clamp, fmtTime } from '@gardener/shared/games/helpers'
+// P1-6修复：rand 已合并到 randInt（功能相同，randInt 额外支持 min/max 自动交换）
+export const rand = randInt
 
 // ========== 游戏顶部状态条通用工具 ==========
 export function useGame(gameKey) {

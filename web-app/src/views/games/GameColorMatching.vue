@@ -2,7 +2,7 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Palette } from 'lucide-vue-next'
-import { rand } from '@gardener/shared/games/helpers'
+import { randInt } from '@gardener/shared/games/helpers'
 
 const router = useRouter()
 
@@ -62,7 +62,7 @@ function genRound() {
   else if (elapsed.value < 20) { numOpts = 7; hueRange = 20; slRange = 18 }
   else { numOpts = 9; hueRange = 12; slRange = 12 }
 
-  targetHsl = [rand(0, 359), rand(45, 90), rand(35, 70)]
+  targetHsl = [randInt(0, 359), randInt(45, 90), randInt(35, 70)]
   targetHex.value = hslToHex(targetHsl[0], targetHsl[1], targetHsl[2])
 
   const opts: { hsl: number[]; hex: string; isTarget: boolean }[] = [
@@ -162,7 +162,7 @@ function reset() {
   combo.value = 0
   time.value = 30
   feedback.value = null
-  readyColor.value = hslToHex(rand(0, 359), rand(45, 90), rand(40, 70))
+  readyColor.value = hslToHex(randInt(0, 359), randInt(45, 90), randInt(40, 70))
 }
 
 onUnmounted(stop)

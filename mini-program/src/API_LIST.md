@@ -1,5 +1,9 @@
 ## 小程序 API 调用清单
 
+> ⚠️ shared 模块变更记录（2026-08）：
+> - `marked-renderer` 已从 `shared/utils/marked-renderer` 移至 `shared/utils/mini-program/marked-renderer`（小程序专属，使用 rpx 单位 + `<view>/<text>/<image>` 组件）。
+> - 导入路径仍为 `@gardener/shared/utils/mini-program/marked-renderer`。
+
 ### common/request.js
 - （无直接调用，仅封装实现）
 

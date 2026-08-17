@@ -761,9 +761,33 @@ onShow(() => {
   setTimeout(() => {
     loadSecondaryDashboard()
   }, 120)
-  // 通知未读数每 60 秒刷新一次
+  // 通知未读数每 60 秒刷新一次（指数退避：连续失败时延长至 120s → 240s，成功后重置）
   if (notifTimer) clearInterval(notifTimer)
-  notifTimer = setInterval(loadNotifications, 60000)
+  let notifInterval = 60000
+  let notifFailCount = 0
+  const baseInterval = 60000
+  const maxInterval = 240000
+  async function pollNotifications() {
+    try {
+      await loadNotifications()
+      // 成功：重置间隔
+      if (notifFailCount > 0) {
+        notifFailCount = 0
+        notifInterval = baseInterval
+        clearInterval(notifTimer)
+        notifTimer = setInterval(pollNotifications, notifInterval)
+      }
+    } catch (e) {
+      // 失败：指数退避（最多 4 分钟）
+      notifFailCount++
+      if (notifInterval < maxInterval) {
+        notifInterval = Math.min(notifInterval * 2, maxInterval)
+        clearInterval(notifTimer)
+        notifTimer = setInterval(pollNotifications, notifInterval)
+      }
+    }
+  }
+  notifTimer = setInterval(pollNotifications, notifInterval)
 })
 
 async function loadPrimaryDashboard() {
@@ -814,6 +838,8 @@ async function loadSecondaryDashboard() {
 }
 onHide(() => {
   if (notifTimer) { clearInterval(notifTimer); notifTimer = null }
+  // 清除未触发的搜索定时器，避免页面隐藏时仍发起请求浪费资源
+  if (searchTimer) { clearTimeout(searchTimer); searchTimer = null }
 })
 onPullDownRefresh(async () => {
   await loadAll()

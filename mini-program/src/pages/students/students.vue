@@ -43,7 +43,7 @@
             <text v-if="s.parentLoginEnabled" class="dial reset" @click.stop="resetParentPwd(s)">🔑 重置密码</text>
             <text v-if="!batchMode" class="dial del" @click.stop="deleteOne(s)">🗑 删除</text>
           </view>
-          <text v-if="s.parentLoginEnabled" class="hint">默认口令：123456（{{ defaultPwd(s) }}）</text>
+          <text v-if="s.parentLoginEnabled" class="hint">默认口令：已设置（点击"重置密码"查看）</text>
         </view>
       </block>
       <EmptyState v-if="!loading && !shown.length" icon="🧒" text="暂无学生" hint="点下方添加或批量导入" />

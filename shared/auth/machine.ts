@@ -22,7 +22,8 @@
  * 这里只保留最小公共字段；实现时在该基础上扩展。
  */
 export interface AuthUser {
-  id: string
+  // P1-10修复：id 支持 string | number，兼容后端自增数字 ID 与小程序 openId 等字符串 ID
+  id: string | number
   role: string
   name: string
   /** 该角色下可用的特性列表（用于功能开关） */

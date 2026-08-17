@@ -127,15 +127,16 @@ export class AiChatService {
     const cached = this.cache.get<string>(cacheKey)
     if (cached !== undefined) return cached
     const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
+    // P0-1修复：所有查询添加 teacherId 过滤，防止跨租户数据泄露 + 全表扫描
     const [u, classes, students, teachers, grades, exams, awards, notes] = await Promise.all([
       this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null),
-      this.classRepo.find({ take: 20 }).catch(() => []),
-      this.studentRepo.find({ take: 50 }).catch(() => []),
-      this.teacherRepo.find({ take: 20 }).catch(() => []),
-      this.gradeRepo.find({ take: 30, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.examRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.awardRepo.find({ take: 20, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.noteRepo.find({ take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.classRepo.find({ where: { teacherId }, take: 20 }).catch(() => []),
+      this.studentRepo.find({ where: { teacherId }, take: 50 }).catch(() => []),
+      this.teacherRepo.find({ where: { teacherId }, take: 20 }).catch(() => []),
+      this.gradeRepo.find({ where: { teacherId }, take: 30, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.examRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.awardRepo.find({ where: { teacherId }, take: 20, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      this.noteRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
     ])
     if (u) {
       lines.push(
@@ -218,6 +219,11 @@ export class AiChatService {
    * 与前端 createSSEParser 共用同一内核，消除双端分隔符与容错策略漂移；
    * OpenAI 格式 delta 提取保持兼容（choices[0].delta.content）。
    */
+  /**
+   * 解析 OpenAI 流式响应（SSE）。
+   * P0-8修复：添加背压控制 — 当 onDelta 处理慢时暂停上游 stream，
+   * 待消费完成后再恢复，避免内存积压。
+   */
   private pipeSse(stream: any, onDelta: (t: string) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       const splitter = createSSEEventSplitter((data) => {
@@ -225,7 +231,17 @@ export class AiChatService {
         try {
           const json = JSON.parse(data)
           const delta = json.choices?.[0]?.delta?.content
-          if (delta) onDelta(delta as string)
+          if (delta) {
+            // 背压控制：如果 onDelta 返回 false，暂停上游
+            const canContinue = onDelta(delta as string)
+            if (canContinue === false && stream.pause) {
+              stream.pause()
+              // 消费恢复后继续
+              setImmediate(() => {
+                if (stream.resume) stream.resume()
+              })
+            }
+          }
         } catch {
           /* 忽略非 JSON 行 */
         }

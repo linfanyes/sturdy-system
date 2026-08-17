@@ -1,11 +1,10 @@
 import { Entity, Column } from 'typeorm'
-import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
+import { BaseEntity } from '../common/entities/base.entity'
 
+// P1-3修复：继承 BaseEntity，统一 id/createdAt/updatedAt/teacherId 字段
+// teacherId 在 BaseEntity 中 nullable，校管场景不使用（用 schoolId 隔离）
 @Entity('school_admins')
-export class SchoolAdmin {
-  @PrimaryGeneratedColumn('uuid')
-  id: string
-
+export class SchoolAdmin extends BaseEntity {
   @Column({ unique: true })
   username: string
 
@@ -23,10 +22,4 @@ export class SchoolAdmin {
 
   @Column({ type: 'boolean', default: true })
   enabled: boolean  // 开启标志：true=启用 / false=禁用
-
-  @CreateDateColumn()
-  createdAt: Date
-
-  @UpdateDateColumn()
-  updatedAt: Date
 }

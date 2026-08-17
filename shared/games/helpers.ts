@@ -9,14 +9,10 @@
 
 /**
  * 整数随机 [min, max] 闭区间（自动交换 min/max）
+ * P1-6修复：移除重复的 rand 函数，统一使用 randInt。
  */
 export function randInt(min: number, max: number): number {
   if (max < min) [min, max] = [max, min]
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-/** 整数随机 [min, max] 闭区间 */
-export function rand(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 

@@ -15,6 +15,8 @@ import {
   FEATURE_FLAGS_SET,
   GRADE_OPTIONS,
 } from '../constants'
+// P3-12修复：添加 SubjectOption 类型导入（用于 getSubjectByValue 返回类型）
+import type { SubjectOption } from '../constants'
 
 /**
  * 严格手机号校验：必须符合 PHONE_REGEX，**不允许空**
@@ -203,7 +205,8 @@ export function isSubject(subject: string): boolean {
  * @param value 学科值
  * @returns SubjectOption | undefined
  */
-export function getSubjectByValue(value: string): import('../constants').SubjectOption | undefined {
+// P3-12修复：内联 import 类型改为文件顶部 import（见顶部 SUBJECT_OPTIONS 导入）
+export function getSubjectByValue(value: string): SubjectOption | undefined {
   if (!value || typeof value !== 'string') return undefined
   return SUBJECT_OPTIONS.find((s) => s.value === value.trim())
 }

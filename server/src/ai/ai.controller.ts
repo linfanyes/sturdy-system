@@ -7,12 +7,8 @@ import { AiService } from './ai.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
-import { BusinessException } from '../common/exceptions/business.exception'
-
 // AI 调用超时配置：环境变量 AI_TIMEOUT（默认 120000ms = 120s）
 const AI_TIMEOUT = Number(process.env.AI_TIMEOUT) || 120000
-// 非流式 AI 调用强制超时（60s），超时后返回友好错误，避免请求挂起
-const NON_STREAMING_TIMEOUT = 60000
 
 @Roles('teacher')
 // AI 为高价接口（调用外部大模型 + 解析上传文件），单独限流为 10 次/分钟/IP，严于全局 60/min
@@ -25,18 +21,7 @@ export class AiController {
     private readonly ai: AiService,
   ) {}
 
-  /** 非流式 AI 调用超时包装：用 Promise.race 实现 60s 强制超时，超时抛 BusinessException */
-  private withAiTimeout<T>(promise: Promise<T>): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new BusinessException('AI_TIMEOUT', 'AI 响应超时，请稍后重试或简化输入内容')),
-          NON_STREAMING_TIMEOUT,
-        ),
-      ),
-    ]) as Promise<T>
-  }
+  // P1-5修复：移除重复的 withAiTimeout — Service 层已有 axios 120s 超时 + 友好降级
 
   /**
    * 学科工具访问校验（P1）：委托 AiService.assertSubjectToolAccess（A01：逻辑已下沉至 Service 层）。
@@ -86,7 +71,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   parse(@Body() body: { text: string; instruction?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.parse(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.parse(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 同步对话（微信小程序用，非流式） */
@@ -97,7 +82,7 @@ export class AiController {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
     // P1：学科工具二次校验，防止前端绕过 UI 越权调用其他学科 AI 工具
     await this.assertSubjectToolAccess(t.role, t.sub, body?.subjectKey)
-    const content = await this.withAiTimeout(this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    const content = await this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
     return { content }
   }
 
@@ -107,7 +92,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   genImage(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.genImage(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.genImage(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** AI 文生视频（调用服务商视频生成模型） */
@@ -116,7 +101,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   genVideo(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.genVideo(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.genVideo(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 语音识别 ASR：接收 base64 音频，调用配置的 AI 服务商多模态模型转文字 */
@@ -125,7 +110,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   asr(@Body() body: { audio: string; format?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.asr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.asr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 图片 OCR：接收 base64 图片，调用多模态模型识别文字 */
@@ -134,7 +119,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   ocr(@Body() body: { image: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.ocr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.ocr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /**
@@ -148,7 +133,7 @@ export class AiController {
   @UseGuards(JwtAuthGuard)
   parseFile(@Body() body: { fileName: string; fileData: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    return this.withAiTimeout(this.ai.parseFile(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body))
+    return this.ai.parseFile(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
   /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成分析报告
@@ -178,6 +163,6 @@ export class AiController {
   generate(@Body() body: { prompt: string; type?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
     const messages = [{ role: 'user', content: body.prompt }]
-    return this.withAiTimeout(this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, { messages }))
+    return this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, { messages })
   }
 }

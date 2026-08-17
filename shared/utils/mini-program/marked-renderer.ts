@@ -1,3 +1,10 @@
+/**
+ * ⚠️ 小程序专属模块 — 仅用于 uni-app 微信小程序端。
+ * 使用 rpx 单位 + <view>/<text>/<image> 小程序组件标签，浏览器环境无法渲染。
+ * Web 端请使用 marked + DOMPurify 方案。
+ * P0-3修复：从 shared/utils/ 移至 shared/utils/mini-program/，明确平台归属。
+ */
+
 const SZ: Record<number, number> = { 1: 40, 2: 36, 3: 32, 4: 30, 5: 28, 6: 26 }
 const LIGHT = { fg: '#333', sub: '#888', codeBg: '#f5f5f5', codeFg: '#c7254e', border: '#d9d9d9', link: '#07c160', strong: '#222' }
 const DARK = { fg: '#e6e6e6', sub: '#9aa0a6', codeBg: '#262b34', codeFg: '#ff9b9b', border: '#3a3f47', link: '#3fd07f', strong: '#ffffff' }

@@ -36,9 +36,12 @@ function fromSharedUser(u: any): AuthUser {
 
 // 单例 machine —— 整个应用生命周期内唯一
 let _machine: ReturnType<typeof createAuthMachine> | null = null
+// HMR 卸载时标记，避免旧 machine 事件监听器成为悬挂引用
+let _hmrDisposed = false
 
 function getMachine() {
-  if (_machine) return _machine
+  if (_machine && !_hmrDisposed) return _machine
+  // HMR 重新初始化：旧实例若存在需清理监听（factory 内部未提供 offAll，通过重新创建隔离）
   _machine = createAuthMachine({
     loginFn: async (creds) => {
       const res = await authApi.unifiedLogin(creds.username || '', creds.password || '')
@@ -55,7 +58,15 @@ function getMachine() {
     revokeFn: undefined,
     debug: isViteDev(),
   })
+  _hmrDisposed = false
   return _machine
+}
+
+// HMR 兼容：开发期热替换时重置 machine，避免事件监听悬挂
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    _hmrDisposed = true
+  })
 }
 
 export const authMachine = getMachine()

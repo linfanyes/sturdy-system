@@ -23,11 +23,21 @@
  *     - '权限不足'
  */
 
-/** 后端返回的「会话失效」提示文案匹配正则 */
+/**
+ * 后端返回的「会话失效」提示文案匹配正则。
+ * P1-11修复：
+ *   - "未登录" 改为精确前缀匹配，避免误匹配 "用户未登录，请注册账号" 等非会话失效场景
+ *   - 移除重复的 "账号已禁用"（已被 "账号已被禁用" 覆盖）
+ *   - 添加排除 "权限不足"（角色不匹配，不应触发登出）
+ */
 export const SESSION_INVALID_PATTERNS =
-  /登录已过期|未登录|缺少令牌|令牌类型不匹配|账号已禁用|登录已关闭|账号已被禁用|账号状态校验失败/
+  /登录已过期|缺少令牌|令牌类型不匹配|账号已被禁用|登录已关闭|账号状态校验失败|^未登录(?!.*注册)/
 
-/** 字符串是否命中会话失效模式 */
+/** 排除模式：匹配到这些时不视为会话失效 */
+const SESSION_INVALID_EXCLUDES = /权限不足/
+
+/** 字符串是否命中会话失效模式（排除误匹配场景） */
 export function isSessionInvalid(msgText: string): boolean {
+  if (SESSION_INVALID_EXCLUDES.test(msgText)) return false
   return SESSION_INVALID_PATTERNS.test(msgText)
 }

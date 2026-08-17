@@ -82,7 +82,8 @@ export default defineConfig({
           // Windows 下 Vite 的模块 id 使用反斜杠，先归一化为正斜杠再做子串匹配
           const fid = id.replace(/\\/g, '/')
           // 本地共享包（file: 依赖 @gardener/shared 的源码，不在 node_modules 内）
-          if (fid.includes('@gardener/shared') || fid.includes('/shared/')) {
+          // 精确匹配：路径以 /shared/ 开头（monorepo 根下的 shared 目录），避免误匹配 node_modules 内其他 shared 目录
+          if (fid.includes('@gardener/shared') || /[\/]shared\/(constants|types|validators|api|utils|auth|schemas|games|composables)\//.test(fid)) {
             return 'vendor-shared'
           }
           if (fid.includes('/node_modules/')) {

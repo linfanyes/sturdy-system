@@ -61,7 +61,9 @@ export const usePrefsStore = defineStore('prefs', () => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) } catch { /* ignore */ }
   }
 
-  watch([theme, density, sidebarCollapsed, accentColor, fontSize, recentExams], persist, { deep: true })
+  // 持久化：标量字段用数组 watch；recentExams 单独监视引用（避免 deep 遍历数组成员，每次 .push/.splice 都触发完整序列化）
+  watch([theme, density, sidebarCollapsed, accentColor, fontSize], persist)
+  watch(recentExams, persist)
 
   // 应用主题到 DOM
   watch(theme, applyThemeClass)
