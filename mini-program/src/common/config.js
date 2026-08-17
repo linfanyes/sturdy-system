@@ -12,6 +12,10 @@ export const CLOUDRUN_SERVICE = 'tec-work' // 云托管服务名（创建服务�
 // 后端接口路径前缀（与后端 main.ts 的 setGlobalPrefix('api/v1') 一致；旧 /api 路径由后端 307 重定向）
 export const API_PREFIX = '/api/v1'
 
+// —— 长列表分页常量（统一为 scroll-view + PAGE_SIZE 触底加载） ——
+export const PAGE_SIZE = 20
+export const SCROLL_THRESHOLD = 150 // lower-threshold 触底距离（px）
+
 // —— 鉴权 Token Storage Key（统一管理，避免散落在各文件中硬编码） ——
 export const TOKEN_KEY = 'g_token' // 教师端 token
 export const ADMIN_TOKEN_KEY = 'admin_token' // 超管 token
