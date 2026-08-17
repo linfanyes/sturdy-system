@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
 import { cachedCrudList, cancelAllRequests } from '@/api/request'
 import { getUnreadCount } from '@/api/notification'
+import { unwrap } from '@/utils/unwrap'
 import {
   Sparkles, School, GraduationCap, BookOpen, Bell, ChevronRight, Loader2,
   Users, ClipboardList, BarChart3, PieChart, CalendarDays, Trophy,
@@ -26,10 +27,6 @@ const recentExams = ref<any[]>([])
 const awards = ref<any[]>([])
 const homeworkList = ref<any[]>([])
 const attendanceList = ref<any[]>([])
-
-function unwrap(res: any): any[] {
-  return Array.isArray(res) ? res : (res?.items || [])
-}
 
 const todayStr = new Date().toISOString().slice(0, 10)
 

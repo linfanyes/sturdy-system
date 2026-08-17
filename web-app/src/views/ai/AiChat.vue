@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import request, { getApiBase, handleUnauthorized } from '@/api/request'
 import { Send, Bot, User, Trash2, Plus, Pin, MessageSquare } from 'lucide-vue-next'
@@ -24,6 +24,8 @@ const messages = ref<Msg[]>([
 const input = ref('')
 const sending = ref(false)
 const listEl = ref<HTMLElement | null>(null)
+// SSE 流 AbortController：用户离开页面或取消发送时中断流，避免内存泄漏
+let streamAbort: AbortController | null = null
 
 // —— 会话历史 ——
 const sessions = ref<ChatSessionDTO[]>([])
@@ -128,7 +130,9 @@ async function send() {
   await persistMessage('user', text)
 
   try {
-    // 使用 SSE 流式接口
+    // 使用 SSE 流式接口；设立 AbortController 用于旧流取消 + onBeforeUnmount 清理
+    streamAbort?.abort() // 若上一流仍在跑，先发后至取消
+    streamAbort = new AbortController()
     const token = auth.token
     const resp = await fetch(`${getApiBase()}/ai/chat`, {
       method: 'POST',
@@ -136,6 +140,7 @@ async function send() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
+      signal: streamAbort.signal,
       body: JSON.stringify({ messages: messages.value.filter(m => m.role !== 'system').slice(0, -1).map(m => ({ role: m.role, content: m.content })) }),
     })
     // 与 request.ts 拦截器保持一致的 401 策略（ai/chat 非登录接口，失效即清登录态跳转）
@@ -170,6 +175,7 @@ async function send() {
     assistantMsg.value.content = `请求失败：${e?.message || '未知错误'}`
   } finally {
     sending.value = false
+    streamAbort = null
     // 持久化 AI 回复到当前会话（失败静默）
     persistMessage('assistant', assistantMsg.value.content)
     await loadSessions()
@@ -192,6 +198,12 @@ function onKeydown(e: KeyboardEvent) {
 // 进入页面时加载会话列表
 onMounted(() => {
   loadSessions()
+})
+
+// 离开页面时中断 SSE 流，避免内存泄漏 + 后端资源浪费
+onBeforeUnmount(() => {
+  streamAbort?.abort()
+  streamAbort = null
 })
 </script>
 

@@ -124,8 +124,14 @@ import { AssignmentModule } from './assignment/assignment.module'
     // 热点接口可用 @Throttle({ dashboard: { limit: 40, ttl: 60000 } }) 覆盖为更严格的 40 次/分钟/IP；
     // AI 接口已有 @Throttle({ default: { limit: 10, ttl: 60000 } }) 10/min，这里仅做兜底。
     // 参数可经 THROTTLE_TTL / THROTTLE_LIMIT 调整（默认 60000ms / 80 次）。
-    // ⚠️ 已知限制：存储为进程内存，云托管横向扩容后配额按实例数倍增；
-    // 如需严格全局配额，需外置 Redis 存储（@nestjs/throttler-storage-redis）。
+    // ⚠️ 已知限制（多实例部署）：
+    //   - 存储为进程内存（ThrottlerStorageService），配额按实例独立计算。
+    //   - 微信云托管横向扩容至 N 个实例后，实际全局配额 = limit × N。
+    //   - 例如：默认 80/min/IP，扩容到 3 实例 → 实际允许 240 次/分钟/IP。
+    //   - 如需严格全局配额（防爬/防滥用），需替换为 @nestjs/throttler-storage-redis
+    //     并配置独立 Redis（当前不使用 Redis 以节省成本，接受此 trade-off）。
+    //   - 安全兜底：后端所有敏感接口均依赖 JWT 鉴权 + teacherId 数据隔离，
+    //     限流仅作为体验层防护（防误触/简单爬取），非安全边界。
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (c: ConfigService) => [
