@@ -7,12 +7,13 @@
  * - 【新增】全部考试科目一起录入（矩阵：行=学生，列=科目），按科目逐科提交
  * - 【新增】全部科目批量导入（矩阵文件：学号,姓名,科目1,科目2…），按科目逐科落库
  */
-import { ref, onMounted, onActivated, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import Modal from '@/components/Modal.vue'
 import { useAuthStore } from '@/stores/auth'
 import { getTeacherSubjects } from '@gardener/shared/schemas/subject-schema'
+import { useKeepAliveRefresh } from '@/composables/useKeepAliveRefresh'
 import { listAllStudents, listExams, listGrades, type TeacherStudent } from '@/api/teacher'
 import { Plus, Search, Upload, Sparkles, Loader2, Download, ClipboardPaste, Table2, Grid3x3, BarChart3, AlertTriangle, Users } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
@@ -103,14 +104,13 @@ async function loadGrades() {
   }
 }
 
-onMounted(async () => {
+const { onMountedRefresh, onActivatedRefresh } = useKeepAliveRefresh()
+onMountedRefresh(async () => {
   await loadClasses()
 })
 
-let activated = false
-// keep-alive 页面重新激活时刷新（首次挂载由 onMounted 加载，不重复请求）
-onActivated(async () => {
-  if (!activated) { activated = true; return }
+// keep-alive 页面重新激活时刷新
+onActivatedRefresh(async () => {
   await loadClasses()
   if (classId.value) {
     await loadExams()

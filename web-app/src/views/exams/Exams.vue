@@ -4,11 +4,12 @@
  * - 新增考试时学期默认为当前学期，无需手动设置
  * - 双击考试行查看本次考试的汇总信息（各科成绩统计）
  */
-import { ref, onMounted, onActivated, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { listExams, createExam, updateExam, deleteExam, listGrades } from '@/api/teacher'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { usePagedList } from '@gardener/shared/composables'
+import { useKeepAliveRefresh } from '@/composables/useKeepAliveRefresh'
 import { getCurrentTerm } from '@gardener/shared/utils/date'
 import { SUBJECT_VALUES } from '@gardener/shared/constants'
 import Modal from '@/components/Modal.vue'
@@ -70,16 +71,15 @@ function currentTerm() {
   return getCurrentTerm()
 }
 
-onMounted(async () => {
+const { onMountedRefresh, onActivatedRefresh } = useKeepAliveRefresh()
+onMountedRefresh(async () => {
   await loadClasses()
   await loadList()
 })
-
-let activated = false
-// keep-alive 页面重新激活时刷新（首次挂载由 onMounted 加载，不重复请求）
-onActivated(async () => {
-  if (activated) { await loadClasses(); await loadList() }
-  activated = true
+// keep-alive 页面重新激活时刷新
+onActivatedRefresh(async () => {
+  await loadClasses()
+  await loadList()
 })
 
 function className(id: string) {
