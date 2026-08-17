@@ -13,11 +13,13 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
+    // P2-16：渐进式启用严格模式（先开 strictNullChecks + noImplicitAny + forceConsistentCasingInFileNames，
+    // 观察 CI 通过后再升 strict: true。全量 strict 需修复约 200+ 隐式 any 与 null 未检查错误。）
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
       "@gardener/shared": ["node_modules/@gardener/shared/dist", "../shared/dist", "vendor/gardener-shared/dist"],
