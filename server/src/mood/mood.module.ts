@@ -78,7 +78,7 @@ export class MoodService {
   async dashboard(teacherId: string, classId?: string, dateFrom?: string, dateTo?: string) {
     const rows = await this.listByTeacher(teacherId, classId, dateFrom, dateTo)
     const total = rows.length
-    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     for (const r of rows) dist[r.level] = (dist[r.level] || 0) + 1
 
     // 按日序列（去重日期，统计每日平均等级）

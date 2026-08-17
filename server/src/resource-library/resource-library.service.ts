@@ -312,7 +312,7 @@ export class ResourceLibraryService {
   private async checkEditPermission(user: any, resourceType: 'poem' | 'formula' | 'word' | 'science' | 'moral'): Promise<void> {
     if (user?.role === 'school_admin' || user?.role === 'super') return
     if (user?.role !== 'teacher') throw new ForbiddenException('仅学科组长可编辑')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const { subject } = this.parseLeaderPosition(teacher?.position || user?.position || '')
     const subjectMap: Record<string, string> = { poem: '语文', formula: '数学', word: '英语', science: '科学', moral: '道德与法治' }
     if (subject !== subjectMap[resourceType]) {
@@ -322,57 +322,57 @@ export class ResourceLibraryService {
 
   async teacherUpdatePoem(user: any, id: string, data: Partial<Poem>) {
     await this.checkEditPermission(user, 'poem')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const p = await this.poemRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
     if (!p) throw new NotFoundException('古诗词不存在')
     // 学科组长仅可修改内容字段，不可改 schoolId/status
     for (const k of ['title', 'dynasty', 'author', 'content', 'translation', 'appreciation', 'grade', 'keywords', 'audioUrl', 'sortOrder']) {
-      if (data[k] !== undefined) (p as any)[k] = data[k]
+      if ((data as any)[k] !== undefined) (p as any)[k] = (data as any)[k]
     }
     return this.poemRepo.save(p)
   }
 
   async teacherUpdateFormula(user: any, id: string, data: Partial<MathFormula>) {
     await this.checkEditPermission(user, 'formula')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const f = await this.formulaRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
     if (!f) throw new NotFoundException('公式不存在')
     for (const k of ['title', 'category', 'formula', 'explanation', 'example', 'grade', 'keywords', 'sortOrder']) {
-      if (data[k] !== undefined) (f as any)[k] = data[k]
+      if ((data as any)[k] !== undefined) (f as any)[k] = (data as any)[k]
     }
     return this.formulaRepo.save(f)
   }
 
   async teacherUpdateWord(user: any, id: string, data: Partial<EnglishWord>) {
     await this.checkEditPermission(user, 'word')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const w = await this.wordRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
     if (!w) throw new NotFoundException('单词不存在')
     for (const k of ['word', 'phonetic', 'meaning', 'category', 'example', 'grade', 'audioUrl', 'sortOrder']) {
-      if (data[k] !== undefined) (w as any)[k] = data[k]
+      if ((data as any)[k] !== undefined) (w as any)[k] = (data as any)[k]
     }
     return this.wordRepo.save(w)
   }
 
   async teacherUpdateScience(user: any, id: string, data: Partial<Science>) {
     await this.checkEditPermission(user, 'science')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const s = await this.scienceRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
     if (!s) throw new NotFoundException('科学资源不存在')
     // 学科组长仅可修改内容字段，不可改 schoolId/status
     for (const k of ['title', 'category', 'content', 'grade', 'keywords', 'sortOrder']) {
-      if (data[k] !== undefined) (s as any)[k] = data[k]
+      if ((data as any)[k] !== undefined) (s as any)[k] = (data as any)[k]
     }
     return this.scienceRepo.save(s)
   }
 
   async teacherUpdateMoral(user: any, id: string, data: Partial<Moral>) {
     await this.checkEditPermission(user, 'moral')
-    const teacher = await this.userRepo.findOne({ where: { id: user.sub } })
+    const teacher = (await this.userRepo.findOne({ where: { id: user.sub } }))!
     const m = await this.moralRepo.findOne({ where: { id, schoolId: teacher.schoolId } })
     if (!m) throw new NotFoundException('道德与法治资源不存在')
     for (const k of ['title', 'category', 'content', 'grade', 'keywords', 'sortOrder']) {
-      if (data[k] !== undefined) (m as any)[k] = data[k]
+      if ((data as any)[k] !== undefined) (m as any)[k] = (data as any)[k]
     }
     return this.moralRepo.save(m)
   }

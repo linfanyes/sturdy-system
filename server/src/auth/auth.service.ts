@@ -120,7 +120,7 @@ export class AuthService {
           avatar: teacher.avatar, teacherNo: teacher.teacherNo,
           position: teacher.position || teacherProfile?.position || '',
           // 任教学科：用于前端按学科过滤菜单/工具（语数外老师一般只任一科）
-          subject: teacher.subject || teacherProfile?.subject || '',
+          subject: teacher.subjects?.[0] || teacherProfile?.subjects?.[0] || '',
           subjects: teacher.subjects || teacherProfile?.subjects || [],
         }
         // 教师直接签发 JWT 并返回

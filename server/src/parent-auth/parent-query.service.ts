@@ -150,7 +150,7 @@ export class ParentQueryService {
       take: 300,
     })
     if (!list.length) return empty
-    const summary = { reading: 0, sport: 0, behavior: 0, homework: 0 }
+    const summary: Record<string, number> = { reading: 0, sport: 0, behavior: 0, homework: 0 }
     for (const c of list) {
       if (Object.prototype.hasOwnProperty.call(summary, c.type)) {
         summary[c.type] += c.count || 1
@@ -439,7 +439,7 @@ export class ParentQueryService {
       // 计算班级整体统计：均分、及格率、优秀率、各科均分
       const allTotals = totalRanks.map(r => r.total).filter(t => t > 0)
       const classAvg = allTotals.length ? Math.round((allTotals.reduce((a, b) => a + b, 0) / allTotals.length) * 10) / 10 : 0
-      const classFullAvg = exam.subjects.reduce((sum, subj) => {
+      const classFullAvg = exam.subjects.reduce((sum: number, subj: string) => {
         const fs = (exam.subjectFullScores && exam.subjectFullScores[subj]) || 100
         return sum + fs
       }, 0) || 100 * (exam.subjects?.length || 1)

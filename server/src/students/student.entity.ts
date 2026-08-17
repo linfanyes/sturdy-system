@@ -12,8 +12,8 @@ export class Student extends BaseEntity {
   @Column() studentNo: string
   @Column({ type: 'varchar', nullable: true }) birthDate: string | null
   @Column({ type: 'int', default: 0 }) seatNo: number
-  @Column({ type: 'int', nullable: true }) seatRow: number
-  @Column({ type: 'int', nullable: true }) seatCol: number
+  @Column({ type: 'int', nullable: true }) seatRow: number | null
+  @Column({ type: 'int', nullable: true }) seatCol: number | null
   @Column({ default: '' }) parentName: string
   @Column({ default: '' }) parentPhone: string
   @Column({ default: '' }) studentPhone: string

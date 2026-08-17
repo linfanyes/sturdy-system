@@ -81,7 +81,7 @@ export class AiChatService {
     // 自动注入本地上下文（对齐 web buildContext，由后端构造）
     if (ownerType) {
       try {
-        const ctx = await this.buildLocalContext(ownerType, ownerId)
+        const ctx = await this.buildLocalContext(ownerType, ownerId as string)
         if (ctx) sysParts.push(ctx)
       } catch {
         /* 上下文构造失败不影响主流程 */
@@ -234,7 +234,7 @@ export class AiChatService {
           if (delta) {
             // 背压控制：如果 onDelta 返回 false，暂停上游
             const canContinue = onDelta(delta as string)
-            if (canContinue === false && stream.pause) {
+            if ((canContinue as any) === false && stream.pause) {
               stream.pause()
               // 消费恢复后继续
               setImmediate(() => {

@@ -45,7 +45,7 @@ export class MonitorService {
     }
 
     try {
-      await this.repo.save(this.repo.create({ type, message, page, url, stack, meta, userId, role }))
+      await this.repo.save(this.repo.create({ type, message, page, url, stack, meta: meta ?? '', userId, role }))
       return { ok: true }
     } catch (e) {
       // 监控表缺失或 DB 异常时静默降级，避免雪崩

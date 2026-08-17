@@ -714,7 +714,7 @@ export class AdminService implements OnModuleInit {
       } catch { /* teachers 表可能无此记录 */ }
       // 置空班级的 teacherId（避免孤儿班级）
       try {
-        await em.getRepository(ClassItem).update({ teacherId }, { teacherId: null })
+        await em.getRepository(ClassItem).update({ teacherId }, { teacherId: null } as any)
       } catch { /* ClassItem 表可能无 teacherId 字段 */ }
     })
 

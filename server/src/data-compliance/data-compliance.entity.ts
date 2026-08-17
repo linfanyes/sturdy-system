@@ -25,5 +25,5 @@ export class DataConsent extends BaseEntity {
 
   /** 撤回时间；为空表示仍有效 */
   @Column({ type: 'datetime', nullable: true })
-  withdrawnAt?: Date
+  withdrawnAt: Date | null
 }

@@ -349,7 +349,7 @@ export class SchoolAdminService {
 
     const classMap: Record<string, string> = {}
     for (const c of classes) classMap[c.id] = c.name
-    for (const s of students) { s['className'] = classMap[s.classId] || '' }
+    for (const s of students) { (s as any).className = classMap[s.classId] || '' }
 
     return { students, teachers, classes }
   }

@@ -93,7 +93,7 @@ export class TextbookService {
   }
 
   async createUnit(schoolId: string, data: Partial<TextbookUnit>) {
-    await this.assertTextbookInSchool(data.textbookId, schoolId)
+    await this.assertTextbookInSchool(data.textbookId!, schoolId)
     const u = this.unitRepo.create(data)
     return this.unitRepo.save(u)
   }
@@ -123,7 +123,7 @@ export class TextbookService {
   }
 
   async createKnowledgePoint(schoolId: string, data: Partial<TextbookKnowledgePoint>) {
-    await this.assertUnitInSchool(data.unitId, schoolId)
+    await this.assertUnitInSchool(data.unitId!, schoolId)
     const kp = this.kpRepo.create(data)
     return this.kpRepo.save(kp)
   }

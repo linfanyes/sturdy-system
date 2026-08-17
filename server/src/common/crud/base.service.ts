@@ -14,7 +14,9 @@ import { BusinessException } from '../exceptions/business.exception'
  */
 export class CrudService<T extends { id: string; teacherId: string }> {
   /** 可选的班级成员服务，用于按班级集合过滤（非所有模块都需要） */
-  protected classMemberSvc: ClassMemberService | null = null
+  // P2-16 严格模式适配：用 definite assignment 断言（子类在构造时通过 withClassMemberService 注入），
+  // 避免所有 this.classMemberSvc.* 调用在 strictNullChecks 下被判定为「possibly null」。
+  protected classMemberSvc!: ClassMemberService
 
   /** 子类可覆盖：创建时必须提供的业务字段（缺省将返回 400，不再落到 DB 层报错） */
   protected requiredCreateFields: string[] = []

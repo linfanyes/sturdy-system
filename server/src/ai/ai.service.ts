@@ -238,8 +238,8 @@ export class AiService {
       st.avg = arr.reduce((a: number, b: number) => a + b, 0) / arr.length
       st.max = Math.max(...arr)
       st.min = Math.min(...arr)
-      st.passCount = arr.filter(v => v >= 60).length
-      st.excellentCount = arr.filter(v => v >= 85).length
+      st.passCount = arr.filter((v: number) => v >= 60).length
+      st.excellentCount = arr.filter((v: number) => v >= 85).length
     }
     return stats
   }

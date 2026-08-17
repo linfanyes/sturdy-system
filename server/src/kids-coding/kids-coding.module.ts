@@ -291,7 +291,7 @@ export class ParentCodingController {
       description: dto.description ?? null,
       blocks: dto.blocks ?? null,
       studentId,
-      teacherId: null,
+      teacherId: null as any,
       classId: null,
       publishedToParent: false,
       teacherName: null,
@@ -425,7 +425,7 @@ export class ParentCodingController {
     for (const type of earned) {
       const exist = await this.badgeRepo.findOne({ where: { studentId, type } as any })
       if (!exist) {
-        const b = this.badgeRepo.create({ studentId, type, teacherId: null, earnedAt: new Date() } as DeepPartial<CodingBadge>)
+        const b = this.badgeRepo.create({ studentId, type, teacherId: null as any, earnedAt: new Date() } as DeepPartial<CodingBadge>)
         await this.badgeRepo.save(b)
       }
     }
