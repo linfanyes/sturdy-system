@@ -246,17 +246,6 @@ export class AiService {
     return stats
   }
 
-  /** 找到本次考试之前最近的一次考试（按日期降序排序，日期相同按 createdAt 降序） */
-  private findPreviousExam(allExams: Exam[], exam: Exam): Exam | null {
-    const sorted = allExams
-      .filter(e => e.id !== exam.id && (e.date < exam.date || (e.date === exam.date && e.createdAt < exam.createdAt)))
-      .sort((a, b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date)
-        return b.createdAt.getTime() - a.createdAt.getTime()
-      })
-    return sorted[0] || null
-  }
-
   /**
    * 全校各科均分（近似：所有班级该科均分均值）
    * P0-3修复：使用 MySQL JSON_TABLE 在数据库层聚合，避免拉取完整 Grade 实体到内存。
