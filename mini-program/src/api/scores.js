@@ -16,22 +16,6 @@ export function updateScoreRecord(id, payload) {
 export function removeScoreRecord(id) {
   return api.del('/score-records/' + id)
 }
-/** 奖励记录列表 */
-export function listRewardRecords(opts = {}) {
-  return api.getList('/reward-records', opts)
-}
-/** 创建奖励记录 */
-export function createRewardRecord(payload) {
-  return api.post('/reward-records', payload)
-}
-/** 更新奖励记录 */
-export function updateRewardRecord(id, payload) {
-  return api.patch('/reward-records/' + id, payload)
-}
-/** 删除奖励记录 */
-export function removeRewardRecord(id) {
-  return api.del('/reward-records/' + id)
-}
 /** 小组成绩列表 */
 export function listGroupScores(opts = {}) {
   return api.getList('/group-scores', opts)

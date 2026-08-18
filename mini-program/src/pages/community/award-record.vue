@@ -11,25 +11,20 @@
     <EmptyState v-if="!list.length" icon="🏆" text="还没有获奖记录" hint="记录每一份荣誉" />
 
     <view class="list" v-else>
-      <view class="c" v-for="a in list" :key="a.id">
-        <image v-if="a.image" :src="a.image" class="thumb" mode="aspectFill" lazy-load @click="preview(a.image)"></image>
-        <view class="mid">
-          <view class="top">
-            <text class="nm">{{ a.name }}</text>
-            <text class="lv" v-if="a.level">{{ a.level }}</text>
-          </view>
-          <view class="meta">{{ a.issuer || '颁发单位未知' }} · {{ a.date }}</view>
-          <view class="tags" v-if="a.tags && a.tags.length">
-            <text class="tag" v-for="(t, i) in a.tags" :key="i">#{{ t }}</text>
-          </view>
-          <view class="note" v-if="a.note">{{ a.note }}</view>
-          <view class="score" v-if="a.ratingScore != null">评分：{{ a.ratingScore }} 分</view>
-        </view>
-        <view class="acts">
-          <text class="a" @click="openEdit(a)">编辑</text>
-          <text class="a del" @click="del(a)">删除</text>
-        </view>
-      </view>
+      <RecordCard
+        v-for="a in list"
+        :key="a.id"
+        :title="a.name"
+        :image="a.image"
+        :level="a.level"
+        :meta="(a.issuer || '颁发单位未知') + ' · ' + a.date"
+        :tags="a.tags"
+        :note="a.note"
+        :score="a.ratingScore"
+        @image-click="preview"
+        @edit="openEdit(a)"
+        @delete="del(a)"
+      />
     </view>
 
     <view class="mask" v-if="show" @click="show = false"></view>
@@ -72,6 +67,7 @@ import { listAwardRecords, createAwardRecord, updateAwardRecord, removeAwardReco
 import { theme } from '../../common/store'
 import { isNonEmpty } from '../../common/validators'
 import { pickAndCompressImage } from '../../common/image'
+import RecordCard from '@/components/business/RecordCard.vue'
 
 const levels = ['国家级', '省级', '市级', '区级', '校级', '其他']
 const list = ref([])
@@ -175,22 +171,6 @@ function del(a) {
 .add { font-size: 28rpx; color: #fff; background: var(--c-primary); padding: 12rpx 26rpx; border-radius: 40rpx; }
 .empty { text-align: center; color: var(--c-sub); padding: 80rpx 40rpx; font-size: 26rpx; }
 .list { background: var(--c-card); border-radius: 16rpx; padding: 10rpx 24rpx; }
-.c { display: flex; gap: 18rpx; padding: 20rpx 0; border-bottom: 1px solid var(--c-card2); }
-.thumb { width: 120rpx; height: 120rpx; border-radius: 14rpx; flex-shrink: 0; background: var(--c-card2); }
-.mid { flex: 1; min-width: 0; }
-.top { display: flex; align-items: center; gap: 12rpx; }
-.nm { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
-.lv { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 20rpx; background: #fff3e0; color: #e6a23c; }
-.meta { font-size: 24rpx; color: var(--c-sub); margin: 6rpx 0; }
-.tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin: 6rpx 0; }
-.tag { font-size: 22rpx; color: #a07b3b; }
-.note { font-size: 25rpx; color: #6a6058; margin-top: 4rpx; }
-.score { font-size: 24rpx; color: var(--c-accent); margin-top: 4rpx; }
-.acts { display: flex; flex-direction: column; gap: 14rpx; 
-  align-items: flex-end;
-}
-.a { font-size: 24rpx; color: var(--c-blue); }
-.a.del { color: var(--c-danger); }
 .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 50; }
 .modal { position: fixed; left: 5%; right: 5%; bottom: 0; z-index: 51; background: var(--c-card); border-radius: 24rpx 24rpx 0 0; padding: 30rpx; padding-bottom: calc(30rpx + env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; }
 .mt { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; color: var(--c-title); }

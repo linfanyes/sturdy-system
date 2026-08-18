@@ -144,17 +144,20 @@
             <text class="lb-link" @click="toggleAllBatch">{{ batchSel.size === students.length ? '全不选' : '全选' }}</text>
           </view>
           <scroll-view scroll-y class="stu-list">
-            <view
-              v-for="(s, i) in students"
+            <StudentAvatar
+              v-for="s in students"
               :key="s.id"
+              :name="s.name"
+              :avatar="s.avatar"
+              :no="s.studentNo"
               class="stu-item"
               :class="{ on: batchSel.has(s.id) }"
               @click="toggleBatchSel(s.id)"
             >
-              <text class="stu-check">{{ batchSel.has(s.id) ? '✓' : '' }}</text>
-              <text class="stu-name">{{ s.name }}</text>
-              <text class="stu-no" v-if="s.studentNo">{{ s.studentNo }}</text>
-            </view>
+              <template #right>
+                <text class="stu-check">{{ batchSel.has(s.id) ? '✓' : '' }}</text>
+              </template>
+            </StudentAvatar>
             <view v-if="!students.length" class="stu-empty">暂无学生</view>
           </scroll-view>
         </view>
@@ -173,6 +176,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { listClasses, listStudents, listRewardRecords, createRewardRecord, removeRewardRecord } from '@/api/reward'
 import { auth, theme } from '../../../common/store'
 import EmptyState from '../../../components/EmptyState/EmptyState.vue'
+import StudentAvatar from '@/components/business/StudentAvatar.vue'
 
 // 预设奖励项目（教师可在记录中自由输入）
 const PRESET_ITEMS = [

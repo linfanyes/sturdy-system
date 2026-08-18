@@ -37,7 +37,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { listClasses, listStudents } from '@/api/teaching'
-import { listRewardRecords } from '@/api/scores'
+import { listRewardRecords } from '@/api/reward'
 import { theme } from '../../common/store'
 
 const classes = ref([])
