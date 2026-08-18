@@ -14,12 +14,85 @@ export interface LoginResult {
   user: AuthUser
 }
 
+// ---- 各接口原始响应类型 ----
+
+/** 超管登录后端返回 */
+interface SuperLoginResponse {
+  role: 'super'
+  token: string
+  user?: { name?: string }
+  effectiveFeatures?: string[]
+}
+
+/** 校管登录后端返回 */
+interface SchoolAdminLoginResponse {
+  token: string
+  admin?: {
+    id: string | number
+    name?: string
+    schoolId?: number
+    schoolName?: string
+    schoolCode?: string
+  }
+  effectiveFeatures?: string[]
+}
+
+/** 教师登录后端返回 */
+interface TeacherLoginResponse {
+  token: string
+  user?: {
+    id: string | number
+    name?: string
+    username?: string
+    school?: string
+    schoolId?: number
+    phone?: string
+    features?: string[]
+    position?: string
+    subject?: string
+    subjects?: string[]
+  }
+  effectiveFeatures?: string[]
+}
+
+/** 家长登录后端返回 */
+interface ParentLoginResponse {
+  token: string
+  parent?: {
+    imUserId: string | number
+    studentId?: number
+    studentName?: string
+    classId?: number
+    studentNo?: string
+  }
+  effectiveFeatures?: string[]
+}
+
+/** 统一登录后端返回 */
+interface UnifiedLoginResponse {
+  role: Role
+  token: string
+  user?: Record<string, any>
+  parent?: Record<string, any>
+  effectiveFeatures?: string[]
+}
+
+/** /auth/me 后端返回 */
+interface AuthMeResponse {
+  role?: Role
+  schoolId?: number
+  effectiveFeatures?: string[]
+  rawFeatures?: string[]
+  schoolFeatureFlags?: string[] | null
+  user?: Record<string, any>
+}
+
 /**
  * 超管登录：POST /api/admin/login
  * 后端返回 { role:'super', token, user:{ name } }
  */
 export async function superLogin(dto: SuperLoginDto): Promise<LoginResult> {
-  const res = await request.post<any, any>('/admin/login', dto)
+  const res = await request.post<SuperLoginResponse>('/admin/login', dto)
   return {
     token: res.token,
     user: { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员', effectiveFeatures: res.effectiveFeatures },
@@ -31,7 +104,7 @@ export async function superLogin(dto: SuperLoginDto): Promise<LoginResult> {
  * 后端返回 { token, admin:{ id, name, schoolId, schoolName, schoolCode } }
  */
 export async function schoolAdminLogin(dto: SchoolAdminLoginDto): Promise<LoginResult> {
-  const res = await request.post<any, any>('/school-admin/login', dto)
+  const res = await request.post<SchoolAdminLoginResponse>('/school-admin/login', dto)
   const a = res.admin || {}
   return {
     token: res.token,
@@ -51,7 +124,7 @@ export async function schoolAdminLogin(dto: SchoolAdminLoginDto): Promise<LoginR
  * 后端返回 { token, user:{ id, name, username, school, schoolId, phone, features, ... } }
  */
 export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
-  const res = await request.post<any, any>('/auth/password-login', dto)
+  const res = await request.post<TeacherLoginResponse>('/auth/password-login', dto)
   const u = res.user || {}
   return {
     token: res.token,
@@ -75,7 +148,7 @@ export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
  * 后端返回 { token, parent:{ imUserId, studentId, studentName, classId, studentNo } }
  */
 export async function parentLogin(dto: ParentLoginDto): Promise<LoginResult> {
-  const res = await request.post<any, any>('/parent-auth/login', dto)
+  const res = await request.post<ParentLoginResponse>('/parent-auth/login', dto)
   const p = res.parent || {}
   return {
     token: res.token,
@@ -122,7 +195,7 @@ export interface UnifiedLoginResult extends LoginResult {}
  * 家长字段为 parent，这里统一映射为 AuthUser。
  */
 export async function unifiedLogin(username: string, password: string): Promise<UnifiedLoginResult> {
-  const res = await request.post<any, any>('/auth/unified-login', { username, password })
+  const res = await request.post<UnifiedLoginResponse>('/auth/unified-login', { username, password })
 
   const role: Role = res.role
   const token: string = res.token
@@ -182,12 +255,12 @@ export async function unifiedLogin(username: string, password: string): Promise<
 
 /** 健康检查：GET /api/health */
 export function checkHealth() {
-  return request.get<any, { status: string; time: string }>('/health')
+  return request.get<{ status: string; time: string }>('/health')
 }
 
 /** 当前用户资料（含扩展字段）：GET /api/users/me */
 export function getProfileMe() {
-  return request.get<any, any>('/users/me')
+  return request.get<AuthUser>('/users/me')
 }
 
 /**
@@ -195,6 +268,6 @@ export function getProfileMe() {
  * 返回 { role, schoolId, effectiveFeatures, rawFeatures, schoolFeatureFlags, user }
  */
 export async function getMe() {
-  const res = await request.get<any, any>('/auth/me')
+  const res = await request.get<AuthMeResponse>('/auth/me')
   return res
 }

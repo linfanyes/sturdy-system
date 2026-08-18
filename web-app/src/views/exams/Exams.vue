@@ -13,7 +13,7 @@ import { useKeepAliveRefresh } from '@/composables/useKeepAliveRefresh'
 import { getCurrentTerm } from '@gardener/shared/utils/date'
 import { SUBJECT_VALUES } from '@gardener/shared/constants'
 import Modal from '@/components/Modal.vue'
-import { Plus, Search, Edit3, Trash2, BarChart3, X, Upload } from 'lucide-vue-next'
+import { Plus, Search, Edit3, Trash2, BarChart3, X } from 'lucide-vue-next'
 import { toast } from '@/utils/feedback'
 
 const router = useRouter()

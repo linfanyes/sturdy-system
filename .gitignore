@@ -107,3 +107,15 @@ scripts/mini-pages.json
 # 云端测试运行态/缓存产物（含 JWT token，勿入库）
 test/cloud/.gen-state.json
 test/cloud/.cloud-sweep-result.json
+
+# P0-10修复：补充遗漏的构建产物与缓存目录
+web-app/dist/
+mini-program/dist/
+web-app/.vite/
+mini-program/.vite/
+*.local
+.catpaw/
+# ESLint 缓存
+.eslintcache
+# Prettier 缓存
+.prettiercache

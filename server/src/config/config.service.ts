@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common'
 import { ConfigService as EnvConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -81,6 +81,8 @@ export class ConfigService implements OnModuleInit {
     this.APP_CONFIG_TTL = 1000 * 60 * 10
   }
 
+  private readonly logger = new Logger(ConfigService.name)
+
   /** AI 配置缓存 TTL（毫秒） */
   private readonly AI_SETTINGS_TTL: number
   /** 应用配置缓存 TTL（毫秒） */
@@ -88,7 +90,7 @@ export class ConfigService implements OnModuleInit {
 
   async onModuleInit() {
     if (!getEncryptionKey()) {
-      console.warn('⚠️  未配置 ENCRYPTION_KEY（32 字节 hex），密钥类配置（wxAppSecret/imSecretKey/aiApiKey）将以明文落库，生产环境建议配置。')
+      this.logger.warn('未配置 ENCRYPTION_KEY（32 字节 hex），密钥类配置（wxAppSecret/imSecretKey/aiApiKey）将以明文落库，生产环境建议配置。')
     }
     try {
       await this.seed()
@@ -96,7 +98,7 @@ export class ConfigService implements OnModuleInit {
       await this.migrateImDefaults()
     } catch (e) {
       // 容错：缺列/表结构未对齐不应阻断整个后端启动（与 admin.service.seedDemoData 一致）
-      console.warn('[Config] 初始化失败（可忽略，待迁移补齐结构后重试）:', (e as Error).message)
+      this.logger.warn('初始化失败（可忽略，待迁移补齐结构后重试）:' + (e as Error).message)
     }
   }
 

@@ -20,10 +20,10 @@ import type { SubjectOption } from '../constants'
 
 /**
  * 严格手机号校验：必须符合 PHONE_REGEX，**不允许空**
- * @param value 待校验手机号
+ * @param value 待校验手机号（可接受 null/undefined，此时返回 false）
  * @returns true = 合法
  */
-export function isPhone(value: string): boolean {
+export function isPhone(value: string | null | undefined): boolean {
   if (value == null) return false
   return PHONE_REGEX.test(String(value).trim())
 }

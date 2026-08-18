@@ -359,7 +359,8 @@ function preloadRouteComponent(name: string) {
   if (matched) {
     _preloadCache.add(name)
     // 手动触发 Webpack/Vite 对 import() 的解析
-    const component = (matched as any).components?.default || (matched as any).component
+    // Vue Router 4 的 RouteRecordNormalized 提供类型安全的 components.default 访问
+    const component = (matched as { components?: { default: () => Promise<any> } }).components?.default
     if (typeof component === 'function') {
       Promise.resolve(component()).catch(() => { /* 忽略预加载失败 */ })
     }

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common'
 import { Response, Request } from 'express'
 import { BusinessException } from '../exceptions/business.exception'
+import { QueryFailedError, EntityNotFoundError } from 'typeorm'
 
 /**
  * 统一异常过滤器（全局注册）：
@@ -63,8 +64,12 @@ export class TypeOrmExceptionFilter implements ExceptionFilter {
       return response.status(status).json(body)
     }
 
-    // 3) 数据库层错误
-    if (exception?.code || exception?.errno) {
+    // 3) 数据库层错误（P1-5 修复：精确检测 TypeORM 错误，避免误判非数据库异常）
+    const isDbError = exception instanceof QueryFailedError ||
+      exception instanceof EntityNotFoundError ||
+      exception?.name === 'QueryFailedError' ||
+      exception?.name === 'EntityNotFoundError'
+    if (isDbError && (exception?.code || exception?.errno)) {
       let message: string
       switch (exception.code) {
         case 'ER_DATA_TOO_LONG':

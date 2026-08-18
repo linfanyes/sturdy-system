@@ -14,6 +14,9 @@ export class WechatService {
 
   /** 用 wx.login 拿到的 code 换取 openid / session_key */
   async code2Session(code: string) {
+    if (!code || !/^[a-zA-Z0-9_-]{10,64}$/.test(code)) {
+      throw new BadRequestException('无效的微信授权 code')
+    }
     const appid = this.config.get<string>('WECHAT_APPID')
     const secret = this.config.get<string>('WECHAT_SECRET')
     if (!appid || !secret) {

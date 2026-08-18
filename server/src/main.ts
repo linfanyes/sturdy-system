@@ -23,7 +23,7 @@ const logger = new Logger('Bootstrap')
  * - /api/v1/foo → 直接放行
  * - 健康检查 /health 不参与版本化
  */
-function setupApiVersioning(app: any) {
+function setupApiVersioning(app: Awaited<ReturnType<typeof NestFactory.create>>) {
   const V1_PREFIX = '/api/v1'
   const LEGACY_PREFIX = '/api'
 
@@ -150,7 +150,9 @@ async function bootstrap() {
   }
 
   // 应用数据库迁移（幂等）。容器场景下这一步已在 docker-entrypoint.sh 中先行执行，
-  // 此处再次调用作为兜底（多实例下通过命名锁串行化），确保无论以何种方式启动都能对齐表结构。
+  // 此处再次调用作为兜底，确保无论以何种方式启动都能对齐表结构。
+  // 注意：当前依赖微信云托管单实例部署，多实例并发迁移不在考虑范围内。
+  // 若未来需要多实例部署，应在此处引入分布式锁（如 MySQL GET_LOCK）保证迁移串行化。
   await runMigrations(app.get(ConfigService))
 
   // 健康检查端点

@@ -113,10 +113,12 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 /** 必选字段类型工具 */
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
 
-/** 深度只读 */
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: DeepReadonly<T[P]>
-}
+/**
+ * 深度只读（限制递归深度为 5 层，防止 TS 编译器无限递归报错）
+ */
+export type DeepReadonly<T, Depth extends number[] = []> =
+  Depth['length'] extends 5 ? T :
+  T extends object ? { readonly [P in keyof T]: DeepReadonly<T[P], [...Depth, 0]> } : T
 
 /** 非空断言工具类型 */
 export type NonNullable<T> = T extends null | undefined ? never : T

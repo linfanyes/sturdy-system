@@ -34,15 +34,12 @@ function fromSharedUser(u: any): AuthUser {
   return { ...u } as AuthUser
 }
 
-// 单例 machine —— 整个应用生命周期内唯一
-let _machine: ReturnType<typeof createAuthMachine> | null = null
-// HMR 卸载时标记，避免旧 machine 事件监听器成为悬挂引用
-let _hmrDisposed = false
-
-function getMachine() {
-  if (_machine && !_hmrDisposed) return _machine
-  // HMR 重新初始化：旧实例若存在需清理监听（factory 内部未提供 offAll，通过重新创建隔离）
-  _machine = createAuthMachine({
+/**
+ * 创建 machine 实例的工厂函数。
+ * 每次调用创建新实例，HMR 场景下用于替换悬挂的旧实例。
+ */
+function createMachineInstance() {
+  return createAuthMachine({
     loginFn: async (creds) => {
       const res = await authApi.unifiedLogin(creds.username || '', creds.password || '')
       return {
@@ -58,58 +55,69 @@ function getMachine() {
     revokeFn: undefined,
     debug: isViteDev(),
   })
-  _hmrDisposed = false
-  return _machine
 }
 
-// HMR 兼容：开发期热替换时重置 machine，避免事件监听悬挂
+// HMR 兼容：开发期热替换时标记需重建 machine
+let _hmrDisposed = false
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     _hmrDisposed = true
   })
 }
 
-export const authMachine = getMachine()
-
 /**
  * Web 鉴权 store（Pinia）。
  * 对外 API 与旧版 useAuthStore 一致；状态由共享 machine 驱动。
+ *
+ * machine 实例挂在 store 内部（而非模块级变量），避免 HMR 竞态：
+ * 每次 store 初始化时若检测到 HMR  disposal 标记，则重建 machine。
  */
 export const useAuthStore = defineStore('auth', () => {
+  // machine 实例：闭包内私有，对外通过 authMachine 暴露只读引用
+  let _machine = createMachineInstance()
+  // DCLP：检测 HMR 后首次访问时自动重建
+  if (_hmrDisposed) {
+    _machine = createMachineInstance()
+    _hmrDisposed = false
+  }
+
+  /** 暴露 machine 只读引用（兼容旧外部调用） */
+  const machine = _machine
+
   // 响应式字段：由 machine 事件同步
-  const token = ref<string>(authMachine.token || '')
-  const user = ref<AuthUser | null>(authMachine.user ? fromSharedUser(authMachine.user) : null)
-  const role = ref<Role | null>(authMachine.role)
-  const isLoggedIn = ref(authMachine.isLoggedIn)
+  const token = ref<string>(machine.token || '')
+  const user = ref<AuthUser | null>(machine.user ? fromSharedUser(machine.user) : null)
+  const role = ref<Role | null>(machine.role)
+  const isLoggedIn = ref(machine.isLoggedIn)
   const effectiveFeatures = ref<string[]>(user.value?.effectiveFeatures || [])
   const schoolFeatureFlags = ref<string[] | null>(user.value?.schoolFeatureFlags ?? null)
 
   function syncFromMachine() {
-    token.value = authMachine.token || ''
-    user.value = authMachine.user ? fromSharedUser(authMachine.user) : null
-    role.value = authMachine.role
-    isLoggedIn.value = authMachine.isLoggedIn
+    token.value = machine.token || ''
+    user.value = machine.user ? fromSharedUser(machine.user) : null
+    role.value = machine.role
+    isLoggedIn.value = machine.isLoggedIn
     effectiveFeatures.value = (user.value?.effectiveFeatures as string[]) || []
     schoolFeatureFlags.value = (user.value?.schoolFeatureFlags as string[] | null) ?? null
   }
 
   // 订阅 machine 事件，实现 machine → 响应式单向同步
-  authMachine.on('login', syncFromMachine)
-  authMachine.on('logout', syncFromMachine)
-  authMachine.on('switchRole', syncFromMachine)
-  authMachine.on('restore', syncFromMachine)
-  authMachine.on('tokenExpired', syncFromMachine)
+  machine.on('login', syncFromMachine)
+  machine.on('logout', syncFromMachine)
+  machine.on('switchRole', syncFromMachine)
+  machine.on('restore', syncFromMachine)
+  machine.on('tokenExpired', syncFromMachine)
 
   /** 兼容旧版 setAuth：采纳外部登录结果，统一走共享状态机，保持 machine/store/localStorage 三方一致 */
   function setAuth(t: string, u: AuthUser) {
-    authMachine.adopt({ token: t, user: toSharedUser(u) })
+    machine.adopt({ token: t, user: toSharedUser(u) })
     // adopt 内部已 emit('login') → syncFromMachine 会同步 refs；此处再显式同步一次兜底，
     // 保证即使调用发生在监听注册之前也不丢失状态。
     syncFromMachine()
   }
 
   async function logout() {
-    await authMachine.logout()
+    await machine.logout()
   }
 
   /** 局部更新当前用户信息 */
@@ -124,13 +132,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 统一登录入口（前端所有角色共用用户名/密码表单）
   async function login(rs: Role, username: string, password: string) {
-    await authMachine.login({ username, password })
+    await machine.login({ username, password })
     await fetchMe()
   }
 
   /** 后端自动识别角色的统一登录（新登录页使用） */
   async function loginByUsername(username: string, password: string) {
-    await authMachine.login({ username, password })
+    await machine.login({ username, password })
     await fetchMe()
   }
 
@@ -193,7 +201,27 @@ export const useAuthStore = defineStore('auth', () => {
     loginAsParent,
     fetchMe,
     applyFeatureProfile,
-    restore: () => authMachine.restore(),
-    switchRole: (r: Role) => authMachine.switchRole(r),
+    restore: () => machine.restore(),
+    switchRole: (r: Role) => machine.switchRole(r),
+    /** 暴露 machine 实例（兼容旧外部调用 authMachine.xxx） */
+    authMachine: machine,
   }
 })
+
+/**
+ * 向后兼容：旧代码通过 `authMachine` 直接访问 machine 实例。
+ * 注意：此引用在 store 初始化后有效；HMR 场景下若 store 被重建，需重新获取。
+ */
+export const authMachine = {
+  get token() { return useAuthStore().authMachine.token },
+  get user() { return useAuthStore().authMachine.user },
+  get role() { return useAuthStore().authMachine.role },
+  get isLoggedIn() { return useAuthStore().authMachine.isLoggedIn },
+  login(...args: any[]) { return useAuthStore().authMachine.login(...args) },
+  logout(...args: any[]) { return useAuthStore().authMachine.logout(...args) },
+  adopt(...args: any[]) { return useAuthStore().authMachine.adopt(...args) },
+  restore(...args: any[]) { return useAuthStore().authMachine.restore(...args) },
+  switchRole(...args: any[]) { return useAuthStore().authMachine.switchRole(...args) },
+  on(...args: any[]) { return useAuthStore().authMachine.on(...args) },
+  off(...args: any[]) { return useAuthStore().authMachine.off(...args) },
+}

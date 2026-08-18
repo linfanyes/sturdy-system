@@ -47,9 +47,11 @@ export function buildWordHtml(options: BuildWordHtmlOptions): string {
   const { title = '', body, fontFamily = "'宋体',SimSun,serif", fontSizePt = 12 } = options
   const safeTitle = escapeHtml(title)
   const nl2br = escapeHtml(body) // pre-wrap 保留换行
+  // 对 fontFamily 做基本 HTML 转义，防止特殊字符破坏 style 属性
+  const safeFontFamily = escapeHtml(fontFamily)
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${safeTitle}</title>
-<style>body{font-family:${fontFamily};font-size:${fontSizePt}pt;line-height:1.8;white-space:pre-wrap;}h1{font-size:${Math.round(fontSizePt * 1.5)}pt;text-align:center;margin-bottom:16pt;}</style>
+<style>body{font-family:${safeFontFamily};font-size:${fontSizePt}pt;line-height:1.8;white-space:pre-wrap;}h1{font-size:${Math.round(fontSizePt * 1.5)}pt;text-align:center;margin-bottom:16pt;}</style>
 </head>
 ${title ? `<body><h1>${safeTitle}</h1>${nl2br}</body></html>` : `<body>${nl2br}</body></html>`}`
 }

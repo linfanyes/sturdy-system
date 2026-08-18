@@ -7,17 +7,20 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { initMonitor } from '@/utils/monitor'
+import { usePrefsStore } from '@/stores/prefs'
 
 // 初始化前端监控（错误捕获 + Core Web Vitals RUM）
 initMonitor()
 
 const route = useRoute()
 const layout = computed(() => (route.meta.layout === 'blank' ? BlankLayout : AppLayout))
+const prefs = usePrefsStore()
 
-// 适老化：应用已保存的字号
+// 字号适配：由 prefs store 统一管理（onMounted 回调中已设置 documentElement fontSize）
+// 此处无需重复逻辑
 onMounted(() => {
-  const s = localStorage.getItem('fontScale')
-  if (s) document.documentElement.style.fontSize = s + 'px'
+  // 确保 prefs store 已初始化（仅触发 import 侧效应）
+  void prefs.fontSize
 })
 </script>
 

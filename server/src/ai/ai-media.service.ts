@@ -3,6 +3,7 @@ import axios from 'axios'
 import { ConfigService } from '../config/config.service'
 import { tlsAgent } from './ai-file-parser.service'
 import { buildAiSettings } from './ai-settings.util'
+import { BusinessException } from '../common/exceptions/business.exception'
 
 /**
  * 媒体生成服务：负责 AI 文生图、文生视频、语音识别 ASR 等多媒体 AI 能力。
@@ -39,22 +40,11 @@ export class AiMediaService {
       const urls: string[] = (resp.data?.data || []).map((d: any) => d.url || d.b64_json).filter(Boolean)
       return { urls }
     } catch (e: any) {
-      // 如果 images/generations 不支持, 回退用 chat/completions 描述生成 base64
-      const resp = await axios.post(
-        `${s.baseUrl}/chat/completions`,
-        {
-          model: s.visionModel || s.textModel,
-          messages: [{ role: 'user', content: `请根据以下描述生成一张图片的详细视觉说明：${prompt}\n请返回JSON: {"description":"图片描述"}` }],
-          stream: false,
-        },
-        {
-          headers: { Authorization: `Bearer ${s.apiKey}`, 'Content-Type': 'application/json' },
-          httpsAgent: tlsAgent,
-          timeout: 60000,
-        },
+      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      throw new BusinessException(
+        'AI_IMAGE_GENERATION_FAILED',
+        '图片生成失败，请检查 AI 服务配置或稍后重试',
       )
-      const content = resp.data?.choices?.[0]?.message?.content || ''
-      return { urls: [] }
     }
   }
 
@@ -78,7 +68,11 @@ export class AiMediaService {
       )
       return { taskId: resp.data?.task_id, url: resp.data?.video_url || resp.data?.url }
     } catch (e: any) {
-      return { url: '' }
+      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      throw new BusinessException(
+        'AI_VIDEO_GENERATION_FAILED',
+        '视频生成失败，请检查 AI 服务配置或稍后重试',
+      )
     }
   }
 
@@ -105,7 +99,11 @@ export class AiMediaService {
       const text = resp.data?.choices?.[0]?.message?.content || ''
       return { text }
     } catch {
-      return { text: '' }
+      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      throw new BusinessException(
+        'AI_ASR_FAILED',
+        '语音识别失败，请检查 AI 服务配置或稍后重试',
+      )
     }
   }
 }

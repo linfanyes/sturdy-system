@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm'
@@ -19,6 +19,8 @@ import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
@@ -165,8 +167,7 @@ export class AuthService {
             await this.studentRepo.save(stu)
           }
         } catch (e) {
-          // eslint-disable-next-line no-console
-          console.warn(`[unified-login] 回填家长 parentId 失败（不影响登录）: ${(e as Error)?.message}`)
+          this.logger.warn(`回填家长 parentId 失败（不影响登录）: ${(e as Error)?.message}`)
         }
       }
       return {

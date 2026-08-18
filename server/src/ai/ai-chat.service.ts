@@ -187,7 +187,7 @@ export class AiChatService {
     ownerType: string,
     ownerId: string,
     body: any,
-    onDelta: (text: string) => void,
+    onDelta: (text: string) => boolean,
   ): Promise<void> {
     const s = await this.buildSettings(ownerType, ownerId)
     const model = this.resolveModel(body, s)
@@ -221,10 +221,10 @@ export class AiChatService {
    */
   /**
    * 解析 OpenAI 流式响应（SSE）。
-   * P0-8修复：添加背压控制 — 当 onDelta 处理慢时暂停上游 stream，
-   * 待消费完成后再恢复，避免内存积压。
+   * P0-3修复：背压控制 — onDelta 返回 false（写入缓冲区满）时暂停上游 stream，
+   * 待 drain 事件触发后再恢复，避免内存积压。
    */
-  private pipeSse(stream: any, onDelta: (t: string) => void): Promise<void> {
+  private pipeSse(stream: any, onDelta: (t: string) => boolean): Promise<void> {
     return new Promise((resolve, reject) => {
       const splitter = createSSEEventSplitter((data) => {
         if (data === '[DONE]') return
@@ -232,12 +232,12 @@ export class AiChatService {
           const json = JSON.parse(data)
           const delta = json.choices?.[0]?.delta?.content
           if (delta) {
-            // 背压控制：如果 onDelta 返回 false，暂停上游
+            // 背压控制：onDelta 返回 false 表示写入缓冲区满，暂停上游
             const canContinue = onDelta(delta as string)
-            if ((canContinue as any) === false && stream.pause) {
+            if (!canContinue && stream.pause) {
               stream.pause()
-              // 消费恢复后继续
-              setImmediate(() => {
+              // 等待 drain 事件（消费恢复后继续）
+              stream.once('drain', () => {
                 if (stream.resume) stream.resume()
               })
             }

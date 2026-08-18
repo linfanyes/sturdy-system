@@ -19,6 +19,14 @@
  * 两侧只传 transport adapter（一个 feed 函数），协议解析逻辑完全收敛到 shared。
  */
 
+/** SSE payload 结构（OpenAI 兼容 + 本系统协议） */
+export interface SSEPayload {
+  delta?: string
+  error?: string
+  choices?: Array<{ delta?: { content?: string } }>
+  [key: string]: unknown
+}
+
 export interface SSEParseHandlers {
   /** 文本增量片段回调 */
   onDelta?: (delta: string, full: string) => void
@@ -98,7 +106,7 @@ export function createSSEParser(handlers: SSEParseHandlers = {}): SSEParser {
       return
     }
 
-    let payload: any = null
+    let payload: SSEPayload | null = null
     try {
       payload = JSON.parse(dataLine)
     } catch {

@@ -12,27 +12,49 @@
  */
 import { ref, watch, type Ref } from 'vue'
 
-export function usePagedList(
-  loadFn: (params: Record<string, any>) => Promise<any[] | { items: any[]; total?: number }>,
-  defaultPageSize = 10,
-  totalRef?: { value: number },
-) {
-  const page = ref<number>(0)
-  const pageSize = ref<number>(defaultPageSize)
-  const total = ref<number>(0)
-  const allItems = ref<any[]>([])
+export interface PagedListOptions<T> {
+  loadFn: (params: { page: number; pageSize: number; [key: string]: unknown }) => Promise<T[] | { items: T[]; total?: number }>
+  pageSize?: number
+  initialPage?: number
+}
+
+export interface PagedListResult<T> {
+  page: Ref<number>
+  pageSize: Ref<number>
+  total: Ref<number>
+  allItems: Ref<T[]>
+  keyword: Ref<string>
+  classId: Ref<string>
+  loadList: () => Promise<void>
+  resetAndReload: () => void
+  goPage: (p: number) => void
+  prevPage: () => void
+  nextPage: () => void
+}
+
+export function usePagedList<T = unknown>(
+  options: PagedListOptions<T>,
+): PagedListResult<T> {
+  const { loadFn, pageSize: defaultPageSize = 10, initialPage = 0 } = options
+
+  const page = ref<number>(initialPage) as Ref<number>
+  const pageSize = ref<number>(defaultPageSize) as Ref<number>
+  const total = ref<number>(0) as Ref<number>
+  const allItems = ref<T[]>([]) as Ref<T[]>
   const keyword = ref<string>('')
   const classId = ref<string>('')
 
   async function loadList() {
     const isSearching = !!keyword.value.trim()
-    const params: Record<string, any> = {
+    const params: { page: number; pageSize: number; [key: string]: unknown } = {
+      page: page.value,
+      pageSize: pageSize.value,
       skip: isSearching ? 0 : page.value * pageSize.value,
       take: isSearching ? 500 : pageSize.value,
     }
     if (classId.value) params.classId = classId.value
     const res = await loadFn(params)
-    let arr: any[] = []
+    let arr: T[] = []
     let totalVal = 0
     if (Array.isArray(res)) {
       arr = res
@@ -55,8 +77,7 @@ export function usePagedList(
   watch(keyword, resetAndReload)
 
   function goPage(p: number) {
-    const totalItems = totalRef?.value ?? allItems.value.length
-    const maxPage = Math.max(0, Math.ceil((totalItems || 0) / pageSize.value) - 1)
+    const maxPage = Math.max(0, Math.ceil((total.value || 0) / pageSize.value) - 1)
     page.value = Math.min(Math.max(0, p), maxPage)
     if (!keyword.value.trim()) {
       loadList()

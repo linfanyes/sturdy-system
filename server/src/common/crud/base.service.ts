@@ -1,5 +1,5 @@
 import { Repository, FindOptionsWhere, In, Not, IsNull } from 'typeorm'
-import { HttpException, HttpStatus, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { HttpException, HttpStatus, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { BusinessException } from '../exceptions/business.exception'
 
@@ -13,6 +13,9 @@ import { BusinessException } from '../exceptions/business.exception'
  * - 通过 ClassMemberService 查询教师可访问的 classId 列表
  */
 export class CrudService<T extends { id: string; teacherId: string }> {
+  // P2 修复：注入 NestJS Logger 替换 console.error
+  protected readonly logger = new Logger(this.constructor.name)
+
   /** 可选的班级成员服务，用于按班级集合过滤（非所有模块都需要） */
   // P2-16 严格模式适配：用 definite assignment 断言（子类在构造时通过 withClassMemberService 注入），
   // 避免所有 this.classMemberSvc.* 调用在 strictNullChecks 下被判定为「possibly null」。
@@ -87,8 +90,8 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       })
       return { items, total }
     } catch (e) {
-      // 查询异常不应静默返回空列表（会把系统故障伪装成“没有数据”），抛 500 便于端侧感知与排障
-      console.error('[CrudService.findAll] 查询失败:', (e as Error)?.message)
+      // 查询异常不应静默返回空列表（会把系统故障伪装成"没有数据"），抛 500 便于端侧感知与排障
+      this.logger.error(`[${this.constructor.name}.findAll] 查询失败:`, (e as Error)?.message)
       throw new HttpException('查询失败，请稍后重试', HttpStatus.INTERNAL_SERVER_ERROR)
     }
   }

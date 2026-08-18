@@ -70,8 +70,8 @@ export class AiExtensionController {
 
     const keepAliveTimer = setInterval(() => { res.write(': keep-alive\n\n') }, 15000)
     try {
-      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string) => {
-        res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string): boolean => {
+        return res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
       res.write(`data: ${JSON.stringify({ error: e?.message || '生成失败' })}\n\n`)
@@ -124,8 +124,8 @@ export class AiExtensionController {
 
     const keepAliveTimer = setInterval(() => { res.write(': keep-alive\n\n') }, 15000)
     try {
-      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string) => {
-        res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string): boolean => {
+        return res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
       res.write(`data: ${JSON.stringify({ error: e?.message || '生成失败' })}\n\n`)
@@ -179,8 +179,8 @@ ${topic ? `沟通主题：${topic}` : ''}
 
     const keepAliveTimer = setInterval(() => { res.write(': keep-alive\n\n') }, 15000)
     try {
-      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string) => {
-        res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string): boolean => {
+        return res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
       res.write(`data: ${JSON.stringify({ error: e?.message || '生成失败' })}\n\n`)
@@ -218,8 +218,8 @@ ${topic ? `沟通主题：${topic}` : ''}
 
     const keepAliveTimer = setInterval(() => { res.write(': keep-alive\n\n') }, 15000)
     try {
-      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string) => {
-        res.write(`data: ${JSON.stringify({ delta })}\n\n`)
+      await this.ai.chatStream('teacher', t.sub, { messages: [{ role: 'user', content: prompt }] }, (delta: string): boolean => {
+        return res.write(`data: ${JSON.stringify({ delta })}\n\n`)
       })
     } catch (e: any) {
       res.write(`data: ${JSON.stringify({ error: e?.message || '生成失败' })}\n\n`)

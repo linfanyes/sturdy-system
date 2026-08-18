@@ -133,24 +133,40 @@ export class Sudoku {
   }
 }
 
+/**
+ * 单次 solve 尝试允许的最大回溯次数。
+ * 超过此限制后降级为确定性顺序（1..9），避免 shuffle 极端情况下的指数增长。
+ */
+const MAX_BACKTRACK_ATTEMPTS = 1000
+
 /** 回溯求解：修改并返回 grid；成功 true，失败 false */
 export function solve(grid: Grid): boolean {
-  for (let i = 0; i < 81; i++) {
-    if (grid[i] === 0) {
-      const r = Math.floor(i / 9)
-      const col = i % 9
-      const nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9])
-      for (const n of nums) {
-        if (isValid(grid, r, col, n)) {
-          grid[i] = n
-          if (solve(grid)) return true
-          grid[i] = 0
+  let attempts = 0
+
+  function backtrack(): boolean {
+    for (let i = 0; i < 81; i++) {
+      if (grid[i] === 0) {
+        const r = Math.floor(i / 9)
+        const col = i % 9
+        // 仅在尝试次数限制内使用随机乱序；超过后降级为确定性顺序
+        const nums = attempts < MAX_BACKTRACK_ATTEMPTS
+          ? shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9])
+          : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        for (const n of nums) {
+          if (isValid(grid, r, col, n)) {
+            grid[i] = n
+            attempts++
+            if (backtrack()) return true
+            grid[i] = 0
+          }
         }
+        return false
       }
-      return false
     }
+    return true
   }
-  return true
+
+  return backtrack()
 }
 
 export function isValid(grid: Grid, r: number, col: number, n: number): boolean {
@@ -167,6 +183,8 @@ export function isValid(grid: Grid, r: number, col: number, n: number): boolean 
 }
 
 export function generate(holes: number): SudokuPuzzle {
+  // 校验 holes 参数范围：0（无挖空）~ 81（全挖空）
+  holes = Math.max(0, Math.min(81, holes))
   const solution: Grid = Array(81).fill(0)
   solve(solution)
   const puzzle = solution.slice()

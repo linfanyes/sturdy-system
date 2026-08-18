@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, In } from 'typeorm'
 import { ClassInsight, InsightStudentDelta } from './insight.entity'
 import { MoodCheckIn } from '../mood/mood.entity'
 import { Grade } from '../grades/grade.entity'
@@ -60,7 +60,7 @@ export class InsightService {
   private async nameMap(ids: string[]): Promise<Record<string, string>> {
     const clean = [...new Set(ids.filter(Boolean))]
     if (!clean.length) return {}
-    const rows = await this.stuRepo.find({ where: clean.map((id) => ({ id })) as any })
+    const rows = await this.stuRepo.find({ where: { id: In(clean) } })
     return Object.fromEntries(rows.map((s) => [s.id, s.name]))
   }
 
@@ -180,15 +180,21 @@ export class InsightService {
     })
   }
 
-  /** 取教师各班级最新一条洞察 */
+  /** 取教师各班级最新一条洞察（子查询一次性获取，避免 N+1） */
   async getLatestForTeacher(teacherId: string): Promise<ClassInsight[]> {
     const classes = await this.getTeacherClasses(teacherId)
-    const res: ClassInsight[] = []
-    for (const cid of classes) {
-      const one = await this.insightRepo.findOne({ where: { teacherId, classId: cid } as any, order: { createdAt: 'DESC' } })
-      if (one) res.push(one)
-    }
-    return res
+    if (!classes.length) return []
+    // P1-9 修复：用子查询替代循环查询，一次性获取所有班级的最新洞察
+    const latestIds = await this.insightRepo
+      .createQueryBuilder('i')
+      .select('MAX(i.id)', 'maxId')
+      .where('i.teacherId = :teacherId', { teacherId })
+      .andWhere('i.classId IN (:...classIds)', { classIds: classes })
+      .groupBy('i.classId')
+      .getRawMany()
+    if (!latestIds.length) return []
+    const ids = latestIds.map((r) => r.maxId).filter(Boolean)
+    return this.insightRepo.find({ where: { id: In(ids) } })
   }
 
   /** 学生 AI 学习伙伴（家长端调用，带内容安全护栏） */

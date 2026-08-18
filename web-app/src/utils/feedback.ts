@@ -85,6 +85,11 @@ const confirmState = reactive<ConfirmState>({
   resolve: null,
 })
 
+/**
+ * 异步确认对话框，返回 Promise<boolean>。
+ * ⚠️ 必须 await 调用结果！未 await 时 Promise 永远 pending，逻辑会立即继续执行。
+ * 替代原生 window.confirm（同步返回 boolean），行为不同。
+ */
 export function confirm(message: string, opts: ConfirmOptions = {}): Promise<boolean> {
   confirmState.title = opts.title ?? '提示'
   confirmState.message = message

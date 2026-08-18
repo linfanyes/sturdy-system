@@ -1,13 +1,10 @@
 import { Entity, Column, Index } from 'typeorm'
-import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 import { BaseEntity } from '../common/entities/base.entity'
 
 /* ===== 学校实体（超管管理）===== */
+// P1-7 修复：继承 BaseEntity，获得 id/teacherId/createdAt/updatedAt/deletedAt 一致性
 @Entity('schools')
-export class School {
-  @PrimaryGeneratedColumn('uuid')
-  id: string
-
+export class School extends BaseEntity {
   @Column({ unique: true, length: 12 })
   code: string // 学校编号（2 位前缀 + 5 位随机 + 平台后缀 H/W，共 8 位，超管创建时生成，唯一且不可修改）
 
@@ -34,12 +31,6 @@ export class School {
    */
   @Column('simple-json', { nullable: true, comment: '学校级功能包开关：null/[]=全部开启；数组=仅列出的包级key可用（超管独占）' })
   featureFlags: string[] | null
-
-  @CreateDateColumn()
-  createdAt: Date
-
-  @UpdateDateColumn()
-  updatedAt: Date
 }
 
 /* ===== 班级/课表/考勤/作业/通知/资源 ===== */

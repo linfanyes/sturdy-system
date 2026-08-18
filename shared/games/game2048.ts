@@ -119,7 +119,7 @@ export class Game2048 {
       }
     }
 
-    const compress = (line: number[], _rowIdx: number): { out: number[]; gained: number; mergedLocal: Set<number> } => {
+    const compress = (line: number[]): { out: number[]; gained: number; mergedLocal: Set<number> } => {
       const arr = line.filter((x) => x)
       const mergedLocal = new Set<number>()
       let g = 0
@@ -144,7 +144,7 @@ export class Game2048 {
     for (let i = 0; i < N; i++) {
       const cells = lineFromBoard(i)
       const line = cells.map((c) => c.value)
-      const { out, gained: g, mergedLocal } = compress(line, i)
+      const { out, gained: g, mergedLocal } = compress(line)
       gained += g
       applyLine(i, out, mergedLocal)
     }

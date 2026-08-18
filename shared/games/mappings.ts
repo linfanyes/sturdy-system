@@ -25,8 +25,8 @@ export const GAME_KEY_TO_NAME: Record<string, string> = {
   jump: '跳一跳',
   breakout: '弹球打砖块',
   motorcycle: '极速摩托',
-  carcrash: '汽车躲避',
-  carCrash: '汽车躲避', // 兼容小程序驼峰命名
+  carcrash: '汽车躲避', // canonical key（小程序原始命名）
+  // carCrash: '汽车躲避', // deprecated alias —— 已废弃，统一使用 carcrash
   plane: '飞机大战',
 
   // —— 益智类 ——
@@ -40,11 +40,11 @@ export const GAME_KEY_TO_NAME: Record<string, string> = {
   tapblack: '别踩白块',
 
   // —— 颜色反应类 ——
-  colormatch: '颜色匹配',
-  colormatching: '颜色匹配',
-  colorReact: '颜色反应', // 兼容小程序
+  colormatch: '颜色匹配', // canonical key
+  // colormatching: '颜色匹配', // deprecated alias —— 已废弃，统一使用 colormatch
+  colorReact: '颜色反应', // 兼容小程序（独立游戏，不同于 colormatch）
   match3: '消消乐',
-  sequence: '数字排序',
+  // sequence: '数字排序', // deprecated alias —— 已废弃，与 numberSort 重复
 
   // —— 经典复刻类 ——
   tetris: '俄罗斯方块',

@@ -62,20 +62,24 @@ export class DataComplianceService {
     return saved
   }
 
-  /** 超管/校管：授权概览统计 */
+  /** 超管/校管：授权概览统计（QueryBuilder 数据库层聚合，避免全量加载） */
   async summary() {
-    const all = await this.repo.find()
-    const total = all.length
-    const granted = { mood: 0, worksPublic: 0, aiAnalysis: 0 }
-    let withdrawn = 0
-    for (const e of all) {
-      if (e.withdrawnAt) { withdrawn++; continue }
-      const c = e.consents || {}
-      if (c.mood) granted.mood++
-      if (c.worksPublic) granted.worksPublic++
-      if (c.aiAnalysis) granted.aiAnalysis++
+    const qb = this.repo.createQueryBuilder('c')
+    qb.select('COUNT(*)', 'total')
+      .addSelect(`SUM(CASE WHEN c.withdrawnAt IS NOT NULL THEN 1 ELSE 0 END)`, 'withdrawn')
+      .addSelect(`SUM(CASE WHEN c.withdrawnAt IS NULL AND JSON_EXTRACT(c.consents, '$.mood') = true THEN 1 ELSE 0 END)`, 'granted_mood')
+      .addSelect(`SUM(CASE WHEN c.withdrawnAt IS NULL AND JSON_EXTRACT(c.consents, '$.worksPublic') = true THEN 1 ELSE 0 END)`, 'granted_worksPublic')
+      .addSelect(`SUM(CASE WHEN c.withdrawnAt IS NULL AND JSON_EXTRACT(c.consents, '$.aiAnalysis') = true THEN 1 ELSE 0 END)`, 'granted_aiAnalysis')
+    const row = await qb.getRawOne()
+    return {
+      total: Number(row.total) || 0,
+      withdrawn: Number(row.withdrawn) || 0,
+      granted: {
+        mood: Number(row.granted_mood) || 0,
+        worksPublic: Number(row.granted_worksPublic) || 0,
+        aiAnalysis: Number(row.granted_aiAnalysis) || 0,
+      },
     }
-    return { total, withdrawn, granted }
   }
 
   /** 超管/校管：按学生查询授权 */

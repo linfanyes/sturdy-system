@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onActivated, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
@@ -13,6 +13,7 @@ import {
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
+import { useKeepAliveRefresh } from '@/composables/useKeepAliveRefresh'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -89,10 +90,12 @@ async function loadGradeTrend() {
     gradeAvgTrend.value = []
   }
 }
-onMounted(() => { load(); loadCharts() })
-let activated = false
-// keep-alive 页面重新激活时刷新数据（首次挂载由 onMounted 加载，不重复请求）
-onActivated(() => { if (activated) { load(); loadCharts() } activated = true })
+
+// 使用可复用的 keep-alive 刷新 composable 替代手动 activated 标志位模式
+const { onMountedRefresh, onActivatedRefresh } = useKeepAliveRefresh()
+onMountedRefresh(() => { load(); loadCharts() })
+onActivatedRefresh(() => { load(); loadCharts() })
+
 onUnmounted(() => { cancelAllRequests() })
 
 /* —— 概览统计 —— */
@@ -308,13 +311,13 @@ const shortcutTools = [
             <!-- 图例 -->
             <div class="space-y-2.5">
               <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" style="background:#4AAE7A" />
+                <span class="w-3 h-3 rounded-full bg-male" />
                 <span class="text-xs text-cocoa-600">男生</span>
                 <span class="ml-auto text-sm font-bold text-cocoa-800">{{ genderDist.male }}</span>
                 <span class="w-10 text-right text-xs text-cocoa-400">{{ genderDist.malePct.toFixed(1) }}%</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" style="background:#E7698C" />
+                <span class="w-3 h-3 rounded-full bg-female" />
                 <span class="text-xs text-cocoa-600">女生</span>
                 <span class="ml-auto text-sm font-bold text-cocoa-800">{{ genderDist.female }}</span>
                 <span class="w-10 text-right text-xs text-cocoa-400">{{ genderDist.femalePct.toFixed(1) }}%</span>
@@ -462,3 +465,13 @@ const shortcutTools = [
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 性别指示器颜色（替换模板内联 style） */
+.bg-male {
+  background: #4AAE7A;
+}
+.bg-female {
+  background: #E7698C;
+}
+</style>

@@ -37,8 +37,15 @@ export function delay(ms: number): Promise<void> {
 }
 
 /**
- * 简单深拷贝（基于 JSON.parse(JSON.stringify)）。
- * 仅适用于纯数据（含 Date→string 等局限性）；复杂对象请使用专用库。
+ * 深拷贝（JSON 序列化实现）。
+ *
+ * ⚠️ 限制：
+ * - Date 对象 → string（ISO 格式）
+ * - undefined 字段 → 丢失（JSON.stringify 会丢弃）
+ * - RegExp / Function / Symbol → 丢失
+ * - 循环引用 → 抛出 TypeError
+ *
+ * 对于含 Date/undefined/RegExp 等场景，推荐使用 structuredClone（需确认运行时支持）。
  */
 export function deepClone<T>(obj: T): T {
   if (obj == null || typeof obj !== 'object') return obj

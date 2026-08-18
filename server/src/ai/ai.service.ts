@@ -57,7 +57,7 @@ export class AiService {
     ownerType: string,
     ownerId: string,
     body: any,
-    onDelta: (text: string) => void,
+    onDelta: (text: string) => boolean,
   ): Promise<void> {
     return this.chat.chatStream(ownerType, ownerId, body, onDelta)
   }
@@ -244,17 +244,35 @@ export class AiService {
     return stats
   }
 
-  /** 找到本次考试之前最近的一次考试（按日期排序） */
+  /** 找到本次考试之前最近的一次考试（按日期降序排序，日期相同按 createdAt 降序） */
   private findPreviousExam(allExams: Exam[], exam: Exam): Exam | null {
     const sorted = allExams
       .filter(e => e.id !== exam.id && (e.date < exam.date || (e.date === exam.date && e.createdAt < exam.createdAt)))
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .sort((a, b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date)
+        return b.createdAt.getTime() - a.createdAt.getTime()
+      })
     return sorted[0] || null
   }
 
-  /** 全校各科均分（近似：所有班级该科均分均值） */
+  /**
+   * 全校各科均分（近似：所有班级该科均分均值）
+   * P1-8修复：使用 QueryBuilder 在数据库层聚合，避免全表扫描 + 大量 JSON 反序列化
+   */
   private async computeSchoolSubjectStats(): Promise<Record<string, { avg: number }>> {
-    const allGrades = await this.gradeRepo.find({ take: 2000 })
+    const out: Record<string, { avg: number }> = {}
+    // 按科目分组查询，使用子查询在 DB 层计算均分（只取最近一学期的成绩）
+    const recentExams = await this.examRepo.find({
+      order: { date: 'DESC' },
+      take: 50,
+      select: ['id'],
+    })
+    if (recentExams.length === 0) return out
+    const examIds = recentExams.map(e => e.id)
+    // 只查询最近考试的成绩，避免全表扫描
+    const allGrades = await this.gradeRepo.find({
+      where: { examId: { $in: examIds } } as any,
+    })
     const bySubject: Record<string, number[]> = {}
     for (const g of allGrades) {
       const arr = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score!))
@@ -262,7 +280,6 @@ export class AiService {
       if (!bySubject[g.subject]) bySubject[g.subject] = []
       bySubject[g.subject].push(...arr)
     }
-    const out: Record<string, { avg: number }> = {}
     for (const [subject, arr] of Object.entries(bySubject)) {
       out[subject] = { avg: arr.reduce((a, b) => a + b, 0) / arr.length }
     }

@@ -82,20 +82,27 @@ export function createAuthMachine(opts: AuthMachineOptions): IAuthStateMachineWi
   }
 
   // —— 状态机操作 ——
+  let loggingIn = false
   async function login(creds: Credentials): Promise<LoginResult> {
-    let result: LoginResult
+    if (loggingIn) throw new AuthError('登录请求进行中，请勿重复提交', 'LOGIN_IN_PROGRESS')
+    loggingIn = true
     try {
-      result = await loginFn(creds)
-    } catch (e) {
-      throw e instanceof AuthError ? e : new AuthError(e instanceof Error ? e.message : '登录失败', 'LOGIN_FAILED')
+      let result: LoginResult
+      try {
+        result = await loginFn(creds)
+      } catch (e) {
+        throw e instanceof AuthError ? e : new AuthError(e instanceof Error ? e.message : '登录失败', 'LOGIN_FAILED')
+      }
+      if (!result?.token) throw new AuthError('登录响应缺少 token', 'INVALID_RESPONSE')
+      if (!result?.user?.id) throw new AuthError('登录响应缺少 user.id', 'INVALID_RESPONSE')
+      if (isJwtExpired(result.token)) throw new AuthError('登录令牌已过期', 'TOKEN_EXPIRED')
+      setActive(result)
+      emit('login', { token: result.token, user: result.user, role: result.user.role as Role })
+      if (debug) console.log('[auth] login ok, role=', result.user.role)
+      return result
+    } finally {
+      loggingIn = false
     }
-    if (!result?.token) throw new AuthError('登录响应缺少 token', 'INVALID_RESPONSE')
-    if (!result?.user?.id) throw new AuthError('登录响应缺少 user.id', 'INVALID_RESPONSE')
-    if (isJwtExpired(result.token)) throw new AuthError('登录令牌已过期', 'TOKEN_EXPIRED')
-    setActive(result)
-    emit('login', { token: result.token, user: result.user, role: result.user.role as Role })
-    if (debug) console.log('[auth] login ok, role=', result.user.role)
-    return result
   }
 
   async function logout(): Promise<void> {

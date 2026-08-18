@@ -150,7 +150,7 @@ export class SnakeGame {
       snake: this.snake.map((c) => ({ ...c })),
       dir: { ...this.dir },
       nextDir: { ...this.nextDir },
-      food: { ...this.food },
+      food: this.food ? { ...this.food } : null,
       score: this.score,
       ate: this.ate,
       over: this.over,

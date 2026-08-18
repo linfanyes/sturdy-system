@@ -204,9 +204,6 @@ export const PRESETS: PresetTemplate[] = [
 ]
 
 /* ===================== 表达式求值器 ===================== */
-// 运行期变量/列表引用（单线程运行，按当前引擎实例注入）
-let _varsRef: Record<string, number> = {}
-let _listsRef: Record<string, number[]> = {}
 
 type Scope = Record<string, number>
 const FN: Record<string, (a: number[]) => number> = {
@@ -240,13 +237,13 @@ function tokenize(s: string): string[] {
   }
   return out
 }
-function parseExpr(tokens: string[], scope: Scope): number | boolean {
+function parseExpr(tokens: string[], scope: Scope, varsRef?: Record<string, number>, listsRef?: Record<string, number[]>): number | boolean {
   let pos = 0
   const peek = () => tokens[pos]
   const next = () => tokens[pos++]
   const toNum = (v: any) => (typeof v === 'number' ? v : v ? 1 : 0)
   const toBool = (v: any) => (typeof v === 'boolean' ? v : !!toNum(v))
-  const lookup = (name: string) => (scope && Object.prototype.hasOwnProperty.call(scope, name)) ? scope[name] : (_varsRef[name] ?? 0)
+  const lookup = (name: string) => (scope && Object.prototype.hasOwnProperty.call(scope, name)) ? scope[name] : (varsRef?.[name] ?? 0)
   function parseOr(): any { let v = parseAnd(); while (peek() === '||') { next(); v = toBool(v) || toBool(parseAnd()) } return v }
   function parseAnd(): any { let v = parseCmp(); while (peek() === '&&') { next(); v = toBool(v) && toBool(parseCmp()) } return v }
   function parseCmp(): any {
@@ -286,11 +283,11 @@ function parseExpr(tokens: string[], scope: Scope): number | boolean {
         const lstName = peek()
         if (/^[a-zA-Z_]/.test(lstName)) next()
         if (peek() === ')') next()
-        return (_listsRef[lstName] || []).length
+        return (listsRef?.[lstName] || []).length
       }
       if (peek() === '[') {
         next(); const idx = toNum(parseOr()); if (peek() === ']') next()
-        return (_listsRef[name] || [])[idx] ?? 0
+        return (listsRef?.[name] || [])[idx] ?? 0
       }
       return lookup(name)
     }
@@ -298,10 +295,10 @@ function parseExpr(tokens: string[], scope: Scope): number | boolean {
   }
   return parseOr()
 }
-export function evalExpr(input: any, scope: Scope = {}): number | boolean {
+export function evalExpr(input: any, scope: Scope = {}, varsRef?: Record<string, number>, listsRef?: Record<string, number[]>): number | boolean {
   if (typeof input === 'number') return input
   if (input == null || input === '') return 0
-  try { return parseExpr(tokenize(String(input)), scope) } catch { return 0 }
+  try { return parseExpr(tokenize(String(input)), scope, varsRef, listsRef) } catch { return 0 }
 }
 
 /* ===================== 运行引擎（舞台 + 调试） ===================== */
@@ -340,8 +337,8 @@ export function useCodingEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
   const clampPos = (v: number) => Math.max(0, Math.min(GRID - 1, v))
   const T = () => turtles[activeTurtle.value]
-  const numExpr = (v: any) => Number(evalExpr(v, vars)) || 0
-  const boolExpr = (v: any) => !!evalExpr(v, vars)
+  const numExpr = (v: any) => Number(evalExpr(v, vars, vars, lists)) || 0
+  const boolExpr = (v: any) => !!evalExpr(v, vars, vars, lists)
   const varSummary = computed(() => {
     const parts = Object.keys(vars).map((k) => `${k}=${vars[k]}`)
     return parts.length ? parts.join('  ') : '（无变量）'
@@ -401,7 +398,6 @@ export function useCodingEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     output.value = []
     for (const k of Object.keys(vars)) delete vars[k]
     for (const k of Object.keys(lists)) delete lists[k]
-    _varsRef = vars; _listsRef = lists
     drawStage()
   }
   function waitStep(): Promise<void> {
