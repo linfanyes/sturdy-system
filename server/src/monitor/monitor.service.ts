@@ -12,6 +12,7 @@ export interface MonitorLogInput {
   url?: string
   userId?: string
   role?: string
+  schoolId?: string
 }
 
 @Injectable()
@@ -32,6 +33,7 @@ export class MonitorService {
     const stack = String(input.stack || '').slice(0, 10000)
     const userId = String(input.userId || '').slice(0, 64)
     const role = String(input.role || '').slice(0, 32)
+    const schoolId = String(input.schoolId || '').slice(0, 64)
 
     let meta: string | null = null
     if (input.meta != null) {
@@ -45,7 +47,7 @@ export class MonitorService {
     }
 
     try {
-      await this.repo.save(this.repo.create({ type, message, page, url, stack, meta: meta ?? '', userId, role }))
+      await this.repo.save(this.repo.create({ type, message, page, url, stack, meta: meta ?? '', userId, role, schoolId }))
       return { ok: true }
     } catch (e) {
       // 监控表缺失或 DB 异常时静默降级，避免雪崩

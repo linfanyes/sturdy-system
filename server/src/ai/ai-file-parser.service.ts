@@ -67,6 +67,9 @@ function assertHostnameNotPrivate(hostname: string): Promise<void> {
 // 上传文件大小上限（10MB），避免超大文件拖垮进程
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
 
+// P1-7修复：下载远程文件时的最大字节数（比上传上限更宽松，但防止内存溢出）
+export const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
+
 // pdfjs-dist 4.x 为 ESM 模块（main: build/pdf.mjs），用异步 import() 加载
 // 用于把扫描版 PDF 光栅化为图片再送多模态模型 OCR
 let _pdfjs: any = null
@@ -171,53 +174,70 @@ export class AiFileParserService {
   /**
    * 把多类型文件（Excel/Word/PDF/Markdown/文本）解析为纯文本，拼成可注入 AI 的提示块。
    * 单个文件文本上限 30000 字，超出截断，避免请求体过大。
+   * P1-4修复：多文件并行处理（Promise.allSettled），降低多文件场景延迟。
    */
   async extractFilesText(
     files: Array<{ name: string; data: string }>,
     s?: any,
   ): Promise<string> {
+    const results = await Promise.allSettled(
+      files.map(f => this.parseSingleFile(f, s)),
+    )
     const blocks: string[] = []
-    for (const f of files) {
-      const buf = Buffer.from(f.data || '', 'base64')
-      const ext = (f.name.split('.').pop() || '').toLowerCase()
-      this.assertTypeMatches(ext, buf)
-      let text = ''
-      let note = ''
-      try {
-        if (['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
-          text = buf.toString('utf-8')
-        } else if (['xlsx', 'xls'].includes(ext)) {
-          text = await this.parseExcel(buf)
-        } else if (ext === 'docx') {
-          const r = await mammoth.extractRawText({ buffer: buf })
-          text = r.value
-          if (!text.trim())
-            note = '（Word 未提取到文字，若为图片型扫描件请导出 PDF 或截图发送）'
-        } else if (ext === 'pdf') {
-          text = await this.extractPdfText(buf)
-          // 文本极少 → 疑似扫描件，尝试用多模态模型 OCR 识别
-          if (text.trim().length < 30 && s?.visionModel && s?.apiKey) {
-            try {
-              text = await this.vision.ocrPdf(buf, s)
-            } catch (e: any) {
-              note = `（PDF 疑似扫描件，OCR 失败：${e?.message || e}）`
-            }
-          }
-        } else {
-          // 未知类型，尽力按文本读取
-          text = buf.toString('utf-8')
-        }
-      } catch (e: any) {
-        text = `[文件「${f.name}」解析失败：${e?.message || e}]`
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      if (result.status === 'fulfilled') {
+        blocks.push(result.value)
+      } else {
+        blocks.push(`【文件：${files[i].name}】\n[解析失败：${result.reason?.message || '未知错误'}]`)
       }
-      if (note) text = (text ? text + '\n' : '') + note
-      const MAX = 30000
-      if (text.length > MAX) {
-        text = text.slice(0, MAX) + `\n…（内容过长已截断，原文约 ${text.length} 字）`
-      }
-      blocks.push(`【文件：${f.name}】\n${text}`)
     }
     return blocks.join('\n\n')
+  }
+
+  /** 解析单个文件（内部方法，供并行调用） */
+  private async parseSingleFile(
+    f: { name: string; data: string },
+    s?: any,
+  ): Promise<string> {
+    const buf = Buffer.from(f.data || '', 'base64')
+    const ext = (f.name.split('.').pop() || '').toLowerCase()
+    this.assertTypeMatches(ext, buf)
+    let text = ''
+    let note = ''
+    try {
+      if (['md', 'txt', 'text', 'csv', 'json', 'log', 'yml', 'yaml'].includes(ext)) {
+        text = buf.toString('utf-8')
+      } else if (['xlsx', 'xls'].includes(ext)) {
+        text = await this.parseExcel(buf)
+      } else if (ext === 'docx') {
+        const r = await mammoth.extractRawText({ buffer: buf })
+        text = r.value
+        if (!text.trim())
+          note = '（Word 未提取到文字，若为图片型扫描件请导出 PDF 或截图发送）'
+      } else if (ext === 'pdf') {
+        text = await this.extractPdfText(buf)
+        // 文本极少 → 疑似扫描件，尝试用多模态模型 OCR 识别
+        if (text.trim().length < 30 && s?.visionModel && s?.apiKey) {
+          try {
+            text = await this.vision.ocrPdf(buf, s)
+          } catch (e: any) {
+            note = `（PDF 疑似扫描件，OCR 失败：${e?.message || e}）`
+          }
+        }
+      } else {
+        // 未知类型，尽力按文本读取
+        text = buf.toString('utf-8')
+      }
+    } catch (e: any) {
+      text = `[文件「${f.name}」解析失败：${e?.message || e}]`
+    }
+    if (note) text = (text ? text + '\n' : '') + note
+    const MAX = 30000
+    if (text.length > MAX) {
+      text = text.slice(0, MAX) + `\n…（内容过长已截断，原文约 ${text.length} 字）`
+    }
+    return `【文件：${f.name}】\n${text}`
   }
 
   /** 用 pdfjs 直接提取数字版 PDF 文本（替代已弃用的 pdf-parse，避免其携带的脆弱 pdfjs-dist） */

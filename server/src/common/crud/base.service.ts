@@ -1,4 +1,4 @@
-import { Repository, FindOptionsWhere, In, Not, IsNull } from 'typeorm'
+import { Repository, FindOptionsWhere, In, Not, IsNull, Like, Or } from 'typeorm'
 import { HttpException, HttpStatus, NotFoundException, ForbiddenException, Logger } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { BusinessException } from '../exceptions/business.exception'
@@ -38,7 +38,7 @@ export class CrudService<T extends { id: string; teacherId: string }> {
    * @param classId 可选班级过滤
    * @param term  可选学期过滤（前端切换学期时传入，按该学期任教班级集合过滤；不传=所有学期，兼容旧前端）
    */
-  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string, date?: string): Promise<{ items: T[]; total: number }> {
+  async findAll(teacherId: string, classId?: string, skip = 0, take = 500, term?: string, date?: string, search?: string): Promise<{ items: T[]; total: number }> {
     const where: FindOptionsWhere<T> = {} as FindOptionsWhere<T>
 
     if (classId) {
@@ -80,6 +80,34 @@ export class CrudService<T extends { id: string; teacherId: string }> {
     // 软删除过滤：默认排除已删除记录
     const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
     if (hasDeletedAt) (where as any).deletedAt = IsNull()
+
+    // P2-4修复：关键字搜索（按 name/remark/description/content 等常见文本字段模糊匹配）
+    const searchTrimmed = search?.trim()
+    if (searchTrimmed) {
+      const searchableFields = ['name', 'remark', 'description', 'content', 'title', 'label', 'note']
+      const matchedCols = this.repo.metadata.columns
+        .filter((c) => searchableFields.includes(c.propertyName))
+        .map((c) => c.propertyName)
+      if (matchedCols.length > 0) {
+        const searchWhere = matchedCols.map((field) => ({
+          ...where,
+          [field]: Like(`%${searchTrimmed}%`),
+          ...(hasDeletedAt ? { deletedAt: IsNull() } : {}),
+        }))
+        try {
+          const [items, total] = await this.repo.findAndCount({
+            where: searchWhere as any,
+            order: { createdAt: 'DESC' } as any,
+            skip,
+            take,
+          })
+          return { items, total }
+        } catch (e) {
+          this.logger.error(`[${this.constructor.name}.findAll] 搜索查询失败:`, (e as Error)?.message)
+          throw new HttpException('搜索失败，请稍后重试', HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+      }
+    }
 
     try {
       const [items, total] = await this.repo.findAndCount({

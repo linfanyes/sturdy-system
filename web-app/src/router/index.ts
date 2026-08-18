@@ -401,9 +401,13 @@ router.beforeEach((to) => {
     return { name: 'forbidden' }
   }
   // 功能权限：以登录/me 返回的 effectiveFeatures（学校级 ∩ 教师级实际可用）为准。
-  // 未加载 effectiveFeatures 时放行（兼容），真正数据权限仍由后端 @Feature 强制校验。
+  // P0-6修复：等待 effectiveFeatures 加载完成后再校验，避免首次路由跳转时短暂放行无权限页面。
   const feature = to.meta.feature as string | undefined
   if (feature) {
+    // 等待功能包加载完成（带超时兜底，避免无限等待）
+    if (!auth.featuresLoaded) {
+      await auth.ensureFeaturesLoaded(5000)
+    }
     const eff = auth.user?.effectiveFeatures
     if (eff && !eff.includes(feature)) {
       return { name: auth.role === 'teacher' ? 'teacher-dashboard' : 'forbidden' }

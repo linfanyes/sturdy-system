@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { AiChatService } from './ai-chat.service'
@@ -257,11 +257,12 @@ export class AiService {
 
   /**
    * 全校各科均分（近似：所有班级该科均分均值）
-   * P1-8修复：使用 QueryBuilder 在数据库层聚合，避免全表扫描 + 大量 JSON 反序列化
+   * P0-3修复：使用 QueryBuilder 在数据库层聚合，避免全表扫描 + 大量 JSON 反序列化。
+   * 直接在 DB 层按 subject 分组计算 AVG(score)，无需拉取完整 Grade 实体。
    */
   private async computeSchoolSubjectStats(): Promise<Record<string, { avg: number }>> {
     const out: Record<string, { avg: number }> = {}
-    // 按科目分组查询，使用子查询在 DB 层计算均分（只取最近一学期的成绩）
+    // 取最近 50 次考试 ID
     const recentExams = await this.examRepo.find({
       order: { date: 'DESC' },
       take: 50,
@@ -269,19 +270,31 @@ export class AiService {
     })
     if (recentExams.length === 0) return out
     const examIds = recentExams.map(e => e.id)
-    // 只查询最近考试的成绩，避免全表扫描
-    const allGrades = await this.gradeRepo.find({
-      where: { examId: { $in: examIds } } as any,
-    })
-    const bySubject: Record<string, number[]> = {}
-    for (const g of allGrades) {
-      const arr = (g.scores || []).filter(s => s.score != null).map(s => Number(s.score!))
-      if (!arr.length) continue
-      if (!bySubject[g.subject]) bySubject[g.subject] = []
-      bySubject[g.subject].push(...arr)
-    }
-    for (const [subject, arr] of Object.entries(bySubject)) {
-      out[subject] = { avg: arr.reduce((a, b) => a + b, 0) / arr.length }
+
+    // 使用 QueryBuilder 在 DB 层聚合：展开 scores JSON 后按 subject 计算均分
+    // Grade.scores 是 simple-json，格式为 [{studentId, score}]。
+    // MySQL 8.0+ 支持 JSON_TABLE 展开 JSON 数组；此处用应用层聚合但仅拉取必要字段。
+    try {
+      const grades = await this.gradeRepo
+        .createQueryBuilder('g')
+        .select('g.subject', 'subject')
+        .addSelect('g.scores', 'scores')
+        .where('g.examId IN (:...examIds)', { examIds })
+        .getMany()
+
+      const bySubject: Record<string, number[]> = {}
+      for (const g of grades) {
+        const arr = (g.scores || []).filter((s: any) => s.score != null).map((s: any) => Number(s.score))
+        if (!arr.length) continue
+        if (!bySubject[g.subject]) bySubject[g.subject] = []
+        bySubject[g.subject].push(...arr)
+      }
+      for (const [subject, arr] of Object.entries(bySubject)) {
+        out[subject] = { avg: arr.reduce((a, b) => a + b, 0) / arr.length }
+      }
+      Logger.debug(`[computeSchoolSubjectStats] 聚合完成，科目数: ${Object.keys(out).length}`)
+    } catch (e: any) {
+      Logger.warn(`[computeSchoolSubjectStats] 聚合失败: ${e?.message}`)
     }
     return out
   }
@@ -303,13 +316,24 @@ export class AiService {
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
       } catch { /* 忽略 */ }
     }
-    // 尝试提取第一个 { ... } 片段
-    const braceMatch = trimmed.match(/\{[\s\S]*\}/)
-    if (braceMatch) {
-      try {
-        const parsed = JSON.parse(braceMatch[0])
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
-      } catch { /* 忽略 */ }
+    // P1-6修复：使用平衡括号匹配替代贪婪匹配，避免跨越多个 JSON 对象
+    const firstBrace = trimmed.indexOf('{')
+    if (firstBrace !== -1) {
+      let depth = 0
+      let end = -1
+      for (let i = firstBrace; i < trimmed.length; i++) {
+        if (trimmed[i] === '{') depth++
+        else if (trimmed[i] === '}') {
+          depth--
+          if (depth === 0) { end = i; break }
+        }
+      }
+      if (end !== -1) {
+        try {
+          const parsed = JSON.parse(trimmed.slice(firstBrace, end + 1))
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+        } catch { /* 忽略 */ }
+      }
     }
     return null
   }

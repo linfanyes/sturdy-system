@@ -47,6 +47,10 @@ scripts/mini-test-tokens.json
 # Swagger 临时拉取文件
 .fetch/
 
+# TypeScript 编译产物（web-app/src 下的 .js/.d.ts 由 .ts 源文件生成，不应入库）
+web-app/src/**/*.js
+web-app/src/**/*.d.ts
+
 # Lighthouse / 诊断产物（本地生成，勿入库）
 web-app/public/diag.html
 

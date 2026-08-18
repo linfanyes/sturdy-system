@@ -91,6 +91,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = ref(machine.isLoggedIn)
   const effectiveFeatures = ref<string[]>(user.value?.effectiveFeatures || [])
   const schoolFeatureFlags = ref<string[] | null>(user.value?.schoolFeatureFlags ?? null)
+  // P0-6修复：标记 effectiveFeatures 是否已加载完成
+  const featuresLoaded = ref(false)
 
   function syncFromMachine() {
     token.value = machine.token || ''
@@ -158,6 +160,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (Array.isArray(me.subjects)) patch.subjects = me.subjects
     }
     if (Object.keys(patch).length) updateUser(patch)
+    // P0-6修复：标记功能包已加载完成
+    featuresLoaded.value = true
   }
 
   async function fetchMe() {
@@ -165,7 +169,17 @@ export const useAuthStore = defineStore('auth', () => {
       const profile = await authApi.getMe()
       applyFeatureProfile(profile)
     } catch (_e) {
-      // 拉取失败不影响登录态
+      // 拉取失败不影响登录态，但仍标记为已加载（避免路由守卫无限等待）
+      featuresLoaded.value = true
+    }
+  }
+
+  // P0-6修复：确保功能包加载完成（带超时兜底）
+  async function ensureFeaturesLoaded(timeoutMs = 5000): Promise<void> {
+    if (featuresLoaded.value) return
+    const start = Date.now()
+    while (!featuresLoaded.value && Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, 100))
     }
   }
 
@@ -190,6 +204,8 @@ export const useAuthStore = defineStore('auth', () => {
     isLoggedIn: computed(() => isLoggedIn.value),
     effectiveFeatures: computed(() => effectiveFeatures.value),
     schoolFeatureFlags: computed(() => schoolFeatureFlags.value),
+    // P0-6修复：暴露功能包加载状态
+    featuresLoaded: computed(() => featuresLoaded.value),
     setAuth,
     logout,
     updateUser,
@@ -200,6 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginAsTeacher,
     loginAsParent,
     fetchMe,
+    ensureFeaturesLoaded,
     applyFeatureProfile,
     restore: () => machine.restore(),
     switchRole: (r: Role) => machine.switchRole(r),

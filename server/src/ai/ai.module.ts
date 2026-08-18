@@ -5,6 +5,7 @@ import { AiChatService } from './ai-chat.service'
 import { AiFileParserService } from './ai-file-parser.service'
 import { AiVisionService } from './ai-vision.service'
 import { AiMediaService } from './ai-media.service'
+import { AiCacheSubscriber } from './ai-cache.subscriber'
 import { AiController } from './ai.controller'
 import { AiExtensionController } from './ai-extension.controller'
 import { ConfigModule } from '../config/config.module'
@@ -28,6 +29,8 @@ import { NoteItem } from '../notes/notes.entity'
     AiFileParserService,
     AiVisionService,
     AiMediaService,
+    // P0-2修复：注册 AI 上下文缓存事件驱动失效订阅器
+    AiCacheSubscriber,
   ],
   controllers: [AiController, AiExtensionController],
   exports: [AiService],

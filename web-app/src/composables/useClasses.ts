@@ -49,12 +49,17 @@ export async function loadClasses(force = false) {
 
 /** Composable：返回班级状态与加载函数 */
 export function useClasses() {
-  return { classes, loading, loadClasses, loaded }
+  return { classes, loading, loadClasses, loaded, invalidate }
 }
 
 /** 通过 id 查找班级名 */
 export function classNameById(id: string) {
   return classes.value.find(c => c.id === id)?.name || id
+}
+
+// P2-3修复：提供 cache 失效入口，班级 CRUD 后调用
+export function invalidate() {
+  loaded.value = false
 }
 
 // —— 工厂函数（可选）：完全独立的响应式状态，不受 HMR 影响 ——

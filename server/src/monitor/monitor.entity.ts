@@ -6,6 +6,7 @@ import { Entity, Column, Index, PrimaryGeneratedColumn, CreateDateColumn } from 
  * 仅在请求头携带 userId/role 时透传归属信息，用于问题定位。
  */
 @Index('idx_monitor_type_created', ['type', 'createdAt'])
+@Index('idx_monitor_school_id', ['schoolId'])
 @Entity('monitor_logs')
 export class MonitorLog {
   @PrimaryGeneratedColumn('uuid')
@@ -40,6 +41,10 @@ export class MonitorLog {
 
   @Column({ type: 'varchar', length: 32, default: '' })
   role: string
+
+  /** P3-2修复：学校 ID（按学校维度筛选监控日志） */
+  @Column({ type: 'varchar', length: 64, default: '' })
+  schoolId: string
 
   @CreateDateColumn({ type: 'datetime' })
   createdAt: Date

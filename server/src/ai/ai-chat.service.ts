@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import axios from 'axios'
@@ -16,6 +16,106 @@ import { AwardRecord } from '../award/award.entity'
 import { NoteItem } from '../notes/notes.entity'
 import { tlsAgent } from './ai-file-parser.service'
 import { buildAiSettings } from './ai-settings.util'
+
+// ─── P0-1: AI 错误类型 + 重试 + 熔断 ───
+
+export enum AiErrorType {
+  NETWORK = 'NETWORK',
+  AUTH = 'AUTH',
+  QUOTA = 'QUOTA',
+  TIMEOUT = 'TIMEOUT',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export class AiError extends Error {
+  constructor(
+    public readonly type: AiErrorType,
+    message: string,
+    public readonly retryable: boolean,
+    public readonly cause?: any,
+  ) {
+    super(message)
+    this.name = 'AiError'
+  }
+}
+
+function classifyError(e: any): AiError {
+  if (e?.response?.status === 401 || e?.response?.status === 403) {
+    return new AiError(AiErrorType.AUTH, 'AI 服务认证失败，请检查 API Key 配置', false, e)
+  }
+  if (e?.response?.status === 429) {
+    return new AiError(AiErrorType.QUOTA, 'AI 服务请求过于频繁，请稍后重试', true, e)
+  }
+  if (e?.code === 'ECONNABORTED' || e?.code === 'ETIMEDOUT' || e?.message?.includes('timeout')) {
+    return new AiError(AiErrorType.TIMEOUT, 'AI 服务响应超时，请稍后重试', true, e)
+  }
+  if (e?.code === 'ENOTFOUND' || e?.code === 'ECONNREFUSED' || e?.code === 'ECONNRESET' || e?.code === 'ERR_NETWORK') {
+    return new AiError(AiErrorType.NETWORK, 'AI 服务网络异常，请检查网络连接', true, e)
+  }
+  return new AiError(AiErrorType.UNKNOWN, e?.message || 'AI 服务调用失败', false, e)
+}
+
+/** 简易熔断器：连续失败 N 次后进入熔断状态，30s 后半开探测 */
+class CircuitBreaker {
+  private failures = 0
+  private lastFailureTime = 0
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED'
+  private readonly threshold = 5
+  private readonly resetTimeoutMs = 30000
+
+  canExecute(): boolean {
+    if (this.state === 'CLOSED') return true
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailureTime > this.resetTimeoutMs) {
+        this.state = 'HALF_OPEN'
+        return true
+      }
+      return false
+    }
+    return true // HALF_OPEN 允许探测
+  }
+
+  recordSuccess(): void {
+    this.failures = 0
+    this.state = 'CLOSED'
+  }
+
+  recordFailure(): void {
+    this.failures++
+    this.lastFailureTime = Date.now()
+    if (this.failures >= this.threshold) {
+      this.state = 'OPEN'
+    }
+  }
+
+  get isOpen(): boolean {
+    return this.state === 'OPEN'
+  }
+}
+
+const aiCircuitBreaker = new CircuitBreaker()
+
+/** 指数退避重试：仅对 retryable 错误重试，最多 2 次（间隔 2s/4s） */
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  let lastError: AiError | undefined
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      const result = await fn()
+      aiCircuitBreaker.recordSuccess()
+      return result
+    } catch (e: any) {
+      const aiError = e instanceof AiError ? e : classifyError(e)
+      lastError = aiError
+      if (!aiError.retryable || attempt === 2) {
+        aiCircuitBreaker.recordFailure()
+        throw aiError
+      }
+      const delay = 2000 * Math.pow(2, attempt) // 2s, 4s
+      Logger.warn(`[${label}] 第${attempt + 1}次失败（${aiError.type}），${delay}ms 后重试`)
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  throw lastError!
 
 /**
  * AI 对话核心服务：负责组装消息（含本地上下文注入）、模型选择、
@@ -182,6 +282,7 @@ export class AiChatService {
   /**
    * 流式对话：密钥与服务端配置均在后端，小程序只传消息。
    * onDelta 每收到一段文本回调一次（用于 SSE 推送给前端）。
+   * P0-1修复：增加重试 + 熔断保护
    */
   async chatStream(
     ownerType: string,
@@ -192,23 +293,30 @@ export class AiChatService {
     const s = await this.buildSettings(ownerType, ownerId)
     const model = this.resolveModel(body, s)
     const messages = await this.buildMessages(body, s, ownerType, ownerId)
-    const resp = await axios.post(
-      `${s.baseUrl}/chat/completions`,
-      {
-        model,
-        temperature: body.temperature ?? s.temperature,
-        stream: true,
-        messages,
-      },
-      {
-        responseType: 'stream',
-        headers: {
-          Authorization: `Bearer ${s.apiKey}`,
-          'Content-Type': 'application/json',
+    // 熔断器检查
+    if (!aiCircuitBreaker.canExecute()) {
+      throw new AiError(AiErrorType.UNKNOWN, 'AI 服务暂时不可用（熔断保护中），请 30 秒后重试。', false)
+    }
+    const resp = await withRetry(() =>
+      axios.post(
+        `${s.baseUrl}/chat/completions`,
+        {
+          model,
+          temperature: body.temperature ?? s.temperature,
+          stream: true,
+          messages,
         },
-        httpsAgent: tlsAgent,
-        timeout: 120000,
-      },
+        {
+          responseType: 'stream',
+          headers: {
+            Authorization: `Bearer ${s.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          httpsAgent: tlsAgent,
+          timeout: 120000,
+        },
+      ),
+      'chatStream',
     )
     await this.pipeSse(resp.data, onDelta)
   }
@@ -258,34 +366,50 @@ export class AiChatService {
   /**
    * 同步对话：一次性返回完整文本。
    * 微信小程序 wx.request 不支持 SSE 流式，前端用此接口。
+   * P0-1修复：增加重试 + 熔断 + 错误类型区分
    */
   async chatSync(ownerType: string, ownerId: string, body: any): Promise<string> {
     const s = await this.buildSettings(ownerType, ownerId)
     const model = this.resolveModel(body, s)
     const messages = await this.buildMessages(body, s, ownerType, ownerId)
     const fallback = '未连接到远端大模型，请在设置中检查AI配置后重试。'
+    // 熔断器打开时直接返回降级文案，避免长时间等待
+    if (!aiCircuitBreaker.canExecute()) {
+      return 'AI 服务暂时不可用（熔断保护中），请 30 秒后重试。'
+    }
     try {
-      const resp = await axios.post(
-      `${s.baseUrl}/chat/completions`,
-      {
-        model,
-        temperature: body.temperature ?? s.temperature,
-        stream: false,
-        messages,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${s.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        httpsAgent: tlsAgent,
-        timeout: 120000,
-      },
-    )
-    return (
-      resp.data?.choices?.[0]?.message?.content || fallback
-    )
-    } catch {
+      const resp = await withRetry(() =>
+        axios.post(
+          `${s.baseUrl}/chat/completions`,
+          {
+            model,
+            temperature: body.temperature ?? s.temperature,
+            stream: false,
+            messages,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${s.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            httpsAgent: tlsAgent,
+            timeout: 120000,
+          },
+        ),
+        'chatSync',
+      )
+      return (
+        resp.data?.choices?.[0]?.message?.content || fallback
+      )
+    } catch (e: any) {
+      const aiError = e instanceof AiError ? e : classifyError(e)
+      // 区分错误类型，给前端更精确的错误提示
+      if (aiError.type === AiErrorType.AUTH) {
+        return 'AI 服务认证失败，请在设置中检查 API Key 配置。'
+      }
+      if (aiError.type === AiErrorType.QUOTA) {
+        return 'AI 请求过于频繁，请稍后重试。'
+      }
       return fallback
     }
   }

@@ -53,6 +53,39 @@ const SWR_DEFAULT_TTL = 30_000 // 30s
 const SWR_FRESH_TIME = 5_000   // 5s 内直接命中（新鲜）
 const SWR_STALE_TIME = 10_000  // 10s 内返回旧值 + 后台刷新（stale-while-revalidate）
 
+// P1-3修复：路径 → 缓存作用域映射（mutation 后按作用域批量失效）
+const pathScopeMap = new Map<string, string[]>()
+const SCOPE_PREFIXES: Record<string, string> = {
+  '/students': ['students'],
+  '/classes': ['classes'],
+  '/exams': ['exams'],
+  '/grades': ['grades'],
+  '/homework': ['homework'],
+  '/notes': ['notes'],
+  '/todos': ['todos'],
+  '/awards': ['awards'],
+  '/behavior': ['behavior'],
+  '/growth': ['growth'],
+  '/attendance': ['attendance'],
+  '/notifications': ['notifications'],
+}
+
+/** 注册路径对应的缓存作用域（在 API 模块初始化时调用） */
+export function registerCacheScope(path: string, scopes: string[]) {
+  pathScopeMap.set(path, scopes)
+}
+
+/** 根据 API 路径推断缓存作用域 */
+function inferScopes(url: string): string[] {
+  const scopes = new Set<string>()
+  for (const [prefix, prefixScopes] of Object.entries(SCOPE_PREFIXES)) {
+    if (url.includes(prefix)) {
+      prefixScopes.forEach(s => scopes.add(s))
+    }
+  }
+  return [...scopes]
+}
+
 /** 带缓存的 GET 请求 */
 export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<T> {
   const cacheKey = `GET:${url}`
@@ -78,7 +111,29 @@ export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<
   return pending
 }
 
-/** 清除指定或全部缓存 */
+/**
+ * P1-3修复：Mutation 后主动失效关联缓存。
+ * @param relatedPath 关联的 API 路径（如 '/students'），会自动失效所有包含该路径的缓存。
+ *                    传 '*' 则清空全部缓存。
+ */
+export function invalidateCache(relatedPath?: string) {
+  if (!relatedPath) {
+    swrCache.clear()
+    return
+  }
+  if (relatedPath === '*') {
+    swrCache.clear()
+    return
+  }
+  // 失效所有 URL 包含 relatedPath 的缓存条目
+  for (const key of swrCache.keys()) {
+    if (key.includes(relatedPath)) {
+      swrCache.delete(key)
+    }
+  }
+}
+
+/** 清除指定或全部缓存（向后兼容） */
 export function clearCache(url?: string) {
   if (url) {
     swrCache.delete(`GET:${url}`)
@@ -89,7 +144,19 @@ export function clearCache(url?: string) {
 
 // ========== 请求拦截 ==========
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('trace_web_token')
+  // P2-8修复：统一从 Pinia store 读取 token，消除与 auth-machine 的双读取路径耦合
+  let token: string | null = null
+  try {
+    // 使用动态 import 避免循环依赖
+    const { useAuthStore } = require('@/stores/auth')
+    token = useAuthStore().token || null
+  } catch {
+    // store 未就绪时回退到 localStorage
+    token = localStorage.getItem('trace_web_token')
+  }
+  if (!token) {
+    token = localStorage.getItem('trace_web_token')
+  }
   if (token) {
     const h = config.headers as unknown as {
       set?: (k: string, v: string) => void

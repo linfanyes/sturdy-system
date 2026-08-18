@@ -1,12 +1,13 @@
-import { Controller, Post, Body, Res, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, Res, UseGuards, Req } from '@nestjs/common'
 import { Feature } from '../common/decorators/feature.decorator'
 import { FeatureGuard } from '../common/feature/feature.guard'
-import { Response } from 'express'
+import { Response, Request } from 'express'
 import { Throttle } from '@nestjs/throttler'
 import { AiService } from './ai.service'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { CurrentTeacher } from '../common/decorators/current-teacher.decorator'
+import { randomUUID } from 'node:crypto'
 // AI 调用超时配置：环境变量 AI_TIMEOUT（默认 120000ms = 120s）
 const AI_TIMEOUT = Number(process.env.AI_TIMEOUT) || 120000
 
@@ -21,13 +22,11 @@ export class AiController {
     private readonly ai: AiService,
   ) {}
 
-  // P1-5修复：移除重复的 withAiTimeout — Service 层已有 axios 120s 超时 + 友好降级
+  // P0-5修复：已移除 assertSubjectToolAccess 死代码（已在 Service 层实现）
 
-  /**
-   * 学科工具访问校验（P1）：委托 AiService.assertSubjectToolAccess（A01：逻辑已下沉至 Service 层）。
-   */
-  private async assertSubjectToolAccess(role: string, teacherId: string, subjectKey?: string): Promise<void> {
-    return this.ai.assertSubjectToolAccess(role, teacherId, subjectKey)
+  /** P0-4修复：生成/提取请求追踪 ID，便于日志关联排查 */
+  private getRequestId(req: Request): string {
+    return (req.headers['x-request-id'] as string) || randomUUID()
   }
 
   /** 流式对话（SSE）。前端用 wx.request 监听分片 data: {...} */
@@ -38,11 +37,15 @@ export class AiController {
     @Body() body: any,
     @CurrentTeacher() t: any,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
+    const requestId = this.getRequestId(req)
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    // P0-4修复：返回请求 ID，便于前端反馈时附带
+    res.setHeader('X-Request-Id', requestId)
     res.flushHeaders?.()
     // SSE keep-alive：每 15s 发送注释行，让客户端知道连接仍然存活
     const keepAliveTimer = setInterval(() => {
@@ -54,13 +57,14 @@ export class AiController {
       })
     } catch (e: any) {
       const msg = e?.message || '未连接到远端大模型，请在设置中检查AI配置后重试。'
-      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`)
+      res.write(`data: ${JSON.stringify({ error: msg, requestId })}\n\n`)
       res.write('data: [DONE]\n\n')
       clearInterval(keepAliveTimer)
       res.end()
       return
     }
     clearInterval(keepAliveTimer)
+    res.write(`data: ${JSON.stringify({ done: true, requestId })}\n\n`)
     res.write('data: [DONE]\n\n')
     res.end()
   }
@@ -78,20 +82,24 @@ export class AiController {
   @Post('chat-sync')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  async chatSync(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  async chatSync(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    const requestId = this.getRequestId(req)
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
-    // P1：学科工具二次校验，防止前端绕过 UI 越权调用其他学科 AI 工具
-    await this.assertSubjectToolAccess(t.role, t.sub, body?.subjectKey)
+    // P0-4修复：返回请求 ID
+    res.setHeader('X-Request-Id', requestId)
+    // P0-5修复：移除死代码，学科工具校验已下沉至 Service 层 assertSubjectToolAccess
+    await this.ai.assertSubjectToolAccess(t.role, t.sub, body?.subjectKey)
     const content = await this.ai.chatSync(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
-    return { content }
+    return { content, requestId }
   }
 
   /** AI 文生图（调用服务商图片生成模型） */
   @Post('gen-image')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  genImage(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  genImage(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.genImage(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
@@ -99,8 +107,9 @@ export class AiController {
   @Post('gen-video')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  genVideo(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  genVideo(@Body() body: any, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.genVideo(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
@@ -108,8 +117,9 @@ export class AiController {
   @Post('asr')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  asr(@Body() body: { audio: string; format?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  asr(@Body() body: { audio: string; format?: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.asr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
@@ -117,8 +127,9 @@ export class AiController {
   @Post('ocr')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  ocr(@Body() body: { image: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  ocr(@Body() body: { image: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.ocr(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
@@ -131,8 +142,9 @@ export class AiController {
   @Post('parse-file')
   @Roles('teacher', 'school_admin')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  parseFile(@Body() body: { fileName: string; fileData: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  parseFile(@Body() body: { fileName: string; fileData: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.parseFile(t.role === 'school_admin' ? 'school_admin' : 'teacher', t.sub, body)
   }
 
@@ -143,8 +155,9 @@ export class AiController {
   @Post('analyze-exam')
   @Roles('teacher')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  async analyzeExam(@Body() b: { examId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  async analyzeExam(@Body() b: { examId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.analyzeExam(b.examId, t.sub)
   }
 
@@ -155,8 +168,9 @@ export class AiController {
   @Post('diagnose')
   @Roles('teacher')
   @UseGuards(JwtAuthGuard, FeatureGuard)
-  async diagnose(@Body() b: { studentId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response) {
+  async diagnose(@Body() b: { studentId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
+    res.setHeader('X-Request-Id', this.getRequestId(req))
     return this.ai.diagnose(b.studentId, t.sub)
   }
 

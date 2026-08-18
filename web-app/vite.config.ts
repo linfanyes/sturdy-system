@@ -43,7 +43,8 @@ export default defineConfig({
   server: {
     port: 5201,
     host: 'localhost',
-    hmr: false,
+    // P3-4修复：重新启用 HMR（之前因 shared 模块 HMR 不稳定而关闭，现已修复）
+    hmr: true,
     proxy: {
       // 开发模式代理目标由 public/config.js 自动决定：
       //   - local 模式（start-web-local.bat）→ localhost:3000 本地后端
@@ -93,6 +94,10 @@ export default defineConfig({
             if (fid.includes('/dayjs/')) return 'vendor-dayjs'
             if (fid.includes('/clsx/') || fid.includes('/tailwind-merge/')) return 'vendor-utils'
             if (/node_modules\/(vue|vue-router|pinia|@vue)\//.test(fid)) return 'vendor-vue'
+          }
+          // P3-8修复：游戏页面按功能分组打包，避免单个 vendor-game 过大
+          if (fid.includes('/views/games/')) {
+            return 'app-games'
           }
         },
       },

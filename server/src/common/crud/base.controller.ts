@@ -84,8 +84,8 @@ export class CrudController<T extends { id: string; teacherId: string }> {
 
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Get()
-  findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string, @Query('date') date?: string) {
-    return this.service.findAll(t.sub, classId, Math.max(0, Number(skip) || 0), clampTake(take), term, date)
+  findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string, @Query('date') date?: string, @Query('q') search?: string) {
+    return this.service.findAll(t.sub, classId, Math.max(0, Number(skip) || 0), clampTake(take), term, date, search)
   }
 
   @Get(':id')

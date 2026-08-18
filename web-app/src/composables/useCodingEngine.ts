@@ -1,4 +1,4 @@
-import { reactive, ref, computed, type Ref } from 'vue'
+import { reactive, ref, readonly, computed, type Ref } from 'vue'
 
 /* =========================================================================
  * 少儿编程 · 共享运行引擎
@@ -551,9 +551,19 @@ export function useCodingEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   }
   function stop() { stopFlag = true }
 
+  // P3-5修复：readonly 包裹内部 ref，防止外部直接修改引擎状态
   return {
-    turtles, activeTurtle, vars, lists, output, logs,
-    running, mode, speed, paused, currentUid, varSummary,
+    turtles: readonly(turtles) as unknown as typeof turtles,
+    activeTurtle: readonly(activeTurtle) as unknown as typeof activeTurtle,
+    vars: readonly(vars) as unknown as typeof vars,
+    lists: readonly(lists) as unknown as typeof lists,
+    output: readonly(output) as unknown as typeof output,
+    logs: readonly(logs) as unknown as typeof logs,
+    running: readonly(running) as unknown as typeof running,
+    mode: readonly(mode) as unknown as typeof mode,
+    speed, paused: readonly(paused) as unknown as typeof paused,
+    currentUid: readonly(currentUid) as unknown as typeof currentUid,
+    varSummary: readonly(varSummary) as unknown as typeof varSummary,
     drawStage, resetStage, run, stop, pause, resume, stepNext,
     setMode: (m: 'auto' | 'step') => { mode.value = m }, setSpeed: (n: number) => { speed.value = n },
   }

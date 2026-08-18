@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import axios from 'axios'
 import { ConfigService } from '../config/config.service'
 import { tlsAgent } from './ai-file-parser.service'
@@ -40,7 +40,8 @@ export class AiMediaService {
       const urls: string[] = (resp.data?.data || []).map((d: any) => d.url || d.b64_json).filter(Boolean)
       return { urls }
     } catch (e: any) {
-      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      // P1-5修复：保留原始错误信息到日志，便于排查
+      Logger.error(`[genImage] 图片生成失败: ${e?.message}`, e?.stack)
       throw new BusinessException(
         'AI_IMAGE_GENERATION_FAILED',
         '图片生成失败，请检查 AI 服务配置或稍后重试',
@@ -68,7 +69,8 @@ export class AiMediaService {
       )
       return { taskId: resp.data?.task_id, url: resp.data?.video_url || resp.data?.url }
     } catch (e: any) {
-      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      // P1-5修复：保留原始错误信息到日志
+      Logger.error(`[genVideo] 视频生成失败: ${e?.message}`, e?.stack)
       throw new BusinessException(
         'AI_VIDEO_GENERATION_FAILED',
         '视频生成失败，请检查 AI 服务配置或稍后重试',
@@ -99,7 +101,8 @@ export class AiMediaService {
       const text = resp.data?.choices?.[0]?.message?.content || ''
       return { text }
     } catch {
-      // P1-6 修复：失败时抛出 BusinessException，让全局异常过滤器返回结构化错误
+      // P1-5修复：保留原始错误信息到日志
+      Logger.error(`[ASR] 语音识别失败`)
       throw new BusinessException(
         'AI_ASR_FAILED',
         '语音识别失败，请检查 AI 服务配置或稍后重试',
