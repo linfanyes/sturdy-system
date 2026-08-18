@@ -28,6 +28,21 @@ export function removeGrade(id) {
   return api.del('/grades/' + id)
 }
 
+/** 批量删除成绩 */
+export function batchRemoveGrades(ids) {
+  return api.del('/grades/batch/ids', { ids })
+}
+
+/** 恢复已删除成绩 */
+export function restoreGrade(id) {
+  return api.patch('/grades/' + id + '/restore')
+}
+
+/** 查看已删除成绩（回收站） */
+export function listDeletedGrades(opts = {}) {
+  return api.getList('/grades/trash/deleted', opts)
+}
+
 /** 班级列表（用于筛选） */
 export function listClasses(opts = {}) {
   return api.getList('/classes', opts)

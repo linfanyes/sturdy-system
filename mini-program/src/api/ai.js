@@ -1,4 +1,4 @@
-import api from '../common/request'
+import api, { streamChat } from '../common/request'
 
 /** 语音识别 (ASR) */
 export function speechToText(audio, format = 'wav') {
@@ -31,4 +31,24 @@ export function genImage(payload) {
 /** AI 生成视频 */
 export function genVideo(payload) {
   return api.post('/ai/gen-video', payload)
+}
+
+/** AI 智能评语生成（SSE 流式） */
+export function generateComment(payload, onDelta, opts) {
+  return streamChat('/ai/extend/comment', payload, onDelta, opts)
+}
+
+/** AI 学生个性化学习建议（SSE 流式） */
+export function generateLearningSuggestion(payload, onDelta, opts) {
+  return streamChat('/ai/extend/learning-suggestion', payload, onDelta, opts)
+}
+
+/** AI 家长沟通话术建议（SSE 流式） */
+export function generateParentCommunication(payload, onDelta, opts) {
+  return streamChat('/ai/extend/parent-communication', payload, onDelta, opts)
+}
+
+/** AI 期末总结生成（SSE 流式） */
+export function generateSummary(payload, onDelta, opts) {
+  return streamChat('/ai/extend/summary', payload, onDelta, opts)
 }

@@ -1,6 +1,23 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
 
 /**
+ * 类型安全的缓存键构建器
+ * 用法: CacheKeys.aiContext(teacherId) => 'ai:context:t:{teacherId}'
+ */
+export const CacheKeys = {
+  aiContext: (teacherId: string) => `ai:context:t:${teacherId}`,
+  aiSettings: (teacherId: string) => `ai:settings:t:${teacherId}`,
+  teacherFeatures: (teacherId: string) => `feat:t:${teacherId}`,
+  classMembers: (classId: string) => `class:members:c:${classId}`,
+  studentGrades: (studentId: string) => `grades:s:${studentId}`,
+  teacherClasses: (teacherId: string) => `teacher:classes:t:${teacherId}`,
+  examStats: (examId: string) => `exam:stats:e:${examId}`,
+  schoolConfig: (schoolId: string) => `school:config:s:${schoolId}`,
+} as const
+
+export type CacheScope = 'ai' | 'feat' | 'class' | 'grades' | 'teacher' | 'exam' | 'school' | 'app'
+
+/**
  * 进程内 LRU 缓存服务（替代 Redis，适用于微信云托管无 Redis 场景）。
  *
  * 设计原则：
@@ -22,6 +39,9 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
 export class CacheService implements OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name)
   private cache: LRUCacheStandard<string, unknown>
+  /** 缓存命中统计 */
+  private hits = 0
+  private misses = 0
 
   constructor() {
     this.cache = createLRUCache<string, unknown>({
@@ -42,7 +62,13 @@ export class CacheService implements OnModuleDestroy {
   }
 
   get<T>(key: string): T | undefined {
-    return this.cache.get(key) as T | undefined
+    const val = this.cache.get(key) as T | undefined
+    if (val !== undefined) {
+      this.hits++
+    } else {
+      this.misses++
+    }
+    return val
   }
 
   set<T>(key: string, value: T, ttlMs?: number): void {
@@ -106,12 +132,22 @@ export class CacheService implements OnModuleDestroy {
   }
 
   stats() {
+    const total = this.hits + this.misses
     return {
       size: this.cache.size,
       calculatedSize: 'calculatedSize' in this.cache ? (this.cache as { calculatedSize: number }).calculatedSize : this.cache.size * 1024,
       max: this.cache.max,
       ttl: 'ttl' in this.cache ? (this.cache as { ttl: number }).ttl : 300000,
+      hits: this.hits,
+      misses: this.misses,
+      hitRate: total > 0 ? Math.round((this.hits / total) * 10000) / 100 : 0,
     }
+  }
+
+  /** 重置统计 */
+  resetStats(): void {
+    this.hits = 0
+    this.misses = 0
   }
 
   onModuleDestroy() {

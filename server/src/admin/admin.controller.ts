@@ -10,6 +10,7 @@ import {
   CreateSchoolAdminDto, UpdateSchoolAdminDto, ToggleEnabledDto,
   ResetPasswordDto, ResetAllDto,
 } from './dto/school-admin.dto'
+import { CacheService } from '../common/cache/cache.service'
 
 // 超管登录：每分钟最多 6 次
 const AdminLoginRateLimit = createRateLimitGuard(60_000, 6)
@@ -33,6 +34,7 @@ export class AdminController {
   constructor(
     private readonly svc: AdminService,
     private readonly audit: AuditService,
+    private readonly cache: CacheService,
   ) {}
 
   @Post('login')
@@ -197,5 +199,27 @@ export class AdminController {
   @UseGuards(JwtAuthGuard)
   auditGradeSummary(@Query('schoolId') schoolId?: string, @Query('classId') classId?: string) {
     return this.svc.gradeAuditSummary(schoolId, classId)
+  }
+
+  /* ===== 系统监控：缓存统计 ===== */
+
+  @Get('cache/stats')
+  @UseGuards(JwtAuthGuard)
+  cacheStats() {
+    return this.cache.stats()
+  }
+
+  @Post('cache/clear')
+  @UseGuards(JwtAuthGuard)
+  clearCache() {
+    this.cache.clear()
+    return { success: true }
+  }
+
+  @Post('cache/clear-scope')
+  @UseGuards(JwtAuthGuard)
+  clearCacheScope(@Body() body: { scope: string }) {
+    this.cache.delByScope(body?.scope || '')
+    return { success: true, scope: body?.scope }
   }
 }

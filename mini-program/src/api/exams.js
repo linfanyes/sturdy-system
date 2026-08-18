@@ -20,6 +20,21 @@ export function removeExam(id) {
   return api.del('/exams/' + id)
 }
 
+/** 批量删除考试 */
+export function batchRemoveExams(ids) {
+  return api.del('/exams/batch/ids', { ids })
+}
+
+/** 恢复已删除考试 */
+export function restoreExam(id) {
+  return api.patch('/exams/' + id + '/restore')
+}
+
+/** 查看已删除考试（回收站） */
+export function listDeletedExams(opts = {}) {
+  return api.getList('/exams/trash/deleted', opts)
+}
+
 /** 班级列表（用于筛选） */
 export function listClasses(opts = {}) {
   return api.getList('/classes', opts)
