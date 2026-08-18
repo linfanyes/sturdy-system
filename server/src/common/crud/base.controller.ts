@@ -14,14 +14,15 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard'
 import { Roles } from '../decorators/roles.decorator'
 import { CurrentTeacher } from '../decorators/current-teacher.decorator'
 import { CrudService } from './base.service'
+import { BusinessException } from '../exceptions/business.exception'
 
 /**
  * 分页上限：客户端传的 take 超过此值时被截断（防止恶意大查询拖垮数据库）。
  */
-const MAX_TAKE = 500
+const MAX_TAKE = 200
 
 function clampTake(take?: string): number {
-  const v = Number(take) || MAX_TAKE
+  const v = Number(take) || 50
   return Math.min(v, MAX_TAKE)
 }
 export { clampTake }
@@ -32,6 +33,7 @@ export { clampTake }
  * - schoolId：学校级租户键，绝不允许客户端指定（超管/校管按 JWT 注入）
  * - parentId / parentPasswordHash / parentLoginEnabled：家长绑定与登录口令，仅服务端可控
  * - classId 为业务字段保留（班级维度实体），由 base.service 在 create/update 时做班级归属校验
+ * - deletedAt：软删除时间戳，不允许客户端指定（由服务端 softRemove 自动维护）
  */
 const UNSAFE_KEYS = new Set([
   'teacherId',
@@ -40,6 +42,7 @@ const UNSAFE_KEYS = new Set([
   'role',
   'createdAt',
   'updatedAt',
+  'deletedAt',
   'isDeleted',
   'parentId',
   'parentPasswordHash',
@@ -71,6 +74,14 @@ export class CrudController<T extends { id: string; teacherId: string }> {
     return this.service.create(t.sub, stripUnsafe(dto))
   }
 
+  /** 批量创建 */
+  @Post('batch')
+  batchCreate(@Body() dto: any, @CurrentTeacher() t: any) {
+    const items = stripUnsafe(dto)?.items
+    if (!Array.isArray(items)) throw new BusinessException('INVALID_BODY', '请求体需包含 items 数组')
+    return Promise.all(items.map((item) => this.service.create(t.sub, stripUnsafe(item))))
+  }
+
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Get()
   findAll(@CurrentTeacher() t: any, @Query('classId') classId?: string, @Query('skip') skip?: string, @Query('take') take?: string, @Query('term') term?: string, @Query('date') date?: string) {
@@ -90,5 +101,25 @@ export class CrudController<T extends { id: string; teacherId: string }> {
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentTeacher() t: any) {
     return this.service.remove(id, t.sub)
+  }
+
+  /** 批量软删除 */
+  @Delete('batch/ids')
+  batchRemove(@Body() dto: any, @CurrentTeacher() t: any) {
+    const ids = dto?.ids
+    if (!Array.isArray(ids)) throw new BusinessException('INVALID_BODY', '请求体需包含 ids 数组')
+    return this.service.batchRemove(t.sub, ids)
+  }
+
+  /** 恢复软删除的记录 */
+  @Patch(':id/restore')
+  restore(@Param('id') id: string, @CurrentTeacher() t: any) {
+    return this.service.restore(t.sub, id)
+  }
+
+  /** 回收站：查看已软删除的记录 */
+  @Get('trash/deleted')
+  findDeleted(@CurrentTeacher() t: any, @Query('skip') skip?: string, @Query('take') take?: string) {
+    return this.service.findDeleted(t.sub, Math.max(0, Number(skip) || 0), clampTake(take))
   }
 }

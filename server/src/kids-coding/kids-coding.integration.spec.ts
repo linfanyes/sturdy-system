@@ -5,6 +5,7 @@ import {
   CodingGalleryController,
   CodingReviewController,
   KidsCodingAdminController,
+  KidsCodingBatchService,
 } from './kids-coding.module'
 import { CodingProject } from './kids-coding.entity'
 import { CodingChallenge } from './challenge.entity'
@@ -48,7 +49,8 @@ describe('kids-coding 端到端集成', () => {
     parentCtrl = new ParentCodingController(projectRepo, challengeRepo, reviewRepo, badgeRepo, fakeMsg)
     galleryCtrl = new CodingGalleryController(projectRepo, challengeRepo)
     reviewCtrl = new CodingReviewController(reviewRepo, projectRepo)
-    adminCtrl = new KidsCodingAdminController(projectRepo, reviewRepo, challengeRepo, fakeMsg)
+    const batchService = new KidsCodingBatchService(projectRepo, reviewRepo, challengeRepo, fakeMsg)
+    adminCtrl = new KidsCodingAdminController(batchService)
   })
 
   afterAll(async () => {
@@ -93,9 +95,9 @@ describe('kids-coding 端到端集成', () => {
     const p = await parentCtrl.createMine({ title: 'm', blocks: [] } as any, { studentId: 's1' } as any)
     expect(await parentCtrl.getReview(p.id, { studentId: 's1' } as any)).toBeNull()
     await reviewCtrl.create({ projectId: p.id, rating: 5, comment: '好' } as any, { sub: 't1', id: 't1' } as any)
-    expect((await parentCtrl.getReview(p.id, { studentId: 's1' } as any)).rating).toBe(5)
+    expect((await parentCtrl.getReview(p.id, { studentId: 's1' } as any))!.rating).toBe(5)
     await reviewCtrl.create({ projectId: p.id, rating: 4 } as any, { sub: 't1', id: 't1' } as any)
-    expect((await parentCtrl.getReview(p.id, { studentId: 's1' } as any)).rating).toBe(4)
+    expect((await parentCtrl.getReview(p.id, { studentId: 's1' } as any))!.rating).toBe(4)
   })
 
   it('D 班级作品墙 精选/取消 + 只读可见性', async () => {
@@ -119,11 +121,11 @@ describe('kids-coding 端到端集成', () => {
     await reviewRepo.save(reviewRepo.create({ projectId: a.id, studentId: 's1', rating: 4, done: true } as any))
     await reviewRepo.save(reviewRepo.create({ projectId: b.id, studentId: 's1', rating: 5, done: true } as any))
     const rep = await parentCtrl.weeklyReport({ studentId: 's1', classId: 'c1' } as any)
-    expect(rep.practiceTotal).toBe(3)
-    expect(rep.submittedTotal).toBe(2)
-    expect(rep.totalBlocks).toBe(10)
-    expect(rep.reviewsTotal).toBe(2)
-    expect(rep.avgRating).toBe(4.5)
+    expect(rep!.practiceTotal).toBe(3)
+    expect(rep!.submittedTotal).toBe(2)
+    expect(rep!.totalBlocks).toBe(10)
+    expect(rep!.reviewsTotal).toBe(2)
+    expect(rep!.avgRating).toBe(4.5)
   })
 
   it('F 成就徽章 规则计算 + 幂等落库', async () => {

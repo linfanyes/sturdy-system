@@ -6,13 +6,13 @@ import { AiFileParserService } from './ai-file-parser.service'
 import { AiVisionService } from './ai-vision.service'
 import { AiMediaService } from './ai-media.service'
 import { AiController } from './ai.controller'
+import { AiExtensionController } from './ai-extension.controller'
 import { ConfigModule } from '../config/config.module'
 import { User } from '../users/user.entity'
 import { ClassItem } from '../classes/class.entity'
 import { Student } from '../students/student.entity'
 import { Teacher } from '../teacher/teacher.entity'
 import { Grade } from '../grades/grade.entity'
-import { Exam } from '../exams/exam.entity'
 import { AwardRecord } from '../award/award.entity'
 import { NoteItem } from '../notes/notes.entity'
 
@@ -20,7 +20,7 @@ import { NoteItem } from '../notes/notes.entity'
   // 注入常见实体用于在 AI 对话中自动构造本地上下文
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, ClassItem, Student, Teacher, Grade, Exam, AwardRecord, NoteItem]),
+    TypeOrmModule.forFeature([User, ClassItem, Student, Teacher, Grade, AwardRecord, NoteItem]),
   ],
   providers: [
     AiService,
@@ -29,7 +29,7 @@ import { NoteItem } from '../notes/notes.entity'
     AiVisionService,
     AiMediaService,
   ],
-  controllers: [AiController],
+  controllers: [AiController, AiExtensionController],
   exports: [AiService],
 })
 export class AiModule {}

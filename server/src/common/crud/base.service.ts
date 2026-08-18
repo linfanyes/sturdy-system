@@ -1,4 +1,4 @@
-import { Repository, FindOptionsWhere, In } from 'typeorm'
+import { Repository, FindOptionsWhere, In, Not, IsNull } from 'typeorm'
 import { HttpException, HttpStatus, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { ClassMemberService } from '../../class-members/class-members.module'
 import { BusinessException } from '../exceptions/business.exception'
@@ -74,6 +74,10 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       if (hasDateCol) (where as any).date = date
     }
 
+    // 软删除过滤：默认排除已删除记录
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
+    if (hasDeletedAt) (where as any).deletedAt = IsNull()
+
     try {
       const [items, total] = await this.repo.findAndCount({
         where,
@@ -94,11 +98,12 @@ export class CrudService<T extends { id: string; teacherId: string }> {
    */
   async findOne(id: string, teacherId: string): Promise<T> {
     const where: FindOptionsWhere<T> = { id } as FindOptionsWhere<T>
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
 
     if (this.isClassScopedEntity() && this.classMemberSvc) {
       // 班级维度：先查记录，再校验教师是否有权访问该记录所属班级
       const e = await this.repo.findOne({ where })
-      if (!e) throw new NotFoundException('记录不存在或无权访问')
+      if (!e || (hasDeletedAt && (e as any).deletedAt)) throw new NotFoundException('记录不存在或无权访问')
       const recordClassId = (e as any)[this.classScopeField()]
       if (recordClassId) {
         const canAccess = await this.classMemberSvc.canAccess(teacherId, recordClassId)
@@ -110,8 +115,8 @@ export class CrudService<T extends { id: string; teacherId: string }> {
       return e
     }
 
-    // 默认：按 teacherId 严格隔离
-    const e = await this.repo.findOne({ where: { ...where, teacherId } as FindOptionsWhere<T> })
+    // 默认：按 teacherId 严格隔离 + 排除已软删除记录
+    const e = await this.repo.findOne({ where: { ...where, teacherId, ...(hasDeletedAt ? { deletedAt: IsNull() } : {}) } as FindOptionsWhere<T> })
     if (!e) throw new NotFoundException('记录不存在或无权访问')
     return e
   }
@@ -160,8 +165,77 @@ export class CrudService<T extends { id: string; teacherId: string }> {
 
   async remove(id: string, teacherId: string): Promise<{ id: string }> {
     const e = await this.findOne(id, teacherId)
-    await this.repo.remove(e)
+    // 软删除：有 deletedAt 列则软删除，否则硬删除（兼容无软删除列的表）
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
+    if (hasDeletedAt) {
+      await this.repo.softRemove(e)
+    } else {
+      await this.repo.remove(e)
+    }
     return { id }
+  }
+
+  /**
+   * 批量软删除
+   */
+  async batchRemove(teacherId: string, ids: string[]): Promise<{ deleted: number }> {
+    if (!Array.isArray(ids) || !ids.length) return { deleted: 0 }
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
+    let deleted = 0
+    for (const id of ids) {
+      try {
+        const e = await this.findOne(id, teacherId)
+        if (hasDeletedAt) {
+          await this.repo.softRemove(e)
+        } else {
+          await this.repo.remove(e)
+        }
+        deleted++
+      } catch {
+        // 忽略不存在的记录，继续处理其他
+      }
+    }
+    return { deleted }
+  }
+
+  /**
+   * 恢复软删除的记录
+   */
+  async restore(teacherId: string, id: string): Promise<T> {
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
+    if (!hasDeletedAt) throw new BusinessException('NOT_SUPPORTED', '该实体不支持恢复操作')
+    const e = await this.repo.findOne({ where: { id } as FindOptionsWhere<T>, withDeleted: true })
+    if (!e) throw new NotFoundException('记录不存在')
+    if (!(e as any).deletedAt) return e // 未删除，无需恢复
+    // 权限校验
+    if (this.isClassScopedEntity() && this.classMemberSvc) {
+      const recordClassId = (e as any)[this.classScopeField()]
+      if (recordClassId) {
+        const canAccess = await this.classMemberSvc.canAccess(teacherId, recordClassId)
+        if (!canAccess) throw new NotFoundException('记录不存在或无权访问')
+      }
+    } else if ((e as any).teacherId !== teacherId) {
+      throw new NotFoundException('记录不存在或无权访问')
+    }
+    await this.repo.recover(e)
+    return e
+  }
+
+  /**
+   * 查看已删除记录（回收站）
+   */
+  async findDeleted(teacherId: string, skip = 0, take = 50): Promise<{ items: T[]; total: number }> {
+    const hasDeletedAt = this.repo.metadata.columns.some((c) => c.propertyName === 'deletedAt')
+    if (!hasDeletedAt) return { items: [], total: 0 }
+    const where: any = { teacherId, deletedAt: Not(IsNull()) }
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { deletedAt: 'DESC' } as any,
+      skip,
+      take: Math.min(take, 100),
+      withDeleted: true,
+    })
+    return { items, total }
   }
 
   /**
