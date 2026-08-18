@@ -13,6 +13,9 @@ import { usePrefsStore } from '@/stores/prefs'
 initMonitor()
 
 const route = useRoute()
+// P3-7修复：根据 route.meta.layout 动态切换布局组件
+// - 'blank' → BlankLayout（登录页、404页等无侧边栏页面）
+// - 'default' 或未设置 → AppLayout（含侧边栏+顶栏+面包屑）
 const layout = computed(() => (route.meta.layout === 'blank' ? BlankLayout : AppLayout))
 const prefs = usePrefsStore()
 

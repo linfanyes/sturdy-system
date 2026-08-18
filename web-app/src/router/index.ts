@@ -251,7 +251,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/super',
     component: () => import('@/layouts/RouteOutlet.vue'),
-    meta: { requiresAuth: true, roles: ['super'] as Role[] },
+    meta: { requiresAuth: true, roles: ['super'] as Role[], layout: 'default' },
     children: [
       { path: '', name: 'super-dashboard', component: () => import('@/views/super/Dashboard.vue'), meta: { title: '超管工作台' } },
       { path: 'schools', name: 'super-schools', component: () => import('@/views/super/Schools.vue'), meta: { title: '学校管理' } },
@@ -271,7 +271,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/school-admin',
     component: () => import('@/layouts/RouteOutlet.vue'),
-    meta: { requiresAuth: true, roles: ['school_admin'] as Role[] },
+    meta: { requiresAuth: true, roles: ['school_admin'] as Role[], layout: 'default' },
     children: [
       { path: '', name: 'school-admin-dashboard', component: () => import('@/views/school-admin/Dashboard.vue'), meta: { title: '校管工作台' } },
       { path: 'teachers', name: 'school-admin-teachers', component: () => import('@/views/school-admin/Teachers.vue'), meta: { title: '教师管理' } },
@@ -291,7 +291,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/teacher',
     component: () => import('@/layouts/RouteOutlet.vue'),
-    meta: { requiresAuth: true, roles: ['teacher'] as Role[] },
+    meta: { requiresAuth: true, roles: ['teacher'] as Role[], layout: 'default' },
     children: [
       ...teacherPersonal,
       ...teacherClass,
@@ -309,7 +309,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/parent',
     component: () => import('@/layouts/RouteOutlet.vue'),
-    meta: { requiresAuth: true, roles: ['parent'] as Role[] },
+    meta: { requiresAuth: true, roles: ['parent'] as Role[], layout: 'default' },
     children: [
       { path: '', name: 'parent-dashboard', component: () => import('@/views/parent/Dashboard.vue'), meta: { title: '家长中心' } },
       { path: 'textbook', name: 'parent-textbook', component: () => import('@/views/parent/Textbook.vue'), meta: { title: '教材知识点' } },
@@ -340,6 +340,9 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/NotFound.vue'),
     meta: { layout: 'blank', title: '页面不存在' },
   },
+  // 布局说明：
+  // - meta.layout: 'blank' → BlankLayout（登录页、404页）
+  // - meta.layout: 'default' 或未设置 → AppLayout（含侧边栏+顶栏+面包屑）
 ]
 
 const router = createRouter({
