@@ -146,7 +146,8 @@ export class GradesService extends CrudService<Grade> {
 
   async importGrades(teacherId: string, dto: any) {
     await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
-    return await this.dataSource.transaction(async (manager) => {
+    // P2修复：使用 SERIALIZABLE 隔离级别防止并发导入覆盖
+    return await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
       const repo = manager.getRepository(Grade)
       const classStudents = await this.stuRepo.find({ where: { classId: dto.classId }, select: ['id'] as any })
       const classStudentIds = new Set(classStudents.map((s) => s.id))
@@ -477,11 +478,15 @@ export class GradesService extends CrudService<Grade> {
       const role = await this.classMemberSvc.getRole(user.sub, stu.classId)
       allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(user.sub, stu.classId)
     }
-    const grades = await this.repo.find({
-      where: { classId: stu.classId } as any,
-      order: { date: 'DESC' } as any,
-      take: 1000,
-    })
+    // P2修复：使用 JSON_EXTRACT 在 DB 层过滤学生，避免加载班级全量成绩到内存
+    const grades = await this.repo
+      .createQueryBuilder('g')
+      .where('g.classId = :classId', { classId: stu.classId })
+      .andWhere('JSON_CONTAINS(g.scores, JSON_OBJECT(:studentIdKey, :studentIdVal))',
+        { studentIdKey: 'studentId', studentIdVal: studentId })
+      .orderBy('g.date', 'DESC')
+      .limit(200)
+      .getMany()
     const history: any[] = []
     const subjectLatest: Record<string, number[]> = {}
     for (const g of grades) {

@@ -52,6 +52,7 @@ const swrCache = new Map<string, { data: any; expireAt: number }>()
 const SWR_DEFAULT_TTL = 30_000 // 30s
 const SWR_FRESH_TIME = 5_000   // 5s 内直接命中（新鲜）
 const SWR_STALE_TIME = 10_000  // 10s 内返回旧值 + 后台刷新（stale-while-revalidate）
+const SWR_MAX_SIZE = 200       // P1修复：LRU 上限，超限时淘汰最久未使用条目
 
 // P1-3修复：路径 → 缓存作用域映射（mutation 后按作用域批量失效）
 const pathScopeMap = new Map<string, string[]>()
@@ -99,6 +100,11 @@ export function cachedGet<T = any>(url: string, ttl = SWR_DEFAULT_TTL): Promise<
 
   // 过期或不存在 → 请求
   const pending = get<T>(url).then((data) => {
+    // P1修复：LRU 淘汰，超限时删除最久未使用条目
+    if (swrCache.size >= SWR_MAX_SIZE) {
+      const oldestKey = swrCache.keys().next().value
+      if (oldestKey) swrCache.delete(oldestKey)
+    }
     swrCache.set(cacheKey, { data, expireAt: Date.now() + ttl })
     return data
   }).catch((err) => {

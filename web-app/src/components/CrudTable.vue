@@ -7,6 +7,7 @@
 import { ref, onMounted, onActivated, computed, watch } from 'vue'
 import { Plus, Search, Edit3, Trash2, Inbox } from 'lucide-vue-next'
 import Modal from './Modal.vue'
+import request from '@/api/request'
 import { loadClasses, useClasses } from '@/composables/useClasses'
 import { toast } from '@/utils/feedback'
 
@@ -109,7 +110,7 @@ async function loadList() {
       take: isSearching ? 500 : pageSize.value,
     }
     if (classId.value) params.classId = classId.value
-    const res = await import('@/api/request').then(m => m.default.get(props.apiPath, { params }))
+    const res = await request.get(props.apiPath, { params })
     const arr = Array.isArray(res) ? res : (res?.items || [])
     allItems.value = arr
     items.value = arr
@@ -202,7 +203,6 @@ async function submitForm() {
   }
   formLoading.value = true
   try {
-    const request = (await import('@/api/request')).default
     if (editing.value) {
       const res = await request.patch(`${props.apiPath}/${editing.value.id}`, form.value)
       // 本地同步
@@ -224,7 +224,6 @@ async function submitForm() {
 async function handleDelete(row: any) {
   if (!await confirm(`确定删除该「${props.title}」？`)) return
   try {
-    const request = (await import('@/api/request')).default
     await request.delete(`${props.apiPath}/${row.id}`)
     items.value = items.value.filter(x => x.id !== row.id)
   } catch (e: any) {

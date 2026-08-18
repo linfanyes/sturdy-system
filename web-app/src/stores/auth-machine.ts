@@ -12,7 +12,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import {
   createAuthMachine,
   createLocalStoragePersistence,
@@ -174,13 +174,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // P0-6修复：确保功能包加载完成（带超时兜底）
+  // P0-6修复：确保功能包加载完成（Promise 唤醒模式，无忙等待）
+  let _featuresResolve: (() => void) | null = null
+  const _featuresPromise = new Promise<void>((resolve) => {
+    _featuresResolve = resolve
+  })
+  // 监听 featuresLoaded 变化，满足条件时立即唤醒
+  watch(featuresLoaded, (loaded) => {
+    if (loaded && _featuresResolve) {
+      _featuresResolve()
+      _featuresResolve = null
+    }
+  })
+
   async function ensureFeaturesLoaded(timeoutMs = 5000): Promise<void> {
     if (featuresLoaded.value) return
-    const start = Date.now()
-    while (!featuresLoaded.value && Date.now() - start < timeoutMs) {
-      await new Promise(r => setTimeout(r, 100))
-    }
+    // Promise.race 实现超时兜底，无需轮询
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))
+    await Promise.race([_featuresPromise, timeout])
   }
 
   // 各角色登录（兼容旧调用）

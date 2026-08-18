@@ -82,6 +82,10 @@ export class CrudService<T extends { id: string; teacherId: string }> {
     if (hasDeletedAt) (where as any).deletedAt = IsNull()
 
     // P2-4修复：关键字搜索（按 name/remark/description/content 等常见文本字段模糊匹配）
+    // ⚠️ 性能提示：Like('%keyword%') 无法走普通 B+Tree 索引，数据量大时需：
+    //   1. 为常用搜索列添加 MySQL FULLTEXT 索引
+    //   2. 或改用 MATCH(...) AGAINST(...) 全文检索
+    //   3. 当前数据量（<10万行）下 Like 可接受
     const searchTrimmed = search?.trim()
     if (searchTrimmed) {
       const searchableFields = ['name', 'remark', 'description', 'content', 'title', 'label', 'note']

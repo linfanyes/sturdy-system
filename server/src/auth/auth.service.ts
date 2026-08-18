@@ -57,8 +57,12 @@ export class AuthService {
     let foundUsername = false  // 追踪是否在任何角色中匹配到用户名
 
     // 1) 超级管理员（用户名命中即视为超管尝试，密码错误需明确提示，避免误报"账号不存在"）
-    const su = this.config.get('SUPER_ADMIN_USER') || 'admin'
-    const sp = this.config.get('SUPER_ADMIN_PASSWORD') || 'admin'
+    const su = this.config.get('SUPER_ADMIN_USER')
+    const sp = this.config.get('SUPER_ADMIN_PASSWORD')
+    // P0修复：强制从环境变量读取，未配置时拒绝登录（消除默认凭据风险）
+    if (u === su && (!su || !sp)) {
+      throw new UnauthorizedException('超级管理员未配置，请联系系统管理员')
+    }
     if (u === su) {
       foundUsername = true
       // 支持 bcrypt 哈希或明文比较（向后兼容）。

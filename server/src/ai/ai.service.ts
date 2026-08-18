@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, LessThan } from 'typeorm'
 import { AiChatService } from './ai-chat.service'
 import { AiFileParserService } from './ai-file-parser.service'
 import { AiVisionService } from './ai-vision.service'
@@ -154,9 +154,11 @@ export class AiService {
     const currentStats = this.computeSubjectStats(grades)
     const fullScoreOf = (s: string) => (exam.subjectFullScores && exam.subjectFullScores[s]) || 100
 
-    // 对比基线：上次同科考试（按班级考试日期排序，取本次之前最近一次）
-    const allExams = await this.examRepo.find({ where: { classId: exam.classId } as any, order: { date: 'ASC' } as any })
-    const prevExam = this.findPreviousExam(allExams, exam)
+    // 对比基线：上次同科考试（按日期降序，取本次之前最近一次，LIMIT 1 避免全表扫描）
+    const prevExam = await this.examRepo.findOne({
+      where: { classId: exam.classId, date: LessThan(exam.date) },
+      order: { date: 'DESC' },
+    })
     let prevStats: Record<string, any> = {}
     if (prevExam) {
       const prevGrades = await this.gradeRepo.find({ where: { classId: exam.classId, examId: prevExam.id } })
@@ -257,42 +259,35 @@ export class AiService {
 
   /**
    * 全校各科均分（近似：所有班级该科均分均值）
-   * P0-3修复：使用 QueryBuilder 在数据库层聚合，避免全表扫描 + 大量 JSON 反序列化。
-   * 直接在 DB 层按 subject 分组计算 AVG(score)，无需拉取完整 Grade 实体。
+   * P0-3修复：使用 MySQL JSON_TABLE 在数据库层聚合，避免拉取完整 Grade 实体到内存。
+   * 直接在 DB 层按 subject 分组计算 AVG(score)。
    */
   private async computeSchoolSubjectStats(): Promise<Record<string, { avg: number }>> {
     const out: Record<string, { avg: number }> = {}
-    // 取最近 50 次考试 ID
-    const recentExams = await this.examRepo.find({
-      order: { date: 'DESC' },
-      take: 50,
-      select: ['id'],
-    })
-    if (recentExams.length === 0) return out
-    const examIds = recentExams.map(e => e.id)
-
-    // 使用 QueryBuilder 在 DB 层聚合：展开 scores JSON 后按 subject 计算均分
-    // Grade.scores 是 simple-json，格式为 [{studentId, score}]。
-    // MySQL 8.0+ 支持 JSON_TABLE 展开 JSON 数组；此处用应用层聚合但仅拉取必要字段。
     try {
-      const grades = await this.gradeRepo
-        .createQueryBuilder('g')
-        .select('g.subject', 'subject')
-        .addSelect('g.scores', 'scores')
-        .where('g.examId IN (:...examIds)', { examIds })
-        .getMany()
+      // 取最近 50 次考试 ID
+      const recentExams = await this.examRepo.find({
+        order: { date: 'DESC' },
+        take: 50,
+        select: ['id'],
+      })
+      if (recentExams.length === 0) return out
+      const examIds = recentExams.map(e => e.id)
 
-      const bySubject: Record<string, number[]> = {}
-      for (const g of grades) {
-        const arr = (g.scores || []).filter((s: any) => s.score != null).map((s: any) => Number(s.score))
-        if (!arr.length) continue
-        if (!bySubject[g.subject]) bySubject[g.subject] = []
-        bySubject[g.subject].push(...arr)
+      // MySQL 8.0+ JSON_TABLE 展开 JSON 数组，DB 层直接 GROUP BY + AVG
+      const rows = await this.gradeRepo.query(
+        `SELECT g.subject AS subject, AVG(js.score) AS avgScore
+         FROM grades g,
+              JSON_TABLE(g.scores, '$[*]' COLUMNS (score DECIMAL(6,2) PATH '$.score')) js
+         WHERE g.exam_id IN (?)
+           AND js.score IS NOT NULL
+         GROUP BY g.subject`,
+        [examIds],
+      )
+      for (const r of rows) {
+        out[r.subject] = { avg: Number(r.avgScore) }
       }
-      for (const [subject, arr] of Object.entries(bySubject)) {
-        out[subject] = { avg: arr.reduce((a, b) => a + b, 0) / arr.length }
-      }
-      Logger.debug(`[computeSchoolSubjectStats] 聚合完成，科目数: ${Object.keys(out).length}`)
+      Logger.debug(`[computeSchoolSubjectStats] DB 聚合完成，科目数: ${Object.keys(out).length}`)
     } catch (e: any) {
       Logger.warn(`[computeSchoolSubjectStats] 聚合失败: ${e?.message}`)
     }

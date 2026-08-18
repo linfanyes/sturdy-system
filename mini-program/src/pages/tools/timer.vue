@@ -77,30 +77,35 @@ const totalSec = computed(() => min.value * 60 + sec.value)
 const progress = computed(() => totalSec.value > 0 ? 1 - left.value / totalSec.value : 0)
 
 // canvas 彩虹进度环
+let rafId = null  // P2修复：requestAnimationFrame 节流，避免低端机掉帧
 function drawRing() {
-  const ctx = uni.createCanvasContext('ringCanvas')
-  const W = 400, H = 400, cx = W / 2, cy = H / 2, r = 150, lw = 20
-  ctx.clearRect(0, 0, W, H)
-  // 背景环
-  ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-  ctx.setLineWidth(lw)
-  ctx.setStrokeStyle(dark.value ? '#2c313a' : '#f0eadc')
-  ctx.stroke()
-  // 彩色进度：从绿(120°)渐变到红(0°)
-  const pct = Math.min(1, Math.max(0, progress.value))
-  if (pct < 1) {
-    const hue = 120 - pct * 120
+  if (rafId) return  // 已在队列中则跳过
+  rafId = requestAnimationFrame(() => {
+    rafId = null
+    const ctx = uni.createCanvasContext('ringCanvas')
+    const W = 400, H = 400, cx = W / 2, cy = H / 2, r = 150, lw = 20
+    ctx.clearRect(0, 0, W, H)
+    // 背景环
     ctx.beginPath()
-    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + pct * 2 * Math.PI)
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI)
     ctx.setLineWidth(lw)
-    ctx.setLineCap('round')
-    ctx.setStrokeStyle(`hsl(${hue}, 80%, 55%)`)
+    ctx.setStrokeStyle(dark.value ? '#2c313a' : '#f0eadc')
     ctx.stroke()
-  }
-  ctx.draw()
+    // 彩色进度：从绿(120°)渐变到红(0°)
+    const pct = Math.min(1, Math.max(0, progress.value))
+    if (pct < 1) {
+      const hue = 120 - pct * 120
+      ctx.beginPath()
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + pct * 2 * Math.PI)
+      ctx.setLineWidth(lw)
+      ctx.setLineCap('round')
+      ctx.setStrokeStyle(`hsl(${hue}, 80%, 55%)`)
+      ctx.stroke()
+    }
+    ctx.draw()
+  })
 }
-// 监听倒计时变化重绘进度环
+// P2修复：监听倒计时变化，使用 rAF 节流重绘
 watch([left, totalSec], () => nextTick(drawRing), { immediate: true })
 
 function setPreset(m) { min.value = m; sec.value = 0; if (!running.value) left.value = m * 60 }
@@ -145,7 +150,10 @@ function swLap() { laps.value.push(swMs.value) }
 function swReset() { clearInterval(swTimer); swRunning.value = false; swMs.value = 0; swBase = 0; laps.value = [] }
 const lapsView = computed(() => laps.value.map(fmt))
 
-onUnload(stopAll)
+onUnload(() => {
+  stopAll()
+  if (rafId) cancelAnimationFrame(rafId)
+})
 </script>
 
 <style scoped>

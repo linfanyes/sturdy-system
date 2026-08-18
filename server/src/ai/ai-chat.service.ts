@@ -58,38 +58,66 @@ function classifyError(e: any): AiError {
 /** 简易熔断器：连续失败 N 次后进入熔断状态，30s 后半开探测 */
 class CircuitBreaker {
   private failures = 0
-  private lastFailureTime = 0
   private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED'
-  private readonly threshold = 5
-  private readonly resetTimeoutMs = 30000
+  private openedAt = 0
 
-  canExecute(): boolean {
-    if (this.state === 'CLOSED') return true
+  constructor(
+    private readonly threshold = 5,
+    private readonly resetMs = 30_000,
+  ) {}
+
+  async execute<T>(fn: () => Promise<T>): Promise<T> {
     if (this.state === 'OPEN') {
-      if (Date.now() - this.lastFailureTime > this.resetTimeoutMs) {
+      if (Date.now() - this.openedAt > this.resetMs) {
         this.state = 'HALF_OPEN'
-        return true
+      } else {
+        throw new Error('AI 服务熔断中，请稍后重试')
       }
-      return false
     }
-    return true // HALF_OPEN 允许探测
-  }
-
-  recordSuccess(): void {
-    this.failures = 0
-    this.state = 'CLOSED'
-  }
-
-  recordFailure(): void {
-    this.failures++
-    this.lastFailureTime = Date.now()
-    if (this.failures >= this.threshold) {
-      this.state = 'OPEN'
+    try {
+      const r = await fn()
+      this.failures = 0
+      this.state = 'CLOSED'
+      return r
+    } catch (e) {
+      this.failures++
+      if (this.failures >= this.threshold) {
+        this.state = 'OPEN'
+        this.openedAt = Date.now()
+      }
+      throw e
     }
   }
+}
 
-  get isOpen(): boolean {
-    return this.state === 'OPEN'
+/** 信号量：限制并发数，避免缓存击穿时打满连接池 */
+class Semaphore {
+  private running = 0
+  private queue: (() => void)[] = []
+
+  constructor(private readonly max: number) {}
+
+  private release() {
+    this.running--
+    const next = this.queue.shift()
+    if (next) next()
+  }
+
+  run<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const start = () => {
+        this.running++
+        fn().then(
+          (r) => { this.release(); resolve(r) },
+          (e) => { this.release(); reject(e) },
+        )
+      }
+      if (this.running < this.max) {
+        start()
+      } else {
+        this.queue.push(start)
+      }
+    })
   }
 }
 
@@ -228,15 +256,18 @@ export class AiChatService {
     if (cached !== undefined) return cached
     const lines: string[] = ['—— 已注入教师本地数据（仅供 AI 参考，回答时基于此数据，不要编造） ——']
     // P0-1修复：所有查询添加 teacherId 过滤，防止跨租户数据泄露 + 全表扫描
+    // P1修复：信号量限流，最多 3 路并发，避免缓存击穿时打满连接池
+    const sem = new Semaphore(3)
+    const safeQuery = <T>(p: Promise<T>) => sem.run(() => p)
     const [u, classes, students, teachers, grades, exams, awards, notes] = await Promise.all([
-      this.userRepo.findOne({ where: { id: teacherId } as any }).catch(() => null),
-      this.classRepo.find({ where: { teacherId }, take: 20 }).catch(() => []),
-      this.studentRepo.find({ where: { teacherId }, take: 50 }).catch(() => []),
-      this.teacherRepo.find({ where: { teacherId }, take: 20 }).catch(() => []),
-      this.gradeRepo.find({ where: { teacherId }, take: 30, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.examRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.awardRepo.find({ where: { teacherId }, take: 20, order: { createdAt: 'DESC' } as any }).catch(() => []),
-      this.noteRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any }).catch(() => []),
+      safeQuery(this.userRepo.findOne({ where: { id: teacherId } as any })).catch(() => null),
+      safeQuery(this.classRepo.find({ where: { teacherId }, take: 20 })).catch(() => []),
+      safeQuery(this.studentRepo.find({ where: { teacherId }, take: 50 })).catch(() => []),
+      safeQuery(this.teacherRepo.find({ where: { teacherId }, take: 20 })).catch(() => []),
+      safeQuery(this.gradeRepo.find({ where: { teacherId }, take: 30, order: { createdAt: 'DESC' } as any })).catch(() => []),
+      safeQuery(this.examRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any })).catch(() => []),
+      safeQuery(this.awardRepo.find({ where: { teacherId }, take: 20, order: { createdAt: 'DESC' } as any })).catch(() => []),
+      safeQuery(this.noteRepo.find({ where: { teacherId }, take: 10, order: { createdAt: 'DESC' } as any })).catch(() => []),
     ])
     if (u) {
       lines.push(
