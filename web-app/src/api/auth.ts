@@ -105,7 +105,8 @@ export async function superLogin(dto: SuperLoginDto): Promise<LoginResult> {
  */
 export async function schoolAdminLogin(dto: SchoolAdminLoginDto): Promise<LoginResult> {
   const res = await request.post<SchoolAdminLoginResponse>('/school-admin/login', dto)
-  const a = res.admin || {}
+  const a = res.admin
+  if (!a) throw new Error('登录失败：未返回管理员信息')
   return {
     token: res.token,
     user: {
@@ -125,7 +126,8 @@ export async function schoolAdminLogin(dto: SchoolAdminLoginDto): Promise<LoginR
  */
 export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
   const res = await request.post<TeacherLoginResponse>('/auth/password-login', dto)
-  const u = res.user || {}
+  const u = res.user
+  if (!u) throw new Error('登录失败：未返回教师信息')
   return {
     token: res.token,
     user: {
@@ -149,7 +151,8 @@ export async function teacherLogin(dto: TeacherLoginDto): Promise<LoginResult> {
  */
 export async function parentLogin(dto: ParentLoginDto): Promise<LoginResult> {
   const res = await request.post<ParentLoginResponse>('/parent-auth/login', dto)
-  const p = res.parent || {}
+  const p = res.parent
+  if (!p) throw new Error('登录失败：未返回家长信息')
   return {
     token: res.token,
     user: {
@@ -206,7 +209,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
       user = { id: 'super', role: 'super' as Role, name: res.user?.name || '超级管理员', effectiveFeatures: res.effectiveFeatures }
       break
     case 'school_admin': {
-      const a = res.user || {}
+      const a = (res.user ?? {}) as Record<string, any>
       user = {
         id: a.id,
         role: 'school_admin',
@@ -218,7 +221,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
       break
     }
     case 'teacher': {
-      const t = res.user || {}
+      const t = (res.user ?? {}) as Record<string, any>
       user = {
         id: t.id,
         role: 'teacher',
@@ -234,7 +237,7 @@ export async function unifiedLogin(username: string, password: string): Promise<
       break
     }
     case 'parent': {
-      const p = res.parent || {}
+      const p = (res.parent ?? {}) as Record<string, any>
       user = {
         id: p.imUserId,
         role: 'parent',
