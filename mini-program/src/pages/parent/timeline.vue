@@ -42,7 +42,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { parentApi } from '../../common/request'
 
-const dark = computed(() => theme.dark)
+const dark = computed(() => theme.mode === 'dark')
 const loading = ref(true)
 const raw = ref([])
 

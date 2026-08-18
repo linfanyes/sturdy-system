@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/utils/feedback'
-import { getClass, deleteClass, listSchoolNotices, type ClassItem } from '@/api/school-admin'
-import { listClassMembers, listClassStudents, type ClassMember } from '@/api/teacher'
+import { getClass, deleteClass, listSchoolNotices, listSchoolStudents, type ClassItem } from '@/api/school-admin'
+import { listClassMembers, type ClassMember } from '@/api/teacher'
 import { listExams, getExamAnalysis, getLeaderboard, getExamTrend } from '@/api/teacher'
 import { Users, Crown, BookOpen, Calendar, TrendingUp, Edit3, Trash2, ArrowLeft, GraduationCap, Megaphone, Trophy, BarChart3 } from 'lucide-vue-next'
 
@@ -151,8 +151,8 @@ const studentsLoading = ref(false)
 async function loadStudents() {
   studentsLoading.value = true
   try {
-    const list = await listClassStudents(classId)
-    students.value = Array.isArray(list) ? list : (list as any)?.items || []
+    const res = await listSchoolStudents({ classId, take: 500 })
+    students.value = res?.items || []
   } catch {
     students.value = []
   } finally {

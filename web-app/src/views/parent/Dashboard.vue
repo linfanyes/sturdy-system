@@ -12,31 +12,26 @@ import WelcomeHero from '@/components/WelcomeHero.vue'
 import GradeOverview from './components/GradeOverview.vue'
 import BehaviorRecord from './components/BehaviorRecord.vue'
 import NoticeList from './components/NoticeList.vue'
+import ParentStatsBar from './components/ParentStatsBar.vue'
+import ParentRemindersCard from './components/ParentRemindersCard.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
 const parentKids = useParentKids()
 
+import { hasParentFeature, DONE_HW_STATUSES } from '@/utils/parentFeatures'
+
 /**
  * 家长功能包判定（班主任可在班级里配置家长可见功能）。
- * - 未携带功能包（undefined/非数组，旧会话）→ 不限制，全部可见
- * - 空数组 → 班主任关闭该班家长全部功能
- * - 非空数组 → 仅开放数组内功能
  * 安全边界以后端为准。
  * 数据源：/parent-auth/me 返回当前孩子的 effectiveFeatures（切换孩子后随 me 刷新）。
  */
-function hasPf(key: string): boolean {
-  const f = me.value?.effectiveFeatures
-  if (!Array.isArray(f)) return true
-  if (f.length === 0) return false
-  return f.indexOf(key) >= 0
-}
-const showScoresSection = computed(() => hasPf('grades') || hasPf('analysis'))
-const showHomeworkSection = computed(() => hasPf('homework'))
-const showNoticesSection = computed(() => hasPf('notices'))
-const showAttendanceSection = computed(() => hasPf('attendance') || hasPf('behavior'))
-const showScheduleSection = computed(() => hasPf('schedule') || hasPf('duty'))
-const showImSection = computed(() => hasPf('im'))
+const showScoresSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'grades') || hasParentFeature(me.value?.effectiveFeatures, 'analysis'))
+const showHomeworkSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'homework'))
+const showNoticesSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'notices'))
+const showAttendanceSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'attendance') || hasParentFeature(me.value?.effectiveFeatures, 'behavior'))
+const showScheduleSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'schedule') || hasParentFeature(me.value?.effectiveFeatures, 'duty'))
+const showImSection = computed(() => hasParentFeature(me.value?.effectiveFeatures, 'im'))
 /** 健康度总览：仅展示当前家长功能包内可见的维度（attendance/exam/homework/behavior/comm） */
 const visibleHealth = computed(() => (healthOverview.value || []).filter((h: any) => {
   if (h.key === 'attendance' || h.key === 'behavior') return showAttendanceSection.value
@@ -118,7 +113,6 @@ const todaySchedule = computed(() => (schedule.value?.week || []).find((d: any) 
 const tomorrowSchedule = computed(() => (schedule.value?.week || []).find((d: any) => d.dayOfWeek === tomorrowDow)?.items || [])
 
 /* ============ 作业状态 ============ */
-const DONE_HW_STATUSES = ['已完成', '已批改', '已发还']
 const OVERDUE_HW_STATUSES = ['逾期', '已逾期']
 function isHwDone(h: any) { return DONE_HW_STATUSES.includes(h.status) }
 function isHwOverdue(h: any) {
@@ -672,60 +666,29 @@ function dismissSubscribe() {
 
     <template v-else>
       <!-- 今日需关注（置顶提醒卡） -->
-      <div v-if="reminders.length && (showNoticesSection || showHomeworkSection || showAttendanceSection)" class="rounded-2xl border-l-4 border-sakura-400 bg-surface p-4 shadow-softer">
-        <div class="text-sm font-bold text-cocoa-900 mb-2 flex items-center gap-2">
-          <Bell class="w-4 h-4 text-sakura-500" /> 今日需关注
-          <span class="text-xs font-normal text-cocoa-400">{{ reminders.length }} 项</span>
-        </div>
-        <div class="space-y-1.5">
-          <div v-for="(r, i) in reminders" :key="i" class="flex items-center gap-2 text-sm" :class="r.level === 'red' ? 'text-sakura-700' : 'text-cocoa-700'">
-            <span>{{ r.icon }}</span><span>{{ r.text }}</span>
-          </div>
-        </div>
-      </div>
+      <ParentRemindersCard
+        :reminders="reminders"
+        :show-notices-section="showNoticesSection"
+        :show-homework-section="showHomeworkSection"
+        :show-attendance-section="showAttendanceSection"
+      />
 
       <!-- 概览卡片 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div v-if="showNoticesSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickNoticeCard">
-          <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Bell class="w-4 h-4 text-sakura-500" /> 待读通知</div>
-          <div class="text-3xl font-bold text-cocoa-900">{{ pendingNotices }}</div>
-          <div class="text-xs text-sakura-400 mt-1 flex items-center gap-0.5">查看通知 <ChevronRight class="w-3 h-3" /></div>
-        </div>
-        <div v-if="showHomeworkSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickHomeworkCard">
-          <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-butter-500" /> 待完成作业</div>
-          <div class="text-3xl font-bold text-cocoa-900">{{ pendingHomework }}</div>
-          <div class="text-xs text-butter-500 mt-1 flex items-center gap-0.5">查看作业 <ChevronRight class="w-3 h-3" /></div>
-        </div>
-        <div v-if="showScoresSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickExamCountCard">
-          <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Sparkles class="w-4 h-4 text-mint-500" /> 最近考试</div>
-          <div class="text-3xl font-bold text-cocoa-900">
-            <template v-if="latestPct != null">{{ latestPct }}<span class="text-base font-semibold text-cocoa-400">%</span></template>
-            <template v-else>--</template>
-          </div>
-          <div class="text-xs mt-1 flex items-center gap-1">
-            <template v-if="pctDelta != null && pctDelta !== 0">
-              <span :class="pctDelta > 0 ? 'text-mint-600' : 'text-sakura-500'" class="flex items-center gap-0.5">
-                <component :is="pctDelta > 0 ? TrendingUp : TrendingDown" class="w-3 h-3" />
-                较上次 {{ pctDelta > 0 ? '+' : '' }}{{ pctDelta }}%
-              </span>
-            </template>
-            <span class="text-mint-500 flex items-center gap-0.5">得分率详情 <ChevronRight class="w-3 h-3" /></span>
-          </div>
-        </div>
-        <div v-if="showScoresSection" class="stat-card cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all" @click="clickRankCard">
-          <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><TrendingUp class="w-4 h-4 text-sky2-500" /> 最新排名</div>
-          <div class="text-3xl font-bold text-cocoa-900">
-            <template v-if="latestExam && latestExam.classRank">第 {{ latestExam.classRank }} 名</template>
-            <template v-else>--</template>
-          </div>
-          <div class="text-xs mt-1 flex items-center gap-1">
-            <template v-if="rankDelta != null && rankDelta !== 0">
-              <span :class="rankDelta > 0 ? 'text-mint-600' : 'text-sakura-500'">较上次 {{ rankDelta > 0 ? '上升' : '下降' }} {{ Math.abs(rankDelta) }} 名</span>
-            </template>
-            <span class="text-sky2-500 flex items-center gap-0.5">查看成绩 <ChevronRight class="w-3 h-3" /></span>
-          </div>
-        </div>
-      </div>
+      <ParentStatsBar
+        :show-notices-section="showNoticesSection"
+        :show-homework-section="showHomeworkSection"
+        :show-scores-section="showScoresSection"
+        :pending-notices="pendingNotices"
+        :pending-homework="pendingHomework"
+        :latest-pct="latestPct"
+        :pct-delta="pctDelta"
+        :latest-exam="latestExam"
+        :rank-delta="rankDelta"
+        @click-notice="clickNoticeCard"
+        @click-homework="clickHomeworkCard"
+        @click-exam-count="clickExamCountCard"
+        @click-rank="clickRankCard"
+      />
 
       <!-- 学习工具快捷入口 -->
       <div class="flex flex-wrap gap-2">

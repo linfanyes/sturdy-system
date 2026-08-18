@@ -292,6 +292,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { theme, parent, logoutParent, setParent } from '../../common/store'
 import { parentApi } from '../../common/request'
 import { getNotifyPref } from '../../api/notifyPref'
+import { DONE_HW_STATUSES } from '@gardener/shared/utils/general'
 import KidList from './components/KidList.vue'
 import ScoreView from './components/ScoreView.vue'
 import MessageCenter from './components/MessageCenter.vue'
@@ -365,8 +366,7 @@ const termOptions = computed(() => { const set = new Set(); for (const e of exam
 const examNameOptions = computed(() => { const set = new Set(); for (const e of exams.value) { if (e.examName) set.add(e.examName) }; return Array.from(set) })
 const subjectOptions = computed(() => { const set = new Set(); for (const e of exams.value) { for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) } }; return Array.from(set) })
 
-// 作业「已完成」口径与 Web 端一致：已批改/已发还 同样视为完成
-const DONE_HW_STATUSES = ['已完成', '已批改', '已发还']
+// 作业「已完成」口径与 Web 端一致：已批改/已发还 同样视为完成（使用共享常量 DONE_HW_STATUSES）
 const pendingHomework = computed(() => homework.value.filter(h => !DONE_HW_STATUSES.includes(h.status)).length)
 
 // 考试按日期排序，取最近两次（用于「较上次」变化量，与 Web 端口径一致）

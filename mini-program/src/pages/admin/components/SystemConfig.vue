@@ -296,7 +296,7 @@ defineExpose({
     Object.assign(adminForm, { schoolId: a.schoolId || '', name: a.name || '', username: a.username || '', password: '', enabled: a.enabled })
     showAdminForm.value = true
   },
-  openResetAdmin(a) { resetTarget.value = a; resetPwd.value = '1314520'; origPwd.value = '1314520' },
+  openResetAdmin(a) { resetTarget.value = a; resetPwd.value = ''; origPwd.value = '' },
 })
 </script>
 

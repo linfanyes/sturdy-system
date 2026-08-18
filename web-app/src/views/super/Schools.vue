@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { toast } from '@/utils/feedback'
+import { toast, confirm } from '@/utils/feedback'
 import { School, Plus, Edit3, Trash2, Power, Loader2 } from 'lucide-vue-next'
 import { listSchools, createSchool, updateSchool, deleteSchool } from '@/api/admin'
 import Modal from '@/components/Modal.vue'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { toast } from '@/utils/feedback'
+import { toast, confirm } from '@/utils/feedback'
 import { formatISOTime } from '@gardener/shared/utils'
 import { Users, Plus, Edit3, Trash2, KeyRound, Power, Loader2 } from 'lucide-vue-next'
 import {
@@ -333,8 +333,6 @@ function formatTime(t?: string) {
     <ResetPasswordModal
       v-model="showReset"
       :target-name="resetTarget?.name"
-      default-password="1314520"
-      current-password="1314520"
       @confirm="submitReset"
     />
   </div>

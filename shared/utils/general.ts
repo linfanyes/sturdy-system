@@ -44,3 +44,14 @@ export function deepClone<T>(obj: T): T {
   if (obj == null || typeof obj !== 'object') return obj
   return JSON.parse(JSON.stringify(obj)) as T
 }
+
+/**
+ * 作业已完成状态常量
+ * 用于判断作业是否已完成（不区分"已批改"和"已发还"等完成状态）
+ */
+export const DONE_HW_STATUSES = ['已批改', '已发还', '已完成']
+
+/**
+ * 作业逾期状态常量
+ */
+export const OVERDUE_HW_STATUSES = ['逾期', '已逾期']

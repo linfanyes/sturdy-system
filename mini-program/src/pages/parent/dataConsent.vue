@@ -40,7 +40,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { theme } from '../../common/store'
 import { getConsent, upsertConsent, withdrawConsent } from '../../api/dataConsent'
 
-const dark = computed(() => theme.dark)
+const dark = computed(() => theme.mode === 'dark')
 const saving = ref(false)
 const version = ref('1.0')
 const withdrawn = ref(false)

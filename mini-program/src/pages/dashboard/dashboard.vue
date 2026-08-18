@@ -255,7 +255,7 @@
     <!-- 今日课程 -->
     <view class="card">
       <view class="card-h" @click="goCrud('schedules')">
-        <text class="ch-t">🗓️ 今日课程（{{ dow[todayDow] }}）</text><text class="ch-m">课表 ›</text>
+        <text class="ch-t">🗓️ 今日课程（{{ dow[todayDow - 1] }}）</text><text class="ch-m">课表 ›</text>
       </view>
       <view v-if="todayLessons.length">
         <view v-for="(l, i) in todayLessons" :key="i" class="li">
@@ -383,6 +383,7 @@ import {
 import { auth, theme, flushTabBarStyle } from '../../common/store'
 import { hasFeature } from '../../common/feature'
 import { copyText } from '../../common/print'
+import GrowthIcon from '../../components/GrowthIcon/GrowthIcon.vue'
 
 // 生日卡片
 const showCard = ref(false), cardName = ref(''), cardMsg = ref(''), cardEmoji = ref('🎂')
@@ -642,7 +643,7 @@ const weekAttRate = computed(() => {
   const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 10)
   const weekAtts = attendanceList.value.filter(a => a.date >= weekAgo)
   if (!weekAtts.length) return 100
-  const present = weekAtts.filter(a => a.records?.some(r => r.status === 'present' || r.status === '出勤')).length
+  const present = weekAtts.filter(a => Object.values(a.records || {}).some(s => s === 'present' || s === '出勤')).length
   return Math.round((present / weekAtts.length) * 100)
 })
 const pendingBySubject = computed(() => {
@@ -663,7 +664,7 @@ const weekTrend = computed(() => {
     const d = new Date(Date.now() - i * 86400000)
     const dateStr = d.toISOString().slice(0, 10)
     const dayAtts = attendanceList.value.filter(a => a.date === dateStr)
-    const present = dayAtts.filter(a => a.records?.some(r => r.status === 'present' || r.status === '出勤')).length
+    const present = dayAtts.filter(a => Object.values(a.records || {}).some(s => s === 'present' || s === '出勤')).length
     const total = dayAtts.length
     days.push({
       label: ['日','一','二','三','四','五','六'][d.getDay()],

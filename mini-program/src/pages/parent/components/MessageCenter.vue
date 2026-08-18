@@ -36,6 +36,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { DONE_HW_STATUSES } from '@gardener/shared/utils/general'
 
 const props = defineProps({
   homework: { type: Array, default: () => [] },
@@ -47,8 +48,7 @@ const showAllNotices = ref(false)
 const visibleHomework = computed(() => showAllHomework.value ? props.homework : props.homework.slice(0, 5))
 const visibleNotices = computed(() => showAllNotices.value ? props.notices : props.notices.slice(0, 5))
 
-// 作业状态口径与 Web 端一致
-const DONE_HW_STATUSES = ['已完成', '已批改', '已发还']
+// 作业状态口径与 Web 端一致（使用共享常量 DONE_HW_STATUSES）
 function dayStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
 function diffDays(dateStr) {
   const d = new Date(String(dateStr).slice(0, 10))

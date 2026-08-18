@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { toast } from '@/utils/feedback'
+import { toast, confirm } from '@/utils/feedback'
 import { Plus, Save, Trash2, Loader2, Star, Bot, RefreshCw } from 'lucide-vue-next'
 import { listAiProviders } from '@/api/teacher'
 import { createAiProvider, updateAiProvider, deleteAiProvider } from '@/api/admin'
