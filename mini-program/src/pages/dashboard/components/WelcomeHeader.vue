@@ -22,7 +22,10 @@
       <view v-if="unreadCount > 0" class="bell-badge pulse-dot">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
     </view>
     <view class="moods">
-      <text class="mood" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)">{{ moodEmojis[i] }} {{ m }}</text>
+      <text class="mood press-feedback" :class="currentMood === m && 'on'" v-for="(m, i) in moodOptions" :key="m" @click="pickMood(m)" :style="{ '--i': i }">
+        <text class="mood-emoji">{{ moodEmojis[i] }}</text>
+        <text class="mood-text">{{ m }}</text>
+      </text>
     </view>
   </view>
 </template>
@@ -178,12 +181,17 @@ function goNotifications() { emit('notifications') }
 /* 心情 */
 .moods { width: 100%; display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 4rpx; }
 .mood {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
   font-size: 22rpx;
-  padding: 8rpx 18rpx;
+  padding: 10rpx 18rpx;
   border-radius: 30rpx;
   background: rgba(255, 255, 255, 0.7);
   color: rgba(74, 63, 53, 0.75);
   transition: all 0.2s;
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.06s + 0.3s);
 }
 .mood:active {
   transform: scale(0.92);
@@ -193,6 +201,11 @@ function goNotifications() { emit('notifications') }
   color: #fff;
   box-shadow: 0 4rpx 12rpx rgba(214, 148, 38, 0.35);
 }
+.mood-emoji { font-size: 24rpx; }
+.mood-text { font-weight: 500; }
+.press-feedback { transition: transform 0.15s, opacity 0.15s; }
+.press-feedback:active { transform: scale(0.92); opacity: 0.9; }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 /* 暗色 */
 .dark .header {
   background: linear-gradient(135deg, #3a3020 0%, #4a3c22 55%, #573d22 100%);
