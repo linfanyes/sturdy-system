@@ -498,15 +498,14 @@ export class GradesService extends CrudService<Grade> {
       const role = await this.classMemberSvc.getRole(user.sub, stu.classId)
       allowedSubjects = role === 'head' ? null : await this.classMemberSvc.getAllSubjects(user.sub, stu.classId)
     }
-    // P2修复：使用 JSON_EXTRACT 在 DB 层过滤学生，避免加载班级全量成绩到内存
-    const grades = await this.repo
+    // 兼容 SQLite（测试）与 MySQL（生产）：SQLite 不支持 JSON_CONTAINS，改为应用层过滤
+    const allGrades = await this.repo
       .createQueryBuilder('g')
       .where('g.classId = :classId', { classId: stu.classId })
-      .andWhere('JSON_CONTAINS(g.scores, JSON_OBJECT(:studentIdKey, :studentIdVal))',
-        { studentIdKey: 'studentId', studentIdVal: studentId })
       .orderBy('g.date', 'DESC')
       .limit(200)
       .getMany()
+    const grades = allGrades.filter((g) => (g.scores || []).some((s) => s.studentId === studentId))
     const history: any[] = []
     const subjectLatest: Record<string, number[]> = {}
     for (const g of grades) {
