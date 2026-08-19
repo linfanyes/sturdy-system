@@ -17,7 +17,7 @@
         <text v-else-if="semesterName" class="sem"> · {{ semesterName }}</text>
       </view>
     </view>
-    <view class="bell" @click="goNotifications">
+    <view class="bell press-feedback" @click="goNotifications">
       <text class="bell-icon">🔔</text>
       <view v-if="unreadCount > 0" class="bell-badge pulse-dot">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
     </view>
@@ -150,11 +150,19 @@ function goNotifications() { emit('notifications') }
 .sem { color: #d69426; font-weight: 600; }
 /* 通知铃 */
 .bell { position: relative; margin-left: auto; padding: 0 10rpx; cursor: pointer; }
-.bell-icon { font-size: 36rpx; }
+.bell-icon { font-size: 36rpx; display: inline-block; transition: transform 0.3s; }
+.bell:hover .bell-icon { animation: bell-shake 0.5s ease-in-out; }
+@keyframes bell-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(12deg); }
+  40% { transform: rotate(-10deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-6deg); }
+}
 .bell-badge {
   position: absolute;
   top: -4rpx; right: 0;
-  background: #e64340;
+  background: linear-gradient(135deg, #f56c6c, #e06c75);
   color: #fff;
   font-size: 18rpx;
   min-width: 28rpx; height: 28rpx;
