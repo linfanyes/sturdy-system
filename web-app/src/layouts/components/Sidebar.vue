@@ -39,7 +39,6 @@ const visibleTeacherMenu = computed<MenuCategory[]>(() => {
 
 const flatItems = computed<MenuItem[]>(() => (auth.role && auth.role !== 'teacher' ? flatNavItems[auth.role] : []))
 
-// 跨娃比对仅在家长关联 ≥2 名学生（同手机号多娃）时出现，否则默认隐藏
 const parentKids = useParentKids()
 const showCompare = computed(() => {
   if (auth.role !== 'parent') return true
@@ -52,6 +51,17 @@ const visibleFlatItems = computed<MenuItem[]>(() =>
 
 const activeCategory = ref<string>('')
 const openCats = ref<string[]>([])
+
+// 侧边栏展开状态
+const isExpanded = ref(false)
+let expandTimer: ReturnType<typeof setTimeout> | null = null
+function handleMouseEnter() {
+  expandTimer = setTimeout(() => { isExpanded.value = true }, 150)
+}
+function handleMouseLeave() {
+  if (expandTimer) clearTimeout(expandTimer)
+  isExpanded.value = false
+}
 
 function findCategoryForRoute(targetName: any) {
   for (const cat of visibleTeacherMenu.value) {
@@ -85,7 +95,6 @@ function syncActiveCat() {
 onMounted(syncActiveCat)
 watch(() => route.name, syncActiveCat)
 
-// 家长端：预取关联孩子数，驱动「跨娃比对」菜单显隐
 onMounted(() => {
   if (auth.role === 'parent') parentKids.ensure()
 })
@@ -144,7 +153,6 @@ function downloadManual() {
   a.click()
 }
 
-// Simple markdown-to-HTML renderer
 function md2html(md: string): string {
   if (!md) return ''
   const raw = escapeHtml(md)
@@ -158,7 +166,6 @@ function md2html(md: string): string {
     .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
     .replace(/^---$/gm, '<hr>')
     .replace(/\n\n/g, '<br><br>')
-  // P0修复：XSS - 移除危险的事件处理器属性（防御 regex 绕过）
   return raw.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
 }
 
@@ -171,32 +178,38 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
 </script>
 
 <template>
-  <aside class="w-20 shrink-0 border-r border-cream-200 bg-gradient-to-b from-cream-100/95 to-cream-50/95 backdrop-blur flex flex-col items-center py-4">
+  <aside
+    class="sidebar"
+    :class="{ expanded: isExpanded, collapsed: !isExpanded }"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <!-- Logo -->
-    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-butter-300 to-butter-500 flex items-center justify-center text-white font-bold text-sm shadow-soft mb-6 leading-none">
-      园丁
+    <div class="sidebar-logo">
+      <div class="logo-icon">园丁</div>
+      <Transition name="fade">
+        <span v-if="isExpanded" class="logo-text">园丁工作台</span>
+      </Transition>
     </div>
 
     <!-- 一级分类图标按钮 -->
-    <nav class="flex-1 w-full px-2 overflow-y-auto space-y-2">
+    <nav class="sidebar-nav">
       <!-- 教师三级菜单 -->
       <template v-if="auth.role === 'teacher'">
         <button
           v-for="cat in visibleTeacherMenu"
           :key="cat.label"
-          class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-          :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+          class="nav-item"
+          :class="{ active: activeCategory === cat.label }"
           :aria-label="cat.label"
           :aria-expanded="activeCategory === cat.label"
           @click="toggleCat(cat.label)"
         >
-          <div
-            class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-            :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
-          >
-            <component :is="cat.icon" class="w-5 h-5" />
+          <div class="nav-indicator" />
+          <div class="nav-icon-wrap" :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text">
+            <component :is="cat.icon" class="w-[22px] h-[22px]" />
           </div>
-          <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+          <span class="nav-label">{{ cat.label }}</span>
         </button>
       </template>
       <!-- 超管 -->
@@ -206,32 +219,28 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             v-if="cat.direct"
             :to="(cat.groups[0]?.items[0]?.to) || '#'"
             @click="activeCategory = ''; openCats = []"
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            class="nav-item"
+            :class="{ active: route.name === (cat.groups[0]?.items[0]?.name) }"
             :aria-label="cat.label"
             :aria-current="route.name === (cat.groups[0]?.items[0]?.name) ? 'page' : undefined"
           >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
-            >
-              <component :is="cat.icon" class="w-5 h-5" />
+            <div class="nav-indicator" />
+            <div class="nav-icon-wrap" :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text">
+              <component :is="cat.icon" class="w-[22px] h-[22px]" />
             </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            <span class="nav-label">{{ cat.label }}</span>
           </router-link>
           <button
             v-else
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            class="nav-item"
+            :class="{ active: activeCategory === cat.label }"
             @click="toggleCat(cat.label)"
           >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
-            >
-              <component :is="cat.icon" class="w-5 h-5" />
+            <div class="nav-indicator" />
+            <div class="nav-icon-wrap" :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text">
+              <component :is="cat.icon" class="w-[22px] h-[22px]" />
             </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            <span class="nav-label">{{ cat.label }}</span>
           </button>
         </template>
       </template>
@@ -242,32 +251,28 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
             v-if="cat.direct"
             :to="(cat.groups[0]?.items[0]?.to) || '#'"
             @click="activeCategory = ''; openCats = []"
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="route.name === (cat.groups[0]?.items[0]?.name) ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            class="nav-item"
+            :class="{ active: route.name === (cat.groups[0]?.items[0]?.name) }"
             :aria-label="cat.label"
             :aria-current="route.name === (cat.groups[0]?.items[0]?.name) ? 'page' : undefined"
           >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
-            >
-              <component :is="cat.icon" class="w-5 h-5" />
+            <div class="nav-indicator" />
+            <div class="nav-icon-wrap" :class="route.name === (cat.groups[0]?.items[0]?.name) ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text">
+              <component :is="cat.icon" class="w-[22px] h-[22px]" />
             </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            <span class="nav-label">{{ cat.label }}</span>
           </router-link>
           <button
             v-else
-            class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-            :class="activeCategory === cat.label ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+            class="nav-item"
+            :class="{ active: activeCategory === cat.label }"
             @click="toggleCat(cat.label)"
           >
-            <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-              :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text"
-            >
-              <component :is="cat.icon" class="w-5 h-5" />
+            <div class="nav-indicator" />
+            <div class="nav-icon-wrap" :class="activeCategory === cat.label ? palette(cat.color).bg : palette(cat.color).soft + ' ' + palette(cat.color).text">
+              <component :is="cat.icon" class="w-[22px] h-[22px]" />
             </div>
-            <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ cat.label }}</span>
+            <span class="nav-label">{{ cat.label }}</span>
           </button>
         </template>
       </template>
@@ -278,89 +283,60 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
           :key="item.name"
           :to="item.to"
           replace
-          class="group flex flex-col items-center w-full py-2 rounded-xl transition-all"
-          :class="route.name === item.name ? 'bg-surface shadow-soft ring-1 ring-butter-200' : 'hover:bg-cream-200/60'"
+          class="nav-item"
+          :class="{ active: route.name === item.name }"
         >
-          <div
-            class="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
-            :class="route.name === item.name ? palette(item.color || 'cream').bg : palette(item.color || 'cream').soft + ' ' + palette(item.color || 'cream').text"
-          >
-            <component :is="item.icon || User" class="w-5 h-5" />
+          <div class="nav-indicator" />
+          <div class="nav-icon-wrap" :class="route.name === item.name ? palette(item.color || 'cream').bg : palette(item.color || 'cream').soft + ' ' + palette(item.color || 'cream').text">
+            <component :is="item.icon || User" class="w-[22px] h-[22px]" />
           </div>
-          <span class="text-[10px] font-medium text-cocoa-700 mt-1 truncate max-w-[60px]">{{ item.label }}</span>
+          <span class="nav-label">{{ item.label }}</span>
         </router-link>
       </template>
     </nav>
 
     <!-- 用户头像+弹出面板 -->
-    <div class="relative border-t border-cream-200/60 pt-3 w-full flex flex-col items-center">
+    <div class="sidebar-footer">
       <button
-        class="w-10 h-10 rounded-full bg-butter-300 hover:bg-butter-400 flex items-center justify-center transition-colors text-lg"
+        class="footer-avatar"
         :title="auth.user?.name || roleLabel[auth.role || 'teacher']"
         @click="toggleProfile"
       >
         {{ userAvatar }}
       </button>
 
-      <!-- 弹出面板 + 点击遮罩关闭 -->
+      <!-- 弹出面板 -->
       <Teleport to="body">
-        <div
-          v-if="showProfile"
-          class="fixed inset-0 z-50"
-          @click="closeProfile"
-        >
-          <div
-            class="absolute bottom-16 left-6 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4"
-            @click.stop
-          >
-        <!-- 个人信息 -->
-        <div class="flex items-center gap-3 mb-3 pb-3 border-b border-cream-100">
-          <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0 text-lg">
-            {{ userAvatar }}
+        <div v-if="showProfile" class="fixed inset-0 z-50" @click="closeProfile">
+          <div class="absolute bottom-16 left-6 w-56 rounded-2xl bg-surface shadow-xl border border-cream-200 p-4" @click.stop>
+            <div class="flex items-center gap-3 mb-3 pb-3 border-b border-cream-100">
+              <div class="w-10 h-10 rounded-full bg-butter-300 flex items-center justify-center shrink-0 text-lg">{{ userAvatar }}</div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-cocoa-900 truncate">{{ auth.user?.name || '用户' }}</div>
+                <div class="text-xs text-cocoa-400">{{ roleLabel[auth.role || 'teacher'] || auth.role }}</div>
+                <div v-if="auth.user?.schoolName" class="text-xs text-cocoa-400 truncate">{{ auth.user.schoolName }}</div>
+              </div>
+            </div>
+            <button class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-cocoa-700 hover:bg-cream-50 transition-colors" @click="previewManual">
+              <BookOpen class="w-4 h-4 text-butter-500" /><span>操作手册</span><ChevronRight class="w-3 h-3 ml-auto text-cocoa-300" />
+            </button>
+            <button class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors mt-1" @click="emit('logout')">
+              <LogOut class="w-4 h-4" /><span>退出登录</span>
+            </button>
           </div>
-          <div class="min-w-0">
-            <div class="text-sm font-semibold text-cocoa-900 truncate">{{ auth.user?.name || '用户' }}</div>
-            <div class="text-xs text-cocoa-400">{{ roleLabel[auth.role || 'teacher'] || auth.role }}</div>
-            <div v-if="auth.user?.schoolName" class="text-xs text-cocoa-400 truncate">{{ auth.user.schoolName }}</div>
-          </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <button
-          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-cocoa-700 hover:bg-cream-50 transition-colors"
-          @click="previewManual"
-        >
-          <BookOpen class="w-4 h-4 text-butter-500" />
-          <span>操作手册</span>
-          <ChevronRight class="w-3 h-3 ml-auto text-cocoa-300" />
-        </button>
-        <button
-          class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors mt-1"
-          @click="emit('logout')"
-        >
-          <LogOut class="w-4 h-4" />
-          <span>退出登录</span>
-        </button>
-      </div>
         </div>
       </Teleport>
     </div>
 
     <!-- 手册预览弹窗 -->
     <Teleport to="body">
-      <div
-        v-if="showManualPreview"
-        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
-        @click.self="showManualPreview = false"
-      >
+      <div v-if="showManualPreview" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4" @click.self="showManualPreview = false">
         <div class="w-full max-w-3xl max-h-[85vh] rounded-2xl bg-surface shadow-xl overflow-hidden flex flex-col">
           <div class="flex items-center justify-between px-5 py-3 border-b border-cream-200">
             <h3 class="text-lg font-bold text-cocoa-900">操作手册</h3>
             <div class="flex items-center gap-2">
-              <button class="px-3 py-1.5 rounded-lg text-sm text-cocoa-600 hover:bg-cream-100 transition-colors" @click="downloadManual">
-                <Download class="w-4 h-4 inline mr-1" />下载
-              </button>
-              <button class="px-3 py-1.5 rounded-lg text-sm text-cocoa-600 hover:bg-cream-100 transition-colors" @click="showManualPreview = false">✕ 关闭</button>
+              <button class="btn-ghost px-3 py-1.5 text-sm" @click="downloadManual"><Download class="w-4 h-4 inline mr-1" />下载</button>
+              <button class="btn-ghost px-3 py-1.5 text-sm" @click="showManualPreview = false">✕ 关闭</button>
             </div>
           </div>
           <div class="flex-1 overflow-y-auto px-5 py-4">
@@ -372,3 +348,202 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
     </Teleport>
   </aside>
 </template>
+
+<style scoped>
+.sidebar {
+  --w-collapsed: 72px;
+  --w-expanded: 220px;
+  width: var(--w-collapsed);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  background: linear-gradient(to bottom, rgba(255, 248, 232, 0.95), rgba(255, 243, 220, 0.95));
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgb(var(--cream-200) / 0.6);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+}
+.sidebar.expanded {
+  width: var(--w-expanded);
+}
+
+/* Logo */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 16px;
+  min-height: 56px;
+}
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgb(var(--butter-300)), rgb(var(--butter-500)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(214, 148, 38, 0.25);
+}
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(var(--cocoa-800));
+  white-space: nowrap;
+}
+
+/* Nav */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgb(var(--cream-300));
+  border-radius: 2px;
+}
+
+/* Nav Item */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: background 0.15s, transform 0.1s;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+.nav-item:hover {
+  background: rgb(var(--cream-100));
+}
+.nav-item:active {
+  transform: scale(0.98);
+}
+.nav-item.active {
+  background: rgb(var(--butter-50));
+}
+
+/* Active Indicator */
+.nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  border-radius: 0 3px 3px 0;
+  background: rgb(var(--butter-400));
+  transition: height 0.2s;
+}
+.nav-item.active .nav-indicator {
+  height: 24px;
+}
+
+/* Icon */
+.nav-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.nav-item:hover .nav-icon-wrap {
+  transform: scale(1.05);
+}
+
+/* Label */
+.nav-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--cocoa-700));
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s 0.05s, transform 0.2s 0.05s;
+}
+.sidebar.expanded .nav-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Footer */
+.sidebar-footer {
+  border-top: 1px solid rgb(var(--cream-200) / 0.5);
+  padding-top: 12px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+.footer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(var(--butter-300)), rgb(var(--butter-400)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: none;
+}
+.footer-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(214, 148, 38, 0.3);
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Dark mode */
+.dark .sidebar {
+  background: linear-gradient(to bottom, rgba(35, 38, 45, 0.95), rgba(28, 30, 35, 0.95));
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+.dark .logo-text {
+  color: rgb(var(--cream-100));
+}
+.dark .nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.dark .nav-item.active {
+  background: rgba(245, 179, 66, 0.1);
+}
+.dark .nav-label {
+  color: rgb(var(--cream-200));
+}
+.dark .sidebar-footer {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+</style>

@@ -90,12 +90,27 @@
 
   /* 统计/信息卡片 —— 升级有机三层阴影 + 纸边高光 + 上浮反馈 */
   .stat-card {
-    @apply bg-surface rounded-2xl p-5 transition-all duration-200 border border-white/60;
+    @apply bg-surface rounded-2xl p-5 transition-all duration-200 border border-white/60 cursor-pointer;
     box-shadow: 0 1px 2px rgba(174,140,90,.04), 0 4px 12px rgba(174,140,90,.06), 0 12px 28px rgba(174,140,90,.04);
+    position: relative;
+    overflow: hidden;
+  }
+  /* 顶部高光线 */
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
   }
   .stat-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 2px 4px rgba(174,140,90,.06), 0 8px 20px rgba(174,140,90,.10), 0 20px 40px rgba(190,140,80,.08);
+  }
+  .stat-card:active {
+    transform: translateY(-2px) scale(0.99);
   }
 
   /* 快捷入口卡片 */
@@ -106,6 +121,26 @@
   .quick-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 2px 4px rgba(174,140,90,.06), 0 8px 20px rgba(174,140,90,.10), 0 20px 40px rgba(190,140,80,.08);
+  }
+  .quick-card:active {
+    transform: translateY(-2px) scale(0.99);
+  }
+
+  /* 可交互面板（含内边距的内容区） */
+  .panel-card {
+    @apply bg-surface rounded-2xl border border-white/60 transition-shadow duration-200;
+    box-shadow: 0 1px 2px rgba(174,140,90,.04), 0 4px 12px rgba(174,140,90,.06);
+  }
+  .panel-card:hover {
+    box-shadow: 0 2px 4px rgba(174,140,90,.05), 0 6px 16px rgba(174,140,90,.08);
+  }
+
+  /* 数据表格行交互 */
+  .table-row-interactive {
+    @apply transition-colors duration-150;
+  }
+  .table-row-interactive:hover {
+    @apply bg-cream-50;
   }
 
   .btn-pill {
@@ -181,6 +216,48 @@
     cursor: not-allowed;
     transform: none !important;
     box-shadow: none !important;
+  }
+
+  /* === 微交互 === */
+  /* 标签/徽章增强 */
+  .badge-soft {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-butter { @apply bg-butter-100 text-butter-700; }
+  .badge-rose { @apply bg-rose-100 text-rose-700; }
+  .badge-blue { @apply bg-blue-100 text-blue-700; }
+  .badge-green { @apply bg-emerald-100 text-emerald-700; }
+  .badge-purple { @apply bg-purple-100 text-purple-700; }
+
+  /* 脉冲动画（用于通知红点） */
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .pulse-dot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  /* 悬浮微上浮 */
+  .hover-lift {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* 页面切换淡入 */
+  .page-enter {
+    animation: page-fade-in 0.3s ease-out;
+  }
+  @keyframes page-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .input-soft {
@@ -289,9 +366,13 @@
   }
   .dark .stat-card,
   .dark .quick-card,
+  .dark .panel-card,
   .dark .table-wrap,
   .dark .form-card {
     @apply bg-cream-200/80 border-cocoa-100/30;
+  }
+  .dark .stat-card::before {
+    @apply opacity-30;
   }
   .dark .table-wrap th {
     @apply bg-cream-300/50 text-cocoa-600;
@@ -311,6 +392,18 @@
   .dark .btn-secondary {
     @apply bg-cream-200/80 text-cocoa-600 border-cream-100/40;
   }
+  .dark .btn-ghost {
+    @apply text-cocoa-500;
+  }
+  .dark .btn-ghost:hover {
+    @apply bg-cream-200/50;
+  }
+  .dark .badge-butter { @apply bg-butter-200/50 text-butter-100; }
+  .dark .badge-rose { @apply bg-rose-200/50 text-rose-100; }
+  .dark .badge-blue { @apply bg-blue-200/50 text-blue-100; }
+  .dark .badge-green { @apply bg-emerald-200/50 text-emerald-100; }
+  .dark .badge-purple { @apply bg-purple-200/50 text-purple-100; }
+}
   .dark .chip {
     @apply bg-cream-200/80 text-cocoa-700;
   }

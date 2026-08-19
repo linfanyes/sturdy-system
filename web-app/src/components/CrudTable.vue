@@ -281,10 +281,7 @@ defineExpose({ reload: loadList })
             class="w-full sm:w-56 pl-9 pr-3 py-2 rounded-xl border border-cream-200 bg-surface text-sm focus:outline-none focus:border-butter-400"
           />
         </div>
-        <button
-          class="btn-pill bg-butter-500 text-white hover:bg-butter-600"
-          @click="openCreate"
-        >
+        <button class="btn-primary" @click="openCreate">
           <Plus class="w-4 h-4" /> 新增
         </button>
       </div>
@@ -319,10 +316,10 @@ defineExpose({ reload: loadList })
           <tr v-for="row in displayedItems" :key="row.id" class="hover:bg-cream-50 transition-colors">
             <td v-for="f in listFields" :key="f.key" class="px-4 py-3 text-cocoa-700">{{ fmtVal(row, f) }}</td>
             <td class="px-4 py-3 text-right whitespace-nowrap">
-              <button class="p-1.5 rounded-lg hover:bg-cream-100 text-cocoa-500" title="编辑" aria-label="编辑" @click="openEdit(row)">
+              <button class="btn-ghost p-1.5" title="编辑" aria-label="编辑" @click="openEdit(row)">
                 <Edit3 class="w-4 h-4" />
               </button>
-              <button class="p-1.5 rounded-lg hover:bg-red-50 text-red-500 ml-1" title="删除" aria-label="删除" @click="handleDelete(row)">
+              <button class="btn-ghost p-1.5 text-rose-600 hover:bg-rose-50" title="删除" aria-label="删除" @click="handleDelete(row)">
                 <Trash2 class="w-4 h-4" />
               </button>
               <button
@@ -429,12 +426,8 @@ defineExpose({ reload: loadList })
       </div>
     </div>
     <template #footer>
-      <button class="px-4 py-2 rounded-xl text-cocoa-500 hover:bg-cream-100" @click="showForm = false">取消</button>
-      <button
-        class="px-4 py-2 rounded-xl bg-butter-500 text-white hover:bg-butter-600 disabled:opacity-60"
-        :disabled="formLoading"
-        @click="submitForm"
-      >
+      <button class="btn-secondary" @click="showForm = false">取消</button>
+      <button class="btn-primary" :disabled="formLoading" @click="submitForm">
         {{ formLoading ? '保存中…' : '保存' }}
       </button>
     </template>
