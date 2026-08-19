@@ -149,14 +149,14 @@ export class AiService {
   }
 
   /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成结构化分析报告 */
-  async analyzeExam(examId: string, teacherId: string): Promise<{ content: string; structured?: any }> {
+  async analyzeExam(examId: string, teacherId: string, role?: string): Promise<{ content: string; structured?: any }> {
     const exam = await this.examRepo.findOne({ where: { id: examId } })
     if (!exam) return { content: '考试不存在或无权限' }
     // P1修复：analyzeExam 权限校验 - 校管和班主任也有权分析
     const teacher = await this.userRepo.findOne({ where: { id: teacherId } as any })
     if (!teacher) return { content: '考试不存在或无权限' }
     const isOwner = exam.teacherId === teacherId
-    const isSchoolAdmin = teacher.role === 'school_admin' || teacher.schoolId
+    const isSchoolAdmin = role === 'school_admin' || teacher.schoolId
     if (!isOwner && !isSchoolAdmin) {
       // 非本人创建的考试，检查是否为班主任
       const role = await this.classMemberSvc.getRole(teacherId, exam.classId)
@@ -166,7 +166,7 @@ export class AiService {
     } else if (isSchoolAdmin) {
       // 校管需验证学校归属
       const cls = await this.classRepo.findOne({ where: { id: exam.classId } as any })
-      if (!cls || (teacher.role === 'school_admin' && cls.teacherId !== teacherId)) {
+      if (!cls || (role === 'school_admin' && cls.teacherId !== teacherId)) {
         // 进一步检查 schoolId 一致性
         const examTeacher = await this.userRepo.findOne({ where: { id: exam.teacherId } as any })
         if (!examTeacher || examTeacher.schoolId !== teacher.schoolId) {

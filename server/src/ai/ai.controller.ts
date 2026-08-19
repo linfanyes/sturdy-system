@@ -158,7 +158,7 @@ export class AiController {
   async analyzeExam(@Body() b: { examId: string }, @CurrentTeacher() t: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
     res.setHeader('X-AI-Timeout', String(AI_TIMEOUT))
     res.setHeader('X-Request-Id', this.getRequestId(req))
-    return this.ai.analyzeExam(b.examId, t.sub)
+    return this.ai.analyzeExam(b.examId, t.sub, t.role)
   }
 
   /** 学生个体学情 AI 诊断：取该生历次成绩 → 趋势 → 诊断建议

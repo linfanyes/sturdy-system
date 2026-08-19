@@ -11,6 +11,7 @@ import { runMigrations } from './migrations/runner'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware'
+import { CacheService } from './common/cache/cache.service'
 import { isBcryptHash } from './common/utils/password.util'
 import helmet from 'helmet'
 

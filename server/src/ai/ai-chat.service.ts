@@ -94,6 +94,33 @@ class CircuitBreaker {
       throw e
     }
   }
+
+  /** 记录一次成功调用：重置失败计数并闭合熔断器 */
+  recordSuccess(): void {
+    this.failures = 0
+    this.state = 'CLOSED'
+  }
+
+  /** 记录一次失败调用：达到阈值则打开熔断 */
+  recordFailure(): void {
+    this.failures++
+    if (this.failures >= this.threshold) {
+      this.state = 'OPEN'
+      this.openedAt = Date.now()
+    }
+  }
+
+  /** 是否允许执行：OPEN 且未过冷却期则拒绝，否则放行（冷却期过后进入半开探测） */
+  canExecute(): boolean {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.openedAt > this.resetMs) {
+        this.state = 'HALF_OPEN'
+        return true
+      }
+      return false
+    }
+    return true
+  }
 }
 
 /** 信号量：限制并发数，避免缓存击穿时打满连接池 */
@@ -150,6 +177,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
     }
   }
   throw lastError!
+}
 
 /**
  * AI 对话核心服务：负责组装消息（含本地上下文注入）、模型选择、
@@ -515,4 +543,4 @@ export class AiChatService {
   }
 }
 
-// NOTE: 文件末尾缺失闭合括号已修复（左括号142 vs 右括号141）
+// NOTE: withRetry 函数体已正确闭合（含 CircuitBreaker.recordSuccess/recordFailure/canExecute 补丁）
