@@ -21,9 +21,9 @@ export function registerParentFunctionalCases(baseUrl: string, seed: SeedResult)
 
   /* ================= 辅助函数 ================= */
 
-  /** 家长登录获取 token */
+  /** 家长登录获取 token（使用家长专用登录端点） */
   const pTok = async (no: string) => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
+    const r = await http('POST', api('/parent-auth/login'), { body: { studentNo: no, password: PARENT_PASS } })
     assert(r.status < 300, `家长登录失败(${no}) ${r.status}`)
     return r.body.token as string
   }
@@ -31,25 +31,25 @@ export function registerParentFunctionalCases(baseUrl: string, seed: SeedResult)
   /* ================= 1. 登录与认证 ================= */
 
   addCase('FUNC-PAR-100', 'parent', '家长用学号+口令统一登录返回 role=parent', async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
+    const r = await http('POST', api('/parent-auth/login'), { body: { studentNo: studentNo(1, 1, 1, 1), password: PARENT_PASS } })
     assert(r.status < 300, `登录失败 ${r.status}`)
     assertEq(r.body.role, 'parent', 'role')
     assert(typeof r.body.token === 'string' && r.body.token.length > 20, 'token 缺失')
   })
 
   addCase('FUNC-PAR-101', 'parent', '家长错误密码返回 401', async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 1), password: 'wrong' } })
+    const r = await http('POST', api('/parent-auth/login'), { body: { studentNo: studentNo(1, 1, 1, 1), password: 'wrong' } })
     assertEq(r.status, 401, '状态码')
   })
 
   addCase('FUNC-PAR-102', 'parent', '未授权学号登录被拒绝（401）', async () => {
-    const r = await http('POST', api('/auth/unified-login'), { body: { username: 'NOTEXIST999', password: PARENT_PASS } })
+    const r = await http('POST', api('/parent-auth/login'), { body: { studentNo: 'NOTEXIST999', password: PARENT_PASS } })
     assertEq(r.status, 401, '状态码')
   })
 
   addCase('FUNC-PAR-103', 'parent', '连续错误密码均返回 401', async () => {
     for (let i = 0; i < 3; i++) {
-      const r = await http('POST', api('/auth/unified-login'), { body: { username: studentNo(1, 1, 1, 4), password: 'bad' + i } })
+      const r = await http('POST', api('/parent-auth/login'), { body: { studentNo: studentNo(1, 1, 1, 4), password: 'bad' + i } })
       assertEq(r.status, 401, `第 ${i + 1} 次状态码`)
     }
   })
@@ -272,11 +272,11 @@ export function registerParentFunctionalCases(baseUrl: string, seed: SeedResult)
 
   addCase('FUNC-PAR-1100', 'parent', '家长修改密码：原密码验证+新密码登录', async () => {
     const no = studentNo(1, 1, 1, 2)
-    const lg = await http('POST', api('/auth/unified-login'), { body: { username: no, password: PARENT_PASS } })
+    const lg = await http('POST', api('/parent-auth/login'), { body: { studentNo: no, password: PARENT_PASS } })
     assert(lg.status < 300, `登录失败 ${lg.status}`)
     const ch = await http('POST', api('/parent-auth/change-password'), { token: lg.body.token, body: { oldPassword: PARENT_PASS, newPassword: 'QaParent@123' } })
     assert(ch.status < 300, `改密失败 ${ch.status} ${JSON.stringify(ch.body).slice(0, 120)}`)
-    const lg2 = await http('POST', api('/auth/unified-login'), { body: { username: no, password: 'QaParent@123' } })
+    const lg2 = await http('POST', api('/parent-auth/login'), { body: { studentNo: no, password: 'QaParent@123' } })
     assert(lg2.status < 300, `新密码登录失败 ${lg2.status}`)
     // 还原
     await http('POST', api('/parent-auth/change-password'), { token: lg2.body.token, body: { oldPassword: 'QaParent@123', newPassword: PARENT_PASS } })
@@ -301,12 +301,12 @@ export function registerParentFunctionalCases(baseUrl: string, seed: SeedResult)
     const t = await pTok(no)
     const ch1 = await http('POST', api('/parent-auth/change-password'), { token: t, body: { oldPassword: PARENT_PASS, newPassword: 'QaPar@Iter1' } })
     assert(ch1.status < 300, `第一次改密失败 ${ch1.status}`)
-    const lg2 = await http('POST', api('/auth/unified-login'), { body: { username: no, password: 'QaPar@Iter1' } })
+    const lg2 = await http('POST', api('/parent-auth/login'), { body: { studentNo: no, password: 'QaPar@Iter1' } })
     assert(lg2.status < 300, `第一次新密码登录失败 ${lg2.status}`)
     const ch2 = await http('POST', api('/parent-auth/change-password'), { token: lg2.body.token, body: { oldPassword: 'QaPar@Iter1', newPassword: 'QaPar@Iter2' } })
     assert(ch2.status < 300, `第二次改密失败 ${ch2.status}`)
     // 还原
-    const lg3 = await http('POST', api('/auth/unified-login'), { body: { username: no, password: 'QaPar@Iter2' } })
+    const lg3 = await http('POST', api('/parent-auth/login'), { body: { studentNo: no, password: 'QaPar@Iter2' } })
     await http('POST', api('/parent-auth/change-password'), { token: lg3.body.token, body: { oldPassword: 'QaPar@Iter2', newPassword: PARENT_PASS } })
   })
 

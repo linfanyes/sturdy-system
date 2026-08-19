@@ -478,6 +478,22 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
     await batchInsert(ds, 'students', studentCols, studentRows, 100)
     studentCount += studentRows.length
 
+    // 验证第一个学生的 parentPasswordHash 是否正确写入
+    if (i === 1 && studentRows.length > 0) {
+      try {
+        const firstStudentNo = studentRows[0][studentProps.indexOf('studentNo')]
+        const verifyRepo = ds.getRepository('students')
+        const found = await verifyRepo.findOne({ where: { studentNo: firstStudentNo } as any })
+        if (found) {
+          const hashVal = (found as any).parentPasswordHash
+          const enabledVal = (found as any).parentLoginEnabled
+          console.log(`[seed] 验证学生 ${firstStudentNo}: parentPasswordHash=${hashVal ? 'SET(' + String(hashVal).substring(0, 20) + '...)' : 'NULL'}, parentLoginEnabled=${enabledVal}`)
+        }
+      } catch (e) {
+        console.log('[seed] 验证失败:', (e as Error).message)
+      }
+    }
+
     // ---------- 7) 考试 ×30/班 + 成绩（直接写库） ----------
     const studentsByClass = new Map<string, Array<{ id: string; studentNo: string }>>()
     for (let g = 1; g <= GRADES_PER_SCHOOL; g++) {
