@@ -12,6 +12,10 @@ process.env.WECHAT_RATE_LIMIT_MAX = process.env.WECHAT_RATE_LIMIT_MAX || '100000
 import { startQaApp } from './harness'
 import { seedDataset } from './seed'
 import { registerFunctionalCases } from './functional'
+import { registerTeacherFunctionalCases } from './teacher-functional'
+import { registerSchoolAdminCases } from './schooladmin-functional'
+import { registerSuperFunctionalCases } from './super-functional'
+import { registerParentFunctionalCases } from './parent-functional'
 import { registerEdgeCases } from './edge'
 import { registerPerfCases } from './performance'
 import { registerNavigationCases } from './navigation'
@@ -30,6 +34,10 @@ async function main() {
   console.log(`[qa] 数据集就绪：学生 ${seed.studentCount} / 考试 ${seed.examCount} / 成绩记录 ${seed.gradeRowCount}，公告 ${seed.noticeCount} / 消息 ${seed.messageCount} / 笔记 ${seed.noteCount} / 通知 ${seed.notificationCount}，耗时 ${seed.durationMs}ms`)
 
   registerFunctionalCases(qa.baseUrl, seed)
+  registerTeacherFunctionalCases(qa.baseUrl, seed)
+  registerSchoolAdminCases(qa.baseUrl, seed)
+  registerSuperFunctionalCases(qa.baseUrl, seed)
+  registerParentFunctionalCases(qa.baseUrl, seed)
   registerEdgeCases(qa.baseUrl, seed)
   registerPerfCases(qa.baseUrl, seed)
   registerNavigationCases(qa.baseUrl, seed)

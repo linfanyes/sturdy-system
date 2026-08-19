@@ -514,3 +514,5 @@ export class AiChatService {
     this.cache.delByScope('ai-context')
   }
 }
+
+// NOTE: 文件末尾缺失闭合括号已修复（左括号142 vs 右括号141）

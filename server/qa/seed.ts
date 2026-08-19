@@ -42,14 +42,14 @@ export const ADMIN_PASS = 'QaAdmin@123'
 export const TEACHER_PASS = 'QaTeach@123'
 export const PARENT_PASS = '123456'
 
-// 数据规模常量
-export const SCHOOL_COUNT = 20
-export const GRADES_PER_SCHOOL = 6
-export const CLASSES_PER_GRADE = 8
-export const CLASSES_PER_SCHOOL = GRADES_PER_SCHOOL * CLASSES_PER_GRADE // 48
-export const STUDENTS_PER_CLASS = 60
-export const TEACHERS_PER_CLASS = 6
-export const TEACHERS_PER_SCHOOL = CLASSES_PER_SCHOOL * TEACHERS_PER_CLASS // 288
+// 数据规模常量（可通过环境变量覆盖，用于快速测试）
+export const SCHOOL_COUNT = +(process.env.QA_SCHOOL_COUNT || 20)
+export const GRADES_PER_SCHOOL = +(process.env.QA_GRADES_PER_SCHOOL || 6)
+export const CLASSES_PER_GRADE = +(process.env.QA_CLASSES_PER_GRADE || 8)
+export const CLASSES_PER_SCHOOL = GRADES_PER_SCHOOL * CLASSES_PER_GRADE
+export const STUDENTS_PER_CLASS = +(process.env.QA_STUDENTS_PER_CLASS || 60)
+export const TEACHERS_PER_CLASS = +(process.env.QA_TEACHERS_PER_CLASS || 6)
+export const TEACHERS_PER_SCHOOL = CLASSES_PER_SCHOOL * TEACHERS_PER_CLASS
 export const EXAMS_PER_SEMESTER = 10
 export const SEMESTERS = 3
 export const EXAMS_PER_CLASS = EXAMS_PER_SEMESTER * SEMESTERS // 30

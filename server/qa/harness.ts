@@ -21,6 +21,9 @@ export async function startQaApp(port = 3199): Promise<QaApp> {
   // QA 环境标记：关闭生产自检、使用内存库
   process.env.NODE_ENV = 'qa'
   process.env.JWT_SECRET = 'qa-test-secret-key-for-local-automation'
+  // QA 超管凭据（bcrypt hash of 'admin'）
+  process.env.SUPER_ADMIN_USER = 'admin'
+  process.env.SUPER_ADMIN_PASSWORD = '$2b$10$dSL8FcGzMZRSMSQW0WEOX.eXKAPjB9Y0tsYK4c9P8UW1YBCbAYwzm'
   // QA 放宽登录限流（防暴力破解守卫），避免压测被 429 拦截；生产默认 10/30 不变
   process.env.LOGIN_RATE_LIMIT_MAX = process.env.LOGIN_RATE_LIMIT_MAX || '100000'
   process.env.WECHAT_RATE_LIMIT_MAX = process.env.WECHAT_RATE_LIMIT_MAX || '100000'
