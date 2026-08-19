@@ -181,8 +181,15 @@ export function request(path, method = 'GET', data = {}, token) {
           }
           return reject(new Error(msg || '登录已过期'))
         }
-        if (status >= 200 && status < 300) resolve(res.data)
-        else reject(toError(res.data, '请求失败(' + status + ')'))
+        if (status >= 200 && status < 300) {
+          // 解包标准信封：{ code: 0, data: ... } → data（兼容旧接口直接返回数据）
+          const body = res.data
+          if (body && typeof body === 'object' && 'code' in body && 'data' in body && typeof body.code === 'number') {
+            resolve(body.data)
+          } else {
+            resolve(body)
+          }
+        } else reject(toError(res.data, '请求失败(' + status + ')'))
       },
       fail: (e) => {
         if (settled) return

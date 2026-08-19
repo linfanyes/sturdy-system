@@ -101,7 +101,7 @@ const isHome = computed(() => route.name === 'super-dashboard' || route.name ===
       </div>
 
       <!-- 实际页面内容 -->
-      <div class="flex-1 overflow-auto">
+      <div class="flex-1 overflow-auto scroll-smooth">
         <div class="w-full min-h-full px-4 py-4 sm:px-6 sm:py-6 lg:px-8 flex flex-col">
           <!-- 教师工作台：二级菜单瓷砖铺满内容区 -->
           <template v-if="showTilesPanel">
@@ -118,12 +118,12 @@ const isHome = computed(() => route.name === 'super-dashboard' || route.name ===
                 <button
                   v-for="item in g.items"
                   :key="item.name"
-                  class="group flex flex-col items-center justify-center rounded-2xl transition-all border-2 border-transparent hover:scale-105 p-4"
-                  :class="route.name === item.name ? ['ring-2', palette(item.color || 'butter').ring, palette(item.color || 'butter').bg] : ['hover:shadow-soft', palette(item.color || 'butter').soft]"
+                  class="group flex flex-col items-center justify-center rounded-2xl transition-all duration-200 border-2 border-transparent hover:scale-105 hover:-translate-y-1 p-4"
+                  :class="route.name === item.name ? ['ring-2', palette(item.color || 'butter').ring, palette(item.color || 'butter').bg] : ['hover:shadow-lg hover:shadow-butter-200/30', palette(item.color || 'butter').soft]"
                   @click="navigateTo(item.to)"
                 >
                   <div
-                    class="w-14 h-14 rounded-full flex items-center justify-center transition-all"
+                    class="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 group-hover:scale-110"
                     :class="palette(item.color || 'butter').bg + ' ' + palette(item.color || 'butter').text"
                   >
                     <span v-if="item.emoji" class="text-2xl">{{ item.emoji }}</span>
@@ -134,9 +134,13 @@ const isHome = computed(() => route.name === 'super-dashboard' || route.name ===
               </div>
             </div>
           </template>
-          <!-- 常规页面内容 -->
+          <!-- 常规页面内容（带过渡动画） -->
           <template v-else>
-            <router-view />
+            <router-view v-slot="{ Component }">
+              <Transition name="page-slide" mode="out-in">
+                <component :is="Component" />
+              </Transition>
+            </router-view>
           </template>
           <footer class="mt-auto pt-8 pb-2 text-center text-xs text-cocoa-400">
             © 2026 园丁工作台 · Web 管理端

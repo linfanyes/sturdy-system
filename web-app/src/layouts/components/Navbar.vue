@@ -157,30 +157,30 @@ function goStudents() { closeSearch(); emit('goStudents') }
   </div>
 
   <!-- 统一页头 -->
-  <header class="shrink-0 border-b border-cream-100 bg-surface/80 px-6 py-4 backdrop-blur">
+  <header class="shrink-0 border-b border-cream-100/80 bg-surface/70 px-6 py-3.5 backdrop-blur-md">
     <div class="flex items-center justify-between">
       <div>
         <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-cocoa-900">{{ displayName }}</h1>
-          <span class="chip bg-butter-100 text-butter-700">{{ greeting }}</span>
+          <h1 class="text-xl font-bold text-cocoa-900">{{ displayName }}</h1>
+          <span class="chip bg-butter-100 text-butter-700 transition-all duration-200">{{ greeting }}</span>
         </div>
         <!-- 子页面显示简洁面包屑 -->
-        <nav v-if="!isHome" aria-label="breadcrumb" class="mt-1.5 flex items-center text-xs text-cocoa-500">
+        <nav v-if="!isHome" aria-label="breadcrumb" class="mt-1 flex items-center text-xs text-cocoa-500">
           <span class="font-medium text-cocoa-700">{{ pageTitle }}</span>
         </nav>
       </div>
       <div class="text-right flex items-center gap-3">
         <button
-          class="theme-toggle p-2 rounded-lg hover:bg-cream-100 transition-colors"
+          class="theme-toggle relative p-2.5 rounded-xl bg-cream-50/80 hover:bg-cream-100 border border-cream-200/60 transition-all duration-200 hover:scale-105 active:scale-95"
           :title="prefs.theme === 'dark' ? '切换浅色模式' : '切换深色模式'"
           @click="prefs.toggleTheme()"
         >
           <Sun v-if="prefs.theme === 'dark'" class="w-4 h-4 text-amber-500" />
           <Moon v-else class="w-4 h-4 text-cocoa-500" />
         </button>
-        <div>
-          <div class="text-sm font-medium text-cocoa-700">{{ roleDisplay }}</div>
-          <div class="mt-0.5 text-xs text-cocoa-400">{{ today }}</div>
+        <div class="pl-2 border-l border-cream-200/60">
+          <div class="text-sm font-semibold text-cocoa-800">{{ roleDisplay }}</div>
+          <div class="text-xs text-cocoa-400 mt-0.5">{{ today }}</div>
         </div>
       </div>
     </div>

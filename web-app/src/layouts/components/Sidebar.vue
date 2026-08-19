@@ -425,7 +425,7 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
   width: 100%;
   padding: 10px 12px;
   border-radius: 12px;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-decoration: none;
   color: inherit;
   cursor: pointer;
@@ -436,9 +436,10 @@ watch(activeCategory, (val) => emit('activeCategoryChange', val))
 }
 .nav-item:hover {
   background: rgb(var(--cream-100));
+  transform: translateX(2px);
 }
 .nav-item:active {
-  transform: scale(0.98);
+  transform: scale(0.97) translateX(0);
 }
 .nav-item.active {
   background: rgb(var(--butter-50));

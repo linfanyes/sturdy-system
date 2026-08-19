@@ -211,51 +211,54 @@ const shortcutTools = [
     </WelcomeHero>
 
     <!-- 概览卡片（可点击跳转） -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/classes')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-butter-500" /> 班级</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div class="stat-card group cursor-pointer hover:shadow-soft transition-all duration-200 hover:-translate-y-1" @click="router.push('/teacher/classes')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-butter-500 group-hover:scale-110 transition-transform" /> 班级</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
+          <template v-if="loading"><div class="skeleton h-8 w-16 rounded-lg"></div></template>
           <CountUp v-else :value="classes.length" />
         </div>
+        <div class="text-xs text-cocoa-400 mt-1">点击查看班级详情 →</div>
       </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/students')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生</div>
+      <div class="stat-card group cursor-pointer hover:shadow-soft transition-all duration-200 hover:-translate-y-1" @click="router.push('/teacher/students')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500 group-hover:scale-110 transition-transform" /> 学生</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
+          <template v-if="loading"><div class="skeleton h-8 w-16 rounded-lg"></div></template>
           <CountUp v-else :value="totalStudents" />
         </div>
+        <div class="text-xs text-cocoa-400 mt-1">共 {{ totalStudents }} 名学生</div>
       </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/exams')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-sky2-500" /> 考试</div>
+      <div class="stat-card group cursor-pointer hover:shadow-soft transition-all duration-200 hover:-translate-y-1" @click="router.push('/teacher/exams')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-sky2-500 group-hover:scale-110 transition-transform" /> 考试</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
+          <template v-if="loading"><div class="skeleton h-8 w-16 rounded-lg"></div></template>
           <CountUp v-else :value="totalExams" />
         </div>
+        <div class="text-xs text-cocoa-400 mt-1">近期考试安排</div>
       </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/rewards')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-sakura-500" /> 奖励记录</div>
+      <div class="stat-card group cursor-pointer hover:shadow-soft transition-all duration-200 hover:-translate-y-1" @click="router.push('/teacher/homework')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-butter-500 group-hover:scale-110 transition-transform" /> 待批作业</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <CountUp v-else :value="awards.length" />
-        </div>
-        <div class="text-xs text-cocoa-400 mt-1">条奖励记录</div>
-      </div>
-      <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/homework')">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-butter-500" /> 待批作业</div>
-        <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="chartLoading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
+          <template v-if="chartLoading"><div class="skeleton h-8 w-16 rounded-lg"></div></template>
           <CountUp v-else :value="pendingHomeworkCount" />
         </div>
         <div class="text-xs text-cocoa-400 mt-1">份待批改</div>
       </div>
-      <div class="stat-card">
-        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-mint-500" /> 今日出勤</div>
+      <div class="stat-card group">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><ClipboardList class="w-4 h-4 text-sakura-500 group-hover:scale-110 transition-transform" /> 今日出勤</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
-          <template v-if="chartLoading"><div class="h-8 w-12 bg-cream-100 rounded-lg animate-pulse"></div></template>
+          <template v-if="chartLoading"><div class="skeleton h-8 w-12 rounded-lg"></div></template>
           <template v-else><CountUp :value="todayAttendanceRate ?? 0" suffix="%" /></template>
         </div>
         <div class="text-xs text-cocoa-400 mt-1">出勤率</div>
+      </div>
+      <div class="stat-card group cursor-pointer hover:shadow-soft transition-all duration-200 hover:-translate-y-1" @click="router.push('/teacher/rewards')">
+        <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" /> 奖励记录</div>
+        <div class="font-num text-3xl font-bold text-cocoa-900">
+          <template v-if="chartLoading"><div class="skeleton h-8 w-16 rounded-lg"></div></template>
+          <CountUp v-else :value="awards.length" />
+        </div>
+        <div class="text-xs text-cocoa-400 mt-1">条奖励记录</div>
       </div>
     </div>
 

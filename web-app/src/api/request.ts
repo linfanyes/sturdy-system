@@ -195,7 +195,14 @@ instance.interceptors.response.use(
     const url = res.config.url || ''
     const method = (res.config.method || 'get').toUpperCase()
     pendingRequests.delete(`${method}:${url}`)
-    return res.data
+
+    // 解包标准信封：{ code: 0, data: ... } → data
+    // 兼容时期：若 data 不含 code+data 字段（旧接口 / 第三方），直接返回
+    const body = res.data
+    if (body && typeof body === 'object' && 'code' in body && 'data' in body && typeof body.code === 'number') {
+      return body.data
+    }
+    return body
   },
   async (err: AxiosError<any>) => {
     // 清理取消的请求

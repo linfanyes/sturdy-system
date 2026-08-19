@@ -52,11 +52,40 @@ export interface Class {
   studentCount: number
 }
 
-/** 统一 API 响应结构 */
+/** 统一 API 响应结构（成功） */
 export interface ApiResponse<T = unknown> {
+  /** 业务状态码，0 = 成功 */
   code: number
   message: string
   data: T
+  /** 服务端时间戳（毫秒），用于前端时钟校准 / 请求排序 */
+  timestamp?: number
+  /** 请求追踪 ID，用于日志关联 */
+  requestId?: string
+}
+
+/** 统一 API 响应结构（失败） */
+export interface ApiErrorResponse {
+  /** HTTP 状态码 */
+  statusCode: number
+  /** 业务错误码（如 INVALID_TOKEN / RESOURCE_NOT_FOUND） */
+  code: string
+  /** 人类可读错误信息 */
+  message: string
+  /** 校验错误的详细字段信息（仅校验异常时有） */
+  details?: string[]
+}
+
+/** 分页查询 DTO（入参） */
+export interface PageQuery {
+  page?: number
+  size?: number
+  /** 搜索关键词 */
+  keyword?: string
+  /** 排序字段 */
+  sortBy?: string
+  /** 排序方向 */
+  sortOrder?: 'asc' | 'desc'
 }
 
 /** 分页查询参数 */

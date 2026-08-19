@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core'
-import { ValidationPipe, Logger } from '@nestjs/common'
+import { ValidationPipe, Logger, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { json, urlencoded } from 'express'
@@ -9,6 +9,8 @@ import * as fs from 'node:fs'
 import { AppModule } from './app.module'
 import { runMigrations } from './migrations/runner'
 import { TypeOrmExceptionFilter } from './common/filters/typeorm-exception.filter'
+import { ResponseInterceptor } from './common/interceptors/response.interceptor'
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware'
 import { isBcryptHash } from './common/utils/password.util'
 import helmet from 'helmet'
 
@@ -83,6 +85,11 @@ async function bootstrap() {
     }),
   )
   app.useGlobalFilters(new TypeOrmExceptionFilter())
+  app.useGlobalInterceptors(new ResponseInterceptor())
+
+  // 请求追踪中间件（必须在最外层，最早注入 requestId）
+  app.use(new RequestIdMiddleware().use)
+
   const port = config.get<number>('PORT') || 3000
 
   // API 文档
@@ -155,10 +162,28 @@ async function bootstrap() {
   // 若未来需要多实例部署，应在此处引入分布式锁（如 MySQL GET_LOCK）保证迁移串行化。
   await runMigrations(app.get(ConfigService))
 
-  // 健康检查端点
+  // 健康检查端点（基础版，用于负载均衡探活）
   app.getHttpAdapter().get('/health', (_req, res) =>
     res.status(200).json({ status: 'ok', time: new Date().toISOString(), version: 'v1' }),
   )
+
+  // 详细健康检查（含缓存命中率、内存使用等运维指标）
+  app.getHttpAdapter().get('/health/detail', (_req, res) => {
+    const cacheService = app.get(CacheService, { strict: false })
+    const memUsage = process.memoryUsage()
+    res.status(200).json({
+      status: 'ok',
+      time: new Date().toISOString(),
+      version: 'v1',
+      uptime: process.uptime(),
+      memory: {
+        rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+      },
+      cache: cacheService ? cacheService.stats() : null,
+    })
+  })
 
   // 版本信息端点
   app.getHttpAdapter().get('/api-version', (_req, res) =>
