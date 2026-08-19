@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
 interface LinePoint { label: string; value: number; value2?: number }
 
@@ -12,6 +12,9 @@ const props = withDefaults(defineProps<{
   color?: string
   color2?: string
 }>(), { height: 180, series1Name: '数量', color: '#e6a23c', color2: '#409eff' })
+
+const mounted = ref(false)
+onMounted(() => { mounted.value = true })
 
 const maxVal = computed(() => {
   let max = 0
@@ -102,6 +105,20 @@ const valueLabels = computed(() => {
 
 // 唯一渐变 ID（避免多实例冲突）
 const gradId = computed(() => `line1-grad-${Math.random().toString(36).slice(2, 9)}`)
+const gradId2 = computed(() => `line2-grad-${Math.random().toString(36).slice(2, 9)}`)
+
+// 折线动画路径长度
+const pathLength = computed(() => {
+  const pts = points1.value
+  if (pts.length < 2) return 0
+  let len = 0
+  for (let i = 1; i < pts.length; i++) {
+    const dx = pts[i].x - pts[i-1].x
+    const dy = pts[i].y - pts[i-1].y
+    len += Math.sqrt(dx*dx + dy*dy)
+  }
+  return len
+})
 </script>
 
 <template>
@@ -126,6 +143,18 @@ const gradId = computed(() => `line1-grad-${Math.random().toString(36).slice(2, 
             <stop offset="0%" :stop-color="color" stop-opacity="0.35" />
             <stop offset="100%" :stop-color="color" stop-opacity="0" />
           </linearGradient>
+          <linearGradient :id="gradId2" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" :stop-color="color2" stop-opacity="0.25" />
+            <stop offset="100%" :stop-color="color2" stop-opacity="0" />
+          </linearGradient>
+          <!-- 折线绘制动画滤镜 -->
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
 
         <!-- 网格线 -->
@@ -134,37 +163,56 @@ const gradId = computed(() => `line1-grad-${Math.random().toString(36).slice(2, 
             :x1="padding.left" :x2="W - padding.right"
             :y1="padding.top + ((H - padding.top - padding.bottom) / 4) * (i - 1)"
             :y2="padding.top + ((H - padding.top - padding.bottom) / 4) * (i - 1)"
-            stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" />
+            stroke="currentColor" stroke-width="1" stroke-dasharray="3 3">
+            <animate attributeName="opacity" from="0" to="1" dur="0.6s" fill="freeze" />
+          </line>
         </g>
 
         <!-- X 轴标签（抽稀） -->
         <g class="text-[10px] fill-cocoa-400">
           <text v-for="(t, i) in xLabels" :key="i"
-            :x="t.x" :y="H - 8" text-anchor="middle">{{ t.label }}</text>
+            :x="t.x" :y="H - 8" text-anchor="middle"
+            :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 0.5s', transitionDelay: `${i * 50}ms` }">
+            {{ t.label }}
+          </text>
         </g>
 
         <!-- Y 轴最大值标签 -->
         <g class="text-[10px] fill-cocoa-400">
-          <text :x="padding.left - 4" :y="padding.top + 4" text-anchor="end">{{ maxVal }}</text>
+          <text :x="padding.left - 4" :y="padding.top + 4" text-anchor="end"
+            :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 0.5s' }">
+            {{ maxVal }}
+          </text>
         </g>
 
         <!-- 系列2填充/折线 -->
         <template v-if="data[0]?.value2 !== undefined">
+          <path :d="area1" :fill="`url(#${gradId2})`" :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 0.8s' }" />
           <path :d="path2" fill="none" :stroke="color2" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" />
-          <circle v-for="(p, i) in points2" :key="`p2-${i}`" :cx="p.x" :cy="p.y" r="3" :fill="color2" />
+            stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3"
+            :style="{ strokeDashoffset: mounted ? 0 : pathLength, transition: 'stroke-dashoffset 1s ease-out' }" />
+          <circle v-for="(p, i) in points2" :key="`p2-${i}`" :cx="p.x" :cy="p.y" r="3" :fill="color2"
+            :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 0.3s', transitionDelay: `${i * 80}ms` }" />
         </template>
 
         <!-- 系列1填充/折线 -->
-        <path :d="area1" :fill="`url(#${gradId})`" />
+        <path :d="area1" :fill="`url(#${gradId})`"
+          :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 1s ease-out' }" />
         <path :d="path1" fill="none" :stroke="color" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round" />
-        <circle v-for="(p, i) in points1" :key="`p1-${i}`" :cx="p.x" :cy="p.y" r="4" fill="white" :stroke="color" stroke-width="2" />
+          stroke-linecap="round" stroke-linejoin="round"
+          :stroke-dasharray="pathLength"
+          :stroke-dashoffset="mounted ? 0 : pathLength"
+          :style="{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)' }" />
+        <circle v-for="(p, i) in points1" :key="`p1-${i}`" :cx="p.x" :cy="p.y" r="4" fill="white" :stroke="color" stroke-width="2"
+          :style="{ opacity: mounted ? 1 : 0, transform: mounted ? 'scale(1)' : 'scale(0)', transformOrigin: `${p.x}px ${p.y}px`, transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', transitionDelay: `${i * 80}ms` }" />
 
         <!-- 数值标签（抽稀，避免重叠） -->
         <g class="text-[10px] fill-cocoa-600 font-medium">
           <text v-for="(p, i) in valueLabels" :key="`v1-${i}`"
-            :x="p.x" :y="p.y - 8" text-anchor="middle">{{ p.value }}</text>
+            :x="p.x" :y="p.y - 8" text-anchor="middle"
+            :style="{ opacity: mounted ? 1 : 0, transition: 'opacity 0.4s', transitionDelay: `${i * 100 + 300}ms` }">
+            {{ p.value }}
+          </text>
         </g>
       </svg>
     </div>

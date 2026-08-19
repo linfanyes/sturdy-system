@@ -233,4 +233,106 @@ page {
 .grow-in > *:nth-child(6) { animation-delay: 0.40s; }
 .grow-in > *:nth-child(7) { animation-delay: 0.47s; }
 .grow-in > *:nth-child(8) { animation-delay: 0.54s; }
+
+/* ===================== 常用动画工具类 ===================== */
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.8) translateY(20rpx); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(40rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40rpx); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6rpx); }
+}
+@keyframes bounce-in {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 动画工具类 */
+.anim-pop { animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-slide-up { animation: slide-up 0.4s ease-out both; }
+.anim-slide-right { animation: slide-in-right 0.4s ease-out both; }
+.anim-fade { animation: fade-in 0.3s ease both; }
+.anim-bounce { animation: bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-float { animation: float-soft 3s ease-in-out infinite; }
+
+/*  stagger 延迟 */
+.anim-delay-1 { animation-delay: 0.08s; }
+.anim-delay-2 { animation-delay: 0.16s; }
+.anim-delay-3 { animation-delay: 0.24s; }
+.anim-delay-4 { animation-delay: 0.32s; }
+.anim-delay-5 { animation-delay: 0.40s; }
+
+/* 脉冲圆点（通知红点） */
+.pulse-dot { position: relative; }
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4rpx;
+  border-radius: 50%;
+  background: rgba(230, 67, 64, 0.3);
+  animation: pulse-ring 1.5s ease-out infinite;
+  z-index: -1;
+}
+
+/* 骨架屏 shimmer */
+.skel-block {
+  background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* 按压反馈 */
+.press-feedback {
+  transition: transform 0.15s, opacity 0.15s;
+}
+.press-feedback:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+/* 悬浮微上浮 */
+.hover-lift {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-lift:active {
+  transform: translateY(2rpx) scale(0.98);
+}
+
+/* 顶部高光线（用于卡片） */
+.card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+}
 </style>

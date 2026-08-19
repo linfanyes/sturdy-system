@@ -43,6 +43,7 @@ withDefaults(
 <style scoped>
 .empty-state {
   @apply flex flex-col items-center justify-center py-16 text-center;
+  animation: fade-in-up 0.5s ease-out both;
 }
 .gi-row {
   @apply flex items-center gap-3 mb-3 opacity-40;
@@ -56,11 +57,20 @@ withDefaults(
 .gi-row:hover :deep(svg:nth-child(4)) { transform: translateY(-8px); }
 .icon {
   @apply text-5xl mb-4 opacity-60;
+  animation: float-gentle 3s ease-in-out infinite;
 }
 .title {
   @apply text-lg font-semibold text-cocoa-700 mb-1;
 }
 .desc {
   @apply text-sm text-cocoa-400 max-w-xs leading-relaxed;
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 </style>

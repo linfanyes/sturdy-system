@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { listMyClasses, listAllStudents, listGrades, type TeacherClass } from '@/api/teacher'
@@ -12,14 +12,18 @@ import {
 } from 'lucide-vue-next'
 import WelcomeHero from '@/components/WelcomeHero.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import CountUp from '@/components/CountUp.vue'
 import SvgLineChart from '@/components/SvgLineChart.vue'
 import { useKeepAliveRefresh } from '@/composables/useKeepAliveRefresh'
 
 const auth = useAuthStore()
 const router = useRouter()
 const loading = ref(true)
+const mounted = ref(false)
 const classes = ref<TeacherClass[]>([])
 const unreadCount = ref(0)
+
+onMounted(() => { mounted.value = true })
 
 // —— 图表数据 ——
 const chartLoading = ref(true)
@@ -212,28 +216,28 @@ const shortcutTools = [
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><GraduationCap class="w-4 h-4 text-butter-500" /> 班级</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ classes.length }}</template>
+          <CountUp v-else :value="classes.length" />
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/students')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Users class="w-4 h-4 text-mint-500" /> 学生</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ totalStudents }}</template>
+          <CountUp v-else :value="totalStudents" />
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/exams')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-sky2-500" /> 考试</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ totalExams }}</template>
+          <CountUp v-else :value="totalExams" />
         </div>
       </div>
       <div class="stat-card cursor-pointer hover:shadow-soft transition-shadow" @click="router.push('/teacher/rewards')">
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><Trophy class="w-4 h-4 text-sakura-500" /> 奖励记录</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="loading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ awards.length }}</template>
+          <CountUp v-else :value="awards.length" />
         </div>
         <div class="text-xs text-cocoa-400 mt-1">条奖励记录</div>
       </div>
@@ -241,7 +245,7 @@ const shortcutTools = [
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><BookOpen class="w-4 h-4 text-butter-500" /> 待批作业</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="chartLoading"><div class="h-8 w-16 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ pendingHomeworkCount }}</template>
+          <CountUp v-else :value="pendingHomeworkCount" />
         </div>
         <div class="text-xs text-cocoa-400 mt-1">份待批改</div>
       </div>
@@ -249,7 +253,7 @@ const shortcutTools = [
         <div class="flex items-center gap-2 text-sm text-cocoa-500 mb-1"><CalendarDays class="w-4 h-4 text-mint-500" /> 今日出勤</div>
         <div class="font-num text-3xl font-bold text-cocoa-900">
           <template v-if="chartLoading"><div class="h-8 w-12 bg-cream-100 rounded-lg animate-pulse"></div></template>
-          <template v-else>{{ todayAttendanceRate ?? '—' }}<span v-if="todayAttendanceRate !== null" class="text-lg">%</span></template>
+          <template v-else><CountUp :value="todayAttendanceRate ?? 0" suffix="%" /></template>
         </div>
         <div class="text-xs text-cocoa-400 mt-1">出勤率</div>
       </div>
@@ -269,13 +273,15 @@ const shortcutTools = [
             <div v-for="i in 3" :key="i" class="h-5 rounded-lg bg-cream-100 animate-pulse" :style="{ width: `${90 - i * 15}%` }" />
           </div>
           <div v-else-if="classDist.length" class="space-y-2.5">
-            <div v-for="c in classDist" :key="c.name" class="flex items-center gap-2">
+            <div v-for="(c, i) in classDist" :key="c.name" class="flex items-center gap-2">
               <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
-              <div class="flex-1 h-5 rounded-full bg-cream-100 overflow-hidden">
+              <div class="flex-1 h-6 rounded-full bg-cream-100 overflow-hidden">
                 <div
-                  class="h-full rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700"
-                  :style="{ width: c.pct + '%' }"
-                />
+                  class="h-full rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700 ease-out"
+                  :style="{ width: mounted ? c.pct + '%' : '0%', transitionDelay: `${i * 80}ms`, position: 'relative' }"
+                >
+                  <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
+                </div>
               </div>
               <span class="w-8 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}</span>
             </div>
@@ -300,12 +306,14 @@ const shortcutTools = [
                 v-if="genderDist.male > 0" cx="50" cy="50" r="40" fill="none"
                 stroke="#4AAE7A" stroke-width="12" stroke-linecap="round"
                 :stroke-dasharray="`${genderDist.maleLen} ${2 * Math.PI * 40 - genderDist.maleLen}`"
+                :style="{ strokeDashoffset: mounted ? 0 : genderDist.maleLen, transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)' }"
               />
               <circle
                 v-if="genderDist.female > 0" cx="50" cy="50" r="40" fill="none"
                 stroke="#E7698C" stroke-width="12"
                 :stroke-dasharray="`${genderDist.femaleLen} ${2 * Math.PI * 40 - genderDist.femaleLen}`"
                 :stroke-dashoffset="-genderDist.maleLen"
+                :style="{ strokeDashoffset: mounted ? -genderDist.maleLen : genderDist.femaleLen, transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s' }"
               />
             </svg>
             <!-- 图例 -->
@@ -360,8 +368,10 @@ const shortcutTools = [
             <div class="flex items-center gap-3">
               <div class="flex-1">
                 <div class="w-full bg-cream-100 rounded-full h-4 overflow-hidden">
-                  <div class="h-4 rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700"
-                    :style="{ width: parentEnabledPct + '%' }"></div>
+                  <div class="h-4 rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-1000 ease-out relative overflow-hidden"
+                    :style="{ width: mounted ? parentEnabledPct + '%' : '0%' }">
+                    <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
+                  </div>
                 </div>
               </div>
               <span class="text-sm font-bold text-cocoa-800 whitespace-nowrap">{{ parentEnabledPct }}%</span>
@@ -383,11 +393,13 @@ const shortcutTools = [
             <span class="text-xs text-cocoa-400">{{ classParentRates.length }} 个班级</span>
           </div>
           <div class="space-y-2.5">
-            <div v-for="c in classParentRates" :key="c.name" class="flex items-center gap-2">
+            <div v-for="(c, i) in classParentRates" :key="c.name" class="flex items-center gap-2">
               <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
               <div class="flex-1 h-5 rounded-full bg-cream-100 overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-mint-300 to-mint-500 transition-all duration-700"
-                  :style="{ width: c.pct + '%' }"></div>
+                <div class="h-full rounded-full bg-gradient-to-r from-mint-300 to-mint-500 transition-all duration-700 ease-out relative overflow-hidden"
+                  :style="{ width: mounted ? c.pct + '%' : '0%', transitionDelay: `${i * 80}ms` }">
+                  <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
+                </div>
               </div>
               <span class="w-20 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}/{{ c.total }} ({{ c.pct }}%)</span>
             </div>
