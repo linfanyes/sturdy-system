@@ -318,13 +318,13 @@ async function handleLogin() {
               {{ errMsg }}
             </div>
 
-            <!-- 登录按钮（复刻旧版黄油渐变圆角胶囊） -->
+            <!-- 登录按钮 -->
             <button
               type="submit"
               :disabled="loading"
-              class="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-butter-400 to-butter-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-butter-400/30 transition hover:from-butter-500 hover:to-butter-600 hover:shadow-xl disabled:opacity-70"
+              class="btn-primary group relative w-full overflow-hidden px-6 py-3 text-base font-semibold"
             >
-              <span aria-hidden class="pointer-events-none absolute left-0 top-0 h-full w-2/5 bg-white/40 blur-sm group-hover:animate-sweep" />
+              <span aria-hidden class="pointer-events-none absolute left-0 top-0 h-full w-2/5 bg-white/30 blur-sm group-hover:animate-sweep" />
               <Loader2 v-if="loading" class="mr-2 inline h-4 w-4 animate-spin" />
               {{ loading ? '登录中…' : '开始工作 →' }}
             </button>

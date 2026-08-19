@@ -112,12 +112,75 @@
     @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-all duration-200 select-none active:scale-95;
   }
 
+  /* === 四级按钮体系 === */
   .btn-primary {
-    @apply btn-pill bg-gradient-to-br from-butter-400 to-butter-500 text-cocoa-900 shadow-pop hover:brightness-105 hover:shadow-soft;
+    @apply btn-pill;
+    background: linear-gradient(135deg, #f5b342 0%, #d69426 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(214, 148, 38, 0.3);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 6px 16px rgba(214, 148, 38, 0.4);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(245, 179, 66, 0.4);
   }
 
   .btn-secondary {
-    @apply btn-pill bg-cream-100 text-cocoa-700 hover:bg-cream-200 border border-cream-200/80;
+    @apply btn-pill;
+    background: rgb(var(--cream-100));
+    color: rgb(var(--cocoa-700));
+    border: 1px solid rgb(var(--cream-200));
+  }
+  .btn-secondary:hover {
+    background: rgb(var(--cream-200));
+  }
+  .btn-secondary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(232, 221, 200, 0.5);
+  }
+
+  .btn-ghost {
+    @apply btn-pill;
+    background: transparent;
+    color: rgb(var(--cocoa-600));
+  }
+  .btn-ghost:hover {
+    background: rgb(var(--cream-100));
+  }
+  .btn-ghost:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(232, 221, 200, 0.5);
+  }
+
+  .btn-danger {
+    @apply btn-pill;
+    background: linear-gradient(135deg, #f56c6c 0%, #e04545 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(245, 108, 108, 0.3);
+  }
+  .btn-danger:hover {
+    filter: brightness(1.05);
+  }
+  .btn-danger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.4);
+  }
+
+  /* 禁用态 */
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-ghost:disabled,
+  .btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
   }
 
   .input-soft {
@@ -254,6 +317,26 @@
   .dark ::selection {
     background: rgba(224, 184, 94, 0.4);
     color: #f2e8d8;
+  }
+
+  /* 暗色模式：按钮适配 */
+  .dark .btn-primary {
+    background: linear-gradient(135deg, #ffce54 0%, #f5b342 100%);
+    color: #1a1c22;
+  }
+  .dark .btn-secondary {
+    background: rgb(var(--cream-200) / 0.8);
+    color: rgb(var(--cocoa-600));
+    border-color: rgb(var(--cream-100) / 0.4);
+  }
+  .dark .btn-ghost {
+    color: rgb(var(--cocoa-400));
+  }
+  .dark .btn-ghost:hover {
+    background: rgb(var(--cream-200) / 0.5);
+  }
+  .dark .btn-danger {
+    background: linear-gradient(135deg, #f56c6c 0%, #e04545 100%);
   }
 }
 
