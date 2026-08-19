@@ -106,6 +106,16 @@ function stopTimer() {
   if (timer) { clearInterval(timer); timer = null }
 }
 
+// P2修复：Fisher-Yates 洗牌算法，保证均匀分布
+function shuffle(arr: any[]) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function startRoll() {
   const pool = remaining.value.length && modeIdx.value === 2 ? remaining.value : namesList.value
   if (!pool.length) {
@@ -132,7 +142,7 @@ function settle(pool) {
   if (modeIdx.value === 0) {
     result = [pool[Math.floor(Math.random() * pool.length)]]
   } else if (modeIdx.value === 1) {
-    const copy = [...pool].sort(() => Math.random() - 0.5)
+    const copy = shuffle(pool)
     result = copy.slice(0, Math.min(pickCount.value, copy.length))
   } else {
     const idx = Math.floor(Math.random() * pool.length)

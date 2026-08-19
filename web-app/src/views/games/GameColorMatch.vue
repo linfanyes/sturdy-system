@@ -21,6 +21,16 @@ const feedback = ref('')
 const best = ref(parseInt(localStorage.getItem('web_game_colormatch_highscore') || '0'))
 let countdown: ReturnType<typeof setInterval> | null = null
 
+// P2修复：Fisher-Yates 洗牌算法，保证均匀分布
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function round() {
   word.value = colorMap[Math.floor(Math.random() * colorMap.length)]
   let c = colorMap[Math.floor(Math.random() * colorMap.length)]
@@ -28,7 +38,7 @@ function round() {
   color.value = c
   const opts = new Set<typeof colorMap[0]>([c])
   while (opts.size < 4) opts.add(colorMap[Math.floor(Math.random() * colorMap.length)])
-  options.value = [...opts].sort(() => Math.random() - 0.5)
+  options.value = shuffle([...opts])
   feedback.value = ''
 }
 

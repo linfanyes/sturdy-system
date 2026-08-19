@@ -17,6 +17,12 @@ import { NoteItem } from '../notes/notes.entity'
 import { tlsAgent } from './ai-file-parser.service'
 import { buildAiSettings } from './ai-settings.util'
 
+// P1修复：手机号脱敏 - AI 上下文中不展示完整手机号
+function maskPhone(phone: string | undefined | null): string {
+  if (!phone || phone.length < 7) return '-'
+  return phone.slice(0, 3) + '****' + phone.slice(-4)
+}
+
 // ─── P0-1: AI 错误类型 + 重试 + 熔断 ───
 
 export enum AiErrorType {
@@ -284,7 +290,7 @@ export class AiChatService {
     }
     if ((teachers as any[]).length) {
       lines.push('# 教师通讯录（最多 20 条）')
-      lines.push((teachers as any[]).map((t) => `- ${t.name || '-'} | 学科: ${t.subject || '-'} | 电话: ${t.phone || '-'}`).join('\n'))
+      lines.push((teachers as any[]).map((t) => `- ${t.name || '-'} | 学科: ${t.subject || '-'} | 电话: ${maskPhone(t.phone)}`).join('\n'))
     }
     if ((grades as any[]).length) {
       lines.push('# 最近成绩记录（最多 30 条）')
@@ -452,11 +458,15 @@ export class AiChatService {
     body: { text: string; instruction?: string },
   ): Promise<any> {
     const s = await this.buildSettings(ownerType, ownerId)
-    const sys =
-      (body.instruction ||
-        '请把下面的内容解析为 JSON 数组，每个元素是一个对象，只返回 JSON，不要解释。') +
-      '\n系统提示词：' +
-      (s.systemPrompt || '')
+    // P0修复：Prompt Injection - instruction 置于 user role，不再拼入 system
+    const sys = s.systemPrompt || '请把下面的内容解析为 JSON 数组，每个元素是一个对象，只返回 JSON，不要解释。'
+    const userContent = body.instruction
+      ? `${body.instruction}\n\n${body.text}`
+      : body.text
+    // P0修复：instruction 长度限制，防止注入超长内容
+    if (body.instruction && body.instruction.length > 2000) {
+      throw new BadRequestException('指令过长，请控制在 2000 字符以内')
+    }
     const resp = await axios.post(
       `${s.baseUrl}/chat/completions`,
       {
@@ -465,7 +475,7 @@ export class AiChatService {
         stream: false,
         messages: [
           { role: 'system', content: sys },
-          { role: 'user', content: body.text },
+          { role: 'user', content: userContent },
         ],
         response_format: { type: 'json_object' },
       },

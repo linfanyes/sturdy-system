@@ -116,6 +116,16 @@ async function onClassChange(e) {
   initGrid()
 }
 
+// P2修复：Fisher-Yates 洗牌算法，保证均匀分布
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function initGrid() {
   grid.value = new Array(rows.value * cols.value).fill(null)
 }
@@ -166,7 +176,7 @@ function autoArrange() {
     }
   } else if (arrangeIdx.value === 2) {
     // 随机
-    ordered = [...names].sort(() => Math.random() - 0.5)
+    ordered = shuffle(names)
   } else {
     // 男女交替
     const males = students.value.filter((s) => s.gender === '男').map((s) => s.name)

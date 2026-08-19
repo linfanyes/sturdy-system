@@ -107,12 +107,22 @@ async function onClassChange(e) {
   await loadStudents()
 }
 
+// P2修复：Fisher-Yates 洗牌算法，保证均匀分布
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function doGroup() {
   const list = namesList.value
   if (!list.length) {
     return uni.showToast({ title: '请先输入名单', icon: 'none' })
   }
-  const shuffled = [...list].sort(() => Math.random() - 0.5)
+  const shuffled = shuffle(list)
   const result = []
   if (modeIdx.value === 0) {
     const n = Math.max(1, groupCount.value)

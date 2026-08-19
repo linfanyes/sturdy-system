@@ -9,6 +9,8 @@ import { Grade } from '../grades/grade.entity'
 import { Exam } from '../exams/exam.entity'
 import { Student } from '../students/student.entity'
 import { User } from '../users/user.entity'
+import { ClassItem } from '../classes/class.entity'
+import { ClassMemberService, ClassMembersModule } from '../class-members/class-members.module'
 import { BusinessException } from '../common/exceptions/business.exception'
 import { getSubjectTool } from '@gardener/shared/schemas/subject-schema'
 
@@ -28,6 +30,8 @@ export class AiService {
     @InjectRepository(Exam) private readonly examRepo: Repository<Exam>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(ClassItem) private readonly classRepo: Repository<ClassItem>,
+    private readonly classMemberSvc: ClassMemberService,
   ) {}
 
   /**
@@ -147,7 +151,29 @@ export class AiService {
   /** 全班考试成绩 AI 分析：取考试数据 → 按科目统计 → 大模型生成结构化分析报告 */
   async analyzeExam(examId: string, teacherId: string): Promise<{ content: string; structured?: any }> {
     const exam = await this.examRepo.findOne({ where: { id: examId } })
-    if (!exam || exam.teacherId !== teacherId) return { content: '考试不存在或无权限' }
+    if (!exam) return { content: '考试不存在或无权限' }
+    // P1修复：analyzeExam 权限校验 - 校管和班主任也有权分析
+    const teacher = await this.userRepo.findOne({ where: { id: teacherId } as any })
+    if (!teacher) return { content: '考试不存在或无权限' }
+    const isOwner = exam.teacherId === teacherId
+    const isSchoolAdmin = teacher.role === 'school_admin' || teacher.schoolId
+    if (!isOwner && !isSchoolAdmin) {
+      // 非本人创建的考试，检查是否为班主任
+      const role = await this.classMemberSvc.getRole(teacherId, exam.classId)
+      if (role !== 'head') {
+        return { content: '考试不存在或无权限' }
+      }
+    } else if (isSchoolAdmin) {
+      // 校管需验证学校归属
+      const cls = await this.classRepo.findOne({ where: { id: exam.classId } as any })
+      if (!cls || (teacher.role === 'school_admin' && cls.teacherId !== teacherId)) {
+        // 进一步检查 schoolId 一致性
+        const examTeacher = await this.userRepo.findOne({ where: { id: exam.teacherId } as any })
+        if (!examTeacher || examTeacher.schoolId !== teacher.schoolId) {
+          return { content: '考试不存在或无权限' }
+        }
+      }
+    }
     // P02修复：使用更精确的查询条件，避免全班级扫描
     const grades = await this.gradeRepo.find({ where: { classId: exam.classId, examId: exam.id } })
     // 本次考试各科统计

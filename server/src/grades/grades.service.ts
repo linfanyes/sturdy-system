@@ -15,6 +15,23 @@ import { AiModule } from '../ai/ai.module'
 import { AiService } from '../ai/ai.service'
 import { GRADE_INSTRUCTION, SubjectStat, WeakSubjectResult } from './grades.types'
 
+// P1修复：scores 结构校验 - 防止恶意/畸形数据污染成绩记录
+const MAX_TAKE = 500
+function validateScores(scores: any): GradeScore[] {
+  if (!Array.isArray(scores)) throw new BadRequestException('scores 必须是数组')
+  if (scores.length > 200) throw new BadRequestException('单次成绩条数不能超过 200')
+  return scores.map((s: any, i: number) => {
+    if (!s || typeof s !== 'object') throw new BadRequestException(`scores[${i}] 格式错误`)
+    if (typeof s.studentId !== 'string' || !s.studentId) {
+      throw new BadRequestException(`scores[${i}].studentId 不能为空`)
+    }
+    if (s.score != null && (typeof s.score !== 'number' || s.score < 0 || s.score > 1000)) {
+      throw new BadRequestException(`scores[${i}].score 必须在 0-1000 之间`)
+    }
+    return { studentId: s.studentId, score: s.score == null ? null : Number(s.score) }
+  })
+}
+
 export class GradesService extends CrudService<Grade> {
   constructor(
     @InjectRepository(Grade) repo: Repository<Grade>,
@@ -30,6 +47,8 @@ export class GradesService extends CrudService<Grade> {
   }
 
   async findAll(user: any, classId?: string, skip = 0, take = 500, _term?: string, _date?: string, subject?: string, examName?: string) {
+    // P1修复：take 硬限制，防止客户端请求过大导致内存溢出
+    if (take > MAX_TAKE || take <= 0) take = MAX_TAKE
     const isSchoolAdmin = user?.role === 'school_admin'
     const where: any = {}
     let allowedSubjects: string[] | null = null
@@ -66,6 +85,7 @@ export class GradesService extends CrudService<Grade> {
 
   async mergeGrade(teacherId: string, dto: any) {
     await this.assertSubjectPermission(teacherId, dto.classId, dto.subject)
+    const scores = validateScores(dto.scores)
     const where: any = {
         classId: dto.classId,
         subject: dto.subject,
@@ -78,13 +98,13 @@ export class GradesService extends CrudService<Grade> {
     }
     const existing = await this.repo.findOne({ where })
     if (existing) {
-      existing.scores = dto.scores
+      existing.scores = scores
       existing.date = dto.date
       existing.examId = dto.examId ?? existing.examId
       await this.repo.save(existing)
       return { created: false, id: existing.id }
     }
-    const g = await this.create(teacherId, dto)
+    const g = await this.create(teacherId, { ...dto, scores })
     return { created: true, id: g.id }
   }
 

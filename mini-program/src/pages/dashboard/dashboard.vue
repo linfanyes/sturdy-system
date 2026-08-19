@@ -400,6 +400,24 @@ function copyBirthdayCard() {
 
 // 笔记分类色块：将中文分类映射为 ASCII 类名，规避 WXSS 不支持中文类名的 \XXXX Unicode 转义
 const catKeyMap = { '教学反思': 'reflection', '班会记录': 'meeting', '学习资料': 'material' }
+
+// P0修复：PII 缓存加密 - 简单异或混淆，防止第三方直接读取 storage
+const OBFUSCATE_KEY = 0x5A
+function obfuscate(obj: any): string {
+  const str = JSON.stringify(obj)
+  let result = ''
+  for (let i = 0; i < str.length; i++) {
+    result += String.fromCharCode(str.charCodeAt(i) ^ OBFUSCATE_KEY)
+  }
+  return result
+}
+function deobfuscate(str: string): any {
+  let result = ''
+  for (let i = 0; i < str.length; i++) {
+    result += String.fromCharCode(str.charCodeAt(i) ^ OBFUSCATE_KEY)
+  }
+  return JSON.parse(result)
+}
 function catKey(cat) {
   return catKeyMap[cat] || 'other'
 }
@@ -687,17 +705,19 @@ async function loadAll(force = false) {
       try {
         const raw = uni.getStorageSync(DASHBOARD_CACHE_KEY)
         if (raw && typeof raw === 'object' && raw.ts && Date.now() - raw.ts < DASHBOARD_CACHE_TTL) {
-          classList.value = raw.classes || []
-          studentList.value = raw.students || []
-          noteList.value = raw.notes || []
-          gradeList.value = raw.grades || []
-          todoList.value = raw.todos || []
-          todayLessons.value = raw.todayLessons || []
-          noticeList.value = raw.notices || []
-          attendanceList.value = raw.attendances || []
-          homeworkList.value = raw.homeworks || []
-          schoolNotices.value = raw.schoolNotices || []
-          behaviorList.value = raw.behaviors || []
+          // P0修复：PII 缓存加密 - 解密混淆数据（兼容旧格式）
+          const src = raw.data ? deobfuscate(raw.data) : raw
+          classList.value = src.classes || []
+          studentList.value = src.students || []
+          noteList.value = src.notes || []
+          gradeList.value = src.grades || []
+          todoList.value = src.todos || []
+          todayLessons.value = src.todayLessons || []
+          noticeList.value = src.notices || []
+          attendanceList.value = src.attendances || []
+          homeworkList.value = src.homeworks || []
+          schoolNotices.value = src.schoolNotices || []
+          behaviorList.value = src.behaviors || []
         }
       } catch {}
     }
@@ -734,17 +754,19 @@ async function loadAll(force = false) {
     try {
       uni.setStorageSync(DASHBOARD_CACHE_KEY, {
         ts: Date.now(),
-        classes: classList.value,
-        students: studentList.value,
-        notes: noteList.value,
-        grades: gradeList.value,
-        todos: todoList.value,
-        todayLessons: todayLessons.value,
-        notices: noticeList.value,
-        attendances: attendanceList.value,
-        homeworks: homeworkList.value,
-        schoolNotices: schoolNotices.value,
-        behaviors: behaviorList.value,
+        data: obfuscate({
+          classes: classList.value,
+          students: studentList.value,
+          notes: noteList.value,
+          grades: gradeList.value,
+          todos: todoList.value,
+          todayLessons: todayLessons.value,
+          notices: noticeList.value,
+          attendances: attendanceList.value,
+          homeworks: homeworkList.value,
+          schoolNotices: schoolNotices.value,
+          behaviors: behaviorList.value,
+        }),
       })
     } catch {}
     loadNotifications()

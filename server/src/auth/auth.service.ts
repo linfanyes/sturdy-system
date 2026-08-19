@@ -65,11 +65,12 @@ export class AuthService {
     }
     if (u === su) {
       foundUsername = true
-      // 支持 bcrypt 哈希或明文比较（向后兼容）。
-      // 建议通过 SUPER_ADMIN_PASSWORD 设置 bcrypt 哈希（$2b$... 开头）以提高安全性。
-      const valid = isBcryptHash(sp)
-        ? bcrypt.compareSync(p, sp)
-        : p === sp
+      // P0修复：时序攻击 - 删除明文比较分支，强制要求 bcrypt 哈希
+      if (!isBcryptHash(sp)) {
+        this.logger.error('超级管理员密码未配置为 bcrypt 哈希，请设置 SUPER_ADMIN_PASSWORD 环境变量为 bcrypt 哈希值')
+        throw new UnauthorizedException('用户名或密码错误')
+      }
+      const valid = bcrypt.compareSync(p, sp)
       if (valid) {
         return {
           role: 'super',
@@ -182,8 +183,8 @@ export class AuthService {
       }
     }
 
-    // 所有角色都未匹配：如果曾经在某张表找到用户名但密码不对，提示"密码错误"更准确
-    throw new UnauthorizedException(foundUsername ? '密码错误' : '账号不存在')
+    // P0修复：用户名枚举 - 统一返回"用户名或密码错误"，不区分账号是否存在
+    throw new UnauthorizedException('用户名或密码错误')
   }
 
   /** 微信登录：委托 WechatAuthService（保持接口兼容） */
@@ -236,18 +237,26 @@ export class AuthService {
    * 补齐产品缺口：此前教师仅能由校管重置密码，无自助改密入口。
    * 适用于以用户名+密码登录的账号（teacher / school_admin）；
    * 微信登录等无密码账号调用会返回明确错误。
+   * P0修复：IDOR - 使用 JWT sub 作为 userId，不接受外部 userId
    */
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
-    const user = await this.users.findById(userId)
+  async changePassword(jwtSub: string, oldPassword: string, newPassword: string) {
+    const user = await this.users.findById(jwtSub)
     if (!user) throw new UnauthorizedException('账号不存在')
     if (!user.passwordHash) throw new BadRequestException('当前账号未设置登录密码，无法修改')
+    // P0修复：密码强度校验
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('新密码长度至少 8 位')
+    }
     const { valid } = verifyAndUpgrade(oldPassword, user.passwordHash)
     if (!valid) throw new UnauthorizedException('原密码错误')
     await this.users.update(user.id, { passwordHash: hashPassword(newPassword) })
     // 审计日志（尽力而为，不影响主流程）
     try {
       await this.auditService.log(user.schoolId || '', 'change_password', user.id, user.username || user.id, '自助修改登录密码')
-    } catch { /* ignore */ }
+    } catch {
+      // P2修复：审计失败时记录日志，不静默吞异常
+      this.logger.warn(`审计日志写入失败: change_password for ${user.id}`)
+    }
     return { ok: true }
   }
 

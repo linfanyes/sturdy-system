@@ -20,11 +20,22 @@ import {
 import type { AuthUser, Role } from '@/types/user'
 import * as authApi from '@/api/auth'
 import { isViteDev } from '@/config/viteEnv'
+import { TOKEN_KEY, USER_KEY, MULTI_ROLE_KEY } from '@/constants/storage-keys'
 
-// 保持旧 key，避免冷启动时与已有登录态不兼容
-const TOKEN_KEY = 'trace_web_token'
-const USER_KEY = 'trace_web_user'
-const MULTI_ROLE_KEY = 'trace_web_multi_role'
+// P2修复：Feature Profile 类型定义，替代 any
+interface FeatureProfile {
+  role?: string
+  schoolId?: string
+  effectiveFeatures?: string[]
+  rawFeatures?: string[]
+  schoolFeatureFlags?: string[] | null
+  user?: {
+    position?: string
+    subject?: string
+    subjects?: string[]
+    [key: string]: unknown
+  }
+}
 
 function toSharedUser(u: AuthUser) {
   return { ...u, id: String(u.id), role: u.role, name: u.name } as any
@@ -99,8 +110,8 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = machine.user ? fromSharedUser(machine.user) : null
     role.value = machine.role
     isLoggedIn.value = machine.isLoggedIn
-    effectiveFeatures.value = (user.value?.effectiveFeatures as string[]) || []
-    schoolFeatureFlags.value = (user.value?.schoolFeatureFlags as string[] | null) ?? null
+    effectiveFeatures.value = user.value?.effectiveFeatures ?? []
+    schoolFeatureFlags.value = user.value?.schoolFeatureFlags ?? null
   }
 
   // 订阅 machine 事件，实现 machine → 响应式单向同步
@@ -144,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchMe()
   }
 
-  function applyFeatureProfile(profile: any) {
+  function applyFeatureProfile(profile: FeatureProfile | null) {
     if (!profile) return
     const patch: Partial<AuthUser> = {}
     if (Array.isArray(profile.effectiveFeatures)) {

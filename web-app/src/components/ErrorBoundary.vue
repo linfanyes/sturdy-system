@@ -5,21 +5,35 @@ import { reportMonitor } from '@/utils/monitor'
 const error = ref<Error | null>(null)
 const retryKey = ref(0)
 
+// P1修复：防止同一错误被 onErrorCaptured 和 window.onerror 重复上报
+const reportedErrors = new Set<string>()
+function reportOnce(type: string, message: string, stack: string | undefined, source: string) {
+  const key = `${type}:${message}:${stack?.slice(0, 200) || ''}`
+  if (reportedErrors.has(key)) return
+  reportedErrors.add(key)
+  // 防止 Set 无限增长
+  if (reportedErrors.size > 100) {
+    const first = reportedErrors.values().next().value
+    if (first) reportedErrors.delete(first)
+  }
+  reportMonitor({ type, message, stack, meta: { source } })
+}
+
 onErrorCaptured((err: unknown) => {
   error.value = err instanceof Error ? err : new Error(String(err))
   console.error('[ErrorBoundary]', err)
-  reportMonitor({ type: 'error', message: error.value.message, stack: error.value.stack, meta: { source: 'component' } })
+  reportOnce('error', error.value.message, error.value.stack, 'component')
   return false
 })
 
 // P0修复：兜底捕获异步错误（onMounted/setTimeout/事件处理器中的异常）
 function onWindowError(event: ErrorEvent) {
   error.value = event.error || new Error(event.message)
-  reportMonitor({ type: 'error', message: error.value.message, stack: error.value.stack, meta: { source: 'window' } })
+  reportOnce('error', error.value.message, error.value.stack, 'window')
 }
 function onUnhandledRejection(event: PromiseRejectionEvent) {
   error.value = event.reason instanceof Error ? event.reason : new Error(String(event.reason))
-  reportMonitor({ type: 'unhandledrejection', message: error.value.message, stack: error.value.stack, meta: { source: 'promise' } })
+  reportOnce('unhandledrejection', error.value.message, error.value.stack, 'promise')
 }
 
 onMounted(() => {

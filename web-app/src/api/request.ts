@@ -2,6 +2,7 @@ import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig 
 import { resolveApiBase, getRuntimeApiBase } from '@/config/apiBase'
 import { getViteEnvApiBase } from '@/config/viteEnv'
 import { isSessionInvalid } from '@gardener/shared/utils/security'
+import { TOKEN_KEY, USER_KEY } from '@/constants/storage-keys'
 
 /**
  * 全局 HTTP 封装：对接小程序后端（NestJS）。
@@ -158,10 +159,10 @@ instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     token = useAuthStore().token || null
   } catch {
     // store 未就绪时回退到 localStorage
-    token = localStorage.getItem('trace_web_token')
+    token = localStorage.getItem(TOKEN_KEY)
   }
   if (!token) {
-    token = localStorage.getItem('trace_web_token')
+    token = localStorage.getItem(TOKEN_KEY)
   }
   if (token) {
     const h = config.headers as unknown as {
@@ -263,8 +264,8 @@ export function cachedCrudList<T = any>(path: string, params?: Record<string, an
  * 统一处理「会话失效」：清除登录态 + 同步清空 Pinia store + 跳转登录页。
  */
 export async function handleUnauthorized(): Promise<void> {
-  localStorage.removeItem('trace_web_token')
-  localStorage.removeItem('trace_web_user')
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
   clearCache()
   cancelAllRequests()
   try {

@@ -64,13 +64,23 @@ const CHAR_LIB = [
   '铅笔橡皮书包尺子', '眼睛耳朵鼻子嘴巴', '春夏秋冬各不同',
 ]
 
+// P2修复：Fisher-Yates 洗牌算法，保证均匀分布
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function gen() {
   loading.value = true
   checked.value = false
   answers.value = []
   const chars = CHAR_LIB[gradeIdx.value % CHAR_LIB.length].split('')
   const count = counts[countIdx.value]
-  const shuffled = chars.sort(() => Math.random() - 0.5)
+  const shuffled = shuffle(chars)
   const selected = shuffled.slice(0, Math.min(count, chars.length))
   list.value = selected.map((c) => ({ hanzi: c, pinyin: '' }))
   loading.value = false

@@ -147,7 +147,7 @@ function downloadManual() {
 // Simple markdown-to-HTML renderer
 function md2html(md: string): string {
   if (!md) return ''
-  return escapeHtml(md)
+  const raw = escapeHtml(md)
     .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -158,6 +158,8 @@ function md2html(md: string): string {
     .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
     .replace(/^---$/gm, '<hr>')
     .replace(/\n\n/g, '<br><br>')
+  // P0修复：XSS - 移除危险的事件处理器属性（防御 regex 绕过）
+  return raw.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
 }
 
 const emit = defineEmits<{
