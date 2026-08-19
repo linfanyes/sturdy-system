@@ -273,17 +273,17 @@ const shortcutTools = [
             <div v-for="i in 3" :key="i" class="h-5 rounded-lg bg-cream-100 animate-pulse" :style="{ width: `${90 - i * 15}%` }" />
           </div>
           <div v-else-if="classDist.length" class="space-y-2.5">
-            <div v-for="(c, i) in classDist" :key="c.name" class="flex items-center gap-2">
-              <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
-              <div class="flex-1 h-6 rounded-full bg-cream-100 overflow-hidden">
+            <div v-for="(c, i) in classDist" :key="c.name" class="dist-row">
+              <span class="dist-label">{{ c.name }}</span>
+              <div class="dist-track">
                 <div
-                  class="h-full rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-700 ease-out"
-                  :style="{ width: mounted ? c.pct + '%' : '0%', transitionDelay: `${i * 80}ms`, position: 'relative' }"
+                  class="dist-fill"
+                  :style="{ width: mounted ? c.pct + '%' : '0%', transitionDelay: `${i * 80}ms` }"
                 >
-                  <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
+                  <div class="dist-shimmer" />
                 </div>
               </div>
-              <span class="w-8 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}</span>
+              <span class="dist-value">{{ c.count }}</span>
             </div>
           </div>
           <EmptyState v-else icon="📊" title="暂无班级数据" desc="分配班级后这里会展示学生分布" />
@@ -365,16 +365,14 @@ const shortcutTools = [
             <div class="h-6 rounded-lg bg-cream-100 animate-pulse" />
           </div>
           <div v-else-if="students.length > 0" class="space-y-3">
-            <div class="flex items-center gap-3">
-              <div class="flex-1">
-                <div class="w-full bg-cream-100 rounded-full h-4 overflow-hidden">
-                  <div class="h-4 rounded-full bg-gradient-to-r from-butter-300 to-butter-500 transition-all duration-1000 ease-out relative overflow-hidden"
-                    :style="{ width: mounted ? parentEnabledPct + '%' : '0%' }">
-                    <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
-                  </div>
+            <div class="progress-wrap">
+              <div class="progress-track">
+                <div class="progress-fill"
+                  :style="{ width: mounted ? parentEnabledPct + '%' : '0%' }">
+                  <div class="progress-shimmer" />
                 </div>
               </div>
-              <span class="text-sm font-bold text-cocoa-800 whitespace-nowrap">{{ parentEnabledPct }}%</span>
+              <span class="progress-value">{{ parentEnabledPct }}%</span>
             </div>
             <div class="text-xs text-cocoa-400">
               已开通 {{ parentEnabled }} 人，共 {{ students.length }} 名学生
@@ -393,15 +391,15 @@ const shortcutTools = [
             <span class="text-xs text-cocoa-400">{{ classParentRates.length }} 个班级</span>
           </div>
           <div class="space-y-2.5">
-            <div v-for="(c, i) in classParentRates" :key="c.name" class="flex items-center gap-2">
-              <span class="w-16 shrink-0 truncate text-xs text-cocoa-600">{{ c.name }}</span>
-              <div class="flex-1 h-5 rounded-full bg-cream-100 overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-mint-300 to-mint-500 transition-all duration-700 ease-out relative overflow-hidden"
+            <div v-for="(c, i) in classParentRates" :key="c.name" class="dist-row">
+              <span class="dist-label">{{ c.name }}</span>
+              <div class="dist-track">
+                <div class="dist-fill mint"
                   :style="{ width: mounted ? c.pct + '%' : '0%', transitionDelay: `${i * 80}ms` }">
-                  <div class="absolute inset-0 rounded-full opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-shimmer" />
+                  <div class="dist-shimmer" />
                 </div>
               </div>
-              <span class="w-20 shrink-0 text-right text-xs font-semibold text-cocoa-700">{{ c.count }}/{{ c.total }} ({{ c.pct }}%)</span>
+              <span class="dist-value sm">{{ c.count }}/{{ c.total }}</span>
             </div>
           </div>
         </div>
@@ -485,5 +483,97 @@ const shortcutTools = [
 }
 .bg-female {
   background: #E7698C;
+}
+
+/* ========== 分布条形图组件化 ========== */
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dist-label {
+  width: 4rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: rgb(var(--cocoa-600));
+}
+.dist-track {
+  flex: 1;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--cream-100));
+  overflow: hidden;
+}
+.dist-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgb(var(--butter-300)) 0%, rgb(var(--butter-500)) 100%);
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.dist-fill.mint {
+  background: linear-gradient(90deg, rgb(var(--mint-300)) 0%, rgb(var(--mint-500)) 100%);
+}
+.dist-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  opacity: 0.3;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+.dist-value {
+  width: 2rem;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(var(--cocoa-700));
+}
+.dist-value.sm {
+  width: 3.5rem;
+  font-size: 0.65rem;
+}
+
+/* ========== 进度条组件化 ========== */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.progress-track {
+  flex: 1;
+  height: 1rem;
+  border-radius: 9999px;
+  background: rgb(var(--cream-100));
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgb(var(--butter-300)) 0%, rgb(var(--butter-500)) 100%);
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.progress-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  opacity: 0.3;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+.progress-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgb(var(--cocoa-800));
+  white-space: nowrap;
 }
 </style>

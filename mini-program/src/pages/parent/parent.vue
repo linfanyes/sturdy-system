@@ -1,40 +1,120 @@
 <template>
   <view class="page" :class="{ dark }">
     <!-- 错误/重试态 -->
-    <view class="load-err" v-if="loadError" @tap="load">⚠️ 数据加载失败，点击重试</view>
+    <view class="load-err" v-if="loadError" @tap="load">
+      <text class="err-icon">⚠️</text>
+      <text class="err-text">数据加载失败，点击重试</text>
+    </view>
     <!-- 加载态 -->
     <view class="loading-mask" v-if="loading">
       <view class="spinner"></view>
       <text class="loading-text">加载中…</text>
     </view>
-    <view class="hd">
-      <view class="t">🏡 {{ greeting }}{{ me?.studentName ? me.studentName + '同学家长' : '家长' }}</view>
-      <view class="hd-actions">
-        <text class="out" @click="openEditStudentInfo">📝 维护信息</text>
-        <text class="out" @click="openStudentRequests">📋 申请记录</text>
-        <text class="out" @click="openMessageCenter">💬 留言</text>
-        <text class="out" @click="goKidsCoding">🧩 少儿编程</text>
-        <text class="out" @click="goMood">🌤️ 心情打卡</text>
-        <text class="out" @click="goTimeline">🌈 成长时光机</text>
-        <text class="out" @click="goNotifySettings">🔔 通知设置</text>
-        <text class="out" @click="goDataConsent">🔐 数据授权</text>
-        <text class="out" @click="goStudyBuddy">🤖 AI学习伙伴</text>
-        <text class="out" @click="goFiveEdu">📊 五育档案</text>
-        <text class="out" @click="goLearningLoop">🎯 学习闭环</text>
-        <text class="out" @click="goSafety">🛡️ 安全守护</text>
-        <text class="out" @click="goHabit">🔥 习惯养成</text>
-        <text class="out" @click="goLiteracy">📚 素养启蒙</text>
-        <text class="out" @click="goSchedule">🗓️ 课表</text>
-        <text class="out" @click="goReport">📋 班级报告</text>
-        <text class="out" @click="goAssignment">📚 分层作业</text>
-        <text class="out" @click="showPwdModal = true">🔑 改密</text>
-        <text class="out" @click="logout">退出</text>
+
+    <!-- ==================== 欢迎区域 ==================== -->
+    <view class="hd" v-if="!loading">
+      <view class="hd-left">
+        <view class="greeting-wrap">
+          <text class="greeting-line1">{{ greeting }}</text>
+          <text class="greeting-line2">{{ me?.studentName ? me.studentName + '同学家长' : '家长' }}</text>
+          <view class="greeting-deco"></view>
+        </view>
       </view>
     </view>
+
+    <!-- ==================== 功能入口面板 ==================== -->
+    <view class="actions-grid" v-if="!loading">
+      <view class="info-btn error logout-btn" @click="logout">
+        <text class="info-icon">🚪</text>
+        <text class="info-label">退出</text>
+      </view>
+    </view>
+
+    <!-- 功能入口列表 -->
+    <view class="actions-list" v-if="!loading">
+      <view class="info-btn action-card" @click="openEditStudentInfo">
+        <text class="info-icon">📝</text>
+        <text class="info-label">维护信息</text>
+      </view>
+      <view class="info-btn action-card" @click="openStudentRequests">
+        <text class="info-icon">📋</text>
+        <text class="info-label">申请记录</text>
+      </view>
+      <view class="info-btn action-card" @click="openMessageCenter">
+        <text class="info-icon">💬</text>
+        <text class="info-label">留言</text>
+      </view>
+      <view class="info-btn action-card" @click="goKidsCoding">
+        <text class="info-icon">🧩</text>
+        <text class="info-label">少儿编程</text>
+      </view>
+      <view class="info-btn action-card" @click="goMood">
+        <text class="info-icon">🌤️</text>
+        <text class="info-label">心情打卡</text>
+      </view>
+      <view class="info-btn action-card" @click="goTimeline">
+        <text class="info-icon">🌈</text>
+        <text class="info-label">成长时光机</text>
+      </view>
+      <view class="info-btn action-card" @click="goNotifySettings">
+        <text class="info-icon">🔔</text>
+        <text class="info-label">通知设置</text>
+      </view>
+      <view class="info-btn action-card" @click="goDataConsent">
+        <text class="info-icon">🔐</text>
+        <text class="info-label">数据授权</text>
+      </view>
+      <view class="info-btn action-card" @click="goStudyBuddy">
+        <text class="info-icon">🤖</text>
+        <text class="info-label">AI学习伙伴</text>
+      </view>
+      <view class="info-btn action-card" @click="goFiveEdu">
+        <text class="info-icon">📊</text>
+        <text class="info-label">五育档案</text>
+      </view>
+      <view class="info-btn action-card" @click="goLearningLoop">
+        <text class="info-icon">🎯</text>
+        <text class="info-label">学习闭环</text>
+      </view>
+      <view class="info-btn action-card" @click="goSafety">
+        <text class="info-icon">🛡️</text>
+        <text class="info-label">安全守护</text>
+      </view>
+      <view class="info-btn action-card" @click="goHabit">
+        <text class="info-icon">🔥</text>
+        <text class="info-label">习惯养成</text>
+      </view>
+      <view class="info-btn action-card" @click="goLiteracy">
+        <text class="info-icon">📚</text>
+        <text class="info-label">素养启蒙</text>
+      </view>
+      <view class="info-btn action-card" @click="goSchedule">
+        <text class="info-icon">🗓️</text>
+        <text class="info-label">课表</text>
+      </view>
+      <view class="info-btn action-card" @click="goReport">
+        <text class="info-icon">📋</text>
+        <text class="info-label">班级报告</text>
+      </view>
+      <view class="info-btn action-card" @click="goAssignment">
+        <text class="info-icon">📚</text>
+        <text class="info-label">分层作业</text>
+      </view>
+      <view class="info-btn action-card" @click="showPwdModal = true">
+        <text class="info-icon">🔑</text>
+        <text class="info-label">改密</text>
+      </view>
+    </view>
+
+    <!-- 学生信息条 -->
     <view class="stu-bar" v-if="me && me.studentName">
-      <text class="sb-item">姓名：{{ me.studentName }}</text>
-      <text class="sb-item">学号：{{ me.studentNo || '--' }}</text>
-      <text class="sb-item">班级：{{ me.className || '--' }}</text>
+      <view class="stu-info-card">
+        <view class="stu-avatar">{{ (me.studentName || '?').charAt(0) }}</view>
+        <view class="stu-info-text">
+          <text class="stu-name">{{ me.studentName }}</text>
+          <text class="stu-meta">学号：{{ me.studentNo || '--' }}　班级：{{ me.className || '--' }}</text>
+        </view>
+      </view>
     </view>
 
     <!-- 孩子列表子组件 -->
@@ -48,46 +128,68 @@
 
     <!-- 顶部统计卡片 -->
     <view class="stats-row" v-if="!loading">
-      <view v-if="hasPf('notices')" class="stat-card clickable" @tap="tab = 'pending'">
-        <view class="stat-label">📢 待读通知</view>
+      <view v-if="hasPf('notices')" class="stat-card stat-notices clickable" @tap="tab = 'pending'">
+        <view class="stat-icon">📢</view>
+        <view class="stat-label">待读通知</view>
         <view class="stat-value">{{ stats.notices }}</view>
       </view>
-      <view v-if="hasPf('homework')" class="stat-card clickable" @tap="tab = 'pending'">
-        <view class="stat-label">📝 待完成作业</view>
+      <view v-if="hasPf('homework')" class="stat-card stat-homework clickable" @tap="tab = 'pending'">
+        <view class="stat-icon">📝</view>
+        <view class="stat-label">待完成作业</view>
         <view class="stat-value">{{ stats.homework }}</view>
       </view>
-      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showGrade" class="stat-card clickable" @tap="tab = 'scores'">
-        <view class="stat-label">📊 最近考试</view>
+      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showGrade" class="stat-card stat-scores clickable" @tap="tab = 'scores'">
+        <view class="stat-icon">📊</view>
+        <view class="stat-label">最近考试</view>
         <view class="stat-value">{{ stats.pct }}</view>
         <view v-if="stats.pctDelta != null && stats.pctDelta !== 0" class="stat-delta" :class="stats.pctDelta > 0 ? 'up' : 'down'">
           较上次 {{ stats.pctDelta > 0 ? '+' : '' }}{{ stats.pctDelta }}%
         </view>
       </view>
-      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showRank" class="stat-card clickable" @tap="tab = 'scores'">
-        <view class="stat-label">🏆 最新排名</view>
+      <view v-if="(hasPf('grades') || hasPf('analysis')) && notifyPref.showRank" class="stat-card stat-rank clickable" @tap="tab = 'scores'">
+        <view class="stat-icon">🏆</view>
+        <view class="stat-label">最新排名</view>
         <view class="stat-value">{{ stats.rank }}</view>
         <view v-if="stats.rankDelta != null && stats.rankDelta !== 0" class="stat-delta" :class="stats.rankDelta > 0 ? 'up' : 'down'">
           较上次 {{ stats.rankDelta > 0 ? '上升' : '下降' }}{{ Math.abs(stats.rankDelta) }}名
         </view>
       </view>
-      <view v-if="moodStat" class="stat-card clickable" @tap="goMood">
-        <view class="stat-label">🌤️ 今日心情</view>
-        <view class="stat-value">{{ moodStat }}</view>
+      <view v-if="moodStat" class="stat-card stat-mood clickable" @tap="goMood">
+        <view class="stat-icon">🌤️</view>
+        <view class="stat-label">今日心情</view>
+        <view class="stat-value stat-value-sm">{{ moodStat }}</view>
       </view>
     </view>
 
     <!-- Tab 切换 -->
     <view class="tabs">
-      <text v-if="showPendingTab" class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">📋 待办公告</text>
-      <text v-if="showScoresTab" class="tab" :class="{ on: tab === 'scores' }" @click="tab = 'scores'">📊 成绩查询</text>
-      <text v-if="showAttendanceTab" class="tab" :class="{ on: tab === 'attendance' }" @click="tab = 'attendance'">📈 考勤</text>
-      <text class="tab" :class="{ on: tab === 'textbook' }" @click="tab = 'textbook'; loadTextbooks()">📚 教材</text>
-      <text class="tab" :class="{ on: tab === 'overview' }" @click="tab = 'overview'">💡 总览</text>
+      <view v-if="showPendingTab" class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">
+        <text class="tab-icon">📋</text>
+        <text class="tab-label">待办公告</text>
+      </view>
+      <view v-if="showScoresTab" class="tab" :class="{ on: tab === 'scores' }" @click="tab = 'scores'">
+        <text class="tab-icon">📊</text>
+        <text class="tab-label">成绩查询</text>
+      </view>
+      <view v-if="showAttendanceTab" class="tab" :class="{ on: tab === 'attendance' }" @click="tab = 'attendance'">
+        <text class="tab-icon">📈</text>
+        <text class="tab-label">考勤</text>
+      </view>
+      <view class="tab" :class="{ on: tab === 'textbook' }" @click="tab = 'textbook'; loadTextbooks()">
+        <text class="tab-icon">📚</text>
+        <text class="tab-label">教材</text>
+      </view>
+      <view class="tab" :class="{ on: tab === 'overview' }" @click="tab = 'overview'">
+        <text class="tab-icon">💡</text>
+        <text class="tab-label">总览</text>
+      </view>
     </view>
 
     <!-- 订阅消息引导 -->
     <view class="subscribe-card" v-if="showSubscribeGuide">
-      <view class="sub-icon">🔔</view>
+      <view class="sub-icon-area">
+        <text class="sub-icon">🔔</text>
+      </view>
       <view class="sub-text">
         <text class="sub-title">开启通知订阅</text>
         <text class="sub-desc">作业提醒、新公告、成绩发布即时推送到微信</text>
@@ -306,10 +408,6 @@ const showSubscribeGuide = ref(true)
 
 /**
  * 家长功能包判定（班主任可在班级里配置家长可见功能）。
- * - 未携带功能包（undefined/非数组，旧会话）→ 不限制，全部可见
- * - 空数组 → 班主任关闭该班家长全部功能
- * - 非空数组 → 仅开放数组内功能
- * 安全边界以后端为准。
  */
 function hasPf(key) {
   const f = parent.user && parent.user.effectiveFeatures
@@ -366,10 +464,7 @@ const termOptions = computed(() => { const set = new Set(); for (const e of exam
 const examNameOptions = computed(() => { const set = new Set(); for (const e of exams.value) { if (e.examName) set.add(e.examName) }; return Array.from(set) })
 const subjectOptions = computed(() => { const set = new Set(); for (const e of exams.value) { for (const s of (e.subjects || [])) { if (s.subject) set.add(s.subject) } }; return Array.from(set) })
 
-// 作业「已完成」口径与 Web 端一致：已批改/已发还 同样视为完成（使用共享常量 DONE_HW_STATUSES）
 const pendingHomework = computed(() => homework.value.filter(h => !DONE_HW_STATUSES.includes(h.status)).length)
-
-// 考试按日期排序，取最近两次（用于「较上次」变化量，与 Web 端口径一致）
 const examsByDate = computed(() => [...exams.value].sort((a, b) => (a.date || '').localeCompare(b.date || '')))
 const latestExam = computed(() => examsByDate.value.length ? examsByDate.value[examsByDate.value.length - 1] : null)
 const prevExam = computed(() => examsByDate.value.length > 1 ? examsByDate.value[examsByDate.value.length - 2] : null)
@@ -388,7 +483,7 @@ const rankDelta = computed(() => {
   const l = latestExam.value && latestExam.value.classRank
   const p = prevExam.value && prevExam.value.classRank
   if (l == null || p == null) return null
-  return p - l // 正数 = 名次上升
+  return p - l
 })
 
 const stats = computed(() => {
@@ -401,7 +496,6 @@ const stats = computed(() => {
   return { notices: noticeCount, homework: homeworkCount, pct, pctDelta: pctDelta.value, rank, rankDelta: rankDelta.value }
 })
 
-// 联系老师：直接拨打班主任（或任一有电话的老师）号码，与 Web 端一致不再空提示
 function contactTeacher() {
   const head = teachers.value.find(t => t.role === 'head' && t.phone)
   const anyWithPhone = teachers.value.find(t => t.phone)
@@ -413,11 +507,7 @@ function contactTeacher() {
     title: '联系老师',
     content: `${target.name}（${target.roleLabel || '老师'}）\n电话：${target.phone}`,
     confirmText: '拨号',
-    success: (res) => {
-      if (res.confirm) {
-        uni.makePhoneCall({ phoneNumber: String(target.phone) })
-      }
-    },
+    success: (res) => { if (res.confirm) uni.makePhoneCall({ phoneNumber: String(target.phone) }) },
   })
 }
 
@@ -481,9 +571,6 @@ async function switchToKid(studentId) {
     const res = await parentApi.post('/parent-auth/switch-student', { studentId })
     const data = res.data || res
     if (data.token) {
-      // 缺陷修复：切换孩子后通过 setParent 持久化新令牌 g_parent_token + 更新 machine。
-      // 此前仅写内存 parent.token 不持久化，后续 parentApi 请求仍用旧令牌（从 storage 读），
-      // 冷启动后也恢复为旧令牌→旧孩子。
       const userPatch = Array.isArray(data.effectiveFeatures)
         ? { ...(parent.user || {}), effectiveFeatures: data.effectiveFeatures }
         : parent.user
@@ -508,19 +595,11 @@ function loadTextbooks() {
 // 科任老师详情弹窗
 const showTeacherModal = ref(false)
 const teacherDetail = ref(null)
-function openTeacher(t) {
-  teacherDetail.value = t
-  showTeacherModal.value = true
-}
-function callTeacher(t) {
-  if (t && t.phone) uni.makePhoneCall({ phoneNumber: String(t.phone) })
-}
-function messageThisTeacher(t) {
-  showTeacherModal.value = false
-  openMessageTeacher(t)
-}
+function openTeacher(t) { teacherDetail.value = t; showTeacherModal.value = true }
+function callTeacher(t) { if (t && t.phone) uni.makePhoneCall({ phoneNumber: String(t.phone) }) }
+function messageThisTeacher(t) { showTeacherModal.value = false; openMessageTeacher(t) }
 
-// 家长留言功能（给科任/班主任留言，复用后端 /messages）
+// 家长留言功能
 const showMsgModal = ref(false)
 const msgTeacherIdx = ref(0)
 const msgContent = ref('')
@@ -536,57 +615,25 @@ const selectedTeacherName = computed(() => {
   return t ? `${t.name}（${t.roleLabel || '老师'}）` : '请选择老师'
 })
 function openMessageCenter() {
-  msgViewSent.value = false
-  msgContent.value = ''
-  msgError.value = ''
-  msgOk.value = false
+  msgViewSent.value = false; msgContent.value = ''; msgError.value = ''; msgOk.value = false
   if ((teachers.value || []).length) msgTeacherIdx.value = 0
   showMsgModal.value = true
 }
-function goKidsCoding() {
-  uni.navigateTo({ url: '/pages/parent/kidsCoding' })
-}
-function goMood() {
-  uni.navigateTo({ url: '/pages/parent/mood' })
-}
-function goTimeline() {
-  uni.navigateTo({ url: '/pages/parent/timeline' })
-}
-function goNotifySettings() {
-  uni.navigateTo({ url: '/pages/parent/notifySettings' })
-}
-function goDataConsent() {
-  uni.navigateTo({ url: '/pages/parent/dataConsent' })
-}
-function goStudyBuddy() {
-  uni.navigateTo({ url: '/pages/parent/studyBuddy' })
-}
-function goFiveEdu() {
-  uni.navigateTo({ url: '/pages/parent/fiveEduProfile' })
-}
-function goLearningLoop() {
-  uni.navigateTo({ url: '/pages/parent/learningLoop' })
-}
-function goSafety() {
-  uni.navigateTo({ url: '/pages/parent/safety' })
-}
-function goHabit() {
-  uni.navigateTo({ url: '/pages/parent/habit' })
-}
-function goLiteracy() {
-  uni.navigateTo({ url: '/pages/parent/literacy' })
-}
-function goSchedule() {
-  uni.navigateTo({ url: '/pages/parent/schedule' })
-}
-function goReport() {
-  uni.navigateTo({ url: '/pages/parent/report' })
-}
-function goAssignment() {
-  uni.navigateTo({ url: '/pages/parent/assignment' })
-}
+function goKidsCoding() { uni.navigateTo({ url: '/pages/parent/kidsCoding' }) }
+function goMood() { uni.navigateTo({ url: '/pages/parent/mood' }) }
+function goTimeline() { uni.navigateTo({ url: '/pages/parent/timeline' }) }
+function goNotifySettings() { uni.navigateTo({ url: '/pages/parent/notifySettings' }) }
+function goDataConsent() { uni.navigateTo({ url: '/pages/parent/dataConsent' }) }
+function goStudyBuddy() { uni.navigateTo({ url: '/pages/parent/studyBuddy' }) }
+function goFiveEdu() { uni.navigateTo({ url: '/pages/parent/fiveEduProfile' }) }
+function goLearningLoop() { uni.navigateTo({ url: '/pages/parent/learningLoop' }) }
+function goSafety() { uni.navigateTo({ url: '/pages/parent/safety' }) }
+function goHabit() { uni.navigateTo({ url: '/pages/parent/habit' }) }
+function goLiteracy() { uni.navigateTo({ url: '/pages/parent/literacy' }) }
+function goSchedule() { uni.navigateTo({ url: '/pages/parent/schedule' }) }
+function goReport() { uni.navigateTo({ url: '/pages/parent/report' }) }
+function goAssignment() { uni.navigateTo({ url: '/pages/parent/assignment' }) }
 
-// 今日心情卡：优先显示今天打卡，否则提示未打卡
 const moodStat = computed(() => {
   const list = moodMine.value || []
   if (!list.length) return ''
@@ -599,10 +646,7 @@ const moodStat = computed(() => {
 function openMessageTeacher(t) {
   const idx = (teachers.value || []).findIndex(x => x.teacherId === (t && t.teacherId))
   msgTeacherIdx.value = idx >= 0 ? idx : 0
-  msgViewSent.value = false
-  msgContent.value = ''
-  msgError.value = ''
-  msgOk.value = false
+  msgViewSent.value = false; msgContent.value = ''; msgError.value = ''; msgOk.value = false
   showMsgModal.value = true
 }
 function onMsgTeacherChange(e) { msgTeacherIdx.value = e.detail.value }
@@ -614,8 +658,7 @@ async function submitMessage() {
   msgSending.value = true
   try {
     await parentApi.post('/messages', { recipientId: t.teacherId, recipientRole: 'teacher', content: msgContent.value.trim() })
-    msgOk.value = true
-    msgContent.value = ''
+    msgOk.value = true; msgContent.value = ''
     setTimeout(() => { showMsgModal.value = false; msgOk.value = false }, 1200)
   } catch (e) { msgError.value = (e && e.message) || '发送失败，请重试' }
   finally { msgSending.value = false }
@@ -648,11 +691,9 @@ async function load() {
     me.value = meResult.value
     kids.value = (meResult.value && meResult.value.kids) || []
     activeKidId.value = meResult.value?.studentId || ''
-    // 家长功能包：/parent-auth/me 返回当前孩子的有效功能，驱动页面显隐
     if (meResult.value && Array.isArray(meResult.value.effectiveFeatures)) {
       parent.user = { ...(parent.user || {}), effectiveFeatures: meResult.value.effectiveFeatures }
     }
-    // 当前 Tab 被班主任关闭时回退到「总览」
     const cur = tab.value
     if ((cur === 'pending' && !showPendingTab.value) || (cur === 'scores' && !showScoresTab.value) || (cur === 'attendance' && !showAttendanceTab.value)) {
       tab.value = 'overview'
@@ -678,75 +719,1003 @@ onShow(() => { if (!parent.token) { uni.reLaunch({ url: '/pages/parent-login/par
 </script>
 
 <style scoped>
-.page { display: flex; flex-direction: column; height: 100vh; padding: 24rpx; box-sizing: border-box; }
-.hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10rpx; }
-.hd-actions { display: flex; gap: 16rpx; flex-wrap: wrap; justify-content: flex-end; }
-.stu-bar { display: flex; flex-wrap: wrap; gap: 20rpx; margin-bottom: 10rpx; background: var(--c-card); border-radius: 12rpx; padding: 16rpx 20rpx; }
-.sb-item { font-size: 24rpx; color: var(--c-title); font-weight: 600; }
-.t { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
-.out { font-size: 24rpx; color: #9aa0a6; }
-.tabs { display: flex; gap: 10rpx; margin-bottom: 14rpx; }
-.tab { flex: 1; text-align: center; font-size: 28rpx; padding: 16rpx 0; border-radius: 12rpx; background: var(--c-card); color: var(--c-sub); font-weight: 600; }
-.tab.on { background: var(--c-primary); color: #fff; }
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10rpx; margin-bottom: 14rpx; }
-.stat-card { background: var(--c-card); border-radius: 12rpx; padding: 14rpx 10rpx; text-align: center; }
-.stat-card.clickable { transition: transform 0.15s, box-shadow 0.15s; }
-.stat-card.clickable:active { transform: scale(0.96); }
-.stat-label { font-size: 22rpx; color: var(--c-sub); margin-bottom: 6rpx; }
-.stat-value { font-size: 28rpx; font-weight: 800; color: var(--c-title); }
-.stat-delta { font-size: 18rpx; margin-top: 4rpx; line-height: 1.2; }
-.stat-delta.up { color: #07c160; }
-.stat-delta.down { color: #f56c6c; }
-.subscribe-card { display: flex; align-items: center; gap: 12rpx; background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius: 14rpx; padding: 16rpx 20rpx; margin-bottom: 14rpx; position: relative; }
-.sub-icon { font-size: 36rpx; flex-shrink: 0; }
-.sub-text { flex: 1; min-width: 0; }
-.sub-title { font-size: 26rpx; font-weight: 700; color: #2e7d32; display: block; }
-.sub-desc { font-size: 22rpx; color: #558b2f; margin-top: 2rpx; }
-.sub-btn { flex-shrink: 0; font-size: 24rpx; color: #fff; background: #43a047; padding: 8rpx 20rpx; border-radius: 30rpx; font-weight: 600; }
-.sub-close { position: absolute; top: 6rpx; right: 12rpx; font-size: 28rpx; color: #9e9e9e; line-height: 1; }
-.loading-mask { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20rpx; padding: 80rpx 0; }
-.spinner { width: 56rpx; height: 56rpx; border: 6rpx solid var(--c-sub); border-top-color: #07c160; border-radius: 50%; animation: spin 0.8s linear infinite; }
+/* ============================================================
+   设计 Token — 温暖 · 手作 · 有光（园丁感）
+   奶油米黄底 + 黄油琥珀主色 + 樱花粉/薄荷绿点缀 + 可可棕文字
+   ============================================================ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24rpx 24rpx 40rpx;
+  box-sizing: border-box;
+  background: var(--c-bg);
+  background-image:
+    radial-gradient(ellipse at 100% 0%, rgba(255, 183, 77, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(255, 138, 101, 0.05) 0%, transparent 40%);
+  transition: background-color 0.3s ease;
+}
+
+/* ---------- 暗色模式 ---------- */
+.page.dark {
+  background: #1a1714;
+  background-image:
+    radial-gradient(ellipse at 100% 0%, rgba(255, 183, 77, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(255, 138, 101, 0.03) 0%, transparent 40%);
+}
+
+/* ==================== 欢迎区域 ==================== */
+.hd {
+  margin-bottom: 20rpx;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.greeting-wrap {
+  position: relative;
+  display: inline-block;
+  padding: 28rpx 36rpx;
+  background: linear-gradient(135deg, var(--c-primary) 0%, #f0b966 100%);
+  border-radius: 24rpx;
+  box-shadow:
+    0 8rpx 32rpx rgba(230, 162, 60, 0.25),
+    0 2rpx 8rpx rgba(230, 162, 60, 0.15),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.greeting-wrap::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200rpx;
+  height: 200rpx;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.greeting-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: -10%;
+  width: 160rpx;
+  height: 160rpx;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.greeting-line1 {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 1rpx;
+}
+
+.greeting-line2 {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 6rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.08);
+}
+
+.greeting-deco {
+  position: absolute;
+  top: 16rpx;
+  right: 20rpx;
+  width: 12rpx;
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  box-shadow: 20rpx 8rpx 0 -2rpx rgba(255, 255, 255, 0.3);
+}
+
+/* ==================== 功能入口面板 ==================== */
+.actions-grid {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16rpx;
+  animation: fadeIn 0.5s ease-out 0.1s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.logout-btn {
+  background: var(--c-card);
+  border: 1rpx solid rgba(244, 67, 54, 0.15);
+  box-shadow: 0 2rpx 8rpx rgba(244, 67, 54, 0.08);
+}
+
+.logout-btn .info-label {
+  color: #e57373;
+}
+
+/* ==================== 功能入口列表 ==================== */
+.actions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+  animation: fadeIn 0.5s ease-out 0.15s both;
+}
+
+.info-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 100rpx;
+  font-size: 24rpx;
+  transition: all 0.2s ease;
+}
+
+.action-card {
+  background: var(--c-card);
+  box-shadow:
+    0 2rpx 8rpx rgba(0, 0, 0, 0.04),
+    0 1rpx 2rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid rgba(0, 0, 0, 0.04);
+}
+
+.action-card:active {
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.06);
+}
+
+.info-icon {
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.info-label {
+  font-size: 24rpx;
+  color: var(--c-title);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==================== 学生信息条 ==================== */
+.stu-bar {
+  margin-bottom: 16rpx;
+  animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+.stu-info-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
+  background: var(--c-card);
+  border-radius: 20rpx;
+  box-shadow:
+    0 4rpx 16rpx rgba(0, 0, 0, 0.04),
+    0 1rpx 4rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid rgba(0, 0, 0, 0.04);
+}
+
+.stu-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f8d7a0 0%, #f0b966 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(230, 162, 60, 0.2);
+  flex-shrink: 0;
+}
+
+.stu-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.stu-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--c-title);
+}
+
+.stu-meta {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== 统计卡片 ==================== */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150rpx, 1fr));
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+  animation: fadeInUp 0.5s ease-out 0.25s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card {
+  background: var(--c-card);
+  border-radius: 20rpx;
+  padding: 20rpx 16rpx;
+  text-align: center;
+  box-shadow:
+    0 4rpx 16rpx rgba(0, 0, 0, 0.04),
+    0 1rpx 4rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4rpx;
+  border-radius: 20rpx 20rpx 0 0;
+}
+
+.stat-card.stat-notices::before { background: linear-gradient(90deg, #ff9a9e, #fad0c4); }
+.stat-card.stat-homework::before { background: linear-gradient(90deg, #a1c4fd, #c2e9fb); }
+.stat-card.stat-scores::before { background: linear-gradient(90deg, #fbc2eb, #a6c1ee); }
+.stat-card.stat-rank::before { background: linear-gradient(90deg, #ffecd2, #fcb69f); }
+.stat-card.stat-mood::before { background: linear-gradient(90deg, #a8edea, #fed6e3); }
+
+.stat-card.clickable:active {
+  transform: scale(0.96);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.stat-icon {
+  font-size: 36rpx;
+  margin-bottom: 6rpx;
+  display: block;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--c-title);
+  line-height: 1.2;
+}
+
+.stat-value-sm {
+  font-size: 26rpx;
+}
+
+.stat-delta {
+  font-size: 18rpx;
+  margin-top: 6rpx;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.stat-delta.up { color: #52c41a; }
+.stat-delta.down { color: #ff7875; }
+
+/* ==================== Tab 切换 ==================== */
+.tabs {
+  display: flex;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+  padding: 6rpx;
+  background: var(--c-card);
+  border-radius: 18rpx;
+  box-shadow:
+    0 2rpx 12rpx rgba(0, 0, 0, 0.04),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  text-align: center;
+  font-size: 24rpx;
+  padding: 14rpx 8rpx;
+  border-radius: 14rpx;
+  color: var(--c-sub);
+  font-weight: 600;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.tab.on {
+  background: linear-gradient(135deg, var(--c-primary) 0%, #f0b966 100%);
+  color: #fff;
+  box-shadow:
+    0 4rpx 12rpx rgba(230, 162, 60, 0.3),
+    0 1rpx 4rpx rgba(230, 162, 60, 0.2);
+}
+
+.tab:not(.on):active {
+  background: rgba(230, 162, 60, 0.08);
+}
+
+.tab-icon {
+  font-size: 26rpx;
+}
+
+.tab-label {
+  white-space: nowrap;
+}
+
+/* ==================== 订阅引导卡片 ==================== */
+.subscribe-card {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+  position: relative;
+  box-shadow:
+    0 4rpx 16rpx rgba(230, 162, 60, 0.12),
+    0 1rpx 4rpx rgba(230, 162, 60, 0.08);
+  border: 1rpx solid rgba(230, 162, 60, 0.15);
+  animation: slideInRight 0.5s ease-out 0.35s both;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20rpx); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.sub-icon-area {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffe082 0%, #ffcc02 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(255, 193, 7, 0.25);
+}
+
+.sub-icon {
+  font-size: 32rpx;
+}
+
+.sub-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.sub-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #5d4037;
+  display: block;
+}
+
+.sub-desc {
+  font-size: 22rpx;
+  color: #795548;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.sub-btn {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #fff;
+  background: linear-gradient(135deg, var(--c-primary) 0%, #f0b966 100%);
+  padding: 12rpx 24rpx;
+  border-radius: 100rpx;
+  font-weight: 700;
+  box-shadow: 0 4rpx 12rpx rgba(230, 162, 60, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.sub-btn:active {
+  transform: scale(0.94);
+}
+
+.sub-close {
+  position: absolute;
+  top: 8rpx;
+  right: 14rpx;
+  font-size: 28rpx;
+  color: #a1887f;
+  line-height: 1;
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== 加载态 ==================== */
+.loading-mask {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+  padding: 80rpx 0;
+}
+
+.spinner {
+  width: 56rpx;
+  height: 56rpx;
+  border: 4rpx solid rgba(230, 162, 60, 0.2);
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 26rpx; color: var(--c-sub); }
-.load-err { background: #E6A23C; color: #fff; font-size: 26rpx; text-align: center; padding: 20rpx; border-radius: 14rpx; margin-bottom: 12rpx; }
-.switch-role { text-align: center; padding: 20rpx 0; font-size: 26rpx; color: #07c160; border-top: 1rpx solid #f0f0f0; margin-top: 20rpx; }
-.pwd-mask { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.pwd-box { width: 600rpx; background: var(--c-card); border-radius: 28rpx; padding: 40rpx; }
-.pwd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx; }
-.pwd-title { font-size: 32rpx; font-weight: 800; color: var(--c-title); }
-.pwd-close { font-size: 36rpx; color: var(--c-sub); }
-.pwd-ok { font-size: 24rpx; color: #07c160; background: #e8f5e9; border-radius: 10rpx; padding: 14rpx; margin-bottom: 16rpx; }
-.pwd-err { font-size: 24rpx; color: #e06c75; background: #fde8e8; border-radius: 10rpx; padding: 14rpx; margin-bottom: 16rpx; }
-.pwd-label { font-size: 24rpx; color: var(--c-sub); margin-bottom: 8rpx; display: block; }
-.pwd-input { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; }
-.pwd-btn { background: var(--c-primary); color: #fff; font-size: 28rpx; font-weight: 700; border-radius: 14rpx; padding: 22rpx; margin-top: 8rpx; }
-.pwd-btn[disabled] { opacity: 0.6; }
-.pwd-tip { font-size: 22rpx; color: #9aa0a6; margin-bottom: 16rpx; display: block; }
-.pwd-textarea { background: var(--c-input); border-radius: 12rpx; padding: 20rpx; font-size: 26rpx; color: var(--c-title); margin-bottom: 20rpx; width: 100%; box-sizing: border-box; height: 120rpx; }
-.req-box { max-height: 80vh; display: flex; flex-direction: column; }
-.req-list { max-height: 600rpx; margin-bottom: 16rpx; }
-.req-item { background: var(--c-input); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; }
-.req-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; }
-.req-name { font-size: 26rpx; font-weight: 700; color: var(--c-title); }
-.req-status { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
-.rs-pending { background: #fef3e0; color: #E6A23C; }
-.rs-approved { background: #e8f5e9; color: #07c160; }
-.rs-rejected { background: #fde8e8; color: #e06c75; }
-.req-date { font-size: 20rpx; color: var(--c-sub); display: block; margin-bottom: 8rpx; }
-.req-payload { background: var(--c-card); border-radius: 10rpx; padding: 12rpx; margin-bottom: 8rpx; }
-.req-line { font-size: 22rpx; color: var(--c-title); display: block; line-height: 1.6; }
-.req-review { font-size: 22rpx; color: #e06c75; background: #fde8e8; border-radius: 8rpx; padding: 8rpx 12rpx; display: block; margin-top: 6rpx; }
-.req-reviewed { font-size: 20rpx; color: #9aa0a6; display: block; margin-top: 6rpx; }
-.req-empty { font-size: 24rpx; color: var(--c-sub); text-align: center; padding: 40rpx 0; }
-.req-msg { font-size: 24rpx; color: var(--c-title); display: block; line-height: 1.6; margin-top: 6rpx; }
-.pwd-btn.ghost { background: var(--c-input); color: var(--c-title); }
-.teacher-detail { display: flex; flex-direction: column; align-items: center; gap: 16rpx; padding: 10rpx 0; }
-.td-avatar { width: 96rpx; height: 96rpx; border-radius: 50%; background: #fdf6ec; color: #E6A23C; display: flex; align-items: center; justify-content: center; font-size: 40rpx; font-weight: 600; }
-.td-name { font-size: 32rpx; font-weight: 800; color: var(--c-title); display: flex; align-items: center; gap: 12rpx; }
-.teacher-role { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 20rpx; }
-.teacher-role.head { background: #fdf6ec; color: #E6A23C; }
-.teacher-role.subject { background: #e8f4fd; color: #1C6FB3; }
-.td-row { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; padding: 12rpx 0; border-bottom: 1rpx solid var(--c-input-border); }
-.td-label { font-size: 24rpx; color: var(--c-sub); flex-shrink: 0; }
-.td-val { font-size: 24rpx; color: var(--c-title); font-weight: 600; text-align: right; flex: 1; margin-left: 16rpx; }
+
+.loading-text {
+  font-size: 26rpx;
+  color: var(--c-sub);
+}
+
+/* ==================== 错误态 ==================== */
+.load-err {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  color: #e65100;
+  font-size: 26rpx;
+  text-align: center;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(230, 126, 34, 0.12);
+  border: 1rpx solid rgba(230, 126, 34, 0.15);
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8rpx); }
+  40% { transform: translateX(8rpx); }
+  60% { transform: translateX(-4rpx); }
+  80% { transform: translateX(4rpx); }
+}
+
+.err-icon {
+  font-size: 30rpx;
+}
+
+.err-text {
+  font-weight: 600;
+}
+
+/* ==================== 弹窗通用 ==================== */
+.pwd-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4rpx);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: maskIn 0.2s ease-out;
+}
+
+@keyframes maskIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pwd-box {
+  width: 600rpx;
+  background: var(--c-card);
+  border-radius: 28rpx;
+  padding: 40rpx;
+  box-shadow:
+    0 16rpx 48rpx rgba(0, 0, 0, 0.12),
+    0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  animation: boxIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes boxIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20rpx); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.pwd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.pwd-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--c-title);
+}
+
+.pwd-close {
+  font-size: 36rpx;
+  color: var(--c-sub);
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.pwd-close:active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.pwd-ok {
+  font-size: 24rpx;
+  color: #52c41a;
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid rgba(82, 196, 26, 0.2);
+  font-weight: 600;
+}
+
+.pwd-err {
+  font-size: 24rpx;
+  color: #ff7875;
+  background: linear-gradient(135deg, #fff2f0 0%, #ffccc7 100%);
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid rgba(255, 120, 117, 0.2);
+  font-weight: 600;
+}
+
+.pwd-label {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  margin-bottom: 8rpx;
+  display: block;
+  font-weight: 600;
+}
+
+.pwd-input {
+  background: var(--c-input);
+  border-radius: 14rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  color: var(--c-title);
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--c-input-border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pwd-input:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3rpx rgba(230, 162, 60, 0.15);
+}
+
+.pwd-btn {
+  background: linear-gradient(135deg, var(--c-primary) 0%, #f0b966 100%);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+  border-radius: 16rpx;
+  padding: 22rpx;
+  margin-top: 8rpx;
+  box-shadow: 0 4rpx 16rpx rgba(230, 162, 60, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pwd-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 2rpx 8rpx rgba(230, 162, 60, 0.2);
+}
+
+.pwd-btn[disabled] {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.pwd-tip {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  margin-bottom: 16rpx;
+  display: block;
+  background: #fffbe6;
+  padding: 12rpx 16rpx;
+  border-radius: 10rpx;
+  border-left: 4rpx solid #faad14;
+}
+
+.pwd-textarea {
+  background: var(--c-input);
+  border-radius: 14rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  color: var(--c-title);
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+  height: 120rpx;
+  border: 1rpx solid var(--c-input-border);
+}
+
+.pwd-textarea:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3rpx rgba(230, 162, 60, 0.15);
+}
+
+/* ==================== 申请记录 ==================== */
+.req-box {
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.req-list {
+  max-height: 600rpx;
+  margin-bottom: 16rpx;
+}
+
+.req-item {
+  background: var(--c-input);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+  border: 1rpx solid var(--c-input-border);
+  transition: transform 0.15s;
+}
+
+.req-item:active {
+  transform: scale(0.98);
+}
+
+.req-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.req-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-title);
+}
+
+.req-status {
+  font-size: 20rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 100rpx;
+  font-weight: 600;
+}
+
+.rs-pending { background: #fff7e6; color: #fa8c16; }
+.rs-approved { background: #f6ffed; color: #52c41a; }
+.rs-rejected { background: #fff2f0; color: #ff7875; }
+
+.req-date {
+  font-size: 20rpx;
+  color: var(--c-sub);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.req-payload {
+  background: var(--c-card);
+  border-radius: 12rpx;
+  padding: 14rpx;
+  margin-bottom: 8rpx;
+  border: 1rpx solid var(--c-input-border);
+}
+
+.req-line {
+  font-size: 22rpx;
+  color: var(--c-title);
+  display: block;
+  line-height: 1.6;
+}
+
+.req-review {
+  font-size: 22rpx;
+  color: #ff7875;
+  background: #fff2f0;
+  border-radius: 10rpx;
+  padding: 10rpx 14rpx;
+  display: block;
+  margin-top: 6rpx;
+  border-left: 4rpx solid #ff7875;
+}
+
+.req-reviewed {
+  font-size: 20rpx;
+  color: var(--c-sub);
+  display: block;
+  margin-top: 6rpx;
+}
+
+.req-empty {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.req-msg {
+  font-size: 24rpx;
+  color: var(--c-title);
+  display: block;
+  line-height: 1.6;
+  margin-top: 6rpx;
+}
+
+.pwd-btn.ghost {
+  background: var(--c-input);
+  color: var(--c-title);
+  box-shadow: none;
+  border: 1rpx solid var(--c-input-border);
+}
+
+/* ==================== 老师详情 ==================== */
+.teacher-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  padding: 10rpx 0;
+}
+
+.td-avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffe082 0%, #ffcc02 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  font-weight: 700;
+  box-shadow: 0 6rpx 20rpx rgba(255, 193, 7, 0.25);
+}
+
+.td-name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--c-title);
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.teacher-role {
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 100rpx;
+  font-weight: 600;
+}
+
+.teacher-role.head { background: #fff7e6; color: #fa8c16; }
+.teacher-role.subject { background: #e6f7ff; color: #1890ff; }
+
+.td-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid var(--c-input-border);
+}
+
+.td-label {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.td-val {
+  font-size: 24rpx;
+  color: var(--c-title);
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+  margin-left: 16rpx;
+}
+
+/* ==================== 暗色模式覆盖 ==================== */
+.dark .greeting-wrap {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%);
+  box-shadow:
+    0 8rpx 32rpx rgba(184, 134, 11, 0.3),
+    0 2rpx 8rpx rgba(184, 134, 11, 0.2),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
+}
+
+.dark .action-card {
+  background: #2a2420;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .info-label { color: #e0d5c8; }
+
+.dark .stu-info-card {
+  background: #2a2420;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .stu-name { color: #f5efe6; }
+.dark .stu-meta { color: #a89f91; }
+
+.dark .stat-card {
+  background: #2a2420;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .stat-value { color: #f5efe6; }
+.dark .stat-label { color: #a89f91; }
+
+.dark .tabs {
+  background: #2a2420;
+  box-shadow:
+    0 2rpx 12rpx rgba(0, 0, 0, 0.15),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.04);
+}
+
+.dark .tab { color: #a89f91; }
+
+.dark .tab.on {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%);
+  box-shadow: 0 4rpx 12rpx rgba(184, 134, 11, 0.35);
+}
+
+.dark .subscribe-card {
+  background: linear-gradient(135deg, #2e2a1a 0%, #332d1a 100%);
+  border-color: rgba(230, 162, 60, 0.2);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .sub-title { color: #f5d78e; }
+.dark .sub-desc { color: #c4a96a; }
+
+.dark .sub-icon-area {
+  background: linear-gradient(135deg, #8d6e63 0%, #a1887f 100%);
+  box-shadow: 0 4rpx 12rpx rgba(141, 110, 99, 0.3);
+}
+
+.dark .sub-btn {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%);
+  box-shadow: 0 4rpx 12rpx rgba(184, 134, 11, 0.35);
+}
+
+.dark .sub-close { color: #6d6458; }
+
+.dark .load-err {
+  background: linear-gradient(135deg, #3e2723 0%, #4e342e 100%);
+  color: #ffab91;
+  border-color: rgba(255, 171, 145, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .pwd-box {
+  background: #2a2420;
+  box-shadow:
+    0 16rpx 48rpx rgba(0, 0, 0, 0.3),
+    0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+}
+
+.dark .pwd-title { color: #f5efe6; }
+.dark .pwd-close { color: #a89f91; }
+.dark .pwd-close:active { background: rgba(255, 255, 255, 0.05); }
+
+.dark .pwd-ok {
+  background: linear-gradient(135deg, #1a2e1a 0%, #253d25 100%);
+  color: #95de64;
+  border-color: rgba(149, 222, 100, 0.2);
+}
+
+.dark .pwd-err {
+  background: linear-gradient(135deg, #2e1a1a 0%, #3d2525 100%);
+  color: #ff9e9e;
+  border-color: rgba(255, 158, 158, 0.2);
+}
+
+.dark .pwd-label { color: #a89f91; }
+.dark .pwd-input { background: #1e1915; border-color: rgba(255, 255, 255, 0.08); color: #f5efe6; }
+.dark .pwd-textarea { background: #1e1915; border-color: rgba(255, 255, 255, 0.08); color: #f5efe6; }
+
+.dark .pwd-btn {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%);
+  box-shadow: 0 4rpx 16rpx rgba(184, 134, 11, 0.3);
+}
+
+.dark .pwd-tip {
+  background: #2e2a1a;
+  color: #c4a96a;
+  border-left-color: #d4a017;
+}
+
+.dark .req-item { background: #1e1915; border-color: rgba(255, 255, 255, 0.06); }
+.dark .req-name { color: #f5efe6; }
+.dark .req-date { color: #a89f91; }
+.dark .req-payload { background: #2a2420; border-color: rgba(255, 255, 255, 0.06); }
+.dark .req-line { color: #e0d5c8; }
+.dark .req-review { background: #2e1a1a; color: #ff9e9e; border-left-color: #ff7875; }
+.dark .req-reviewed { color: #6d6458; }
+.dark .req-empty { color: #a89f91; }
+.dark .req-msg { color: #e0d5c8; }
+
+.dark .rs-pending { background: #2e2a1a; color: #ffc069; }
+.dark .rs-approved { background: #1a2e1a; color: #95de64; }
+.dark .rs-rejected { background: #2e1a1a; color: #ff9e9e; }
+
+.dark .pwd-btn.ghost { background: #1e1915; color: #e0d5c8; border-color: rgba(255, 255, 255, 0.08); }
+
+.dark .td-avatar {
+  background: linear-gradient(135deg, #8d6e63 0%, #a1887f 100%);
+  box-shadow: 0 6rpx 20rpx rgba(141, 110, 99, 0.3);
+}
+
+.dark .td-name { color: #f5efe6; }
+.dark .td-row { border-color: rgba(255, 255, 255, 0.06); }
+.dark .td-label { color: #a89f91; }
+.dark .td-val { color: #e0d5c8; }
+
+.dark .teacher-role.head { background: #2e2a1a; color: #ffc069; }
+.dark .teacher-role.subject { background: #1a2330; color: #69c0ff; }
+
+.dark .spinner {
+  border-color: rgba(184, 134, 11, 0.2);
+  border-top-color: #d4a017;
+}
+
+.dark .loading-text { color: #a89f91; }
+
+.dark .logout-btn {
+  background: #2a2420;
+  border-color: rgba(255, 120, 117, 0.2);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+
+.dark .logout-btn .info-label { color: #ff9e9e; }
 </style>

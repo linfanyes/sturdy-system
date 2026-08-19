@@ -170,7 +170,7 @@ async function handleLogin() {
       class="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] xl:max-w-6xl"
     >
       <!-- 左侧品牌/欢迎区 -->
-      <div class="space-y-7 text-center lg:text-left">
+      <div class="left-section space-y-7 text-center lg:text-left">
         <div
           class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-surface/80 px-4 py-1.5 text-sm font-semibold text-cocoa-800 shadow-sm backdrop-blur"
         >
@@ -229,7 +229,7 @@ async function handleLogin() {
       </div>
 
       <!-- 右侧登录卡 -->
-      <div class="relative">
+      <div class="login-card-wrapper relative">
         <!-- 顶部头像徽章（悬浮在卡片上方） -->
         <div class="absolute -top-7 left-1/2 z-10 -translate-x-1/2">
           <div
@@ -276,7 +276,7 @@ async function handleLogin() {
                 autocomplete="username"
                 placeholder="请输入用户名"
                 aria-label="用户名"
-                class="input-soft"
+                class="input-soft input-glow"
               />
             </div>
             <div>
@@ -290,7 +290,7 @@ async function handleLogin() {
                   autocomplete="current-password"
                   placeholder="请输入密码"
                   aria-label="密码"
-                  class="input-soft pr-11"
+                  class="input-soft input-glow pr-11"
                   @keydown="checkCapsLock"
                   @keyup="checkCapsLock"
                 />
@@ -313,7 +313,7 @@ async function handleLogin() {
             <!-- 错误提示 -->
             <div
               v-if="errMsg"
-              class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-500"
+              :class="['rounded-xl bg-red-50 px-3 py-2 text-sm text-red-500', { 'err-shake': errMsg }]"
             >
               {{ errMsg }}
             </div>
@@ -322,7 +322,7 @@ async function handleLogin() {
             <button
               type="submit"
               :disabled="loading"
-              class="btn-primary group relative w-full overflow-hidden px-6 py-3 text-base font-semibold"
+              class="btn-primary btn-press btn-breathe group relative w-full overflow-hidden px-6 py-3 text-base font-semibold"
             >
               <span aria-hidden class="pointer-events-none absolute left-0 top-0 h-full w-2/5 bg-white/30 blur-sm group-hover:animate-sweep" />
               <Loader2 v-if="loading" class="mr-2 inline h-4 w-4 animate-spin" />
@@ -407,5 +407,103 @@ async function handleLogin() {
 .motto-enter-from,
 .motto-leave-to {
   opacity: 0;
+}
+
+/* 登录卡入场动画 */
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes left-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 左侧品牌区 stagger 入场 */
+.left-section > * {
+  animation: left-slide-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.left-section > *:nth-child(1) { animation-delay: 0.1s; }
+.left-section > *:nth-child(2) { animation-delay: 0.2s; }
+.left-section > *:nth-child(3) { animation-delay: 0.32s; }
+.left-section > *:nth-child(4) { animation-delay: 0.44s; }
+.left-section > *:nth-child(5) { animation-delay: 0.56s; }
+
+/* 右侧登录卡入场 */
+.login-card-wrapper {
+  animation: card-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+/* 输入框聚焦光晕 */
+.input-glow:focus {
+  box-shadow: 0 0 0 4px rgba(245, 179, 66, 0.15), 0 4px 16px rgba(245, 179, 66, 0.1);
+}
+
+/* 登录按钮按压反馈 */
+.btn-press:active {
+  transform: scale(0.96) translateY(1px) !important;
+}
+
+/* 浮动装饰元素 */
+@keyframes float-decor {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+.decor-float {
+  animation: float-decor 5s ease-in-out infinite;
+}
+
+/* 图标微妙摇摆 */
+@keyframes icon-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+.icon-wiggle:hover {
+  animation: icon-wiggle 0.6s ease-in-out;
+}
+
+/* 错误信息抖动 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.err-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* 成功率场呼吸 */
+@keyframes success-breathe {
+  0%, 100% { box-shadow: 0 4px 12px rgba(214, 148, 38, 0.3); }
+  50% { box-shadow: 0 6px 24px rgba(214, 148, 38, 0.5); }
+}
+.btn-breathe:not(:disabled) {
+  animation: success-breathe 2.5s ease-in-out infinite;
+}
+
+/* 减少动态 */
+@media (prefers-reduced-motion: reduce) {
+  .left-section > *,
+  .login-card-wrapper,
+  .decor-float,
+  .icon-wiggle:hover,
+  .btn-breathe:not(:disabled) {
+    animation: none !important;
+  }
 }
 </style>

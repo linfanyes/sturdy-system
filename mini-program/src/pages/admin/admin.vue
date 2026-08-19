@@ -1,35 +1,58 @@
 <template>
   <view class="page" :class="{ dark: theme.mode === 'dark' }">
-    <view v-if="logging" class="login-card">
-      <view class="login-title">🔐 正在以超级管理员身份进入…</view>
+    <!-- ===== 登录中状态 ===== -->
+    <view v-if="logging" class="login-card login-card--logging anim-bounce">
+      <view class="login-crest">
+        <text class="login-crest-ico anim-float">👑</text>
+        <view class="login-crest-ring"></view>
+      </view>
+      <view class="login-title">正在以超级管理员身份进入</view>
+      <view class="login-dots"><text class="dot dot-1"></text><text class="dot dot-2"></text><text class="dot dot-3"></text></view>
     </view>
 
+    <!-- ===== 登录表单 ===== -->
     <template v-else-if="!adminToken">
-      <view class="login-card">
-        <view class="login-title">🔐 超级管理员</view>
+      <view class="login-card anim-pop">
+        <view class="login-crest">
+          <text class="login-crest-ico">👑</text>
+          <view class="login-crest-ring"></view>
+        </view>
+        <view class="login-title">超级管理员</view>
+        <view class="login-sub">请输入凭据以访问全局控制台</view>
         <view class="login-field">
           <text class="login-label">用户名</text>
-          <input v-model="adminUser" class="login-input" placeholder="超管用户名" />
+          <input v-model="adminUser" class="login-input" placeholder="超管用户名" placeholder-class="login-placeholder" />
         </view>
         <view class="login-field">
           <text class="login-label">密码</text>
-          <input v-model="adminPwd" class="login-input" placeholder="超管密码" password />
+          <input v-model="adminPwd" class="login-input" placeholder="超管密码" password placeholder-class="login-placeholder" />
         </view>
-        <button class="login-btn" :disabled="logging" @click="doLogin">{{ logging ? '登录中…' : '登录' }}</button>
+        <button class="login-btn press-feedback" :disabled="logging" @click="doLogin">
+          <text v-if="!logging" class="login-btn-txt">登 录</text>
+          <text v-else class="login-btn-txt">登录中…</text>
+        </button>
         <view class="hint">用户名/密码由后端环境变量配置（SUPER_ADMIN_USER / SUPER_ADMIN_PASSWORD）</view>
       </view>
     </template>
 
+    <!-- ===== 已登录主界面 ===== -->
     <template v-else>
+      <!-- 顶部头栏 -->
       <view class="head">
-        <text class="h">👑 超级管理员</text>
-        <text class="logout" @click="logout">退出</text>
+        <view class="head-left">
+          <text class="head-avatar">👑</text>
+          <view>
+            <text class="h">超级管理员</text>
+            <text class="head-sub">全局控制台</text>
+          </view>
+        </view>
+        <text class="logout press-feedback" @click="logout">退出</text>
       </view>
 
       <!-- 二级功能面板：带返回头 -->
       <template v-if="subView">
         <view class="sub-head">
-          <text class="sub-back" @click="back">← 返回</text>
+          <text class="sub-back press-feedback" @click="back">← 返回</text>
           <text class="sub-title">{{ subTitle }}</text>
         </view>
 
@@ -102,40 +125,82 @@
       <template v-else>
         <!-- 仪表盘 -->
         <view v-if="bottomTab === 'dashboard'" class="dash">
-          <view class="dash-welcome">
-            <text class="dash-hi">👋 欢迎回来</text>
+          <view class="dash-welcome anim-slide-up">
+            <text class="dash-hi">欢迎回来 👋</text>
             <text class="dash-sub">系统全局概览与快捷入口</text>
           </view>
-          <view class="dash-stats">
-            <view class="dstat"><text class="dstat-num">{{ schools.length }}</text><text class="dstat-label">学校</text></view>
-            <view class="dstat"><text class="dstat-num">{{ schoolAdmins.length }}</text><text class="dstat-label">校管理员</text></view>
-            <view class="dstat"><text class="dstat-num">{{ providers.length }}</text><text class="dstat-label">AI 厂商</text></view>
-            <view class="dstat"><text class="dstat-num">{{ todayLogCount }}</text><text class="dstat-label">今日日志</text></view>
-            <view class="dstat"><text class="dstat-num">{{ weekLogCount }}</text><text class="dstat-label">本周日志</text></view>
+          <view class="dash-stats grow-in">
+            <view class="dstat dstat--school">
+              <text class="dstat-ico">🏫</text>
+              <text class="dstat-num">{{ schools.length }}</text>
+              <text class="dstat-label">学校</text>
+            </view>
+            <view class="dstat dstat--admin">
+              <text class="dstat-ico">👤</text>
+              <text class="dstat-num">{{ schoolAdmins.length }}</text>
+              <text class="dstat-label">校管理员</text>
+            </view>
+            <view class="dstat dstat--ai">
+              <text class="dstat-ico">🤖</text>
+              <text class="dstat-num">{{ providers.length }}</text>
+              <text class="dstat-label">AI 厂商</text>
+            </view>
+            <view class="dstat dstat--today">
+              <text class="dstat-ico">📅</text>
+              <text class="dstat-num">{{ todayLogCount }}</text>
+              <text class="dstat-label">今日日志</text>
+            </view>
+            <view class="dstat dstat--week">
+              <text class="dstat-ico">📈</text>
+              <text class="dstat-num">{{ weekLogCount }}</text>
+              <text class="dstat-label">本周日志</text>
+            </view>
           </view>
-          <view class="dash-menu">
-            <view class="dm" @click="quickOpen('account','school')"><text class="dm-ico">🏫</text><text class="dm-txt">学校管理</text></view>
-            <view class="dm" @click="quickOpen('account','schoolAdmin')"><text class="dm-ico">👤</text><text class="dm-txt">校管理员</text></view>
-            <view class="dm" @click="quickOpen('settings','config')"><text class="dm-ico">⚙️</text><text class="dm-txt">平台配置</text></view>
-            <view class="dm" @click="quickOpen('settings','ai')"><text class="dm-ico">🤖</text><text class="dm-txt">AI 服务商</text></view>
-            <view class="dm" @click="quickOpen('dashboard','grade')"><text class="dm-ico">📊</text><text class="dm-txt">成绩审计</text></view>
-            <view class="dm" @click="quickOpen('dashboard','audit')"><text class="dm-ico">📜</text><text class="dm-txt">审计日志</text></view>
+          <view class="dash-menu grow-in">
+            <view class="dm press-feedback" @click="quickOpen('account','school')">
+              <text class="dm-ico">🏫</text>
+              <text class="dm-txt">学校管理</text>
+            </view>
+            <view class="dm press-feedback" @click="quickOpen('account','schoolAdmin')">
+              <text class="dm-ico">👤</text>
+              <text class="dm-txt">校管理员</text>
+            </view>
+            <view class="dm press-feedback" @click="quickOpen('settings','config')">
+              <text class="dm-ico">⚙️</text>
+              <text class="dm-txt">平台配置</text>
+            </view>
+            <view class="dm press-feedback" @click="quickOpen('settings','ai')">
+              <text class="dm-ico">🤖</text>
+              <text class="dm-txt">AI 服务商</text>
+            </view>
+            <view class="dm press-feedback" @click="quickOpen('dashboard','grade')">
+              <text class="dm-ico">📊</text>
+              <text class="dm-txt">成绩审计</text>
+            </view>
+            <view class="dm press-feedback" @click="quickOpen('dashboard','audit')">
+              <text class="dm-ico">📜</text>
+              <text class="dm-txt">审计日志</text>
+            </view>
           </view>
         </view>
 
         <!-- 账户管理二级列表 -->
         <template v-else-if="bottomTab === 'account'">
-          <view class="menu-list">
-            <view class="menu-row" @click="openSub('school')">
-              <text class="menu-icon">🏫</text>
+          <view class="menu-list grow-in">
+            <view class="menu-row press-feedback" @click="openSub('school')">
+              <view class="menu-icon-wrap menu-icon--school">
+                <text class="menu-icon">🏫</text>
+              </view>
               <view class="menu-info">
                 <text class="menu-name">学校管理</text>
                 <text class="menu-sub">{{ schools.length }} 所学校</text>
               </view>
               <text class="menu-arrow">›</text>
             </view>
-            <view class="menu-row" @click="openSub('schoolAdmin')">
-              <text class="menu-icon">👤</text>
+            <view class="menu-row press-feedback" @click="openSub('schoolAdmin')">
+              <view class="menu-icon-wrap menu-icon--admin">
+                <text class="menu-icon">👤</text>
+              </view>
               <view class="menu-info">
                 <text class="menu-name">校管理员</text>
                 <text class="menu-sub">{{ schoolAdmins.length }} 个管理员</text>
@@ -147,17 +212,21 @@
 
         <!-- 设置二级列表 -->
         <template v-else-if="bottomTab === 'settings'">
-          <view class="menu-list">
-            <view class="menu-row" @click="openSub('config')">
-              <text class="menu-icon">⚙️</text>
+          <view class="menu-list grow-in">
+            <view class="menu-row press-feedback" @click="openSub('config')">
+              <view class="menu-icon-wrap menu-icon--config">
+                <text class="menu-icon">⚙️</text>
+              </view>
               <view class="menu-info">
                 <text class="menu-name">平台配置</text>
                 <text class="menu-sub">全局配置项即时生效</text>
               </view>
               <text class="menu-arrow">›</text>
             </view>
-            <view class="menu-row" @click="openSub('ai')">
-              <text class="menu-icon">🤖</text>
+            <view class="menu-row press-feedback" @click="openSub('ai')">
+              <view class="menu-icon-wrap menu-icon--ai">
+                <text class="menu-icon">🤖</text>
+              </view>
               <view class="menu-info">
                 <text class="menu-name">AI 服务商</text>
                 <text class="menu-sub">{{ providers.length }} 个厂商</text>
@@ -170,16 +239,25 @@
 
       <!-- 底部 3-tab 导航 -->
       <view class="tabbar">
-        <view class="tab-item" :class="{ on: bottomTab === 'dashboard' }" @click="selectBottomTab('dashboard')">
-          <text class="tab-ico">📊</text>
+        <view class="tab-item press-feedback" :class="{ on: bottomTab === 'dashboard' }" @click="selectBottomTab('dashboard')">
+          <view class="tab-ico-wrap">
+            <text class="tab-ico">📊</text>
+            <view v-if="bottomTab === 'dashboard'" class="tab-indicator"></view>
+          </view>
           <text class="tab-txt">工作台</text>
         </view>
-        <view class="tab-item" :class="{ on: bottomTab === 'account' }" @click="selectBottomTab('account')">
-          <text class="tab-ico">👥</text>
+        <view class="tab-item press-feedback" :class="{ on: bottomTab === 'account' }" @click="selectBottomTab('account')">
+          <view class="tab-ico-wrap">
+            <text class="tab-ico">👥</text>
+            <view v-if="bottomTab === 'account'" class="tab-indicator"></view>
+          </view>
           <text class="tab-txt">账户管理</text>
         </view>
-        <view class="tab-item" :class="{ on: bottomTab === 'settings' }" @click="selectBottomTab('settings')">
-          <text class="tab-ico">⚙️</text>
+        <view class="tab-item press-feedback" :class="{ on: bottomTab === 'settings' }" @click="selectBottomTab('settings')">
+          <view class="tab-ico-wrap">
+            <text class="tab-ico">⚙️</text>
+            <view v-if="bottomTab === 'settings'" class="tab-indicator"></view>
+          </view>
           <text class="tab-txt">设置</text>
         </view>
       </view>
@@ -599,42 +677,431 @@ async function loadAuditLogList() {
 </script>
 
 <style scoped>
-.page { padding: 24rpx; padding-bottom: calc(150rpx + env(safe-area-inset-bottom)); background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
-.login-card { background: var(--c-card); border-radius: 28rpx; padding: 48rpx 36rpx; width: 560rpx; max-width: 90vw; margin: 120rpx auto 0; box-sizing: border-box; box-shadow: 0 10rpx 36rpx var(--c-shadow); border: 1px solid var(--c-border); }
-.login-title { font-size: 36rpx; font-weight: 800; color: var(--c-title); text-align: center; margin-bottom: 30rpx; }
+/* ======================== 页面容器 ======================== */
+.page {
+  padding: 24rpx;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  background: var(--c-bg);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ======================== 登录卡片 ======================== */
+.login-card {
+  position: relative;
+  background: var(--c-card);
+  border-radius: 32rpx;
+  padding: 56rpx 40rpx 40rpx;
+  width: 560rpx;
+  max-width: 90vw;
+  margin: 100rpx auto 0;
+  box-sizing: border-box;
+  box-shadow: var(--c-shadow-paper);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+}
+/* 卡片顶部柔光带 */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 4rpx;
+  background: linear-gradient(90deg, transparent, var(--c-primary), transparent);
+  border-radius: 0 0 4rpx 4rpx;
+}
+/* 登录中变体 */
+.login-card--logging {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx 70rpx;
+}
+/* 王冠徽标 */
+.login-crest {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+.login-crest-ico {
+  font-size: 72rpx;
+  line-height: 1;
+  filter: drop-shadow(0 4rpx 12rpx rgba(245,179,66,.35));
+}
+.login-crest-ring {
+  position: absolute;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(245,179,66,.2);
+  animation: pulse-ring 2s ease-out infinite;
+}
+/* 登录中脉冲圆点 */
+.login-dots {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+.login-dots .dot {
+  display: inline-block;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: var(--c-primary);
+}
+.dot-1 { animation: dot-pulse 1.2s ease-in-out infinite; }
+.dot-2 { animation: dot-pulse 1.2s ease-in-out 0.2s infinite; }
+.dot-3 { animation: dot-pulse 1.2s ease-in-out 0.4s infinite; }
+
+.login-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: var(--c-title);
+  text-align: center;
+  margin-bottom: 8rpx;
+}
+.login-sub {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  text-align: center;
+  margin-bottom: 32rpx;
+}
 .login-field { margin-bottom: 20rpx; }
-.login-label { display: block; font-size: 26rpx; color: var(--c-sub); margin-bottom: 8rpx; }
-.login-input { border: 1px solid var(--c-input-border); border-radius: 16rpx; padding: 22rpx 24rpx; font-size: 30rpx; width: 100%; box-sizing: border-box; background: var(--c-input); color: var(--c-text); }
-.login-btn { background: linear-gradient(135deg, var(--c-primary), var(--c-primary-d)); color: #fff; border-radius: 50rpx; font-size: 30rpx; height: 88rpx; line-height: 88rpx; margin-top: 20rpx; font-weight: 700; box-shadow: 0 6rpx 20rpx rgba(245,179,66,.25); }
-.hint { font-size: 22rpx; color: var(--c-sub); text-align: center; margin-top: 16rpx; }
-.head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24rpx; padding-top: 8rpx; }
-.h { font-size: 36rpx; font-weight: 800; color: var(--c-title); }
-.logout { font-size: 24rpx; color: var(--c-primary); font-weight: 600; padding: 10rpx 28rpx; border-radius: 32rpx; background: rgba(245,179,66,.1); }
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: stretch; background: var(--c-card); border-top: 1px solid var(--c-border); padding-bottom: env(safe-area-inset-bottom); z-index: 50; box-shadow: 0 -6rpx 24rpx var(--c-shadow); }
-.tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4rpx; padding: 14rpx 0 12rpx; color: var(--c-sub); }
-.tab-item.on { color: var(--c-primary); }
-.tab-ico { font-size: 38rpx; line-height: 1; }
-.tab-txt { font-size: 22rpx; font-weight: 600; }
-.sub-head { display: flex; align-items: center; gap: 16rpx; padding: 8rpx 4rpx 20rpx; }
-.sub-back { font-size: 28rpx; color: var(--c-accent); font-weight: 600; padding: 8rpx 12rpx; background: rgba(245,179,66,.08); border-radius: 24rpx; }
-.sub-title { font-size: 32rpx; font-weight: 800; color: var(--c-title); }
-.menu-list { display: flex; flex-direction: column; gap: 16rpx; }
-.menu-row { display: flex; align-items: center; gap: 20rpx; padding: 28rpx 24rpx; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
-.menu-icon { font-size: 44rpx; width: 64rpx; text-align: center; }
+.login-label {
+  display: block;
+  font-size: 26rpx;
+  color: var(--c-sub);
+  margin-bottom: 8rpx;
+  font-weight: 600;
+}
+.login-input {
+  border: 1.5px solid var(--c-input-border);
+  border-radius: var(--r-md);
+  padding: 22rpx 24rpx;
+  font-size: 30rpx;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--c-input);
+  color: var(--c-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-input:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 4rpx rgba(245,179,66,.12);
+}
+.login-placeholder {
+  color: var(--c-sub);
+  opacity: 0.6;
+}
+.login-btn {
+  background: linear-gradient(135deg, var(--c-primary), var(--c-primary-d));
+  color: #fff;
+  border-radius: var(--r-pill);
+  font-size: 30rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  margin-top: 24rpx;
+  font-weight: 700;
+  box-shadow: 0 8rpx 24rpx rgba(245,179,66,.28);
+  letter-spacing: 4rpx;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.login-btn-txt { letter-spacing: 4rpx; }
+.hint {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  text-align: center;
+  margin-top: 20rpx;
+  line-height: 1.6;
+}
+
+/* ======================== 顶部头栏 ======================== */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding-top: 8rpx;
+}
+.head-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.head-avatar {
+  font-size: 44rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(245,179,66,.15), rgba(245,179,66,.08));
+  border-radius: 50%;
+  border: 1.5px solid rgba(245,179,66,.2);
+}
+.h {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--c-title);
+  display: block;
+}
+.head-sub {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  display: block;
+  margin-top: 2rpx;
+}
+.logout {
+  font-size: 24rpx;
+  color: var(--c-primary);
+  font-weight: 600;
+  padding: 12rpx 28rpx;
+  border-radius: var(--r-pill);
+  background: rgba(245,179,66,.1);
+  border: 1.5px solid rgba(245,179,66,.2);
+  transition: transform 0.15s, background 0.15s;
+}
+
+/* ======================== 子页面头栏 ======================== */
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 4rpx 20rpx;
+}
+.sub-back {
+  font-size: 28rpx;
+  color: var(--c-accent);
+  font-weight: 600;
+  padding: 10rpx 20rpx;
+  background: rgba(245,179,66,.08);
+  border-radius: 24rpx;
+  border: 1px solid rgba(245,179,66,.15);
+  transition: transform 0.15s;
+}
+.sub-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--c-title);
+}
+
+/* ======================== 仪表盘 ======================== */
+.dash { padding-top: 8rpx; }
+.dash-welcome {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 28rpx;
+  padding: 32rpx 36rpx;
+  background: linear-gradient(135deg, rgba(245,179,66,.1), rgba(245,179,66,.04));
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(245,179,66,.12);
+}
+.dash-hi {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: var(--c-title);
+}
+.dash-sub {
+  font-size: 24rpx;
+  color: var(--c-sub);
+  margin-top: 8rpx;
+}
+
+/* 统计卡片行 */
+.dash-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+.dstat {
+  flex: 1 1 30%;
+  min-width: 30%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28rpx 0 24rpx;
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--c-shadow-paper);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s;
+}
+.dstat:active {
+  transform: scale(0.97);
+}
+/* 顶部色带 */
+.dstat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 4rpx;
+  border-radius: 0 0 4rpx 4rpx;
+}
+.dstat--school::before { background: var(--c-primary); }
+.dstat--admin::before { background: var(--c-accent); }
+.dstat--ai::before { background: var(--c-blue); }
+.dstat--today::before { background: var(--c-success); }
+.dstat--week::before { background: var(--c-pink); }
+
+.dstat-ico {
+  font-size: 36rpx;
+  margin-bottom: 8rpx;
+}
+.dstat-num {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--c-title);
+  line-height: 1.2;
+}
+.dstat--school .dstat-num { color: var(--c-primary); }
+.dstat--admin .dstat-num { color: var(--c-accent); }
+.dstat--ai .dstat-num { color: var(--c-blue); }
+.dstat--today .dstat-num { color: var(--c-success); }
+.dstat--week .dstat-num { color: var(--c-pink); }
+.dstat-label {
+  font-size: 22rpx;
+  color: var(--c-sub);
+  margin-top: 4rpx;
+}
+
+/* 快捷菜单网格 */
+.dash-menu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.dm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 36rpx 0;
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--c-shadow-paper);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.dm-ico { font-size: 50rpx; }
+.dm-txt {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-title);
+}
+
+/* ======================== 菜单列表 ======================== */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx 24rpx;
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--c-shadow-paper);
+  border: 1px solid var(--c-border);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.menu-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.menu-icon--school { background: rgba(245,179,66,.12); }
+.menu-icon--admin { background: rgba(230,162,60,.12); }
+.menu-icon--config { background: rgba(28,111,179,.1); }
+.menu-icon--ai { background: rgba(76,175,80,.1); }
+.menu-icon { font-size: 36rpx; }
 .menu-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .menu-name { font-size: 30rpx; font-weight: 700; color: var(--c-title); }
 .menu-sub { font-size: 22rpx; color: var(--c-sub); margin-top: 4rpx; }
-.menu-arrow { font-size: 40rpx; color: var(--c-sub); font-weight: 700; }
-.dash { padding-top: 8rpx; }
-.dash-welcome { display: flex; flex-direction: column; margin-bottom: 24rpx; }
-.dash-hi { font-size: 34rpx; font-weight: 800; color: var(--c-title); }
-.dash-sub { font-size: 24rpx; color: var(--c-sub); margin-top: 6rpx; }
-.dash-stats { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 28rpx; }
-.dstat { flex: 1 1 30%; min-width: 30%; display: flex; flex-direction: column; align-items: center; padding: 28rpx 0; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
-.dstat-num { font-size: 44rpx; font-weight: 800; color: var(--c-primary); }
-.dstat-label { font-size: 22rpx; color: var(--c-sub); margin-top: 6rpx; }
-.dash-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; }
-.dm { display: flex; flex-direction: column; align-items: center; gap: 12rpx; padding: 32rpx 0; background: var(--c-card); border-radius: 20rpx; box-shadow: 0 4rpx 16rpx var(--c-shadow); }
-.dm-ico { font-size: 48rpx; }
-.dm-txt { font-size: 26rpx; font-weight: 600; color: var(--c-title); }
+.menu-arrow {
+  font-size: 40rpx;
+  color: var(--c-sub);
+  font-weight: 700;
+  opacity: 0.5;
+}
+
+/* ======================== 底部 Tabbar ======================== */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  background: var(--c-card);
+  border-top: 1px solid var(--c-border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 50;
+  box-shadow: 0 -4rpx 20rpx var(--c-shadow);
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  padding: 16rpx 0 12rpx;
+  color: var(--c-sub);
+  position: relative;
+  transition: color 0.2s;
+}
+.tab-item.on { color: var(--c-primary); }
+.tab-ico-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tab-ico {
+  font-size: 38rpx;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.tab-item.on .tab-ico {
+  transform: scale(1.1);
+}
+.tab-indicator {
+  width: 32rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background: var(--c-primary);
+  margin-top: 6rpx;
+  animation: bounce-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.tab-txt {
+  font-size: 22rpx;
+  font-weight: 600;
+  transition: font-weight 0.2s;
+}
+.tab-item.on .tab-txt {
+  font-weight: 700;
+}
+
+/* ======================== 按压反馈（scoped 内覆盖全局） ======================== */
+.press-feedback {
+  transition: transform 0.15s, opacity 0.15s;
+}
+.press-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
 </style>

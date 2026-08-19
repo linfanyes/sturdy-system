@@ -6,25 +6,27 @@
     <view class="glow glow-butter" />
 
     <view class="inner">
-      <!-- 品牌徽章（对齐 Web 端登录页） -->
-      <view class="brand-chip">
-        <text class="brand-spark">✨</text>
-        <text class="brand-name">园丁工作台</text>
-      </view>
+    <!-- 品牌徽章（对齐 Web 端登录页） -->
+    <view class="brand-chip pop-in">
+      <text class="brand-spark">✨</text>
+      <text class="brand-name">园丁工作台</text>
+    </view>
 
-      <!-- Logo + 标题 -->
-      <view class="logo-wrap">
-        <view class="logo-halo">
-          <text class="logo">🌻</text>
-        </view>
+    <!-- Logo + 标题 -->
+    <view class="logo-wrap pop-in" style="--i:0.1s">
+      <view class="logo-halo pulse-soft">
+        <text class="logo">🌻</text>
       </view>
-      <view class="title">今天也要闪闪发光</view>
-      <view class="slogan">用心看见每一个孩子 🌱</view>
+    </view>
+    <view class="title pop-in" style="--i:0.2s">今天也要闪闪发光</view>
+    <view class="slogan pop-in" style="--i:0.3s">用心看见每一个孩子 🌱</view>
 
-      <!-- 表单 -->
+    <!-- 表单 -->
+    <view class="form-area">
       <input
         v-model="username"
-        class="inp2"
+        class="inp2 pop-in"
+        style="--i:0.4s"
         placeholder="用户名 / 学号"
         placeholder-style="color:#b5a890;"
         confirm-type="next"
@@ -32,7 +34,8 @@
       />
       <input
         v-model="password"
-        class="inp2"
+        class="inp2 pop-in"
+        style="--i:0.5s"
         :focus="focusPwd"
         confirm-type="done"
         placeholder="密码"
@@ -40,15 +43,16 @@
         placeholder-style="color:#b5a890;"
         @confirm="doLogin"
       />
+    </view>
 
-      <!-- 登录按钮：黄油琥珀渐变（与 Web 端 btn-primary 同源） -->
-      <button class="btn" :disabled="loading" @click="doLogin">
-        {{ loading ? '登录中…' : '开始工作 →' }}
-      </button>
+    <!-- 登录按钮：黄油琥珀渐变（与 Web 端 btn-primary 同源） -->
+    <button class="btn btn-breathe pop-in" style="--i:0.6s" :disabled="loading" @click="doLogin">
+      {{ loading ? '登录中…' : '开始工作 →' }}
+    </button>
 
-      <view class="foot">
-        <text class="foot-text">登录后 token 将持久化，下次打开无需重新登录</text>
-      </view>
+    <view class="foot pop-in" style="--i:0.7s">
+      <text class="foot-text">登录后 token 将持久化，下次打开无需重新登录</text>
+    </view>
     </view>
   </view>
 </template>
@@ -233,4 +237,53 @@ function handleLoginResult(r) {
 
 .foot { margin-top: 40rpx; }
 .foot-text { font-size: 22rpx; color: var(--c-sub); }
+
+/* ========= 入场动效 ========= */
+.pop-in {
+  animation: pop-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--i, 0s);
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(24rpx) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Logo 光晕呼吸 */
+.pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 12rpx 40rpx rgba(245, 179, 66, 0.35); }
+  50% { box-shadow: 0 12rpx 50rpx rgba(245, 179, 66, 0.55); }
+}
+
+/* 登录按钮呼吸光晕 */
+.btn-breathe:not([disabled]) {
+  animation: btn-breathe 2.5s ease-in-out infinite;
+}
+@keyframes btn-breathe {
+  0%, 100% { box-shadow: 0 10rpx 30rpx rgba(214, 148, 38, 0.28); }
+  50% { box-shadow: 0 14rpx 40rpx rgba(214, 148, 38, 0.45); }
+}
+
+/* 输入框聚焦态增强 */
+.inp2:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 6rpx rgba(245, 179, 66, 0.18);
+}
+
+/* 表单区域 */
+.form-area {
+  width: 100%;
+  max-width: 620rpx;
+}
+
+/* 减少动态效果 */
+@media (prefers-reduced-motion: reduce) {
+  .pop-in,
+  .pulse-soft,
+  .btn-breathe:not([disabled]) {
+    animation: none !important;
+  }
+}
 </style>
