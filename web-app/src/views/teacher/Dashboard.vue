@@ -312,7 +312,6 @@ const shortcutTools = [
                 v-if="genderDist.female > 0" cx="50" cy="50" r="40" fill="none"
                 stroke="#E7698C" stroke-width="12"
                 :stroke-dasharray="`${genderDist.femaleLen} ${2 * Math.PI * 40 - genderDist.femaleLen}`"
-                :stroke-dashoffset="-genderDist.maleLen"
                 :style="{ strokeDashoffset: mounted ? -genderDist.maleLen : genderDist.femaleLen, transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s' }"
               />
             </svg>

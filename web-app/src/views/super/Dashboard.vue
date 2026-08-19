@@ -236,7 +236,7 @@ onMounted(load)
 }
 
 /* 暗色模式适配覆盖 */
-.dark .stat-card .group:hover {
+.dark .stat-card.group:hover {
   background: rgba(68, 61, 52, 0.5);
 }
 </style>

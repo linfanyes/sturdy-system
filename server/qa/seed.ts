@@ -22,6 +22,7 @@
 import type { DataSource } from 'typeorm'
 import { http } from './harness'
 import { randomUUID } from 'crypto'
+import bcrypt from 'bcrypt'
 
 /** TypeORM 默认命名策略：camelCase → snake_case */
 function toSnake(name: string): string {
@@ -225,9 +226,8 @@ export async function seedDataset(baseUrl: string, ds: DataSource): Promise<Seed
   if (su.status >= 300) throw new Error(`超管登录失败: ${su.status} ${JSON.stringify(su.body)}`)
   const superToken = su.body.token as string
 
-  // 预计算家长口令哈希
-  const bcrypt = require('bcrypt')
-  const parentHash = bcrypt.hashSync(PARENT_PASS, 4)
+  // 预计算家长口令哈希（与 password.util.ts 保持一致：bcrypt + 10 rounds）
+  const parentHash = bcrypt.hashSync(PARENT_PASS, 10)
 
   // Build property→column maps using entity metadata
   const colMap = getColumnMap(ds)

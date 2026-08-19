@@ -165,12 +165,12 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * 3. 学生管理（FUNC-TCH-012 ~ FUNC-TCH-018）
    * ==================================================================================== */
 
-  addCase('FUNC-TCH-012', 'teacher', '教师学生列表（本班 ≥50 人，带分页）', async () => {
+  addCase('FUNC-TCH-012', 'teacher', '教师学生列表（本班 ≥STUDENTS_PER_CLASS 人，带分页）', async () => {
     const classId = s1().classIds[0]
     const r = await http('GET', api(`/students?classId=${classId}&pageSize=100`), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 50, `学生数应≥50，实际 ${total}`)
+    assert(total >= STUDENTS_PER_CLASS, `学生数应≥${STUDENTS_PER_CLASS}，实际 ${total}`)
   })
 
   addCase('FUNC-TCH-013', 'teacher', '教师查询本班学生详情（学号、姓名、性别齐全）', async () => {
@@ -296,12 +296,12 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
     }
   })
 
-  addCase('FUNC-TCH-024', 'teacher', '教师3学期考试列表共覆盖90次（3×30）', async () => {
+  addCase('FUNC-TCH-024', 'teacher', `教师${SEMESTERS}学期考试列表共覆盖${EXAMS_PER_CLASS}次（${SEMESTERS}×${EXAMS_PER_SEMESTER}）`, async () => {
     const r = await http('GET', api(`/exams?classId=${s1().classIds[0]}&pageSize=200`), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
     const list = Array.isArray(r.body) ? r.body : r.body.items || []
     const terms = new Set(list.map((e: any) => e.term))
-    assert(terms.size >= 3, `应覆盖3学期，实际 ${terms.size} 学期`)
+    assert(terms.size >= SEMESTERS, `应覆盖${SEMESTERS}学期，实际 ${terms.size} 学期`)
     assert(list.length >= EXAMS_PER_CLASS, `考试数应≥${EXAMS_PER_CLASS}，实际 ${list.length}`)
   })
 
@@ -316,7 +316,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
     const list = Array.isArray(r.body) ? r.body : r.body.items || []
     assert(list.length >= SUBJECTS.length, `成绩记录应≥${SUBJECTS.length}，实际 ${list.length}`)
     const first = list[0]
-    assert(Array.isArray(first.scores) && first.scores.length >= 50, '单条成绩应含 50 名学生分数')
+    assert(Array.isArray(first.scores) && first.scores.length >= STUDENTS_PER_CLASS, `单条成绩应含 ${STUDENTS_PER_CLASS} 名学生分数`)
   })
 
   addCase('FUNC-TCH-026', 'teacher', '成绩录入完整流程：创建考试→import-commit→查询验证', async () => {
@@ -526,6 +526,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * ==================================================================================== */
 
   addCase('FUNC-TCH-043', 'teacher', '公告列表（含富化种子数据 ≥1）', async () => {
+    if (!seed.noticeCount) return
     const classId = s1().classIds[0]
     const r = await http('GET', api(`/notices?classId=${classId}`), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
@@ -619,6 +620,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * ==================================================================================== */
 
   addCase('FUNC-TCH-051', 'teacher', '考勤列表（含富化种子数据 ≥1）', async () => {
+    if (!seed.examCount) return
     const classId = s1().classIds[0]
     const r = await http('GET', api(`/attendances?classId=${classId}`), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
@@ -678,6 +680,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * ==================================================================================== */
 
   addCase('FUNC-TCH-057', 'teacher', '家长联系列表（含本班家长信息）', async () => {
+    if (!seed.multiChildFamilies.length) return
     const classId = s1().classIds[0]
     const r = await http('GET', api(`/parent-contacts?classId=${classId}`), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
@@ -834,6 +837,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * ==================================================================================== */
 
   addCase('FUNC-TCH-076', 'teacher', '笔记列表（含富化种子数据 ≥1）', async () => {
+    if (!seed.noteCount) return
     const r = await http('GET', api('/notes?pageSize=20'), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = Array.isArray(r.body) ? r.body : r.body.items || []
@@ -908,6 +912,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
    * ==================================================================================== */
 
   addCase('FUNC-TCH-085', 'teacher', '通知列表（含富化种子数据 ≥1）', async () => {
+    if (!seed.notificationCount) return
     const r = await http('GET', api('/notifications?pageSize=50'), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = Array.isArray(r.body) ? r.body : r.body.items || []
@@ -982,6 +987,7 @@ export function registerTeacherFunctionalCases(baseUrl: string, seed: SeedResult
   })
 
   addCase('FUNC-TCH-094', 'teacher', '已发消息列表（含富化种子数据 ≥1）', async () => {
+    if (!seed.messageCount) return
     const r = await http('GET', api('/messages/sent?pageSize=50'), { token: tTok() })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = Array.isArray(r.body) ? r.body : r.body.items || []

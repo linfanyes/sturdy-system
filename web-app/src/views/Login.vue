@@ -135,23 +135,12 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div
-    class="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8"
-    style="background: linear-gradient(135deg, #fff0e6 0%, #fff8f0 40%, #eafaf1 100%);"
-  >
+  <div class="login-page relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden p-4 sm:p-6 lg:p-8">
     <!-- 柔和光斑 -->
     <div class="pointer-events-none absolute inset-0 -z-10">
-      <div
-        class="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-sakura-300/35 blur-[120px]"
-      />
-      <div
-        class="absolute top-1/3 -right-40 h-[32rem] w-[32rem] -translate-y-1/2 rounded-full bg-mint-300/30 blur-[120px]"
-        style="animation-delay: -2s"
-      />
-      <div
-        class="absolute -bottom-32 left-1/4 h-[26rem] w-[26rem] rounded-full bg-butter-300/35 blur-[120px]"
-        style="animation-delay: -4s"
-      />
+      <div class="decor-blob bg-sakura-300/35" />
+      <div class="decor-blob bg-mint-300/30" style="animation-delay: -2s" />
+      <div class="decor-blob bg-butter-300/35" style="animation-delay: -4s" />
     </div>
 
     <!-- 右侧竖排装饰文字 -->
@@ -296,7 +285,6 @@ async function handleLogin() {
                 />
                 <button
                   type="button"
-                  tabindex="-1"
                   :aria-label="showPassword ? '隐藏密码' : '显示密码'"
                   class="absolute inset-y-0 right-3 flex items-center text-cocoa-400 transition hover:text-cocoa-600"
                   @click="showPassword = !showPassword"
@@ -400,6 +388,44 @@ async function handleLogin() {
 </template>
 
 <style scoped>
+/* 登录页背景：奶油米黄渐变 + 暗色模式 */
+.login-page {
+  background: linear-gradient(135deg, #fff0e6 0%, #fff8f0 40%, #eafaf1 100%);
+}
+.dark .login-page {
+  background: linear-gradient(135deg, #1a1714 0%, #231f1a 40%, #1a2018 100%);
+}
+
+/* 装饰光斑 */
+.decor-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  animation: float-decor 6s ease-in-out infinite;
+}
+.decor-blob:nth-child(1) {
+  top: -8rem;
+  left: -8rem;
+  width: 28rem;
+  height: 28rem;
+}
+.decor-blob:nth-child(2) {
+  top: 33%;
+  right: -10rem;
+  width: 32rem;
+  height: 32rem;
+  transform: translateY(-50%);
+}
+.decor-blob:nth-child(3) {
+  bottom: -8rem;
+  left: 25%;
+  width: 26rem;
+  height: 26rem;
+}
+.dark .decor-blob {
+  opacity: 0.15;
+}
+
 .motto-enter-active,
 .motto-leave-active {
   transition: opacity 0.5s ease;

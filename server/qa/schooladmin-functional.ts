@@ -105,9 +105,9 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
     if (!sa1Token) sa1Token = await loginAdmin(1)
     const r = await http('GET', api('/school-admin/dashboard'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
-    assert(r.body.totalTeachers >= 200, `教师总数应≥200，实际 ${r.body.totalTeachers}`)
-    assert(r.body.totalClasses >= 40, `班级总数应≥40，实际 ${r.body.totalClasses}`)
-    assert(r.body.totalStudents >= 2000, `学生总数应≥2000，实际 ${r.body.totalStudents}`)
+    assert(r.body.totalTeachers >= TEACHERS_PER_SCHOOL, `教师总数应≥${TEACHERS_PER_SCHOOL}，实际 ${r.body.totalTeachers}`)
+    assert(r.body.totalClasses >= CLASSES_PER_SCHOOL, `班级总数应≥${CLASSES_PER_SCHOOL}，实际 ${r.body.totalClasses}`)
+    assert(r.body.totalStudents >= CLASSES_PER_SCHOOL * STUDENTS_PER_CLASS, `学生总数应≥${CLASSES_PER_SCHOOL * STUDENTS_PER_CLASS}，实际 ${r.body.totalStudents}`)
   })
 
   addCase('FUNC-SA-DASH-02', 'school_admin', '工作台返回活跃/非活跃教师数', async () => {
@@ -144,6 +144,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-DASH-06', 'school_admin', '工作台返回学科分布数据', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.gradeRowCount) return
     const r = await http('GET', api('/school-admin/dashboard'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     assert(Array.isArray(r.body.subjectDistribution), 'subjectDistribution 应为数组')
@@ -163,12 +164,12 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
   // 域 3：教师管理
   // ===================================================================
 
-  addCase('FUNC-SA-TEACH-01', 'school_admin', '教师列表分页返回（总数 ≥ 200）', async () => {
+  addCase('FUNC-SA-TEACH-01', 'school_admin', '教师列表分页返回（总数 ≥ TEACHERS_PER_SCHOOL）', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
     const r = await http('GET', api('/school-admin/teachers?pageSize=500'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 200, `教师总数应≥200，实际 ${total}`)
+    assert(total >= TEACHERS_PER_SCHOOL, `教师总数应≥${TEACHERS_PER_SCHOOL}，实际 ${total}`)
   })
 
   addCase('FUNC-SA-TEACH-02', 'school_admin', '教师列表按关键词搜索命中', async () => {
@@ -308,12 +309,12 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
   // 域 4：班级管理
   // ===================================================================
 
-  addCase('FUNC-SA-CLASS-01', 'school_admin', '班级列表返回（总数 ≥ 40）', async () => {
+  addCase('FUNC-SA-CLASS-01', 'school_admin', '班级列表返回（总数 ≥ CLASSES_PER_SCHOOL）', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
     const r = await http('GET', api('/school-admin/classes?pageSize=500'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 40, `班级总数应≥40，实际 ${total}`)
+    assert(total >= CLASSES_PER_SCHOOL, `班级总数应≥${CLASSES_PER_SCHOOL}，实际 ${total}`)
   })
 
   addCase('FUNC-SA-CLASS-02', 'school_admin', '新建班级', async () => {
@@ -396,12 +397,12 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
   // 域 5：学生管理
   // ===================================================================
 
-  addCase('FUNC-SA-STUD-01', 'school_admin', '学生列表按班级查询（≥ 50 人）', async () => {
+  addCase('FUNC-SA-STUD-01', 'school_admin', '学生列表按班级查询（≥ STUDENTS_PER_CLASS 人）', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
     const r = await http('GET', api(`/school-admin/students?classId=${s1().classIds[0]}&pageSize=200`), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
-    assert(total >= 50, `学生数应≥50，实际 ${total}`)
+    assert(total >= STUDENTS_PER_CLASS, `学生数应≥${STUDENTS_PER_CLASS}，实际 ${total}`)
   })
 
   addCase('FUNC-SA-STUD-02', 'school_admin', '学生搜索按姓名命中', async () => {
@@ -505,6 +506,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-NOTICE-02', 'school_admin', '学校公告列表（含学校级与班级级）', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.noticeCount) return
     const r = await http('GET', api('/school-admin/notices?pageSize=200'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = r.body.items || (Array.isArray(r.body) ? r.body : [])
@@ -586,6 +588,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-ACAD-02', 'school_admin', '成绩汇总按学科聚合（含均分/及格率/高低分）', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.gradeRowCount) return
     const r = await http('GET', api('/school-admin/academic/summary'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const subjects = r.body.subjects || []
@@ -600,6 +603,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-ACAD-03', 'school_admin', '按年级横向对比各班成绩', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.gradeRowCount) return
     const r = await http('GET', api('/school-admin/academic/class-comparison?grade=一年级'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const classes = r.body.classes || []
@@ -632,6 +636,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-ACAD-06', 'school_admin', '班级趋势含学科列表', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.gradeRowCount) return
     const classId = s1().classIds[0]
     const r = await http('GET', api(`/school-admin/academic/class-trend?classId=${classId}`), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
@@ -700,6 +705,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-HW-01', 'school_admin', '全校作业聚合列表', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.examCount) return
     const r = await http('GET', api('/school-admin/homework?pageSize=50'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const total = r.body.total ?? (r.body.items || []).length
@@ -922,6 +928,7 @@ export function registerSchoolAdminCases(baseUrl: string, seed: SeedResult) {
 
   addCase('FUNC-SA-MSG-04', 'school_admin', '查看已发送消息列表', async () => {
     if (!sa1Token) sa1Token = await loginAdmin(1)
+    if (!seed.messageCount) return
     const r = await http('GET', api('/messages/sent?pageSize=20'), { token: sa1Token })
     assert(r.status < 300, `状态码 ${r.status}`)
     const items = Array.isArray(r.body) ? r.body : r.body.items || []

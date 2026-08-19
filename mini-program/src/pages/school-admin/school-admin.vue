@@ -115,7 +115,7 @@
         <button class="notice-send" :disabled="saving" @click="saveSemester">{{ saving ? '保存中…' : '创建学期' }}</button>
       </view>
       <view class="notice-list">
-        <div v-if="!semesters.length" class="empty" style="padding:20rpx 0">暂无学期，点击上方「新增」创建</div>
+        <view v-if="!semesters.length" class="empty" style="padding:20rpx 0">暂无学期，点击上方「新增」创建</view>
         <view class="notice-item" v-for="s in semesters" :key="s.id">
           <view class="notice-item-hd">
             <text class="notice-item-title">{{ s.name }}</text>

@@ -433,9 +433,6 @@
   .dark .input-soft {
     @apply bg-cream-200/60 border-cocoa-100/50 text-cocoa-900;
   }
-  .dark .btn-primary {
-    @apply text-cream-300;
-  }
   .dark .btn-secondary {
     @apply bg-cream-200/80 text-cocoa-600 border-cream-100/40;
   }
