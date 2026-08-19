@@ -111,6 +111,11 @@
 
     <!-- 功能入口 -->
     <FeatureGrid @go="go" />
+
+    <!-- 回到顶部 -->
+    <view class="fab-top" :class="showBackTop && 'show'" @click="scrollToTop" v-if="showBackTop">
+      <text class="fab-icon">↑</text>
+    </view>
   </view>
 </template>
 
@@ -153,6 +158,17 @@ const {
 
 // 注册生命周期
 registerLifecycle()
+
+// 回到顶部
+const showBackTop = ref(false)
+const SCROLL_THRESHOLD = 300
+
+function onPageScroll(e) {
+  showBackTop.value = e.scrollTop > SCROLL_THRESHOLD
+}
+function scrollToTop() {
+  uni.pageScrollTo({ scrollTop: 0, duration: 300 })
+}
 
 // 导航函数
 function go(f) {
@@ -232,4 +248,35 @@ function copyBirthdayCard() {
 .pulse-dot::before { content: ''; position: absolute; inset: -4rpx; border-radius: 50%; background: rgba(230,67,64,0.3); animation: pulse-ring 1.5s ease-out infinite; z-index: -1; }
 @keyframes slide-right { from { opacity: 0; transform: translateX(-20rpx); } to { opacity: 1; transform: translateX(0); } }
 @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+/* 回到顶部 */
+.fab-top {
+  position: fixed;
+  right: 30rpx;
+  bottom: calc(60rpx + env(safe-area-inset-bottom));
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5b342, #d69426);
+  box-shadow: 0 8rpx 24rpx rgba(214, 148, 38, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(20rpx) scale(0.8);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 999;
+}
+.fab-top.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.fab-top:active {
+  transform: scale(0.9);
+}
+.fab-icon {
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+}
 </style>
