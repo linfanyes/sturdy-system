@@ -2,14 +2,19 @@
 # 园丁工作台后端容器初始化入口
 # 流程：
 #   1) 自动执行数据库迁移（migrations/*.sql，幂等 + 并发锁）
-#   2) 迁移完成后启动后端服务
-# 这样云端每次「重新拉取代码 → 跑流水线 → 重建部署」都会先对齐表结构再起服务，
-# 新增实体只需在 server/src/migrations/ 添加 .sql 迁移文件并重新部署即可，无需手动建表。
+#   2) 若 SEED_ON_START=true，运行种子数据生成脚本（幂等，首次部署时写入）
+#   3) 启动后端服务
 set -e
 
 echo "[entrypoint] 开始数据库初始化（自动迁移）..."
 node dist/migrate.js
-echo "[entrypoint] 迁移完成，启动后端服务..."
+echo "[entrypoint] 迁移完成"
 
-# exec 让 node 进程接管 PID 1，正确接收并转发 SIGTERM/SIGINT 等信号
+if [ "$SEED_ON_START" = "true" ]; then
+  echo "[entrypoint] 开始写入种子数据..."
+  node dist/scripts/seed-data.js
+  echo "[entrypoint] 种子数据写入完成"
+fi
+
+echo "[entrypoint] 启动后端服务..."
 exec node dist/main.js

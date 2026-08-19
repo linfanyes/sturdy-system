@@ -10,16 +10,17 @@
     "vendor:shared": "node ../scripts/sync-shared-vendor.mjs",
     "check:vendor": "node ../scripts/check-shared-vendor.mjs",
     "qa": "tsc -p tsconfig.qa.json && node .qa-dist/server/qa/run.js",
+    "test:seed": "npx jest --testPathPatterns=seed-comprehensive.spec.ts",
     "test": "jest",
     "test:cov": "jest --coverage",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/server/src/main.js",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "seed": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/seed-data.js",
-    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/clear-data.js",
-    "dedupe:grades": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/dedupe-grades.js",
-    "seed:comprehensive": "tsc -p tsconfig.seed.json && node .seed-dist/server/scripts/seed-comprehensive.js",
+    "seed": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/seed-data.js",
+    "seed:clear": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/clear-data.js",
+    "dedupe:grades": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/dedupe-grades.js",
+    "seed:comprehensive": "tsc -p tsconfig.seed.json && node .seed-dist/scripts/seed-comprehensive.js",
     "slow-query-monitor": "node scripts/slow-query-monitor.js"
   },
   "dependencies": {
@@ -56,14 +57,12 @@
     "@nestjs/schematics": "^10.1.4",
     "@nestjs/testing": "^10.4.22",
     "@types/bcrypt": "^6.0.0",
-    "@types/express": "^4.17.25",
+    "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.16.10",
-    "eslint": "^9.39.5",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.12",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.67.0"
+    "typescript": "^5.9.3"
   },
   "optionalDependencies": {
     "better-sqlite3": "^12.11.1"

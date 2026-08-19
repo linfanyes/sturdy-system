@@ -1,16 +1,21 @@
 /**
- * 一键生成测试数据
+ * 一键生成测试数据（全面版）
  *
  * 生成内容（每校）：
  *   - 1 个学校 + 1 个校管（school_admins）
- *   - 20 名教师（users），职务各不相同、任教学科不同
- *   - 3 个班级，每班 1 名班主任 + 按科目分配的科任老师（class_members）
- *   - 每班 20 名学生 + 对应家长（parents / student_parents）
- *   - 每班 6 次“全部科目”考试 + 3 次“仅语数外”考试，并生成每位学生的成绩（grades）
- *   - 每校 1 条学校公告 + 每班 1 条班级公告（notices）
+ *   - 24 名教师（users），职务各不相同、任教学科不同
+ *   - 6 个年级（一年级~六年级），每年级 3 个班级
+ *   - 每班 30 名学生 + 对应家长（parents / student_parents）
+ *   - 每班 10 次考试（含语数外 3 科），并生成每位学生的成绩（grades）
+ *   - 每校 1 条学校公告 + 每班 3 条班级公告（notices）
  *   - 每班一份每周课表（schedules，5 天 × 7 节）
  *   - 教学资源库种子数据（古诗词 30 首 + 数学公式 23 条 + 英语单词 120 个）
  *   - 教材知识库种子数据（人教版语文/数学 + 外研版英语，共 32 本教材含单元与知识点）
+ *
+ * 总量（5 所学校）：
+ *   5 学校 × 6 年级 × 3 班级 × 30 学生 = 2700 名学生
+ *   5 学校 × 6 年级 × 3 班级 × 10 考试 = 900 场考试
+ *   900 场 × 3 科 = 2700 科次成绩
  *
  * 运行：在 server/ 目录执行 `npm run seed`（或 `npx tsx scripts/seed-data.ts`）
  * 幂等：若已存在 seed-manifest.json，会先清除旧数据再重新生成。
@@ -42,74 +47,62 @@ import {
 } from './seed-common'
 
 const SCHOOL_PREFIXES = ['XA', 'XB', 'XC', 'XD', 'XE']
-const NOTICE_TITLES = ['家长会通知', '作业提醒', '安全教育告家长书', '期中表彰名单', '春季运动会安排']
+const NOTICE_TITLES = ['家长会通知', '作业提醒', '安全教育告家长书', '期中表彰名单', '春季运动会安排', '期末考试安排', '放假通知', '返校通知']
+const EXAM_NAMES = ['第一次月考', '期中考试', '第二次月考', '第三次月考', '第四次月考', '第五次月考', '第六次月考', '期末考试', '摸底考试', '综合测试']
 
-async function main() {
-  const ds = buildDataSource()
-  await ds.initialize()
-  console.log('✅ 数据库连接成功')
+/**
+ * 创建单个学校的所有数据
+ */
+async function createSchool(ds: any, s: number, m: Record<string, string[]>, pwHash: string) {
+  const code = await genSchoolCode(SCHOOL_PREFIXES[s], ds)
+  const school = await ds.getRepository(School).save(ds.getRepository(School).create({
+    code, name: `第${s + 1}实验小学`, address: `测试市测试区${s + 1}号`,
+    contact: '教务处', phone: `1380000000${s}`, status: 'active',
+  }))
+  m.schools.push(school.id)
 
-  const prev = loadManifest()
-  if (prev) {
-    console.log('⚠ 发现旧种子清单，先清除再重新生成...')
-    await clearByManifest(ds, prev)
-    clearManifest()
+  // 校管
+  const adminUsername = `sa${s + 1}`
+  const admin = await ds.getRepository(SchoolAdmin).save(ds.getRepository(SchoolAdmin).create({
+    username: adminUsername, passwordHash: pwHash, name: `${school.name}主任`,
+    schoolId: school.id,
+    permissions: ['teachers', 'classes', 'students', 'exams', 'grades', 'attendance',
+      'schedule', 'homework', 'notices', 'ai', 'tools', 'games', 'finance', 'activities', 'rewards', 'parents'],
+    enabled: true,
+  }))
+  m.schoolAdmins.push(admin.id)
+
+  // 教师（24 名，职务/学科各不相同）
+  const teachers: any[] = []
+  for (let t = 0; t < SEED_CONFIG.teachersPerSchool; t++) {
+    const teacherNo = 'JS' + code + String(t + 1).padStart(5, '0')
+    const subject = ALL_SUBJECTS[t % ALL_SUBJECTS.length]
+    const position = POSITIONS[t % POSITIONS.length]
+    const name = genName()
+    const u = await ds.getRepository(User).save(ds.getRepository(User).create({
+      username: teacherNo, passwordHash: pwHash, name, schoolId: school.id,
+      school: school.name, subject, subjects: [subject], position,
+      positions: [position], grade: GRADES[t % GRADES.length], teacherNo, enabled: true, gender: pick(['男', '女']),
+    }))
+    teachers.push(u)
+    m.teachers.push(u.id)
   }
 
-  const m: Record<string, string[]> = {
-    schools: [], schoolAdmins: [], teachers: [], classes: [], classMembers: [],
-    students: [], parents: [], studentParents: [], exams: [], grades: [],
-    notices: [], schedules: [],
+  // 科目 -> 教师ID 映射（用于分配科任老师）
+  const subjectTeacherMap: Record<string, string[]> = {}
+  for (const subj of ALL_SUBJECTS) {
+    subjectTeacherMap[subj] = teachers
+      .filter((t: any) => (t.subjects || []).includes(subj))
+      .map((t: any) => t.id)
   }
-  const pwHash = bcrypt.hashSync(SEED_CONFIG.defaultPassword, 10)
 
-  for (let s = 0; s < SEED_CONFIG.schools; s++) {
-    const grade = GRADES[s]
-    const code = await genSchoolCode(SCHOOL_PREFIXES[s], ds)
-    const school = await ds.getRepository(School).save(ds.getRepository(School).create({
-      code, name: `${grade}测试学校${s + 1}`, address: '测试市测试区1号',
-      contact: '教务处', phone: `1380000000${s}`, status: 'active',
-    }))
-    m.schools.push(school.id)
+  // 遍历每个年级
+  for (let g = 0; g < GRADES.length; g++) {
+    const grade = GRADES[g]
 
-    // 校管
-    const adminUsername = `sa${s + 1}`
-    const admin = await ds.getRepository(SchoolAdmin).save(ds.getRepository(SchoolAdmin).create({
-      username: adminUsername, passwordHash: pwHash, name: `${grade}校管理员`,
-      schoolId: school.id,
-      permissions: ['teachers', 'classes', 'students', 'exams', 'grades', 'attendance',
-        'schedule', 'homework', 'notices', 'ai', 'tools', 'games', 'finance', 'activities', 'rewards', 'parents'],
-      enabled: true,
-    }))
-    m.schoolAdmins.push(admin.id)
-
-    // 教师（20 名，职务/学科各不相同）
-    const teachers: any[] = []
-    for (let t = 0; t < SEED_CONFIG.teachersPerSchool; t++) {
-      const teacherNo = 'JS' + code + String(t + 1).padStart(5, '0')
-      const subject = ALL_SUBJECTS[t % ALL_SUBJECTS.length]
-      const position = POSITIONS[t % POSITIONS.length]
-      const name = genName()
-      const u = await ds.getRepository(User).save(ds.getRepository(User).create({
-        username: teacherNo, passwordHash: pwHash, name, schoolId: school.id,
-        school: school.name, subject, subjects: [subject], position,
-        positions: [position], grade, teacherNo, enabled: true, gender: pick(['男', '女']),
-      }))
-      teachers.push(u)
-      m.teachers.push(u.id)
-    }
-
-    // 科目 -> 教师ID 映射（用于分配科任老师）
-    const subjectTeacherMap: Record<string, string[]> = {}
-    for (const subj of ALL_SUBJECTS) {
-      subjectTeacherMap[subj] = teachers
-        .filter((t: any) => (t.subjects || []).includes(subj))
-        .map((t: any) => t.id)
-    }
-
-    // 班级
-    for (let c = 0; c < SEED_CONFIG.classesPerSchool; c++) {
-      const head = teachers[c % teachers.length]
+    // 每年级 3 个班级
+    for (let c = 0; c < SEED_CONFIG.classesPerGrade; c++) {
+      const head = teachers[(g * SEED_CONFIG.classesPerGrade + c) % teachers.length]
       const className = `${grade}${c + 1}班`
       const cls = await ds.getRepository(ClassItem).save(ds.getRepository(ClassItem).create({
         name: className, grade, classNo: String(c + 1), headTeacher: head.name,
@@ -141,7 +134,7 @@ async function main() {
       for (let st = 0; st < SEED_CONFIG.studentsPerClass; st++) {
         const surname = pick(SURNAMES)
         const name = surname + pick(GIVEN)
-        const studentNo = `${s + 1}${c + 1}${String(st + 1).padStart(2, '0')}`
+        const studentNo = `${s + 1}${g + 1}${c + 1}${String(st + 1).padStart(3, '0')}`
         const gender = pick(['男', '女'])
         const parentPhone = '1' + pick(['3', '5', '7', '8', '9']) + randInt(100000000, 999999999).toString()
         const stu = await ds.getRepository(Student).save(ds.getRepository(Student).create({
@@ -176,24 +169,14 @@ async function main() {
         await ds.getRepository(Student).save(stu)
       }
 
-      // 考试：6 次全科目 + 3 次语数外
+      // 考试：10 次（含语数外 3 科）
       const exams: any[] = []
-      for (let e = 0; e < SEED_CONFIG.fullExams; e++) {
+      for (let e = 0; e < SEED_CONFIG.examsPerClass; e++) {
         const exam = await ds.getRepository(Exam).save(ds.getRepository(Exam).create({
-          term: '2026春季', name: `第${e + 1}次月考`, teacherName: head.name,
-          classId: cls.id, subjects: ALL_SUBJECTS,
-          subjectFullScores: Object.fromEntries(ALL_SUBJECTS.map((x) => [x, 100])),
-          date: `2026-0${e + 2}-1${e % 9 + 1}`, note: '', teacherId: head.id,
-        }))
-        exams.push(exam)
-        m.exams.push(exam.id)
-      }
-      for (let e = 0; e < SEED_CONFIG.partialExams; e++) {
-        const exam = await ds.getRepository(Exam).save(ds.getRepository(Exam).create({
-          term: '2026春季', name: `第${e + 1}次语数外测验`, teacherName: head.name,
+          term: '2026春季', name: EXAM_NAMES[e % EXAM_NAMES.length], teacherName: head.name,
           classId: cls.id, subjects: CORE_SUBJECTS,
           subjectFullScores: Object.fromEntries(CORE_SUBJECTS.map((x) => [x, 100])),
-          date: `2026-0${SEED_CONFIG.fullExams + e + 2}-0${e + 1}`, note: '', teacherId: head.id,
+          date: `2026-0${(e % 9) + 2}-${String((e % 28) + 1).padStart(2, '0')}`, note: '', teacherId: head.id,
         }))
         exams.push(exam)
         m.exams.push(exam.id)
@@ -221,13 +204,15 @@ async function main() {
         }
       }
 
-      // 班级公告
-      const notice = await ds.getRepository(Notice).save(ds.getRepository(Notice).create({
-        teacherId: head.id, classId: cls.id,
-        title: `${className}：${pick(NOTICE_TITLES)}`, content: '这是测试公告内容。',
-        scope: 'class', pinned: false, ended: false,
-      }))
-      m.notices.push(notice.id)
+      // 班级公告（每班 3 条）
+      for (let n = 0; n < 3; n++) {
+        const notice = await ds.getRepository(Notice).save(ds.getRepository(Notice).create({
+          teacherId: head.id, classId: cls.id,
+          title: `${className}：${pick(NOTICE_TITLES)}`, content: '这是测试公告内容。',
+          scope: 'class', pinned: n === 0, ended: false,
+        }))
+        m.notices.push(notice.id)
+      }
 
       // 课表：5 天 × 7 节
       for (let d = 1; d <= 5; d++) {
@@ -242,6 +227,8 @@ async function main() {
           m.schedules.push(sched.id)
         }
       }
+
+      console.log(`    ✓ 班级[${className}] 完成：${SEED_CONFIG.studentsPerClass} 学生 / ${SEED_CONFIG.examsPerClass} 考试`)
     }
 
     // 学校公告
@@ -251,56 +238,82 @@ async function main() {
     }))
     m.notices.push(sn.id)
 
-    // 教学资源库（古诗词 / 数学公式 / 英语单词）
-    for (const seed of SEED_POEMS) {
-      const p = await ds.getRepository(Poem).save(ds.getRepository(Poem).create({
-        schoolId: school.id, title: seed.title, dynasty: seed.dynasty, author: seed.author,
-        content: seed.content, translation: seed.translation || '', appreciation: seed.appreciation || '',
-        grade: seed.grade, keywords: seed.keywords, status: 'published',
-      }))
-    }
-    for (const seed of SEED_MATH_FORMULAS) {
-      const f = await ds.getRepository(MathFormula).save(ds.getRepository(MathFormula).create({
-        schoolId: school.id, title: seed.title, category: seed.category, formula: seed.formula,
-        explanation: seed.explanation || '', example: seed.example || '',
-        grade: seed.grade, keywords: seed.keywords, status: 'published',
-      }))
-    }
-    for (const seed of SEED_ENGLISH_WORDS) {
-      const w = await ds.getRepository(EnglishWord).save(ds.getRepository(EnglishWord).create({
-        schoolId: school.id, word: seed.word, phonetic: seed.phonetic, meaning: seed.meaning,
-        category: seed.category, example: seed.example || '', grade: seed.grade,
-        status: 'published',
-      }))
-    }
+    console.log(`  ✓ 学校[${school.name}] 完成：校管 sa${s + 1} / 教师 ${teachers.length} / 年级 ${GRADES.length}`)
+  }
 
-    // 教材知识库（人教版语文/数学 + 外研版英语，共 32 本）
-    for (const seed of SEED_TEXTBOOKS) {
-      const existing = await ds.getRepository(Textbook).findOne({
-        where: { schoolId: school.id, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
-      })
-      if (existing) continue
-      const tb = await ds.getRepository(Textbook).save(ds.getRepository(Textbook).create({
-        schoolId: school.id, publisher: seed.publisher, subject: seed.subject,
-        grade: seed.grade, term: seed.term, name: seed.name, status: 'published',
+  // 教学资源库（古诗词 / 数学公式 / 英语单词）
+  for (const seed of SEED_POEMS) {
+    await ds.getRepository(Poem).save(ds.getRepository(Poem).create({
+      schoolId: school.id, title: seed.title, dynasty: seed.dynasty, author: seed.author,
+      content: seed.content, translation: seed.translation || '', appreciation: seed.appreciation || '',
+      grade: seed.grade, keywords: seed.keywords, status: 'published',
+    }))
+  }
+  for (const seed of SEED_MATH_FORMULAS) {
+    await ds.getRepository(MathFormula).save(ds.getRepository(MathFormula).create({
+      schoolId: school.id, title: seed.title, category: seed.category, formula: seed.formula,
+      explanation: seed.explanation || '', example: seed.example || '',
+      grade: seed.grade, keywords: seed.keywords, status: 'published',
+    }))
+  }
+  for (const seed of SEED_ENGLISH_WORDS) {
+    await ds.getRepository(EnglishWord).save(ds.getRepository(EnglishWord).create({
+      schoolId: school.id, word: seed.word, phonetic: seed.phonetic, meaning: seed.meaning,
+      category: seed.category, example: seed.example || '', grade: seed.grade,
+      status: 'published',
+    }))
+  }
+
+  // 教材知识库（人教版语文/数学 + 外研版英语，共 32 本）
+  for (const seed of SEED_TEXTBOOKS) {
+    const existing = await ds.getRepository(Textbook).findOne({
+      where: { schoolId: school.id, publisher: seed.publisher, subject: seed.subject, grade: seed.grade, term: seed.term },
+    })
+    if (existing) continue
+    const tb = await ds.getRepository(Textbook).save(ds.getRepository(Textbook).create({
+      schoolId: school.id, publisher: seed.publisher, subject: seed.subject,
+      grade: seed.grade, term: seed.term, name: seed.name, status: 'published',
+    }))
+    for (let i = 0; i < seed.units.length; i++) {
+      const su = seed.units[i]
+      const unit = await ds.getRepository(TextbookUnit).save(ds.getRepository(TextbookUnit).create({
+        textbookId: tb.id, unitOrder: i + 1, title: su.title, summary: su.summary || '',
       }))
-      for (let i = 0; i < seed.units.length; i++) {
-        const su = seed.units[i]
-        const unit = await ds.getRepository(TextbookUnit).save(ds.getRepository(TextbookUnit).create({
-          textbookId: tb.id, unitOrder: i + 1, title: su.title, summary: su.summary || '',
+      for (let j = 0; j < su.points.length; j++) {
+        const sp = su.points[j]
+        await ds.getRepository(TextbookKnowledgePoint).save(ds.getRepository(TextbookKnowledgePoint).create({
+          unitId: unit.id, pointOrder: j + 1,
+          title: sp.title, type: sp.type, content: sp.content,
+          difficulty: sp.difficulty, keywords: sp.keywords,
         }))
-        for (let j = 0; j < su.points.length; j++) {
-          const sp = su.points[j]
-          await ds.getRepository(TextbookKnowledgePoint).save(ds.getRepository(TextbookKnowledgePoint).create({
-            unitId: unit.id, pointOrder: j + 1,
-            title: sp.title, type: sp.type, content: sp.content,
-            difficulty: sp.difficulty, keywords: sp.keywords,
-          }))
-        }
       }
     }
+  }
+}
 
-    console.log(`  ✓ 学校[${school.name}] 完成：校管 sa${s + 1} / 教师 ${teachers.length} / 班级 ${SEED_CONFIG.classesPerSchool}`)
+async function main() {
+  const ds = buildDataSource()
+  await ds.initialize()
+  console.log('✅ 数据库连接成功')
+
+  const prev = loadManifest()
+  if (prev) {
+    console.log('⚠ 发现旧种子清单，先清除再重新生成...')
+    await clearByManifest(ds, prev)
+    clearManifest()
+  }
+
+  const m: Record<string, string[]> = {
+    schools: [], schoolAdmins: [], teachers: [], classes: [], classMembers: [],
+    students: [], parents: [], studentParents: [], exams: [], grades: [],
+    notices: [], schedules: [],
+  }
+  const pwHash = bcrypt.hashSync(SEED_CONFIG.defaultPassword, 10)
+
+  console.log(`\n🚀 开始生成测试数据：${SEED_CONFIG.schools} 学校 × ${GRADES.length} 年级 × ${SEED_CONFIG.classesPerGrade} 班级 × ${SEED_CONFIG.studentsPerClass} 学生\n`)
+
+  for (let s = 0; s < SEED_CONFIG.schools; s++) {
+    await createSchool(ds, s, m, pwHash)
   }
 
   saveManifest(m)

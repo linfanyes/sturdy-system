@@ -36,11 +36,10 @@ import { Textbook, TextbookUnit, TextbookKnowledgePoint } from '../src/textbook/
 /* ===================== 配置 ===================== */
 export const SEED_CONFIG = {
   schools: 5,
-  teachersPerSchool: 20,
-  classesPerSchool: 3,
-  studentsPerClass: 20,
-  fullExams: 6, // 全部科目考试次数
-  partialExams: 3, // 仅语数外的考试次数
+  teachersPerSchool: 24,
+  classesPerGrade: 3, // 每个年级的班级数
+  studentsPerClass: 30,
+  examsPerClass: 10, // 每个班级的考试次数
   defaultPassword: process.env.SEED_PASSWORD || 'Test@2026', // 所有种子账号统一口令
 }
 

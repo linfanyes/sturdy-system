@@ -22,21 +22,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const STATE_FILE = join(__dirname, '.gen-state.json')
 
 // ============ 规模配置 ============
-const SCHOOLS = 15
+const SCHOOLS = 5
 const GRADES = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级']
-const CLASSES_PER_GRADE = 10
-const STUDENTS_PER_CLASS = 45
+const CLASSES_PER_GRADE = 3
+const STUDENTS_PER_CLASS = 30
 const SEMESTERS = [
   { term: '2026春', name: '2026年春季学期', start: '2026-02-16', end: '2026-07-03' },
-  { term: '2026秋', name: '2026年秋季学期', start: '2026-09-01', end: '2027-01-29' },
 ]
-const EXAMS_PER_SEMESTER = 15
+const EXAMS_PER_SEMESTER = 10
 const SUBJECTS = ['语文', '数学', '英语']
 const FULL = 100
 const PASSWORD = 'Teacher123'
 const SAD_PASSWORD = 'Sad12345'
-// 每个班级开通家长登录的学生数（0=不开通，45=全部）
-const PARENT_ENABLE = Number(process.env.PARENT_ENABLE || 45)
+// 每个班级开通家长登录的学生数（0=不开通，30=全部）
+const PARENT_ENABLE = Number(process.env.PARENT_ENABLE || 30)
 // 并发：外=同时处理的学校/班级数，内=班级内成绩提交并发
 const CONC = Number(process.argv[2] || 10)
 const OUTER = Math.max(1, Math.floor(CONC))

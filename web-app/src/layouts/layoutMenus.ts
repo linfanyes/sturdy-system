@@ -309,6 +309,7 @@ export const superMenu: MenuCategory[] = [
 	    groups: [{ label: '', items: [
 	      { name: 'super-schools', label: '学校管理', to: '/super/schools', icon: School, color: 'blue' },
 	      { name: 'super-admins', label: '校管理员', to: '/super/admins', icon: Users, color: 'purple' },
+	      { name: 'super-kids-coding', label: '周报批量推送', to: '/super/kids-coding', icon: Send, color: 'green' },
 	    ] }],
   },
   {
@@ -325,12 +326,6 @@ export const superMenu: MenuCategory[] = [
 	      { name: 'super-school-features', label: '学校功能包', to: '/super/school-features', icon: ToggleLeft, color: 'green' },
 	      { name: 'super-account-clear', label: '清除业务数据', to: '/super/account-clear', icon: Trash2, color: 'cocoa' },
 	    ] }],
-  },
-  {
-    label: '少儿编程', color: 'green', icon: Send,
-    groups: [{ label: '', items: [
-      { name: 'super-kids-coding', label: '周报批量推送', to: '/super/kids-coding', icon: Send, color: 'green' },
-    ] }],
   },
 ]
 
