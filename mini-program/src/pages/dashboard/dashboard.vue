@@ -31,11 +31,16 @@
     <QuickActions @goPage="goPage" />
 
     <!-- 学校公告 -->
-    <view class="card" v-if="schoolNotices.length">
-      <view class="card-h">
-        <text class="ch-t">🏫 学校公告 <text class="unread-badge">{{ schoolNotices.length }}</text></text>
+    <view class="card school-notice" v-if="schoolNotices.length">
+      <view class="card-h press-feedback" @click="goPage('/pages/community/notifications')">
+        <view class="notice-title-row">
+          <view class="notice-ic">🏫</view>
+          <text class="ch-t">学校公告</text>
+          <text class="unread-badge pulse-dot">{{ schoolNotices.length }}</text>
+        </view>
+        <text class="ch-m">全部 ›</text>
       </view>
-      <view v-for="n in schoolNotices" :key="n.id" class="li col bord">
+      <view v-for="(n, i) in schoolNotices" :key="n.id" class="li col bord slide-in" :style="{ '--i': i }">
         <text class="li-t">{{ n.title }}</text>
         <text class="li-s clamp">{{ n.content }}</text>
       </view>
@@ -205,15 +210,26 @@ function copyBirthdayCard() {
 <style scoped>
 .page { padding: 30rpx; background: var(--c-bg); min-height: 100vh; box-sizing: border-box; }
 .card { margin-top: 20rpx; background: var(--c-card); border-radius: 20rpx; padding: 24rpx; box-shadow: 0 2rpx 10rpx var(--c-shadow); }
+.school-notice { background: linear-gradient(135deg, var(--c-card) 0%, #fff8f0 100%); border-radius: 24rpx; position: relative; overflow: hidden; }
+.school-notice::before { content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 2rpx; background: linear-gradient(90deg, transparent, rgba(230,162,60,0.4), transparent); }
 .card-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.notice-title-row { display: flex; align-items: center; gap: 12rpx; }
+.notice-ic { width: 44rpx; height: 44rpx; border-radius: 12rpx; background: linear-gradient(135deg, #fff3d6, #ffe0a0); display: flex; align-items: center; justify-content: center; font-size: 24rpx; }
 .ch-t { font-size: 28rpx; font-weight: 700; color: var(--c-title); }
 .ch-m { font-size: 22rpx; color: var(--c-sub); }
 .li { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 1px solid var(--c-border); font-size: 26rpx; }
 .li:last-child { border-bottom: none; }
 .li.col { flex-direction: column; align-items: stretch; }
-.li-t { flex: 1; color: var(--c-title); }
+.li-t { flex: 1; color: var(--c-title); font-weight: 600; }
 .li-s { color: var(--c-sub); font-size: 22rpx; margin-left: 16rpx; flex-shrink: 0; }
 .clamp { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bord { border-left: 6rpx solid var(--c-danger); padding-left: 14rpx; }
-.unread-badge { display: inline-block; font-size: 18rpx; color: #fff; background: #e64340; border-radius: 20rpx; padding: 0 12rpx; margin-left: 6rpx; font-weight: 400; vertical-align: middle; line-height: 28rpx; }
+.bord { border-left: 6rpx solid var(--c-accent); padding-left: 14rpx; }
+.unread-badge { display: inline-block; font-size: 18rpx; color: #fff; background: linear-gradient(135deg, #f56c6c, #e06c75); border-radius: 20rpx; padding: 0 12rpx; margin-left: 6rpx; font-weight: 400; vertical-align: middle; line-height: 28rpx; }
+.slide-in { animation: slide-right 0.4s ease-out both; animation-delay: calc(var(--i, 0) * 0.08s); }
+.press-feedback { transition: transform 0.15s; }
+.press-feedback:active { transform: scale(0.98); }
+.pulse-dot { position: relative; }
+.pulse-dot::before { content: ''; position: absolute; inset: -4rpx; border-radius: 50%; background: rgba(230,67,64,0.3); animation: pulse-ring 1.5s ease-out infinite; z-index: -1; }
+@keyframes slide-right { from { opacity: 0; transform: translateX(-20rpx); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
 </style>
